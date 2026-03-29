@@ -78,7 +78,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     } else if (data) {
       // Fetch latest weights for each graft
       const graftIds = (data as Graft[]).map(g => g.id)
-      let weightMap = new Map<string, number>()
+      const weightMap = new Map<string, number>()
       if (graftIds.length > 0) {
         const { data: weights } = await supabase
           .from('queen_weights')

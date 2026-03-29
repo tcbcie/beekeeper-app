@@ -167,7 +167,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       // Auto-update nuc status and linked graft status based on queen status
       const qs = formData.queen_status
       const nucUpdate: Record<string, string> = {}
-      let graftStatus: string | null = null
+      let syncGraftStatus: string | null = null
 
       const inspectionDate = formData.inspection_date
 
@@ -178,19 +178,19 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       if (qs === 'virgin') {
         nucUpdate.status = 'virgin'
         nucUpdate.queen_emerged_at = inspectionDate
-        graftStatus = 'emerged'
+        syncGraftStatus = 'emerged'
       } else if (qs === 'mated') {
         nucUpdate.status = 'mating'
         nucUpdate.mating_confirmed_at = inspectionDate
-        graftStatus = 'mated'
+        syncGraftStatus = 'mated'
       } else if (qs === 'laying') {
         nucUpdate.status = 'laying'
         nucUpdate.mating_confirmed_at = inspectionDate
-        graftStatus = 'mated'
+        syncGraftStatus = 'mated'
       } else if (qs === 'dead' || qs === 'missing') {
         nucUpdate.status = 'failed'
         nucUpdate.failed_at = inspectionDate
-        graftStatus = 'failed'
+        syncGraftStatus = 'failed'
       }
 
       if (Object.keys(nucUpdate).length > 0) {
@@ -203,10 +203,10 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
         if (nucSyncError) console.error('Error syncing nuc status:', nucSyncError)
       }
 
-      if (graftStatus && graftId) {
+      if (syncGraftStatus && graftId) {
         const { error: graftSyncError } = await supabase
           .from('batch_grafts')
-          .update({ status: graftStatus, status_date: inspectionDate })
+          .update({ status: syncGraftStatus, status_date: inspectionDate })
           .eq('id', graftId)
           .eq('user_id', userId)
 
@@ -251,7 +251,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       queen_last_seen_at: null,
       failed_at: null,
     }
-    let graftStatus: string | null = null
+    let syncGraftStatus: string | null = null
 
     if (remaining && remaining.length > 0) {
       for (const insp of remaining) {
@@ -262,19 +262,19 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
         if (qs === 'virgin') {
           nucReset.status = 'virgin'
           nucReset.queen_emerged_at = nucReset.queen_emerged_at || insp.inspection_date
-          graftStatus = 'emerged'
+          syncGraftStatus = 'emerged'
         } else if (qs === 'mated') {
           nucReset.status = 'mating'
           nucReset.mating_confirmed_at = nucReset.mating_confirmed_at || insp.inspection_date
-          graftStatus = 'mated'
+          syncGraftStatus = 'mated'
         } else if (qs === 'laying') {
           nucReset.status = 'laying'
           nucReset.mating_confirmed_at = nucReset.mating_confirmed_at || insp.inspection_date
-          graftStatus = 'mated'
+          syncGraftStatus = 'mated'
         } else if (qs === 'dead' || qs === 'missing') {
           nucReset.status = 'failed'
           nucReset.failed_at = insp.inspection_date
-          graftStatus = 'failed'
+          syncGraftStatus = 'failed'
         }
       }
     }
@@ -288,7 +288,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
     if (graftId) {
       await supabase
         .from('batch_grafts')
-        .update({ status: graftStatus || 'in_nuc' })
+        .update({ status: syncGraftStatus || 'in_nuc' })
         .eq('id', graftId)
         .eq('user_id', userId)
     }
@@ -322,6 +322,10 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
 
   const handleWeighQueen = async () => {
     if (!weightValue || !graftId) return
+    if (!weightDate) {
+      toast.error('Please select a date')
+      return
+    }
     const parsed = parseInt(weightValue, 10)
     if (isNaN(parsed) || parsed <= 0) {
       toast.error('Please enter a valid weight in mg')
@@ -556,7 +560,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                 onClick={handleWeighQueen}
                 tone="success"
                 size="sm"
-                disabled={weightSaving || !weightValue}
+                disabled={weightSaving || !weightValue || !weightDate}
               >
                 {weightSaving ? 'Saving...' : 'Save'}
               </Button>
