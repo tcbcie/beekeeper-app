@@ -157,7 +157,7 @@ export default function DistributionList({
                       Date <SortIcon col="date" />
                     </button>
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Location</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Mating Location</th>
                   <th className="px-3 py-2 text-center text-xs font-medium text-text-secondary">
                     <button type="button" onClick={() => handleSort('mated')} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
                       Mated <SortIcon col="mated" />
@@ -310,7 +310,7 @@ export default function DistributionList({
                       <span className="text-text-secondary">{formatDateIrish(dist.distribution_date)}</span>
                     </div>
                     <div>
-                      <span className="text-text-tertiary">Location: </span>
+                      <span className="text-text-tertiary">Mating Location: </span>
                       <span className="text-text-secondary">{getLocationDisplay(dist)}</span>
                     </div>
                     {graft?.queen_number && (
