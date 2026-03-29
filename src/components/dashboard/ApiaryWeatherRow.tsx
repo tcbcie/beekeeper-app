@@ -648,7 +648,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setForecastExpanded(!forecastExpanded) } }}
           aria-expanded={forecastExpanded}
           aria-label={forecastExpanded ? 'Hide 7-day forecast' : 'Show 7-day forecast'}
-          className="w-full flex items-center justify-between px-4 py-1 bg-forest-50 dark:bg-forest-900/40 text-xs text-forest-700 dark:text-forest-300 hover:bg-forest-100 dark:hover:bg-forest-900/50 transition-colors cursor-pointer"
+          className="w-full flex items-center justify-between px-4 py-1 bg-forest-50 dark:bg-surface-elevated text-xs text-forest-700 dark:text-forest-300 hover:bg-forest-100 dark:hover:bg-surface-secondary transition-colors cursor-pointer"
         >
           <span>{weatherLabel(weather.current.weatherCode)}</span>
           <span className="flex items-center gap-1 text-forest-600 dark:text-forest-400">
@@ -665,7 +665,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
               <div
                 key={index}
                 className={`flex-1 flex flex-col items-center py-1.5 ${
-                  index === 0 ? 'bg-forest-50/50 dark:bg-forest-900/30' : ''
+                  index === 0 ? 'bg-forest-50/50 dark:bg-surface-elevated' : ''
                 } ${index < weather.daily.length - 1 ? 'border-r border-border/40' : ''}`}
               >
                 <span className={`text-xs font-semibold leading-none ${
@@ -683,7 +683,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
       )}
 
       {gddValue !== null && !activeAction && (
-        <div className="px-3 py-1.5 bg-green-50/50 dark:bg-green-900/30 border-b border-border dark:border-border/70">
+        <div className="px-3 py-1.5 bg-green-50/50 dark:bg-surface-elevated border-b border-border dark:border-border/70">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 shrink-0">
               <Thermometer size={13} className="text-forest-600 dark:text-forest-400" />
