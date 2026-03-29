@@ -1648,20 +1648,21 @@ export default function BatchesPage() {
  <table className="min-w-full divide-y divide-border">
  <thead className="bg-surface-secondary">
  <tr>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Actions</th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Batch Name</th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Breeder Queen</th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Graft Date</th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Grafts</th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Accepted</th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Hatched</th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Mated</th>
+ <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Actions</th>
+ <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Batch Name</th>
+ <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Breeder Queen</th>
+ <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Graft Date</th>
+ <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Grafts</th>
+ <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Accepted</th>
+ <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Hatched</th>
+ <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Mated</th>
+ <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Sealed Dist.</th>
  </tr>
  </thead>
  <tbody className="bg-surface dark:bg-surface divide-y divide-border">
  {filteredBatches.map((batch: Batch) => (
  <tr key={batch.id} className="hover:bg-surface-secondary">
- <td className="px-6 py-4 whitespace-nowrap flex gap-2">
+ <td className="px-3 py-4 whitespace-nowrap flex gap-2">
  <IconButton onClick={() => handleEdit(batch)} tone="blue" size="xs" aria-label="Edit batch">
  <Edit2 size={16} />
  </IconButton>
@@ -1669,7 +1670,7 @@ export default function BatchesPage() {
  <Trash2 size={16} />
  </IconButton>
  </td>
- <td className="px-6 py-4 whitespace-nowrap font-medium">
+ <td className="px-3 py-4 whitespace-nowrap font-medium">
  <span className="inline-flex items-center gap-2">
  {batch.batch_name}
  {batch.status === 'completed' && (
@@ -1677,12 +1678,13 @@ export default function BatchesPage() {
  )}
  </span>
  </td>
- <td className="px-6 py-4 whitespace-nowrap">{batch.queens?.queen_number || 'N/A'}</td>
- <td className="px-6 py-4 whitespace-nowrap">{formatDateIrish(batch.graft_date)}</td>
- <td className="px-6 py-4 whitespace-nowrap">{batch.cell_count || '-'}</td>
- <td className="px-6 py-4 whitespace-nowrap">{batch.grafts_accepted || '-'}</td>
- <td className="px-6 py-4 whitespace-nowrap">{batch.queens_hatched || '-'}</td>
- <td className="px-6 py-4 whitespace-nowrap">{batch.queens_mated || '-'}</td>
+ <td className="px-3 py-4 whitespace-nowrap">{batch.queens?.queen_number || 'N/A'}</td>
+ <td className="px-3 py-4 whitespace-nowrap">{formatDateIrish(batch.graft_date)}</td>
+ <td className="px-3 py-4 whitespace-nowrap">{batch.cell_count || '-'}</td>
+ <td className="px-3 py-4 whitespace-nowrap">{batch.grafts_accepted || '-'}</td>
+ <td className="px-3 py-4 whitespace-nowrap">{batch.queens_hatched || '-'}</td>
+ <td className="px-3 py-4 whitespace-nowrap">{batch.queens_mated || '-'}</td>
+ <td className="px-3 py-4 whitespace-nowrap">{sealedCellCounts[batch.id] || '-'}</td>
  </tr>
  ))}
  </tbody>
