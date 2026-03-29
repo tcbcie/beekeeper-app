@@ -155,13 +155,17 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     const cb = onCountsChangeRef.current
     if (cb) cb({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated })
 
+    // Determine batch completion: all grafts in terminal status (sold/failed)
+    const allTerminal = grafts.length > 0 && grafts.every(g => g.status === 'sold' || g.status === 'failed')
+    const batchStatus = allTerminal ? 'completed' : 'active'
+
     // Persist to DB if counts changed (fire-and-forget)
-    const key = `${batchId}:${accepted}:${hatched}:${mated}`
+    const key = `${batchId}:${accepted}:${hatched}:${mated}:${batchStatus}`
     if (key !== lastPersistedCounts.current) {
       lastPersistedCounts.current = key
       supabase
         .from('rearing_batches')
-        .update({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated })
+        .update({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated, status: batchStatus })
         .eq('id', batchId)
         .then(({ error }) => {
           if (error) console.error('Failed to persist batch counts:', error)
