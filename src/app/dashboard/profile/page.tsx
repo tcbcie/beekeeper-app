@@ -904,12 +904,10 @@ export default function ProfilePage() {
  </div>
 
  {/* Location Display */}
- {userProfile?.is_uk_ni_resident && (
  <div className="md:col-span-2 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="text-sm font-semibold text-foreground mb-1">Location</div>
- <div className="text-sm text-foreground">Resident in NI/UK</div>
+ <div className="text-sm font-semibold text-foreground mb-1">Resident in NI/UK</div>
+ <div className="text-sm text-foreground">{userProfile?.is_uk_ni_resident ? 'Yes' : 'No'}</div>
  </div>
- )}
 
  {/* Association Membership Display */}
  {(userProfile?.association_id || userProfile?.member_fibka || userProfile?.member_iba || userProfile?.member_nihbs) && (
