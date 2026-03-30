@@ -13,6 +13,7 @@ interface PurchaseItemFormProps {
   onSubmit: (item: Partial<PurchaseItem>) => Promise<void>
   onCancel: () => void
   saving: boolean
+  isUkNi?: boolean
 }
 
 export default function PurchaseItemForm({
@@ -20,7 +21,8 @@ export default function PurchaseItemForm({
   categories,
   onSubmit,
   onCancel,
-  saving
+  saving,
+  isUkNi
 }: PurchaseItemFormProps) {
   const toast = useToast()
   const [name, setName] = useState(item?.name || '')
@@ -182,7 +184,7 @@ export default function PurchaseItemForm({
           </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">
-              Est. Price (EUR)
+              Est. Price ({isUkNi ? 'GBP' : 'EUR'})
             </label>
             <input
               type="number"

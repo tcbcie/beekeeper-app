@@ -9,6 +9,7 @@ interface PurchaseItemCardProps {
   onEdit: (item: PurchaseItem) => void
   onDelete: (item: PurchaseItem) => void
   onMarkPurchased: (item: PurchaseItem) => void
+  isUkNi?: boolean
 }
 
 const priorityStyles = {
@@ -34,7 +35,8 @@ export default function PurchaseItemCard({
   item,
   onEdit,
   onDelete,
-  onMarkPurchased
+  onMarkPurchased,
+  isUkNi
 }: PurchaseItemCardProps) {
   const isPurchased = item.status === 'purchased'
   const style = priorityStyles[item.priority]
@@ -49,9 +51,9 @@ export default function PurchaseItemCard({
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-IE', {
+    return new Intl.NumberFormat(isUkNi ? 'en-GB' : 'en-IE', {
       style: 'currency',
-      currency: 'EUR'
+      currency: isUkNi ? 'GBP' : 'EUR'
     }).format(price)
   }
 
