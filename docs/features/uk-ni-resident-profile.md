@@ -13,9 +13,11 @@ Users in Northern Ireland or the UK can toggle a "Resident in NI/UK" setting on 
 - Added `is_uk_ni_resident boolean NOT NULL DEFAULT false`
 
 ### `varroa_treatment_products` table
+- Added `approved_in_ireland boolean NOT NULL DEFAULT true` (existing treatments default to Irish-approved)
 - Added `approved_in_uk boolean NOT NULL DEFAULT false`
 - Added unique constraint on `product_name`
 - Seeded/flagged 14 UK-approved treatments from the approved list
+- 6 UK-only treatments (Thymovar, Oxuvar, Apistan, Apitraz, Bayvarol, Polyvar Yellow) set to `approved_in_ireland = false`
 
 ## UI Changes
 
@@ -30,8 +32,9 @@ Users in Northern Ireland or the UK can toggle a "Resident in NI/UK" setting on 
 - Currency formatting switches between `en-GB`/`GBP` and `en-IE`/`EUR`
 
 ### Treatment Management (`src/components/settings/TreatmentManagement.tsx`)
-- "Approved in UK/NI" checkbox in the add/edit form
-- "UK Approved" badge column in the treatments table
+- "Approved in Ireland" and "Approved in UK/NI" checkboxes in the add/edit form
+- "Approved In" column with IE/UK badges in the treatments table
+- All/Ireland/UK region filter buttons to filter the table
 - Description updated to reference both Ireland and UK
 
 ### Varroa Treatment Form (`src/components/records/forms/VarroaTreatmentForm.tsx`)

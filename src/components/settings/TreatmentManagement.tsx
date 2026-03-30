@@ -24,6 +24,7 @@ interface VarroaTreatment {
   temperature_range: string
   honey_flow_restrictions: string
   withdrawal_period_days: number
+  approved_in_ireland?: boolean
   approved_in_uk?: boolean
   created_at?: string
   updated_at?: string
@@ -38,6 +39,7 @@ interface TreatmentFormData {
   temperature_range: string
   honey_flow_restrictions: string
   withdrawal_period_days: number
+  approved_in_ireland: boolean
   approved_in_uk: boolean
 }
 
@@ -50,6 +52,7 @@ const emptyFormData: TreatmentFormData = {
   temperature_range: '',
   honey_flow_restrictions: '',
   withdrawal_period_days: 0,
+  approved_in_ireland: true,
   approved_in_uk: false,
 }
 
@@ -64,7 +67,7 @@ export default function TreatmentManagement() {
 
   const filteredTreatments = useMemo(() => {
     if (regionFilter === 'uk') return treatments.filter(t => t.approved_in_uk)
-    if (regionFilter === 'ireland') return treatments.filter(t => !t.approved_in_uk)
+    if (regionFilter === 'ireland') return treatments.filter(t => t.approved_in_ireland)
     return treatments
   }, [treatments, regionFilter])
 
@@ -139,6 +142,7 @@ export default function TreatmentManagement() {
       temperature_range: treatment.temperature_range,
       honey_flow_restrictions: treatment.honey_flow_restrictions,
       withdrawal_period_days: treatment.withdrawal_period_days,
+      approved_in_ireland: treatment.approved_in_ireland !== false,
       approved_in_uk: treatment.approved_in_uk || false,
     })
     setShowAddForm(true)
@@ -313,7 +317,16 @@ export default function TreatmentManagement() {
                 />
               </div>
 
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 flex gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.approved_in_ireland}
+                    onChange={(e) => setFormData({ ...formData, approved_in_ireland: e.target.checked })}
+                    className="w-4 h-4 rounded border-border text-forest-600 focus:ring-forest-500"
+                  />
+                  <span className="text-sm font-medium text-foreground">Approved in Ireland</span>
+                </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -389,7 +402,7 @@ export default function TreatmentManagement() {
                     Withdrawal (days)
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">
-                    UK Approved
+                    Approved In
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                     Notes
@@ -480,12 +493,26 @@ export default function TreatmentManagement() {
                           />
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <input
-                            type="checkbox"
-                            checked={formData.approved_in_uk}
-                            onChange={(e) => setFormData({ ...formData, approved_in_uk: e.target.checked })}
-                            className="w-4 h-4 rounded border-border text-forest-600 focus:ring-forest-500"
-                          />
+                          <div className="flex flex-col items-center gap-1">
+                            <label className="flex items-center gap-1 text-xs">
+                              <input
+                                type="checkbox"
+                                checked={formData.approved_in_ireland}
+                                onChange={(e) => setFormData({ ...formData, approved_in_ireland: e.target.checked })}
+                                className="w-3 h-3 rounded border-border text-forest-600"
+                              />
+                              IE
+                            </label>
+                            <label className="flex items-center gap-1 text-xs">
+                              <input
+                                type="checkbox"
+                                checked={formData.approved_in_uk}
+                                onChange={(e) => setFormData({ ...formData, approved_in_uk: e.target.checked })}
+                                className="w-3 h-3 rounded border-border text-forest-600"
+                              />
+                              UK
+                            </label>
+                          </div>
                         </td>
                         <td className="px-4 py-3">
                           <TextAreaField
@@ -541,13 +568,21 @@ export default function TreatmentManagement() {
                           {treatment.withdrawal_period_days === 0 ? 'None' : treatment.withdrawal_period_days}
                         </td>
                         <td className="px-4 py-3 text-sm text-center">
-                          {treatment.approved_in_uk ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
-                              UK
-                            </span>
-                          ) : (
-                            <span className="text-text-tertiary">-</span>
-                          )}
+                          <div className="flex flex-wrap justify-center gap-1">
+                            {treatment.approved_in_ireland && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
+                                IE
+                              </span>
+                            )}
+                            {treatment.approved_in_uk && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                                UK
+                              </span>
+                            )}
+                            {!treatment.approved_in_ireland && !treatment.approved_in_uk && (
+                              <span className="text-text-tertiary">-</span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-text-tertiary">
                           <div className="max-w-xs truncate" title={treatment.notes || ''}>
