@@ -167,24 +167,12 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
   }, [updateHybridisation, fetchDistributions, userId, toast])
 
   const handleHybridisationDateChange = useCallback(async (id: string, date: string) => {
-    if (updatingIdsRef.current.has(id)) return
     if (!date) return
-
-    setUpdatingIds((prev) => new Set(prev).add(id))
-    try {
-      const success = await updateHybridisation(id, true, date)
-      if (success) {
-        toast.success('Hybridisation date updated')
-        await fetchDistributions(userId)
-      } else {
-        toast.error('Failed to update hybridisation date')
-      }
-    } finally {
-      setUpdatingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
+    const success = await updateHybridisation(id, true, date)
+    if (success) {
+      await fetchDistributions(userId)
+    } else {
+      toast.error('Failed to update hybridisation date')
     }
   }, [updateHybridisation, fetchDistributions, userId, toast])
 
@@ -398,8 +386,9 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                           />
                           {d.offspring_hybridised === true && (
                             <input
+                              key={`${d.id}-hd-${d.hybridisation_date ?? ''}`}
                               type="date"
-                              value={d.hybridisation_date || ''}
+                              defaultValue={d.hybridisation_date || ''}
                               onChange={(e) => handleHybridisationDateChange(d.id, e.target.value)}
                               disabled={updatingIds.has(d.id)}
                               className="w-28 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
