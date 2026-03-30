@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, X, Edit2, Trash2, Save } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -60,6 +60,13 @@ export default function TreatmentManagement() {
   const [editing, setEditing] = useState<VarroaTreatment | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [formData, setFormData] = useState<TreatmentFormData>(emptyFormData)
+  const [regionFilter, setRegionFilter] = useState<'all' | 'ireland' | 'uk'>('all')
+
+  const filteredTreatments = useMemo(() => {
+    if (regionFilter === 'uk') return treatments.filter(t => t.approved_in_uk)
+    if (regionFilter === 'ireland') return treatments.filter(t => !t.approved_in_uk)
+    return treatments
+  }, [treatments, regionFilter])
 
   const fetchTreatments = useCallback(async () => {
     setLoading(true)
@@ -188,6 +195,25 @@ export default function TreatmentManagement() {
             {showAddForm ? <X size={16} /> : <Plus size={16} />}
             {showAddForm ? 'Cancel' : 'Add Treatment'}
           </Button>
+        </div>
+
+        {/* Region Filter */}
+        <div className="flex gap-2">
+          {(['all', 'ireland', 'uk'] as const).map((region) => (
+            <Button
+              key={region}
+              onClick={() => setRegionFilter(region)}
+              size="xs"
+              tone={regionFilter === region ? 'blue' : 'neutral'}
+              className={`text-sm ${
+                regionFilter === region
+                  ? ''
+                  : 'bg-surface-secondary text-text-secondary hover:bg-surface-secondary/80'
+              }`}
+            >
+              {region === 'all' ? 'All' : region === 'ireland' ? 'Ireland' : 'UK'}
+            </Button>
+          ))}
         </div>
 
         {/* Add/Edit Form */}
@@ -327,9 +353,11 @@ export default function TreatmentManagement() {
           <div className="text-center py-8">
             <LoadingSpinner text="Loading varroa treatments..." />
           </div>
-        ) : treatments.length === 0 ? (
+        ) : filteredTreatments.length === 0 ? (
           <div className="text-center py-8 text-text-tertiary">
-            No varroa treatments found. Add your first treatment above.
+            {treatments.length === 0
+              ? 'No varroa treatments found. Add your first treatment above.'
+              : 'No treatments match the selected filter.'}
           </div>
         ) : (
           <TableContainer className="border-none rounded-none">
@@ -369,7 +397,7 @@ export default function TreatmentManagement() {
                 </TableHeaderRow>
               </thead>
               <TableBody>
-                {treatments.map((treatment) => (
+                {filteredTreatments.map((treatment) => (
                   <TableRow key={treatment.id}>
                     {editing?.id === treatment.id ? (
                       /* Inline Edit Mode */
