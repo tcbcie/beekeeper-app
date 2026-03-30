@@ -1,31 +1,23 @@
-# Task: Fix NIHBS Report Missing Mating Apiary Details
+# Task: Add Apidea Number / Queen Status Table to NUC Reports
 
-**Date:** 29/03/2026
+**Date:** 30/03/2026
 **Status:** Complete
 
 ## Objective
-Fix the NIHBS monthly returns report showing empty mating apiary details (name, grid reference, altitude all blank, count = 0).
-
-## Root Cause
-The `can_access_apiary` RLS function only allowed access to apiaries the user owns or shares via teams. When the report queries apiary details for mating apiaries belonging to other group members, RLS blocked the result.
+Add a table to the Queen Rearing Reports tab showing each apidea (mating nuc) number alongside its current queen status.
 
 ## Plan
 
-- [x] 1. Update `can_access_apiary` function to allow access to mating apiaries used in the user's rearing group batches
-- [x] 2. Update feature documentation
+- [x] 1. Add `nuc_number` to `NucRecord` interface and Supabase query in `NucReportsTab.tsx`
+- [x] 2. Add "Apidea Overview" panel with mobile card view + desktop table view showing nuc number and status
+- [x] 3. Include apidea number in CSV export
+- [x] 4. Update feature docs
 
 ## Review
 
 ### Changes Made
-
-- **`can_access_apiary` SQL function** — Added a fourth OR clause:
-  - Allows SELECT access when the apiary is referenced as `mating_apiary_id` on a `rearing_batches` row linked to a `rearing_group` the user is a member of
-  - Applied directly via Supabase MCP
-
-- **`sql/can_access_apiary_add_rearing_group.sql`** — Migration file for the function update
-
-- **`docs/features/nihbs-monthly-returns.md`** — Added RLS note for apiaries access via rearing group membership
+- **`src/components/batches/NucReportsTab.tsx`** — Added `nuc_number` to `NucRecord` interface and Supabase query. Added new "Apidea Overview" panel between the Status Overview row and Utilisation row, showing each active mating nuc's apidea number and queen status. Mobile uses compact card rows; desktop uses a two-column table. CSV export now includes "Apidea Number" as the first column.
+- **`docs/features/queen-rearing-nuc-reports.md`** — Documented Phase 3 (Apidea Overview Table).
 
 ### Notes
-- No frontend code changes needed — the hook logic was correct, only RLS was blocking
-- The fix is scoped: only mating apiaries referenced by group batches become visible, not all of a group member's apiaries
+- Single file change for functionality. Reuses existing `activeNucs`, `STATUS_LABELS`, `STATUS_TONES`, and `Badge` component.
