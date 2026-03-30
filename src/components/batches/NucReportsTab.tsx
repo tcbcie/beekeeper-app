@@ -19,6 +19,7 @@ interface NucReportsTabProps {
 
 interface NucRecord {
   id: string
+  nuc_number: string | null
   status: string
   is_inventory: boolean
   equipment_status: string | null
@@ -124,7 +125,7 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
     setFetchError(false)
     const { data, error } = await supabase
       .from('mating_nucs')
-      .select('id, status, is_inventory, equipment_status, batch_id, setup_date, retired_at, queen_emerged_at, mating_confirmed_at, cell_introduced_at, rearing_batches(id, batch_name)')
+      .select('id, nuc_number, status, is_inventory, equipment_status, batch_id, setup_date, retired_at, queen_emerged_at, mating_confirmed_at, cell_introduced_at, rearing_batches(id, batch_name)')
       .eq('user_id', userId)
 
     if (error) {
@@ -295,6 +296,7 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
   // --- Export handlers ---
   const handleExportCSV = useCallback(() => {
     const rows = matingNucs.map(n => ({
+      'Apidea Number': n.nuc_number || '',
       'NUC Status': STATUS_LABELS[n.status] || n.status,
       'Batch': n.rearing_batches?.batch_name || '',
       'Setup Date': n.setup_date || '',
@@ -490,6 +492,53 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
             )}
           </Panel>
         </div>
+
+        {/* Apidea Overview Table */}
+        {activeNucs.length > 0 && (() => {
+          const sortedNucs = [...activeNucs].sort((a, b) =>
+            (a.nuc_number || '').localeCompare(b.nuc_number || '', undefined, { numeric: true })
+          )
+          return (
+          <Panel>
+            <h3 className="text-lg font-semibold text-foreground mb-4">Apidea Overview</h3>
+            <p className="text-sm text-text-secondary mb-3">
+              Each apidea and its current queen status ({activeNucs.length} active)
+            </p>
+
+            {/* Mobile card view */}
+            <div className="md:hidden space-y-2">
+              {sortedNucs.map(n => (
+                <div key={n.id} className="flex items-center justify-between bg-surface-elevated rounded-lg p-3 border border-border">
+                  <span className="font-medium text-foreground">{n.nuc_number || '—'}</span>
+                  <Badge tone={STATUS_TONES[n.status] || 'neutral'}>{STATUS_LABELS[n.status] || n.status}</Badge>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="py-2 pr-4 text-sm font-medium text-text-secondary">Apidea Number</th>
+                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Queen Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedNucs.map(n => (
+                    <tr key={n.id} className="border-b border-border last:border-0">
+                      <td className="py-3 pr-4 text-foreground font-medium">{n.nuc_number || '—'}</td>
+                      <td className="py-3 px-4">
+                        <Badge tone={STATUS_TONES[n.status] || 'neutral'}>{STATUS_LABELS[n.status] || n.status}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+          )
+        })()}
 
         {/* Row 2: Utilisation + Mating Success */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -82,6 +82,21 @@ Add a new "Reports" tab to the Queen Rearing page (`/dashboard/batches?tab=repor
 - **[Medium]** Invalid Date guard (`isNaN`) on `setupDate` for malformed date strings.
 - **[Medium]** Fixed operator precedence on tone fallback expressions.
 
+### Phase 3: Apidea Overview Table
+
+#### Tasks
+- [x] 1. Add `nuc_number` to `NucRecord` interface and Supabase select query
+- [x] 2. Add "Apidea Overview" panel — mobile card view + desktop table showing apidea number and queen status
+- [x] 3. Add "Apidea Number" column to CSV export
+- [x] 4. Update feature documentation
+
+#### Approach
+- Reuses existing `activeNucs` (non-retired mating nucs) for the data source
+- Reuses existing `STATUS_LABELS` and `STATUS_TONES` maps with `Badge` component
+- Mobile: horizontal card layout (name left, badge right)
+- Desktop: two-column table (Apidea Number, Queen Status)
+- Single file change: `NucReportsTab.tsx` only
+
 ### Audit Hardening — Phase 2
 - **[High]** `handleExportImage` wrapped in try/catch with `toast.error()` — `exportToImage` re-throws on failure, previously caused unhandled promise rejection with no user feedback.
 - **[High]** Print header date range consolidated into single expression — previously produced unbalanced parentheses when only one of start/end date was set.
