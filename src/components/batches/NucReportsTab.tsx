@@ -125,8 +125,9 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
 
-  // Export ref
+  // Export refs
   const reportRef = useRef<HTMLDivElement>(null)
+  const nucTableRef = useRef<HTMLDivElement>(null)
 
   const fetchNucs = useCallback(async () => {
     setLoading(true)
@@ -330,6 +331,36 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
     }
   }, [toast])
 
+  // --- Mating Nuc table export handlers ---
+  const handleNucTableCSV = useCallback(() => {
+    const sorted = [...activeNucs].sort((a, b) =>
+      (a.nuc_number || '').localeCompare(b.nuc_number || '', undefined, { numeric: true })
+    )
+    const rows = sorted.map(n => ({
+      'Nuc Number': n.nuc_number || '',
+      'Queen Status': STATUS_LABELS[n.status] || n.status,
+      'Setup Date': n.setup_date || '',
+      'Cell Introduced': n.cell_introduced_at?.split('T')[0] || '',
+      'Queen Emerged': n.queen_emerged_at?.split('T')[0] || '',
+      'Mating Confirmed': n.mating_confirmed_at?.split('T')[0] || '',
+      'Failed': n.failed_at?.split('T')[0] || '',
+    }))
+    exportToCSV(rows, 'mating-nucs-overview')
+  }, [activeNucs])
+
+  const handleNucTablePrint = useCallback(() => {
+    printReport()
+  }, [])
+
+  const handleNucTableImage = useCallback(async () => {
+    if (!nucTableRef.current) return
+    try {
+      await exportToImage(nucTableRef.current, 'mating-nucs-overview')
+    } catch {
+      toast.error('Failed to export image')
+    }
+  }, [toast])
+
   // --- Render ---
   if (loading) {
     return <LoadingSpinner />
@@ -357,8 +388,113 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
     )
   }
 
+  const sortedActiveNucs = useMemo(() =>
+    [...activeNucs].sort((a, b) =>
+      (a.nuc_number || '').localeCompare(b.nuc_number || '', undefined, { numeric: true })
+    ), [activeNucs])
+
   return (
     <div className="space-y-6">
+      {/* Mating Nuc's Overview Table */}
+      {sortedActiveNucs.length > 0 && (
+        <div ref={nucTableRef} className="print-container">
+          <Panel>
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Mating Nuc&apos;s Overview</h3>
+                <p className="text-sm text-text-secondary mt-1">
+                  Each mating nuc and its current queen status ({sortedActiveNucs.length} active)
+                </p>
+              </div>
+              <div className="no-print">
+                <ReportExportBar
+                  onExportCSV={handleNucTableCSV}
+                  onPrint={handleNucTablePrint}
+                  onExportImage={handleNucTableImage}
+                  disabled={sortedActiveNucs.length === 0}
+                />
+              </div>
+            </div>
+
+            {/* Mobile card view */}
+            <div className="md:hidden space-y-3">
+              {sortedActiveNucs.map(n => (
+                <div key={n.id} className="bg-surface-elevated rounded-lg p-3 border border-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-foreground">{n.nuc_number || '—'}</span>
+                    <Badge tone={STATUS_TONES[n.status] || 'neutral'}>{STATUS_LABELS[n.status] || n.status}</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    {n.setup_date && (
+                      <>
+                        <span className="text-text-secondary">Setup</span>
+                        <span className="text-foreground">{formatDate(n.setup_date)}</span>
+                      </>
+                    )}
+                    {n.cell_introduced_at && (
+                      <>
+                        <span className="text-text-secondary">Cell Introduced</span>
+                        <span className="text-foreground">{formatDate(n.cell_introduced_at)}</span>
+                      </>
+                    )}
+                    {n.queen_emerged_at && (
+                      <>
+                        <span className="text-text-secondary">Queen Emerged</span>
+                        <span className="text-foreground">{formatDate(n.queen_emerged_at)}</span>
+                      </>
+                    )}
+                    {n.mating_confirmed_at && (
+                      <>
+                        <span className="text-text-secondary">Mating Confirmed</span>
+                        <span className="text-foreground">{formatDate(n.mating_confirmed_at)}</span>
+                      </>
+                    )}
+                    {n.failed_at && (
+                      <>
+                        <span className="text-text-secondary text-red-600 dark:text-red-400">Failed</span>
+                        <span className="text-red-600 dark:text-red-400">{formatDate(n.failed_at)}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table view */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="py-2 pr-4 text-sm font-medium text-text-secondary">Nuc Number</th>
+                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Queen Status</th>
+                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Setup</th>
+                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Cell Introduced</th>
+                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Queen Emerged</th>
+                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Mating Confirmed</th>
+                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Failed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedActiveNucs.map(n => (
+                    <tr key={n.id} className="border-b border-border last:border-0">
+                      <td className="py-3 pr-4 text-foreground font-medium">{n.nuc_number || '—'}</td>
+                      <td className="py-3 px-4">
+                        <Badge tone={STATUS_TONES[n.status] || 'neutral'}>{STATUS_LABELS[n.status] || n.status}</Badge>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-foreground">{formatDate(n.setup_date)}</td>
+                      <td className="py-3 px-4 text-sm text-foreground">{formatDate(n.cell_introduced_at)}</td>
+                      <td className="py-3 px-4 text-sm text-foreground">{formatDate(n.queen_emerged_at)}</td>
+                      <td className="py-3 px-4 text-sm text-foreground">{formatDate(n.mating_confirmed_at)}</td>
+                      <td className="py-3 px-4 text-sm text-red-600 dark:text-red-400">{n.failed_at ? formatDate(n.failed_at) : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        </div>
+      )}
+
       {/* Filters & Export Bar */}
       <Panel className="no-print">
         <div className="space-y-4">
@@ -502,97 +638,6 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
             )}
           </Panel>
         </div>
-
-        {/* Apidea Overview Table */}
-        {activeNucs.length > 0 && (() => {
-          const sortedNucs = [...activeNucs].sort((a, b) =>
-            (a.nuc_number || '').localeCompare(b.nuc_number || '', undefined, { numeric: true })
-          )
-          return (
-          <Panel>
-            <h3 className="text-lg font-semibold text-foreground mb-4">Apidea Overview</h3>
-            <p className="text-sm text-text-secondary mb-3">
-              Each apidea and its current queen status ({activeNucs.length} active)
-            </p>
-
-            {/* Mobile card view */}
-            <div className="md:hidden space-y-3">
-              {sortedNucs.map(n => (
-                <div key={n.id} className="bg-surface-elevated rounded-lg p-3 border border-border space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-foreground">{n.nuc_number || '—'}</span>
-                    <Badge tone={STATUS_TONES[n.status] || 'neutral'}>{STATUS_LABELS[n.status] || n.status}</Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                    {n.setup_date && (
-                      <>
-                        <span className="text-text-secondary">Setup</span>
-                        <span className="text-foreground">{formatDate(n.setup_date)}</span>
-                      </>
-                    )}
-                    {n.cell_introduced_at && (
-                      <>
-                        <span className="text-text-secondary">Cell Introduced</span>
-                        <span className="text-foreground">{formatDate(n.cell_introduced_at)}</span>
-                      </>
-                    )}
-                    {n.queen_emerged_at && (
-                      <>
-                        <span className="text-text-secondary">Queen Emerged</span>
-                        <span className="text-foreground">{formatDate(n.queen_emerged_at)}</span>
-                      </>
-                    )}
-                    {n.mating_confirmed_at && (
-                      <>
-                        <span className="text-text-secondary">Mating Confirmed</span>
-                        <span className="text-foreground">{formatDate(n.mating_confirmed_at)}</span>
-                      </>
-                    )}
-                    {n.failed_at && (
-                      <>
-                        <span className="text-text-secondary text-red-600 dark:text-red-400">Failed</span>
-                        <span className="text-red-600 dark:text-red-400">{formatDate(n.failed_at)}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Desktop table view */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="py-2 pr-4 text-sm font-medium text-text-secondary">Apidea Number</th>
-                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Queen Status</th>
-                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Setup</th>
-                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Cell Introduced</th>
-                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Queen Emerged</th>
-                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Mating Confirmed</th>
-                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Failed</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedNucs.map(n => (
-                    <tr key={n.id} className="border-b border-border last:border-0">
-                      <td className="py-3 pr-4 text-foreground font-medium">{n.nuc_number || '—'}</td>
-                      <td className="py-3 px-4">
-                        <Badge tone={STATUS_TONES[n.status] || 'neutral'}>{STATUS_LABELS[n.status] || n.status}</Badge>
-                      </td>
-                      <td className="py-3 px-4 text-sm text-foreground">{formatDate(n.setup_date)}</td>
-                      <td className="py-3 px-4 text-sm text-foreground">{formatDate(n.cell_introduced_at)}</td>
-                      <td className="py-3 px-4 text-sm text-foreground">{formatDate(n.queen_emerged_at)}</td>
-                      <td className="py-3 px-4 text-sm text-foreground">{formatDate(n.mating_confirmed_at)}</td>
-                      <td className="py-3 px-4 text-sm text-red-600 dark:text-red-400">{n.failed_at ? formatDate(n.failed_at) : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Panel>
-          )
-        })()}
 
         {/* Row 2: Utilisation + Mating Success */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

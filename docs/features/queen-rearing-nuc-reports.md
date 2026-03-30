@@ -82,22 +82,23 @@ Add a new "Reports" tab to the Queen Rearing page (`/dashboard/batches?tab=repor
 - **[Medium]** Invalid Date guard (`isNaN`) on `setupDate` for malformed date strings.
 - **[Medium]** Fixed operator precedence on tone fallback expressions.
 
-### Phase 3: Apidea Overview Table
+### Phase 3: Mating Nuc's Overview Table
 
 #### Tasks
-- [x] 1. Add `nuc_number` to `NucRecord` interface and Supabase select query
-- [x] 2. Add "Apidea Overview" panel — mobile card view + desktop table showing apidea number and queen status
-- [x] 3. Add "Apidea Number" column to CSV export
-- [x] 4. Update feature documentation
+- [x] 1. Add `nuc_number` and `failed_at` to `NucRecord` interface and Supabase select query
+- [x] 2. Add "Mating Nuc's Overview" panel at the top of the page with its own export bar
+- [x] 3. Desktop 7-column table + mobile card view with date grid
+- [x] 4. Separate CSV/Print/Image export for the table only
+- [x] 5. Update feature documentation
 
 #### Approach
-- Reuses existing `activeNucs` (non-retired mating nucs) for the data source
-- Reuses existing `STATUS_LABELS` and `STATUS_TONES` maps with `Badge` component
-- Desktop: 7-column table (Apidea Number, Queen Status, Setup, Cell Introduced, Queen Emerged, Mating Confirmed, Failed)
-- Mobile: card per apidea with name/status header and date grid (only shows dates that have values)
-- `failed_at` added to NucRecord interface and Supabase query
+- Table rendered at the top of the page, above the filters and report stats
+- Has its own `ReportExportBar` (CSV, Print, Image) independent of the main report exports
+- Table image export uses a dedicated `nucTableRef`
+- Sorted by nuc number using natural numeric sort via `localeCompare`
 - `formatDate` helper for consistent en-GB date display across both views
-- CSV export includes all date columns
+- Mobile: card per nuc with name/status header and date grid (only shows dates that have values)
+- Desktop: 7-column table (Nuc Number, Queen Status, Setup, Cell Introduced, Queen Emerged, Mating Confirmed, Failed)
 - Single file change: `NucReportsTab.tsx` only
 
 ### Audit Hardening — Phase 2
