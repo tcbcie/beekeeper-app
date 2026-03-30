@@ -23,6 +23,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
   const [expenseCategories, setExpenseCategories] = useState<DropdownValue[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [isUkNi, setIsUkNi] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null)
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('year')
@@ -97,7 +98,16 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
   useEffect(() => {
     fetchCategories()
     fetchRecords()
-  }, [fetchCategories, fetchRecords])
+    supabase
+      .from('profiles')
+      .select('is_uk_ni_resident')
+      .eq('id', userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setIsUkNi(data.is_uk_ni_resident || false)
+      })
+      .catch((err) => console.error('Failed to fetch UK/NI resident flag:', err))
+  }, [fetchCategories, fetchRecords, userId])
 
   // Filter records by time period
   const filteredRecords = useMemo(() => {
@@ -224,7 +234,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
       return
     }
 
-    const headers = ['Date', 'Type', 'Category', 'Amount (EUR)', 'Description', 'Notes']
+    const headers = ['Date', 'Type', 'Category', `Amount (${isUkNi ? 'GBP' : 'EUR'})`, 'Description', 'Notes']
     const rows = filteredRecords.map(r => [
       r.transaction_date,
       r.record_type,
@@ -317,6 +327,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
         totalIncome={totals.income}
         totalExpenses={totals.expenses}
         netProfit={totals.net}
+        isUkNi={isUkNi}
       />
 
       {/* Form */}
@@ -346,6 +357,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
               record={record}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              isUkNi={isUkNi}
             />
           ))}
         </div>

@@ -47,6 +47,7 @@ interface UseRecordsDataReturn {
   // State
   loading: boolean
   isTeamMember: boolean
+  isUkNiResident: boolean
   sharedHiveIds: string[]
 
   // Fetch functions
@@ -163,6 +164,7 @@ export function useRecordsData(): UseRecordsDataReturn {
   // UI state
   const [loading, setLoading] = useState(true)
   const [isTeamMember, setIsTeamMember] = useState(false)
+  const [isUkNiResident, setIsUkNiResident] = useState(false)
   const [sharedHiveIds, setSharedHiveIds] = useState<string[]>([])
   const sharedHiveIdsRef = useRef<string[]>([])
   const fetchInProgressRef = useRef(false)
@@ -667,6 +669,17 @@ export function useRecordsData(): UseRecordsDataReturn {
       // Fetch accessible hive IDs once and pass to all record fetchers
       const hiveIds = await getAccessibleHiveIds(userId)
 
+      // Fetch UK/NI resident flag
+      supabase
+        .from('profiles')
+        .select('is_uk_ni_resident')
+        .eq('id', userId)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) setIsUkNiResident(data.is_uk_ni_resident || false)
+        })
+        .catch((err) => console.error('Failed to fetch UK/NI resident flag:', err))
+
       await Promise.all([
         fetchInspections(userId, ownershipFilter, hiveIds),
         fetchVarroaTreatments(userId, ownershipFilter, hiveIds),
@@ -718,6 +731,7 @@ export function useRecordsData(): UseRecordsDataReturn {
     // State
     loading,
     isTeamMember,
+    isUkNiResident,
     sharedHiveIds,
 
     // Fetch functions
