@@ -675,10 +675,10 @@ export function useRecordsData(): UseRecordsDataReturn {
         .select('is_uk_ni_resident')
         .eq('id', userId)
         .maybeSingle()
-        .then(({ data }) => {
+        .then(({ data, error }) => {
+          if (error) { console.error('Failed to fetch UK/NI resident flag:', error); return }
           if (data) setIsUkNiResident(data.is_uk_ni_resident || false)
         })
-        .catch((err) => console.error('Failed to fetch UK/NI resident flag:', err))
 
       await Promise.all([
         fetchInspections(userId, ownershipFilter, hiveIds),

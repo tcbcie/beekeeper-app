@@ -103,10 +103,10 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
       .select('is_uk_ni_resident')
       .eq('id', userId)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) { console.error('Failed to fetch UK/NI resident flag:', error); return }
         if (data) setIsUkNi(data.is_uk_ni_resident || false)
       })
-      .catch((err) => console.error('Failed to fetch UK/NI resident flag:', err))
   }, [fetchCategories, fetchRecords, userId])
 
   // Filter records by time period
