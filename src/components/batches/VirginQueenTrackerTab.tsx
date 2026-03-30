@@ -5,7 +5,8 @@ import { useToast } from '@/components/ui/Toast'
 import { useVirginQueenTracker, type TrackedVirginQueen, type StatusFilter } from '@/hooks/useVirginQueenTracker'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import { Check, X, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react'
-import { formatDateIrish } from './graftConstants'
+import { formatDateIrish, COLOUR_DOTS } from './graftConstants'
+import { getQueenColorFromYear } from '@/types/queen'
 
 interface VirginQueenTrackerTabProps {
   userId: string
@@ -326,6 +327,7 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                 <thead>
                   <tr className="border-b border-border bg-surface-secondary">
                     <th className="text-left py-3 px-4 font-medium text-text-secondary">Cell</th>
+                    <th className="text-left py-3 px-4 font-medium text-text-secondary">Queen</th>
                     <th className="text-left py-3 px-4 font-medium text-text-secondary">Type</th>
                     <th className="text-left py-3 px-4 font-medium text-text-secondary">Batch</th>
                     <th className="text-left py-3 px-4 font-medium text-text-secondary">Recipient</th>
@@ -340,6 +342,25 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                   {filteredDistributions.map((d) => (
                     <tr key={d.id} className="border-b border-border last:border-b-0 hover:bg-surface-secondary/50">
                       <td className="py-3 px-4 text-foreground font-medium">#{d.cell_number}</td>
+                      <td className="py-3 px-4 text-foreground">
+                        {d.queen_marked && d.queen_number ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            {d.emergence_date && (
+                              <span className={`inline-block w-3 h-3 rounded-full shrink-0 ${COLOUR_DOTS[getQueenColorFromYear(d.emergence_date)] || ''}`} />
+                            )}
+                            <span className="font-medium">{d.queen_number}</span>
+                          </span>
+                        ) : d.queen_marked ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            {d.emergence_date && (
+                              <span className={`inline-block w-3 h-3 rounded-full shrink-0 ${COLOUR_DOTS[getQueenColorFromYear(d.emergence_date)] || ''}`} />
+                            )}
+                            <span className="text-text-tertiary text-xs">Marked</span>
+                          </span>
+                        ) : (
+                          <span className="text-text-tertiary text-xs">-</span>
+                        )}
+                      </td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                           d.distribution_type === 'queen_cell'
@@ -416,6 +437,14 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-semibold text-foreground">Cell #{d.cell_number}</span>
+                        {d.queen_marked && (
+                          <span className="inline-flex items-center gap-1">
+                            {d.emergence_date && (
+                              <span className={`inline-block w-2.5 h-2.5 rounded-full ${COLOUR_DOTS[getQueenColorFromYear(d.emergence_date)] || ''}`} />
+                            )}
+                            {d.queen_number && <span className="text-sm font-medium text-foreground">{d.queen_number}</span>}
+                          </span>
+                        )}
                         <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                           d.distribution_type === 'queen_cell'
                             ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
