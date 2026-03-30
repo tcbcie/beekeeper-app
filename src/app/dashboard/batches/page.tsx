@@ -91,7 +91,6 @@ interface FormData {
  grafts_accepted: string
  queens_hatched: string
  queens_mated: string
- queens_hybridised: string
  acceptance_check_date: string
  first_option_to_cage_date: string
  second_option_to_cage_date: string
@@ -261,7 +260,6 @@ export default function BatchesPage() {
  grafts_accepted: '',
  queens_hatched: '',
  queens_mated: '',
- queens_hybridised: '',
  acceptance_check_date: '',
  first_option_to_cage_date: '',
  second_option_to_cage_date: '',
@@ -518,7 +516,6 @@ export default function BatchesPage() {
  grafts_accepted: formData.grafts_accepted ? parseInt(formData.grafts_accepted, 10) || null : null,
  queens_hatched: formData.queens_hatched ? parseInt(formData.queens_hatched, 10) || null : null,
  queens_mated: formData.queens_mated ? parseInt(formData.queens_mated, 10) || null : null,
- queens_hybridised: formData.queens_hybridised ? parseInt(formData.queens_hybridised, 10) || null : null,
  acceptance_check_date: formData.acceptance_check_date || null,
  first_option_to_cage_date: formData.first_option_to_cage_date || null,
  second_option_to_cage_date: formData.second_option_to_cage_date || null,
@@ -572,7 +569,6 @@ export default function BatchesPage() {
  grafts_accepted: batch.grafts_accepted?.toString() || '',
  queens_hatched: batch.queens_hatched?.toString() || '',
  queens_mated: batch.queens_mated?.toString() || '',
- queens_hybridised: batch.queens_hybridised?.toString() || '',
  acceptance_check_date: batch.acceptance_check_date || '',
  first_option_to_cage_date: batch.first_option_to_cage_date || '',
  second_option_to_cage_date: batch.second_option_to_cage_date || '',
@@ -785,7 +781,6 @@ export default function BatchesPage() {
  grafts_accepted: '',
  queens_hatched: '',
  queens_mated: '',
- queens_hybridised: '',
  acceptance_check_date: '',
  first_option_to_cage_date: '',
  second_option_to_cage_date: '',
@@ -1366,43 +1361,6 @@ export default function BatchesPage() {
  }}
  className={stepperButtonClassName}
  aria-label="Increase queens mated"
- >
- <Plus size={16} />
- </IconButton>
- </div>
- </div>
-
- {/* Queens Showing Hybridised Offspring */}
- <div>
- <label className="block text-xs font-medium text-text-secondary mb-1">Queens Showing Hybridised Offspring</label>
- <div className={stepperRowClassName}>
- <IconButton
- type="button"
- onClick={() => {
- const val = parseInt(formData.queens_hybridised || '0')
- if (val > 0) setFormData({...formData, queens_hybridised: (val - 1).toString()})
- }}
- className={stepperButtonClassName}
- aria-label="Decrease hybridised queens"
- >
- <Minus size={16} />
- </IconButton>
- <input
- type="number"
- value={formData.queens_hybridised}
- onChange={(e) => setFormData({...formData, queens_hybridised: e.target.value})}
- className={stepperInputClassName}
- min="0"
- placeholder="0"
- />
- <IconButton
- type="button"
- onClick={() => {
- const val = parseInt(formData.queens_hybridised || '0')
- setFormData({...formData, queens_hybridised: (val + 1).toString()})
- }}
- className={stepperButtonClassName}
- aria-label="Increase hybridised queens"
  >
  <Plus size={16} />
  </IconButton>

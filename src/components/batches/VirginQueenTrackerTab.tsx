@@ -166,6 +166,28 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
     }
   }, [updateHybridisation, fetchDistributions, userId, toast])
 
+  const handleHybridisationDateChange = useCallback(async (id: string, date: string) => {
+    if (updatingIdsRef.current.has(id)) return
+    if (!date) return
+
+    setUpdatingIds((prev) => new Set(prev).add(id))
+    try {
+      const success = await updateHybridisation(id, true, date)
+      if (success) {
+        toast.success('Hybridisation date updated')
+        await fetchDistributions(userId)
+      } else {
+        toast.error('Failed to update hybridisation date')
+      }
+    } finally {
+      setUpdatingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }, [updateHybridisation, fetchDistributions, userId, toast])
+
   // Get recipient display name + email
   const getRecipientName = (d: TrackedVirginQueen): string => {
     const name = d.recipient_name || d.external_recipient_name || null
@@ -366,13 +388,24 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                         />
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <ThreeStateToggle
-                          value={d.offspring_hybridised}
-                          onChange={(v) => handleHybridisationChange(d.id, v)}
-                          labels={{ true: 'Yes', false: 'No', null: '?' }}
-                          disabled={updatingIds.has(d.id)}
-                          ariaLabel={`Cell ${d.cell_number} hybridised`}
-                        />
+                        <div className="flex items-center justify-center gap-2">
+                          <ThreeStateToggle
+                            value={d.offspring_hybridised}
+                            onChange={(v) => handleHybridisationChange(d.id, v)}
+                            labels={{ true: 'Yes', false: 'No', null: '?' }}
+                            disabled={updatingIds.has(d.id)}
+                            ariaLabel={`Cell ${d.cell_number} hybridised`}
+                          />
+                          {d.offspring_hybridised === true && (
+                            <input
+                              type="date"
+                              value={d.hybridisation_date || ''}
+                              onChange={(e) => handleHybridisationDateChange(d.id, e.target.value)}
+                              disabled={updatingIds.has(d.id)}
+                              className="w-28 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+                            />
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -470,7 +503,7 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                           ariaLabel={`Cell ${d.cell_number} overwintered`}
                         />
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm text-text-secondary" id={`hybridised-label-${d.id}`}>Hybridised:</span>
                         <ThreeStateToggle
                           value={d.offspring_hybridised}
@@ -479,6 +512,15 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
                           disabled={updatingIds.has(d.id)}
                           ariaLabel={`Cell ${d.cell_number} hybridised`}
                         />
+                        {d.offspring_hybridised === true && (
+                          <input
+                            type="date"
+                            value={d.hybridisation_date || ''}
+                            onChange={(e) => handleHybridisationDateChange(d.id, e.target.value)}
+                            disabled={updatingIds.has(d.id)}
+                            className="w-28 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+                          />
+                        )}
                       </div>
                     </div>
 
