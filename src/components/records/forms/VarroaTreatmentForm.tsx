@@ -61,10 +61,11 @@ export default function VarroaTreatmentForm({
   const [showAllProducts, setShowAllProducts] = useState(false)
   const isEditing = Boolean(treatment?.id)
 
-  // Pre-filter treatment products for UK/NI residents
+  // Pre-filter treatment products by resident jurisdiction
   const filteredProducts = useMemo(() => {
-    if (!isUkNiResident || showAllProducts) return treatmentProducts
-    return treatmentProducts.filter(p => p.approved_in_uk)
+    if (showAllProducts) return treatmentProducts
+    if (isUkNiResident) return treatmentProducts.filter(p => p.approved_in_uk)
+    return treatmentProducts.filter(p => p.approved_in_ireland)
   }, [treatmentProducts, isUkNiResident, showAllProducts])
 
   // Track mounted state to prevent state updates after unmount
@@ -354,17 +355,17 @@ export default function VarroaTreatmentForm({
               ))}
               <option value="Other">Other (specify below)</option>
             </select>
-            {isUkNiResident && (
-              <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={showAllProducts}
-                  onChange={(e) => setShowAllProducts(e.target.checked)}
-                  className="w-4 h-4 rounded border-border text-forest-600 focus:ring-forest-500"
-                />
-                <span className="text-xs text-text-tertiary">Show all products (not just UK approved)</span>
-              </label>
-            )}
+            <label className="flex items-center gap-2 mt-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showAllProducts}
+                onChange={(e) => setShowAllProducts(e.target.checked)}
+                className="w-4 h-4 rounded border-border text-forest-600 focus:ring-forest-500"
+              />
+              <span className="text-xs text-text-tertiary">
+                Show all products (not just {isUkNiResident ? 'UK' : 'Ireland'} approved)
+              </span>
+            </label>
 
             {/* Product details tooltip */}
             {selectedProduct && !isOtherTreatment && (
