@@ -24,6 +24,7 @@ export default function PurchaseList({ userId }: PurchaseListProps) {
   const [saving, setSaving] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingItem, setEditingItem] = useState<PurchaseItem | null>(null)
+  const [isUkNi, setIsUkNi] = useState(false)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending')
 
   // Fetch categories
@@ -77,7 +78,16 @@ export default function PurchaseList({ userId }: PurchaseListProps) {
   useEffect(() => {
     fetchCategories()
     fetchItems()
-  }, [fetchCategories, fetchItems])
+    supabase
+      .from('profiles')
+      .select('is_uk_ni_resident')
+      .eq('id', userId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) { console.error('Failed to fetch UK/NI resident flag:', error); return }
+        if (data) setIsUkNi(data.is_uk_ni_resident || false)
+      })
+  }, [fetchCategories, fetchItems, userId])
 
   // Filter items by status
   const filteredItems = useMemo(() => {
@@ -255,6 +265,7 @@ export default function PurchaseList({ userId }: PurchaseListProps) {
         pendingCount={summary.pendingCount}
         urgentCount={summary.urgentCount}
         estimatedTotal={summary.estimatedTotal}
+        isUkNi={isUkNi}
       />
 
       {/* Form */}
@@ -265,6 +276,7 @@ export default function PurchaseList({ userId }: PurchaseListProps) {
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           saving={saving}
+          isUkNi={isUkNi}
         />
       )}
 
@@ -284,6 +296,7 @@ export default function PurchaseList({ userId }: PurchaseListProps) {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onMarkPurchased={handleMarkPurchased}
+              isUkNi={isUkNi}
             />
           ))}
         </div>

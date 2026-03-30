@@ -6,17 +6,19 @@ interface PurchaseSummaryProps {
   pendingCount: number
   urgentCount: number
   estimatedTotal: number
+  isUkNi?: boolean
 }
 
 export default function PurchaseSummary({
   pendingCount,
   urgentCount,
-  estimatedTotal
+  estimatedTotal,
+  isUkNi
 }: PurchaseSummaryProps) {
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-IE', {
+    return new Intl.NumberFormat(isUkNi ? 'en-GB' : 'en-IE', {
       style: 'currency',
-      currency: 'EUR'
+      currency: isUkNi ? 'GBP' : 'EUR'
     }).format(amount)
   }
 
