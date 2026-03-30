@@ -361,6 +361,11 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
     }
   }, [toast])
 
+  const sortedActiveNucs = useMemo(() =>
+    [...activeNucs].sort((a, b) =>
+      (a.nuc_number || '').localeCompare(b.nuc_number || '', undefined, { numeric: true })
+    ), [activeNucs])
+
   // --- Render ---
   if (loading) {
     return <LoadingSpinner />
@@ -387,11 +392,6 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
       />
     )
   }
-
-  const sortedActiveNucs = useMemo(() =>
-    [...activeNucs].sort((a, b) =>
-      (a.nuc_number || '').localeCompare(b.nuc_number || '', undefined, { numeric: true })
-    ), [activeNucs])
 
   return (
     <div className="space-y-6">
