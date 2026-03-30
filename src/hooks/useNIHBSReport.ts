@@ -28,6 +28,7 @@ export interface MonthlyData {
   virgins_external_mated: number
   auto_virgins_distributed_external: number
   auto_virgins_external_mated: number
+  auto_hybridised_offspring: number
 }
 
 export interface NIHBSReportData {
@@ -86,7 +87,7 @@ export function useNIHBSReport() {
       if (userIds.length > 0) {
         const { data: batches, error: batchesError } = await supabase
           .from('rearing_batches')
-          .select('id, graft_date, emergence_date, cell_count, grafts_accepted, queens_hatched, queens_mated, queens_hybridised, mating_apiary_id')
+          .select('id, graft_date, emergence_date, cell_count, grafts_accepted, queens_hatched, queens_mated, mating_apiary_id')
           .in('user_id', userIds)
           .eq('rearing_group_id', groupId)
           .gte('graft_date', startDate)
@@ -99,11 +100,11 @@ export function useNIHBSReport() {
         const batchIdList = (batches || []).map((b: { id: string }) => b.id).filter(Boolean)
         const derivedCounts = new Map<string, { grafts_accepted: number; queens_hatched: number; queens_mated: number }>()
         // Also store distributions for reuse in step 2b
-        let allDists: { graft_id: string; batch_id: string; distribution_type: string; recipient_user_id: string | null; mating_confirmed: boolean | null; distribution_date: string | null }[] = []
+        let allDists: { graft_id: string; batch_id: string; distribution_type: string; recipient_user_id: string | null; mating_confirmed: boolean | null; distribution_date: string | null; offspring_hybridised: boolean | null; hybridisation_date: string | null }[] = []
         if (batchIdList.length > 0) {
           const [graftsRes, distsRes] = await Promise.all([
             supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIdList),
-            supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type, recipient_user_id, mating_confirmed, distribution_date').in('batch_id', batchIdList),
+            supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type, recipient_user_id, mating_confirmed, distribution_date, offspring_hybridised, hybridisation_date').in('batch_id', batchIdList),
           ])
 
           if (graftsRes.error) throw graftsRes.error
@@ -151,6 +152,7 @@ export function useNIHBSReport() {
               virgins_external_mated: 0,
               auto_virgins_distributed_external: 0,
               auto_virgins_external_mated: 0,
+              auto_hybridised_offspring: 0,
             })
           }
           return monthlyMap.get(m)!
@@ -212,7 +214,6 @@ export function useNIHBSReport() {
             const emergMd = getMonth(emergence.month)
             emergMd.total.queens_hatched += hatched
             emergMd.total.queens_mated += mated
-            emergMd.hybridised_offspring += batch.queens_hybridised || 0
 
             const emergAd = getApiary(emergMd, apiaryId)
             emergAd.queens_hatched += hatched
@@ -242,6 +243,18 @@ export function useNIHBSReport() {
             if (d.distribution_type === 'mated_queen' || d.mating_confirmed) {
               md.auto_virgins_external_mated++
             }
+          }
+
+          // Auto-calculate hybridised offspring from individual distribution records
+          for (const d of allDists) {
+            if (d.offspring_hybridised !== true) continue
+            const hybDate = d.hybridisation_date
+            if (!hybDate) continue
+            const hybMonth = parseInt(hybDate.split('-')[1], 10)
+            const hybYear = parseInt(hybDate.split('-')[0], 10)
+            if (hybYear !== year) continue
+            const md = getMonth(hybMonth)
+            md.auto_hybridised_offspring++
           }
         }
       }
@@ -289,6 +302,7 @@ export function useNIHBSReport() {
       for (const [, md] of monthlyMap) {
         md.virgins_distributed_external = md.auto_virgins_distributed_external
         md.virgins_external_mated = md.auto_virgins_external_mated
+        md.hybridised_offspring = md.auto_hybridised_offspring
       }
 
       if (!returnsError && returns) {
@@ -305,10 +319,11 @@ export function useNIHBSReport() {
               virgins_external_mated: 0,
               auto_virgins_distributed_external: 0,
               auto_virgins_external_mated: 0,
+              auto_hybridised_offspring: 0,
             })
           }
           const md = monthlyMap.get(r.month)!
-          // Only override batch-aggregated hybridised_offspring if a manual value was explicitly saved
+          // Only override auto-calculated hybridised_offspring if a manual value was explicitly saved
           if (r.hybridised_offspring != null) {
             md.hybridised_offspring = r.hybridised_offspring
           }

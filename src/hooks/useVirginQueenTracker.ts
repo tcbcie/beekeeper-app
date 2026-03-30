@@ -209,7 +209,7 @@ export function useVirginQueenTracker() {
     }
   }, [])
 
-  const updateHybridisation = useCallback(async (id: string, value: boolean | null): Promise<boolean> => {
+  const updateHybridisation = useCallback(async (id: string, value: boolean | null, date?: string): Promise<boolean> => {
     // Validate ID before update
     if (!id || typeof id !== 'string' || id.trim() === '') {
       console.error('Invalid distribution ID for hybridisation update')
@@ -222,7 +222,7 @@ export function useVirginQueenTracker() {
         .from('graft_distributions')
         .update({
           offspring_hybridised: value,
-          hybridisation_date: value !== null ? today : null,
+          hybridisation_date: value === true ? (date || today) : null,
         })
         .eq('id', id)
 

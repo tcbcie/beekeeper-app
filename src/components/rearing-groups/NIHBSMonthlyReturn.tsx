@@ -328,7 +328,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
         addDataRow('     Number of queens mated this month', 'queens_mated')
         sheet.addRow([])
 
-        // Row 21: Hybridised offspring (total only, manual field)
+        // Row 21: Hybridised offspring (total only, auto-calculated from distribution records)
         const r21 = sheet.addRow([])
         r21.getCell(1).value = '     Number of newly mated queens showing hybridised offspring'
         r21.getCell(1).font = { size: 11 }
@@ -526,7 +526,12 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                     </tr>
                     <tr className="border-b border-border bg-amber-50 dark:bg-amber-950/20">
                       <td className="py-2 px-3 text-text-tertiary">21</td>
-                      <td className="py-2 px-3 text-foreground">Hybridised offspring</td>
+                      <td className="py-2 px-3 text-foreground">
+                        Hybridised offspring
+                        {md.auto_hybridised_offspring > 0 && (
+                          <div className="text-xs text-text-tertiary mt-0.5">Auto: {md.auto_hybridised_offspring} from records</div>
+                        )}
+                      </td>
                       <td className="py-2 px-3 text-right">
                         <input
                           type="number"
@@ -600,15 +605,20 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                   <span className="font-medium text-foreground">{md.total.queens_mated}</span>
                 </div>
                 <div className="pt-2 border-t border-border space-y-2">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-text-tertiary">Hybridised offspring:</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={getManualField(md.month, 'hybridised_offspring')}
-                      onChange={(e) => setManualField(md.month, 'hybridised_offspring', parseInt(e.target.value) || 0)}
-                      className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
-                    />
+                  <div className="text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-text-tertiary">Hybridised offspring:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={getManualField(md.month, 'hybridised_offspring')}
+                        onChange={(e) => setManualField(md.month, 'hybridised_offspring', parseInt(e.target.value) || 0)}
+                        className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
+                      />
+                    </div>
+                    {md.auto_hybridised_offspring > 0 && (
+                      <div className="text-xs text-text-tertiary mt-0.5">Auto: {md.auto_hybridised_offspring} from records</div>
+                    )}
                   </div>
                   <div className="text-sm">
                     <div className="flex justify-between items-center">
