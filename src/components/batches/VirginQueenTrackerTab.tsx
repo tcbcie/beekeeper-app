@@ -198,7 +198,7 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
   }
 
   if (loading) {
-    return <div className="text-center py-8 text-text-secondary">Loading virgin queen tracker...</div>
+    return <div className="text-center py-8 text-text-secondary">Loading queen tracker...</div>
   }
 
   if (error) {
@@ -220,7 +220,7 @@ export default function VirginQueenTrackerTab({ userId }: VirginQueenTrackerTabP
   if (allGroups.length === 0) {
     return (
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
-        <h3 className="text-lg font-semibold text-foreground mb-4">Virgin Queen Tracker</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-4">Queen Tracker</h3>
         <p className="text-text-secondary">
           You are not a member of any rearing groups. Join or create a group to track virgin queens distributed from group batches.
         </p>

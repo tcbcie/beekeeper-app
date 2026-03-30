@@ -859,7 +859,7 @@ export default function BatchesPage() {
  size="lg"
  active={activeTab === 'virgins'}
  >
- Virgin Queen Tracker
+ Queen Tracker
  </NavTabButton>
  <NavTabButton
  onClick={() => setActiveTab('planning')}
