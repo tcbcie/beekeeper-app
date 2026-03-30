@@ -125,6 +125,7 @@ export default function RecordsPage() {
     applicationMethods,
     loading,
     isTeamMember,
+    isUkNiResident,
     sharedHiveIds,
     fetchInspections,
     fetchVarroaTreatments,
@@ -1121,6 +1122,7 @@ export default function RecordsPage() {
                 selectedHiveId={filters.hiveId}
                 treatmentProducts={treatmentProducts}
                 applicationMethods={applicationMethods}
+                isUkNiResident={isUkNiResident}
                 onSubmit={handleTreatmentSubmit}
                 onCancel={resetForm}
                 onShowIpmTips={() => setShowIpmTips(true)}

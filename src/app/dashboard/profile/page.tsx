@@ -34,6 +34,7 @@ interface UserProfile {
  member_fibka?: boolean
  member_iba?: boolean
  member_nihbs?: boolean
+ is_uk_ni_resident?: boolean
  enable_task_email_reminders?: boolean
  enable_event_email_reminders?: boolean
  task_reminder_frequency?: 'realtime' | 'daily' | 'weekly' | 'disabled'
@@ -68,6 +69,7 @@ export default function ProfilePage() {
  member_fibka: false,
  member_iba: false,
  member_nihbs: false,
+ is_uk_ni_resident: false,
  enable_task_email_reminders: true,
  enable_event_email_reminders: true,
  task_reminder_frequency: 'daily' as 'realtime' | 'daily' | 'weekly' | 'disabled',
@@ -148,6 +150,7 @@ export default function ProfilePage() {
  member_fibka: data.member_fibka || false,
  member_iba: data.member_iba || false,
  member_nihbs: data.member_nihbs || false,
+ is_uk_ni_resident: data.is_uk_ni_resident || false,
  enable_task_email_reminders: data.enable_task_email_reminders !== undefined ? data.enable_task_email_reminders : true,
  enable_event_email_reminders: data.enable_event_email_reminders !== undefined ? data.enable_event_email_reminders : true,
  task_reminder_frequency: data.task_reminder_frequency || 'daily',
@@ -174,6 +177,7 @@ export default function ProfilePage() {
  member_fibka: profileFormData.member_fibka,
  member_iba: profileFormData.member_iba,
  member_nihbs: profileFormData.member_nihbs,
+ is_uk_ni_resident: profileFormData.is_uk_ni_resident,
  enable_task_email_reminders: profileFormData.enable_task_email_reminders,
  enable_event_email_reminders: profileFormData.enable_event_email_reminders,
  task_reminder_frequency: profileFormData.task_reminder_frequency,
@@ -209,6 +213,7 @@ export default function ProfilePage() {
  member_fibka: userProfile.member_fibka || false,
  member_iba: userProfile.member_iba || false,
  member_nihbs: userProfile.member_nihbs || false,
+ is_uk_ni_resident: userProfile.is_uk_ni_resident || false,
  enable_task_email_reminders: userProfile.enable_task_email_reminders !== undefined ? userProfile.enable_task_email_reminders : true,
  enable_event_email_reminders: userProfile.enable_event_email_reminders !== undefined ? userProfile.enable_event_email_reminders : true,
  task_reminder_frequency: userProfile.task_reminder_frequency || 'daily',
@@ -738,6 +743,23 @@ export default function ProfilePage() {
  />
  </div>
 
+ {/* Location */}
+ <div className="md:col-span-2 pt-4 border-t">
+ <h3 className="text-md font-medium text-foreground mb-3">Location</h3>
+ <label className="flex items-center gap-3 cursor-pointer">
+ <input
+ type="checkbox"
+ checked={profileFormData.is_uk_ni_resident}
+ onChange={(e) =>
+ setProfileFormData({ ...profileFormData, is_uk_ni_resident: e.target.checked })
+ }
+ className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
+ />
+ <span className="text-sm text-foreground">Resident in NI/UK</span>
+ </label>
+ <p className="text-xs text-text-tertiary mt-1 ml-7">Sets currency to GBP and pre-selects UK-authorised varroa treatments</p>
+ </div>
+
  {/* Association Membership */}
  <div className="md:col-span-2 pt-4 border-t">
  <h3 className="text-md font-medium text-foreground mb-3">Association Membership</h3>
@@ -880,6 +902,14 @@ export default function ProfilePage() {
  </div>
  </div>
  </div>
+
+ {/* Location Display */}
+ {userProfile?.is_uk_ni_resident && (
+ <div className="md:col-span-2 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+ <div className="text-sm font-semibold text-foreground mb-1">Location</div>
+ <div className="text-sm text-foreground">Resident in NI/UK</div>
+ </div>
+ )}
 
  {/* Association Membership Display */}
  {(userProfile?.association_id || userProfile?.member_fibka || userProfile?.member_iba || userProfile?.member_nihbs) && (

@@ -6,18 +6,19 @@ interface FinancialSummaryProps {
   totalIncome: number
   totalExpenses: number
   netProfit: number
+  isUkNi?: boolean
 }
 
 export default function FinancialSummary({
   totalIncome,
   totalExpenses,
-  netProfit
+  netProfit,
+  isUkNi
 }: FinancialSummaryProps) {
-  // Format amount with euro symbol
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-IE', {
+    return new Intl.NumberFormat(isUkNi ? 'en-GB' : 'en-IE', {
       style: 'currency',
-      currency: 'EUR'
+      currency: isUkNi ? 'GBP' : 'EUR'
     }).format(amount)
   }
 

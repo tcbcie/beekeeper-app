@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { HelpCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import type { VarroaTreatment, Hive, Apiary, TreatmentProduct, DropdownValue } from '@/types/records'
@@ -15,6 +15,7 @@ interface VarroaTreatmentFormProps {
   selectedHiveId?: string
   treatmentProducts: TreatmentProduct[]
   applicationMethods: DropdownValue[]
+  isUkNiResident?: boolean
   onSubmit: (treatment: VarroaTreatment, isOther: boolean, otherType: string) => Promise<void>
   onCancel: () => void
   onShowIpmTips: () => void
@@ -29,6 +30,7 @@ export default function VarroaTreatmentForm({
   selectedHiveId = '',
   treatmentProducts,
   applicationMethods,
+  isUkNiResident = false,
   onSubmit,
   onCancel,
   onShowIpmTips,
@@ -56,7 +58,14 @@ export default function VarroaTreatmentForm({
   const [selectedHiveHasHoneySupers, setSelectedHiveHasHoneySupers] = useState(false)
   const [fetchingWeather, setFetchingWeather] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [showAllProducts, setShowAllProducts] = useState(false)
   const isEditing = Boolean(treatment?.id)
+
+  // Pre-filter treatment products for UK/NI residents
+  const filteredProducts = useMemo(() => {
+    if (!isUkNiResident || showAllProducts) return treatmentProducts
+    return treatmentProducts.filter(p => p.approved_in_uk)
+  }, [treatmentProducts, isUkNiResident, showAllProducts])
 
   // Track mounted state to prevent state updates after unmount
   const isMountedRef = useRef(true)
@@ -338,13 +347,24 @@ export default function VarroaTreatmentForm({
               required={!isOtherTreatment}
             >
               <option value="">Select treatment product</option>
-              {treatmentProducts.map((product) => (
+              {filteredProducts.map((product) => (
                 <option key={product.id} value={product.product_name}>
                   {product.product_name} - {product.active_ingredients || 'No active ingredient listed'}
                 </option>
               ))}
               <option value="Other">Other (specify below)</option>
             </select>
+            {isUkNiResident && (
+              <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showAllProducts}
+                  onChange={(e) => setShowAllProducts(e.target.checked)}
+                  className="w-4 h-4 rounded border-border text-forest-600 focus:ring-forest-500"
+                />
+                <span className="text-xs text-text-tertiary">Show all products (not just UK approved)</span>
+              </label>
+            )}
 
             {/* Product details tooltip */}
             {selectedProduct && !isOtherTreatment && (

@@ -8,12 +8,14 @@ interface FinancialRecordCardProps {
   record: FinancialRecord
   onEdit: (record: FinancialRecord) => void
   onDelete: (record: FinancialRecord) => void
+  isUkNi?: boolean
 }
 
 export default function FinancialRecordCard({
   record,
   onEdit,
-  onDelete
+  onDelete,
+  isUkNi
 }: FinancialRecordCardProps) {
   const isIncome = record.record_type === 'income'
 
@@ -27,11 +29,10 @@ export default function FinancialRecordCard({
     })
   }
 
-  // Format amount with euro symbol
   const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-IE', {
+    return new Intl.NumberFormat(isUkNi ? 'en-GB' : 'en-IE', {
       style: 'currency',
-      currency: 'EUR'
+      currency: isUkNi ? 'GBP' : 'EUR'
     }).format(amount)
   }
 

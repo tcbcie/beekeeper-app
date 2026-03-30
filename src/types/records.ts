@@ -189,6 +189,7 @@ export interface TreatmentProduct {
   temperature_range: string | null
   honey_flow_restrictions: string | null
   withdrawal_period_days: number | null
+  approved_in_uk: boolean
   notes: string | null
   created_at: string
   updated_at: string

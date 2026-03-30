@@ -24,6 +24,7 @@ interface VarroaTreatment {
   temperature_range: string
   honey_flow_restrictions: string
   withdrawal_period_days: number
+  approved_in_uk?: boolean
   created_at?: string
   updated_at?: string
 }
@@ -37,6 +38,7 @@ interface TreatmentFormData {
   temperature_range: string
   honey_flow_restrictions: string
   withdrawal_period_days: number
+  approved_in_uk: boolean
 }
 
 const emptyFormData: TreatmentFormData = {
@@ -48,6 +50,7 @@ const emptyFormData: TreatmentFormData = {
   temperature_range: '',
   honey_flow_restrictions: '',
   withdrawal_period_days: 0,
+  approved_in_uk: false,
 }
 
 export default function TreatmentManagement() {
@@ -129,6 +132,7 @@ export default function TreatmentManagement() {
       temperature_range: treatment.temperature_range,
       honey_flow_restrictions: treatment.honey_flow_restrictions,
       withdrawal_period_days: treatment.withdrawal_period_days,
+      approved_in_uk: treatment.approved_in_uk || false,
     })
     setShowAddForm(true)
   }
@@ -166,7 +170,7 @@ export default function TreatmentManagement() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-foreground">Varroa Treatments</h2>
-            <p className="text-text-tertiary mt-2">Manage approved varroa treatment products for Ireland</p>
+            <p className="text-text-tertiary mt-2">Manage approved varroa treatment products for Ireland and UK</p>
           </div>
         </div>
       </div>
@@ -175,7 +179,7 @@ export default function TreatmentManagement() {
         {/* Add Treatment Button */}
         <div className="flex justify-between items-center">
           <p className="text-sm text-text-tertiary">
-            Reference data for approved varroa mite treatment products in Ireland.
+            Reference data for approved varroa mite treatment products in Ireland and UK.
           </p>
           <Button
             onClick={() => setShowAddForm(!showAddForm)}
@@ -266,7 +270,7 @@ export default function TreatmentManagement() {
                 <TextInput
                   type="number"
                   value={formData.withdrawal_period_days}
-                  onChange={(e) => setFormData({ ...formData, withdrawal_period_days: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, withdrawal_period_days: parseInt(e.target.value) || 0 })}
                   className="rounded-md"
                   min="0"
                   required
@@ -281,6 +285,18 @@ export default function TreatmentManagement() {
                   className="rounded-md"
                   rows={3}
                 />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.approved_in_uk}
+                    onChange={(e) => setFormData({ ...formData, approved_in_uk: e.target.checked })}
+                    className="w-4 h-4 rounded border-border text-forest-600 focus:ring-forest-500"
+                  />
+                  <span className="text-sm font-medium text-foreground">Approved in UK/NI</span>
+                </label>
               </div>
             </div>
 
@@ -343,6 +359,9 @@ export default function TreatmentManagement() {
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                     Withdrawal (days)
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    UK Approved
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
                     Notes
@@ -427,9 +446,17 @@ export default function TreatmentManagement() {
                           <TextInput
                             type="number"
                             value={formData.withdrawal_period_days}
-                            onChange={(e) => setFormData({ ...formData, withdrawal_period_days: parseInt(e.target.value) })}
+                            onChange={(e) => setFormData({ ...formData, withdrawal_period_days: parseInt(e.target.value) || 0 })}
                             className="w-full px-2 py-1 text-sm rounded"
                             min="0"
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={formData.approved_in_uk}
+                            onChange={(e) => setFormData({ ...formData, approved_in_uk: e.target.checked })}
+                            className="w-4 h-4 rounded border-border text-forest-600 focus:ring-forest-500"
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -484,6 +511,15 @@ export default function TreatmentManagement() {
                         </td>
                         <td className="px-4 py-3 text-sm text-text-tertiary text-center">
                           {treatment.withdrawal_period_days === 0 ? 'None' : treatment.withdrawal_period_days}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-center">
+                          {treatment.approved_in_uk ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                              UK
+                            </span>
+                          ) : (
+                            <span className="text-text-tertiary">-</span>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-sm text-text-tertiary">
                           <div className="max-w-xs truncate" title={treatment.notes || ''}>
