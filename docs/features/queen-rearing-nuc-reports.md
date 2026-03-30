@@ -93,8 +93,11 @@ Add a new "Reports" tab to the Queen Rearing page (`/dashboard/batches?tab=repor
 #### Approach
 - Reuses existing `activeNucs` (non-retired mating nucs) for the data source
 - Reuses existing `STATUS_LABELS` and `STATUS_TONES` maps with `Badge` component
-- Mobile: horizontal card layout (name left, badge right)
-- Desktop: two-column table (Apidea Number, Queen Status)
+- Desktop: 7-column table (Apidea Number, Queen Status, Setup, Cell Introduced, Queen Emerged, Mating Confirmed, Failed)
+- Mobile: card per apidea with name/status header and date grid (only shows dates that have values)
+- `failed_at` added to NucRecord interface and Supabase query
+- `formatDate` helper for consistent en-GB date display across both views
+- CSV export includes all date columns
 - Single file change: `NucReportsTab.tsx` only
 
 ### Audit Hardening — Phase 2

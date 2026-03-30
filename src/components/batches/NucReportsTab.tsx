@@ -29,6 +29,7 @@ interface NucRecord {
   queen_emerged_at: string | null
   mating_confirmed_at: string | null
   cell_introduced_at: string | null
+  failed_at: string | null
   rearing_batches: { id: string; batch_name: string } | null
 }
 
@@ -91,6 +92,13 @@ const TIME_PERIOD_OPTIONS: { value: TimePeriod; label: string }[] = [
   { value: 'custom', label: 'Custom' },
 ]
 
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return '—'
+  const d = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00')
+  if (isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
 function getDateRangeStart(period: TimePeriod): Date | null {
   const today = new Date()
   switch (period) {
@@ -125,7 +133,7 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
     setFetchError(false)
     const { data, error } = await supabase
       .from('mating_nucs')
-      .select('id, nuc_number, status, is_inventory, equipment_status, batch_id, setup_date, retired_at, queen_emerged_at, mating_confirmed_at, cell_introduced_at, rearing_batches(id, batch_name)')
+      .select('id, nuc_number, status, is_inventory, equipment_status, batch_id, setup_date, retired_at, queen_emerged_at, mating_confirmed_at, cell_introduced_at, failed_at, rearing_batches(id, batch_name)')
       .eq('user_id', userId)
 
     if (error) {
@@ -297,11 +305,13 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
   const handleExportCSV = useCallback(() => {
     const rows = matingNucs.map(n => ({
       'Apidea Number': n.nuc_number || '',
-      'NUC Status': STATUS_LABELS[n.status] || n.status,
+      'Queen Status': STATUS_LABELS[n.status] || n.status,
       'Batch': n.rearing_batches?.batch_name || '',
       'Setup Date': n.setup_date || '',
+      'Cell Introduced': n.cell_introduced_at?.split('T')[0] || '',
       'Queen Emerged': n.queen_emerged_at?.split('T')[0] || '',
       'Mating Confirmed': n.mating_confirmed_at?.split('T')[0] || '',
+      'Failed': n.failed_at?.split('T')[0] || '',
       'Retired': n.retired_at?.split('T')[0] || '',
     }))
     exportToCSV(rows, 'nuc-report')
@@ -506,11 +516,45 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
             </p>
 
             {/* Mobile card view */}
-            <div className="md:hidden space-y-2">
+            <div className="md:hidden space-y-3">
               {sortedNucs.map(n => (
-                <div key={n.id} className="flex items-center justify-between bg-surface-elevated rounded-lg p-3 border border-border">
-                  <span className="font-medium text-foreground">{n.nuc_number || '—'}</span>
-                  <Badge tone={STATUS_TONES[n.status] || 'neutral'}>{STATUS_LABELS[n.status] || n.status}</Badge>
+                <div key={n.id} className="bg-surface-elevated rounded-lg p-3 border border-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-foreground">{n.nuc_number || '—'}</span>
+                    <Badge tone={STATUS_TONES[n.status] || 'neutral'}>{STATUS_LABELS[n.status] || n.status}</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    {n.setup_date && (
+                      <>
+                        <span className="text-text-secondary">Setup</span>
+                        <span className="text-foreground">{formatDate(n.setup_date)}</span>
+                      </>
+                    )}
+                    {n.cell_introduced_at && (
+                      <>
+                        <span className="text-text-secondary">Cell Introduced</span>
+                        <span className="text-foreground">{formatDate(n.cell_introduced_at)}</span>
+                      </>
+                    )}
+                    {n.queen_emerged_at && (
+                      <>
+                        <span className="text-text-secondary">Queen Emerged</span>
+                        <span className="text-foreground">{formatDate(n.queen_emerged_at)}</span>
+                      </>
+                    )}
+                    {n.mating_confirmed_at && (
+                      <>
+                        <span className="text-text-secondary">Mating Confirmed</span>
+                        <span className="text-foreground">{formatDate(n.mating_confirmed_at)}</span>
+                      </>
+                    )}
+                    {n.failed_at && (
+                      <>
+                        <span className="text-text-secondary text-red-600 dark:text-red-400">Failed</span>
+                        <span className="text-red-600 dark:text-red-400">{formatDate(n.failed_at)}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -522,6 +566,11 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
                   <tr className="border-b border-border">
                     <th className="py-2 pr-4 text-sm font-medium text-text-secondary">Apidea Number</th>
                     <th className="py-2 px-4 text-sm font-medium text-text-secondary">Queen Status</th>
+                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Setup</th>
+                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Cell Introduced</th>
+                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Queen Emerged</th>
+                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Mating Confirmed</th>
+                    <th className="py-2 px-4 text-sm font-medium text-text-secondary">Failed</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -531,6 +580,11 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
                       <td className="py-3 px-4">
                         <Badge tone={STATUS_TONES[n.status] || 'neutral'}>{STATUS_LABELS[n.status] || n.status}</Badge>
                       </td>
+                      <td className="py-3 px-4 text-sm text-foreground">{formatDate(n.setup_date)}</td>
+                      <td className="py-3 px-4 text-sm text-foreground">{formatDate(n.cell_introduced_at)}</td>
+                      <td className="py-3 px-4 text-sm text-foreground">{formatDate(n.queen_emerged_at)}</td>
+                      <td className="py-3 px-4 text-sm text-foreground">{formatDate(n.mating_confirmed_at)}</td>
+                      <td className="py-3 px-4 text-sm text-red-600 dark:text-red-400">{n.failed_at ? formatDate(n.failed_at) : '—'}</td>
                     </tr>
                   ))}
                 </tbody>
