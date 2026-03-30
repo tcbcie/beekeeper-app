@@ -302,6 +302,11 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
     ? Math.round(daysToMating.reduce((a, b) => a + b, 0) / daysToMating.length)
     : null
 
+  const sortedActiveNucs = useMemo(() =>
+    [...activeNucs].sort((a, b) =>
+      (a.nuc_number || '').localeCompare(b.nuc_number || '', undefined, { numeric: true })
+    ), [activeNucs])
+
   // --- Export handlers ---
   const handleExportCSV = useCallback(() => {
     const rows = matingNucs.map(n => ({
@@ -333,10 +338,7 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
 
   // --- Mating Nuc table export handlers ---
   const handleNucTableCSV = useCallback(() => {
-    const sorted = [...activeNucs].sort((a, b) =>
-      (a.nuc_number || '').localeCompare(b.nuc_number || '', undefined, { numeric: true })
-    )
-    const rows = sorted.map(n => ({
+    const rows = sortedActiveNucs.map(n => ({
       'Nuc Number': n.nuc_number || '',
       'Queen Status': STATUS_LABELS[n.status] || n.status,
       'Setup Date': n.setup_date || '',
@@ -346,7 +348,7 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
       'Failed': n.failed_at?.split('T')[0] || '',
     }))
     exportToCSV(rows, 'mating-nucs-overview')
-  }, [activeNucs])
+  }, [sortedActiveNucs])
 
   const handleNucTablePrint = useCallback(() => {
     printReport()
@@ -360,11 +362,6 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
       toast.error('Failed to export image')
     }
   }, [toast])
-
-  const sortedActiveNucs = useMemo(() =>
-    [...activeNucs].sort((a, b) =>
-      (a.nuc_number || '').localeCompare(b.nuc_number || '', undefined, { numeric: true })
-    ), [activeNucs])
 
   // --- Render ---
   if (loading) {
