@@ -339,6 +339,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           saving={saving}
+          isUkNi={isUkNi}
         />
       )}
 

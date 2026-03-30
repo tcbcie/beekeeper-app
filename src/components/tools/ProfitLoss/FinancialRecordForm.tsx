@@ -13,6 +13,7 @@ interface FinancialRecordFormProps {
   onSubmit: (record: Partial<FinancialRecord>) => Promise<void>
   onCancel: () => void
   saving: boolean
+  isUkNi?: boolean
 }
 
 export default function FinancialRecordForm({
@@ -21,7 +22,8 @@ export default function FinancialRecordForm({
   expenseCategories,
   onSubmit,
   onCancel,
-  saving
+  saving,
+  isUkNi
 }: FinancialRecordFormProps) {
   const toast = useToast()
   const [recordType, setRecordType] = useState<'income' | 'expense'>(record?.record_type || 'expense')
@@ -130,7 +132,7 @@ export default function FinancialRecordForm({
           </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">
-              Amount (EUR) *
+              Amount ({isUkNi ? 'GBP' : 'EUR'}) *
             </label>
             <input
               type="number"
