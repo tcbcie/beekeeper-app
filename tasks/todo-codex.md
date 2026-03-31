@@ -1,34 +1,32 @@
-# Task: Queen Tracker Hardening Audit
+# Task: Queen Tracker Default Collapse
 **Date:** 31/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Harden the `Queen Tracker` implementation against permission drift, silent update failure, and concurrent mutation races so the tracker behaves safely under real Supabase RLS constraints and adverse user interaction.
+Collapse the Queen Tracker record detail panels by default so each queen card opens in a more compact summary state until the user explicitly expands it.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `src/hooks/useQueenTracker.ts`
-  * `src/components/batches/QueenTrackerTab.tsx`
+* **Files to Modify:** * `src/components/batches/QueenTrackerTab.tsx`
   * `docs/features/queen-tracker.md`
-  * `docs/features/queen-tracker-hardening-audit-plan.md`
+  * `docs/features/queen-tracker-default-collapsed-detail-plan.md`
   * `tasks/todo-codex.md`
   * `tasks/todo-codex-codex.md`
-* **Simplicity Check:** Keep the hardening local to the tracker hook and tab. Reuse the existing date utilities and existing rearing-group ownership source instead of introducing parallel logic or broad refactors.
+* **Simplicity Check:** Keep the change local to the existing tracker card expand/collapse behaviour. Reuse the current `expandedId` state rather than introducing a new interaction model or changing any tracker data flow.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Align tracker visibility and ownership resolution with the canonical `rearing_groups.owner_id` model so group-owner access does not depend on a separate membership-role assumption.
-- [x] **Step 2:** Harden mutation paths in `useQueenTracker.ts` so overwintering and hybridisation updates only report success when a row was actually updated, with clear handling for permission-denied or stale-row cases.
-- [x] **Step 3:** Close the remaining concurrent-write gap around hybridisation date edits and tighten related defensive checks, including local-date handling and null-safe derived formatting.
-- [x] **Step 4:** Update documentation in `docs/features/queen-tracker.md`
-- [x] **Step 5:** Prompt user to test the build
+- [x] **Step 1:** Update `QueenTrackerTab.tsx` so the record detail grid is collapsed by default on desktop as well as mobile, while keeping the existing expand state model.
+- [x] **Step 2:** Make the expand/collapse control visible and clear in the collapsed default state across breakpoints without changing the card data content.
+- [x] **Step 3:** Update documentation in `docs/features/queen-tracker.md`
+- [x] **Step 4:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The tracker mixed client-side ownership assumptions with stricter database permissions, and the update helpers treated zero-row writes as success while the hybridisation date path still bypassed the in-flight guard.
-* **Summary of Changes:** Reworked tracker ownership resolution to use `rearing_groups.owner_id`, marked non-owned rows as read-only in the UI, verified update success by selecting the updated row, moved tracker date stamping to local calendar dates, and brought the hybridisation date edit into the same per-row concurrency guard as the toggles.
-* **Notes for User:** The live Supabase policies were checked through the MCP connection. Build tests were not run per repository instruction. Please test the `Queen Tracker` tab in your normal build flow.
+* **Root Cause Found (if applicable):** The Queen Tracker card body was forced open on desktop by a layout class, so the detail panels were always visible even though the component already had a per-record expand state.
+* **Summary of Changes:** Removed the desktop forced-open detail body, exposed the expand/collapse control on all breakpoints with a clearer label, and updated the Queen Tracker documentation to describe the collapsed-by-default interaction.
+* **Notes for User:** No database work was required. Build tests were not run per repository instruction. Please test the `Queen Tracker` tab in your normal build flow.
 
 ## Review
-* **Scope Covered:** Queen Tracker permission, mutation, and concurrency hardening.
-* **Summary of Changes:** The tracker now separates visibility from editability, stops claiming success for denied or stale writes, uses local calendar dates for outcome stamps, and prevents overlapping hybridisation-date writes from racing each other.
-* **Notes for User:** Please verify group-owner read-only behaviour on member records, successful edits on your own records, and hybridisation date edits on slow or repeated clicks before running your normal build check.
+* **Scope Covered:** Default collapsed state for Queen Tracker record details.
+* **Summary of Changes:** Queen Tracker cards now show the summary header first and keep the detail grid hidden until the user clicks `Show details`, on desktop and mobile alike.
+* **Notes for User:** Please verify expand/collapse behaviour on both desktop and mobile widths before running your normal build check.

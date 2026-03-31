@@ -77,7 +77,7 @@ Each tracked queen now renders as a responsive record with:
 - **Outcomes panel:** Mated state, overwintered toggle, hybridised toggle, and hybridisation date input when relevant
 - **Footer strip:** Quick recap of distribution date, location, and primary contact fields
 
-On mobile, each record collapses behind an expand button to keep the list usable.
+Each record now opens in a collapsed summary state by default and reveals the full detail grid only when the user expands it. The same expand/collapse control is available on desktop and mobile.
 Read-only records show a badge and a short explanation inside the Outcomes panel.
 
 ## 6. Outcome Logic

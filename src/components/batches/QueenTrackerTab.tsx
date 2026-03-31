@@ -653,15 +653,16 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                     <button
                       type="button"
                       onClick={() => setExpandedId(isExpanded ? null : distribution.id)}
-                      className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-text-secondary transition-colors hover:text-foreground dark:bg-surface-elevated md:hidden"
+                      className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-3 text-sm font-medium text-text-secondary transition-colors hover:text-foreground dark:bg-surface-elevated"
                       aria-expanded={isExpanded}
                       aria-label={isExpanded ? 'Collapse queen details' : 'Expand queen details'}
                     >
+                      <span>{isExpanded ? 'Hide details' : 'Show details'}</span>
                       {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </button>
                   </div>
                 </div>
-                <div className={`${isExpanded ? 'block' : 'hidden'} md:block`}>
+                <div className={isExpanded ? 'block' : 'hidden'}>
                   <div className="grid gap-4 p-4 sm:p-5 xl:grid-cols-2 2xl:grid-cols-4">
                     <TrackerPanel title="Queen Record" icon={Crown}>
                       <DetailItem label="Queen label" value={distribution.queen_display_name} />
