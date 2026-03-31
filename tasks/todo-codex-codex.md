@@ -1,30 +1,28 @@
-# Task: Community Map Privileged Defaults
-**Date:** 27/03/2026
+# Task: Queen Lineage Investigation
+**Date:** 31/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Change the Community Map so Power Users and Admins do not have the privileged community overlays selected by default on first load. This will make wild colonies start hidden, and will treat conservation areas as hidden by default for those privileged users.
+Correct the queen lineage displays so the tree and detail views show the stored parentage accurately. Live database checks showed the screenshot is not caused by a stored `1B`/`36-DA` cycle, so the fix needs to address the lineage fetch path and keep defensive guards for future bad lineage data.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `src/app/dashboard/community-map/page.tsx`
-  * `docs/features/community-map-privileged-defaults-plan.md`
-* **Simplicity Check:** Keep the change limited to the Community Map page's initial UI state and its supporting feature note. Do not alter data fetching, permissions, or the Settings page, which already defaults to the `Profile` section rather than `Conservation Areas`.
+* **Files to Modify:** * `src/components/QueenLineageTree.tsx`
+  * `src/hooks/useQueenDetail.ts`
+  * `src/app/dashboard/queens/page.tsx`
+  * `src/app/dashboard/queens/lineage/page.tsx`
+  * `docs/features/queen-lineage.md`
+* **Simplicity Check:** Keep the change inside the existing queen UI and hooks. Replace the ambiguous self-referencing embeds with explicit parent lookups, then add light validation and cycle guards without changing the broader queen data model.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Update the Community Map state initialisation so Power Users and Admins start with wild colonies hidden by default, while keeping the existing toggle behaviour unchanged.
-- [x] **Step 2:** Update the Community Map state initialisation so Power Users and Admins start with conservation areas hidden by default, without affecting the underlying conservation-area data load.
-- [x] **Step 3:** Review the surrounding map summary and control behaviour to ensure the default-off state does not break counts, toggles, or later layer rendering.
-- [x] **Step 4:** Update documentation in `docs/features/community-map-privileged-defaults-plan.md`
+- [x] **Step 1:** Replace ambiguous self-referencing parent fetches in the queen detail hook and per-queen lineage tree with explicit ID-based lookups so parent cards match the stored `mother_id` and `father_id` values.
+- [x] **Step 2:** Add surgical validation to queen create/edit flows so a queen cannot be assigned a mother or father that would create a cyclical lineage loop, and hide invalid parent choices in the form.
+- [x] **Step 3:** Harden the lineage overview page and per-queen tree so repeated lineage links are handled safely and do not disappear or render misleading duplicate ancestry.
+- [x] **Step 4:** Update documentation in `docs/features/queen-lineage.md`
 - [x] **Step 5:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The Community Map was initialising privileged overlays with the same visible-by-default behaviour as general layers, so Power Users and Admins landed on a busier first view than intended.
-* **Summary of Changes:** Updated the Community Map bootstrap so Power Users and Admins start with wild colonies and conservation areas hidden by default, and documented the behaviour in the feature note.
-* **Notes for User:** I verified during planning that the Settings page already defaults to `Profile`, so this request was implemented as a Community Map default-selection change rather than a Settings-tab change.
-
-## Review
-* **Scope Covered:** Community Map privileged default visibility only.
-* **Summary of Changes:** Power User/Admin sessions now flip `Wild colonies` and `Conservation areas` off during the authenticated map initialisation flow before the map is shown, while leaving data loading and manual toggles unchanged.
-* **Notes for User:** Please test the Community Map as a Power User or Admin and confirm the two layers start hidden and can still be enabled normally.
+* **Root Cause Found (if applicable):** Live MCP queries showed the stored rows were sane for the investigated queens. The incorrect lineage display is most likely caused by the client-side self-referencing embeds resolving the wrong relationship direction for parent data, with no extra protection against repeated lineage links.
+* **Summary of Changes:** Replaced the parent self-join embeds in the queen detail hook and per-queen lineage tree with explicit `queens.id` lookups, added form-side lineage cycle prevention, hardened both lineage views against repeated links, and updated the feature note to match the new behaviour.
+* **Notes for User:** The live database was checked through the Supabase MCP during investigation, rather than inferring lineage solely from local code. Build tests were not run per repository instruction; please test the build.

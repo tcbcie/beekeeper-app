@@ -12,6 +12,27 @@ import QueenLineageTree from '@/components/QueenLineageTree'
 import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
 import Button from '@/components/ui/Button'
 
+const getInvalidLineageParentIds = (queens: Queen[], queenId: string): Set<string> => {
+ const invalidIds = new Set<string>([queenId])
+ const queue = [queenId]
+
+ // Walk down visible lineage links so descendants cannot be re-used as parents.
+ while (queue.length > 0) {
+ const currentId = queue.shift()
+ if (!currentId) continue
+
+ queens.forEach((queen) => {
+ const isDescendant = queen.mother_id === currentId || queen.father_id === currentId
+ if (isDescendant && !invalidIds.has(queen.id)) {
+ invalidIds.add(queen.id)
+ queue.push(queen.id)
+ }
+ })
+ }
+
+ return invalidIds
+}
+
 export default function QueensPage() {
  const searchParams = useSearchParams()
  const router = useRouter()
@@ -331,6 +352,18 @@ export default function QueensPage() {
  mated_date: formData.mated_date || null,
  }
 
+ const invalidParentIds = editingQueen && !editingQueen.distributed_by_name
+ ? getInvalidLineageParentIds(queens, editingQueen.id)
+ : new Set<string>()
+ const selectedParentIds = [dataToSubmit.mother_id, dataToSubmit.father_id].filter(
+ (parentId): parentId is string => Boolean(parentId)
+ )
+
+ if (selectedParentIds.some((parentId) => invalidParentIds.has(parentId))) {
+ toast.error('A queen cannot use herself or one of her descendants as a parent.')
+ return
+ }
+
  try {
  if (editingQueen) {
  // For distributed queens, strip locked fields to preserve breeder provenance
@@ -560,6 +593,11 @@ export default function QueensPage() {
  return Math.round(totalDays / activeWithDates.length / 30)
  })()
 
+ const invalidParentIds = editingQueen && !editingQueen.distributed_by_name
+ ? getInvalidLineageParentIds(queens, editingQueen.id)
+ : new Set<string>()
+ const availableParentQueens = queens.filter((q) => !invalidParentIds.has(q.id))
+
  const colorOptions = ['White', 'Yellow', 'Red', 'Green', 'Blue', 'None']
 
  if (loading) return <LoadingSpinner text="Loading queens..." />
@@ -721,8 +759,7 @@ export default function QueensPage() {
  className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
  >
  <option value="">Select mother queen (optional)</option>
- {queens
- .filter((q) => q.id !== editingQueen?.id)
+ {availableParentQueens
  .map((q) => (
  <option key={q.id} value={q.id}>
  {q.queen_number} {q.marking_color ? `(${q.marking_color})` : ''}
@@ -740,8 +777,7 @@ export default function QueensPage() {
  className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
  >
  <option value="">Select father queen (optional)</option>
- {queens
- .filter((q) => q.id !== editingQueen?.id)
+ {availableParentQueens
  .map((q) => (
  <option key={q.id} value={q.id}>
  {q.queen_number} {q.marking_color ? `(${q.marking_color})` : ''}

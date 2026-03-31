@@ -3,6 +3,12 @@ import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import type { Queen } from '@/types/queen'
 
+interface QueenParent {
+  id: string
+  queen_number: string
+  marking_color: string
+}
+
 interface QueenHive {
   id: string
   hive_number: string
@@ -53,8 +59,6 @@ export function useQueenDetail(queenId: string): UseQueenDetailReturn {
         .from('queens')
         .select(`
           *,
-          mother:queens!mother_id(id, queen_number, marking_color),
-          father:queens!father_id(id, queen_number, marking_color),
           batch:rearing_batches!batch_id(id, batch_name),
           hives!queen_id(id, hive_number, apiaries(name))
         `)
@@ -63,7 +67,34 @@ export function useQueenDetail(queenId: string): UseQueenDetailReturn {
 
       if (queenError) throw queenError
       if (!queenData) throw new Error('Queen not found')
-      setQueen(queenData as Queen)
+
+      const [motherRes, fatherRes] = await Promise.all([
+        queenData.mother_id
+          ? supabase
+              .from('queens')
+              .select('id, queen_number, marking_color')
+              .eq('id', queenData.mother_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+        queenData.father_id
+          ? supabase
+              .from('queens')
+              .select('id, queen_number, marking_color')
+              .eq('id', queenData.father_id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ])
+
+      if (motherRes.error) throw motherRes.error
+      if (fatherRes.error) throw fatherRes.error
+
+      const queenWithParents: Queen = {
+        ...(queenData as Queen),
+        mother: (motherRes.data as QueenParent | null) ?? null,
+        father: (fatherRes.data as QueenParent | null) ?? null,
+      }
+
+      setQueen(queenWithParents)
       setIsOwner(queenData.user_id === currentUserId)
 
       // Set assigned hive
