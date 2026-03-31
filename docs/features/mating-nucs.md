@@ -4,7 +4,7 @@
 Track mating nucs through the queen rearing process. Each nuc receives a queen cell from a batch, is placed at a mating location, and can be inspected to track queen development (`virgin -> mating -> laying`). Nucs can be retired and reused across seasons with full history tracking. The feature also supports bulk creation for numbered and unnumbered nuc workflows while storing each nuc as an individual row.
 
 ## Feature Location
-- **UI**: Dashboard > Queen Rearing (Batches) > "Mating Nucs" tab
+- **UI**: Dashboard > Queen Rearing (Batches) > `Nuc Setup` tab
 - **Route**: `/dashboard/batches?tab=nucs`
 
 ## Data Flow
@@ -32,7 +32,7 @@ Batch (graft date, breeder queen)
 - Displays queen number in nuc list
 
 ### Bulk Mating Nuc Creation
-- Dedicated bulk workflow on the Mating Nucs page
+- Dedicated bulk workflow on the `Nuc Setup` tab
 - Two modes:
   - **Numbered mode**: user enters multiple nuc numbers in one action
   - **Unnumbered mode**: user creates one nuc per selected sealed cell without manual numbering

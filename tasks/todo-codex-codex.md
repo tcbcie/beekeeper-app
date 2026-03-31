@@ -1,28 +1,33 @@
-# Task: Queen Lineage Investigation
+# Task: Queen Rearing and Lineage Hardening Review
 **Date:** 31/03/2026
 **Status:** Completed
 
 ## 1. Objective
-Correct the queen lineage displays so the tree and detail views show the stored parentage accurately. Live database checks showed the screenshot is not caused by a stored `1B`/`36-DA` cycle, so the fix needs to address the lineage fetch path and keep defensive guards for future bad lineage data.
+Address the review findings from the Queen Rearing tab reorder, then harden the recently shipped lineage changes so tab navigation, async state, and documentation remain consistent under refreshes, rapid navigation, and missing relationship data.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `src/components/QueenLineageTree.tsx`
+* **Files to Modify:** * `src/app/dashboard/batches/page.tsx`
+  * `src/components/QueenLineageTree.tsx`
   * `src/hooks/useQueenDetail.ts`
-  * `src/app/dashboard/queens/page.tsx`
-  * `src/app/dashboard/queens/lineage/page.tsx`
+  * `docs/features/queen-rearing.md`
   * `docs/features/queen-lineage.md`
-* **Simplicity Check:** Keep the change inside the existing queen UI and hooks. Replace the ambiguous self-referencing embeds with explicit parent lookups, then add light validation and cycle guards without changing the broader queen data model.
+  * `docs/features/mating-nucs.md`
+  * `docs/features/virgin-queen-tracker.md`
+  * `docs/features/mating-nuc-qr-codes.md`
+  * `docs/features/overview-pages-improvement.md`
+  * `docs/features/queen-rearing-lineage-hardening-plan.md`
+* **Simplicity Check:** This keeps the work surgical: one source of truth for Queen Rearing tabs, safe client-side URL/state synchronisation, targeted lineage fetch guards, and documentation alignment. No schema changes or feature redesigns are planned.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Replace ambiguous self-referencing parent fetches in the queen detail hook and per-queen lineage tree with explicit ID-based lookups so parent cards match the stored `mother_id` and `father_id` values.
-- [x] **Step 2:** Add surgical validation to queen create/edit flows so a queen cannot be assigned a mother or father that would create a cyclical lineage loop, and hide invalid parent choices in the form.
-- [x] **Step 3:** Harden the lineage overview page and per-queen tree so repeated lineage links are handled safely and do not disappear or render misleading duplicate ancestry.
-- [x] **Step 4:** Update documentation in `docs/features/queen-lineage.md`
+- [x] **Step 1:** Consolidate the Queen Rearing tab metadata into a single configuration and make tab clicks keep `?tab=` in sync with the visible tab.
+- [x] **Step 2:** Harden `src/components/QueenLineageTree.tsx` so stale async lineage responses cannot overwrite the current queen after rapid navigation or collapse/expand changes.
+- [x] **Step 3:** Harden `src/hooks/useQueenDetail.ts` so hive and sighting state is reset safely when a queen has no active hive assignment or when a newer fetch replaces an older one.
+- [x] **Step 4:** Update documentation in `docs/features/queen-rearing.md`, `docs/features/queen-lineage.md`, and the related Queen Rearing docs so labels and behaviour match the live UI.
 - [x] **Step 5:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** Live MCP queries showed the stored rows were sane for the investigated queens. The incorrect lineage display is most likely caused by the client-side self-referencing embeds resolving the wrong relationship direction for parent data, with no extra protection against repeated lineage links.
-* **Summary of Changes:** Replaced the parent self-join embeds in the queen detail hook and per-queen lineage tree with explicit `queens.id` lookups, added form-side lineage cycle prevention, hardened both lineage views against repeated links, and updated the feature note to match the new behaviour.
-* **Notes for User:** The live database was checked through the Supabase MCP during investigation, rather than inferring lineage solely from local code. Build tests were not run per repository instruction; please test the build.
+* **Root Cause Found (if applicable):** The Queen Rearing shell kept tab ids, labels, URL handling, and render order in separate client-side structures, while the lineage detail views still allowed older async responses to overwrite newer queen state. The `public.queens` table currently enforces only self-referencing foreign keys, so lineage safety still depends on the client paths.
+* **Summary of Changes:** Centralised Queen Rearing tab metadata and URL synchronisation, added request-ownership guards to the lineage tree and queen detail hook, reset derived hive and sighting state defensively, and aligned the affected feature notes with the live tab labels and lineage behaviour.
+* **Notes for User:** Supabase MCP review confirmed there is no database-level lineage cycle constraint and no current direct self-parent or two-node mother cycles in live data. Build tests were not run per repository instruction; please verify the UI and run your normal build check.

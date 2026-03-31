@@ -24,6 +24,7 @@ The free-text `lineage` column stores human-readable breeding notation (for exam
 - Parent summaries in the detail page and lineage tree are fetched directly from the stored `mother_id` and `father_id` values.
 - The queen create/edit form hides any parent option that would make the edited queen its own ancestor or descendant.
 - If repeated lineage links are already present in stored data, the UI shows a warning and hides the repeated branch instead of rendering misleading duplicate ancestry.
+- The database currently uses self-referencing foreign keys without a built-in cycle constraint, so the client still enforces lineage safety in the form and tree rendering paths.
 
 ## Per-Queen Lineage Tree
 
@@ -69,6 +70,8 @@ Queens with offspring (referenced via `mother_id` or `father_id`) are protected 
 - Parent summaries in lineage and detail views use direct `queens.id` lookups instead of embedded self-joins
 - Hive and apiary data is still joined via `hives!queen_id(hive_number, apiaries(name))`
 - `extractQueenNode()` handles Supabase returning non-self joins as arrays or objects
+- `QueenLineageTree` ignores stale async responses if the user switches queens or collapses the panel during a fetch
+- `useQueenDetail()` clears derived hive and sighting state before applying a new queen response
 - The lineage overview clones branch-level visited state so repeated lineage links are skipped safely without dropping the rest of the tree
 - RLS access is controlled by `can_access_queen()` function (SECURITY DEFINER)
 - Error state is displayed to the user if the query fails

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import type { Queen } from '@/types/queen'
@@ -50,9 +50,19 @@ export function useQueenDetail(queenId: string): UseQueenDetailReturn {
   const [sightings, setSightings] = useState<QueenSighting[]>([])
   const [loading, setLoading] = useState(true)
   const [isOwner, setIsOwner] = useState(false)
+  const requestIdRef = useRef(0)
 
   const fetchQueenData = useCallback(async (currentUserId: string) => {
+    const requestId = requestIdRef.current + 1
+    requestIdRef.current = requestId
+
     setLoading(true)
+    setQueen(null)
+    setHive(null)
+    setOffspring([])
+    setSightings([])
+    setIsOwner(false)
+
     try {
       // Fetch queen with relations
       const { data: queenData, error: queenError } = await supabase
@@ -88,6 +98,8 @@ export function useQueenDetail(queenId: string): UseQueenDetailReturn {
       if (motherRes.error) throw motherRes.error
       if (fatherRes.error) throw fatherRes.error
 
+      if (requestIdRef.current !== requestId) return
+
       const queenWithParents: Queen = {
         ...(queenData as Queen),
         mother: (motherRes.data as QueenParent | null) ?? null,
@@ -97,28 +109,34 @@ export function useQueenDetail(queenId: string): UseQueenDetailReturn {
       setQueen(queenWithParents)
       setIsOwner(queenData.user_id === currentUserId)
 
-      // Set assigned hive
       const hiveData = queenData.hives
+      const assignedHive = Array.isArray(hiveData) ? hiveData[0] : hiveData
       let assignedHiveId: string | null = null
-      if (Array.isArray(hiveData) && hiveData.length > 0) {
-        const h = hiveData[0]
-        assignedHiveId = h.id
+      if (assignedHive?.id) {
+        assignedHiveId = assignedHive.id
         setHive({
-          id: h.id,
-          hive_number: h.hive_number,
-          apiary_name: Array.isArray(h.apiaries) ? h.apiaries[0]?.name || null : h.apiaries?.name || null,
+          id: assignedHive.id,
+          hive_number: assignedHive.hive_number,
+          apiary_name: Array.isArray(assignedHive.apiaries)
+            ? assignedHive.apiaries[0]?.name || null
+            : assignedHive.apiaries?.name || null,
         })
       }
 
-      // Fetch offspring (always) and sightings (only if assigned to a hive)
       const offspringRes = await supabase.from('queens')
         .select('id, queen_number, birth_date, status, marking_color')
         .eq('mother_id', queenId)
         .order('birth_date', { ascending: false })
 
-      setOffspring((offspringRes.data || []) as QueenOffspring[])
+      if (requestIdRef.current !== requestId) return
 
-      // Fetch sightings from the assigned hive directly (not via queen_id join)
+      if (offspringRes.error) {
+        console.error('Error fetching offspring:', offspringRes.error)
+        setOffspring([])
+      } else {
+        setOffspring((offspringRes.data || []) as QueenOffspring[])
+      }
+
       if (assignedHiveId) {
         const sightingsRes = await supabase.from('inspections')
           .select('id, inspection_date, queen_seen, eggs_present, hive_id, hives(hive_number)')
@@ -141,14 +159,25 @@ export function useQueenDetail(queenId: string): UseQueenDetailReturn {
           hive_number: s.hives?.[0]?.hive_number || '',
           hive_id: s.hive_id,
         }))
-        setSightings(sightingData)
+
+        if (requestIdRef.current !== requestId) return
+
+        if (sightingsRes.error) {
+          console.error('Error fetching queen sightings:', sightingsRes.error)
+          setSightings([])
+        } else {
+          setSightings(sightingData)
+        }
       }
 
     } catch (error) {
+      if (requestIdRef.current !== requestId) return
       console.error('Error fetching queen data:', error)
       toast.error('Failed to load queen details')
     } finally {
-      setLoading(false)
+      if (requestIdRef.current === requestId) {
+        setLoading(false)
+      }
     }
   }, [queenId, toast])
 

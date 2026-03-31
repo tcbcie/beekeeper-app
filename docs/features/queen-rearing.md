@@ -8,11 +8,12 @@ The queen rearing system is the most complex feature in HiveCraic, spanning batc
 
 | Route | Page | Purpose |
 |-------|------|---------|
-| `/dashboard/batches` | Batches page | Five-tab hub: Grafting Batch, Mating Nucs, Selection, Virgin Queen Tracker, Planning |
+| `/dashboard/batches` | Batches page | Seven-tab hub: Grafting Batch, Nuc Setup, Manage Nucs, Queen Tracker, Selection, Planning, Reports |
 | `/dashboard/queens` | Queens list | Queen registry with genealogy, search, CSV export |
 | `/dashboard/queens/[id]` | Queen detail | Profile, lineage tree, offspring, sighting history |
 
 The batches page stays on a single route and switches tabs client-side.
+The active tab is mirrored to the `?tab=` query parameter so deep links, refreshes, and browser navigation reopen the same view. Invalid tab ids fall back to `grafting`.
 
 ---
 
@@ -116,34 +117,41 @@ Queen Record (queen_number, lineage, batch_id)
 - Integrates `BatchGraftsSection` for existing batches
 - Mobile card view / desktop table view
 
-**Mating Nucs Tab** — renders `MatingNucsTab` component (see below)
+**Nuc Setup Tab** - renders `MatingNucsTab` component (see below)
 
-**Selection Tab** — breeder queen ranking
-- Filters: apiary, time period (current year / 6m / 1y / all / custom range)
-- Weighted scoring (1–5) for: brood pattern, population, temperament, swarming (inverted), honey yield
-- Optional criteria: calmness, recapping, VSH, SMR, chalkbrood (inverted)
-- Minimum 3 inspections required per hive
-- Results ranked with medals for top 3
+**Manage Nucs Tab** - renders `ManageNucsTab` component
+- Dedicated view for managing active and retired mating nucs outside the setup flow
 
-**Virgin Queen Tracker Tab** — renders `VirginQueenTrackerTab` component
+**Queen Tracker Tab** - renders `VirginQueenTrackerTab` component
 - Tracks virgin queens distributed from rearing-group batches
 - Supports group, year, and status filters
 - Allows overwintering and hybridisation tracking updates
 
-**Planning Tab** — renders `QueenRearingPlanningTab` component
+**Selection Tab** - breeder queen ranking
+- Filters: apiary, time period (current year / 6m / 1y / all / custom range)
+- Weighted scoring (1-5) for: brood pattern, population, temperament, swarming (inverted), honey yield
+- Optional criteria: calmness, recapping, VSH, SMR, chalkbrood (inverted)
+- Minimum 3 inspections required per hive
+- Results ranked with medals for top 3
+
+**Planning Tab** - renders `QueenRearingPlanningTab` component
 - Local planning sandbox with no database writes
 - Lets the user plan from either a graft date or a target virgin emergence day, then inspect the weekday impact across key queen milestones
 - Shows virgin emergence, likely mating-flight window, likely laying window, and linked drone timing
 - Surfaces assumptions directly in the UI so the timing ranges remain easy to adjust later
 
+**Reports Tab** - renders `NucReportsTab` component
+- Reporting view for mating nucs and related rearing outputs
 ### Reusable Components
 
 | Component | File | Purpose |
 |-----------|------|---------|
 | `BatchGraftsSection` | `src/components/batches/BatchGraftsSection.tsx` | Split view: collapsible frame visualisation for grafted/accepted grafts (bars + cups) with staged bulk actions + queen tracking table for all post-frame grafts (caged/emerged/in_nuc/mated/failed/sold) with bulk actions (status change, mark/unmark, distribute, delete), queen marking, queen numbering, marking colour note, and individual distribute/delete actions. Per-row distribute and delete buttons are hidden when 2+ grafts are selected (multi-select uses the bulk action bar instead). In frame bulk mode, status/date selections are staged and saved only when `Done` is clicked, and the bulk date picker is pre-populated with the current date. Failed and distributed rows are auto-locked with a red "Failed" or indigo "Distributed" badge; lock can be toggled for correction. The batch-grafts shell, frame controls, table rows, distribution cards, and shared status chips are aligned with the application dark theme so this area no longer falls back to pale light-mode surfaces |
 | `MatingNucsTab` | `src/components/batches/MatingNucsTab.tsx` | Full nuc CRUD, retirement with history, expandable inspections |
+| `ManageNucsTab` | `src/components/batches/ManageNucsTab.tsx` | Equipment-focused mating nuc register with QR code assignment, inspections, and inventory state management |
 | `VirginQueenTrackerTab` | `src/components/batches/VirginQueenTrackerTab.tsx` | Tracks distributed virgin queens across rearing groups with status filters and follow-up fields |
 | `QueenRearingPlanningTab` | `src/components/batches/QueenRearingPlanningTab.tsx` | Local queen and drone timeline planner driven by either a graft date or a target emergence day, with weekday-aware date ranges |
+| `NucReportsTab` | `src/components/batches/NucReportsTab.tsx` | Read-only rearing reports for mating nuc utilisation and related outputs |
 | `NucInspectionPanel` | `src/components/batches/NucInspectionPanel.tsx` | Inline inspection form + history list per nuc |
 | `NucInspectionCard` | `src/components/batches/NucInspectionCard.tsx` | Single inspection display with badges |
 | `QueenLineageTree` | `src/components/QueenLineageTree.tsx` | 4-generation family tree with colour-coded queen cards |
@@ -231,9 +239,10 @@ Located in `src/lib/ai/tools/queens.ts` and `src/lib/ai/tools/nucs.ts`:
 ## Custom Hook
 
 **`useQueenDetail`** (`src/hooks/useQueenDetail.ts`)
-- Fetches queen with mother, father, batch relations via `select('*')`
-- Retrieves assigned hive, offspring (daughter queens), and inspection sightings
-- Returns: `apiary`, `hive`, `offspring`, `sightings`, `stats`, `loading`, `isOwner`
+- Fetches the queen record plus batch relation, then resolves mother and father directly from the stored ids
+- Resets assigned hive, offspring, and inspection sightings before applying a new queen response so stale detail state is not reused across navigation
+- Ignores stale async responses if a newer queen fetch starts before the previous one completes
+- Returns: `queen`, `hive`, `offspring`, `sightings`, `loading`, `isOwner`, `fetchQueenData`
 
 ---
 
@@ -261,7 +270,7 @@ Component-level interfaces in `batches/page.tsx`:
 4. **Cascading dropdowns** — apiary → hive, batch → graft
 5. **Auto-status updates** — nuc status updates automatically from inspection queen_status (laying → laying, dead/missing → failed)
 6. **Weighted scoring** — configurable multi-criteria algorithm for breeder selection
-7. **Genealogy** — self-referencing mother/father FKs with recursive tree fetching (up to 4 generations)
+7. **Genealogy** — self-referencing mother/father FKs with direct parent lookups, duplicate-branch warnings, and request guards for rapid navigation
 8. **Team visibility** — queens visible across shared apiaries via team membership
 9. **Frame visualisation** — grafts rendered as a physical grafting frame with horizontal bars and hanging cell cups, coloured by status. Frame layout defined by `frame_rows` × `cells_per_row`. Horizontally scrollable on mobile. Frame shows only `grafted`/`accepted` grafts with bulk select/status/delete actions; status and date are staged and committed together on `Done`, and the bulk date picker defaults to the current date when bulk mode is opened. It is collapsible via a toggle and auto-collapses on load when any grafts have progressed to the queen tracking table. Post-frame grafts (including `failed`) appear in a separate queen tracking table below with its own bulk action bar (status change, mark all/unmark all, distribute, delete), queen marking checkbox, queen number input, and individual distribute/delete actions. Rows in `sold` or `failed` status are auto-locked and show a coloured badge; the lock can be toggled to allow corrections
 10. **Marking colour display** — when a batch has an emergence date, the queen tracking table shows an info line with the international marking colour (White/Yellow/Red/Green/Blue) and a colour swatch dot, derived from the emergence year via `getQueenColorFromYear()`
@@ -272,7 +281,7 @@ Component-level interfaces in `batches/page.tsx`:
 
 | File | Purpose |
 |------|---------|
-| `src/app/dashboard/batches/page.tsx` | Main batches page (Grafting Batch, Mating Nucs, Selection, Virgin Queen Tracker, Planning tabs) |
+| `src/app/dashboard/batches/page.tsx` | Main batches page (Grafting Batch, Nuc Setup, Manage Nucs, Queen Tracker, Selection, Planning, Reports tabs) |
 | `src/app/dashboard/queens/page.tsx` | Queens list with CRUD and CSV export |
 | `src/app/dashboard/queens/[id]/page.tsx` | Queen detail with lineage and sightings |
 | `src/components/batches/BatchGraftsSection.tsx` | Frame visualisation of grafts (bars + cups) + distribution list |
