@@ -160,12 +160,12 @@ The following defensive improvements were applied to the distribution code:
 
 Second round of defensive improvements from a full code audit:
 
-- **Stale closure guard** — `VirginQueenTrackerTab` concurrent update guard now uses a `useRef` instead of state closure, preventing rapid double-clicks from bypassing the in-flight check
+- **Stale closure guard** — `QueenTrackerTab` concurrent update guard now uses a `useRef` instead of state closure, preventing rapid double-clicks from bypassing the in-flight check
 - **Optimistic update rollback** — `useBatchGrafts` queen marked, status date, and queen number optimistic updates now revert local state on Supabase error
 - **Accurate mated counter** — `queens_mated` batch counter now excludes `sold` grafts distributed as `queen_cell` (unmated), using distribution type data
 - **Dead code removal** — Removed unused `toggleMatingConfirmed` from `useGraftDistributions`
 - **Timezone-safe birth date** — `deriveBirthDate` now appends `T00:00:00` to date parse, matching codebase convention
-- **DRY date formatting** — `VirginQueenTrackerTab` now imports `formatDateIrish` from `graftConstants` instead of duplicating
+- **DRY date formatting** — `QueenTrackerTab` now imports `formatDateIrish` from `graftConstants` instead of duplicating
 - **Input length limits** — External recipient fields in `DistributeGraftModal` now have `maxLength` (name: 200, email: 254, phone: 20, location: 100)
 - **O(1) graft lookup** — `DistributionList` uses a `Map` for graft lookup instead of `Array.find()` in render loop
 - **Safe bulk delete** — Frame bulk delete now filters out distributed and failed grafts before deletion, preventing FK constraint errors

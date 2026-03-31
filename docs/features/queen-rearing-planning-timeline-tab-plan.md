@@ -7,7 +7,7 @@ Add a new `Planning` tab to the Queen Rearing page so beekeepers can try differe
 
 ## 2. Scope & Simplicity
 * **In Scope:** Add a new planning tab on `/dashboard/batches`, show queen timeline milestones with weekdays, and derive the linked drone preparation window from either a selected graft date or a target emergence day.
-* **Out of Scope:** Persisting planner scenarios, changing rearing batch database fields, adding notifications from planner-only dates, or redesigning the existing Grafting Batch, Mating Nucs, Selection, or Virgin Queen Tracker flows.
+* **Out of Scope:** Persisting planner scenarios, changing rearing batch database fields, adding notifications from planner-only dates, or redesigning the existing Grafting Batch, Mating Nucs, Selection, or Queen Tracker flows.
 * **Existing Code Impact:** Primarily `src/app/dashboard/batches/page.tsx` plus one new tab component and the supporting Queen Rearing documentation.
 
 ## 3. Technical Design

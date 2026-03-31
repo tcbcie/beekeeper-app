@@ -1,4 +1,4 @@
-# Virgin Queen Tracker Implementation
+# Queen Tracker Implementation
 
 **Date:** 05/03/2026
 **Status:** Complete
@@ -9,10 +9,10 @@ Add tracking for virgin queens distributed from group batches with overwintering
 ## Implementation Steps
 
 - [x] **Step 1:** Create migration adding 4 columns to `graft_distributions`
-- [x] **Step 2:** Create `useVirginQueenTracker.ts` hook
-- [x] **Step 3:** Create `VirginQueenTrackerTab.tsx` component (desktop + mobile)
+- [x] **Step 2:** Create `useQueenTracker.ts` hook
+- [x] **Step 3:** Create `QueenTrackerTab.tsx` component (desktop + mobile)
 - [x] **Step 4:** Replace placeholder in batches page with actual component
-- [x] **Step 5:** Create `docs/features/virgin-queen-tracker.md`
+- [x] **Step 5:** Create `docs/features/queen-tracker.md`
 
 ## Review
 
@@ -26,9 +26,9 @@ Add tracking for virgin queens distributed from group batches with overwintering
   - `hybridisation_date` (DATE) - when assessed
 
 **New Files:**
-- `src/hooks/useVirginQueenTracker.ts` - Hook for fetching distributions from group batches and updating tracking fields
-- `src/components/batches/VirginQueenTrackerTab.tsx` - Main UI component with filters, stats, and mobile/desktop views
-- `docs/features/virgin-queen-tracker.md` - Feature documentation
+- `src/hooks/useQueenTracker.ts` - Hook for fetching distributions from group batches and updating tracking fields
+- `src/components/batches/QueenTrackerTab.tsx` - Main UI component with filters, stats, and mobile/desktop views
+- `docs/features/queen-tracker.md` - Feature documentation
 
 **Modified Files:**
 - `src/app/dashboard/batches/page.tsx` - Added import and replaced placeholder with component
@@ -42,7 +42,7 @@ Add tracking for virgin queens distributed from group batches with overwintering
 6. **Summary Stats:** Total, mated, overwintered, failed, hybridised counts
 
 ### Testing Required
-1. Navigate to Queen Rearing → Virgin Queen Tracker tab
+1. Navigate to Queen Rearing → Queen Tracker tab
 2. Verify distributions from group batches appear
 3. Test toggling overwintered status (should auto-set date)
 4. Test toggling hybridisation status

@@ -88,7 +88,7 @@ export default function QueenDetailPage() {
         fetchQueenData(currentUserId)
         return
       }
-      // Feed back mating confirmation to graft_distributions for Virgin Queen Tracker / NIHBS report
+      // Feed back mating confirmation to graft_distributions for Queen Tracker / NIHBS report
       if (queen.batch_id) {
         (async () => {
           try {

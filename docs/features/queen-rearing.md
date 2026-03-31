@@ -122,8 +122,8 @@ Queen Record (queen_number, lineage, batch_id)
 **Manage Nucs Tab** - renders `ManageNucsTab` component
 - Dedicated view for managing active and retired mating nucs outside the setup flow
 
-**Queen Tracker Tab** - renders `VirginQueenTrackerTab` component
-- Tracks virgin queens distributed from rearing-group batches
+**Queen Tracker Tab** - renders `QueenTrackerTab` component
+- Tracks distributed queens from rearing-group batches
 - Supports group, year, and status filters
 - Allows overwintering and hybridisation tracking updates
 
@@ -149,7 +149,7 @@ Queen Record (queen_number, lineage, batch_id)
 | `BatchGraftsSection` | `src/components/batches/BatchGraftsSection.tsx` | Split view: collapsible frame visualisation for grafted/accepted grafts (bars + cups) with staged bulk actions + queen tracking table for all post-frame grafts (caged/emerged/in_nuc/mated/failed/sold) with bulk actions (status change, mark/unmark, distribute, delete), queen marking, queen numbering, marking colour note, and individual distribute/delete actions. Per-row distribute and delete buttons are hidden when 2+ grafts are selected (multi-select uses the bulk action bar instead). In frame bulk mode, status/date selections are staged and saved only when `Done` is clicked, and the bulk date picker is pre-populated with the current date. Failed and distributed rows are auto-locked with a red "Failed" or indigo "Distributed" badge; lock can be toggled for correction. The batch-grafts shell, frame controls, table rows, distribution cards, and shared status chips are aligned with the application dark theme so this area no longer falls back to pale light-mode surfaces |
 | `MatingNucsTab` | `src/components/batches/MatingNucsTab.tsx` | Full nuc CRUD, retirement with history, expandable inspections |
 | `ManageNucsTab` | `src/components/batches/ManageNucsTab.tsx` | Equipment-focused mating nuc register with QR code assignment, inspections, and inventory state management |
-| `VirginQueenTrackerTab` | `src/components/batches/VirginQueenTrackerTab.tsx` | Tracks distributed virgin queens across rearing groups with status filters and follow-up fields |
+| `QueenTrackerTab` | `src/components/batches/QueenTrackerTab.tsx` | Tracks distributed queens across rearing groups with status filters and follow-up fields |
 | `QueenRearingPlanningTab` | `src/components/batches/QueenRearingPlanningTab.tsx` | Local queen and drone timeline planner driven by either a graft date or a target emergence day, with weekday-aware date ranges |
 | `NucReportsTab` | `src/components/batches/NucReportsTab.tsx` | Read-only rearing reports for mating nuc utilisation and related outputs |
 | `NucInspectionPanel` | `src/components/batches/NucInspectionPanel.tsx` | Inline inspection form + history list per nuc |

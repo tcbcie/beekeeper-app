@@ -31,11 +31,11 @@ Rearing groups in the NIHBS Conservation and Queen Rearing Group Scheme (DAFM-fu
   - Queen cells hatched
   - Queens mated within group
 - Manual-entry fields (saved per month):
-  - Hybridised offspring (auto-calculated from Virgin Queen Tracker distribution records)
+  - Hybridised offspring (auto-calculated from Queen Tracker distribution records)
   - Virgin queens distributed outside group (auto-calculated from distribution records)
   - Virgins distributed outside — successfully mated (auto-calculated from distribution records)
 - Auto-calculated distribution counts from `graft_distributions` records:
-  - Hybridised offspring = count of distributions where `offspring_hybridised === true`, grouped by `hybridisation_date` month (tracked via Virgin Queen Tracker)
+  - Hybridised offspring = count of distributions where `offspring_hybridised === true`, grouped by `hybridisation_date` month (tracked via Queen Tracker)
   - External distributions = virgin_queen distributions where recipient is NOT a group member (queen_cell distributions excluded — tracked separately on row 28)
   - Mated queen external distributions included in rows 24/26 (distributed outside / successfully mated)
   - Auto-calculated values used as defaults; manual overrides take precedence when saved
@@ -134,7 +134,7 @@ Batch-level values take precedence when explicitly set (uses `??` nullish coales
 
 ## Hybridised Offspring — Distribution-Based Tracking
 
-Row 21 ("Number of newly mated queens showing hybridised offspring") is auto-calculated from individual `graft_distributions` records where `offspring_hybridised === true`, grouped by `hybridisation_date` month. This replaces the previous batch-level `rearing_batches.queens_hybridised` field (which is no longer written to from the batch form). The Virgin Queen Tracker provides a three-state toggle (Yes/No/?) with a user-selectable date picker when set to Yes. Manual overrides from `nihbs_monthly_returns.hybridised_offspring` still take precedence when explicitly saved.
+Row 21 ("Number of newly mated queens showing hybridised offspring") is auto-calculated from individual `graft_distributions` records where `offspring_hybridised === true`, grouped by `hybridisation_date` month. This replaces the previous batch-level `rearing_batches.queens_hybridised` field (which is no longer written to from the batch form). The Queen Tracker provides a three-state toggle (Yes/No/?) with a user-selectable date picker when set to Yes. Manual overrides from `nihbs_monthly_returns.hybridised_offspring` still take precedence when explicitly saved.
 
 ## RLS Policies
 
