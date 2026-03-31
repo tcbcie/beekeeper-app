@@ -33,7 +33,7 @@ This feature supports conservation breeding programmes by providing visibility i
 ## 3. Technical Design
 
 ### Architecture
-The feature is implemented as a tab component on the Queen Rearing page (`/dashboard/batches`). It fetches distributions from batches linked to rearing groups the user is a member of.
+The feature is implemented as the `Queen Tracker` tab component on the Queen Rearing page (`/dashboard/batches`). It fetches distributions from batches linked to rearing groups the user is a member of.
 
 ### Database Schema Changes
 Added to `graft_distributions` table:
@@ -75,7 +75,7 @@ hybridisation_date DATE DEFAULT NULL
 
 ### Accessing the Tracker
 1. Navigate to Queen Rearing (`/dashboard/batches`)
-2. Click the "Virgin Queen Tracker" tab
+2. Click the `Queen Tracker` tab
 
 ### Filtering Data
 - **Group:** Filter by specific rearing group (or view all)

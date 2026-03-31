@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { ChevronDown, ChevronRight, Crown } from 'lucide-react'
@@ -132,6 +132,7 @@ export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenL
   const [lineage, setLineage] = useState<LineageData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const requestIdRef = useRef(0)
 
   const fetchQueenById = useCallback(async (id: string): Promise<QueenRecord | null> => {
     const { data, error } = await supabase
@@ -144,154 +145,168 @@ export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenL
     return data ? extractQueenRecord(data) : null
   }, [])
 
-  const fetchLineage = useCallback(async () => {
-    if (!queenId) return
-    setLoading(true)
-    setError(null)
+  const fetchLineage = useCallback(async (targetQueenId: string): Promise<LineageData | null> => {
+    const queen = await fetchQueenById(targetQueenId)
 
-    try {
-      const queen = await fetchQueenById(queenId)
+    if (!queen) {
+      return null
+    }
 
-      if (!queen) {
-        setError('Failed to load lineage data')
-        setLoading(false)
-        return
+    const displayedQueenIds = new Set<string>([queen.id])
+    const warnings = new Set<string>()
+
+    const fetchUniqueRelation = async (
+      relatedId: string | null | undefined,
+      warningMessage: string
+    ): Promise<QueenRecord | null> => {
+      if (!relatedId) return null
+
+      const relatedQueen = await fetchQueenById(relatedId)
+      if (!relatedQueen) return null
+
+      if (displayedQueenIds.has(relatedQueen.id)) {
+        warnings.add(warningMessage)
+        return null
       }
 
-      const displayedQueenIds = new Set<string>([queen.id])
-      const warnings = new Set<string>()
+      displayedQueenIds.add(relatedQueen.id)
+      return relatedQueen
+    }
 
-      const fetchUniqueRelation = async (
-        relatedId: string | null | undefined,
-        warningMessage: string
-      ): Promise<QueenRecord | null> => {
-        if (!relatedId) return null
+    const mother = await fetchUniqueRelation(
+      queen.mother_id,
+      'Repeated parent links were hidden in the lineage tree.'
+    )
+    const father = await fetchUniqueRelation(
+      queen.father_id,
+      'Repeated parent links were hidden in the lineage tree.'
+    )
+    const grandmother = mother
+      ? await fetchUniqueRelation(
+          mother.mother_id,
+          'Repeated ancestor links were hidden in the lineage tree.'
+        )
+      : null
+    const grandfather = mother
+      ? await fetchUniqueRelation(
+          mother.father_id,
+          'Repeated ancestor links were hidden in the lineage tree.'
+        )
+      : null
+    const greatGrandmother = grandmother
+      ? await fetchUniqueRelation(
+          grandmother.mother_id,
+          'Repeated ancestor links were hidden in the lineage tree.'
+        )
+      : null
+    const greatGrandfather = grandmother
+      ? await fetchUniqueRelation(
+          grandmother.father_id,
+          'Repeated ancestor links were hidden in the lineage tree.'
+        )
+      : null
 
-        const relatedQueen = await fetchQueenById(relatedId)
-        if (!relatedQueen) return null
+    const { data: childrenData, error: childrenError } = await supabase
+      .from('queens')
+      .select('id, queen_number, marking_color, status, hives!queen_id(hive_number, apiaries(name))')
+      .eq('mother_id', targetQueenId)
+      .order('birth_date', { ascending: false })
 
-        if (displayedQueenIds.has(relatedQueen.id)) {
-          warnings.add(warningMessage)
-          return null
+    if (childrenError) throw childrenError
+
+    const children = (childrenData || [])
+      .map(extractQueenNode)
+      .filter((child) => {
+        if (displayedQueenIds.has(child.id)) {
+          warnings.add('Repeated descendant links were hidden in the lineage tree.')
+          return false
         }
 
-        displayedQueenIds.add(relatedQueen.id)
-        return relatedQueen
-      }
+        displayedQueenIds.add(child.id)
+        return true
+      })
 
-      const mother = await fetchUniqueRelation(
-        queen.mother_id,
-        'Repeated parent links were hidden in the lineage tree.'
-      )
-      const father = await fetchUniqueRelation(
-        queen.father_id,
-        'Repeated parent links were hidden in the lineage tree.'
-      )
-      const grandmother = mother
-        ? await fetchUniqueRelation(
-            mother.mother_id,
-            'Repeated ancestor links were hidden in the lineage tree.'
-          )
-        : null
-      const grandfather = mother
-        ? await fetchUniqueRelation(
-            mother.father_id,
-            'Repeated ancestor links were hidden in the lineage tree.'
-          )
-        : null
-      const greatGrandmother = grandmother
-        ? await fetchUniqueRelation(
-            grandmother.mother_id,
-            'Repeated ancestor links were hidden in the lineage tree.'
-          )
-        : null
-      const greatGrandfather = grandmother
-        ? await fetchUniqueRelation(
-            grandmother.father_id,
-            'Repeated ancestor links were hidden in the lineage tree.'
-          )
-        : null
-
-      // Fetch children (queens where mother_id = this queen)
-      const { data: childrenData, error: childrenError } = await supabase
+    let siblings: QueenNode[] = []
+    if (queen.mother_id) {
+      const { data: siblingsData, error: siblingsError } = await supabase
         .from('queens')
         .select('id, queen_number, marking_color, status, hives!queen_id(hive_number, apiaries(name))')
-        .eq('mother_id', queenId)
-        .order('birth_date', { ascending: false })
+        .eq('mother_id', queen.mother_id)
+        .neq('id', targetQueenId)
+        .limit(5)
 
-      if (childrenError) throw childrenError
+      if (siblingsError) throw siblingsError
 
-      const children = (childrenData || [])
+      siblings = (siblingsData || [])
         .map(extractQueenNode)
-        .filter((child) => {
-          if (displayedQueenIds.has(child.id)) {
-            warnings.add('Repeated descendant links were hidden in the lineage tree.')
+        .filter((sibling) => {
+          if (displayedQueenIds.has(sibling.id)) {
+            warnings.add('Repeated sibling links were hidden in the lineage tree.')
             return false
           }
 
-          displayedQueenIds.add(child.id)
+          displayedQueenIds.add(sibling.id)
           return true
         })
-
-      // Fetch siblings (same mother)
-      let siblings: QueenNode[] = []
-      if (queen.mother_id) {
-        const { data: siblingsData, error: siblingsError } = await supabase
-          .from('queens')
-          .select('id, queen_number, marking_color, status, hives!queen_id(hive_number, apiaries(name))')
-          .eq('mother_id', queen.mother_id)
-          .neq('id', queenId)
-          .limit(5)
-
-        if (siblingsError) throw siblingsError
-
-        siblings = (siblingsData || [])
-          .map(extractQueenNode)
-          .filter((sibling) => {
-            if (displayedQueenIds.has(sibling.id)) {
-              warnings.add('Repeated sibling links were hidden in the lineage tree.')
-              return false
-            }
-
-            displayedQueenIds.add(sibling.id)
-            return true
-          })
-      }
-
-      setLineage({
-        queen,
-        mother,
-        father,
-        grandmother,
-        grandfather,
-        greatGrandmother,
-        greatGrandfather,
-        children,
-        siblings,
-        warnings: Array.from(warnings),
-      })
-    } catch (err) {
-      console.error('Error fetching lineage:', err)
-      setError('Failed to load lineage data')
-    } finally {
-      setLoading(false)
     }
-  }, [fetchQueenById, queenId])
+
+    return {
+      queen,
+      mother,
+      father,
+      grandmother,
+      grandfather,
+      greatGrandmother,
+      greatGrandfather,
+      children,
+      siblings,
+      warnings: Array.from(warnings),
+    }
+  }, [fetchQueenById])
 
   useEffect(() => {
-    if (!expanded || !queenId) return
-    let stale = false
+    if (!expanded || !queenId) {
+      requestIdRef.current += 1
+      setLoading(false)
+      return
+    }
+
+    const requestId = requestIdRef.current + 1
+    requestIdRef.current = requestId
+    setLoading(true)
+    setError(null)
 
     const run = async () => {
-      await fetchLineage()
-      // If queenId changed while fetching, discard result by re-fetching on next effect
-      if (stale) {
+      try {
+        const nextLineage = await fetchLineage(queenId)
+        if (requestIdRef.current !== requestId) return
+
+        if (!nextLineage) {
+          setLineage(null)
+          setError('Failed to load lineage data')
+          return
+        }
+
+        setLineage(nextLineage)
+      } catch (err) {
+        if (requestIdRef.current !== requestId) return
+        console.error('Error fetching lineage:', err)
         setLineage(null)
+        setError('Failed to load lineage data')
+      } finally {
+        if (requestIdRef.current === requestId) {
+          setLoading(false)
+        }
       }
     }
+
     run()
 
-    return () => { stale = true }
+    return () => {
+      if (requestIdRef.current === requestId) {
+        requestIdRef.current += 1
+      }
+    }
   }, [expanded, queenId, fetchLineage])
 
   return (

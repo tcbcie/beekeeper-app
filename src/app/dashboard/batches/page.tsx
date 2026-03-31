@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X, Minus, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
@@ -174,11 +174,24 @@ const formatDateIrish = (dateString: string | null): string => {
  return `${day}/${month}/${year}`
 }
 
-type TabId = 'grafting' | 'nucs' | 'selection' | 'virgins' | 'planning' | 'manage_nucs' | 'reports'
+type TabId = 'grafting' | 'nucs' | 'manage_nucs' | 'virgins' | 'selection' | 'planning' | 'reports'
 
-const VALID_TABS: TabId[] = ['grafting', 'nucs', 'selection', 'virgins', 'planning', 'manage_nucs', 'reports']
+const TAB_CONFIG = [
+ { id: 'grafting', label: 'Grafting Batch' },
+ { id: 'nucs', label: 'Nuc Setup' },
+ { id: 'manage_nucs', label: 'Manage Nucs' },
+ { id: 'virgins', label: 'Queen Tracker' },
+ { id: 'selection', label: 'Selection' },
+ { id: 'planning', label: 'Planning' },
+ { id: 'reports', label: 'Reports' },
+] as const satisfies ReadonlyArray<{ id: TabId; label: string }>
+
+const VALID_TABS = new Set<TabId>(TAB_CONFIG.map((tab) => tab.id))
+const getValidTab = (tabParam: string | null): TabId =>
+ tabParam && VALID_TABS.has(tabParam as TabId) ? tabParam as TabId : 'grafting'
 
 export default function BatchesPage() {
+ const pathname = usePathname()
  const router = useRouter()
  const searchParams = useSearchParams()
  const toast = useToast()
@@ -209,17 +222,30 @@ export default function BatchesPage() {
  })
  }, [batches, filterStatus, filterYear])
 
- const tabParam = searchParams.get('tab')
- const initialTab: TabId = tabParam && VALID_TABS.includes(tabParam as TabId) ? tabParam as TabId : 'grafting'
- const [activeTab, setActiveTab] = useState<TabId>(initialTab)
+ const [activeTab, setActiveTab] = useState<TabId>(() => getValidTab(searchParams.get('tab')))
 
- // Sync active tab when URL ?tab= param changes (e.g. back button, deep-link navigation)
+ const setTab = useCallback((tab: TabId) => {
+ setActiveTab(tab)
+
+ const params = new URLSearchParams(searchParams.toString())
+ params.set('tab', tab)
+ const nextSearch = params.toString()
+ router.replace(nextSearch ? `${pathname}?${nextSearch}` : pathname, { scroll: false })
+ }, [pathname, router, searchParams])
+
  useEffect(() => {
- const urlTab = searchParams.get('tab')
- if (urlTab && VALID_TABS.includes(urlTab as TabId) && urlTab !== activeTab) {
- setActiveTab(urlTab as TabId)
+ const rawTab = searchParams.get('tab')
+ const nextTab = getValidTab(rawTab)
+ if (nextTab !== activeTab) {
+ setActiveTab(nextTab)
  }
- }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+
+ if (rawTab && rawTab !== nextTab) {
+ const params = new URLSearchParams(searchParams.toString())
+ params.set('tab', nextTab)
+ router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+ }
+ }, [activeTab, pathname, router, searchParams])
 
  // Selection tab states
  const [selectedApiary, setSelectedApiary] = useState<string>('all')
@@ -829,62 +855,17 @@ export default function BatchesPage() {
  <div className="border-b border-border">
  <div className="overflow-x-auto">
  <nav className="flex -mb-px min-w-max">
+ {TAB_CONFIG.map((tab) => (
  <NavTabButton
- onClick={() => setActiveTab('grafting')}
+ key={tab.id}
+ onClick={() => setTab(tab.id)}
  tone="blue"
  size="lg"
- active={activeTab === 'grafting'}
+ active={activeTab === tab.id}
  >
- Grafting Batch
+ {tab.label}
  </NavTabButton>
- <NavTabButton
- onClick={() => setActiveTab('nucs')}
- tone="blue"
- size="lg"
- active={activeTab === 'nucs'}
- >
- Nuc Setup
- </NavTabButton>
- <NavTabButton
- onClick={() => setActiveTab('selection')}
- tone="blue"
- size="lg"
- active={activeTab === 'selection'}
- >
- Selection
- </NavTabButton>
- <NavTabButton
- onClick={() => setActiveTab('virgins')}
- tone="blue"
- size="lg"
- active={activeTab === 'virgins'}
- >
- Queen Tracker
- </NavTabButton>
- <NavTabButton
- onClick={() => setActiveTab('planning')}
- tone="blue"
- size="lg"
- active={activeTab === 'planning'}
- >
- Planning
- </NavTabButton>
- <NavTabButton
- onClick={() => setActiveTab('manage_nucs')}
- tone="blue"
- size="lg"
- active={activeTab === 'manage_nucs'}
- >
- Manage NUCs
- </NavTabButton>
- <NavTabButton
- onClick={() => setActiveTab('reports')}
- tone="blue"
- size="lg"
- active={activeTab === 'reports'}
- >
- Reports
- </NavTabButton>
+ ))}
  </nav>
  </div>
  </div>
@@ -1661,7 +1642,7 @@ export default function BatchesPage() {
  <MatingNucsTab userId={userId} />
  )}
 
- {/* Manage NUCs Tab Content */}
+ {/* Manage Nucs Tab Content */}
  {activeTab === 'manage_nucs' && userId && (
  <ManageNucsTab userId={userId} />
  )}
@@ -2118,7 +2099,7 @@ export default function BatchesPage() {
  </div>
  )}
 
- {/* Virgin Queen Tracker Tab Content */}
+ {/* Queen Tracker Tab Content */}
  {activeTab === 'virgins' && userId && (
  <VirginQueenTrackerTab userId={userId} />
  )}

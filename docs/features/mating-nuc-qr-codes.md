@@ -12,19 +12,20 @@ Extends the existing QR tag system to support mating nucs alongside hives. Adds 
 
 ## Navigation Structure
 
-The Queen Rearing section contains six tabs:
+The Queen Rearing section contains seven tabs:
 
 | Tab | Purpose |
 |-----|---------|
 | Grafting Batch | Create and manage rearing batches |
 | **Nuc Setup** | Commission mating nucs with brood, queens, or cells |
+| **Manage Nucs** | Equipment inventory, QR codes, inspections |
+| **Queen Tracker** | Track virgin queen outcomes |
 | Selection | Breeder queen selection filters |
-| Virgin Queen Tracker | Track virgin queens |
 | Planning | Rearing schedule planning |
-| **Manage NUCs** | Equipment inventory, QR codes, inspections |
+| Reports | Review rearing and mating nuc reports |
 
 - The "Nuc Setup" tab (formerly "Mating Nucs") handles commissioning nucs within a batch context. Users can select from existing inventory nucs or enter a nuc number freely.
-- The "Manage NUCs" tab is the equipment inventory register. Users create nuc boxes here (nuc number + notes), manage equipment statuses, assign QR codes, and record inspections.
+- The "Manage Nucs" tab is the equipment inventory register. Users create nuc boxes here (nuc number + notes), manage equipment statuses, assign QR codes, and record inspections.
 
 ## How It Works
 
@@ -41,8 +42,8 @@ The Queen Rearing section contains six tabs:
 3. Displays nuc number, equipment status, queen-rearing status, and mating location
 4. Two quick actions: **View Details** and **New Inspection**
 
-### Equipment Management (Manage NUCs)
-1. Navigate to **Queen Rearing > Manage NUCs** tab
+### Equipment Management (Manage Nucs)
+1. Navigate to **Queen Rearing > Manage Nucs** tab
 2. Click **Add Nuc** to register a new physical nuc box (nuc number, optional notes, optional QR tag)
 3. New nucs are created with `is_inventory=true`, equipment status "Ready", and rearing status "Setup"
 4. Only nucs created via this tab appear here (distinguished by `is_inventory` flag)
@@ -76,7 +77,7 @@ The Queen Rearing section contains six tabs:
 **`mating_nucs` table — new columns:**
 - `equipment_status text NOT NULL DEFAULT 'active'`
 - CHECK constraint: `equipment_status IN ('active', 'ready', 'retired')`
-- `is_inventory boolean NOT NULL DEFAULT false` — distinguishes nucs registered as inventory (via Manage NUCs) from nucs created through the Nuc Setup commissioning flow
+- `is_inventory boolean NOT NULL DEFAULT false` — distinguishes nucs registered as inventory (via Manage Nucs) from nucs created through the Nuc Setup commissioning flow
 
 ### Tag Code Format
 - Hive tags: `HC-XXXXXX` (unchanged)
@@ -100,14 +101,14 @@ The old `/dashboard/mating-nucs` route redirects to `/dashboard/batches?tab=mana
 | `src/lib/qr-tags.ts` | Tag code generation with prefix parameter |
 | `src/components/mating-nucs/NucQRCode.tsx` | QR code display with download/print for nucs |
 | `src/components/batches/ManageNucsTab.tsx` | Equipment inventory tab component (QR codes, statuses, inspections) |
-| `src/app/dashboard/mating-nucs/page.tsx` | Redirect to Queen Rearing Manage NUCs tab |
-| `src/app/dashboard/batches/page.tsx` | Queen Rearing page (hosts Nuc Setup + Manage NUCs tabs) |
+| `src/app/dashboard/mating-nucs/page.tsx` | Redirect to Queen Rearing Manage Nucs tab |
+| `src/app/dashboard/batches/page.tsx` | Queen Rearing page (hosts Nuc Setup + Manage Nucs tabs) |
 | `src/app/dashboard/hive-scan/tag/[code]/page.tsx` | Scan landing page (extended with nuc branch) |
 | `src/app/dashboard/qr-tags/page.tsx` | QR tags management (extended with nuc tag support) |
 
 ## Deep-Linking
 
-The Manage NUCs tab supports URL parameters for deep-linking from the scan page:
+The Manage Nucs tab supports URL parameters for deep-linking from the scan page:
 - `/dashboard/batches?tab=manage_nucs&nuc={id}` — auto-expands the specified nuc card
 
 ## Verification
@@ -115,7 +116,7 @@ The Manage NUCs tab supports URL parameters for deep-linking from the scan page:
 1. Generate MN-XXXXXX tags on the QR Tags page
 2. Assign a tag to a mating nuc via the assign modal
 3. Open the scan URL in a browser — verify nuc info loads with 2 action buttons
-4. Navigate to Queen Rearing > Manage NUCs tab — verify all nucs listed with equipment statuses
+4. Navigate to Queen Rearing > Manage Nucs tab — verify all nucs listed with equipment statuses
 5. Change equipment status on a nuc (active/ready/retired)
 6. Download and print a mating nuc QR tag
 7. Test the deep-link: `/dashboard/batches?tab=manage_nucs&nuc={id}` auto-expands the card
