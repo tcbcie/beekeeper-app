@@ -25,6 +25,7 @@ Batch (graft date, breeder queen)
 - `Cell/Graft` dropdown only lists `sealed` cells from the selected batch
 - Track nuc through statuses: `setup`, `cell_introduced`, `virgin`, `mating`, `laying`, `failed`, `sold`, `merged`
 - Auto-sync nuc status **and** linked graft status from inspection queen status (see [nuc-inspection-status-sync.md](nuc-inspection-status-sync.md))
+- Mobile nuc cards stack their action tray below the main content and group key metadata into surfaced detail blocks so narrow screens stay readable
 
 ### "Grafted from" Queen Selection
 - Optional dropdown to select which queen the cells were grafted from
@@ -46,10 +47,10 @@ Batch (graft date, breeder queen)
 - Expandable inspection panel with inline add/edit
 - Inspection cards with badges for queen status, eggs, larvae, population, and temperament
 - Auto-syncs nuc status and linked batch graft status on new inspections:
-  - `virgin` → nuc `virgin`, graft `emerged`, sets `queen_emerged_at`
-  - `mated` → nuc `mating`, graft `mated`, sets `mating_confirmed_at`
-  - `laying` → nuc `laying`, graft `mated`, sets `mating_confirmed_at`
-  - `dead`/`missing` → nuc `failed`
+  - `virgin` -> nuc `virgin`, graft `emerged`, sets `queen_emerged_at`
+  - `mated` -> nuc `mating`, graft `mated`, sets `mating_confirmed_at`
+  - `laying` -> nuc `laying`, graft `mated`, sets `mating_confirmed_at`
+  - `dead`/`missing` -> nuc `failed`
 
 ### Distribution from Nuc Card
 - Distribute button appears on nucs with a linked graft in `virgin`, `mating`, or `laying` status
@@ -115,7 +116,7 @@ Used for cell eligibility:
 - Bulk create form (numbered and unnumbered modes)
 - Sealed-cell picker for bulk workflows
 - Bulk runs summary table with run-level list filtering
-- Nuc list, actions, and expandable inspections
+- Nuc list, responsive action trays, grouped mobile detail cards, and expandable inspections
 
 ### `src/hooks/useMatingNucBulk.ts`
 - Fetches bulk run rows
