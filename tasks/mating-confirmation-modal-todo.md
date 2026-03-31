@@ -9,7 +9,7 @@ When confirming mating on a distribution, show a modal to capture the mating dat
 ## Requirements
 1. For app users/group members: apiary dropdown + free text field (one mandatory)
 2. For external recipients: mandatory text field
-3. Show mating location in Virgin Queen Tracker instead of Owner column
+3. Show mating location in Queen Tracker instead of Owner column
 
 ## Implementation Steps
 
@@ -17,7 +17,7 @@ When confirming mating on a distribution, show a modal to capture the mating dat
 - [x] **Step 2:** Create `ConfirmMatingModal.tsx` component
 - [x] **Step 3:** Update `DistributionList.tsx` to show modal instead of direct toggle
 - [x] **Step 4:** Update `useBatchGrafts.ts` to handle the new flow
-- [x] **Step 5:** Update Virgin Queen Tracker to show Mating Location instead of Owner
+- [x] **Step 5:** Update Queen Tracker to show Mating Location instead of Owner
 
 ## Review
 
@@ -31,7 +31,7 @@ When confirming mating on a distribution, show a modal to capture the mating dat
 - `src/hooks/useBatchGrafts.ts` - Replaced `handleToggleMating` with `handleConfirmMating` and `handleClearMating`
 - `src/components/batches/DistributionList.tsx` - Added modal state, shows modal on check icon click
 - `src/components/batches/BatchGraftsSection.tsx` - Updated props to use new function names
-- `src/components/batches/VirginQueenTrackerTab.tsx` - Replaced Owner column with Mating Location
+- `src/components/batches/QueenTrackerTab.tsx` - Replaced Owner column with Mating Location
 
 ### Features
 - Modal shows apiary dropdown for app users (fetches recipient's apiaries)

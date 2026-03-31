@@ -15,7 +15,7 @@ import { initializeNotifications, scheduleBatchNotifications } from '@/lib/notif
 import MatingNucsTab from '@/components/batches/MatingNucsTab'
 import ManageNucsTab from '@/components/batches/ManageNucsTab'
 import BatchGraftsSection from '@/components/batches/BatchGraftsSection'
-import VirginQueenTrackerTab from '@/components/batches/VirginQueenTrackerTab'
+import QueenTrackerTab from '@/components/batches/QueenTrackerTab'
 import QueenRearingPlanningTab from '@/components/batches/QueenRearingPlanningTab'
 import NucReportsTab from '@/components/batches/NucReportsTab'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
@@ -2101,7 +2101,7 @@ export default function BatchesPage() {
 
  {/* Queen Tracker Tab Content */}
  {activeTab === 'virgins' && userId && (
- <VirginQueenTrackerTab userId={userId} />
+ <QueenTrackerTab userId={userId} />
  )}
 
  {/* Planning Tab Content */}
