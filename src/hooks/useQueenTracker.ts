@@ -226,8 +226,11 @@ export function useQueenTracker() {
 
         // Visibility check: user sees their own distributions OR is a group owner
         const isOwnDistribution = d.user_id === userId
-        const isGroupBatch = typeof batch.rearing_group_id === 'string' && batch.rearing_group_id.trim().length > 0
-        const isGroupOwner = isGroupBatch && ownedGroupIds.includes(batch.rearing_group_id)
+        const groupId = typeof batch.rearing_group_id === 'string'
+          ? batch.rearing_group_id.trim() || null
+          : null
+        const isGroupBatch = groupId !== null
+        const isGroupOwner = groupId !== null && ownedGroupIds.includes(groupId)
         const isVisibleNonGroupBatch = !isGroupBatch && batch.user_id === userId
 
         if (!isOwnDistribution && !isGroupOwner && !isVisibleNonGroupBatch) continue
@@ -303,7 +306,7 @@ export function useQueenTracker() {
           batch_name: batch.batch_name,
           graft_date: batch.graft_date,
           emergence_date: batch.emergence_date ?? null,
-          rearing_group_id: batch.rearing_group_id ?? null,
+          rearing_group_id: groupId,
           batch_owner_id: batch.user_id,
           batch_owner_name: batchOwnerName,
           mating_apiary_name: batchMatingApiary?.name ?? null,
