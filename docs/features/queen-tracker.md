@@ -84,13 +84,13 @@ The ledger totals now sit inside a collapsible summary strip that starts closed 
 ### Table Layout
 Each tracked queen now renders as a dense summary row with:
 - **Details:** Expand or collapse control in the first column so row inspection starts at the left edge
-- **Outcome actions:** `Overwintered` and `Hybridised` controls now sit directly beside `Details`, each with inline date entry
+- **Actions:** `Overwintered` and `Hybridised` now share one compact action column beside `Details`, with the two toggles stacked vertically for faster scanning
 - **Queen:** Cell title, compact marked and tagged indicators clustered beside it, an explicit `Age ...` summary line, and a selected-row treatment so the active row stays obvious
 - **Status:** Distribution type and lifecycle state in a tighter, narrower column
 - **Destination:** Recipient, recorded location, and distribution date
 
 Read-only member rows now use a distinct row treatment instead of a dedicated `Read only` badge in the Status column.
-Expanded rows now hold the broader queen record panels and supporting context, including group, member, batch, and latest weight.
+Expanded rows now hold the broader queen record panels and supporting context, including group, member, batch, latest weight, and the editable outcome dates.
 Read-only records still show their restricted-edit explanation inside the expanded Outcomes panel.
 Stage data is no longer surfaced in the Queen Ledger UI.
 
@@ -103,14 +103,14 @@ A record is considered mated when either:
 
 ### Overwintered
 - Three-state toggle: unknown, yes, no
-- Date defaults to the local calendar date when the user first sets an outcome, but it can then be edited directly from the ledger row
+- Date defaults to the local calendar date when the user first sets an outcome, but it can then be edited from the expanded Outcomes panel
 - Date is cleared when reset to unknown
-- The overwintered date editor is user-controlled, so members can correct historical outcome dates without reopening the wider record
+- The overwintered date editor is user-controlled inside the expanded record, so members can correct historical outcome dates without widening the main table
 - A write is only treated as successful when Supabase returns the updated row
 
 ### Hybridised
 - Three-state toggle: unknown, yes, no
-- When set to yes, `hybridisation_date` defaults to today and remains editable directly from the ledger row
+- When set to yes, `hybridisation_date` defaults to today and remains editable from the expanded Outcomes panel
 - When reset to no or unknown, the hybridisation date is cleared
 - Hybridisation date edits use the same per-row in-flight guard as the toggle path
 - The hybridisation date editor is controlled so failed writes revert to the persisted value, and cleared values no longer leave stale input state behind

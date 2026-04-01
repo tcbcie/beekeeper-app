@@ -56,12 +56,14 @@ function ThreeStateToggle({
   labels = { true: 'Yes', false: 'No', null: '?' },
   disabled = false,
   ariaLabel,
+  size = 'default',
 }: {
   value: boolean | null
   onChange: (newValue: boolean | null) => void
   labels?: { true: string; false: string; null: string }
   disabled?: boolean
   ariaLabel?: string
+  size?: 'default' | 'compact'
 }) {
   const cycle = () => {
     if (disabled) return
@@ -78,6 +80,10 @@ function ThreeStateToggle({
 
   const Icon = value === true ? Check : value === false ? X : HelpCircle
   const displayLabel = value === null ? labels.null : value ? labels.true : labels.false
+  const sizingClass = size === 'compact'
+    ? 'min-w-[4.15rem] px-2.5 py-1 text-xs'
+    : 'min-w-[4.75rem] px-3 py-1.5 text-sm'
+  const iconSize = size === 'compact' ? 12 : 14
 
   return (
     <button
@@ -86,34 +92,73 @@ function ThreeStateToggle({
       disabled={disabled}
       aria-pressed={value === true ? 'true' : value === false ? 'false' : 'mixed'}
       aria-label={ariaLabel ? `${ariaLabel}: ${displayLabel}` : displayLabel}
-      className={`inline-flex min-w-[4.75rem] items-center justify-center gap-1 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${bgColor} ${
+      className={`inline-flex items-center justify-center gap-1 rounded-full border font-medium transition-colors ${sizingClass} ${bgColor} ${
         disabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-85'
       }`}
       title={displayLabel}
     >
-      <Icon size={14} aria-hidden="true" />
+      <Icon size={iconSize} aria-hidden="true" />
       <span>{displayLabel}</span>
     </button>
   )
 }
 
-function OutcomeActionCell({
+function OutcomeActionStack({
+  overwintered,
+  hybridised,
+  disabled,
+  queenLabel,
+  onOverwinteredChange,
+  onHybridisationChange,
+}: {
+  overwintered: boolean | null
+  hybridised: boolean | null
+  disabled: boolean
+  queenLabel: string
+  onOverwinteredChange: (newValue: boolean | null) => void
+  onHybridisationChange: (newValue: boolean | null) => void
+}) {
+  return (
+    <div className="min-w-[9rem] space-y-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">Overwintered</span>
+        <ThreeStateToggle
+          value={overwintered}
+          onChange={onOverwinteredChange}
+          labels={{ true: 'Yes', false: 'No', null: '?' }}
+          disabled={disabled}
+          ariaLabel={`Queen ${queenLabel} overwintered`}
+          size="compact"
+        />
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">Hybridised</span>
+        <ThreeStateToggle
+          value={hybridised}
+          onChange={onHybridisationChange}
+          labels={{ true: 'Yes', false: 'No', null: '?' }}
+          disabled={disabled}
+          ariaLabel={`Queen ${queenLabel} hybridised`}
+          size="compact"
+        />
+      </div>
+    </div>
+  )
+}
+
+function OutcomeDateField({
   id,
-  value,
+  label,
   date,
   disabled,
   dateEnabled,
-  ariaLabel,
-  onValueChange,
   onDateChange,
 }: {
   id: string
-  value: boolean | null
+  label: string
   date: string | null
   disabled: boolean
   dateEnabled: boolean
-  ariaLabel: string
-  onValueChange: (newValue: boolean | null) => void
   onDateChange: (id: string, date: string) => Promise<boolean>
 }) {
   const [draftDate, setDraftDate] = useState(date || '')
@@ -136,14 +181,8 @@ function OutcomeActionCell({
   }, [date, dateEnabled, disabled, draftDate, id, onDateChange])
 
   return (
-    <div className="min-w-[8.75rem] space-y-2">
-      <ThreeStateToggle
-        value={value}
-        onChange={onValueChange}
-        labels={{ true: 'Yes', false: 'No', null: '?' }}
-        disabled={disabled}
-        ariaLabel={ariaLabel}
-      />
+    <div className="space-y-2">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
       <input
         type="date"
         value={dateEnabled ? draftDate : ''}
@@ -155,8 +194,11 @@ function OutcomeActionCell({
           }
         }}
         disabled={disabled || !dateEnabled}
-        className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-xs text-foreground shadow-sm disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
+        className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
       />
+      {!dateEnabled && (
+        <p className="text-xs text-text-secondary">Set the outcome first to record a date.</p>
+      )}
     </div>
   )
 }
@@ -228,10 +270,16 @@ function ExpandedTrackerRowContent({
   distribution,
   ownerDisplayName,
   isReadOnly,
+  isUpdating,
+  onOverwinteredDateChange,
+  onHybridisationDateChange,
 }: {
   distribution: DerivedTrackerRow
   ownerDisplayName: string
   isReadOnly: boolean
+  isUpdating: boolean
+  onOverwinteredDateChange: (id: string, date: string) => Promise<boolean>
+  onHybridisationDateChange: (id: string, date: string) => Promise<boolean>
 }) {
   return (
     <>
@@ -278,9 +326,34 @@ function ExpandedTrackerRowContent({
           />
           <DetailItem label="Mated date" value={formatOptionalDate(distribution.mating_confirmed_date)} />
           <DetailItem label="Overwintered" value={formatTriStateValue(distribution.overwintered)} />
-          <DetailItem label="Overwintered date" value={formatOptionalDate(distribution.overwintered_date)} />
+          {isReadOnly && (
+            <DetailItem label="Overwintered date" value={formatOptionalDate(distribution.overwintered_date)} />
+          )}
           <DetailItem label="Hybridised offspring" value={formatTriStateValue(distribution.offspring_hybridised)} />
-          <DetailItem label="Hybridisation date" value={formatOptionalDate(distribution.hybridisation_date)} />
+          {isReadOnly && (
+            <DetailItem label="Hybridisation date" value={formatOptionalDate(distribution.hybridisation_date)} />
+          )}
+
+          {!isReadOnly && (
+            <div className="space-y-3 rounded-2xl border border-border bg-surface px-3 py-3 dark:bg-surface-elevated">
+              <OutcomeDateField
+                id={distribution.id}
+                label="Record overwintered date"
+                date={distribution.overwintered_date}
+                disabled={isUpdating}
+                dateEnabled={distribution.overwintered !== null}
+                onDateChange={onOverwinteredDateChange}
+              />
+              <OutcomeDateField
+                id={distribution.id}
+                label="Record hybridisation date"
+                date={distribution.hybridisation_date}
+                disabled={isUpdating}
+                dateEnabled={distribution.offspring_hybridised === true}
+                onDateChange={onHybridisationDateChange}
+              />
+            </div>
+          )}
         </TrackerPanel>
       </div>
 
@@ -955,12 +1028,11 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       ) : (
         <div className="overflow-hidden rounded-[1.6rem] border border-border bg-surface shadow-sm dark:bg-surface-elevated/95">
           <div className="overflow-x-auto">
-            <table className="min-w-[84rem] w-full border-separate border-spacing-0 text-sm">
+            <table className="min-w-[70rem] w-full border-separate border-spacing-0 text-sm">
               <thead className="bg-surface-secondary/70 dark:bg-surface-elevated/85">
                 <tr>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Details</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Overwintered</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Hybridised</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Actions</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Queen</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Status</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Destination</th>
@@ -1026,31 +1098,17 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                           </button>
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <OutcomeActionCell
-                            id={distribution.id}
-                            value={distribution.overwintered}
-                            date={distribution.overwintered_date}
+                          <OutcomeActionStack
+                            overwintered={distribution.overwintered}
+                            hybridised={distribution.offspring_hybridised}
                             disabled={isUpdating || isReadOnly}
-                            dateEnabled={distribution.overwintered !== null}
-                            ariaLabel={`Queen ${distribution.queen_display_name} overwintered`}
-                            onValueChange={(value) => handleOverwinteredChange(distribution.id, value)}
-                            onDateChange={(id, date) => handleOverwinteredDateChange(id, distribution.overwintered, date)}
+                            queenLabel={distribution.queen_display_name}
+                            onOverwinteredChange={(value) => handleOverwinteredChange(distribution.id, value)}
+                            onHybridisationChange={(value) => handleHybridisationChange(distribution.id, value)}
                           />
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <OutcomeActionCell
-                            id={distribution.id}
-                            value={distribution.offspring_hybridised}
-                            date={distribution.hybridisation_date}
-                            disabled={isUpdating || isReadOnly}
-                            dateEnabled={distribution.offspring_hybridised === true}
-                            ariaLabel={`Queen ${distribution.queen_display_name} hybridised`}
-                            onValueChange={(value) => handleHybridisationChange(distribution.id, value)}
-                            onDateChange={handleHybridisationDateChange}
-                          />
-                        </td>
-                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <div className="min-w-[12rem] space-y-1.5">
+                          <div className="min-w-[11rem] space-y-1.5">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-semibold text-foreground">{distribution.queen_display_name}</p>
                               <div className="flex shrink-0 items-center gap-1.5">
@@ -1092,7 +1150,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                           </div>
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <div className="min-w-[9.5rem] space-y-1.5">
+                          <div className="min-w-[8.25rem] space-y-1.5">
                             <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.display_type_class}`}>
                               {distribution.display_type_label}
                             </span>
@@ -1102,7 +1160,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                           </div>
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <div className="min-w-[16rem]">
+                          <div className="min-w-[14rem]">
                             <p className="font-medium text-foreground">{distribution.recipient_display_name}</p>
                             <p className="mt-1 text-xs text-text-secondary">{distribution.destination_label}</p>
                             <p className="mt-1 text-xs text-text-secondary">Distributed {formatOptionalDate(distribution.distribution_date)}</p>
@@ -1112,7 +1170,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                       {isExpanded && (
                         <tr>
                           <td
-                            colSpan={6}
+                            colSpan={5}
                             className={`border-t border-border p-0 ${
                               isSelected
                                 ? 'bg-emerald-50/80 dark:bg-emerald-950/20'
@@ -1125,6 +1183,9 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                               distribution={distribution}
                               ownerDisplayName={ownerDisplayName}
                               isReadOnly={isReadOnly}
+                              isUpdating={isUpdating}
+                              onOverwinteredDateChange={(id, date) => handleOverwinteredDateChange(id, distribution.overwintered, date)}
+                              onHybridisationDateChange={handleHybridisationDateChange}
                             />
                           </td>
                         </tr>
