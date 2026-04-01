@@ -282,6 +282,12 @@ function getMotherQueenLabel(distribution: TrackedQueen): string {
   return parts.join(' / ')
 }
 
+function formatQueenTaggedValue(queenNumber: string | null): string | null {
+  const value = queenNumber?.trim()
+  if (!value) return null
+  return value.startsWith('#') ? value : `#${value}`
+}
+
 function buildDerivedRow(distribution: TrackedQueen, groupName: string): DerivedTrackerRow {
   const typeInfo = formatDistributionType(distribution.distribution_type)
   const lifecycleInfo = formatLifecycle(distribution)
@@ -292,7 +298,8 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
     distribution.mother_queen_birth_date ? getQueenColorFromYear(distribution.mother_queen_birth_date) : ''
   )
   const queenDisplayName = `Cell #${distribution.cell_number}`
-  const queenTaggedLabel = distribution.queen_number ? `Queen Tagged ${distribution.queen_number}` : null
+  const queenTaggedValue = formatQueenTaggedValue(distribution.queen_number)
+  const queenTaggedLabel = queenTaggedValue ? `Queen Tagged (${queenTaggedValue})` : null
   const markingStatusLabel = distribution.queen_marked
     ? markingColour
       ? `Marked (${markingColour})`
@@ -681,7 +688,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                 <div className={isExpanded ? 'block' : 'hidden'}>
                   <div className="grid gap-4 p-4 sm:p-5 xl:grid-cols-2 2xl:grid-cols-4">
                     <TrackerPanel title="Queen Record" icon={Crown}>
-                      <DetailItem label="Queen Tagged" value={distribution.queen_number || '-'} />
+                      <DetailItem label="Queen Tagged" value={formatQueenTaggedValue(distribution.queen_number) || '-'} />
                       <DetailItem label="Cell number" value={`#${distribution.cell_number}`} />
                       <DetailItem label="Marking" value={distribution.marking_status_label} />
                       <DetailItem label="Age" value={distribution.queen_age_label} />

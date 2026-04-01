@@ -174,13 +174,13 @@ const formatDateIrish = (dateString: string | null): string => {
  return `${day}/${month}/${year}`
 }
 
-type TabId = 'grafting' | 'nucs' | 'manage_nucs' | 'virgins' | 'selection' | 'planning' | 'reports'
+type TabId = 'grafting' | 'nucs' | 'manage_nucs' | 'queens' | 'selection' | 'planning' | 'reports'
 
 const TAB_CONFIG = [
  { id: 'grafting', label: 'Grafting Batch' },
  { id: 'nucs', label: 'Nuc Setup' },
  { id: 'manage_nucs', label: 'Manage Nucs' },
- { id: 'virgins', label: 'Queen Tracker' },
+ { id: 'queens', label: 'Queen Tracker' },
  { id: 'selection', label: 'Selection' },
  { id: 'planning', label: 'Planning' },
  { id: 'reports', label: 'Reports' },
@@ -2100,7 +2100,7 @@ export default function BatchesPage() {
  )}
 
  {/* Queen Tracker Tab Content */}
- {activeTab === 'virgins' && userId && (
+ {activeTab === 'queens' && userId && (
  <QueenTrackerTab userId={userId} />
  )}
 
