@@ -3,7 +3,7 @@
 **Status:** Implemented
 
 ## 1. Overview
-The Queen Tracker is the `Queen Tracker` tab on the Queen Rearing page (`/dashboard/batches`). It follows queens distributed from visible rearing-group batches and from the current user’s non-group batches, and presents each one as a fuller queen record rather than a narrow distribution row.
+The Queen Tracker is the `Queen Tracker` tab on the Queen Rearing page (`/dashboard/batches`). It follows queens distributed from visible rearing-group batches and from the current user's non-group batches, and presents each one as a fuller queen record rather than a narrow distribution row.
 
 The tracker now combines:
 - Queen identity context such as cell number, queen tagged number, marking state, recorded marking colour where marked, age, latest weight, and current graft stage
@@ -13,7 +13,7 @@ The tracker now combines:
 
 ## 2. Scope & Simplicity
 * **In Scope:**
-  - Track queen cell, virgin queen, and mated queen distributions from visible group-linked batches and from the current user’s non-group batches
+  - Track queen cell, virgin queen, and mated queen distributions from visible group-linked batches and from the current user's non-group batches
   - Surface the fuller set of existing queen, batch, breeder, recipient, and outcome details already available in the system
   - Present the tracker as a queen-led responsive ledger with grouped sections instead of a cramped desktop table
   - Provide dynamic `Group -> Member -> Batch` filtering, alongside the existing year and status filters
@@ -48,7 +48,8 @@ The tracker now uses broader joins and mapping over existing tables:
 
 The tracker now resolves group ownership from `rearing_groups.owner_id`, matching the rest of the rearing-group feature instead of inferring ownership from membership-role rows alone.
 The ledger visibility path now normalises nullable group IDs before owner checks so the non-group branch stays explicit and the hook remains build-safe.
-Non-group batches are intentionally limited to the current user’s own ledger rows.
+The ledger also normalises the batch owner profile join before deriving `batch_owner_name`, so the `Member` filter shows the real distributing member name when profile data exists.
+Non-group batches are intentionally limited to the current user's own ledger rows.
 
 ## 4. Visibility Rules
 - **Group members:** See their own distributions from group-linked batches

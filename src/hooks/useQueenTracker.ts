@@ -250,6 +250,10 @@ export function useQueenTracker() {
         }>)
         const apiary = firstJoinedRecord(d.apiaries as JoinedRecord<{ name: string | null; eircode: string | null }>)
         const hive = firstJoinedRecord(d.hives as JoinedRecord<{ hive_number: string | null }>)
+        const batchOwnerProfile = firstJoinedRecord(batch.profiles as JoinedRecord<{
+          first_name: string | null
+          last_name: string | null
+        }>)
         const batchMatingApiary = firstJoinedRecord(batch.apiaries as JoinedRecord<{ name: string | null; eircode: string | null }>)
         const motherQueen = firstJoinedRecord(batch.queens as JoinedRecord<{
           queen_number: string | null
@@ -260,7 +264,6 @@ export function useQueenTracker() {
         const latestWeight = latestWeights.get(graftId)
 
         // Build batch owner name
-        const batchOwnerProfile = batch.profiles
         const batchOwnerName = batchOwnerProfile
           ? `${batchOwnerProfile.first_name || ''} ${batchOwnerProfile.last_name || ''}`.trim() || null
           : null
