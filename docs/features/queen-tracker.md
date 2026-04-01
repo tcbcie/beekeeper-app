@@ -70,7 +70,7 @@ The tracker now resolves group ownership from `rearing_groups.owner_id`, matchin
 
 ### Queen Record Layout
 Each tracked queen now renders as a responsive record with:
-- **Header:** Distribution type, lifecycle state, group, cell title, marking summary, optional `Queen Tagged` badge, and latest weight summary. `mated_queen` rows now use the type badge text `Distributed as mated` so it remains distinct from the lifecycle `Mated` badge. Queens show `Marked (White)` style wording only when `queen_marked` is true, otherwise the tracker shows `Unmarked`.
+- **Header:** Distribution type, lifecycle state, group, cell title, marking summary, optional `Queen Tagged (#xx)` badge, and latest weight summary. `mated_queen` rows now use the type badge text `Distributed as mated` so it remains distinct from the lifecycle `Mated` badge. Queens show `Marked (White)` style wording only when `queen_marked` is true, otherwise the tracker shows `Unmarked`.
 - **Queen Record panel:** Queen tagged number, cell number, marking status, age, latest weight, current graft stage, and stage date
 - **Breeding Context panel:** Batch, breeder, mother queen, mother marking, mother age, graft date, emergence date, and source mating apiary
 - **Destination panel:** Recipient, contact details, recipient apiary or hive, recorded location, distribution date, and notes
