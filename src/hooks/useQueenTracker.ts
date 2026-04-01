@@ -13,6 +13,9 @@ export interface TrackedQueen {
   mating_confirmed: boolean
   mating_confirmed_date: string | null
   mating_location: string | null
+  queen_failed: boolean
+  queen_failed_date: string | null
+  queen_failure_comment: string | null
   overwintered: boolean | null
   overwintered_date: string | null
   offspring_hybridised: boolean | null
@@ -322,6 +325,9 @@ export function useQueenTracker() {
           mating_confirmed: d.mating_confirmed === true,
           mating_confirmed_date: d.mating_confirmed_date as string | null,
           mating_location: d.mating_location as string | null,
+          queen_failed: d.queen_failed === true,
+          queen_failed_date: d.queen_failed_date as string | null,
+          queen_failure_comment: d.queen_failure_comment as string | null,
           overwintered: d.overwintered as boolean | null,
           overwintered_date: d.overwintered_date as string | null,
           offspring_hybridised: d.offspring_hybridised as boolean | null,
@@ -453,12 +459,67 @@ export function useQueenTracker() {
     }
   }, [])
 
+  const updateFailure = useCallback(async (
+    id: string,
+    value: boolean,
+    date?: string | null,
+    comment?: string | null
+  ): Promise<boolean> => {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      console.error('Invalid distribution ID for failure update')
+      return false
+    }
+    if (value && typeof date === 'string' && date !== '' && !isValidDateOnly(date)) {
+      console.error('Invalid failure date provided:', date)
+      return false
+    }
+
+    const normalisedComment = typeof comment === 'string'
+      ? comment.trim() || null
+      : null
+
+    if (normalisedComment && normalisedComment.length > 280) {
+      console.error('Failure comment exceeds 280 characters')
+      return false
+    }
+
+    try {
+      const today = getTodayLocalDate()
+      const resolvedDate = value
+        ? date === undefined
+          ? today
+          : date
+        : null
+
+      const { data, error } = await supabase
+        .from('graft_distributions')
+        .update({
+          queen_failed: value,
+          queen_failed_date: resolvedDate,
+          queen_failure_comment: value ? normalisedComment : null,
+        })
+        .eq('id', id)
+        .select('id')
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data?.id) {
+        console.warn('No permitted distribution row found for failure update:', id)
+        return false
+      }
+      return true
+    } catch (err) {
+      console.error('Error updating queen failure status:', err)
+      return false
+    }
+  }, [])
+
   const calculateStats = useCallback((data: TrackedQueen[]): QueenTrackerStats => {
     return {
       total: data.length,
       mated: data.filter((d) => d.mating_confirmed || d.distribution_type === 'mated_queen').length,
       overwintered: data.filter((d) => d.overwintered === true).length,
-      failed: data.filter((d) => d.overwintered === false).length,
+      failed: data.filter((d) => d.queen_failed === true).length,
       hybridised: data.filter((d) => d.offspring_hybridised === true).length,
     }
   }, [])
@@ -466,13 +527,13 @@ export function useQueenTracker() {
   const filterByStatus = useCallback((data: TrackedQueen[], status: StatusFilter): TrackedQueen[] => {
     switch (status) {
       case 'pending':
-        return data.filter((d) => !d.mating_confirmed && d.distribution_type !== 'mated_queen')
+        return data.filter((d) => !d.queen_failed && !d.mating_confirmed && d.distribution_type !== 'mated_queen' && d.overwintered === null)
       case 'mated':
-        return data.filter((d) => (d.mating_confirmed || d.distribution_type === 'mated_queen') && d.overwintered === null)
+        return data.filter((d) => !d.queen_failed && (d.mating_confirmed || d.distribution_type === 'mated_queen') && d.overwintered === null)
       case 'overwintered':
-        return data.filter((d) => d.overwintered === true)
+        return data.filter((d) => !d.queen_failed && d.overwintered === true)
       case 'failed':
-        return data.filter((d) => d.overwintered === false)
+        return data.filter((d) => d.queen_failed === true)
       default:
         return data
     }
@@ -513,6 +574,7 @@ export function useQueenTracker() {
     fetchDistributions,
     updateOverwintered,
     updateHybridisation,
+    updateFailure,
     calculateStats,
     filterByStatus,
     filterByYear,
