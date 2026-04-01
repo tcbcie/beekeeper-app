@@ -21,7 +21,7 @@ The NIHBS monthly report auto-calculates external distribution counts from these
 | recipient_hive_id | UUID | FK to hives (optional) — destination hive (app users only) |
 | distribution_date | DATE | When distributed (defaults to today) |
 | mating_confirmed | BOOLEAN | Whether the virgin queen mated successfully |
-| mating_confirmed_date | DATE | Date mating was confirmed (set automatically to today when toggled on, cleared to NULL when toggled off) |
+| mating_confirmed_date | DATE | Date mating was confirmed (defaults to the chosen confirmation date, and can be adjusted later from the batch table or Queen Ledger) |
 | notes | TEXT | Optional notes |
 | user_id | UUID | FK to auth.users — who created the record |
 | created_at | TIMESTAMPTZ | Record creation timestamp |
@@ -89,6 +89,7 @@ A legend showing only the recipient types present in the current batch appears n
 
 **Other features:**
 - Mating confirmed toggle (for queen cell/virgin queen distributions) — when confirmed, the confirmed date is shown in green ("Mated: DD/MM/YYYY"); toggling off clears the date
+- The same `mating_confirmed` and `mating_confirmed_date` fields are now also editable from the Queen Ledger, so the batch distributions table reflects those updates on the next fetch without a second data model
 - Delete button to remove distribution and revert graft status
 
 ### Bulk Operations
@@ -162,7 +163,7 @@ Second round of defensive improvements from a full code audit:
 
 - **Stale closure guard** — `QueenTrackerTab` concurrent update guard now uses a `useRef` instead of state closure, preventing rapid double-clicks from bypassing the in-flight check
 - **Optimistic update rollback** — `useBatchGrafts` queen marked, status date, and queen number optimistic updates now revert local state on Supabase error
-- **Accurate mated counter** — `queens_mated` batch counter now excludes `sold` grafts distributed as `queen_cell` (unmated), using distribution type data
+- **Accurate mated counter** — `queens_mated` batch counter now only treats sold distributions as mated when they are `mated_queen` rows or have an explicit `mating_confirmed = true` confirmation
 - **Dead code removal** — Removed unused `toggleMatingConfirmed` from `useGraftDistributions`
 - **Timezone-safe birth date** — `deriveBirthDate` now appends `T00:00:00` to date parse, matching codebase convention
 - **DRY date formatting** — `QueenTrackerTab` now imports `formatDateIrish` from `graftConstants` instead of duplicating

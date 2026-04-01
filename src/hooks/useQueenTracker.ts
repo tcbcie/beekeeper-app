@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
+import { setDistributionMatingConfirmation, updateDistributionMatingDate } from '@/hooks/useGraftDistributions'
 
 export interface TrackedQueen {
   id: string
@@ -70,6 +71,9 @@ type TrackedQueenPatch = {
   id: string
 } & Partial<Pick<
   TrackedQueen,
+  | 'mating_confirmed'
+  | 'mating_confirmed_date'
+  | 'mating_location'
   | 'overwintered'
   | 'overwintered_date'
   | 'offspring_hybridised'
@@ -486,6 +490,66 @@ export function useQueenTracker() {
     }
   }, [applyTrackedQueenPatch])
 
+  const updateMating = useCallback(async (id: string, value: boolean, date?: string | null): Promise<boolean> => {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      console.error('Invalid distribution ID for mating update')
+      return false
+    }
+
+    const normalisedDate = normaliseDateOnlyInput(date)
+    if (value && typeof normalisedDate === 'string' && !isValidDateOnly(normalisedDate)) {
+      console.error('Invalid mating date provided:', normalisedDate)
+      return false
+    }
+
+    const result = await setDistributionMatingConfirmation(id, {
+      confirmed: value,
+      matingDate: normalisedDate,
+    })
+
+    if (!result?.id) {
+      console.warn('No permitted distribution row found for mating update:', id)
+      return false
+    }
+
+    applyTrackedQueenPatch({
+      id: result.id,
+      mating_confirmed: result.mating_confirmed,
+      mating_confirmed_date: result.mating_confirmed_date,
+      mating_location: result.mating_location,
+    })
+
+    return true
+  }, [applyTrackedQueenPatch])
+
+  const updateMatingDate = useCallback(async (id: string, date: string): Promise<boolean> => {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      console.error('Invalid distribution ID for mating date update')
+      return false
+    }
+
+    const trimmedDate = date.trim()
+    if (!trimmedDate || !isValidDateOnly(trimmedDate)) {
+      console.error('Invalid mating date provided:', date)
+      return false
+    }
+
+    const result = await updateDistributionMatingDate(id, trimmedDate)
+    if (!result?.id) {
+      console.warn('No permitted distribution row found for mating date update:', id)
+      return false
+    }
+
+    applyTrackedQueenPatch({
+      id: result.id,
+      mating_confirmed: result.mating_confirmed,
+      mating_confirmed_date: result.mating_confirmed_date,
+      mating_location: result.mating_location,
+    })
+
+    return true
+  }, [applyTrackedQueenPatch])
+
   const updateOverwinteredDate = useCallback(async (id: string, date: string | null): Promise<boolean> => {
     if (!id || typeof id !== 'string' || id.trim() === '') {
       console.error('Invalid distribution ID for overwintered date update')
@@ -800,6 +864,8 @@ export function useQueenTracker() {
     loading,
     error,
     fetchDistributions,
+    updateMating,
+    updateMatingDate,
     updateOverwintered,
     updateOverwinteredDate,
     updateHybridisation,

@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getQueenColorFromYear } from '@/types/queen'
+import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
 
 export interface GraftDistribution {
   id: string
@@ -34,6 +35,11 @@ export interface GraftDistribution {
   external_recipient_location: string | null
   mating_location: string | null
 }
+
+export type DistributionMatingUpdate = Pick<
+  GraftDistribution,
+  'id' | 'mating_confirmed' | 'mating_confirmed_date' | 'mating_location'
+>
 
 export interface RecipientUser {
   id: string
@@ -96,6 +102,143 @@ interface BatchDetails {
   distributedByName: string | null
   motherQueenSnapshot: string | null
   motherQueenSubspecies: string | null
+}
+
+function isValidDateOnly(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const parsed = parseLocalDate(value)
+  return !Number.isNaN(parsed.getTime()) && toLocalDateString(parsed) === value
+}
+
+function getTodayLocalDate(): string {
+  return toLocalDateString(new Date())
+}
+
+function normaliseDateOnlyInput(value?: string | null): string | null | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return null
+
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
+}
+
+function normaliseOptionalText(value?: string | null): string | null | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return null
+
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
+}
+
+export async function setDistributionMatingConfirmation(
+  id: string,
+  {
+    confirmed,
+    matingDate,
+    matingLocation,
+    clearLocationOnClear = true,
+  }: {
+    confirmed: boolean
+    matingDate?: string | null
+    matingLocation?: string | null
+    clearLocationOnClear?: boolean
+  }
+): Promise<DistributionMatingUpdate | null> {
+  if (!id || typeof id !== 'string' || id.trim() === '') {
+    console.error('Invalid distribution ID for mating confirmation')
+    return null
+  }
+
+  const normalisedDate = normaliseDateOnlyInput(matingDate)
+  const normalisedLocation = normaliseOptionalText(matingLocation)
+  const resolvedDate = confirmed
+    ? typeof normalisedDate === 'string'
+      ? normalisedDate
+      : getTodayLocalDate()
+    : null
+
+  if (confirmed && !isValidDateOnly(resolvedDate)) {
+    console.error('Invalid mating date supplied:', resolvedDate)
+    return null
+  }
+
+  const updateData: Record<string, unknown> = {
+    mating_confirmed: confirmed,
+    mating_confirmed_date: resolvedDate,
+  }
+
+  if (confirmed) {
+    if (normalisedLocation !== undefined) {
+      updateData.mating_location = normalisedLocation
+    }
+  } else if (clearLocationOnClear) {
+    updateData.mating_location = null
+  } else if (normalisedLocation !== undefined) {
+    updateData.mating_location = normalisedLocation
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('graft_distributions')
+      .update(updateData)
+      .eq('id', id)
+      .select('id, mating_confirmed, mating_confirmed_date, mating_location')
+      .maybeSingle()
+
+    if (error) throw error
+    if (!data?.id) return null
+
+    return {
+      id: data.id,
+      mating_confirmed: data.mating_confirmed === true,
+      mating_confirmed_date: data.mating_confirmed_date as string | null,
+      mating_location: data.mating_location as string | null,
+    }
+  } catch (err) {
+    console.error('Error updating mating confirmation:', err)
+    return null
+  }
+}
+
+export async function updateDistributionMatingDate(
+  id: string,
+  matingDate: string
+): Promise<DistributionMatingUpdate | null> {
+  if (!id || typeof id !== 'string' || id.trim() === '') {
+    console.error('Invalid distribution ID for mating date update')
+    return null
+  }
+
+  const normalisedDate = normaliseDateOnlyInput(matingDate)
+  if (typeof normalisedDate !== 'string' || !isValidDateOnly(normalisedDate)) {
+    console.error('Invalid mating date supplied:', matingDate)
+    return null
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('graft_distributions')
+      .update({
+        mating_confirmed_date: normalisedDate,
+      })
+      .eq('id', id)
+      .eq('mating_confirmed', true)
+      .select('id, mating_confirmed, mating_confirmed_date, mating_location')
+      .maybeSingle()
+
+    if (error) throw error
+    if (!data?.id) return null
+
+    return {
+      id: data.id,
+      mating_confirmed: data.mating_confirmed === true,
+      mating_confirmed_date: data.mating_confirmed_date as string | null,
+      mating_location: data.mating_location as string | null,
+    }
+  } catch (err) {
+    console.error('Error updating mating date:', err)
+    return null
+  }
 }
 
 /** Derive queen birth date: emergence_date, falling back to graft_date + 12 days. */
@@ -464,67 +607,26 @@ export function useGraftDistributions() {
     matingDate: string,
     matingLocation: string
   ): Promise<boolean> => {
-    // Validate required fields
-    if (!id || typeof id !== 'string' || id.trim() === '') {
-      console.error('Invalid distribution ID for mating confirmation')
-      return false
-    }
-    if (!matingDate || typeof matingDate !== 'string') {
-      console.error('Invalid mating date')
-      return false
-    }
-    // Validate date format (YYYY-MM-DD)
-    const dateObj = new Date(matingDate + 'T00:00:00')
-    if (isNaN(dateObj.getTime())) {
-      console.error('Invalid date format for mating confirmation')
-      return false
-    }
     if (!matingLocation || !matingLocation.trim()) {
       console.error('Missing mating location')
       return false
     }
 
-    try {
-      const { error } = await supabase
-        .from('graft_distributions')
-        .update({
-          mating_confirmed: true,
-          mating_confirmed_date: matingDate,
-          mating_location: matingLocation.trim(),
-        })
-        .eq('id', id)
+    const result = await setDistributionMatingConfirmation(id, {
+      confirmed: true,
+      matingDate,
+      matingLocation,
+    })
 
-      if (error) throw error
-      return true
-    } catch (err) {
-      console.error('Error confirming mating with location:', err)
-      return false
-    }
+    return Boolean(result?.id)
   }, [])
 
   const clearMatingConfirmation = useCallback(async (id: string): Promise<boolean> => {
-    // Validate ID before update
-    if (!id || typeof id !== 'string' || id.trim() === '') {
-      console.error('Invalid distribution ID for clearing mating confirmation')
-      return false
-    }
+    const result = await setDistributionMatingConfirmation(id, {
+      confirmed: false,
+    })
 
-    try {
-      const { error } = await supabase
-        .from('graft_distributions')
-        .update({
-          mating_confirmed: false,
-          mating_confirmed_date: null,
-          mating_location: null,
-        })
-        .eq('id', id)
-
-      if (error) throw error
-      return true
-    } catch (err) {
-      console.error('Error clearing mating confirmation:', err)
-      return false
-    }
+    return Boolean(result?.id)
   }, [])
 
   const searchUsers = useCallback(async (searchText: string): Promise<RecipientUser[]> => {

@@ -170,8 +170,16 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     if (loading) return
     const accepted = grafts.length === 0 ? 0 : grafts.filter(g => !['grafted', 'failed'].includes(g.status)).length
     const hatched = grafts.length === 0 ? 0 : grafts.filter(g => ['emerged', 'in_nuc', 'mated', 'sold'].includes(g.status)).length
-    const queenCellGraftIds = new Set(distributions.filter(d => d.distribution_type === 'queen_cell').map(d => d.graft_id))
-    const mated = grafts.length === 0 ? 0 : grafts.filter(g => g.status === 'mated' || (g.status === 'sold' && !queenCellGraftIds.has(g.id))).length
+    const distributionByGraftId = new Map(distributions.map((distribution) => [distribution.graft_id, distribution]))
+    const mated = grafts.length === 0 ? 0 : grafts.filter((graft) => {
+      if (graft.status === 'mated') return true
+      if (graft.status !== 'sold') return false
+
+      const distribution = distributionByGraftId.get(graft.id)
+      if (!distribution) return false
+
+      return distribution.distribution_type === 'mated_queen' || distribution.mating_confirmed
+    }).length
 
     const cb = onCountsChangeRef.current
     if (cb) cb({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated })

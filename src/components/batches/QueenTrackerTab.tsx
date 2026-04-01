@@ -109,28 +109,56 @@ function ThreeStateToggle({
 }
 
 function OutcomeActionStack({
+  showMatedAction,
+  mated,
   overwintered,
   hybridised,
   failed,
+  matingDisabled,
   outcomeDisabled,
   failureDisabled,
   queenLabel,
+  onMatingToggle,
   onOverwinteredChange,
   onHybridisationChange,
   onFailureToggle,
 }: {
+  showMatedAction: boolean
+  mated: boolean
   overwintered: boolean | null
   hybridised: boolean | null
   failed: boolean
+  matingDisabled: boolean
   outcomeDisabled: boolean
   failureDisabled: boolean
   queenLabel: string
+  onMatingToggle: () => void
   onOverwinteredChange: (newValue: boolean | null) => void
   onHybridisationChange: (newValue: boolean | null) => void
   onFailureToggle: () => void
 }) {
   return (
     <div className="min-w-[7.75rem] space-y-2">
+      {showMatedAction && (
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">Mated</span>
+          <button
+            type="button"
+            onClick={onMatingToggle}
+            disabled={matingDisabled}
+            aria-pressed={mated}
+            aria-label={`Queen ${queenLabel} mating status: ${mated ? 'Confirmed' : 'Pending mating'}`}
+            className={`inline-flex min-w-[4.15rem] items-center justify-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+              mated
+                ? 'border-green-300 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-900/50 dark:text-green-300'
+                : 'border-border bg-surface-secondary text-text-secondary dark:bg-surface-elevated'
+            } ${matingDisabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-85'}`}
+          >
+            <Check size={12} aria-hidden="true" />
+            <span>{mated ? 'Clear' : 'Mark'}</span>
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">Overwintered</span>
         <ThreeStateToggle
@@ -356,11 +384,16 @@ function formatTriStateValue(value: boolean | null): string {
   return '?'
 }
 
+function isMatedDistribution(distribution: TrackedQueen): boolean {
+  return distribution.mating_confirmed || distribution.distribution_type === 'mated_queen'
+}
+
 function ExpandedTrackerRowContent({
   distribution,
   ownerDisplayName,
   isReadOnly,
   isUpdating,
+  onMatingDateChange,
   onOverwinteredDateChange,
   onHybridisationDateChange,
   onFailureDateChange,
@@ -370,6 +403,7 @@ function ExpandedTrackerRowContent({
   ownerDisplayName: string
   isReadOnly: boolean
   isUpdating: boolean
+  onMatingDateChange: (id: string, date: string) => Promise<boolean>
   onOverwinteredDateChange: (id: string, date: string) => Promise<boolean>
   onHybridisationDateChange: (id: string, date: string) => Promise<boolean>
   onFailureDateChange: (id: string, date: string) => Promise<boolean>
@@ -417,9 +451,10 @@ function ExpandedTrackerRowContent({
 
           <DetailItem
             label="Mated"
-            value={distribution.mating_confirmed || distribution.distribution_type === 'mated_queen' ? 'Confirmed' : 'Pending'}
+            value={isMatedDistribution(distribution) ? 'Confirmed' : 'Pending'}
           />
           <DetailItem label="Mated date" value={formatOptionalDate(distribution.mating_confirmed_date)} />
+          <DetailItem label="Mated location" value={distribution.mating_location || '-'} />
           <DetailItem label="Failed" value={distribution.queen_failed ? 'Yes' : 'No'} />
           {isReadOnly && distribution.queen_failed && (
             <DetailItem label="Failure date" value={formatOptionalDate(distribution.queen_failed_date)} />
@@ -438,6 +473,17 @@ function ExpandedTrackerRowContent({
 
           {!isReadOnly && (
             <div className="space-y-3 rounded-2xl border border-border bg-surface px-3 py-3 dark:bg-surface-elevated">
+              {distribution.distribution_type !== 'mated_queen' && (
+                <OutcomeDateField
+                  id={distribution.id}
+                  label="Record mated date"
+                  date={distribution.mating_confirmed_date}
+                  disabled={isUpdating}
+                  dateEnabled={distribution.mating_confirmed}
+                  disabledMessage="Mark the queen as mated to record a date."
+                  onDateChange={onMatingDateChange}
+                />
+              )}
               <OutcomeDateField
                 id={distribution.id}
                 label="Record failure date"
@@ -719,6 +765,8 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     loading,
     error,
     fetchDistributions,
+    updateMating,
+    updateMatingDate,
     updateOverwintered,
     updateOverwinteredDate,
     updateHybridisation,
@@ -920,6 +968,59 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       })
     }
   }, [updateOverwintered, toast])
+
+  const handleMatingToggle = useCallback(async (id: string, currentValue: boolean) => {
+    if (updatingIdsRef.current.has(id)) return
+
+    const nextValue = !currentValue
+
+    setUpdatingIds((prev) => new Set(prev).add(id))
+    try {
+      const success = await updateMating(id, nextValue)
+      if (success) {
+        toast.success(nextValue ? 'Mating confirmed' : 'Mating confirmation cleared')
+        if (nextValue) {
+          setSelectedId(id)
+          setExpandedId(id)
+        }
+      } else {
+        toast.error('Failed to update mating status')
+      }
+    } finally {
+      setUpdatingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }, [updateMating, toast])
+
+  const handleMatingDateChange = useCallback(async (id: string, date: string): Promise<boolean> => {
+    if (updatingIdsRef.current.has(id)) return false
+
+    const nextDate = date.trim()
+    if (nextDate === '') {
+      toast.error('Mated date is required while mating remains confirmed')
+      return false
+    }
+
+    setUpdatingIds((prev) => new Set(prev).add(id))
+    try {
+      const success = await updateMatingDate(id, nextDate)
+      if (success) {
+        toast.success('Mated date updated')
+      } else {
+        toast.error('Failed to update mated date')
+      }
+      return success
+    } finally {
+      setUpdatingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }, [updateMatingDate, toast])
 
   const handleOverwinteredDateChange = useCallback(async (id: string, date: string): Promise<boolean> => {
     if (updatingIdsRef.current.has(id)) return false
@@ -1354,12 +1455,16 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                         </td>
                         <td className={`border-t border-border pl-2 pr-3 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
                           <OutcomeActionStack
+                            showMatedAction={distribution.distribution_type !== 'mated_queen'}
+                            mated={distribution.mating_confirmed}
                             overwintered={distribution.overwintered}
                             hybridised={distribution.offspring_hybridised}
                             failed={distribution.queen_failed}
+                            matingDisabled={isUpdating || isReadOnly}
                             outcomeDisabled={outcomeDisabled}
                             failureDisabled={isUpdating || isReadOnly}
                             queenLabel={distribution.queen_display_name}
+                            onMatingToggle={() => handleMatingToggle(distribution.id, distribution.mating_confirmed)}
                             onOverwinteredChange={(value) => handleOverwinteredChange(distribution.id, value)}
                             onHybridisationChange={(value) => handleHybridisationChange(distribution.id, value)}
                             onFailureToggle={() => handleFailureToggle(distribution.id, distribution.queen_failed)}
@@ -1406,6 +1511,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                               ownerDisplayName={ownerDisplayName}
                               isReadOnly={isReadOnly}
                               isUpdating={isUpdating}
+                              onMatingDateChange={handleMatingDateChange}
                               onOverwinteredDateChange={handleOverwinteredDateChange}
                               onHybridisationDateChange={handleHybridisationDateChange}
                               onFailureDateChange={handleFailureDateChange}
