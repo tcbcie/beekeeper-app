@@ -79,16 +79,9 @@ The ledger totals now sit inside a collapsible summary strip that starts closed 
 - Failed
 - Hybridised
 
-### Ledger Legend
-A compact legend now sits below the summary strip and explains the table language:
-- Status badges
-- Inline row actions
-- Summary row cues for marking, tagged number, and weight
-- Expanded detail row access
-
 ### Table Layout
 Each tracked queen now renders as a dense summary row with:
-- **Queen:** Cell title, marking state, optional `Queen Tagged (#xx)` badge, and secondary identity cues
+- **Queen:** Cell title, compact marked and tagged indicators, and an explicit `Age ...` summary line
 - **Status:** Distribution type, lifecycle state, and read-only or hybridised flags
 - **Group, Member, Batch, and Destination:** Core estate context for scanning larger ledgers quickly
 - **Weight and stage:** Latest logged weight plus current graft stage and stage date
