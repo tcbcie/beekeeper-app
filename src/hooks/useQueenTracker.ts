@@ -29,6 +29,7 @@ export interface TrackedQueen {
   external_recipient_phone: string | null
   external_recipient_location: string | null
   recipient_hive_number: string | null
+  recipient_type: 'group_member' | 'app_user' | 'public'
   // Cell info
   cell_number: number
   graft_status: string | null
@@ -149,11 +150,45 @@ export function useQueenTracker() {
       if (requestId !== fetchCounter.current) return
 
       const rows = [...(ownResult.data || []), ...(ownedGroupResult.data || [])]
+      const groupIds = Array.from(new Set(
+        rows
+          .map((row) => {
+            const batch = firstJoinedRecord(row.rearing_batches as JoinedRecord<{ rearing_group_id: string | null }>)
+            return typeof batch?.rearing_group_id === 'string' && batch.rearing_group_id.trim().length > 0
+              ? batch.rearing_group_id.trim()
+              : null
+          })
+          .filter((groupId): groupId is string => groupId !== null)
+      ))
       const graftIds = Array.from(new Set(
         rows
           .map((row) => (typeof row.graft_id === 'string' && row.graft_id.trim() ? row.graft_id : null))
           .filter((graftId): graftId is string => graftId !== null)
       ))
+      const groupMemberIdsByGroupId = new Map<string, Set<string>>()
+
+      if (groupIds.length > 0) {
+        const { data: groupMembers, error: groupMembersError } = await supabase
+          .from('rearing_group_members')
+          .select('group_id, user_id')
+          .in('group_id', groupIds)
+
+        if (groupMembersError) {
+          console.error('Error fetching rearing group members for tracker:', groupMembersError)
+        } else {
+          for (const member of groupMembers || []) {
+            if (typeof member.group_id !== 'string' || typeof member.user_id !== 'string') continue
+
+            if (!groupMemberIdsByGroupId.has(member.group_id)) {
+              groupMemberIdsByGroupId.set(member.group_id, new Set())
+            }
+
+            groupMemberIdsByGroupId.get(member.group_id)?.add(member.user_id)
+          }
+        }
+      }
+
+      if (requestId !== fetchCounter.current) return
 
       const latestWeights = new Map<string, { weight_mg: number; weighed_at: string }>()
       if (graftIds.length > 0) {
@@ -208,6 +243,9 @@ export function useQueenTracker() {
         const graftId = typeof d.graft_id === 'string' ? d.graft_id : ''
         const batchId = typeof d.batch_id === 'string' ? d.batch_id : ''
         const distributionDate = typeof d.distribution_date === 'string' ? d.distribution_date : ''
+        const recipientUserId = typeof d.recipient_user_id === 'string' && d.recipient_user_id.trim().length > 0
+          ? d.recipient_user_id
+          : null
 
         if (!distributionId || !graftId || !batchId || !distributionDate) continue
 
@@ -267,6 +305,11 @@ export function useQueenTracker() {
         const recipientName = recipientProfile
           ? recipientProfile.full_name || `${recipientProfile.first_name || ''} ${recipientProfile.last_name || ''}`.trim() || null
           : null
+        const recipientType = recipientUserId === null
+          ? 'public'
+          : groupId !== null && groupMemberIdsByGroupId.get(groupId)?.has(recipientUserId)
+            ? 'group_member'
+            : 'app_user'
 
         mapped.push({
           id: distributionId,
@@ -284,7 +327,7 @@ export function useQueenTracker() {
           offspring_hybridised: d.offspring_hybridised as boolean | null,
           hybridisation_date: d.hybridisation_date as string | null,
           notes: d.notes as string | null,
-          recipient_user_id: d.recipient_user_id as string | null,
+          recipient_user_id: recipientUserId,
           recipient_name: recipientName,
           recipient_email: recipientProfile?.email ?? null,
           recipient_apiary_name: apiary?.name ?? null,
@@ -294,6 +337,7 @@ export function useQueenTracker() {
           external_recipient_phone: d.external_recipient_phone as string | null,
           external_recipient_location: d.external_recipient_location as string | null,
           recipient_hive_number: hive?.hive_number ?? null,
+          recipient_type: recipientType,
           cell_number: cellNumber,
           graft_status: graft?.status ?? null,
           graft_status_date: graft?.status_date ?? null,
