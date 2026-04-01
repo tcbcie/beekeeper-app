@@ -304,38 +304,32 @@ function OutcomeActionStack({
   onFailureToggle: () => void
 }) {
   const compactButtonClass = 'inline-flex w-full items-center justify-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition-colors'
-  const titleClass = 'text-[10px] font-semibold leading-3 text-text-tertiary'
+  const titleClass = 'text-center text-[10px] font-semibold leading-3 text-text-tertiary'
 
-  return (
-    <div className="min-w-[9.25rem] space-y-2">
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-        {showMatedAction ? (
-          <>
-            <p className={titleClass}>Mated</p>
-            <p className={titleClass}>Hybridised</p>
-            <button
-              type="button"
-              onClick={onMatingToggle}
-              disabled={matingDisabled}
-              aria-pressed={mated}
-              aria-label={`Queen ${queenLabel} mating status: ${mated ? 'Confirmed' : 'Pending mating'}`}
-              className={`${compactButtonClass} ${
-                mated
-                  ? 'border-green-300 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-900/50 dark:text-green-300'
-                  : 'border-border bg-surface-secondary text-text-secondary dark:bg-surface-elevated'
-              } ${matingDisabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-85'}`}
-            >
-              <Check size={12} aria-hidden="true" />
-              <span>{mated ? 'Clear' : 'Mark'}</span>
-            </button>
-          </>
-        ) : (
-          <>
-            <span />
-            <p className={titleClass}>Hybridised</p>
-            <span />
-          </>
-        )}
+  const actionContent = {
+    mated: {
+      label: 'Mated',
+      control: (
+        <button
+          type="button"
+          onClick={onMatingToggle}
+          disabled={matingDisabled}
+          aria-pressed={mated}
+          aria-label={`Queen ${queenLabel} mating status: ${mated ? 'Confirmed' : 'Pending mating'}`}
+          className={`${compactButtonClass} ${
+            mated
+              ? 'border-green-300 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-900/50 dark:text-green-300'
+              : 'border-border bg-surface-secondary text-text-secondary dark:bg-surface-elevated'
+          } ${matingDisabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-85'}`}
+        >
+          <Check size={12} aria-hidden="true" />
+          <span>{mated ? 'Clear' : 'Mark'}</span>
+        </button>
+      ),
+    },
+    hybridised: {
+      label: 'Hybridised',
+      control: (
         <ThreeStateActionButton
           value={hybridised}
           onClick={onHybridisationClick}
@@ -344,9 +338,11 @@ function OutcomeActionStack({
           ariaLabel={`Queen ${queenLabel} hybridised`}
           size="compact"
         />
-
-        <p className={titleClass}>Overwintered</p>
-        <p className={titleClass}>Failed</p>
+      ),
+    },
+    overwintered: {
+      label: 'Overwintered',
+      control: (
         <ThreeStateActionButton
           value={overwintered}
           onClick={onOverwinteredClick}
@@ -355,6 +351,11 @@ function OutcomeActionStack({
           ariaLabel={`Queen ${queenLabel} overwintered`}
           size="compact"
         />
+      ),
+    },
+    failed: {
+      label: 'Failed',
+      control: (
         <button
           type="button"
           onClick={onFailureToggle}
@@ -370,7 +371,50 @@ function OutcomeActionStack({
           <X size={12} aria-hidden="true" />
           <span>{failed ? 'Clear' : 'Mark'}</span>
         </button>
-      </div>
+      ),
+    },
+  } as const
+
+  const actionRows = showMatedAction
+    ? [
+        ['mated', 'hybridised'],
+        ['overwintered', 'failed'],
+      ]
+    : [
+        ['hybridised', 'overwintered'],
+        ['failed'],
+      ]
+
+  return (
+    <div className="min-w-[9.25rem] space-y-2">
+      {actionRows.map((row, index) => {
+        const isSingle = row.length === 1
+        const gridClass = isSingle
+          ? 'grid-cols-1 place-items-center'
+          : 'grid-cols-2'
+
+        return (
+          <div key={`${row.join('-')}-${index}`} className="space-y-1">
+            <div className={`grid ${gridClass} gap-x-3 gap-y-1`}>
+              {row.map((key) => (
+                <p key={`${key}-label`} className={titleClass}>
+                  {actionContent[key as keyof typeof actionContent].label}
+                </p>
+              ))}
+            </div>
+            <div className={`grid ${gridClass} gap-x-3 gap-y-1`}>
+              {row.map((key) => (
+                <div
+                  key={`${key}-control`}
+                  className={isSingle ? 'w-[4.75rem]' : 'w-full'}
+                >
+                  {actionContent[key as keyof typeof actionContent].control}
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
