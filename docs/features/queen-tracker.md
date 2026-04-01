@@ -94,7 +94,7 @@ The ledger totals now sit inside a collapsible summary strip that starts closed 
 Each tracked queen now renders as a dense summary row with:
 - **Details:** Expand or collapse control in the first column so row inspection starts at the left edge
 - **Queen:** Cell title, compact marked and tagged indicators clustered beside it, an explicit `Age ...` summary line, and a selected-row treatment so the active row stays obvious
-- **Actions:** `Mated`, `Failed`, `Overwintered`, and `Hybridised` share one compact action column between `Queen` and `Status`, with the controls stacked vertically for faster scanning
+- **Actions:** `Mated`, `Failed`, `Overwintered`, and `Hybridised` share one compact action column between `Queen` and `Status`, with the controls stacked vertically for faster scanning and a compact inline date-capture editor appearing in place when the user records a date-bearing outcome
 - **Status:** Distribution type and lifecycle state in a tighter, narrower column
 - **Distribution:** Recipient name-first or email fallback, a compact distribution-type cue (`Group Member`, `App User`, or `Public Recipient`), and the distributed date on its own line beneath that cue
 
@@ -113,15 +113,15 @@ A record is considered mated when either:
 - `distribution_type = 'mated_queen'`
 
 For eligible `Pending Mating` rows, the row action area now provides a compact `Mated` control.
-- Marking mating from the ledger writes to the same distribution record used by the batch distributions table
-- The first confirmation defaults the mated date to the current local date and expands the row so the member can refine it immediately
+- Marking mating from the ledger now opens a compact inline date-capture editor inside the actions cell before saving
+- Confirming mating from that editor writes to the same distribution record used by the batch distributions table
 - The expanded `Outcomes` panel now includes an editable `Record mated date` field for confirmed non-`mated_queen` rows
 - Clearing mating removes both the confirmation flag and the recorded mating date
 - Batch-level `queens_mated` counts now only treat sold virgin-queen rows as mated once this confirmation exists
 
 ### Overwintered
 - Three-state toggle: unknown, yes, no
-- Date defaults to the local calendar date when the user first sets an outcome, but it can then be edited from the expanded Outcomes panel
+- Setting an overwintering outcome now goes through the same inline date-capture editor before the first save
 - Date is cleared when reset to unknown
 - The overwintered date editor is user-controlled inside the expanded record, so members can correct historical outcome dates without widening the main table
 - Overwintering edits are disabled while a queen is explicitly marked failed
@@ -129,7 +129,7 @@ For eligible `Pending Mating` rows, the row action area now provides a compact `
 
 ### Hybridised
 - Three-state toggle: unknown, yes, no
-- When set to yes, `hybridisation_date` defaults to today and remains editable from the expanded Outcomes panel
+- Setting hybridisation now goes through the same inline date-capture editor before the first save
 - When reset to no or unknown, the hybridisation date is cleared
 - Hybridisation date edits use the same per-row in-flight guard as the toggle path
 - The hybridisation date editor is controlled so failed writes revert to the persisted value, and cleared values no longer leave stale input state behind
@@ -140,7 +140,7 @@ For eligible `Pending Mating` rows, the row action area now provides a compact `
 ### Failed
 - Failure is now an explicit queen outcome rather than a derived alias of `overwintered = false`
 - The row action area provides a compact `Failed` control alongside `Overwintered` and `Hybridised`
-- Marking a queen as failed defaults the failure date to today and expands the row so the user can capture the fuller details
+- Marking a queen as failed now goes through the same inline date-capture editor before the failure is saved
 - Failure date and a short failure comment are edited in the expanded `Outcomes` panel
 - Clearing the failure state clears the failure date and failure comment
 - Failure date and comment writes now use dedicated guarded updates, so they cannot recreate a failed state after a concurrent clear

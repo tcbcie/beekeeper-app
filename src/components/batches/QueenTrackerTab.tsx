@@ -21,7 +21,7 @@ import Button from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { NON_GROUP_LEDGER_SCOPE, useQueenTracker, type TrackedQueen, type StatusFilter } from '@/hooks/useQueenTracker'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
-import { parseLocalDate } from '@/lib/date-utils'
+import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
 import { COLOUR_DOTS, formatDateIrish } from './graftConstants'
 import { calculateQueenAge, getQueenColorFromYear } from '@/types/queen'
 
@@ -53,30 +53,32 @@ type DerivedTrackerRow = TrackedQueen & {
   mother_queen_marking_label: string
 }
 
+type OutcomeActionKind = 'mated' | 'overwintered' | 'hybridised' | 'failed'
+
+type OutcomeActionDraft = {
+  rowId: string
+  kind: OutcomeActionKind
+  value: boolean | null
+  date: string
+}
+
 const MAX_FAILURE_COMMENT_LENGTH = 280
 
-function ThreeStateToggle({
+function ThreeStateActionButton({
   value,
-  onChange,
+  onClick,
   labels = { true: 'Yes', false: 'No', null: '?' },
   disabled = false,
   ariaLabel,
   size = 'default',
 }: {
   value: boolean | null
-  onChange: (newValue: boolean | null) => void
+  onClick: () => void
   labels?: { true: string; false: string; null: string }
   disabled?: boolean
   ariaLabel?: string
   size?: 'default' | 'compact'
 }) {
-  const cycle = () => {
-    if (disabled) return
-    if (value === null) onChange(true)
-    else if (value === true) onChange(false)
-    else onChange(null)
-  }
-
   const bgColor = value === true
     ? 'border-green-300 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-900/50 dark:text-green-300'
     : value === false
@@ -93,7 +95,7 @@ function ThreeStateToggle({
   return (
     <button
       type="button"
-      onClick={cycle}
+      onClick={onClick}
       disabled={disabled}
       aria-pressed={value === true ? 'true' : value === false ? 'false' : 'mixed'}
       aria-label={ariaLabel ? `${ariaLabel}: ${displayLabel}` : displayLabel}
@@ -108,6 +110,170 @@ function ThreeStateToggle({
   )
 }
 
+function getTodayLocalDate(): string {
+  return toLocalDateString(new Date())
+}
+
+function outcomeNeedsDate(kind: OutcomeActionKind, value: boolean | null): boolean {
+  switch (kind) {
+    case 'mated':
+    case 'failed':
+      return true
+    case 'overwintered':
+      return value !== null
+    case 'hybridised':
+      return value === true
+    default:
+      return false
+  }
+}
+
+function getOutcomeActionTitle(kind: OutcomeActionKind): string {
+  switch (kind) {
+    case 'mated':
+      return 'Record mated date'
+    case 'overwintered':
+      return 'Record overwintered outcome'
+    case 'hybridised':
+      return 'Record hybridised outcome'
+    case 'failed':
+      return 'Record failure date'
+    default:
+      return 'Record outcome'
+  }
+}
+
+function createOutcomeActionDraft(distribution: TrackedQueen, kind: OutcomeActionKind): OutcomeActionDraft {
+  switch (kind) {
+    case 'mated':
+      return {
+        rowId: distribution.id,
+        kind,
+        value: true,
+        date: distribution.mating_confirmed_date || getTodayLocalDate(),
+      }
+    case 'failed':
+      return {
+        rowId: distribution.id,
+        kind,
+        value: true,
+        date: distribution.queen_failed_date || getTodayLocalDate(),
+      }
+    case 'overwintered':
+      return {
+        rowId: distribution.id,
+        kind,
+        value: distribution.overwintered ?? true,
+        date: distribution.overwintered_date || getTodayLocalDate(),
+      }
+    case 'hybridised':
+      return {
+        rowId: distribution.id,
+        kind,
+        value: distribution.offspring_hybridised ?? true,
+        date: distribution.hybridisation_date || getTodayLocalDate(),
+      }
+    default:
+      return {
+        rowId: distribution.id,
+        kind: 'mated',
+        value: true,
+        date: getTodayLocalDate(),
+      }
+  }
+}
+
+function OutcomeActionEditor({
+  draft,
+  disabled,
+  onValueChange,
+  onDateChange,
+  onCancel,
+  onSave,
+}: {
+  draft: OutcomeActionDraft
+  disabled: boolean
+  onValueChange: (value: boolean | null) => void
+  onDateChange: (date: string) => void
+  onCancel: () => void
+  onSave: () => void
+}) {
+  const needsDate = outcomeNeedsDate(draft.kind, draft.value)
+  const saveDisabled = disabled || (needsDate && draft.date.trim() === '')
+  const showStateChoices = draft.kind === 'overwintered' || draft.kind === 'hybridised'
+
+  return (
+    <div className="mt-3 rounded-2xl border border-emerald-200/80 bg-white/90 p-3 shadow-sm dark:border-emerald-900/60 dark:bg-surface-elevated/95">
+      <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+        <CalendarDays size={14} className="text-emerald-700 dark:text-emerald-300" />
+        <span>{getOutcomeActionTitle(draft.kind)}</span>
+      </div>
+
+      {showStateChoices && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {[
+            { label: 'Yes', value: true },
+            { label: 'No', value: false },
+            { label: 'Unknown', value: null },
+          ].map((option) => {
+            const isActive = draft.value === option.value
+            return (
+              <button
+                key={option.label}
+                type="button"
+                onClick={() => onValueChange(option.value)}
+                disabled={disabled}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                  isActive
+                    ? 'border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-200'
+                    : 'border-border bg-surface text-text-secondary dark:bg-surface'
+                } ${disabled ? 'cursor-not-allowed opacity-60' : 'hover:opacity-85'}`}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+          Date
+        </label>
+        <input
+          type="date"
+          value={needsDate ? draft.date : ''}
+          onChange={(event) => onDateChange(event.target.value)}
+          disabled={disabled || !needsDate}
+          className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
+        />
+        {!needsDate && (
+          <p className="text-xs text-text-secondary">No date is needed for the selected outcome.</p>
+        )}
+      </div>
+
+      <div className="mt-3 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={disabled}
+          className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saveDisabled}
+          className="rounded-full border border-emerald-500 bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function OutcomeActionStack({
   showMatedAction,
   mated,
@@ -119,8 +285,8 @@ function OutcomeActionStack({
   failureDisabled,
   queenLabel,
   onMatingToggle,
-  onOverwinteredChange,
-  onHybridisationChange,
+  onOverwinteredClick,
+  onHybridisationClick,
   onFailureToggle,
 }: {
   showMatedAction: boolean
@@ -133,8 +299,8 @@ function OutcomeActionStack({
   failureDisabled: boolean
   queenLabel: string
   onMatingToggle: () => void
-  onOverwinteredChange: (newValue: boolean | null) => void
-  onHybridisationChange: (newValue: boolean | null) => void
+  onOverwinteredClick: () => void
+  onHybridisationClick: () => void
   onFailureToggle: () => void
 }) {
   return (
@@ -161,9 +327,9 @@ function OutcomeActionStack({
       )}
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">Overwintered</span>
-        <ThreeStateToggle
+        <ThreeStateActionButton
           value={overwintered}
-          onChange={onOverwinteredChange}
+          onClick={onOverwinteredClick}
           labels={{ true: 'Yes', false: 'No', null: '?' }}
           disabled={outcomeDisabled}
           ariaLabel={`Queen ${queenLabel} overwintered`}
@@ -172,9 +338,9 @@ function OutcomeActionStack({
       </div>
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">Hybridised</span>
-        <ThreeStateToggle
+        <ThreeStateActionButton
           value={hybridised}
-          onChange={onHybridisationChange}
+          onClick={onHybridisationClick}
           labels={{ true: 'Yes', false: 'No', null: '?' }}
           disabled={outcomeDisabled}
           ariaLabel={`Queen ${queenLabel} hybridised`}
@@ -791,6 +957,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [actionDraft, setActionDraft] = useState<OutcomeActionDraft | null>(null)
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set())
   const updatingIdsRef = useRef(updatingIds)
   updatingIdsRef.current = updatingIds
@@ -944,56 +1111,57 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     }
   }, [selectedId, trackerRows])
 
+  useEffect(() => {
+    if (!actionDraft) return
+
+    const hasDraftRow = trackerRows.some((distribution) => distribution.id === actionDraft.rowId)
+    if (!hasDraftRow) {
+      setActionDraft(null)
+    }
+  }, [actionDraft, trackerRows])
+
   const stats = useMemo(() => calculateStats(filteredDistributions), [filteredDistributions, calculateStats])
   const summaryLabel = stats.total === 1
     ? '1 queen matches the current filters.'
     : `${stats.total} queens match the current filters.`
 
-  const handleOverwinteredChange = useCallback(async (id: string, newValue: boolean | null) => {
-    if (updatingIdsRef.current.has(id)) return
+  const openOutcomeActionDraft = useCallback((distribution: DerivedTrackerRow, kind: OutcomeActionKind) => {
+    if (updatingIdsRef.current.has(distribution.id) || !distribution.can_edit) return
 
-    setUpdatingIds((prev) => new Set(prev).add(id))
-    try {
-      const success = await updateOverwintered(id, newValue)
-      if (success) {
-        toast.success('Overwintering status updated')
-      } else {
-        toast.error('Failed to update overwintering status')
+    setSelectedId(distribution.id)
+    setActionDraft((current) => {
+      if (current?.rowId === distribution.id && current.kind === kind) {
+        return null
       }
-    } finally {
-      setUpdatingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
+      return createOutcomeActionDraft(distribution, kind)
+    })
+  }, [])
+
+  const handleMatingToggle = useCallback(async (distribution: DerivedTrackerRow) => {
+    if (updatingIdsRef.current.has(distribution.id)) return
+
+    if (!distribution.mating_confirmed) {
+      openOutcomeActionDraft(distribution, 'mated')
+      return
     }
-  }, [updateOverwintered, toast])
 
-  const handleMatingToggle = useCallback(async (id: string, currentValue: boolean) => {
-    if (updatingIdsRef.current.has(id)) return
-
-    const nextValue = !currentValue
-
-    setUpdatingIds((prev) => new Set(prev).add(id))
+    setUpdatingIds((prev) => new Set(prev).add(distribution.id))
     try {
-      const success = await updateMating(id, nextValue)
+      const success = await updateMating(distribution.id, false)
       if (success) {
-        toast.success(nextValue ? 'Mating confirmed' : 'Mating confirmation cleared')
-        if (nextValue) {
-          setSelectedId(id)
-          setExpandedId(id)
-        }
+        toast.success('Mating confirmation cleared')
+        setActionDraft((current) => current?.rowId === distribution.id && current.kind === 'mated' ? null : current)
       } else {
         toast.error('Failed to update mating status')
       }
     } finally {
       setUpdatingIds((prev) => {
         const next = new Set(prev)
-        next.delete(id)
+        next.delete(distribution.id)
         return next
       })
     }
-  }, [updateMating, toast])
+  }, [openOutcomeActionDraft, updateMating, toast])
 
   const handleMatingDateChange = useCallback(async (id: string, date: string): Promise<boolean> => {
     if (updatingIdsRef.current.has(id)) return false
@@ -1045,25 +1213,86 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     }
   }, [updateOverwinteredDate, toast])
 
-  const handleHybridisationChange = useCallback(async (id: string, newValue: boolean | null) => {
-    if (updatingIdsRef.current.has(id)) return
+  const handleFailureToggle = useCallback(async (distribution: DerivedTrackerRow) => {
+    if (updatingIdsRef.current.has(distribution.id)) return
 
-    setUpdatingIds((prev) => new Set(prev).add(id))
+    if (!distribution.queen_failed) {
+      openOutcomeActionDraft(distribution, 'failed')
+      return
+    }
+
+    setUpdatingIds((prev) => new Set(prev).add(distribution.id))
     try {
-      const success = await updateHybridisation(id, newValue)
+      const success = await updateFailure(distribution.id, false)
       if (success) {
-        toast.success('Hybridisation status updated')
+        toast.success('Queen failure cleared')
+        setActionDraft((current) => current?.rowId === distribution.id && current.kind === 'failed' ? null : current)
       } else {
-        toast.error('Failed to update hybridisation status')
+        toast.error('Failed to update queen failure status')
       }
     } finally {
       setUpdatingIds((prev) => {
         const next = new Set(prev)
-        next.delete(id)
+        next.delete(distribution.id)
         return next
       })
     }
-  }, [updateHybridisation, toast])
+  }, [openOutcomeActionDraft, updateFailure, toast])
+
+  const handleSaveOutcomeAction = useCallback(async () => {
+    if (!actionDraft || updatingIdsRef.current.has(actionDraft.rowId)) return
+
+    const requiresDate = outcomeNeedsDate(actionDraft.kind, actionDraft.value)
+    const nextDate = actionDraft.date.trim()
+    if (requiresDate && nextDate === '') {
+      toast.error('Please record the date before saving this outcome')
+      return
+    }
+
+    setUpdatingIds((prev) => new Set(prev).add(actionDraft.rowId))
+    try {
+      let success = false
+
+      switch (actionDraft.kind) {
+        case 'mated':
+          success = await updateMating(actionDraft.rowId, true, nextDate)
+          if (success) toast.success('Mating confirmed')
+          break
+        case 'overwintered':
+          success = await updateOverwintered(
+            actionDraft.rowId,
+            actionDraft.value,
+            actionDraft.value === null ? null : nextDate
+          )
+          if (success) toast.success('Overwintering status updated')
+          break
+        case 'hybridised':
+          success = await updateHybridisation(
+            actionDraft.rowId,
+            actionDraft.value,
+            actionDraft.value === true ? nextDate : null
+          )
+          if (success) toast.success('Hybridisation status updated')
+          break
+        case 'failed':
+          success = await updateFailure(actionDraft.rowId, true, nextDate)
+          if (success) toast.success('Queen marked as failed')
+          break
+      }
+
+      if (success) {
+        setActionDraft(null)
+      } else {
+        toast.error('Failed to update outcome')
+      }
+    } finally {
+      setUpdatingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(actionDraft.rowId)
+        return next
+      })
+    }
+  }, [actionDraft, toast, updateFailure, updateHybridisation, updateMating, updateOverwintered])
 
   const handleHybridisationDateChange = useCallback(async (id: string, date: string): Promise<boolean> => {
     if (updatingIdsRef.current.has(id)) return false
@@ -1087,32 +1316,6 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       })
     }
   }, [updateHybridisationDate, toast])
-
-  const handleFailureToggle = useCallback(async (id: string, currentValue: boolean) => {
-    if (updatingIdsRef.current.has(id)) return
-
-    const nextValue = !currentValue
-
-    setUpdatingIds((prev) => new Set(prev).add(id))
-    try {
-      const success = await updateFailure(id, nextValue)
-      if (success) {
-        toast.success(nextValue ? 'Queen marked as failed' : 'Queen failure cleared')
-        if (nextValue) {
-          setSelectedId(id)
-          setExpandedId(id)
-        }
-      } else {
-        toast.error('Failed to update queen failure status')
-      }
-    } finally {
-      setUpdatingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
-    }
-  }, [updateFailure, toast])
 
   const handleFailureDateChange = useCallback(async (id: string, date: string): Promise<boolean> => {
     if (updatingIdsRef.current.has(id)) return false
@@ -1360,6 +1563,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                   const isSelected = selectedId === distribution.id
                   const isUpdating = updatingIds.has(distribution.id)
                   const isReadOnly = !distribution.can_edit
+                  const activeActionDraft = actionDraft?.rowId === distribution.id ? actionDraft : null
                   const outcomeDisabled = isUpdating || isReadOnly || distribution.queen_failed
                   const ownerDisplayName = distribution.batch_owner_name
                     || (distribution.batch_owner_id === userId ? 'You' : '-')
@@ -1464,11 +1668,33 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             outcomeDisabled={outcomeDisabled}
                             failureDisabled={isUpdating || isReadOnly}
                             queenLabel={distribution.queen_display_name}
-                            onMatingToggle={() => handleMatingToggle(distribution.id, distribution.mating_confirmed)}
-                            onOverwinteredChange={(value) => handleOverwinteredChange(distribution.id, value)}
-                            onHybridisationChange={(value) => handleHybridisationChange(distribution.id, value)}
-                            onFailureToggle={() => handleFailureToggle(distribution.id, distribution.queen_failed)}
+                            onMatingToggle={() => void handleMatingToggle(distribution)}
+                            onOverwinteredClick={() => openOutcomeActionDraft(distribution, 'overwintered')}
+                            onHybridisationClick={() => openOutcomeActionDraft(distribution, 'hybridised')}
+                            onFailureToggle={() => void handleFailureToggle(distribution)}
                           />
+                          {activeActionDraft && (
+                            <OutcomeActionEditor
+                              draft={activeActionDraft}
+                              disabled={isUpdating}
+                              onValueChange={(value) => {
+                                setActionDraft((current) => (
+                                  current && current.rowId === distribution.id
+                                    ? { ...current, value }
+                                    : current
+                                ))
+                              }}
+                              onDateChange={(date) => {
+                                setActionDraft((current) => (
+                                  current && current.rowId === distribution.id
+                                    ? { ...current, date }
+                                    : current
+                                ))
+                              }}
+                              onCancel={() => setActionDraft(null)}
+                              onSave={() => void handleSaveOutcomeAction()}
+                            />
+                          )}
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
                           <div className="min-w-[7.5rem] space-y-1.5">
