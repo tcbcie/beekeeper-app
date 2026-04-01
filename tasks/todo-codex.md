@@ -1,31 +1,32 @@
-# Task: Queen Ledger Type Guard Build Fix
+# Task: Queen Ledger Header Layout Cleanup
 **Date:** 01/04/2026
 **Status:** Completed
 
 ## 1. Objective
-Fix the Queen Ledger TypeScript build error caused by using a nullable `rearing_group_id` in the new group-owner visibility check.
+Tidy the Queen Ledger header so the title, description, and filters feel organised instead of stretched and disconnected.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `useQueenTracker.ts`
-  * `queen-ledger-type-guard-build-fix-plan.md`
+* **Files to Modify:** * `QueenTrackerTab.tsx`
+  * `queen-tracker.md`
+  * `queen-ledger-header-layout-plan.md`
   * `todo-codex.md`
   * `todo-codex-codex.md`
-* **Simplicity Check:** Keep the fix inside the ledger hook by introducing an explicit non-null group ID before the owner lookup. Do not widen the recent ledger behaviour change or touch the reporting path.
+* **Simplicity Check:** Keep the change limited to the ledger header layout and filter presentation. Do not alter the filter logic, ledger data flow, or outcome controls.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Tighten the `rearing_group_id` narrowing in the ledger visibility branch so the owner lookup only receives a definite string.
-- [x] **Step 2:** Re-read the surrounding non-group logic to make sure the type fix does not change runtime visibility behaviour.
-- [x] **Step 3:** Update documentation in the bug-fix note and close the task log.
+- [x] **Step 1:** Restructure the ledger header so the intro block and filter controls align cleanly across desktop and mobile widths.
+- [x] **Step 2:** Reduce visual sprawl in the filter row with better grouping, spacing, and responsive wrapping.
+- [x] **Step 3:** Update documentation in `docs/features/queen-tracker.md` and the layout plan note.
 - [x] **Step 4:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The runtime guard proved `rearing_group_id` for JavaScript, but TypeScript still saw the joined field as `string | null` at the owner-membership lookup.
-* **Summary of Changes:** Normalised `rearing_group_id` into a local trimmed nullable value, used that value for both the group-batch flag and the owner-membership lookup, and preserved the non-group branch unchanged.
-* **Notes for User:** This is intended as a build-only hardening fix. Build tests were not run per repository instruction.
+* **Root Cause Found (if applicable):** The header paired a tall intro block with an oversized minimum-width filter grid, which created awkward whitespace and poor alignment at wider breakpoints.
+* **Summary of Changes:** Moved the filters into a dedicated tray, tightened the intro width, removed the oversized filter-grid minimum width, and improved responsive wrapping so the ledger header reads as one coherent control surface.
+* **Notes for User:** This is a presentation-only pass. Build tests were not run per repository instruction.
 
 ## Review
-* **Scope Covered:** Queen Ledger type-guard hardening.
-* **Summary of Changes:** The ledger hook now narrows nullable group IDs explicitly before the owner check, which resolves the TypeScript build error without changing the filter model.
-* **Notes for User:** Please re-run your normal build flow and confirm the Queen Ledger still shows both group and non-group rows as expected.
+* **Scope Covered:** Queen Ledger header layout cleanup.
+* **Summary of Changes:** The ledger header now keeps the title and copy compact while the filters sit in a cleaner wrapped tray beneath or alongside the intro depending on width.
+* **Notes for User:** Please check the Queen Ledger header on desktop and mobile in your normal build flow.
