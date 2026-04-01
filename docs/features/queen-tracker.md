@@ -84,10 +84,10 @@ The ledger totals now sit inside a collapsible summary strip that starts closed 
 ### Table Layout
 Each tracked queen now renders as a dense summary row with:
 - **Details:** Expand or collapse control in the first column so row inspection starts at the left edge
-- **Actions:** `Overwintered` and `Hybridised` now share one compact action column beside `Details`, with the two toggles stacked vertically for faster scanning
 - **Queen:** Cell title, compact marked and tagged indicators clustered beside it, an explicit `Age ...` summary line, and a selected-row treatment so the active row stays obvious
 - **Status:** Distribution type and lifecycle state in a tighter, narrower column
 - **Destination:** Recipient, recorded location, and distribution date
+- **Actions:** `Overwintered` and `Hybridised` now share one compact action column on the right, with the two toggles stacked vertically for faster scanning
 
 Read-only member rows now use a distinct row treatment instead of a dedicated `Read only` badge in the Status column.
 Expanded rows now hold the broader queen record panels and supporting context, including group, member, batch, latest weight, and the editable outcome dates.
