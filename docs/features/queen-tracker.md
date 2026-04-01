@@ -6,7 +6,7 @@
 The Queen Tracker is the `Queen Tracker` tab on the Queen Rearing page (`/dashboard/batches`). It follows queens distributed from visible rearing-group batches and from the current user's non-group batches, and presents each one as a fuller queen record rather than a narrow distribution row.
 
 The tracker now combines:
-- Queen identity context such as cell number, queen tagged number, marking state, recorded marking colour where marked, age, latest weight, and current graft stage
+- Queen identity context such as cell number, queen tagged number, marking state, recorded marking colour where marked, age, and latest weight
 - Breeding provenance such as batch, breeder, mother queen, mother marking and age, graft date, emergence date, and source mating apiary
 - Destination context such as recipient, contact details, recipient apiary or hive, and recorded mating location
 - Lifecycle outcomes such as mating confirmation, overwintering, and hybridisation status
@@ -82,14 +82,14 @@ The ledger totals now sit inside a collapsible summary strip that starts closed 
 ### Table Layout
 Each tracked queen now renders as a dense summary row with:
 - **Details:** Expand or collapse control in the first column so row inspection starts at the left edge
-- **Queen:** Cell title, compact marked and tagged indicators clustered beside it, and an explicit `Age ...` summary line
+- **Queen:** Cell title, compact marked and tagged indicators clustered beside it, an explicit `Age ...` summary line, and a selected-row treatment so the active row stays obvious
 - **Status:** Distribution type, lifecycle state, and read-only or hybridised flags
-- **Group, Member, Batch, and Destination:** Core estate context for scanning larger ledgers quickly
-- **Weight and stage:** Latest logged weight plus current graft stage and stage date
+- **Destination:** Recipient, recorded location, and distribution date
 - **Inline actions:** Overwintered and hybridised controls directly on the main row
 
-Expanded rows now hold the broader queen record panels and supporting context, including the hybridisation date input when relevant.
+Expanded rows now hold the broader queen record panels and supporting context, including group, member, batch, latest weight, and the hybridisation date input when relevant.
 Read-only records still show their restricted-edit explanation inside the expanded Outcomes panel.
+Stage data is no longer surfaced in the Queen Ledger UI.
 
 ## 6. Outcome Logic
 

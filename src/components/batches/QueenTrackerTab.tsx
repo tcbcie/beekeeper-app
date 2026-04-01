@@ -12,7 +12,6 @@ import {
   MapPin,
   Package2,
   Phone,
-  Scale,
   Sprout,
   Tag,
   UserRound,
@@ -43,7 +42,6 @@ type DerivedTrackerRow = TrackedQueen & {
   recipient_apiary_label: string
   origin_mating_apiary_label: string
   mother_queen_label: string
-  current_stage_label: string
   latest_weight_label: string
   queen_age_label: string
   marking_colour_label: string
@@ -185,13 +183,12 @@ function ExpandedTrackerRowContent({
           <DetailItem label="Marking" value={distribution.marking_status_label} />
           <DetailItem label="Age" value={distribution.queen_age_label} />
           <DetailItem label="Latest weight" value={distribution.latest_weight_label} />
-          <DetailItem label="Current graft stage" value={distribution.current_stage_label} />
-          <DetailItem label="Stage date" value={formatOptionalDate(distribution.graft_status_date)} />
         </TrackerPanel>
 
         <TrackerPanel title="Breeding Context" icon={Package2}>
+          <DetailItem label="Group" value={distribution.group_name} />
+          <DetailItem label="Member" value={ownerDisplayName} />
           <DetailItem label="Batch" value={distribution.batch_name} />
-          <DetailItem label="Breeder" value={ownerDisplayName} />
           <DetailItem label="Mother queen" value={distribution.mother_queen_label} />
           <DetailItem label="Mother marking" value={distribution.mother_queen_marking_label} />
           <DetailItem label="Mother age" value={distribution.mother_queen_age_label} />
@@ -324,19 +321,6 @@ function formatLifecycle(distribution: TrackedQueen) {
   }
 }
 
-function formatGraftStatus(status: string | null): string {
-  if (!status) return '-'
-
-  switch (status) {
-    case 'in_nuc':
-      return 'In nuc'
-    case 'queen_cell':
-      return 'Queen cell'
-    default:
-      return status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')
-  }
-}
-
 function getRecipientName(distribution: TrackedQueen): string {
   const name = distribution.recipient_name || distribution.external_recipient_name || null
   const email = distribution.recipient_email || distribution.external_recipient_email || null
@@ -447,7 +431,6 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
     recipient_apiary_label: getRecipientApiaryLabel(distribution),
     origin_mating_apiary_label: getOriginMatingApiaryLabel(distribution),
     mother_queen_label: getMotherQueenLabel(distribution),
-    current_stage_label: formatGraftStatus(distribution.graft_status),
     latest_weight_label: latestWeightLabel,
     queen_age_label: distribution.emergence_date ? calculateQueenAge(distribution.emergence_date) : 'N/A',
     marking_colour_label: markingColour || '-',
@@ -483,6 +466,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all')
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set())
   const updatingIdsRef = useRef(updatingIds)
   updatingIdsRef.current = updatingIds
@@ -637,6 +621,15 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       buildDerivedRow(distribution, getGroupScopeLabel(distribution, groupNameById.get(distribution.rearing_group_id ?? '') || null))
     )
   }, [filteredDistributions, groupNameById])
+
+  useEffect(() => {
+    if (!selectedId) return
+
+    const hasSelectedRow = trackerRows.some((distribution) => distribution.id === selectedId)
+    if (!hasSelectedRow) {
+      setSelectedId(null)
+    }
+  }, [selectedId, trackerRows])
 
   const stats = useMemo(() => calculateStats(filteredDistributions), [filteredDistributions, calculateStats])
   const summaryLabel = stats.total === 1
@@ -889,17 +882,13 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       ) : (
         <div className="overflow-hidden rounded-[1.6rem] border border-border bg-surface shadow-sm dark:bg-surface-elevated/95">
           <div className="overflow-x-auto">
-            <table className="min-w-[96rem] w-full border-separate border-spacing-0 text-sm">
+            <table className="min-w-[72rem] w-full border-separate border-spacing-0 text-sm">
               <thead className="bg-surface-secondary/70 dark:bg-surface-elevated/85">
                 <tr>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Details</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Queen</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Status</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Group</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Member</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Batch</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Destination</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Weight and stage</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Overwintered</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Hybridised</th>
                 </tr>
@@ -910,19 +899,37 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                     ? COLOUR_DOTS[distribution.marking_colour_label] || ''
                     : ''
                   const isExpanded = expandedId === distribution.id
+                  const isSelected = selectedId === distribution.id
                   const isUpdating = updatingIds.has(distribution.id)
                   const isReadOnly = !distribution.can_edit
                   const ownerDisplayName = distribution.batch_owner_name
                     || (distribution.batch_owner_id === userId ? 'You' : '-')
                   const queenTaggedValue = formatQueenTaggedValue(distribution.queen_number)
+                  const cellHighlightClass = isSelected
+                    ? 'bg-emerald-50/85 dark:bg-emerald-950/25'
+                    : isExpanded
+                      ? 'bg-surface-secondary/30 dark:bg-surface-elevated/70'
+                      : ''
 
                   return (
                     <Fragment key={distribution.id}>
-                      <tr className={isExpanded ? 'bg-surface-secondary/30 dark:bg-surface-elevated/70' : ''}>
-                        <td className="border-t border-border px-4 py-3 align-top">
+                      <tr
+                        aria-selected={isSelected}
+                        onClick={() => setSelectedId(distribution.id)}
+                        onFocusCapture={() => setSelectedId(distribution.id)}
+                        className="transition-colors"
+                      >
+                        <td
+                          className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${
+                            isSelected ? 'shadow-[inset_4px_0_0_0_rgba(22,163,74,0.9)]' : ''
+                          }`}
+                        >
                           <button
                             type="button"
-                            onClick={() => setExpandedId(isExpanded ? null : distribution.id)}
+                            onClick={() => {
+                              setSelectedId(distribution.id)
+                              setExpandedId(isExpanded ? null : distribution.id)
+                            }}
                             className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 text-sm font-medium text-text-secondary transition-colors hover:text-foreground dark:bg-surface-elevated"
                             aria-expanded={isExpanded}
                             aria-label={isExpanded ? 'Collapse queen details' : 'Expand queen details'}
@@ -931,7 +938,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
                         </td>
-                        <td className="border-t border-border px-4 py-3 align-top">
+                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass}`}>
                           <div className="min-w-[12rem] space-y-1.5">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-semibold text-foreground">{distribution.queen_display_name}</p>
@@ -973,7 +980,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             <p className="text-xs text-text-secondary">{distribution.queen_secondary_label}</p>
                           </div>
                         </td>
-                        <td className="border-t border-border px-4 py-3 align-top">
+                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass}`}>
                           <div className="min-w-[14rem] flex flex-wrap gap-1.5">
                             <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.display_type_class}`}>
                               {distribution.display_type_label}
@@ -993,40 +1000,14 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             )}
                           </div>
                         </td>
-                        <td className="border-t border-border px-4 py-3 align-top">
-                          <div className="min-w-[10rem]">
-                            <p className="font-medium text-foreground">{distribution.group_name}</p>
-                          </div>
-                        </td>
-                        <td className="border-t border-border px-4 py-3 align-top">
-                          <div className="min-w-[10rem]">
-                            <p className="font-medium text-foreground">{ownerDisplayName}</p>
-                            <p className="mt-1 text-xs text-text-secondary">{distribution.origin_mating_apiary_label}</p>
-                          </div>
-                        </td>
-                        <td className="border-t border-border px-4 py-3 align-top">
-                          <div className="min-w-[12rem]">
-                            <p className="font-medium text-foreground">{distribution.batch_name}</p>
-                            <p className="mt-1 text-xs text-text-secondary">Graft {formatOptionalDate(distribution.graft_date)}</p>
-                          </div>
-                        </td>
-                        <td className="border-t border-border px-4 py-3 align-top">
+                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass}`}>
                           <div className="min-w-[16rem]">
                             <p className="font-medium text-foreground">{distribution.recipient_display_name}</p>
                             <p className="mt-1 text-xs text-text-secondary">{distribution.destination_label}</p>
                             <p className="mt-1 text-xs text-text-secondary">Distributed {formatOptionalDate(distribution.distribution_date)}</p>
                           </div>
                         </td>
-                        <td className="border-t border-border px-4 py-3 align-top">
-                          <div className="min-w-[13rem] space-y-1">
-                            <p className="font-medium text-foreground">
-                              {distribution.latest_weight_label === '-' ? 'No weight logged' : distribution.latest_weight_label}
-                            </p>
-                            <p className="text-xs text-text-secondary">{distribution.current_stage_label}</p>
-                            <p className="text-xs text-text-secondary">Stage date {formatOptionalDate(distribution.graft_status_date)}</p>
-                          </div>
-                        </td>
-                        <td className="border-t border-border px-4 py-3 align-top">
+                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass}`}>
                           <div className="min-w-[7.5rem] space-y-2">
                             <ThreeStateToggle
                               value={distribution.overwintered}
@@ -1038,7 +1019,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             <p className="text-xs text-text-secondary">Date {formatOptionalDate(distribution.overwintered_date)}</p>
                           </div>
                         </td>
-                        <td className="border-t border-border px-4 py-3 align-top">
+                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass}`}>
                           <div className="min-w-[7.5rem] space-y-2">
                             <ThreeStateToggle
                               value={distribution.offspring_hybridised}
@@ -1053,7 +1034,14 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                       </tr>
                       {isExpanded && (
                         <tr>
-                          <td colSpan={10} className="border-t border-border bg-surface-secondary/20 p-0 dark:bg-surface/35">
+                          <td
+                            colSpan={6}
+                            className={`border-t border-border p-0 ${
+                              isSelected
+                                ? 'bg-emerald-50/60 dark:bg-emerald-950/15'
+                                : 'bg-surface-secondary/20 dark:bg-surface/35'
+                            }`}
+                          >
                             <ExpandedTrackerRowContent
                               distribution={distribution}
                               ownerDisplayName={ownerDisplayName}

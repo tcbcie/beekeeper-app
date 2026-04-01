@@ -1,33 +1,33 @@
-# Task: Queen Ledger Column And Queen Cell Tidy
+# Task: Queen Ledger Row Selection And Column Pruning
 **Date:** 01/04/2026
 **Status:** Completed
 
 ## 1. Objective
-Move the Queen Ledger `Details` control to the first column and tighten the queen identity cell so the cell title and marked or tagged indicators read as one compact unit rather than wasting horizontal space.
+Add a clear selected-row state to the Queen Ledger table, remove low-value summary columns that are already covered by filters, remove stage data from the Queen Ledger UI, and move the remaining context into the expanded detail area so the table remains easier to scan.
 
 ## 2. Impact Analysis
 * **Files to Modify:** * `QueenTrackerTab.tsx`
   * `queen-tracker.md`
-  * `queen-ledger-column-and-queen-cell-tidy-plan.md`
+  * `queen-ledger-row-selection-and-column-pruning-plan.md`
   * `todo-codex.md`
   * `todo-codex-codex.md`
-* **Simplicity Check:** Keep the change inside the Queen Ledger table presentation only. The data model, actions, filters, permissions, and expanded detail content remain unchanged.
+* **Simplicity Check:** This keeps the change inside the Queen Ledger presentation layer only. The ledger hook, filtering logic, permissions, and NIHBS boundary remain unchanged.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Move the `Details` column and expand/collapse control from the end of the table to the first column.
-- [x] **Step 2:** Tighten the queen identity cell so `Cell #...`, `Age ...`, and the compact marked or tagged indicators sit closer together with less wasted space.
-- [x] **Step 3:** Preserve the existing row actions and expanded detail behaviour while refining the visual spacing and hierarchy.
+- [x] **Step 1:** Add an explicit selected-row visual state so the active queen row is obvious while scanning or expanding the table.
+- [x] **Step 2:** Remove the `Group`, `Member`, `Batch`, and `Weight and stage` summary columns from the main table, and rebalance the remaining columns for cleaner scanning.
+- [x] **Step 3:** Move the removed group, member, and batch context into the expanded detail area, and remove stage data from the Queen Ledger UI rather than restating it elsewhere.
 - [x] **Step 4:** Update documentation in `docs/features/queen-tracker.md`
 - [x] **Step 5:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The detail control was visually detached from the row identity at the far edge of the table, and the queen identity cell still used a split layout that left too much empty space between the cell label and its compact state cues.
-* **Summary of Changes:** Moved the detail control into the first column, tightened the queen identity cell into a single left-hand cluster, and preserved the existing row actions and expansion behaviour.
+* **Root Cause Found (if applicable):** The ledger table still duplicated filter context in the summary scan path, and there was no persistent active-row treatment once the view moved from cards to a denser table.
+* **Summary of Changes:** Added a selected-row highlight, reduced the main table to six columns, moved group, member, and batch context into the expanded details, and removed stage data from the Queen Ledger UI.
 * **Notes for User:** This is a presentation-only change. Build tests were not run per repository instruction.
 
 ## Review
-* **Scope Covered:** Queen Ledger column and queen cell tidy pass.
-* **Summary of Changes:** The details control now leads the row, and the queen identity cell reads more compactly with the marked and tagged indicators sitting directly beside the cell title.
-* **Notes for User:** Please check the Queen Ledger table in your normal build flow, especially the first-column detail control and the tighter queen identity cell on desktop and mobile widths.
+* **Scope Covered:** Queen Ledger row selection and summary-column pruning pass.
+* **Summary of Changes:** The ledger now has a persistent selected-row treatment, the main table is reduced to the high-value scanning columns only, and the removed group, member, and batch context now lives in the expanded details. Stage data is no longer shown in the ledger UI.
+* **Notes for User:** Please check the Queen Ledger table in your normal build flow, especially row selection, the slimmer table scan, and the moved detail fields inside expanded rows.
