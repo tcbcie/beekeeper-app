@@ -157,8 +157,10 @@ export async function setDistributionMatingConfirmation(
       : getTodayLocalDate()
     : null
 
-  if (confirmed && !isValidDateOnly(resolvedDate)) {
-    console.error('Invalid mating date supplied:', resolvedDate)
+  const confirmedDate = confirmed ? resolvedDate : null
+
+  if (confirmedDate !== null && !isValidDateOnly(confirmedDate)) {
+    console.error('Invalid mating date supplied:', confirmedDate)
     return null
   }
 
