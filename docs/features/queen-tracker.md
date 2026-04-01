@@ -42,7 +42,7 @@ The live schema was checked through the MCP server before implementation. An add
 
 The tracker now uses broader joins and mapping over existing tables:
 - `graft_distributions` for distribution and outcome fields
-- `batch_grafts` for cell number, queen marking, queen number, graft stage, and stage date
+- `batch_grafts` for cell number, queen marking, and queen number
 - `queen_weights` for the latest recorded queen weight per graft
 - `rearing_batches` for batch dates, optional group linkage, and batch ownership
 - `rearing_group_members` to distinguish distributions to same-group members from other app users
@@ -57,6 +57,8 @@ Non-group batches are intentionally limited to the current user's own ledger row
 The ledger fetch path now queries owned ledger rows directly from `graft_distributions.user_id`, only adds additional group rows for groups owned by the current user, deduplicates graft IDs before the `queen_weights` lookup, and skips malformed rows without a valid cell number instead of fabricating `Cell #0`.
 The recent hardening pass also required a follow-up parse fix in `useQueenTracker` so the owned-row and owned-group query-builder path compiles cleanly.
 The explicit queen-failure migration also backfilled historic ledger rows where `overwintered = false` into the new `queen_failed` state so previous tracker data keeps its earlier failure meaning.
+The latest remediation pass narrows the ledger select payload to the fields the table actually uses, patches successful outcome writes into local hook state instead of refetching the full ledger, and uses dedicated failure-date and failure-comment updates guarded by the explicit failure state.
+The filter hierarchy now uses safe derived selections for Group, Member, and Batch rather than repairing invalid selections in effects after render, and year parsing now uses the existing local-date helper for consistency.
 
 ## 4. Visibility Rules
 - **Group members:** See their own distributions from group-linked batches
@@ -114,7 +116,7 @@ A record is considered mated when either:
 - Date is cleared when reset to unknown
 - The overwintered date editor is user-controlled inside the expanded record, so members can correct historical outcome dates without widening the main table
 - Overwintering edits are disabled while a queen is explicitly marked failed
-- A write is only treated as successful when Supabase returns the updated row
+- A write is only treated as successful when Supabase returns the updated row, and successful writes patch the local ledger row instead of triggering a full reload
 
 ### Hybridised
 - Three-state toggle: unknown, yes, no
@@ -122,6 +124,7 @@ A record is considered mated when either:
 - When reset to no or unknown, the hybridisation date is cleared
 - Hybridisation date edits use the same per-row in-flight guard as the toggle path
 - The hybridisation date editor is controlled so failed writes revert to the persisted value, and cleared values no longer leave stale input state behind
+- The hybridisation date is now written through its own guarded update path, so saving the date cannot silently recreate a hybridised state after a concurrent change
 - Hybridisation edits are disabled while a queen is explicitly marked failed
 - A write is only treated as successful when Supabase returns the updated row
 
@@ -131,6 +134,7 @@ A record is considered mated when either:
 - Marking a queen as failed defaults the failure date to today and expands the row so the user can capture the fuller details
 - Failure date and a short failure comment are edited in the expanded `Outcomes` panel
 - Clearing the failure state clears the failure date and failure comment
+- Failure date and comment writes now use dedicated guarded updates, so they cannot recreate a failed state after a concurrent clear
 - Historic rows previously treated as failed through `overwintered = false` were backfilled into the explicit failure state during migration
 
 ### Winter Loss
