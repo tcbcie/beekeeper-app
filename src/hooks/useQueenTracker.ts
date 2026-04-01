@@ -7,6 +7,7 @@ export interface TrackedQueen {
   graft_id: string
   batch_id: string
   can_edit: boolean
+  is_group_batch: boolean
   distribution_type: 'queen_cell' | 'virgin_queen' | 'mated_queen'
   distribution_date: string
   mating_confirmed: boolean
@@ -40,7 +41,7 @@ export interface TrackedQueen {
   batch_name: string
   graft_date: string
   emergence_date: string | null
-  rearing_group_id: string
+  rearing_group_id: string | null
   batch_owner_id: string
   batch_owner_name: string | null
   mating_apiary_name: string | null
@@ -60,6 +61,8 @@ export interface QueenTrackerStats {
 }
 
 export type StatusFilter = 'all' | 'pending' | 'mated' | 'overwintered' | 'failed'
+export const NON_GROUP_LEDGER_SCOPE = '__non_group__' as const
+export type GroupFilterValue = string | typeof NON_GROUP_LEDGER_SCOPE | null
 
 type JoinedRecord<T> = T | T[] | null
 
@@ -122,18 +125,7 @@ export function useQueenTracker() {
         .filter((groupId): groupId is string => typeof groupId === 'string' && groupId.trim().length > 0)
       const groupIds = Array.from(new Set([...memberGroupIds, ...ownedGroupIds]))
 
-      if (groupIds.length === 0) {
-        if (requestId === fetchCounter.current) {
-          setDistributions([])
-          setLoading(false)
-        }
-        return
-      }
-
-      // Fetch distributions from batches linked to these groups
-      const { data, error } = await supabase
-        .from('graft_distributions')
-        .select(`
+      const distributionSelect = `
           *,
           batch_grafts(cell_number, queen_marked, queen_number, status, status_date),
           profiles!graft_distributions_recipient_profile_id_fkey(full_name, first_name, last_name, email),
@@ -145,16 +137,33 @@ export function useQueenTracker() {
             apiaries!mating_apiary_id(name, eircode),
             queens!mother_queen_id(queen_number, subspecies, marking_color, birth_date)
           )
-        `)
-        .in('distribution_type', ['queen_cell', 'virgin_queen', 'mated_queen'])
-        .in('rearing_batches.rearing_group_id', groupIds)
-        .order('distribution_date', { ascending: false })
+        `
 
-      if (error) throw error
+      const queryResults = await Promise.all([
+        groupIds.length > 0
+          ? supabase
+              .from('graft_distributions')
+              .select(distributionSelect)
+              .in('distribution_type', ['queen_cell', 'virgin_queen', 'mated_queen'])
+              .in('rearing_batches.rearing_group_id', groupIds)
+              .order('distribution_date', { ascending: false })
+          : Promise.resolve({ data: [], error: null }),
+        supabase
+          .from('graft_distributions')
+          .select(distributionSelect)
+          .in('distribution_type', ['queen_cell', 'virgin_queen', 'mated_queen'])
+          .eq('rearing_batches.user_id', userId)
+          .is('rearing_batches.rearing_group_id', null)
+          .order('distribution_date', { ascending: false }),
+      ])
+
+      const [groupResult, nonGroupResult] = queryResults
+      if (groupResult.error) throw groupResult.error
+      if (nonGroupResult.error) throw nonGroupResult.error
 
       if (requestId !== fetchCounter.current) return
 
-      const rows = data || []
+      const rows = [...(groupResult.data || []), ...(nonGroupResult.data || [])]
       const graftIds = rows
         .map((row) => row.graft_id as string | null)
         .filter((graftId): graftId is string => Boolean(graftId))
@@ -192,14 +201,14 @@ export function useQueenTracker() {
           batch_name: string
           graft_date: string
           emergence_date: string | null
-          rearing_group_id: string
+          rearing_group_id: string | null
           user_id: string
           profiles: { first_name: string | null; last_name: string | null } | null
           apiaries: { name: string | null; eircode: string | null }[] | { name: string | null; eircode: string | null } | null
           queens: { queen_number: string | null; subspecies: string | null; marking_color: string | null; birth_date: string | null }[] | { queen_number: string | null; subspecies: string | null; marking_color: string | null; birth_date: string | null } | null
         }>)
 
-        if (!batch?.id || !batch.rearing_group_id || !batch.user_id || !batch.batch_name) continue
+        if (!batch?.id || !batch.user_id || !batch.batch_name) continue
 
         const distributionType = d.distribution_type
         if (
@@ -217,9 +226,11 @@ export function useQueenTracker() {
 
         // Visibility check: user sees their own distributions OR is a group owner
         const isOwnDistribution = d.user_id === userId
-        const isGroupOwner = ownedGroupIds.includes(batch.rearing_group_id)
+        const isGroupBatch = typeof batch.rearing_group_id === 'string' && batch.rearing_group_id.trim().length > 0
+        const isGroupOwner = isGroupBatch && ownedGroupIds.includes(batch.rearing_group_id)
+        const isVisibleNonGroupBatch = !isGroupBatch && batch.user_id === userId
 
-        if (!isOwnDistribution && !isGroupOwner) continue
+        if (!isOwnDistribution && !isGroupOwner && !isVisibleNonGroupBatch) continue
 
         const graft = firstJoinedRecord(d.batch_grafts as JoinedRecord<{
           cell_number: number
@@ -261,6 +272,7 @@ export function useQueenTracker() {
           graft_id: graftId,
           batch_id: batchId,
           can_edit: isOwnDistribution,
+          is_group_batch: isGroupBatch,
           distribution_type: distributionType,
           distribution_date: distributionDate,
           mating_confirmed: d.mating_confirmed === true,
@@ -291,7 +303,7 @@ export function useQueenTracker() {
           batch_name: batch.batch_name,
           graft_date: batch.graft_date,
           emergence_date: batch.emergence_date ?? null,
-          rearing_group_id: batch.rearing_group_id,
+          rearing_group_id: batch.rearing_group_id ?? null,
           batch_owner_id: batch.user_id,
           batch_owner_name: batchOwnerName,
           mating_apiary_name: batchMatingApiary?.name ?? null,
@@ -418,9 +430,22 @@ export function useQueenTracker() {
     })
   }, [])
 
-  const filterByGroup = useCallback((data: TrackedQueen[], groupId: string | null): TrackedQueen[] => {
+  const filterByGroup = useCallback((data: TrackedQueen[], groupId: GroupFilterValue): TrackedQueen[] => {
     if (!groupId) return data
+    if (groupId === NON_GROUP_LEDGER_SCOPE) {
+      return data.filter((d) => !d.is_group_batch)
+    }
     return data.filter((d) => d.rearing_group_id === groupId)
+  }, [])
+
+  const filterByMember = useCallback((data: TrackedQueen[], memberId: string | null): TrackedQueen[] => {
+    if (!memberId) return data
+    return data.filter((d) => d.batch_owner_id === memberId)
+  }, [])
+
+  const filterByBatch = useCallback((data: TrackedQueen[], batchId: string | null): TrackedQueen[] => {
+    if (!batchId) return data
+    return data.filter((d) => d.batch_id === batchId)
   }, [])
 
   return {
@@ -434,5 +459,7 @@ export function useQueenTracker() {
     filterByStatus,
     filterByYear,
     filterByGroup,
+    filterByMember,
+    filterByBatch,
   }
 }

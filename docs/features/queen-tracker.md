@@ -3,7 +3,7 @@
 **Status:** Implemented
 
 ## 1. Overview
-The Queen Tracker is the `Queen Tracker` tab on the Queen Rearing page (`/dashboard/batches`). It follows queens distributed from rearing-group batches and presents each one as a fuller queen record rather than a narrow distribution row.
+The Queen Tracker is the `Queen Tracker` tab on the Queen Rearing page (`/dashboard/batches`). It follows queens distributed from visible rearing-group batches and from the current user’s non-group batches, and presents each one as a fuller queen record rather than a narrow distribution row.
 
 The tracker now combines:
 - Queen identity context such as cell number, queen tagged number, marking state, recorded marking colour where marked, age, latest weight, and current graft stage
@@ -13,10 +13,10 @@ The tracker now combines:
 
 ## 2. Scope & Simplicity
 * **In Scope:**
-  - Track queen cell, virgin queen, and mated queen distributions from group-linked batches
+  - Track queen cell, virgin queen, and mated queen distributions from visible group-linked batches and from the current user’s non-group batches
   - Surface the fuller set of existing queen, batch, breeder, recipient, and outcome details already available in the system
   - Present the tracker as a queen-led responsive ledger with grouped sections instead of a cramped desktop table
-  - Keep the existing group, year, and status filters
+  - Provide dynamic `Group -> Member -> Batch` filtering, alongside the existing year and status filters
   - Keep the existing overwintering and hybridisation update actions
 
 * **Out of Scope:**
@@ -41,25 +41,32 @@ The tracker now uses broader joins and mapping over existing tables:
 - `graft_distributions` for distribution and outcome fields
 - `batch_grafts` for cell number, queen marking, queen number, graft stage, and stage date
 - `queen_weights` for the latest recorded queen weight per graft
-- `rearing_batches` for batch dates, group linkage, and batch ownership
+- `rearing_batches` for batch dates, optional group linkage, and batch ownership
 - `rearing_batches -> apiaries!mating_apiary_id` for source mating apiary context
 - `rearing_batches -> queens!mother_queen_id` for mother queen context
 - `graft_distributions -> profiles / apiaries / hives` for recipient and destination details
 
 The tracker now resolves group ownership from `rearing_groups.owner_id`, matching the rest of the rearing-group feature instead of inferring ownership from membership-role rows alone.
+Non-group batches are intentionally limited to the current user’s own ledger rows.
 
 ## 4. Visibility Rules
 - **Group members:** See their own distributions from group-linked batches
 - **Group owners:** See all member distributions from their groups
+- **Non-group batches:** See their own non-group ledger rows
 - **Edit access:** Only the distributing member can update overwintering and hybridisation status for a tracker row
 - **Read-only state:** Group owners can view member records that they do not own, but those rows render as read-only in the tracker UI
+- **NIHBS boundary:** Non-group batches stay out of NIHBS reporting because the report path only counts batches linked to the selected group
 
 ## 5. UI Structure
 
 ### Filters
 - Group
+- Member
+- Batch
 - Year
 - Status (`All`, `Pending mating`, `Mated`, `Overwintered`, `Failed`)
+
+The Group filter includes a dedicated non-group scope whenever the user has visible non-group ledger rows. Member and Batch options are derived from the rows that remain after the upstream selections, so owners can drill down through group members while ordinary members only see the member scope available to them.
 
 ### Summary Cards
 - Tracked queens
@@ -109,4 +116,5 @@ A record is considered mated when either:
 ## 8. Files Modified
 - `src/hooks/useQueenTracker.ts`
 - `src/components/batches/QueenTrackerTab.tsx`
+- `src/hooks/useNIHBSReport.ts`
 - `docs/features/queen-tracker.md`
