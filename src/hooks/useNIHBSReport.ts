@@ -89,6 +89,7 @@ export function useNIHBSReport() {
           .from('rearing_batches')
           .select('id, graft_date, emergence_date, cell_count, grafts_accepted, queens_hatched, queens_mated, mating_apiary_id')
           .in('user_id', userIds)
+          // Keep NIHBS totals strictly group-linked; non-group batches stay out of these counts.
           .eq('rearing_group_id', groupId)
           .gte('graft_date', startDate)
           .lt('graft_date', endDate)

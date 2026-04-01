@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
-import { useQueenTracker, type TrackedQueen, type StatusFilter } from '@/hooks/useQueenTracker'
+import { NON_GROUP_LEDGER_SCOPE, useQueenTracker, type TrackedQueen, type StatusFilter } from '@/hooks/useQueenTracker'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import { COLOUR_DOTS, formatDateIrish } from './graftConstants'
 import { calculateQueenAge, getQueenColorFromYear } from '@/types/queen'
@@ -288,6 +288,11 @@ function formatQueenTaggedValue(queenNumber: string | null): string | null {
   return value.startsWith('#') ? value : `#${value}`
 }
 
+function getGroupScopeLabel(distribution: TrackedQueen, groupName: string | null): string {
+  if (!distribution.is_group_batch) return 'Non-group batch'
+  return groupName || 'Unknown group'
+}
+
 function buildDerivedRow(distribution: TrackedQueen, groupName: string): DerivedTrackerRow {
   const typeInfo = formatDistributionType(distribution.distribution_type)
   const lifecycleInfo = formatLifecycle(distribution)
@@ -356,10 +361,14 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     filterByStatus,
     filterByYear,
     filterByGroup,
+    filterByMember,
+    filterByBatch,
   } = useQueenTracker()
   const { ownedRearingGroups, memberRearingGroups, fetchRearingGroups } = useRearingGroups()
 
   const [selectedGroupId, setSelectedGroupId] = useState<string>('')
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('')
+  const [selectedBatchId, setSelectedBatchId] = useState<string>('')
   const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear())
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -402,17 +411,119 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     return Array.from(years).sort((a, b) => b - a)
   }, [distributions])
 
-  const filteredDistributions = useMemo(() => {
+  const preHierarchyDistributions = useMemo(() => {
     let result = distributions
-    result = filterByGroup(result, selectedGroupId || null)
     result = filterByYear(result, selectedYear)
     result = filterByStatus(result, selectedStatus)
     return result
-  }, [distributions, selectedGroupId, selectedYear, selectedStatus, filterByGroup, filterByYear, filterByStatus])
+  }, [distributions, selectedYear, selectedStatus, filterByYear, filterByStatus])
+
+  const availableGroupFilters = useMemo(() => {
+    const visibleGroupIds = new Set<string>()
+    let hasNonGroupRows = false
+
+    preHierarchyDistributions.forEach((distribution) => {
+      if (distribution.is_group_batch && distribution.rearing_group_id) {
+        visibleGroupIds.add(distribution.rearing_group_id)
+        return
+      }
+
+      hasNonGroupRows = true
+    })
+
+    const groups = allGroups
+      .filter((group) => visibleGroupIds.has(group.id))
+      .sort((a, b) => a.name.localeCompare(b.name))
+
+    return { groups, hasNonGroupRows }
+  }, [allGroups, preHierarchyDistributions])
+
+  useEffect(() => {
+    if (!selectedGroupId) return
+
+    if (selectedGroupId === NON_GROUP_LEDGER_SCOPE) {
+      if (!availableGroupFilters.hasNonGroupRows) {
+        setSelectedGroupId('')
+        setSelectedMemberId('')
+        setSelectedBatchId('')
+      }
+      return
+    }
+
+    const hasSelectedGroup = availableGroupFilters.groups.some((group) => group.id === selectedGroupId)
+    if (!hasSelectedGroup) {
+      setSelectedGroupId('')
+      setSelectedMemberId('')
+      setSelectedBatchId('')
+    }
+  }, [availableGroupFilters, selectedGroupId])
+
+  const groupScopedDistributions = useMemo(() => {
+    return filterByGroup(preHierarchyDistributions, selectedGroupId || null)
+  }, [preHierarchyDistributions, selectedGroupId, filterByGroup])
+
+  const availableMembers = useMemo(() => {
+    const membersById = new Map<string, string>()
+
+    groupScopedDistributions.forEach((distribution) => {
+      if (membersById.has(distribution.batch_owner_id)) return
+
+      const ownerName = distribution.batch_owner_name?.trim()
+      const label = distribution.batch_owner_id === userId
+        ? 'You'
+        : ownerName || 'Unknown member'
+
+      membersById.set(distribution.batch_owner_id, label)
+    })
+
+    return Array.from(membersById.entries())
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  }, [groupScopedDistributions, userId])
+
+  useEffect(() => {
+    if (!selectedMemberId) return
+
+    const hasSelectedMember = availableMembers.some((member) => member.id === selectedMemberId)
+    if (!hasSelectedMember) {
+      setSelectedMemberId('')
+      setSelectedBatchId('')
+    }
+  }, [availableMembers, selectedMemberId])
+
+  const memberScopedDistributions = useMemo(() => {
+    return filterByMember(groupScopedDistributions, selectedMemberId || null)
+  }, [groupScopedDistributions, selectedMemberId, filterByMember])
+
+  const availableBatches = useMemo(() => {
+    const batchesById = new Map<string, string>()
+
+    memberScopedDistributions.forEach((distribution) => {
+      if (batchesById.has(distribution.batch_id)) return
+      batchesById.set(distribution.batch_id, distribution.batch_name)
+    })
+
+    return Array.from(batchesById.entries())
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  }, [memberScopedDistributions])
+
+  useEffect(() => {
+    if (!selectedBatchId) return
+
+    const hasSelectedBatch = availableBatches.some((batch) => batch.id === selectedBatchId)
+    if (!hasSelectedBatch) {
+      setSelectedBatchId('')
+    }
+  }, [availableBatches, selectedBatchId])
+
+  const filteredDistributions = useMemo(() => {
+    return filterByBatch(memberScopedDistributions, selectedBatchId || null)
+  }, [memberScopedDistributions, selectedBatchId, filterByBatch])
 
   const trackerRows = useMemo(() => {
     return filteredDistributions.map((distribution) =>
-      buildDerivedRow(distribution, groupNameById.get(distribution.rearing_group_id) || 'Unknown group')
+      buildDerivedRow(distribution, getGroupScopeLabel(distribution, groupNameById.get(distribution.rearing_group_id ?? '') || null))
     )
   }, [filteredDistributions, groupNameById])
 
@@ -497,17 +608,6 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     )
   }
 
-  if (allGroups.length === 0) {
-    return (
-      <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm dark:bg-surface-elevated/95">
-        <h3 className="text-lg font-semibold text-foreground">Queen Tracker</h3>
-        <p className="mt-2 text-sm text-text-secondary">
-          You are not a member of any rearing groups. Join or create a group to track distributed queens here.
-        </p>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       <section className="rounded-[1.75rem] border border-border bg-surface px-5 py-5 shadow-sm dark:bg-surface-elevated/95 sm:px-6">
@@ -517,26 +617,76 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
             <div className="space-y-2">
               <h3 className="text-2xl font-semibold text-foreground sm:text-[2rem]">Distributed Queen Ledger</h3>
               <p className="text-sm leading-6 text-text-secondary">
-                Follow each distributed queen as a full record: identity, breeding context, destination, and longer-term outcomes in one place.
+                Follow each distributed queen from both group and non-group batches as a full record: identity, breeding context, destination, and longer-term outcomes in one place.
               </p>
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3 xl:min-w-[38rem]">
+          <div className="grid gap-4 md:grid-cols-2 xl:min-w-[66rem] xl:grid-cols-5">
             <div>
               <label className="mb-1 block text-sm font-medium text-text-secondary">Group</label>
               <select
                 value={selectedGroupId}
                 onChange={(event) => {
                   const value = event.target.value
-                  startTransition(() => setSelectedGroupId(value))
+                  startTransition(() => {
+                    setSelectedGroupId(value)
+                    setSelectedMemberId('')
+                    setSelectedBatchId('')
+                  })
                 }}
                 className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
               >
-                <option value="">All groups</option>
-                {allGroups.map((group) => (
+                <option value="">All groups and non-group batches</option>
+                {availableGroupFilters.groups.map((group) => (
                   <option key={group.id} value={group.id}>
                     {group.name} {group.user_role === 'owner' ? '(Owner)' : ''}
+                  </option>
+                ))}
+                {availableGroupFilters.hasNonGroupRows && (
+                  <option value={NON_GROUP_LEDGER_SCOPE}>Non-group batches</option>
+                )}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-text-secondary">Member</label>
+              <select
+                value={selectedMemberId}
+                onChange={(event) => {
+                  const value = event.target.value
+                  startTransition(() => {
+                    setSelectedMemberId(value)
+                    setSelectedBatchId('')
+                  })
+                }}
+                disabled={availableMembers.length === 0}
+                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+              >
+                <option value="">All members</option>
+                {availableMembers.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium text-text-secondary">Batch</label>
+              <select
+                value={selectedBatchId}
+                onChange={(event) => {
+                  const value = event.target.value
+                  startTransition(() => setSelectedBatchId(value))
+                }}
+                disabled={availableBatches.length === 0}
+                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+              >
+                <option value="">All batches</option>
+                {availableBatches.map((batch) => (
+                  <option key={batch.id} value={batch.id}>
+                    {batch.label}
                   </option>
                 ))}
               </select>
@@ -595,7 +745,11 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
 
       {trackerRows.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-10 text-center shadow-sm dark:bg-surface-elevated/95">
-          <p className="text-sm text-text-secondary">No distributed queens match the current filters.</p>
+          <p className="text-sm text-text-secondary">
+            {distributions.length === 0
+              ? 'No queen ledger records are available yet.'
+              : 'No distributed queens match the current filters.'}
+          </p>
         </div>
       ) : (
         <div className="space-y-4">
