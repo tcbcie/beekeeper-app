@@ -88,7 +88,9 @@ Each tracked queen now renders as a dense summary row with:
 - **Queen:** Cell title, compact marked and tagged indicators clustered beside it, an explicit `Age ...` summary line, and a selected-row treatment so the active row stays obvious
 - **Actions:** `Overwintered` and `Hybridised` share one compact action column between `Queen` and `Status`, with the two toggles stacked vertically for faster scanning
 - **Status:** Distribution type and lifecycle state in a tighter, narrower column
-- **Distribution:** Recipient name-first or email fallback, a compact distribution-type cue (`Group Member`, `App User`, or `Public Recipient`), and distribution date
+- **Distribution:** Recipient name-first or email fallback, a compact distribution-type cue (`Group Member`, `App User`, or `Public Recipient`), and the distributed date on its own line beneath that cue
+
+The summary row spacing between `Queen` and `Actions` has also been tightened so the identity and action area reads as one denser working block.
 
 Read-only member rows now use a distinct row treatment instead of a dedicated `Read only` badge in the Status column.
 Expanded rows now hold the broader queen record panels and supporting context, including group, member, batch, latest weight, and the editable outcome dates.

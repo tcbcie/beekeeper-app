@@ -1,27 +1,25 @@
-# Task: Queen Ledger Distribution Column Refinement
+# Task: Queen Ledger Queen Actions Spacing Tidy
 **Date:** 01/04/2026
 **Status:** Completed
 
 ## 1. Objective
-Refine the Queen Ledger `Distribution` column so it uses space better, shows a cleaner recipient label, clearly distinguishes distributions to a group member, an app user, or a member of the public, and places the `Actions` column back between `Queen` and `Status`.
+Tighten the Queen Ledger row so the gap between the `Queen` and `Actions` columns is reduced, the identity-plus-action area reads as one denser block, and the `Distributed` date in the `Distribution` column sits beneath the recipient classification badge instead of beside it.
 
 ## 2. Impact Analysis
 * **Files to Modify:** * `src/components/batches/QueenTrackerTab.tsx`
-  * `src/hooks/useQueenTracker.ts`
   * `docs/features/queen-tracker.md`
-  * `docs/features/queen-ledger-distribution-column-refinement-plan.md`
-* **Simplicity Check:** This keeps the change scoped to the ledger display, one small recipient-classification addition in the tracker hook, and a table-column reorder. It avoids broader workflow or schema changes and leaves actions, permissions, and NIHBS logic untouched.
+  * `docs/features/queen-ledger-queen-actions-spacing-tidy-plan.md`
+* **Simplicity Check:** This is a surgical table-layout pass inside the Queen Ledger component. It avoids hook changes, action logic changes, permission changes, and NIHBS changes.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Add a minimal recipient-type classification path in `src/hooks/useQueenTracker.ts` so ledger rows can distinguish `Group Member`, `App User`, and `Public Recipient` using real recipient and group-membership context.
-- [x] **Step 2:** Refine the Queen Ledger table in `src/components/batches/QueenTrackerTab.tsx` so the `Destination` header becomes `Distribution`, the row shows recipient name when available or email when not, the recipient type is surfaced compactly, and the `Actions` column sits between `Queen` and `Status`.
-- [x] **Step 3:** Keep fuller distribution context in the expanded details so the compact table view does not lose useful recipient information.
-- [x] **Step 4:** Update documentation in `docs/features/queen-tracker.md`
-- [x] **Step 5:** Prompt user to test the build
+- [x] **Step 1:** Tighten the Queen Ledger summary-row widths and spacing in `src/components/batches/QueenTrackerTab.tsx` so the `Queen` and `Actions` cells sit closer together without harming readability.
+- [x] **Step 2:** Adjust the queen identity, compact action-cell layout, and `Distribution` cell stack so the row feels denser and the distributed date sits beneath the recipient classification badge.
+- [x] **Step 3:** Update documentation in `docs/features/queen-tracker.md`
+- [x] **Step 4:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The ledger distribution cell was using a broad destination summary without showing who the queen was actually distributed to, and the column order no longer matched the preferred scan pattern.
-* **Summary of Changes:** Added a recipient-type classification path based on real group membership, renamed the summary column to `Distribution`, compacted the row to name-first or email-only display, surfaced a recipient-type badge, and restored `Actions` to sit between `Queen` and `Status`.
-* **Notes for User:** This was a UI-led refinement with one small tracker-hook enrichment. Build tests were not run per repository instruction.
+* **Root Cause Found (if applicable):** The row was still carrying more padding and minimum width than necessary between the queen identity cluster and the action stack, and the distribution sub-line was using a side-by-side badge-and-date layout that spent avoidable horizontal space.
+* **Summary of Changes:** Reduced the Queen and Actions cell footprint, tightened the local icon and toggle spacing, and moved the distributed date beneath the recipient classification badge in the Distribution column.
+* **Notes for User:** This was a UI-only spacing pass. Build tests were not run per repository instruction.
