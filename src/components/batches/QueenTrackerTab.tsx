@@ -121,9 +121,9 @@ function OutcomeActionStack({
   onHybridisationChange: (newValue: boolean | null) => void
 }) {
   return (
-    <div className="min-w-[9rem] space-y-2.5">
+    <div className="min-w-[7.75rem] space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">Overwintered</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">Overwintered</span>
         <ThreeStateToggle
           value={overwintered}
           onChange={onOverwinteredChange}
@@ -134,7 +134,7 @@ function OutcomeActionStack({
         />
       </div>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">Hybridised</span>
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">Hybridised</span>
         <ThreeStateToggle
           value={hybridised}
           onChange={onHybridisationChange}
@@ -1124,11 +1124,11 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           </button>
                         </td>
-                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <div className="min-w-[10rem] space-y-1.5">
-                            <div className="flex flex-wrap items-center gap-2">
+                        <td className={`border-t border-border pl-4 pr-2 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
+                          <div className="min-w-[8.75rem] space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-1.5">
                               <p className="font-semibold text-foreground">{distribution.queen_display_name}</p>
-                              <div className="flex shrink-0 items-center gap-1.5">
+                              <div className="flex shrink-0 items-center gap-1">
                                 <span
                                   title={distribution.marking_status_label}
                                   aria-label={distribution.marking_status_label}
@@ -1166,7 +1166,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             <p className="text-xs text-text-secondary">{distribution.queen_secondary_label}</p>
                           </div>
                         </td>
-                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
+                        <td className={`border-t border-border pl-2 pr-3 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
                           <OutcomeActionStack
                             overwintered={distribution.overwintered}
                             hybridised={distribution.offspring_hybridised}
@@ -1189,13 +1189,13 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
                           <div className="min-w-[13rem] space-y-1.5">
                             <p className="font-medium text-foreground">{distribution.recipient_display_name}</p>
-                            <div className="flex flex-wrap items-center gap-2">
+                            <div className="space-y-1">
                               <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${distribution.recipient_type_class}`}>
                                 {distribution.recipient_type_label}
                               </span>
-                              <span className="text-xs text-text-secondary">
+                              <p className="text-xs text-text-secondary">
                                 Distributed {formatOptionalDate(distribution.distribution_date)}
-                              </span>
+                              </p>
                             </div>
                           </div>
                         </td>
