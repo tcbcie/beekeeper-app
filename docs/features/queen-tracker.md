@@ -9,7 +9,7 @@ The tracker now combines:
 - Queen identity context such as cell number, queen tagged number, marking state, recorded marking colour where marked, age, and latest weight
 - Breeding provenance such as batch, breeder, mother queen, mother marking and age, graft date, emergence date, and source mating apiary
 - Destination context such as recipient, contact details, recipient apiary or hive, and recorded mating location
-- Lifecycle outcomes such as mating confirmation, overwintering, and hybridisation status
+- Lifecycle outcomes such as mating confirmation, explicit queen failure, overwintering, and hybridisation status
 
 ## 2. Scope & Simplicity
 * **In Scope:**
@@ -35,7 +35,10 @@ The tracker now combines:
 The feature remains a client-rendered tab on `/dashboard/batches` and continues to use `useQueenTracker` as its data source. The hook now exposes a richer normalised record, and the component renders that data in a table-first queen ledger with expandable detail rows.
 
 ### Database Connections (MCP Server)
-The live schema was checked through the MCP server before implementation. No migration was required.
+The live schema was checked through the MCP server before implementation. An additional migration was applied to `public.graft_distributions` to add:
+- `queen_failed`
+- `queen_failed_date`
+- `queen_failure_comment`
 
 The tracker now uses broader joins and mapping over existing tables:
 - `graft_distributions` for distribution and outcome fields
@@ -53,12 +56,13 @@ The ledger also normalises the batch owner profile join before deriving `batch_o
 Non-group batches are intentionally limited to the current user's own ledger rows.
 The ledger fetch path now queries owned ledger rows directly from `graft_distributions.user_id`, only adds additional group rows for groups owned by the current user, deduplicates graft IDs before the `queen_weights` lookup, and skips malformed rows without a valid cell number instead of fabricating `Cell #0`.
 The recent hardening pass also required a follow-up parse fix in `useQueenTracker` so the owned-row and owned-group query-builder path compiles cleanly.
+The explicit queen-failure migration also backfilled historic ledger rows where `overwintered = false` into the new `queen_failed` state so previous tracker data keeps its earlier failure meaning.
 
 ## 4. Visibility Rules
 - **Group members:** See their own distributions from group-linked batches
 - **Group owners:** See all member distributions from their groups
 - **Non-group batches:** See their own non-group ledger rows
-- **Edit access:** Only the distributing member can update overwintering and hybridisation status for a tracker row
+- **Edit access:** Only the distributing member can update failure, overwintering, and hybridisation outcomes for a tracker row
 - **Read-only state:** Group owners can view member records that they do not own, but those rows render as read-only in the tracker UI
 - **NIHBS boundary:** Non-group batches stay out of NIHBS reporting because the report path only counts batches linked to the selected group
 
@@ -86,14 +90,14 @@ The ledger totals now sit inside a collapsible summary strip that starts closed 
 Each tracked queen now renders as a dense summary row with:
 - **Details:** Expand or collapse control in the first column so row inspection starts at the left edge
 - **Queen:** Cell title, compact marked and tagged indicators clustered beside it, an explicit `Age ...` summary line, and a selected-row treatment so the active row stays obvious
-- **Actions:** `Overwintered` and `Hybridised` share one compact action column between `Queen` and `Status`, with the two toggles stacked vertically for faster scanning
+- **Actions:** `Failed`, `Overwintered`, and `Hybridised` share one compact action column between `Queen` and `Status`, with the controls stacked vertically for faster scanning
 - **Status:** Distribution type and lifecycle state in a tighter, narrower column
 - **Distribution:** Recipient name-first or email fallback, a compact distribution-type cue (`Group Member`, `App User`, or `Public Recipient`), and the distributed date on its own line beneath that cue
 
 The summary row spacing between `Queen` and `Actions` has also been tightened so the identity and action area reads as one denser working block.
 
 Read-only member rows now use a distinct row treatment instead of a dedicated `Read only` badge in the Status column.
-Expanded rows now hold the broader queen record panels and supporting context, including group, member, batch, latest weight, and the editable outcome dates.
+Expanded rows now hold the broader queen record panels and supporting context, including group, member, batch, latest weight, the editable failure date and comment, and the editable outcome dates.
 Read-only records still show their restricted-edit explanation inside the expanded Outcomes panel.
 Stage data is no longer surfaced in the Queen Ledger UI.
 
@@ -109,6 +113,7 @@ A record is considered mated when either:
 - Date defaults to the local calendar date when the user first sets an outcome, but it can then be edited from the expanded Outcomes panel
 - Date is cleared when reset to unknown
 - The overwintered date editor is user-controlled inside the expanded record, so members can correct historical outcome dates without widening the main table
+- Overwintering edits are disabled while a queen is explicitly marked failed
 - A write is only treated as successful when Supabase returns the updated row
 
 ### Hybridised
@@ -117,16 +122,30 @@ A record is considered mated when either:
 - When reset to no or unknown, the hybridisation date is cleared
 - Hybridisation date edits use the same per-row in-flight guard as the toggle path
 - The hybridisation date editor is controlled so failed writes revert to the persisted value, and cleared values no longer leave stale input state behind
+- Hybridisation edits are disabled while a queen is explicitly marked failed
 - A write is only treated as successful when Supabase returns the updated row
+
+### Failed
+- Failure is now an explicit queen outcome rather than a derived alias of `overwintered = false`
+- The row action area provides a compact `Failed` control alongside `Overwintered` and `Hybridised`
+- Marking a queen as failed defaults the failure date to today and expands the row so the user can capture the fuller details
+- Failure date and a short failure comment are edited in the expanded `Outcomes` panel
+- Clearing the failure state clears the failure date and failure comment
+- Historic rows previously treated as failed through `overwintered = false` were backfilled into the explicit failure state during migration
+
+### Winter Loss
+- A row with `overwintered = false` but no explicit failure now shows `Winter loss` as its lifecycle state
+- The `Failed` summary and filter use the explicit failure state, not winter loss
 
 ## 7. Risks And Constraints
 - The tracker intentionally avoids joining directly to recipient queen records because the current schema does not provide a guaranteed direct link from a tracker row to a specific queen row.
 - The richer layout depends on optional fields that may be empty, so the UI uses explicit fallbacks instead of leaving gaps.
 - The tracker remains distribution-led under the hood even though the presentation is queen-led.
 - Visibility and editability are intentionally different: group owners may see more rows than they are allowed to edit under current RLS rules.
+- The failure outcome now has clearer semantics than overwintering, but older data still depends on the backfill migration to preserve prior tracker meaning.
 
 ## 8. Files Modified
+- `supabase` migration `add_queen_failure_fields_to_graft_distributions`
 - `src/hooks/useQueenTracker.ts`
 - `src/components/batches/QueenTrackerTab.tsx`
-- `src/hooks/useNIHBSReport.ts`
 - `docs/features/queen-tracker.md`

@@ -52,6 +52,8 @@ type DerivedTrackerRow = TrackedQueen & {
   mother_queen_marking_label: string
 }
 
+const MAX_FAILURE_COMMENT_LENGTH = 280
+
 function ThreeStateToggle({
   value,
   onChange,
@@ -108,17 +110,23 @@ function ThreeStateToggle({
 function OutcomeActionStack({
   overwintered,
   hybridised,
-  disabled,
+  failed,
+  outcomeDisabled,
+  failureDisabled,
   queenLabel,
   onOverwinteredChange,
   onHybridisationChange,
+  onFailureToggle,
 }: {
   overwintered: boolean | null
   hybridised: boolean | null
-  disabled: boolean
+  failed: boolean
+  outcomeDisabled: boolean
+  failureDisabled: boolean
   queenLabel: string
   onOverwinteredChange: (newValue: boolean | null) => void
   onHybridisationChange: (newValue: boolean | null) => void
+  onFailureToggle: () => void
 }) {
   return (
     <div className="min-w-[7.75rem] space-y-2">
@@ -128,7 +136,7 @@ function OutcomeActionStack({
           value={overwintered}
           onChange={onOverwinteredChange}
           labels={{ true: 'Yes', false: 'No', null: '?' }}
-          disabled={disabled}
+          disabled={outcomeDisabled}
           ariaLabel={`Queen ${queenLabel} overwintered`}
           size="compact"
         />
@@ -139,10 +147,28 @@ function OutcomeActionStack({
           value={hybridised}
           onChange={onHybridisationChange}
           labels={{ true: 'Yes', false: 'No', null: '?' }}
-          disabled={disabled}
+          disabled={outcomeDisabled}
           ariaLabel={`Queen ${queenLabel} hybridised`}
           size="compact"
         />
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-text-tertiary">Failed</span>
+        <button
+          type="button"
+          onClick={onFailureToggle}
+          disabled={failureDisabled}
+          aria-pressed={failed}
+          aria-label={`Queen ${queenLabel} failure status: ${failed ? 'Failed' : 'Not failed'}`}
+          className={`inline-flex min-w-[4.15rem] items-center justify-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+            failed
+              ? 'border-red-300 bg-red-100 text-red-700 dark:border-red-700 dark:bg-red-900/50 dark:text-red-300'
+              : 'border-border bg-surface-secondary text-text-secondary dark:bg-surface-elevated'
+          } ${failureDisabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-85'}`}
+        >
+          <X size={12} aria-hidden="true" />
+          <span>{failed ? 'Clear' : 'Mark'}</span>
+        </button>
       </div>
     </div>
   )
@@ -154,6 +180,7 @@ function OutcomeDateField({
   date,
   disabled,
   dateEnabled,
+  disabledMessage = 'Set the outcome first to record a date.',
   onDateChange,
 }: {
   id: string
@@ -161,6 +188,7 @@ function OutcomeDateField({
   date: string | null
   disabled: boolean
   dateEnabled: boolean
+  disabledMessage?: string
   onDateChange: (id: string, date: string) => Promise<boolean>
 }) {
   const [draftDate, setDraftDate] = useState(date || '')
@@ -199,7 +227,66 @@ function OutcomeDateField({
         className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
       />
       {!dateEnabled && (
-        <p className="text-xs text-text-secondary">Set the outcome first to record a date.</p>
+        <p className="text-xs text-text-secondary">{disabledMessage}</p>
+      )}
+    </div>
+  )
+}
+
+function OutcomeCommentField({
+  id,
+  label,
+  comment,
+  disabled,
+  enabled,
+  maxLength = MAX_FAILURE_COMMENT_LENGTH,
+  disabledMessage = 'Mark the queen as failed to record a comment.',
+  onCommentChange,
+}: {
+  id: string
+  label: string
+  comment: string | null
+  disabled: boolean
+  enabled: boolean
+  maxLength?: number
+  disabledMessage?: string
+  onCommentChange: (id: string, comment: string) => Promise<boolean>
+}) {
+  const [draftComment, setDraftComment] = useState(comment || '')
+
+  useEffect(() => {
+    setDraftComment(comment || '')
+  }, [comment, id])
+
+  const commitComment = useCallback(async () => {
+    if (disabled || !enabled) return
+
+    const nextValue = draftComment.trim()
+    const currentValue = comment?.trim() || ''
+    if (nextValue === currentValue) return
+
+    const success = await onCommentChange(id, nextValue)
+    if (!success) {
+      setDraftComment(comment || '')
+    }
+  }, [comment, disabled, draftComment, enabled, id, onCommentChange])
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
+        <span className="text-[11px] text-text-tertiary">{draftComment.length}/{maxLength}</span>
+      </div>
+      <textarea
+        value={enabled ? draftComment : ''}
+        onChange={(event) => setDraftComment(event.target.value.slice(0, maxLength))}
+        onBlur={() => void commitComment()}
+        disabled={disabled || !enabled}
+        rows={3}
+        className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
+      />
+      {!enabled && (
+        <p className="text-xs text-text-secondary">{disabledMessage}</p>
       )}
     </div>
   )
@@ -275,6 +362,8 @@ function ExpandedTrackerRowContent({
   isUpdating,
   onOverwinteredDateChange,
   onHybridisationDateChange,
+  onFailureDateChange,
+  onFailureCommentChange,
 }: {
   distribution: DerivedTrackerRow
   ownerDisplayName: string
@@ -282,6 +371,8 @@ function ExpandedTrackerRowContent({
   isUpdating: boolean
   onOverwinteredDateChange: (id: string, date: string) => Promise<boolean>
   onHybridisationDateChange: (id: string, date: string) => Promise<boolean>
+  onFailureDateChange: (id: string, date: string) => Promise<boolean>
+  onFailureCommentChange: (id: string, comment: string) => Promise<boolean>
 }) {
   return (
     <>
@@ -319,7 +410,7 @@ function ExpandedTrackerRowContent({
         <TrackerPanel title="Outcomes" icon={Sprout}>
           {isReadOnly && (
             <div className="rounded-2xl border border-border bg-surface px-3 py-3 text-sm text-text-secondary dark:bg-surface-elevated">
-              Only the distributing member can update overwintering and hybridisation outcomes for this record.
+              Only the distributing member can update failure, overwintering, and hybridisation outcomes for this record.
             </div>
           )}
 
@@ -328,6 +419,13 @@ function ExpandedTrackerRowContent({
             value={distribution.mating_confirmed || distribution.distribution_type === 'mated_queen' ? 'Confirmed' : 'Pending'}
           />
           <DetailItem label="Mated date" value={formatOptionalDate(distribution.mating_confirmed_date)} />
+          <DetailItem label="Failed" value={distribution.queen_failed ? 'Yes' : 'No'} />
+          {isReadOnly && distribution.queen_failed && (
+            <DetailItem label="Failure date" value={formatOptionalDate(distribution.queen_failed_date)} />
+          )}
+          {isReadOnly && distribution.queen_failed && (
+            <DetailItem label="Failure comment" value={distribution.queen_failure_comment || '-'} />
+          )}
           <DetailItem label="Overwintered" value={formatTriStateValue(distribution.overwintered)} />
           {isReadOnly && (
             <DetailItem label="Overwintered date" value={formatOptionalDate(distribution.overwintered_date)} />
@@ -341,10 +439,30 @@ function ExpandedTrackerRowContent({
             <div className="space-y-3 rounded-2xl border border-border bg-surface px-3 py-3 dark:bg-surface-elevated">
               <OutcomeDateField
                 id={distribution.id}
+                label="Record failure date"
+                date={distribution.queen_failed_date}
+                disabled={isUpdating}
+                dateEnabled={distribution.queen_failed}
+                disabledMessage="Mark the queen as failed to record a date."
+                onDateChange={onFailureDateChange}
+              />
+              <OutcomeCommentField
+                id={distribution.id}
+                label="Failure comment"
+                comment={distribution.queen_failure_comment}
+                disabled={isUpdating}
+                enabled={distribution.queen_failed}
+                onCommentChange={onFailureCommentChange}
+              />
+              <OutcomeDateField
+                id={distribution.id}
                 label="Record overwintered date"
                 date={distribution.overwintered_date}
                 disabled={isUpdating}
-                dateEnabled={distribution.overwintered !== null}
+                dateEnabled={distribution.overwintered !== null && !distribution.queen_failed}
+                disabledMessage={distribution.queen_failed
+                  ? 'Clear the failure outcome to edit overwintering.'
+                  : 'Set the outcome first to record a date.'}
                 onDateChange={onOverwinteredDateChange}
               />
               <OutcomeDateField
@@ -352,7 +470,10 @@ function ExpandedTrackerRowContent({
                 label="Record hybridisation date"
                 date={distribution.hybridisation_date}
                 disabled={isUpdating}
-                dateEnabled={distribution.offspring_hybridised === true}
+                dateEnabled={distribution.offspring_hybridised === true && !distribution.queen_failed}
+                disabledMessage={distribution.queen_failed
+                  ? 'Clear the failure outcome to edit hybridisation.'
+                  : 'Set the outcome first to record a date.'}
                 onDateChange={onHybridisationDateChange}
               />
             </div>
@@ -413,10 +534,17 @@ function formatDistributionType(distributionType: TrackedQueen['distribution_typ
 }
 
 function formatLifecycle(distribution: TrackedQueen) {
-  if (distribution.overwintered === false) {
+  if (distribution.queen_failed) {
     return {
       label: 'Failed',
       className: 'border-red-200 bg-red-100 text-red-800 dark:border-red-800 dark:bg-red-900/35 dark:text-red-300',
+    }
+  }
+
+  if (distribution.overwintered === false) {
+    return {
+      label: 'Winter loss',
+      className: 'border-orange-200 bg-orange-100 text-orange-800 dark:border-orange-800 dark:bg-orange-900/35 dark:text-orange-300',
     }
   }
 
@@ -592,6 +720,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     fetchDistributions,
     updateOverwintered,
     updateHybridisation,
+    updateFailure,
     calculateStats,
     filterByStatus,
     filterByYear,
@@ -872,6 +1001,87 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     }
   }, [updateHybridisation, fetchDistributions, userId, toast])
 
+  const handleFailureToggle = useCallback(async (id: string, currentValue: boolean) => {
+    if (updatingIdsRef.current.has(id)) return
+
+    const nextValue = !currentValue
+
+    setUpdatingIds((prev) => new Set(prev).add(id))
+    try {
+      const success = await updateFailure(id, nextValue)
+      if (success) {
+        toast.success(nextValue ? 'Queen marked as failed' : 'Queen failure cleared')
+        if (nextValue) {
+          setSelectedId(id)
+          setExpandedId(id)
+        }
+        await fetchDistributions(userId)
+      } else {
+        toast.error('Failed to update queen failure status')
+      }
+    } finally {
+      setUpdatingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }, [updateFailure, fetchDistributions, userId, toast])
+
+  const handleFailureDateChange = useCallback(async (
+    id: string,
+    currentComment: string | null,
+    date: string
+  ): Promise<boolean> => {
+    if (updatingIdsRef.current.has(id)) return false
+
+    const nextDate = date.trim()
+
+    setUpdatingIds((prev) => new Set(prev).add(id))
+    try {
+      const success = await updateFailure(id, true, nextDate === '' ? null : nextDate, currentComment)
+      if (success) {
+        toast.success('Failure date updated')
+        await fetchDistributions(userId)
+      } else {
+        toast.error('Failed to update failure date')
+      }
+      return success
+    } finally {
+      setUpdatingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }, [updateFailure, fetchDistributions, userId, toast])
+
+  const handleFailureCommentChange = useCallback(async (
+    id: string,
+    currentDate: string | null,
+    comment: string
+  ): Promise<boolean> => {
+    if (updatingIdsRef.current.has(id)) return false
+
+    setUpdatingIds((prev) => new Set(prev).add(id))
+    try {
+      const success = await updateFailure(id, true, currentDate, comment)
+      if (success) {
+        toast.success('Failure comment updated')
+        await fetchDistributions(userId)
+      } else {
+        toast.error('Failed to update failure comment')
+      }
+      return success
+    } finally {
+      setUpdatingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }, [updateFailure, fetchDistributions, userId, toast])
+
   if (loading) {
     return <div className="py-10 text-center text-text-secondary">Loading queen tracker...</div>
   }
@@ -1074,6 +1284,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                   const isSelected = selectedId === distribution.id
                   const isUpdating = updatingIds.has(distribution.id)
                   const isReadOnly = !distribution.can_edit
+                  const outcomeDisabled = isUpdating || isReadOnly || distribution.queen_failed
                   const ownerDisplayName = distribution.batch_owner_name
                     || (distribution.batch_owner_id === userId ? 'You' : '-')
                   const queenTaggedValue = formatQueenTaggedValue(distribution.queen_number)
@@ -1170,10 +1381,13 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                           <OutcomeActionStack
                             overwintered={distribution.overwintered}
                             hybridised={distribution.offspring_hybridised}
-                            disabled={isUpdating || isReadOnly}
+                            failed={distribution.queen_failed}
+                            outcomeDisabled={outcomeDisabled}
+                            failureDisabled={isUpdating || isReadOnly}
                             queenLabel={distribution.queen_display_name}
                             onOverwinteredChange={(value) => handleOverwinteredChange(distribution.id, value)}
                             onHybridisationChange={(value) => handleHybridisationChange(distribution.id, value)}
+                            onFailureToggle={() => handleFailureToggle(distribution.id, distribution.queen_failed)}
                           />
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
@@ -1219,6 +1433,8 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                               isUpdating={isUpdating}
                               onOverwinteredDateChange={(id, date) => handleOverwinteredDateChange(id, distribution.overwintered, date)}
                               onHybridisationDateChange={handleHybridisationDateChange}
+                              onFailureDateChange={(id, date) => handleFailureDateChange(id, distribution.queen_failure_comment, date)}
+                              onFailureCommentChange={(id, comment) => handleFailureCommentChange(id, distribution.queen_failed_date, comment)}
                             />
                           </td>
                         </tr>

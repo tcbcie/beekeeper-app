@@ -1,32 +1,33 @@
-# Task: Queen Ledger Queen Actions Spacing Tidy
+# Task: Queen Ledger Failure Outcome
 **Date:** 01/04/2026
 **Status:** Completed
 
 ## 1. Objective
-Tighten the Queen Ledger row so the gap between the `Queen` and `Actions` columns is reduced, the identity-plus-action area reads as one denser block, and the `Distributed` date in the `Distribution` column sits beneath the recipient classification badge instead of beside it.
+Add an explicit queen-failure mechanism to the Queen Ledger so users can mark a queen as failed from the row action area and capture a failure date plus a short comment without misusing `overwintered = false`.
 
 ## 2. Impact Analysis
 * **Files to Modify:** * `src/components/batches/QueenTrackerTab.tsx`
+  * `src/hooks/useQueenTracker.ts`
   * `docs/features/queen-tracker.md`
-  * `docs/features/queen-ledger-queen-actions-spacing-tidy-plan.md`
-  * `tasks/todo-codex.md`
-  * `tasks/todo-codex-codex.md`
-* **Simplicity Check:** This is a surgical table-layout pass inside the Queen Ledger component. It avoids hook changes, action logic changes, permission changes, and NIHBS changes.
+  * `docs/features/queen-ledger-failure-outcome-plan.md`
+* **Simplicity Check:** This keeps the new failure mechanism inside the existing ledger model and outcome area instead of creating a parallel workflow. The row trigger stays in the current `Actions` column, while the date and comment capture live in the expanded `Outcomes` panel to avoid widening the table again.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Tighten the Queen Ledger summary-row widths and spacing in `src/components/batches/QueenTrackerTab.tsx` so the `Queen` and `Actions` cells sit closer together without harming readability.
-- [x] **Step 2:** Adjust the queen identity, compact action-cell layout, and `Distribution` cell stack so the row feels denser and the distributed date sits beneath the recipient classification badge.
-- [x] **Step 3:** Update documentation in `docs/features/queen-tracker.md`
-- [x] **Step 4:** Prompt user to test the build
+- [x] **Step 1:** Add an explicit failure outcome model to the Queen Ledger data path so failure is no longer inferred from `overwintered = false`.
+- [x] **Step 2:** Add a compact `Fail` action beside the existing overwintering and hybridisation controls in `src/components/batches/QueenTrackerTab.tsx`.
+- [x] **Step 3:** Add failure date and short-comment capture to the expanded `Outcomes` panel, with clear save and clear behaviour.
+- [x] **Step 4:** Update the ledger status, summary, and filtering logic so `Failed` reflects the explicit failure outcome.
+- [x] **Step 5:** Update documentation in `docs/features/queen-tracker.md`
+- [x] **Step 6:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The row was still carrying more padding and minimum width than necessary between the queen identity cluster and the action stack, and the distribution sub-line was using a side-by-side badge-and-date layout that spent avoidable horizontal space.
-* **Summary of Changes:** Reduced the Queen and Actions cell footprint, tightened the local icon and toggle spacing, and moved the distributed date beneath the recipient classification badge in the Distribution column.
-* **Notes for User:** This was a UI-only spacing pass. Build tests were not run per repository instruction.
+* **Root Cause Found (if applicable):** The Queen Ledger was treating `Failed` as `overwintered === false`, which conflated a queen-failure outcome with overwintering and left no proper place to record a failure date or comment.
+* **Summary of Changes:** Added dedicated failure fields to `graft_distributions`, backfilled historic tracker failures, introduced an explicit failure action in the ledger row, and moved failure date and comment editing into the expanded `Outcomes` panel.
+* **Notes for User:** Live MCP verification confirmed the existing schema before the migration was applied. Build tests were not run per repository instruction.
 
 ## Review
-* **Scope Covered:** Queen Ledger Queen and Actions spacing tidy.
-* **Summary of Changes:** The summary row now reads more tightly around the queen identity and action controls, and the Distribution cell now stacks the distributed date below the recipient-type badge.
-* **Notes for User:** Please test the Queen Ledger in your normal build flow, especially row density on desktop and tap comfort on narrower widths.
+* **Scope Covered:** Queen Ledger explicit failure outcome.
+* **Summary of Changes:** The ledger now treats failure as its own outcome, with a compact `Failed` row action plus editable failure date and comment. The `Failed` filter and summary now use the explicit failure state, while non-failure `overwintered = false` rows now show `Winter loss`.
+* **Notes for User:** Please test the Queen Ledger in your normal build flow, especially marking a queen as failed, editing the failure date and comment, clearing failure, and reviewing historic rows that were previously counted as failed.
