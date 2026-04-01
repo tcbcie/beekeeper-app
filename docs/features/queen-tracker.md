@@ -94,7 +94,7 @@ The ledger totals now sit inside a collapsible summary strip that starts closed 
 Each tracked queen now renders as a dense summary row with:
 - **Details:** Expand or collapse control in the first column so row inspection starts at the left edge
 - **Queen:** Cell title, compact marked and tagged indicators clustered beside it, an explicit `Age ...` summary line, and a selected-row treatment so the active row stays obvious
-- **Actions:** `Mated`, `Failed`, `Overwintered`, and `Hybridised` share one compact action column between `Queen` and `Status`, with the controls stacked vertically for faster scanning and a compact inline date-capture editor appearing in place when the user records a date-bearing outcome
+- **Actions:** `Mated`, `Hybridised`, `Overwintered`, and `Failed` share one compact action column between `Queen` and `Status`, arranged as a denser two-by-two tile grid with the inline date-capture editor appearing directly beneath it when the user records a date-bearing outcome
 - **Status:** Distribution type and lifecycle state in a tighter, narrower column
 - **Distribution:** Recipient name-first or email fallback, a compact distribution-type cue (`Group Member`, `App User`, or `Public Recipient`), and the distributed date on its own line beneath that cue
 
