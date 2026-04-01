@@ -81,6 +81,29 @@ type TrackedQueenPatch = {
 
 type JoinedRecord<T> = T | T[] | null
 
+type BatchJoinRow = {
+  id: string
+  batch_name: string
+  graft_date: string
+  emergence_date: string | null
+  rearing_group_id: string | null
+  user_id: string
+  profiles: JoinedRecord<{
+    first_name: string | null
+    last_name: string | null
+  }>
+  apiaries: JoinedRecord<{
+    name: string | null
+    eircode: string | null
+  }>
+  queens: JoinedRecord<{
+    queen_number: string | null
+    subspecies: string | null
+    marking_color: string | null
+    birth_date: string | null
+  }>
+}
+
 function firstJoinedRecord<T>(value: JoinedRecord<T>): T | null {
   if (Array.isArray(value)) return value[0] ?? null
   return value ?? null
@@ -271,17 +294,7 @@ export function useQueenTracker() {
       const mapped: TrackedQueen[] = []
 
       for (const d of rows) {
-        const batch = firstJoinedRecord(d.rearing_batches as JoinedRecord<{
-          id: string
-          batch_name: string
-          graft_date: string
-          emergence_date: string | null
-          rearing_group_id: string | null
-          user_id: string
-          profiles: { first_name: string | null; last_name: string | null } | null
-          apiaries: { name: string | null; eircode: string | null }[] | { name: string | null; eircode: string | null } | null
-          queens: { queen_number: string | null; subspecies: string | null; marking_color: string | null; birth_date: string | null }[] | { queen_number: string | null; subspecies: string | null; marking_color: string | null; birth_date: string | null } | null
-        }>)
+        const batch = firstJoinedRecord(d.rearing_batches as JoinedRecord<BatchJoinRow>)
 
         if (!batch?.id || !batch.user_id || !batch.batch_name) continue
 

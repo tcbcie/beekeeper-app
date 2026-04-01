@@ -56,6 +56,7 @@ The ledger also normalises the batch owner profile join before deriving `batch_o
 Non-group batches are intentionally limited to the current user's own ledger rows.
 The ledger fetch path now queries owned ledger rows directly from `graft_distributions.user_id`, only adds additional group rows for groups owned by the current user, deduplicates graft IDs before the `queen_weights` lookup, and skips malformed rows without a valid cell number instead of fabricating `Cell #0`.
 The recent hardening pass also required a follow-up parse fix in `useQueenTracker` so the owned-row and owned-group query-builder path compiles cleanly.
+The latest build-fix follow-up also corrects the typed `rearing_batches` nested join shape so the existing `firstJoinedRecord(...)` normalisation matches the raw Supabase payload and compiles cleanly.
 The explicit queen-failure migration also backfilled historic ledger rows where `overwintered = false` into the new `queen_failed` state so previous tracker data keeps its earlier failure meaning.
 The latest remediation pass narrows the ledger select payload to the fields the table actually uses, patches successful outcome writes into local hook state instead of refetching the full ledger, and uses dedicated failure-date and failure-comment updates guarded by the explicit failure state.
 The filter hierarchy now uses safe derived selections for Group, Member, and Batch rather than repairing invalid selections in effects after render, and year parsing now uses the existing local-date helper for consistency.
