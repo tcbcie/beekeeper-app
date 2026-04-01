@@ -68,14 +68,23 @@ Non-group batches are intentionally limited to the current user’s own ledger r
 - Status (`All`, `Pending mating`, `Mated`, `Overwintered`, `Failed`)
 
 The Group filter includes a dedicated non-group scope whenever the user has visible non-group ledger rows. Member and Batch options are derived from the rows that remain after the upstream selections, so owners can drill down through group members while ordinary members only see the member scope available to them.
-The ledger header now uses a tighter intro block with a dedicated filter tray so the controls wrap more cleanly across desktop and mobile widths.
+The ledger header now drops the descriptive intro copy and keeps a dedicated filter tray so the controls stay focused on actual filtering work across desktop and mobile widths.
 
-### Summary Cards
+### Summary Strip
+The ledger totals now sit inside a collapsible summary strip that starts closed by default. It still shows:
 - Tracked queens
 - Mated
 - Overwintered
 - Failed
 - Hybridised
+
+### Card Legend
+A compact legend now sits below the summary strip and explains the card information language:
+- Type badge
+- Lifecycle badge
+- Group or non-group scope badge
+- Hybridised and read-only flags
+- Quick chips for marking, tagged number, and latest weight
 
 ### Queen Record Layout
 Each tracked queen now renders as a responsive record with:

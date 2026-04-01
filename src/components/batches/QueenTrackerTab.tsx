@@ -101,7 +101,7 @@ function ThreeStateToggle({
   )
 }
 
-function SummaryCard({
+function SummaryPill({
   label,
   value,
   accentClass,
@@ -111,12 +111,30 @@ function SummaryCard({
   accentClass: string
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border bg-surface px-4 py-4 shadow-sm dark:bg-surface-elevated/95">
-      <div className={`absolute inset-x-0 top-0 h-1 ${accentClass}`} />
-      <div className="space-y-1">
-        <div className="text-2xl font-semibold text-foreground">{value}</div>
-        <div className="text-sm text-text-secondary">{label}</div>
+    <div className="inline-flex min-w-[10.5rem] flex-1 items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm dark:bg-surface-elevated/95">
+      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${accentClass}`} />
+      <div className="min-w-0 space-y-0.5">
+        <div className="text-lg font-semibold text-foreground">{value}</div>
+        <div className="text-xs text-text-secondary">{label}</div>
       </div>
+    </div>
+  )
+}
+
+function LegendItem({
+  title,
+  description,
+  preview,
+}: {
+  title: string
+  description: string
+  preview: ReactNode
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface px-4 py-4 shadow-sm dark:bg-surface-elevated/95">
+      <div className="flex flex-wrap items-center gap-2">{preview}</div>
+      <p className="mt-3 text-sm font-semibold text-foreground">{title}</p>
+      <p className="mt-1 text-xs leading-5 text-text-secondary">{description}</p>
     </div>
   )
 }
@@ -371,6 +389,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   const [selectedBatchId, setSelectedBatchId] = useState<string>('')
   const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear())
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all')
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set())
   const updatingIdsRef = useRef(updatingIds)
@@ -528,6 +547,9 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   }, [filteredDistributions, groupNameById])
 
   const stats = useMemo(() => calculateStats(filteredDistributions), [filteredDistributions, calculateStats])
+  const summaryLabel = stats.total === 1
+    ? '1 queen matches the current filters.'
+    : `${stats.total} queens match the current filters.`
 
   const handleOverwinteredChange = useCallback(async (id: string, newValue: boolean | null) => {
     if (updatingIdsRef.current.has(id)) return
@@ -611,149 +633,238 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   return (
     <div className="space-y-6">
       <section className="overflow-hidden rounded-[1.75rem] border border-border bg-surface px-5 py-5 shadow-sm dark:bg-surface-elevated/95 sm:px-6">
-        <div className="space-y-5">
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] xl:items-start">
-            <div className="space-y-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-text-tertiary">Queen tracker</p>
-              <div className="space-y-3">
-                <h3 className="max-w-[14ch] text-2xl font-semibold leading-tight text-foreground sm:max-w-none sm:text-[2rem]">
-                  Distributed Queen Ledger
-                </h3>
-                <p className="max-w-[34rem] text-sm leading-6 text-text-secondary">
-                  Follow each distributed queen from both group and non-group batches as a full record: identity,
-                  breeding context, destination, and longer-term outcomes in one place.
-                </p>
-              </div>
+        <div className="rounded-2xl border border-border bg-surface-secondary/55 p-4 shadow-sm dark:bg-surface-elevated/55">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-tertiary">Ledger filters</p>
+              <p className="mt-1 text-xs text-text-secondary">Group, member, batch, year, and outcome status</p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <div className="min-w-0">
+              <label className="mb-1.5 block text-sm font-medium text-text-secondary">Group</label>
+              <select
+                value={selectedGroupId}
+                onChange={(event) => {
+                  const value = event.target.value
+                  startTransition(() => {
+                    setSelectedGroupId(value)
+                    setSelectedMemberId('')
+                    setSelectedBatchId('')
+                  })
+                }}
+                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
+              >
+                <option value="">All groups and non-group batches</option>
+                {availableGroupFilters.groups.map((group) => (
+                  <option key={group.id} value={group.id}>
+                    {group.name} {group.user_role === 'owner' ? '(Owner)' : ''}
+                  </option>
+                ))}
+                {availableGroupFilters.hasNonGroupRows && (
+                  <option value={NON_GROUP_LEDGER_SCOPE}>Non-group batches</option>
+                )}
+              </select>
             </div>
 
-            <div className="rounded-2xl border border-border bg-surface-secondary/55 p-4 shadow-sm dark:bg-surface-elevated/55">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-tertiary">Ledger filters</p>
-                <p className="text-xs text-text-secondary">Group, member, batch, year, and outcome status</p>
-              </div>
+            <div className="min-w-0">
+              <label className="mb-1.5 block text-sm font-medium text-text-secondary">Member</label>
+              <select
+                value={selectedMemberId}
+                onChange={(event) => {
+                  const value = event.target.value
+                  startTransition(() => {
+                    setSelectedMemberId(value)
+                    setSelectedBatchId('')
+                  })
+                }}
+                disabled={availableMembers.length === 0}
+                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+              >
+                <option value="">All members</option>
+                {availableMembers.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                <div className="min-w-0">
-                  <label className="mb-1.5 block text-sm font-medium text-text-secondary">Group</label>
-                  <select
-                    value={selectedGroupId}
-                    onChange={(event) => {
-                      const value = event.target.value
-                      startTransition(() => {
-                        setSelectedGroupId(value)
-                        setSelectedMemberId('')
-                        setSelectedBatchId('')
-                      })
-                    }}
-                    className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
-                  >
-                    <option value="">All groups and non-group batches</option>
-                    {availableGroupFilters.groups.map((group) => (
-                      <option key={group.id} value={group.id}>
-                        {group.name} {group.user_role === 'owner' ? '(Owner)' : ''}
-                      </option>
-                    ))}
-                    {availableGroupFilters.hasNonGroupRows && (
-                      <option value={NON_GROUP_LEDGER_SCOPE}>Non-group batches</option>
-                    )}
-                  </select>
-                </div>
+            <div className="min-w-0">
+              <label className="mb-1.5 block text-sm font-medium text-text-secondary">Batch</label>
+              <select
+                value={selectedBatchId}
+                onChange={(event) => {
+                  const value = event.target.value
+                  startTransition(() => setSelectedBatchId(value))
+                }}
+                disabled={availableBatches.length === 0}
+                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+              >
+                <option value="">All batches</option>
+                {availableBatches.map((batch) => (
+                  <option key={batch.id} value={batch.id}>
+                    {batch.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-                <div className="min-w-0">
-                  <label className="mb-1.5 block text-sm font-medium text-text-secondary">Member</label>
-                  <select
-                    value={selectedMemberId}
-                    onChange={(event) => {
-                      const value = event.target.value
-                      startTransition(() => {
-                        setSelectedMemberId(value)
-                        setSelectedBatchId('')
-                      })
-                    }}
-                    disabled={availableMembers.length === 0}
-                    className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
-                  >
-                    <option value="">All members</option>
-                    {availableMembers.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <div className="min-w-0">
+              <label className="mb-1.5 block text-sm font-medium text-text-secondary">Year</label>
+              <select
+                value={selectedYear ?? ''}
+                onChange={(event) => {
+                  const value = event.target.value
+                  startTransition(() => {
+                    const parsed = parseInt(value, 10)
+                    setSelectedYear(Number.isFinite(parsed) ? parsed : null)
+                  })
+                }}
+                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
+              >
+                <option value="">All years</option>
+                {availableYears.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-                <div className="min-w-0">
-                  <label className="mb-1.5 block text-sm font-medium text-text-secondary">Batch</label>
-                  <select
-                    value={selectedBatchId}
-                    onChange={(event) => {
-                      const value = event.target.value
-                      startTransition(() => setSelectedBatchId(value))
-                    }}
-                    disabled={availableBatches.length === 0}
-                    className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
-                  >
-                    <option value="">All batches</option>
-                    {availableBatches.map((batch) => (
-                      <option key={batch.id} value={batch.id}>
-                        {batch.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="min-w-0">
-                  <label className="mb-1.5 block text-sm font-medium text-text-secondary">Year</label>
-                  <select
-                    value={selectedYear ?? ''}
-                    onChange={(event) => {
-                      const value = event.target.value
-                      startTransition(() => {
-                        const parsed = parseInt(value, 10)
-                        setSelectedYear(Number.isFinite(parsed) ? parsed : null)
-                      })
-                    }}
-                    className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
-                  >
-                    <option value="">All years</option>
-                    {availableYears.map((year) => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="min-w-0">
-                  <label className="mb-1.5 block text-sm font-medium text-text-secondary">Status</label>
-                  <select
-                    value={selectedStatus}
-                    onChange={(event) => {
-                      const value = event.target.value as StatusFilter
-                      startTransition(() => setSelectedStatus(value))
-                    }}
-                    className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
-                  >
-                    <option value="all">All</option>
-                    <option value="pending">Pending mating</option>
-                    <option value="mated">Mated (awaiting winter)</option>
-                    <option value="overwintered">Overwintered</option>
-                    <option value="failed">Failed</option>
-                  </select>
-                </div>
-              </div>
+            <div className="min-w-0">
+              <label className="mb-1.5 block text-sm font-medium text-text-secondary">Status</label>
+              <select
+                value={selectedStatus}
+                onChange={(event) => {
+                  const value = event.target.value as StatusFilter
+                  startTransition(() => setSelectedStatus(value))
+                }}
+                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
+              >
+                <option value="all">All</option>
+                <option value="pending">Pending mating</option>
+                <option value="mated">Mated (awaiting winter)</option>
+                <option value="overwintered">Overwintered</option>
+                <option value="failed">Failed</option>
+              </select>
             </div>
           </div>
         </div>
       </section>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <SummaryCard label="Tracked queens" value={stats.total} accentClass="bg-slate-500" />
-        <SummaryCard label="Mated" value={stats.mated} accentClass="bg-green-500" />
-        <SummaryCard label="Overwintered" value={stats.overwintered} accentClass="bg-blue-500" />
-        <SummaryCard label="Failed" value={stats.failed} accentClass="bg-red-500" />
-        <SummaryCard label="Hybridised" value={stats.hybridised} accentClass="bg-amber-500" />
-      </div>
+      <section className="overflow-hidden rounded-[1.6rem] border border-border bg-surface shadow-sm dark:bg-surface-elevated/95">
+        <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-tertiary">Ledger summary</p>
+            <p className="mt-1 text-sm text-text-secondary">{summaryLabel}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsSummaryExpanded((current) => !current)}
+            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-3 text-sm font-medium text-text-secondary transition-colors hover:text-foreground dark:bg-surface-elevated"
+            aria-expanded={isSummaryExpanded}
+            aria-controls="queen-ledger-summary-panel"
+          >
+            <span>{isSummaryExpanded ? 'Hide summary' : 'Show summary'}</span>
+            {isSummaryExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </button>
+        </div>
+
+        <div
+          id="queen-ledger-summary-panel"
+          className={isSummaryExpanded ? 'border-t border-border px-4 py-4 sm:px-5' : 'hidden'}
+        >
+          <div className="flex flex-wrap gap-3">
+            <SummaryPill label="Tracked queens" value={stats.total} accentClass="bg-slate-500" />
+            <SummaryPill label="Mated" value={stats.mated} accentClass="bg-green-500" />
+            <SummaryPill label="Overwintered" value={stats.overwintered} accentClass="bg-blue-500" />
+            <SummaryPill label="Failed" value={stats.failed} accentClass="bg-red-500" />
+            <SummaryPill label="Hybridised" value={stats.hybridised} accentClass="bg-amber-500" />
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[1.6rem] border border-border bg-surface-secondary/45 p-4 shadow-sm dark:bg-surface-elevated/55 sm:p-5">
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-tertiary">Card legend</p>
+          <p className="mt-1 text-sm text-text-secondary">Quick guide to the badges and chips shown on each queen card.</p>
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-4">
+          <LegendItem
+            title="Type badge"
+            description="Shows whether the queen left the batch as a cell, a virgin, or already mated."
+            preview={(
+              <>
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300">
+                  Cell
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-100 px-3 py-1 text-xs font-medium text-sky-800 dark:border-sky-800 dark:bg-sky-900/35 dark:text-sky-300">
+                  Virgin
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/35 dark:text-emerald-300">
+                  Distributed as mated
+                </span>
+              </>
+            )}
+          />
+          <LegendItem
+            title="Lifecycle badge"
+            description="Tracks the current outcome state for the queen after distribution."
+            preview={(
+              <>
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300">
+                  Pending Mating
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-100 px-3 py-1 text-xs font-medium text-green-800 dark:border-green-800 dark:bg-green-900/35 dark:text-green-300">
+                  Mated
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800 dark:border-blue-800 dark:bg-blue-900/35 dark:text-blue-300">
+                  Overwintered
+                </span>
+              </>
+            )}
+          />
+          <LegendItem
+            title="Scope and flags"
+            description="Shows whether the record belongs to a group or non-group batch, and whether it is hybridised or read only."
+            preview={(
+              <>
+                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
+                  Group or Non-group batch
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300">
+                  Hybridised
+                </span>
+                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900/35 dark:text-slate-300">
+                  Read only
+                </span>
+              </>
+            )}
+          />
+          <LegendItem
+            title="Quick chips"
+            description="Summarises marking status, tagged number, and latest recorded weight without opening the card."
+            preview={(
+              <>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
+                  <Tag size={13} />
+                  Marked (White)
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
+                  Queen Tagged (#14)
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
+                  <Scale size={13} />
+                  No weight logged
+                </span>
+              </>
+            )}
+          />
+        </div>
+      </section>
 
       {trackerRows.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-10 text-center shadow-sm dark:bg-surface-elevated/95">
