@@ -132,7 +132,7 @@ export function useQueenTracker() {
           .from('graft_distributions')
           .select(distributionSelect)
           .in('distribution_type', ['queen_cell', 'virgin_queen', 'mated_queen'])
-          .order('distribution_date', { ascending: false }),
+          .order('distribution_date', { ascending: false })
 
       const [ownResult, ownedGroupResult] = await Promise.all([
         buildDistributionQuery().eq('user_id', userId),
