@@ -682,19 +682,30 @@ export function useQueenTracker() {
     }
   }, [applyTrackedQueenPatch])
 
-  const updateFailure = useCallback(async (id: string, value: boolean): Promise<boolean> => {
+  const updateFailure = useCallback(async (id: string, value: boolean, date?: string | null): Promise<boolean> => {
     if (!id || typeof id !== 'string' || id.trim() === '') {
       console.error('Invalid distribution ID for failure update')
       return false
     }
 
+    const normalisedDate = normaliseDateOnlyInput(date)
+    if (value && typeof normalisedDate === 'string' && !isValidDateOnly(normalisedDate)) {
+      console.error('Invalid failure date provided:', normalisedDate)
+      return false
+    }
+
     try {
       const today = getTodayLocalDate()
+      const resolvedDate = value
+        ? normalisedDate === undefined
+          ? today
+          : normalisedDate
+        : null
       const { data, error } = await supabase
         .from('graft_distributions')
         .update({
           queen_failed: value,
-          queen_failed_date: value ? today : null,
+          queen_failed_date: resolvedDate,
           queen_failure_comment: null,
         })
         .eq('id', id)
