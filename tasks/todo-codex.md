@@ -1,33 +1,33 @@
-# Task: Queen Ledger Row Tidy Pass
+# Task: Queen Ledger Column And Queen Cell Tidy
 **Date:** 01/04/2026
 **Status:** Completed
 
 ## 1. Objective
-Tighten the Queen Ledger table so the main queen row reads more cleanly by removing the legend block, simplifying marking and tagging cues, removing duplicated marked or unmarked wording, and making age display clearer.
+Move the Queen Ledger `Details` control to the first column and tighten the queen identity cell so the cell title and marked or tagged indicators read as one compact unit rather than wasting horizontal space.
 
 ## 2. Impact Analysis
 * **Files to Modify:** * `QueenTrackerTab.tsx`
   * `queen-tracker.md`
-  * `queen-ledger-row-tidy-plan.md`
+  * `queen-ledger-column-and-queen-cell-tidy-plan.md`
   * `todo-codex.md`
   * `todo-codex-codex.md`
-* **Simplicity Check:** Keep the change inside the Queen Ledger presentation layer only. The hook, filters, permissions, and outcome logic remain unchanged.
+* **Simplicity Check:** Keep the change inside the Queen Ledger table presentation only. The data model, actions, filters, permissions, and expanded detail content remain unchanged.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Remove the `Ledger legend` section so the table starts closer to the actual data.
-- [x] **Step 2:** Refine the queen row identity block to use compact visual indicators for marked and tagged queens, while still showing the tagged number when present.
-- [x] **Step 3:** Remove duplicated marked or unmarked wording from the queen row and prefix age explicitly as `Age ...` in the row summary.
+- [x] **Step 1:** Move the `Details` column and expand/collapse control from the end of the table to the first column.
+- [x] **Step 2:** Tighten the queen identity cell so `Cell #...`, `Age ...`, and the compact marked or tagged indicators sit closer together with less wasted space.
+- [x] **Step 3:** Preserve the existing row actions and expanded detail behaviour while refining the visual spacing and hierarchy.
 - [x] **Step 4:** Update documentation in `docs/features/queen-tracker.md`
 - [x] **Step 5:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The table structure was better, but the row summary still carried old card-era cues, which caused duplicated marked or unmarked language and unnecessary visual noise above the actual ledger.
-* **Summary of Changes:** Removed the legend block, tightened the queen identity cell, replaced verbose marked and tagged labels with compact indicators, and changed the row summary to an explicit `Age ...` label.
+* **Root Cause Found (if applicable):** The detail control was visually detached from the row identity at the far edge of the table, and the queen identity cell still used a split layout that left too much empty space between the cell label and its compact state cues.
+* **Summary of Changes:** Moved the detail control into the first column, tightened the queen identity cell into a single left-hand cluster, and preserved the existing row actions and expansion behaviour.
 * **Notes for User:** This is a presentation-only change. Build tests were not run per repository instruction.
 
 ## Review
-* **Scope Covered:** Queen Ledger row tidy pass.
-* **Summary of Changes:** The Queen Ledger row now reads more cleanly, with less duplicated status language and tighter marked or tagged cues for quicker scanning.
-* **Notes for User:** Please check the Queen Ledger row presentation in your normal build flow, especially marked versus unmarked queens, tagged versus untagged queens, and the compact identity cell on narrower widths.
+* **Scope Covered:** Queen Ledger column and queen cell tidy pass.
+* **Summary of Changes:** The details control now leads the row, and the queen identity cell reads more compactly with the marked and tagged indicators sitting directly beside the cell title.
+* **Notes for User:** Please check the Queen Ledger table in your normal build flow, especially the first-column detail control and the tighter queen identity cell on desktop and mobile widths.

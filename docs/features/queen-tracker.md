@@ -81,12 +81,12 @@ The ledger totals now sit inside a collapsible summary strip that starts closed 
 
 ### Table Layout
 Each tracked queen now renders as a dense summary row with:
-- **Queen:** Cell title, compact marked and tagged indicators, and an explicit `Age ...` summary line
+- **Details:** Expand or collapse control in the first column so row inspection starts at the left edge
+- **Queen:** Cell title, compact marked and tagged indicators clustered beside it, and an explicit `Age ...` summary line
 - **Status:** Distribution type, lifecycle state, and read-only or hybridised flags
 - **Group, Member, Batch, and Destination:** Core estate context for scanning larger ledgers quickly
 - **Weight and stage:** Latest logged weight plus current graft stage and stage date
 - **Inline actions:** Overwintered and hybridised controls directly on the main row
-- **Detail control:** Expand the row to reveal the fuller queen, breeding, destination, and outcome record
 
 Expanded rows now hold the broader queen record panels and supporting context, including the hybridisation date input when relevant.
 Read-only records still show their restricted-edit explanation inside the expanded Outcomes panel.

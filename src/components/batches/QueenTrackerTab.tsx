@@ -892,6 +892,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
             <table className="min-w-[96rem] w-full border-separate border-spacing-0 text-sm">
               <thead className="bg-surface-secondary/70 dark:bg-surface-elevated/85">
                 <tr>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Details</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Queen</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Status</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Group</th>
@@ -901,7 +902,6 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Weight and stage</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Overwintered</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Hybridised</th>
-                  <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Details</th>
                 </tr>
               </thead>
               <tbody>
@@ -920,12 +920,21 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                     <Fragment key={distribution.id}>
                       <tr className={isExpanded ? 'bg-surface-secondary/30 dark:bg-surface-elevated/70' : ''}>
                         <td className="border-t border-border px-4 py-3 align-top">
-                          <div className="min-w-[15rem] space-y-2">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="font-semibold text-foreground">{distribution.queen_display_name}</p>
-                                <p className="mt-1 text-xs text-text-secondary">{distribution.queen_secondary_label}</p>
-                              </div>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedId(isExpanded ? null : distribution.id)}
+                            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 text-sm font-medium text-text-secondary transition-colors hover:text-foreground dark:bg-surface-elevated"
+                            aria-expanded={isExpanded}
+                            aria-label={isExpanded ? 'Collapse queen details' : 'Expand queen details'}
+                          >
+                            <span>{isExpanded ? 'Hide' : 'Show'}</span>
+                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          </button>
+                        </td>
+                        <td className="border-t border-border px-4 py-3 align-top">
+                          <div className="min-w-[12rem] space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold text-foreground">{distribution.queen_display_name}</p>
                               <div className="flex shrink-0 items-center gap-1.5">
                                 <span
                                   title={distribution.marking_status_label}
@@ -961,6 +970,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                                 </span>
                               </div>
                             </div>
+                            <p className="text-xs text-text-secondary">{distribution.queen_secondary_label}</p>
                           </div>
                         </td>
                         <td className="border-t border-border px-4 py-3 align-top">
@@ -1039,18 +1049,6 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             />
                             <p className="text-xs text-text-secondary">Date {formatOptionalDate(distribution.hybridisation_date)}</p>
                           </div>
-                        </td>
-                        <td className="border-t border-border px-4 py-3 align-top text-right">
-                          <button
-                            type="button"
-                            onClick={() => setExpandedId(isExpanded ? null : distribution.id)}
-                            className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-surface px-3 text-sm font-medium text-text-secondary transition-colors hover:text-foreground dark:bg-surface-elevated"
-                            aria-expanded={isExpanded}
-                            aria-label={isExpanded ? 'Collapse queen details' : 'Expand queen details'}
-                          >
-                            <span>{isExpanded ? 'Hide details' : 'Show details'}</span>
-                            {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                          </button>
                         </td>
                       </tr>
                       {isExpanded && (
