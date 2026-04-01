@@ -15,7 +15,7 @@ The tracker now combines:
 * **In Scope:**
   - Track queen cell, virgin queen, and mated queen distributions from visible group-linked batches and from the current user's non-group batches
   - Surface the fuller set of existing queen, batch, breeder, recipient, and outcome details already available in the system
-  - Present the tracker as a queen-led responsive ledger with grouped sections instead of a cramped desktop table
+  - Present the tracker as a denser table-first ledger with expandable detail rows for fuller queen context
   - Provide dynamic `Group -> Member -> Batch` filtering, alongside the existing year and status filters
   - Keep the existing overwintering and hybridisation update actions
 
@@ -32,7 +32,7 @@ The tracker now combines:
 ## 3. Technical Design
 
 ### Architecture
-The feature remains a client-rendered tab on `/dashboard/batches` and continues to use `useQueenTracker` as its data source. The hook now exposes a richer normalised record, and the component renders that data in a queen-centric card ledger that works on both desktop and mobile.
+The feature remains a client-rendered tab on `/dashboard/batches` and continues to use `useQueenTracker` as its data source. The hook now exposes a richer normalised record, and the component renders that data in a table-first queen ledger with expandable detail rows.
 
 ### Database Connections (MCP Server)
 The live schema was checked through the MCP server before implementation. No migration was required.
@@ -79,25 +79,24 @@ The ledger totals now sit inside a collapsible summary strip that starts closed 
 - Failed
 - Hybridised
 
-### Card Legend
-A compact legend now sits below the summary strip and explains the card information language:
-- Type badge
-- Lifecycle badge
-- Group or non-group scope badge
-- Hybridised and read-only flags
-- Quick chips for marking, tagged number, and latest weight
+### Ledger Legend
+A compact legend now sits below the summary strip and explains the table language:
+- Status badges
+- Inline row actions
+- Summary row cues for marking, tagged number, and weight
+- Expanded detail row access
 
-### Queen Record Layout
-Each tracked queen now renders as a responsive record with:
-- **Header:** Distribution type, lifecycle state, group, cell title, marking summary, optional `Queen Tagged (#xx)` badge, and latest weight summary. `mated_queen` rows now use the type badge text `Distributed as mated` so it remains distinct from the lifecycle `Mated` badge. Queens show `Marked (White)` style wording only when `queen_marked` is true, otherwise the tracker shows `Unmarked`.
-- **Queen Record panel:** Queen tagged number, cell number, marking status, age, latest weight, current graft stage, and stage date
-- **Breeding Context panel:** Batch, breeder, mother queen, mother marking, mother age, graft date, emergence date, and source mating apiary
-- **Destination panel:** Recipient, contact details, recipient apiary or hive, recorded location, distribution date, and notes
-- **Outcomes panel:** Mated state, overwintered toggle, hybridised toggle, and hybridisation date input when relevant
-- **Footer strip:** Quick recap of distribution date, location, and primary contact fields
+### Table Layout
+Each tracked queen now renders as a dense summary row with:
+- **Queen:** Cell title, marking state, optional `Queen Tagged (#xx)` badge, and secondary identity cues
+- **Status:** Distribution type, lifecycle state, and read-only or hybridised flags
+- **Group, Member, Batch, and Destination:** Core estate context for scanning larger ledgers quickly
+- **Weight and stage:** Latest logged weight plus current graft stage and stage date
+- **Inline actions:** Overwintered and hybridised controls directly on the main row
+- **Detail control:** Expand the row to reveal the fuller queen, breeding, destination, and outcome record
 
-Each record now opens in a collapsed summary state by default and reveals the full detail grid only when the user expands it. The same expand/collapse control is available on desktop and mobile.
-Read-only records show a badge and a short explanation inside the Outcomes panel.
+Expanded rows now hold the broader queen record panels and supporting context, including the hybridisation date input when relevant.
+Read-only records still show their restricted-edit explanation inside the expanded Outcomes panel.
 
 ## 6. Outcome Logic
 

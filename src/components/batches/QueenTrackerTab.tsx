@@ -1,6 +1,6 @@
 'use client'
 
-import { startTransition, useState, useEffect, useCallback, useMemo, useRef, type ComponentType, type ReactNode } from 'react'
+import { Fragment, startTransition, useState, useEffect, useCallback, useMemo, useRef, type ComponentType, type ReactNode } from 'react'
 import {
   Check,
   ChevronDown,
@@ -173,6 +173,121 @@ function DetailItem({
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
       <div className="mt-1 text-sm text-foreground">{value}</div>
     </div>
+  )
+}
+
+function formatTriStateValue(value: boolean | null): string {
+  if (value === true) return 'Yes'
+  if (value === false) return 'No'
+  return '?'
+}
+
+function ExpandedTrackerRowContent({
+  distribution,
+  ownerDisplayName,
+  isReadOnly,
+  isUpdating,
+  onHybridisationDateChange,
+}: {
+  distribution: DerivedTrackerRow
+  ownerDisplayName: string
+  isReadOnly: boolean
+  isUpdating: boolean
+  onHybridisationDateChange: (id: string, date: string) => void
+}) {
+  return (
+    <>
+      <div className="grid gap-4 p-4 sm:p-5 xl:grid-cols-2 2xl:grid-cols-4">
+        <TrackerPanel title="Queen Record" icon={Crown}>
+          <DetailItem label="Queen Tagged" value={formatQueenTaggedValue(distribution.queen_number) || '-'} />
+          <DetailItem label="Cell number" value={`#${distribution.cell_number}`} />
+          <DetailItem label="Marking" value={distribution.marking_status_label} />
+          <DetailItem label="Age" value={distribution.queen_age_label} />
+          <DetailItem label="Latest weight" value={distribution.latest_weight_label} />
+          <DetailItem label="Current graft stage" value={distribution.current_stage_label} />
+          <DetailItem label="Stage date" value={formatOptionalDate(distribution.graft_status_date)} />
+        </TrackerPanel>
+
+        <TrackerPanel title="Breeding Context" icon={Package2}>
+          <DetailItem label="Batch" value={distribution.batch_name} />
+          <DetailItem label="Breeder" value={ownerDisplayName} />
+          <DetailItem label="Mother queen" value={distribution.mother_queen_label} />
+          <DetailItem label="Mother marking" value={distribution.mother_queen_marking_label} />
+          <DetailItem label="Mother age" value={distribution.mother_queen_age_label} />
+          <DetailItem label="Graft date" value={formatOptionalDate(distribution.graft_date)} />
+          <DetailItem label="Emergence date" value={formatOptionalDate(distribution.emergence_date)} />
+          <DetailItem label="Source mating apiary" value={distribution.origin_mating_apiary_label} />
+        </TrackerPanel>
+
+        <TrackerPanel title="Destination" icon={UserRound}>
+          <DetailItem label="Recipient" value={distribution.recipient_display_name} />
+          <DetailItem label="Contact" value={distribution.recipient_contact_label} />
+          <DetailItem label="Recipient apiary" value={distribution.recipient_apiary_label} />
+          <DetailItem label="Recorded location" value={distribution.destination_label} />
+          <DetailItem label="Distribution date" value={formatOptionalDate(distribution.distribution_date)} />
+          <DetailItem label="Notes" value={distribution.notes || '-'} />
+        </TrackerPanel>
+
+        <TrackerPanel title="Outcomes" icon={Sprout}>
+          {isReadOnly && (
+            <div className="rounded-2xl border border-border bg-surface px-3 py-3 text-sm text-text-secondary dark:bg-surface-elevated">
+              Only the distributing member can update overwintering and hybridisation outcomes for this record.
+            </div>
+          )}
+
+          <DetailItem
+            label="Mated"
+            value={distribution.mating_confirmed || distribution.distribution_type === 'mated_queen' ? 'Confirmed' : 'Pending'}
+          />
+          <DetailItem label="Mated date" value={formatOptionalDate(distribution.mating_confirmed_date)} />
+          <DetailItem label="Overwintered" value={formatTriStateValue(distribution.overwintered)} />
+          <DetailItem label="Overwintered date" value={formatOptionalDate(distribution.overwintered_date)} />
+          <DetailItem label="Hybridised offspring" value={formatTriStateValue(distribution.offspring_hybridised)} />
+          <DetailItem label="Hybridisation date" value={formatOptionalDate(distribution.hybridisation_date)} />
+
+          {distribution.has_hybridisation_date_input && (
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+                Hybridisation date
+              </label>
+              <input
+                key={`${distribution.id}-hd-${distribution.hybridisation_date ?? ''}`}
+                type="date"
+                defaultValue={distribution.hybridisation_date || ''}
+                onChange={(event) => onHybridisationDateChange(distribution.id, event.target.value)}
+                disabled={isUpdating || isReadOnly}
+                className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground dark:bg-surface-elevated"
+              />
+            </div>
+          )}
+        </TrackerPanel>
+      </div>
+
+      <div className="grid gap-3 border-t border-border px-4 py-4 sm:px-5 md:grid-cols-3">
+        <div className="inline-flex items-center gap-2 rounded-full bg-surface-secondary/60 px-3 py-2 text-sm text-text-secondary dark:bg-surface/60">
+          <CalendarDays size={15} className="text-forest-600 dark:text-forest-300" />
+          <span>Distributed {formatOptionalDate(distribution.distribution_date)}</span>
+        </div>
+        <div className="inline-flex items-center gap-2 rounded-full bg-surface-secondary/60 px-3 py-2 text-sm text-text-secondary dark:bg-surface/60">
+          <MapPin size={15} className="text-forest-600 dark:text-forest-300" />
+          <span>{distribution.destination_label}</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(distribution.recipient_email || distribution.external_recipient_email) && (
+            <span className="inline-flex items-center gap-2 rounded-full bg-surface-secondary/60 px-3 py-2 text-sm text-text-secondary dark:bg-surface/60">
+              <Mail size={15} className="text-forest-600 dark:text-forest-300" />
+              <span className="truncate">{distribution.recipient_email || distribution.external_recipient_email}</span>
+            </span>
+          )}
+          {distribution.external_recipient_phone && (
+            <span className="inline-flex items-center gap-2 rounded-full bg-surface-secondary/60 px-3 py-2 text-sm text-text-secondary dark:bg-surface/60">
+              <Phone size={15} className="text-forest-600 dark:text-forest-300" />
+              <span>{distribution.external_recipient_phone}</span>
+            </span>
+          )}
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -788,14 +903,14 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
 
       <section className="rounded-[1.6rem] border border-border bg-surface-secondary/45 p-4 shadow-sm dark:bg-surface-elevated/55 sm:p-5">
         <div className="mb-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-tertiary">Card legend</p>
-          <p className="mt-1 text-sm text-text-secondary">Quick guide to the badges and chips shown on each queen card.</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-tertiary">Ledger legend</p>
+          <p className="mt-1 text-sm text-text-secondary">Quick guide to the badges, inline actions, and expanded detail rows in the table.</p>
         </div>
 
         <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-4">
           <LegendItem
-            title="Type badge"
-            description="Shows whether the queen left the batch as a cell, a virgin, or already mated."
+            title="Status badges"
+            description="Shows how the queen left the batch and her current lifecycle outcome at a glance."
             preview={(
               <>
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300">
@@ -811,42 +926,18 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
             )}
           />
           <LegendItem
-            title="Lifecycle badge"
-            description="Tracks the current outcome state for the queen after distribution."
+            title="Inline row actions"
+            description="Overwintered and Hybridised controls stay directly on the row so outcomes can be updated without opening details."
             preview={(
               <>
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300">
-                  Pending Mating
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-100 px-3 py-1 text-xs font-medium text-green-800 dark:border-green-800 dark:bg-green-900/35 dark:text-green-300">
-                  Mated
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800 dark:border-blue-800 dark:bg-blue-900/35 dark:text-blue-300">
-                  Overwintered
-                </span>
+                <ThreeStateToggle value={true} onChange={() => {}} labels={{ true: 'Yes', false: 'No', null: '?' }} ariaLabel="Preview overwintered toggle" />
+                <ThreeStateToggle value={null} onChange={() => {}} labels={{ true: 'Yes', false: 'No', null: '?' }} ariaLabel="Preview hybridised toggle" />
               </>
             )}
           />
           <LegendItem
-            title="Scope and flags"
-            description="Shows whether the record belongs to a group or non-group batch, and whether it is hybridised or read only."
-            preview={(
-              <>
-                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
-                  Group or Non-group batch
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300">
-                  Hybridised
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900/35 dark:text-slate-300">
-                  Read only
-                </span>
-              </>
-            )}
-          />
-          <LegendItem
-            title="Quick chips"
-            description="Summarises marking status, tagged number, and latest recorded weight without opening the card."
+            title="Summary row cues"
+            description="The main row is for scanning: queen identity, tagged number, marking state, weight, stage, member, batch, and destination."
             preview={(
               <>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
@@ -863,6 +954,18 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
               </>
             )}
           />
+          <LegendItem
+            title="Expanded detail row"
+            description="Use the detail control to reveal the fuller queen, breeding, destination, and outcome record for the selected row."
+            preview={(
+              <>
+                <span className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-surface px-3 text-sm font-medium text-text-secondary dark:bg-surface-elevated">
+                  <span>Show details</span>
+                  <ChevronDown size={18} />
+                </span>
+              </>
+            )}
+          />
         </div>
       </section>
 
@@ -875,175 +978,128 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {trackerRows.map((distribution) => {
-            const markingColourDotClass = distribution.queen_marked && distribution.marking_colour_label !== '-'
-              ? COLOUR_DOTS[distribution.marking_colour_label] || ''
-              : ''
-            const isExpanded = expandedId === distribution.id
-            const isUpdating = updatingIds.has(distribution.id)
-            const isReadOnly = !distribution.can_edit
+        <div className="overflow-hidden rounded-[1.6rem] border border-border bg-surface shadow-sm dark:bg-surface-elevated/95">
+          <div className="overflow-x-auto">
+            <table className="min-w-[96rem] w-full border-separate border-spacing-0 text-sm">
+              <thead className="bg-surface-secondary/70 dark:bg-surface-elevated/85">
+                <tr>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Queen</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Status</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Group</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Member</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Batch</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Destination</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Weight and stage</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Overwintered</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Hybridised</th>
+                  <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trackerRows.map((distribution) => {
+                  const markingColourDotClass = distribution.queen_marked && distribution.marking_colour_label !== '-'
+                    ? COLOUR_DOTS[distribution.marking_colour_label] || ''
+                    : ''
+                  const isExpanded = expandedId === distribution.id
+                  const isUpdating = updatingIds.has(distribution.id)
+                  const isReadOnly = !distribution.can_edit
+                  const ownerDisplayName = distribution.batch_owner_name
+                    || (distribution.batch_owner_id === userId ? 'You' : '-')
 
-            return (
-              <article
-                key={distribution.id}
-                className="overflow-hidden rounded-[1.6rem] border border-border bg-surface shadow-sm [content-visibility:auto] dark:bg-surface-elevated/95"
-              >
-                <div className="border-b border-border bg-gradient-to-r from-surface-secondary via-surface to-surface px-4 py-4 dark:from-surface dark:via-surface-elevated/90 dark:to-surface-elevated sm:px-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0 flex-1 space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.display_type_class}`}>
-                          {distribution.display_type_label}
-                        </span>
-                        <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.lifecycle_class}`}>
-                          {distribution.lifecycle_label}
-                        </span>
-                        <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
-                          {distribution.group_name}
-                        </span>
-                        {distribution.offspring_hybridised === true && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300">
-                            Hybridised
-                          </span>
-                        )}
-                        {isReadOnly && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900/35 dark:text-slate-300">
-                            Read only
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-3">
-                            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-forest-50 text-forest-700 dark:bg-forest-900/25 dark:text-forest-300">
-                              <Crown size={20} />
-                            </span>
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                {markingColourDotClass && (
-                                  <span className={`inline-block h-3 w-3 rounded-full ${markingColourDotClass}`} />
-                                )}
-                                <h4 className="truncate text-lg font-semibold text-foreground">{distribution.queen_display_name}</h4>
+                  return (
+                    <Fragment key={distribution.id}>
+                      <tr className={isExpanded ? 'bg-surface-secondary/30 dark:bg-surface-elevated/70' : ''}>
+                        <td className="border-t border-border px-4 py-3 align-top">
+                          <div className="min-w-[15rem] space-y-2">
+                            <div className="flex items-start gap-2">
+                              {markingColourDotClass && (
+                                <span className={`mt-1.5 inline-block h-3 w-3 shrink-0 rounded-full ${markingColourDotClass}`} />
+                              )}
+                              <div className="min-w-0">
+                                <p className="font-semibold text-foreground">{distribution.queen_display_name}</p>
+                                <p className="mt-1 text-xs text-text-secondary">{distribution.queen_secondary_label}</p>
                               </div>
-                              <p className="mt-1 text-sm text-text-secondary">{distribution.queen_secondary_label}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-1.5">
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
+                                <Tag size={12} />
+                                {distribution.marking_status_label}
+                              </span>
+                              {distribution.queen_tagged_label && (
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
+                                  {distribution.queen_tagged_label}
+                                </span>
+                              )}
                             </div>
                           </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
-                            <Tag size={13} />
-                            {distribution.marking_status_label}
-                          </span>
-                          {distribution.queen_tagged_label && (
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
-                              <span>{distribution.queen_tagged_label}</span>
+                        </td>
+                        <td className="border-t border-border px-4 py-3 align-top">
+                          <div className="min-w-[14rem] flex flex-wrap gap-1.5">
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.display_type_class}`}>
+                              {distribution.display_type_label}
                             </span>
-                          )}
-                          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
-                            <Scale size={13} />
-                            {distribution.latest_weight_label === '-' ? 'No weight logged' : distribution.latest_weight_label}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setExpandedId(isExpanded ? null : distribution.id)}
-                      className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-3 text-sm font-medium text-text-secondary transition-colors hover:text-foreground dark:bg-surface-elevated"
-                      aria-expanded={isExpanded}
-                      aria-label={isExpanded ? 'Collapse queen details' : 'Expand queen details'}
-                    >
-                      <span>{isExpanded ? 'Hide details' : 'Show details'}</span>
-                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                    </button>
-                  </div>
-                </div>
-                <div className={isExpanded ? 'block' : 'hidden'}>
-                  <div className="grid gap-4 p-4 sm:p-5 xl:grid-cols-2 2xl:grid-cols-4">
-                    <TrackerPanel title="Queen Record" icon={Crown}>
-                      <DetailItem label="Queen Tagged" value={formatQueenTaggedValue(distribution.queen_number) || '-'} />
-                      <DetailItem label="Cell number" value={`#${distribution.cell_number}`} />
-                      <DetailItem label="Marking" value={distribution.marking_status_label} />
-                      <DetailItem label="Age" value={distribution.queen_age_label} />
-                      <DetailItem label="Latest weight" value={distribution.latest_weight_label} />
-                      <DetailItem label="Current graft stage" value={distribution.current_stage_label} />
-                      <DetailItem label="Stage date" value={formatOptionalDate(distribution.graft_status_date)} />
-                    </TrackerPanel>
-
-                    <TrackerPanel title="Breeding Context" icon={Package2}>
-                      <DetailItem label="Batch" value={distribution.batch_name} />
-                      <DetailItem label="Breeder" value={distribution.batch_owner_name || '-'} />
-                      <DetailItem label="Mother queen" value={distribution.mother_queen_label} />
-                      <DetailItem label="Mother marking" value={distribution.mother_queen_marking_label} />
-                      <DetailItem label="Mother age" value={distribution.mother_queen_age_label} />
-                      <DetailItem label="Graft date" value={formatOptionalDate(distribution.graft_date)} />
-                      <DetailItem label="Emergence date" value={formatOptionalDate(distribution.emergence_date)} />
-                      <DetailItem label="Source mating apiary" value={distribution.origin_mating_apiary_label} />
-                    </TrackerPanel>
-
-                    <TrackerPanel title="Destination" icon={UserRound}>
-                      <DetailItem label="Recipient" value={distribution.recipient_display_name} />
-                      <DetailItem label="Contact" value={distribution.recipient_contact_label} />
-                      <DetailItem label="Recipient apiary" value={distribution.recipient_apiary_label} />
-                      <DetailItem label="Recorded location" value={distribution.destination_label} />
-                      <DetailItem label="Distribution date" value={formatOptionalDate(distribution.distribution_date)} />
-                      <DetailItem label="Notes" value={distribution.notes || '-'} />
-                    </TrackerPanel>
-
-                    <TrackerPanel title="Outcomes" icon={Sprout}>
-                      {isReadOnly && (
-                        <div className="rounded-2xl border border-border bg-surface px-3 py-3 text-sm text-text-secondary dark:bg-surface-elevated">
-                          Only the distributing member can update overwintering and hybridisation outcomes for this record.
-                        </div>
-                      )}
-
-                      <div className="rounded-2xl border border-border bg-surface px-3 py-3 dark:bg-surface-elevated">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Mated</p>
-                            <p className="mt-1 text-sm text-foreground">
-                              {distribution.mating_confirmed || distribution.distribution_type === 'mated_queen' ? 'Confirmed' : 'Pending'}
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.lifecycle_class}`}>
+                              {distribution.lifecycle_label}
+                            </span>
+                            {distribution.offspring_hybridised === true && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300">
+                                Hybridised
+                              </span>
+                            )}
+                            {isReadOnly && (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900/35 dark:text-slate-300">
+                                Read only
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="border-t border-border px-4 py-3 align-top">
+                          <div className="min-w-[10rem]">
+                            <p className="font-medium text-foreground">{distribution.group_name}</p>
+                          </div>
+                        </td>
+                        <td className="border-t border-border px-4 py-3 align-top">
+                          <div className="min-w-[10rem]">
+                            <p className="font-medium text-foreground">{ownerDisplayName}</p>
+                            <p className="mt-1 text-xs text-text-secondary">{distribution.origin_mating_apiary_label}</p>
+                          </div>
+                        </td>
+                        <td className="border-t border-border px-4 py-3 align-top">
+                          <div className="min-w-[12rem]">
+                            <p className="font-medium text-foreground">{distribution.batch_name}</p>
+                            <p className="mt-1 text-xs text-text-secondary">Graft {formatOptionalDate(distribution.graft_date)}</p>
+                          </div>
+                        </td>
+                        <td className="border-t border-border px-4 py-3 align-top">
+                          <div className="min-w-[16rem]">
+                            <p className="font-medium text-foreground">{distribution.recipient_display_name}</p>
+                            <p className="mt-1 text-xs text-text-secondary">{distribution.destination_label}</p>
+                            <p className="mt-1 text-xs text-text-secondary">Distributed {formatOptionalDate(distribution.distribution_date)}</p>
+                          </div>
+                        </td>
+                        <td className="border-t border-border px-4 py-3 align-top">
+                          <div className="min-w-[13rem] space-y-1">
+                            <p className="font-medium text-foreground">
+                              {distribution.latest_weight_label === '-' ? 'No weight logged' : distribution.latest_weight_label}
                             </p>
-                            <p className="mt-1 text-xs text-text-secondary">Date: {formatOptionalDate(distribution.mating_confirmed_date)}</p>
+                            <p className="text-xs text-text-secondary">{distribution.current_stage_label}</p>
+                            <p className="text-xs text-text-secondary">Stage date {formatOptionalDate(distribution.graft_status_date)}</p>
                           </div>
-                          <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm font-medium ${
-                            distribution.mating_confirmed || distribution.distribution_type === 'mated_queen'
-                              ? 'border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900/35 dark:text-green-300'
-                              : 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300'
-                          }`}>
-                            {distribution.mating_confirmed || distribution.distribution_type === 'mated_queen' ? <Check size={14} /> : <HelpCircle size={14} />}
-                            <span>{distribution.mating_confirmed || distribution.distribution_type === 'mated_queen' ? 'Yes' : 'Pending'}</span>
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-border bg-surface px-3 py-3 dark:bg-surface-elevated">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Overwintered</p>
-                            <p className="mt-1 text-xs text-text-secondary">Date: {formatOptionalDate(distribution.overwintered_date)}</p>
+                        </td>
+                        <td className="border-t border-border px-4 py-3 align-top">
+                          <div className="min-w-[7.5rem] space-y-2">
+                            <ThreeStateToggle
+                              value={distribution.overwintered}
+                              onChange={(value) => handleOverwinteredChange(distribution.id, value)}
+                              labels={{ true: 'Yes', false: 'No', null: '?' }}
+                              disabled={isUpdating || isReadOnly}
+                              ariaLabel={`Queen ${distribution.queen_display_name} overwintered`}
+                            />
+                            <p className="text-xs text-text-secondary">Date {formatOptionalDate(distribution.overwintered_date)}</p>
                           </div>
-                          <ThreeStateToggle
-                            value={distribution.overwintered}
-                            onChange={(value) => handleOverwinteredChange(distribution.id, value)}
-                            labels={{ true: 'Yes', false: 'No', null: '?' }}
-                            disabled={isUpdating || isReadOnly}
-                            ariaLabel={`Queen ${distribution.queen_display_name} overwintered`}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-border bg-surface px-3 py-3 dark:bg-surface-elevated">
-                        <div className="flex flex-col gap-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Hybridised offspring</p>
-                              <p className="mt-1 text-xs text-text-secondary">Date: {formatOptionalDate(distribution.hybridisation_date)}</p>
-                            </div>
+                        </td>
+                        <td className="border-t border-border px-4 py-3 align-top">
+                          <div className="min-w-[7.5rem] space-y-2">
                             <ThreeStateToggle
                               value={distribution.offspring_hybridised}
                               onChange={(value) => handleHybridisationChange(distribution.id, value)}
@@ -1051,56 +1107,41 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                               disabled={isUpdating || isReadOnly}
                               ariaLabel={`Queen ${distribution.queen_display_name} hybridised`}
                             />
+                            <p className="text-xs text-text-secondary">Date {formatOptionalDate(distribution.hybridisation_date)}</p>
                           </div>
-
-                          {distribution.has_hybridisation_date_input && (
-                            <div>
-                              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
-                                Hybridisation date
-                              </label>
-                              <input
-                                key={`${distribution.id}-hd-${distribution.hybridisation_date ?? ''}`}
-                                type="date"
-                                defaultValue={distribution.hybridisation_date || ''}
-                                onChange={(event) => handleHybridisationDateChange(distribution.id, event.target.value)}
-                                disabled={isUpdating || isReadOnly}
-                                className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground dark:bg-surface-elevated"
-                              />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </TrackerPanel>
-                  </div>
-
-                  <div className="grid gap-3 border-t border-border px-4 py-4 sm:px-5 md:grid-cols-3">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-surface-secondary/60 px-3 py-2 text-sm text-text-secondary dark:bg-surface/60">
-                      <CalendarDays size={15} className="text-forest-600 dark:text-forest-300" />
-                      <span>Distributed {formatOptionalDate(distribution.distribution_date)}</span>
-                    </div>
-                    <div className="inline-flex items-center gap-2 rounded-full bg-surface-secondary/60 px-3 py-2 text-sm text-text-secondary dark:bg-surface/60">
-                      <MapPin size={15} className="text-forest-600 dark:text-forest-300" />
-                      <span>{distribution.destination_label}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {(distribution.recipient_email || distribution.external_recipient_email) && (
-                        <span className="inline-flex items-center gap-2 rounded-full bg-surface-secondary/60 px-3 py-2 text-sm text-text-secondary dark:bg-surface/60">
-                          <Mail size={15} className="text-forest-600 dark:text-forest-300" />
-                          <span className="truncate">{distribution.recipient_email || distribution.external_recipient_email}</span>
-                        </span>
+                        </td>
+                        <td className="border-t border-border px-4 py-3 align-top text-right">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedId(isExpanded ? null : distribution.id)}
+                            className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-surface px-3 text-sm font-medium text-text-secondary transition-colors hover:text-foreground dark:bg-surface-elevated"
+                            aria-expanded={isExpanded}
+                            aria-label={isExpanded ? 'Collapse queen details' : 'Expand queen details'}
+                          >
+                            <span>{isExpanded ? 'Hide details' : 'Show details'}</span>
+                            {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={10} className="border-t border-border bg-surface-secondary/20 p-0 dark:bg-surface/35">
+                            <ExpandedTrackerRowContent
+                              distribution={distribution}
+                              ownerDisplayName={ownerDisplayName}
+                              isReadOnly={isReadOnly}
+                              isUpdating={isUpdating}
+                              onHybridisationDateChange={handleHybridisationDateChange}
+                            />
+                          </td>
+                        </tr>
                       )}
-                      {distribution.external_recipient_phone && (
-                        <span className="inline-flex items-center gap-2 rounded-full bg-surface-secondary/60 px-3 py-2 text-sm text-text-secondary dark:bg-surface/60">
-                          <Phone size={15} className="text-forest-600 dark:text-forest-300" />
-                          <span>{distribution.external_recipient_phone}</span>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </article>
-            )
-          })}
+                    </Fragment>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
