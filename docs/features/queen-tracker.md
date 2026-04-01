@@ -68,6 +68,7 @@ Non-group batches are intentionally limited to the current user’s own ledger r
 - Status (`All`, `Pending mating`, `Mated`, `Overwintered`, `Failed`)
 
 The Group filter includes a dedicated non-group scope whenever the user has visible non-group ledger rows. Member and Batch options are derived from the rows that remain after the upstream selections, so owners can drill down through group members while ordinary members only see the member scope available to them.
+The ledger header now uses a tighter intro block with a dedicated filter tray so the controls wrap more cleanly across desktop and mobile widths.
 
 ### Summary Cards
 - Tracked queens

@@ -610,126 +610,138 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[1.75rem] border border-border bg-surface px-5 py-5 shadow-sm dark:bg-surface-elevated/95 sm:px-6">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-text-tertiary">Queen tracker</p>
-            <div className="space-y-2">
-              <h3 className="text-2xl font-semibold text-foreground sm:text-[2rem]">Distributed Queen Ledger</h3>
-              <p className="text-sm leading-6 text-text-secondary">
-                Follow each distributed queen from both group and non-group batches as a full record: identity, breeding context, destination, and longer-term outcomes in one place.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 xl:min-w-[66rem] xl:grid-cols-5">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-text-secondary">Group</label>
-              <select
-                value={selectedGroupId}
-                onChange={(event) => {
-                  const value = event.target.value
-                  startTransition(() => {
-                    setSelectedGroupId(value)
-                    setSelectedMemberId('')
-                    setSelectedBatchId('')
-                  })
-                }}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
-              >
-                <option value="">All groups and non-group batches</option>
-                {availableGroupFilters.groups.map((group) => (
-                  <option key={group.id} value={group.id}>
-                    {group.name} {group.user_role === 'owner' ? '(Owner)' : ''}
-                  </option>
-                ))}
-                {availableGroupFilters.hasNonGroupRows && (
-                  <option value={NON_GROUP_LEDGER_SCOPE}>Non-group batches</option>
-                )}
-              </select>
+      <section className="overflow-hidden rounded-[1.75rem] border border-border bg-surface px-5 py-5 shadow-sm dark:bg-surface-elevated/95 sm:px-6">
+        <div className="space-y-5">
+          <div className="grid gap-5 xl:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] xl:items-start">
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-text-tertiary">Queen tracker</p>
+              <div className="space-y-3">
+                <h3 className="max-w-[14ch] text-2xl font-semibold leading-tight text-foreground sm:max-w-none sm:text-[2rem]">
+                  Distributed Queen Ledger
+                </h3>
+                <p className="max-w-[34rem] text-sm leading-6 text-text-secondary">
+                  Follow each distributed queen from both group and non-group batches as a full record: identity,
+                  breeding context, destination, and longer-term outcomes in one place.
+                </p>
+              </div>
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-text-secondary">Member</label>
-              <select
-                value={selectedMemberId}
-                onChange={(event) => {
-                  const value = event.target.value
-                  startTransition(() => {
-                    setSelectedMemberId(value)
-                    setSelectedBatchId('')
-                  })
-                }}
-                disabled={availableMembers.length === 0}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
-              >
-                <option value="">All members</option>
-                {availableMembers.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <div className="rounded-2xl border border-border bg-surface-secondary/55 p-4 shadow-sm dark:bg-surface-elevated/55">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-tertiary">Ledger filters</p>
+                <p className="text-xs text-text-secondary">Group, member, batch, year, and outcome status</p>
+              </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-text-secondary">Batch</label>
-              <select
-                value={selectedBatchId}
-                onChange={(event) => {
-                  const value = event.target.value
-                  startTransition(() => setSelectedBatchId(value))
-                }}
-                disabled={availableBatches.length === 0}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
-              >
-                <option value="">All batches</option>
-                {availableBatches.map((batch) => (
-                  <option key={batch.id} value={batch.id}>
-                    {batch.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                <div className="min-w-0">
+                  <label className="mb-1.5 block text-sm font-medium text-text-secondary">Group</label>
+                  <select
+                    value={selectedGroupId}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      startTransition(() => {
+                        setSelectedGroupId(value)
+                        setSelectedMemberId('')
+                        setSelectedBatchId('')
+                      })
+                    }}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
+                  >
+                    <option value="">All groups and non-group batches</option>
+                    {availableGroupFilters.groups.map((group) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name} {group.user_role === 'owner' ? '(Owner)' : ''}
+                      </option>
+                    ))}
+                    {availableGroupFilters.hasNonGroupRows && (
+                      <option value={NON_GROUP_LEDGER_SCOPE}>Non-group batches</option>
+                    )}
+                  </select>
+                </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-text-secondary">Year</label>
-              <select
-                value={selectedYear ?? ''}
-                onChange={(event) => {
-                  const value = event.target.value
-                  startTransition(() => {
-                    const parsed = parseInt(value, 10)
-                    setSelectedYear(Number.isFinite(parsed) ? parsed : null)
-                  })
-                }}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
-              >
-                <option value="">All years</option>
-                {availableYears.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <div className="min-w-0">
+                  <label className="mb-1.5 block text-sm font-medium text-text-secondary">Member</label>
+                  <select
+                    value={selectedMemberId}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      startTransition(() => {
+                        setSelectedMemberId(value)
+                        setSelectedBatchId('')
+                      })
+                    }}
+                    disabled={availableMembers.length === 0}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+                  >
+                    <option value="">All members</option>
+                    {availableMembers.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-medium text-text-secondary">Status</label>
-              <select
-                value={selectedStatus}
-                onChange={(event) => {
-                  const value = event.target.value as StatusFilter
-                  startTransition(() => setSelectedStatus(value))
-                }}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
-              >
-                <option value="all">All</option>
-                <option value="pending">Pending mating</option>
-                <option value="mated">Mated (awaiting winter)</option>
-                <option value="overwintered">Overwintered</option>
-                <option value="failed">Failed</option>
-              </select>
+                <div className="min-w-0">
+                  <label className="mb-1.5 block text-sm font-medium text-text-secondary">Batch</label>
+                  <select
+                    value={selectedBatchId}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      startTransition(() => setSelectedBatchId(value))
+                    }}
+                    disabled={availableBatches.length === 0}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+                  >
+                    <option value="">All batches</option>
+                    {availableBatches.map((batch) => (
+                      <option key={batch.id} value={batch.id}>
+                        {batch.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="min-w-0">
+                  <label className="mb-1.5 block text-sm font-medium text-text-secondary">Year</label>
+                  <select
+                    value={selectedYear ?? ''}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      startTransition(() => {
+                        const parsed = parseInt(value, 10)
+                        setSelectedYear(Number.isFinite(parsed) ? parsed : null)
+                      })
+                    }}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
+                  >
+                    <option value="">All years</option>
+                    {availableYears.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="min-w-0">
+                  <label className="mb-1.5 block text-sm font-medium text-text-secondary">Status</label>
+                  <select
+                    value={selectedStatus}
+                    onChange={(event) => {
+                      const value = event.target.value as StatusFilter
+                      startTransition(() => setSelectedStatus(value))
+                    }}
+                    className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
+                  >
+                    <option value="all">All</option>
+                    <option value="pending">Pending mating</option>
+                    <option value="mated">Mated (awaiting winter)</option>
+                    <option value="overwintered">Overwintered</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
         </div>
