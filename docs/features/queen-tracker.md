@@ -9,7 +9,7 @@ The tracker now combines:
 - Queen identity context such as cell number, queen tagged number, marking state, recorded marking colour where marked, age, and latest weight
 - Breeding provenance such as batch, breeder, mother queen, mother marking and age, graft date, emergence date, and source mating apiary
 - Destination context such as recipient, contact details, recipient apiary or hive, and recorded mating location
-- Lifecycle outcomes such as mating confirmation, explicit queen failure, overwintering, and hybridisation status
+- Lifecycle outcomes such as direct mating confirmation, explicit queen failure, overwintering, and hybridisation status
 
 ## 2. Scope & Simplicity
 * **In Scope:**
@@ -17,7 +17,7 @@ The tracker now combines:
   - Surface the fuller set of existing queen, batch, breeder, recipient, and outcome details already available in the system
   - Present the tracker as a denser table-first ledger with expandable detail rows for fuller queen context
   - Provide dynamic `Group -> Member -> Batch` filtering, alongside the existing year and status filters
-  - Keep the existing overwintering and hybridisation update actions
+  - Keep the existing outcome update actions and add direct mating confirmation for `Pending Mating` ledger rows
 
 * **Out of Scope:**
   - Creating a brand-new route or replacing the standalone Queens registry
@@ -55,6 +55,7 @@ The ledger visibility path now normalises nullable group IDs before owner checks
 The ledger also normalises the batch owner profile join before deriving `batch_owner_name`, so the `Member` filter shows the real distributing member name when profile data exists.
 Non-group batches are intentionally limited to the current user's own ledger rows.
 The ledger fetch path now queries owned ledger rows directly from `graft_distributions.user_id`, only adds additional group rows for groups owned by the current user, deduplicates graft IDs before the `queen_weights` lookup, and skips malformed rows without a valid cell number instead of fabricating `Cell #0`.
+The latest mating-confirmation pass reuses the existing `graft_distributions.mating_confirmed`, `mating_confirmed_date`, and `mating_location` fields, so no schema change was needed for ledger-side mating updates.
 The recent hardening pass also required a follow-up parse fix in `useQueenTracker` so the owned-row and owned-group query-builder path compiles cleanly.
 The latest build-fix follow-up also corrects the typed `rearing_batches` nested join shape so the existing `firstJoinedRecord(...)` normalisation matches the raw Supabase payload and compiles cleanly.
 The explicit queen-failure migration also backfilled historic ledger rows where `overwintered = false` into the new `queen_failed` state so previous tracker data keeps its earlier failure meaning.
@@ -93,7 +94,7 @@ The ledger totals now sit inside a collapsible summary strip that starts closed 
 Each tracked queen now renders as a dense summary row with:
 - **Details:** Expand or collapse control in the first column so row inspection starts at the left edge
 - **Queen:** Cell title, compact marked and tagged indicators clustered beside it, an explicit `Age ...` summary line, and a selected-row treatment so the active row stays obvious
-- **Actions:** `Failed`, `Overwintered`, and `Hybridised` share one compact action column between `Queen` and `Status`, with the controls stacked vertically for faster scanning
+- **Actions:** `Mated`, `Failed`, `Overwintered`, and `Hybridised` share one compact action column between `Queen` and `Status`, with the controls stacked vertically for faster scanning
 - **Status:** Distribution type and lifecycle state in a tighter, narrower column
 - **Distribution:** Recipient name-first or email fallback, a compact distribution-type cue (`Group Member`, `App User`, or `Public Recipient`), and the distributed date on its own line beneath that cue
 
@@ -110,6 +111,13 @@ Stage data is no longer surfaced in the Queen Ledger UI.
 A record is considered mated when either:
 - `mating_confirmed = true`, or
 - `distribution_type = 'mated_queen'`
+
+For eligible `Pending Mating` rows, the row action area now provides a compact `Mated` control.
+- Marking mating from the ledger writes to the same distribution record used by the batch distributions table
+- The first confirmation defaults the mated date to the current local date and expands the row so the member can refine it immediately
+- The expanded `Outcomes` panel now includes an editable `Record mated date` field for confirmed non-`mated_queen` rows
+- Clearing mating removes both the confirmation flag and the recorded mating date
+- Batch-level `queens_mated` counts now only treat sold virgin-queen rows as mated once this confirmation exists
 
 ### Overwintered
 - Three-state toggle: unknown, yes, no
@@ -148,6 +156,7 @@ A record is considered mated when either:
 - The tracker remains distribution-led under the hood even though the presentation is queen-led.
 - Visibility and editability are intentionally different: group owners may see more rows than they are allowed to edit under current RLS rules.
 - The failure outcome now has clearer semantics than overwintering, but older data still depends on the backfill migration to preserve prior tracker meaning.
+- Distributed grafts intentionally remain `sold` after distribution; later mating confirmation changes the distribution outcome and batch mated counts rather than rewriting the graft lifecycle stage.
 
 ## 8. Files Modified
 - `supabase` migration `add_queen_failure_fields_to_graft_distributions`
