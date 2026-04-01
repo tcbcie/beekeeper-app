@@ -6,7 +6,7 @@
 The Queen Tracker is the `Queen Tracker` tab on the Queen Rearing page (`/dashboard/batches`). It follows queens distributed from rearing-group batches and presents each one as a fuller queen record rather than a narrow distribution row.
 
 The tracker now combines:
-- Queen identity context such as cell number, queen number, marking state, recorded marking colour where marked, age, latest weight, and current graft stage
+- Queen identity context such as cell number, queen tagged number, marking state, recorded marking colour where marked, age, latest weight, and current graft stage
 - Breeding provenance such as batch, breeder, mother queen, mother marking and age, graft date, emergence date, and source mating apiary
 - Destination context such as recipient, contact details, recipient apiary or hive, and recorded mating location
 - Lifecycle outcomes such as mating confirmation, overwintering, and hybridisation status
@@ -70,8 +70,8 @@ The tracker now resolves group ownership from `rearing_groups.owner_id`, matchin
 
 ### Queen Record Layout
 Each tracked queen now renders as a responsive record with:
-- **Header:** Distribution type, lifecycle state, group, queen label, marking summary, and latest weight summary. `mated_queen` rows now use the type badge text `Distributed as mated` so it remains distinct from the lifecycle `Mated` badge. Queens show `Marked (White)` style wording only when `queen_marked` is true, otherwise the tracker shows `Unmarked`.
-- **Queen Record panel:** Cell number, marking status, age, latest weight, current graft stage, and stage date
+- **Header:** Distribution type, lifecycle state, group, cell title, marking summary, optional `Queen Tagged` badge, and latest weight summary. `mated_queen` rows now use the type badge text `Distributed as mated` so it remains distinct from the lifecycle `Mated` badge. Queens show `Marked (White)` style wording only when `queen_marked` is true, otherwise the tracker shows `Unmarked`.
+- **Queen Record panel:** Queen tagged number, cell number, marking status, age, latest weight, current graft stage, and stage date
 - **Breeding Context panel:** Batch, breeder, mother queen, mother marking, mother age, graft date, emergence date, and source mating apiary
 - **Destination panel:** Recipient, contact details, recipient apiary or hive, recorded location, distribution date, and notes
 - **Outcomes panel:** Mated state, overwintered toggle, hybridised toggle, and hybridisation date input when relevant
