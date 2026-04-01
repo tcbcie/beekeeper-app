@@ -47,6 +47,7 @@ The tracker now uses broader joins and mapping over existing tables:
 - `graft_distributions -> profiles / apiaries / hives` for recipient and destination details
 
 The tracker now resolves group ownership from `rearing_groups.owner_id`, matching the rest of the rearing-group feature instead of inferring ownership from membership-role rows alone.
+The ledger visibility path now normalises nullable group IDs before owner checks so the non-group branch stays explicit and the hook remains build-safe.
 Non-group batches are intentionally limited to the current user’s own ledger rows.
 
 ## 4. Visibility Rules
