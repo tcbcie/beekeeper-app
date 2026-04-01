@@ -1,28 +1,25 @@
-# Task: Queen Ledger Hardening Remediation
+# Task: Queen Ledger Batch Join Type Fix
 **Date:** 01/04/2026
 **Status:** Completed
 
 ## 1. Objective
-Harden the Queen Ledger so row updates do not refetch and reset the full view, failure-date and comment edits cannot silently resurrect outcomes, and the filter state becomes derived rather than effect-repaired.
+Fix the Queen Ledger build regression in the hook by aligning the typed `rearing_batches` join shape with the actual Supabase nested join payload.
 
 ## 2. Impact Analysis
 * **Files to Modify:** * `src/hooks/useQueenTracker.ts`
-  * `src/components/batches/QueenTrackerTab.tsx`
   * `docs/features/queen-tracker.md`
-  * `docs/features/queen-ledger-audit-hardening-remediation-plan.md`
-* **Simplicity Check:** This keeps the remediation inside the existing ledger hook and table component. The plan avoids schema changes, avoids broad UI redesign, and focuses only on removing fragile state transitions and over-broad data handling.
+  * `docs/features/queen-ledger-batch-join-type-fix-plan.md`
+* **Simplicity Check:** This is a surgical typing fix in the ledger hook. It will not change the query logic, UI behaviour, or schema. The change is limited to correcting the nested join type shape so the existing normalisation path compiles cleanly.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Refactor the ledger outcome update path so successful row edits patch local state instead of refetching and replacing the full ledger.
-- [x] **Step 2:** Split failure-date and failure-comment persistence from the main failure toggle so date or comment saves cannot recreate a failed state after concurrent changes.
-- [x] **Step 3:** Replace the current effect-based group, member, and batch filter repair logic with safe derived selections.
-- [x] **Step 4:** Narrow the ledger select payload and align year parsing with the existing local date helper.
-- [x] **Step 5:** Update documentation in `docs/features/queen-tracker.md`
-- [x] **Step 6:** Prompt user to test the build
+- [x] **Step 1:** Correct the typed `rearing_batches` join shape in the Queen Ledger hook so nested relations match the raw Supabase payload.
+- [x] **Step 2:** Keep the existing `firstJoinedRecord(...)` normalisation path intact while removing the invalid cast that is breaking the build.
+- [x] **Step 3:** Update documentation in `docs/features/queen-tracker.md`
+- [x] **Step 4:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The ledger was still refetching and rebuilding the full row set after each outcome edit, and the failure detail editors were updating state in ways that could reintroduce stale outcomes after concurrent changes. The filter hierarchy also depended on repair effects instead of deterministic derived state.
-* **Summary of Changes:** Added local row patching for outcome writes, split failure-date and failure-comment persistence into guarded updates, replaced filter repair effects with safe derived selections, narrowed the hook query payload, and aligned year parsing with the local-date helper.
-* **Notes for User:** No database migration was required for this remediation. Build tests were not run per repository instruction.
+* **Root Cause Found (if applicable):** The Queen Ledger hook was casting the `rearing_batches` join to a shape that assumed nested `profiles`, `apiaries`, and `queens` relations had already been flattened, which did not match the raw Supabase payload and caused the build to fail.
+* **Summary of Changes:** Corrected the nested join type shape with an explicit `BatchJoinRow` type, preserved the existing `firstJoinedRecord(...)` normalisation path, and updated the tracker documentation to record the build fix.
+* **Notes for User:** No database change was needed. Build tests were not run per repository instruction.
