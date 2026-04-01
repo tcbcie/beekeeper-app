@@ -100,30 +100,18 @@ export function useQueenTracker() {
     setError(null)
 
     try {
-      // Resolve visibility from the canonical ownership source plus membership rows.
-      const [{ data: memberships, error: memberError }, { data: ownedGroups, error: ownedGroupsError }] = await Promise.all([
-        supabase
-          .from('rearing_group_members')
-          .select('group_id')
-          .eq('user_id', userId),
-        supabase
-          .from('rearing_groups')
-          .select('id')
-          .eq('owner_id', userId),
-      ])
+      const { data: ownedGroups, error: ownedGroupsError } = await supabase
+        .from('rearing_groups')
+        .select('id')
+        .eq('owner_id', userId)
 
-      if (memberError) throw memberError
       if (ownedGroupsError) throw ownedGroupsError
 
       if (requestId !== fetchCounter.current) return
 
-      const memberGroupIds = (memberships || [])
-        .map((membership) => membership.group_id)
-        .filter((groupId): groupId is string => typeof groupId === 'string' && groupId.trim().length > 0)
       const ownedGroupIds = (ownedGroups || [])
         .map((group) => group.id)
         .filter((groupId): groupId is string => typeof groupId === 'string' && groupId.trim().length > 0)
-      const groupIds = Array.from(new Set([...memberGroupIds, ...ownedGroupIds]))
 
       const distributionSelect = `
           *,
@@ -139,34 +127,33 @@ export function useQueenTracker() {
           )
         `
 
-      const queryResults = await Promise.all([
-        groupIds.length > 0
-          ? supabase
-              .from('graft_distributions')
-              .select(distributionSelect)
-              .in('distribution_type', ['queen_cell', 'virgin_queen', 'mated_queen'])
-              .in('rearing_batches.rearing_group_id', groupIds)
-              .order('distribution_date', { ascending: false })
-          : Promise.resolve({ data: [], error: null }),
+      const buildDistributionQuery = () =>
         supabase
           .from('graft_distributions')
           .select(distributionSelect)
           .in('distribution_type', ['queen_cell', 'virgin_queen', 'mated_queen'])
-          .eq('rearing_batches.user_id', userId)
-          .is('rearing_batches.rearing_group_id', null)
           .order('distribution_date', { ascending: false }),
+
+      const [ownResult, ownedGroupResult] = await Promise.all([
+        buildDistributionQuery().eq('user_id', userId),
+        ownedGroupIds.length > 0
+          ? buildDistributionQuery()
+              .in('rearing_batches.rearing_group_id', ownedGroupIds)
+              .neq('user_id', userId)
+          : Promise.resolve({ data: [], error: null }),
       ])
 
-      const [groupResult, nonGroupResult] = queryResults
-      if (groupResult.error) throw groupResult.error
-      if (nonGroupResult.error) throw nonGroupResult.error
+      if (ownResult.error) throw ownResult.error
+      if (ownedGroupResult.error) throw ownedGroupResult.error
 
       if (requestId !== fetchCounter.current) return
 
-      const rows = [...(groupResult.data || []), ...(nonGroupResult.data || [])]
-      const graftIds = rows
-        .map((row) => row.graft_id as string | null)
-        .filter((graftId): graftId is string => Boolean(graftId))
+      const rows = [...(ownResult.data || []), ...(ownedGroupResult.data || [])]
+      const graftIds = Array.from(new Set(
+        rows
+          .map((row) => (typeof row.graft_id === 'string' && row.graft_id.trim() ? row.graft_id : null))
+          .filter((graftId): graftId is string => graftId !== null)
+      ))
 
       const latestWeights = new Map<string, { weight_mg: number; weighed_at: string }>()
       if (graftIds.length > 0) {
@@ -231,9 +218,7 @@ export function useQueenTracker() {
           : null
         const isGroupBatch = groupId !== null
         const isGroupOwner = groupId !== null && ownedGroupIds.includes(groupId)
-        const isVisibleNonGroupBatch = !isGroupBatch && batch.user_id === userId
-
-        if (!isOwnDistribution && !isGroupOwner && !isVisibleNonGroupBatch) continue
+        if (!isOwnDistribution && !isGroupOwner) continue
 
         const graft = firstJoinedRecord(d.batch_grafts as JoinedRecord<{
           cell_number: number
@@ -262,6 +247,16 @@ export function useQueenTracker() {
           birth_date: string | null
         }>)
         const latestWeight = latestWeights.get(graftId)
+        const cellNumber = typeof graft?.cell_number === 'number'
+          && Number.isFinite(graft.cell_number)
+          && graft.cell_number > 0
+          ? graft.cell_number
+          : null
+
+        if (cellNumber === null) {
+          console.warn('Skipping queen tracker row without a valid cell number', { distributionId, graftId })
+          continue
+        }
 
         // Build batch owner name
         const batchOwnerName = batchOwnerProfile
@@ -299,7 +294,7 @@ export function useQueenTracker() {
           external_recipient_phone: d.external_recipient_phone as string | null,
           external_recipient_location: d.external_recipient_location as string | null,
           recipient_hive_number: hive?.hive_number ?? null,
-          cell_number: graft?.cell_number ?? 0,
+          cell_number: cellNumber,
           graft_status: graft?.status ?? null,
           graft_status_date: graft?.status_date ?? null,
           queen_marked: graft?.queen_marked ?? false,
@@ -365,20 +360,24 @@ export function useQueenTracker() {
     }
   }, [])
 
-  const updateHybridisation = useCallback(async (id: string, value: boolean | null, date?: string): Promise<boolean> => {
+  const updateHybridisation = useCallback(async (id: string, value: boolean | null, date?: string | null): Promise<boolean> => {
     // Validate ID before update
     if (!id || typeof id !== 'string' || id.trim() === '') {
       console.error('Invalid distribution ID for hybridisation update')
       return false
     }
-    if (value === true && date && !isValidDateOnly(date)) {
+    if (value === true && typeof date === 'string' && date !== '' && !isValidDateOnly(date)) {
       console.error('Invalid hybridisation date provided:', date)
       return false
     }
 
     try {
       const today = getTodayLocalDate()
-      const resolvedDate = value === true ? (date || today) : null
+      const resolvedDate = value === true
+        ? date === undefined
+          ? today
+          : date
+        : null
       const { data, error } = await supabase
         .from('graft_distributions')
         .update({

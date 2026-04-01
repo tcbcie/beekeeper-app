@@ -172,8 +172,34 @@ function ExpandedTrackerRowContent({
   ownerDisplayName: string
   isReadOnly: boolean
   isUpdating: boolean
-  onHybridisationDateChange: (id: string, date: string) => void
+  onHybridisationDateChange: (id: string, date: string) => Promise<boolean>
 }) {
+  const [draftHybridisationDate, setDraftHybridisationDate] = useState(distribution.hybridisation_date || '')
+
+  useEffect(() => {
+    setDraftHybridisationDate(distribution.hybridisation_date || '')
+  }, [distribution.hybridisation_date, distribution.id])
+
+  const commitHybridisationDate = useCallback(async () => {
+    if (isReadOnly || isUpdating) return
+
+    const nextValue = draftHybridisationDate.trim()
+    const currentValue = distribution.hybridisation_date || ''
+    if (nextValue === currentValue) return
+
+    const success = await onHybridisationDateChange(distribution.id, nextValue)
+    if (!success) {
+      setDraftHybridisationDate(currentValue)
+    }
+  }, [
+    distribution.hybridisation_date,
+    distribution.id,
+    draftHybridisationDate,
+    isReadOnly,
+    isUpdating,
+    onHybridisationDateChange,
+  ])
+
   return (
     <>
       <div className="grid gap-4 p-4 sm:p-5 xl:grid-cols-2 2xl:grid-cols-4">
@@ -229,10 +255,15 @@ function ExpandedTrackerRowContent({
                 Hybridisation date
               </label>
               <input
-                key={`${distribution.id}-hd-${distribution.hybridisation_date ?? ''}`}
                 type="date"
-                defaultValue={distribution.hybridisation_date || ''}
-                onChange={(event) => onHybridisationDateChange(distribution.id, event.target.value)}
+                value={draftHybridisationDate}
+                onChange={(event) => setDraftHybridisationDate(event.target.value)}
+                onBlur={() => void commitHybridisationDate()}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.currentTarget.blur()
+                  }
+                }}
                 disabled={isUpdating || isReadOnly}
                 className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground dark:bg-surface-elevated"
               />
@@ -678,18 +709,21 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     }
   }, [updateHybridisation, fetchDistributions, userId, toast])
 
-  const handleHybridisationDateChange = useCallback(async (id: string, date: string) => {
-    if (!date || updatingIdsRef.current.has(id)) return
+  const handleHybridisationDateChange = useCallback(async (id: string, date: string): Promise<boolean> => {
+    if (updatingIdsRef.current.has(id)) return false
+
+    const nextDate = date.trim()
 
     setUpdatingIds((prev) => new Set(prev).add(id))
     try {
-      const success = await updateHybridisation(id, true, date)
+      const success = await updateHybridisation(id, true, nextDate === '' ? null : nextDate)
       if (success) {
         toast.success('Hybridisation date updated')
         await fetchDistributions(userId)
       } else {
         toast.error('Failed to update hybridisation date')
       }
+      return success
     } finally {
       setUpdatingIds((prev) => {
         const next = new Set(prev)

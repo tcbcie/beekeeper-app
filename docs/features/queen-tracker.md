@@ -50,6 +50,7 @@ The tracker now resolves group ownership from `rearing_groups.owner_id`, matchin
 The ledger visibility path now normalises nullable group IDs before owner checks so the non-group branch stays explicit and the hook remains build-safe.
 The ledger also normalises the batch owner profile join before deriving `batch_owner_name`, so the `Member` filter shows the real distributing member name when profile data exists.
 Non-group batches are intentionally limited to the current user's own ledger rows.
+The ledger fetch path now queries owned ledger rows directly from `graft_distributions.user_id`, only adds additional group rows for groups owned by the current user, deduplicates graft IDs before the `queen_weights` lookup, and skips malformed rows without a valid cell number instead of fabricating `Cell #0`.
 
 ## 4. Visibility Rules
 - **Group members:** See their own distributions from group-linked batches
@@ -109,6 +110,7 @@ A record is considered mated when either:
 - When set to yes, `hybridisation_date` is stored and remains editable from the tracker
 - When reset to no or unknown, the hybridisation date is cleared
 - Hybridisation date edits use the same per-row in-flight guard as the toggle path
+- The hybridisation date editor is controlled so failed writes revert to the persisted value, and cleared values no longer leave stale input state behind
 - A write is only treated as successful when Supabase returns the updated row
 
 ## 7. Risks And Constraints
