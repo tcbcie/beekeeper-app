@@ -1028,14 +1028,14 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       ) : (
         <div className="overflow-hidden rounded-[1.6rem] border border-border bg-surface shadow-sm dark:bg-surface-elevated/95">
           <div className="overflow-x-auto">
-            <table className="min-w-[70rem] w-full border-separate border-spacing-0 text-sm">
+            <table className="min-w-[66rem] w-full border-separate border-spacing-0 text-sm">
               <thead className="bg-surface-secondary/70 dark:bg-surface-elevated/85">
                 <tr>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Details</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Actions</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Queen</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Status</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Destination</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1098,17 +1098,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                           </button>
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <OutcomeActionStack
-                            overwintered={distribution.overwintered}
-                            hybridised={distribution.offspring_hybridised}
-                            disabled={isUpdating || isReadOnly}
-                            queenLabel={distribution.queen_display_name}
-                            onOverwinteredChange={(value) => handleOverwinteredChange(distribution.id, value)}
-                            onHybridisationChange={(value) => handleHybridisationChange(distribution.id, value)}
-                          />
-                        </td>
-                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <div className="min-w-[11rem] space-y-1.5">
+                          <div className="min-w-[10rem] space-y-1.5">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-semibold text-foreground">{distribution.queen_display_name}</p>
                               <div className="flex shrink-0 items-center gap-1.5">
@@ -1150,7 +1140,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                           </div>
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <div className="min-w-[8.25rem] space-y-1.5">
+                          <div className="min-w-[7.5rem] space-y-1.5">
                             <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.display_type_class}`}>
                               {distribution.display_type_label}
                             </span>
@@ -1160,11 +1150,21 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                           </div>
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <div className="min-w-[14rem]">
+                          <div className="min-w-[13rem]">
                             <p className="font-medium text-foreground">{distribution.recipient_display_name}</p>
                             <p className="mt-1 text-xs text-text-secondary">{distribution.destination_label}</p>
                             <p className="mt-1 text-xs text-text-secondary">Distributed {formatOptionalDate(distribution.distribution_date)}</p>
                           </div>
+                        </td>
+                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
+                          <OutcomeActionStack
+                            overwintered={distribution.overwintered}
+                            hybridised={distribution.offspring_hybridised}
+                            disabled={isUpdating || isReadOnly}
+                            queenLabel={distribution.queen_display_name}
+                            onOverwinteredChange={(value) => handleOverwinteredChange(distribution.id, value)}
+                            onHybridisationChange={(value) => handleHybridisationChange(distribution.id, value)}
+                          />
                         </td>
                       </tr>
                       {isExpanded && (
