@@ -46,7 +46,6 @@ type DerivedTrackerRow = TrackedQueen & {
   current_stage_label: string
   latest_weight_label: string
   queen_age_label: string
-  queen_tagged_label: string | null
   marking_colour_label: string
   marking_status_label: string
   mother_queen_age_label: string
@@ -117,24 +116,6 @@ function SummaryPill({
         <div className="text-lg font-semibold text-foreground">{value}</div>
         <div className="text-xs text-text-secondary">{label}</div>
       </div>
-    </div>
-  )
-}
-
-function LegendItem({
-  title,
-  description,
-  preview,
-}: {
-  title: string
-  description: string
-  preview: ReactNode
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface px-4 py-4 shadow-sm dark:bg-surface-elevated/95">
-      <div className="flex flex-wrap items-center gap-2">{preview}</div>
-      <p className="mt-3 text-sm font-semibold text-foreground">{title}</p>
-      <p className="mt-1 text-xs leading-5 text-text-secondary">{description}</p>
     </div>
   )
 }
@@ -436,17 +417,14 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
     distribution.mother_queen_birth_date ? getQueenColorFromYear(distribution.mother_queen_birth_date) : ''
   )
   const queenDisplayName = `Cell #${distribution.cell_number}`
-  const queenTaggedValue = formatQueenTaggedValue(distribution.queen_number)
-  const queenTaggedLabel = queenTaggedValue ? `Queen Tagged (${queenTaggedValue})` : null
   const markingStatusLabel = distribution.queen_marked
     ? markingColour
       ? `Marked (${markingColour})`
       : 'Marked'
     : 'Unmarked'
-  const queenSecondaryParts = [
-    distribution.queen_marked ? 'Marked' : 'Unmarked',
-    distribution.emergence_date ? calculateQueenAge(distribution.emergence_date) : null,
-  ].filter(Boolean)
+  const queenSecondaryLabel = distribution.emergence_date
+    ? `Age ${calculateQueenAge(distribution.emergence_date)}`
+    : 'Age N/A'
   const latestWeightLabel = distribution.latest_weight_mg
     !== null
     ? distribution.latest_weight_date
@@ -462,7 +440,7 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
     lifecycle_class: lifecycleInfo.className,
     group_name: groupName,
     queen_display_name: queenDisplayName,
-    queen_secondary_label: queenSecondaryParts.join(' / '),
+    queen_secondary_label: queenSecondaryLabel,
     recipient_display_name: getRecipientName(distribution),
     recipient_contact_label: getRecipientContact(distribution),
     destination_label: getDestinationLabel(distribution),
@@ -472,7 +450,6 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
     current_stage_label: formatGraftStatus(distribution.graft_status),
     latest_weight_label: latestWeightLabel,
     queen_age_label: distribution.emergence_date ? calculateQueenAge(distribution.emergence_date) : 'N/A',
-    queen_tagged_label: queenTaggedLabel,
     marking_colour_label: markingColour || '-',
     marking_status_label: markingStatusLabel,
     mother_queen_age_label: distribution.mother_queen_birth_date ? calculateQueenAge(distribution.mother_queen_birth_date) : 'N/A',
@@ -901,74 +878,6 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         </div>
       </section>
 
-      <section className="rounded-[1.6rem] border border-border bg-surface-secondary/45 p-4 shadow-sm dark:bg-surface-elevated/55 sm:p-5">
-        <div className="mb-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-tertiary">Ledger legend</p>
-          <p className="mt-1 text-sm text-text-secondary">Quick guide to the badges, inline actions, and expanded detail rows in the table.</p>
-        </div>
-
-        <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-4">
-          <LegendItem
-            title="Status badges"
-            description="Shows how the queen left the batch and her current lifecycle outcome at a glance."
-            preview={(
-              <>
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300">
-                  Cell
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-100 px-3 py-1 text-xs font-medium text-sky-800 dark:border-sky-800 dark:bg-sky-900/35 dark:text-sky-300">
-                  Virgin
-                </span>
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:border-emerald-800 dark:bg-emerald-900/35 dark:text-emerald-300">
-                  Distributed as mated
-                </span>
-              </>
-            )}
-          />
-          <LegendItem
-            title="Inline row actions"
-            description="Overwintered and Hybridised controls stay directly on the row so outcomes can be updated without opening details."
-            preview={(
-              <>
-                <ThreeStateToggle value={true} onChange={() => {}} labels={{ true: 'Yes', false: 'No', null: '?' }} ariaLabel="Preview overwintered toggle" />
-                <ThreeStateToggle value={null} onChange={() => {}} labels={{ true: 'Yes', false: 'No', null: '?' }} ariaLabel="Preview hybridised toggle" />
-              </>
-            )}
-          />
-          <LegendItem
-            title="Summary row cues"
-            description="The main row is for scanning: queen identity, tagged number, marking state, weight, stage, member, batch, and destination."
-            preview={(
-              <>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
-                  <Tag size={13} />
-                  Marked (White)
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
-                  Queen Tagged (#14)
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
-                  <Scale size={13} />
-                  No weight logged
-                </span>
-              </>
-            )}
-          />
-          <LegendItem
-            title="Expanded detail row"
-            description="Use the detail control to reveal the fuller queen, breeding, destination, and outcome record for the selected row."
-            preview={(
-              <>
-                <span className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-surface px-3 text-sm font-medium text-text-secondary dark:bg-surface-elevated">
-                  <span>Show details</span>
-                  <ChevronDown size={18} />
-                </span>
-              </>
-            )}
-          />
-        </div>
-      </section>
-
       {trackerRows.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-10 text-center shadow-sm dark:bg-surface-elevated/95">
           <p className="text-sm text-text-secondary">
@@ -1005,31 +914,52 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                   const isReadOnly = !distribution.can_edit
                   const ownerDisplayName = distribution.batch_owner_name
                     || (distribution.batch_owner_id === userId ? 'You' : '-')
+                  const queenTaggedValue = formatQueenTaggedValue(distribution.queen_number)
 
                   return (
                     <Fragment key={distribution.id}>
                       <tr className={isExpanded ? 'bg-surface-secondary/30 dark:bg-surface-elevated/70' : ''}>
                         <td className="border-t border-border px-4 py-3 align-top">
                           <div className="min-w-[15rem] space-y-2">
-                            <div className="flex items-start gap-2">
-                              {markingColourDotClass && (
-                                <span className={`mt-1.5 inline-block h-3 w-3 shrink-0 rounded-full ${markingColourDotClass}`} />
-                              )}
+                            <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="font-semibold text-foreground">{distribution.queen_display_name}</p>
                                 <p className="mt-1 text-xs text-text-secondary">{distribution.queen_secondary_label}</p>
                               </div>
-                            </div>
-                            <div className="flex flex-wrap gap-1.5">
-                              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
-                                <Tag size={12} />
-                                {distribution.marking_status_label}
-                              </span>
-                              {distribution.queen_tagged_label && (
-                                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
-                                  {distribution.queen_tagged_label}
+                              <div className="flex shrink-0 items-center gap-1.5">
+                                <span
+                                  title={distribution.marking_status_label}
+                                  aria-label={distribution.marking_status_label}
+                                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full border ${
+                                    distribution.queen_marked
+                                      ? 'border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-900/35 dark:text-green-300'
+                                      : 'border-border bg-surface text-text-secondary dark:bg-surface-elevated'
+                                  }`}
+                                >
+                                  {distribution.queen_marked ? (
+                                    <span className="flex items-center gap-1">
+                                      {markingColourDotClass && (
+                                        <span className={`inline-block h-2.5 w-2.5 rounded-full ${markingColourDotClass}`} />
+                                      )}
+                                      <Check size={13} />
+                                    </span>
+                                  ) : (
+                                    <X size={13} />
+                                  )}
                                 </span>
-                              )}
+                                <span
+                                  title={queenTaggedValue ? `Tagged ${queenTaggedValue}` : 'Untagged'}
+                                  aria-label={queenTaggedValue ? `Tagged ${queenTaggedValue}` : 'Untagged'}
+                                  className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium ${
+                                    queenTaggedValue
+                                      ? 'border-border bg-surface text-text-secondary dark:bg-surface-elevated'
+                                      : 'border-border bg-surface-secondary text-text-tertiary dark:bg-surface-elevated'
+                                  }`}
+                                >
+                                  <Tag size={12} />
+                                  {queenTaggedValue && <span>{queenTaggedValue}</span>}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </td>
