@@ -329,20 +329,29 @@ export function useQueenTracker() {
     }
   }, [])
 
-  const updateOverwintered = useCallback(async (id: string, value: boolean | null): Promise<boolean> => {
+  const updateOverwintered = useCallback(async (id: string, value: boolean | null, date?: string | null): Promise<boolean> => {
     // Validate ID before update
     if (!id || typeof id !== 'string' || id.trim() === '') {
       console.error('Invalid distribution ID for overwintered update')
       return false
     }
+    if (value !== null && typeof date === 'string' && date !== '' && !isValidDateOnly(date)) {
+      console.error('Invalid overwintered date provided:', date)
+      return false
+    }
 
     try {
       const today = getTodayLocalDate()
+      const resolvedDate = value === null
+        ? null
+        : date === undefined
+          ? today
+          : date
       const { data, error } = await supabase
         .from('graft_distributions')
         .update({
           overwintered: value,
-          overwintered_date: value !== null ? today : null,
+          overwintered_date: resolvedDate,
         })
         .eq('id', id)
         .select('id')
