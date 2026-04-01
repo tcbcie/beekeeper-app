@@ -35,8 +35,6 @@ export interface TrackedQueen {
   recipient_type: 'group_member' | 'app_user' | 'public'
   // Cell info
   cell_number: number
-  graft_status: string | null
-  graft_status_date: string | null
   queen_marked: boolean
   queen_number: string | null
   latest_weight_mg: number | null
@@ -68,6 +66,19 @@ export type StatusFilter = 'all' | 'pending' | 'mated' | 'overwintered' | 'faile
 export const NON_GROUP_LEDGER_SCOPE = '__non_group__' as const
 export type GroupFilterValue = string | typeof NON_GROUP_LEDGER_SCOPE | null
 
+type TrackedQueenPatch = {
+  id: string
+} & Partial<Pick<
+  TrackedQueen,
+  | 'overwintered'
+  | 'overwintered_date'
+  | 'offspring_hybridised'
+  | 'hybridisation_date'
+  | 'queen_failed'
+  | 'queen_failed_date'
+  | 'queen_failure_comment'
+>>
+
 type JoinedRecord<T> = T | T[] | null
 
 function firstJoinedRecord<T>(value: JoinedRecord<T>): T | null {
@@ -85,11 +96,29 @@ function getTodayLocalDate(): string {
   return toLocalDateString(new Date())
 }
 
+function normaliseDateOnlyInput(value?: string | null): string | null | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return null
+
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
+}
+
 export function useQueenTracker() {
   const [distributions, setDistributions] = useState<TrackedQueen[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fetchCounter = useRef(0)
+
+  const applyTrackedQueenPatch = useCallback((patch: TrackedQueenPatch) => {
+    setDistributions((current) =>
+      current.map((distribution) => (
+        distribution.id === patch.id
+          ? { ...distribution, ...patch }
+          : distribution
+      ))
+    )
+  }, [])
 
   const fetchDistributions = useCallback(async (userId: string) => {
     // Validate userId before making queries
@@ -118,8 +147,29 @@ export function useQueenTracker() {
         .filter((groupId): groupId is string => typeof groupId === 'string' && groupId.trim().length > 0)
 
       const distributionSelect = `
-          *,
-          batch_grafts(cell_number, queen_marked, queen_number, status, status_date),
+          id,
+          user_id,
+          graft_id,
+          batch_id,
+          distribution_type,
+          distribution_date,
+          mating_confirmed,
+          mating_confirmed_date,
+          mating_location,
+          queen_failed,
+          queen_failed_date,
+          queen_failure_comment,
+          overwintered,
+          overwintered_date,
+          offspring_hybridised,
+          hybridisation_date,
+          notes,
+          recipient_user_id,
+          external_recipient_name,
+          external_recipient_email,
+          external_recipient_phone,
+          external_recipient_location,
+          batch_grafts(cell_number, queen_marked, queen_number),
           profiles!graft_distributions_recipient_profile_id_fkey(full_name, first_name, last_name, email),
           apiaries!graft_distributions_recipient_apiary_id_fkey(name, eircode),
           hives!graft_distributions_recipient_hive_id_fkey(hive_number),
@@ -265,8 +315,6 @@ export function useQueenTracker() {
           cell_number: number
           queen_marked: boolean
           queen_number: string | null
-          status: string | null
-          status_date: string | null
         }>)
         const recipientProfile = firstJoinedRecord(d.profiles as JoinedRecord<{
           full_name: string | null
@@ -345,8 +393,6 @@ export function useQueenTracker() {
           recipient_hive_number: hive?.hive_number ?? null,
           recipient_type: recipientType,
           cell_number: cellNumber,
-          graft_status: graft?.status ?? null,
-          graft_status_date: graft?.status_date ?? null,
           queen_marked: graft?.queen_marked ?? false,
           queen_number: graft?.queen_number ?? null,
           latest_weight_mg: latestWeight?.weight_mg ?? null,
@@ -385,8 +431,9 @@ export function useQueenTracker() {
       console.error('Invalid distribution ID for overwintered update')
       return false
     }
-    if (value !== null && typeof date === 'string' && date !== '' && !isValidDateOnly(date)) {
-      console.error('Invalid overwintered date provided:', date)
+    const normalisedDate = normaliseDateOnlyInput(date)
+    if (value !== null && typeof normalisedDate === 'string' && !isValidDateOnly(normalisedDate)) {
+      console.error('Invalid overwintered date provided:', normalisedDate)
       return false
     }
 
@@ -394,9 +441,9 @@ export function useQueenTracker() {
       const today = getTodayLocalDate()
       const resolvedDate = value === null
         ? null
-        : date === undefined
+        : normalisedDate === undefined
           ? today
-          : date
+          : normalisedDate
       const { data, error } = await supabase
         .from('graft_distributions')
         .update({
@@ -404,7 +451,7 @@ export function useQueenTracker() {
           overwintered_date: resolvedDate,
         })
         .eq('id', id)
-        .select('id')
+        .select('id, overwintered, overwintered_date')
         .maybeSingle()
 
       if (error) throw error
@@ -412,12 +459,61 @@ export function useQueenTracker() {
         console.warn('No permitted distribution row found for overwintered update:', id)
         return false
       }
+
+      applyTrackedQueenPatch({
+        id: data.id,
+        overwintered: data.overwintered as boolean | null,
+        overwintered_date: data.overwintered_date as string | null,
+      })
+
       return true
     } catch (err) {
       console.error('Error updating overwintered status:', err)
       return false
     }
-  }, [])
+  }, [applyTrackedQueenPatch])
+
+  const updateOverwinteredDate = useCallback(async (id: string, date: string | null): Promise<boolean> => {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      console.error('Invalid distribution ID for overwintered date update')
+      return false
+    }
+
+    const normalisedDate = normaliseDateOnlyInput(date)
+    if (typeof normalisedDate === 'string' && !isValidDateOnly(normalisedDate)) {
+      console.error('Invalid overwintered date provided:', normalisedDate)
+      return false
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('graft_distributions')
+        .update({
+          overwintered_date: normalisedDate,
+        })
+        .eq('id', id)
+        .not('overwintered', 'is', null)
+        .eq('queen_failed', false)
+        .select('id, overwintered_date')
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data?.id) {
+        console.warn('No permitted distribution row found for overwintered date update:', id)
+        return false
+      }
+
+      applyTrackedQueenPatch({
+        id: data.id,
+        overwintered_date: data.overwintered_date as string | null,
+      })
+
+      return true
+    } catch (err) {
+      console.error('Error updating overwintered date:', err)
+      return false
+    }
+  }, [applyTrackedQueenPatch])
 
   const updateHybridisation = useCallback(async (id: string, value: boolean | null, date?: string | null): Promise<boolean> => {
     // Validate ID before update
@@ -425,17 +521,18 @@ export function useQueenTracker() {
       console.error('Invalid distribution ID for hybridisation update')
       return false
     }
-    if (value === true && typeof date === 'string' && date !== '' && !isValidDateOnly(date)) {
-      console.error('Invalid hybridisation date provided:', date)
+    const normalisedDate = normaliseDateOnlyInput(date)
+    if (value === true && typeof normalisedDate === 'string' && !isValidDateOnly(normalisedDate)) {
+      console.error('Invalid hybridisation date provided:', normalisedDate)
       return false
     }
 
     try {
       const today = getTodayLocalDate()
       const resolvedDate = value === true
-        ? date === undefined
+        ? normalisedDate === undefined
           ? today
-          : date
+          : normalisedDate
         : null
       const { data, error } = await supabase
         .from('graft_distributions')
@@ -444,7 +541,7 @@ export function useQueenTracker() {
           hybridisation_date: resolvedDate,
         })
         .eq('id', id)
-        .select('id')
+        .select('id, offspring_hybridised, hybridisation_date')
         .maybeSingle()
 
       if (error) throw error
@@ -452,25 +549,145 @@ export function useQueenTracker() {
         console.warn('No permitted distribution row found for hybridisation update:', id)
         return false
       }
+
+      applyTrackedQueenPatch({
+        id: data.id,
+        offspring_hybridised: data.offspring_hybridised as boolean | null,
+        hybridisation_date: data.hybridisation_date as string | null,
+      })
+
       return true
     } catch (err) {
       console.error('Error updating hybridisation status:', err)
       return false
     }
-  }, [])
+  }, [applyTrackedQueenPatch])
 
-  const updateFailure = useCallback(async (
-    id: string,
-    value: boolean,
-    date?: string | null,
-    comment?: string | null
-  ): Promise<boolean> => {
+  const updateHybridisationDate = useCallback(async (id: string, date: string | null): Promise<boolean> => {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      console.error('Invalid distribution ID for hybridisation date update')
+      return false
+    }
+
+    const normalisedDate = normaliseDateOnlyInput(date)
+    if (typeof normalisedDate === 'string' && !isValidDateOnly(normalisedDate)) {
+      console.error('Invalid hybridisation date provided:', normalisedDate)
+      return false
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('graft_distributions')
+        .update({
+          hybridisation_date: normalisedDate,
+        })
+        .eq('id', id)
+        .eq('offspring_hybridised', true)
+        .eq('queen_failed', false)
+        .select('id, hybridisation_date')
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data?.id) {
+        console.warn('No permitted distribution row found for hybridisation date update:', id)
+        return false
+      }
+
+      applyTrackedQueenPatch({
+        id: data.id,
+        hybridisation_date: data.hybridisation_date as string | null,
+      })
+
+      return true
+    } catch (err) {
+      console.error('Error updating hybridisation date:', err)
+      return false
+    }
+  }, [applyTrackedQueenPatch])
+
+  const updateFailure = useCallback(async (id: string, value: boolean): Promise<boolean> => {
     if (!id || typeof id !== 'string' || id.trim() === '') {
       console.error('Invalid distribution ID for failure update')
       return false
     }
-    if (value && typeof date === 'string' && date !== '' && !isValidDateOnly(date)) {
-      console.error('Invalid failure date provided:', date)
+
+    try {
+      const today = getTodayLocalDate()
+      const { data, error } = await supabase
+        .from('graft_distributions')
+        .update({
+          queen_failed: value,
+          queen_failed_date: value ? today : null,
+          queen_failure_comment: null,
+        })
+        .eq('id', id)
+        .select('id, queen_failed, queen_failed_date, queen_failure_comment')
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data?.id) {
+        console.warn('No permitted distribution row found for failure update:', id)
+        return false
+      }
+
+      applyTrackedQueenPatch({
+        id: data.id,
+        queen_failed: data.queen_failed === true,
+        queen_failed_date: data.queen_failed_date as string | null,
+        queen_failure_comment: data.queen_failure_comment as string | null,
+      })
+
+      return true
+    } catch (err) {
+      console.error('Error updating queen failure status:', err)
+      return false
+    }
+  }, [applyTrackedQueenPatch])
+
+  const updateFailureDate = useCallback(async (id: string, date: string | null): Promise<boolean> => {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      console.error('Invalid distribution ID for failure date update')
+      return false
+    }
+
+    const normalisedDate = normaliseDateOnlyInput(date)
+    if (typeof normalisedDate === 'string' && !isValidDateOnly(normalisedDate)) {
+      console.error('Invalid failure date provided:', normalisedDate)
+      return false
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('graft_distributions')
+        .update({
+          queen_failed_date: normalisedDate,
+        })
+        .eq('id', id)
+        .eq('queen_failed', true)
+        .select('id, queen_failed_date')
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data?.id) {
+        console.warn('No permitted distribution row found for failure date update:', id)
+        return false
+      }
+
+      applyTrackedQueenPatch({
+        id: data.id,
+        queen_failed_date: data.queen_failed_date as string | null,
+      })
+
+      return true
+    } catch (err) {
+      console.error('Error updating queen failure date:', err)
+      return false
+    }
+  }, [applyTrackedQueenPatch])
+
+  const updateFailureComment = useCallback(async (id: string, comment: string | null): Promise<boolean> => {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      console.error('Invalid distribution ID for failure comment update')
       return false
     }
 
@@ -484,35 +701,33 @@ export function useQueenTracker() {
     }
 
     try {
-      const today = getTodayLocalDate()
-      const resolvedDate = value
-        ? date === undefined
-          ? today
-          : date
-        : null
-
       const { data, error } = await supabase
         .from('graft_distributions')
         .update({
-          queen_failed: value,
-          queen_failed_date: resolvedDate,
-          queen_failure_comment: value ? normalisedComment : null,
+          queen_failure_comment: normalisedComment,
         })
         .eq('id', id)
-        .select('id')
+        .eq('queen_failed', true)
+        .select('id, queen_failure_comment')
         .maybeSingle()
 
       if (error) throw error
       if (!data?.id) {
-        console.warn('No permitted distribution row found for failure update:', id)
+        console.warn('No permitted distribution row found for failure comment update:', id)
         return false
       }
+
+      applyTrackedQueenPatch({
+        id: data.id,
+        queen_failure_comment: data.queen_failure_comment as string | null,
+      })
+
       return true
     } catch (err) {
-      console.error('Error updating queen failure status:', err)
+      console.error('Error updating queen failure comment:', err)
       return false
     }
-  }, [])
+  }, [applyTrackedQueenPatch])
 
   const calculateStats = useCallback((data: TrackedQueen[]): QueenTrackerStats => {
     return {
@@ -543,8 +758,8 @@ export function useQueenTracker() {
     if (!year || !Number.isFinite(year)) return data
     return data.filter((d) => {
       if (!d.distribution_date) return false
-      const date = new Date(d.distribution_date + 'T00:00:00')
-      if (isNaN(date.getTime())) return false
+      const date = parseLocalDate(d.distribution_date)
+      if (Number.isNaN(date.getTime())) return false
       return date.getFullYear() === year
     })
   }, [])
@@ -573,8 +788,12 @@ export function useQueenTracker() {
     error,
     fetchDistributions,
     updateOverwintered,
+    updateOverwinteredDate,
     updateHybridisation,
+    updateHybridisationDate,
     updateFailure,
+    updateFailureDate,
+    updateFailureComment,
     calculateStats,
     filterByStatus,
     filterByYear,

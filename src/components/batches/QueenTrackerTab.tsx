@@ -21,6 +21,7 @@ import Button from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { NON_GROUP_LEDGER_SCOPE, useQueenTracker, type TrackedQueen, type StatusFilter } from '@/hooks/useQueenTracker'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
+import { parseLocalDate } from '@/lib/date-utils'
 import { COLOUR_DOTS, formatDateIrish } from './graftConstants'
 import { calculateQueenAge, getQueenColorFromYear } from '@/types/queen'
 
@@ -719,8 +720,12 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     error,
     fetchDistributions,
     updateOverwintered,
+    updateOverwinteredDate,
     updateHybridisation,
+    updateHybridisationDate,
     updateFailure,
+    updateFailureDate,
+    updateFailureComment,
     calculateStats,
     filterByStatus,
     filterByYear,
@@ -769,8 +774,8 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
 
     distributions.forEach((distribution) => {
       if (!distribution.distribution_date) return
-      const date = new Date(distribution.distribution_date + 'T00:00:00')
-      if (isNaN(date.getTime())) return
+      const date = parseLocalDate(distribution.distribution_date)
+      if (Number.isNaN(date.getTime())) return
       years.add(date.getFullYear())
     })
 
@@ -804,29 +809,21 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     return { groups, hasNonGroupRows }
   }, [allGroups, preHierarchyDistributions])
 
-  useEffect(() => {
-    if (!selectedGroupId) return
+  const safeSelectedGroupId = useMemo(() => {
+    if (!selectedGroupId) return ''
 
     if (selectedGroupId === NON_GROUP_LEDGER_SCOPE) {
-      if (!availableGroupFilters.hasNonGroupRows) {
-        setSelectedGroupId('')
-        setSelectedMemberId('')
-        setSelectedBatchId('')
-      }
-      return
+      return availableGroupFilters.hasNonGroupRows ? selectedGroupId : ''
     }
 
-    const hasSelectedGroup = availableGroupFilters.groups.some((group) => group.id === selectedGroupId)
-    if (!hasSelectedGroup) {
-      setSelectedGroupId('')
-      setSelectedMemberId('')
-      setSelectedBatchId('')
-    }
+    return availableGroupFilters.groups.some((group) => group.id === selectedGroupId)
+      ? selectedGroupId
+      : ''
   }, [availableGroupFilters, selectedGroupId])
 
   const groupScopedDistributions = useMemo(() => {
-    return filterByGroup(preHierarchyDistributions, selectedGroupId || null)
-  }, [preHierarchyDistributions, selectedGroupId, filterByGroup])
+    return filterByGroup(preHierarchyDistributions, safeSelectedGroupId || null)
+  }, [preHierarchyDistributions, safeSelectedGroupId, filterByGroup])
 
   const availableMembers = useMemo(() => {
     const membersById = new Map<string, string>()
@@ -847,19 +844,17 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       .sort((a, b) => a.label.localeCompare(b.label))
   }, [groupScopedDistributions, userId])
 
-  useEffect(() => {
-    if (!selectedMemberId) return
+  const safeSelectedMemberId = useMemo(() => {
+    if (!selectedMemberId) return ''
 
-    const hasSelectedMember = availableMembers.some((member) => member.id === selectedMemberId)
-    if (!hasSelectedMember) {
-      setSelectedMemberId('')
-      setSelectedBatchId('')
-    }
+    return availableMembers.some((member) => member.id === selectedMemberId)
+      ? selectedMemberId
+      : ''
   }, [availableMembers, selectedMemberId])
 
   const memberScopedDistributions = useMemo(() => {
-    return filterByMember(groupScopedDistributions, selectedMemberId || null)
-  }, [groupScopedDistributions, selectedMemberId, filterByMember])
+    return filterByMember(groupScopedDistributions, safeSelectedMemberId || null)
+  }, [groupScopedDistributions, safeSelectedMemberId, filterByMember])
 
   const availableBatches = useMemo(() => {
     const batchesById = new Map<string, string>()
@@ -874,18 +869,17 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       .sort((a, b) => a.label.localeCompare(b.label))
   }, [memberScopedDistributions])
 
-  useEffect(() => {
-    if (!selectedBatchId) return
+  const safeSelectedBatchId = useMemo(() => {
+    if (!selectedBatchId) return ''
 
-    const hasSelectedBatch = availableBatches.some((batch) => batch.id === selectedBatchId)
-    if (!hasSelectedBatch) {
-      setSelectedBatchId('')
-    }
+    return availableBatches.some((batch) => batch.id === selectedBatchId)
+      ? selectedBatchId
+      : ''
   }, [availableBatches, selectedBatchId])
 
   const filteredDistributions = useMemo(() => {
-    return filterByBatch(memberScopedDistributions, selectedBatchId || null)
-  }, [memberScopedDistributions, selectedBatchId, filterByBatch])
+    return filterByBatch(memberScopedDistributions, safeSelectedBatchId || null)
+  }, [memberScopedDistributions, safeSelectedBatchId, filterByBatch])
 
   const trackerRows = useMemo(() => {
     return filteredDistributions.map((distribution) =>
@@ -915,7 +909,6 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       const success = await updateOverwintered(id, newValue)
       if (success) {
         toast.success('Overwintering status updated')
-        await fetchDistributions(userId)
       } else {
         toast.error('Failed to update overwintering status')
       }
@@ -926,23 +919,18 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         return next
       })
     }
-  }, [updateOverwintered, fetchDistributions, userId, toast])
+  }, [updateOverwintered, toast])
 
-  const handleOverwinteredDateChange = useCallback(async (
-    id: string,
-    currentValue: boolean | null,
-    date: string
-  ): Promise<boolean> => {
-    if (currentValue === null || updatingIdsRef.current.has(id)) return false
+  const handleOverwinteredDateChange = useCallback(async (id: string, date: string): Promise<boolean> => {
+    if (updatingIdsRef.current.has(id)) return false
 
     const nextDate = date.trim()
 
     setUpdatingIds((prev) => new Set(prev).add(id))
     try {
-      const success = await updateOverwintered(id, currentValue, nextDate === '' ? null : nextDate)
+      const success = await updateOverwinteredDate(id, nextDate === '' ? null : nextDate)
       if (success) {
         toast.success('Overwintered date updated')
-        await fetchDistributions(userId)
       } else {
         toast.error('Failed to update overwintered date')
       }
@@ -954,7 +942,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         return next
       })
     }
-  }, [updateOverwintered, fetchDistributions, userId, toast])
+  }, [updateOverwinteredDate, toast])
 
   const handleHybridisationChange = useCallback(async (id: string, newValue: boolean | null) => {
     if (updatingIdsRef.current.has(id)) return
@@ -964,7 +952,6 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       const success = await updateHybridisation(id, newValue)
       if (success) {
         toast.success('Hybridisation status updated')
-        await fetchDistributions(userId)
       } else {
         toast.error('Failed to update hybridisation status')
       }
@@ -975,7 +962,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         return next
       })
     }
-  }, [updateHybridisation, fetchDistributions, userId, toast])
+  }, [updateHybridisation, toast])
 
   const handleHybridisationDateChange = useCallback(async (id: string, date: string): Promise<boolean> => {
     if (updatingIdsRef.current.has(id)) return false
@@ -984,10 +971,9 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
 
     setUpdatingIds((prev) => new Set(prev).add(id))
     try {
-      const success = await updateHybridisation(id, true, nextDate === '' ? null : nextDate)
+      const success = await updateHybridisationDate(id, nextDate === '' ? null : nextDate)
       if (success) {
         toast.success('Hybridisation date updated')
-        await fetchDistributions(userId)
       } else {
         toast.error('Failed to update hybridisation date')
       }
@@ -999,7 +985,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         return next
       })
     }
-  }, [updateHybridisation, fetchDistributions, userId, toast])
+  }, [updateHybridisationDate, toast])
 
   const handleFailureToggle = useCallback(async (id: string, currentValue: boolean) => {
     if (updatingIdsRef.current.has(id)) return
@@ -1015,7 +1001,6 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
           setSelectedId(id)
           setExpandedId(id)
         }
-        await fetchDistributions(userId)
       } else {
         toast.error('Failed to update queen failure status')
       }
@@ -1026,23 +1011,18 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         return next
       })
     }
-  }, [updateFailure, fetchDistributions, userId, toast])
+  }, [updateFailure, toast])
 
-  const handleFailureDateChange = useCallback(async (
-    id: string,
-    currentComment: string | null,
-    date: string
-  ): Promise<boolean> => {
+  const handleFailureDateChange = useCallback(async (id: string, date: string): Promise<boolean> => {
     if (updatingIdsRef.current.has(id)) return false
 
     const nextDate = date.trim()
 
     setUpdatingIds((prev) => new Set(prev).add(id))
     try {
-      const success = await updateFailure(id, true, nextDate === '' ? null : nextDate, currentComment)
+      const success = await updateFailureDate(id, nextDate === '' ? null : nextDate)
       if (success) {
         toast.success('Failure date updated')
-        await fetchDistributions(userId)
       } else {
         toast.error('Failed to update failure date')
       }
@@ -1054,21 +1034,16 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         return next
       })
     }
-  }, [updateFailure, fetchDistributions, userId, toast])
+  }, [updateFailureDate, toast])
 
-  const handleFailureCommentChange = useCallback(async (
-    id: string,
-    currentDate: string | null,
-    comment: string
-  ): Promise<boolean> => {
+  const handleFailureCommentChange = useCallback(async (id: string, comment: string): Promise<boolean> => {
     if (updatingIdsRef.current.has(id)) return false
 
     setUpdatingIds((prev) => new Set(prev).add(id))
     try {
-      const success = await updateFailure(id, true, currentDate, comment)
+      const success = await updateFailureComment(id, comment)
       if (success) {
         toast.success('Failure comment updated')
-        await fetchDistributions(userId)
       } else {
         toast.error('Failed to update failure comment')
       }
@@ -1080,7 +1055,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         return next
       })
     }
-  }, [updateFailure, fetchDistributions, userId, toast])
+  }, [updateFailureComment, toast])
 
   if (loading) {
     return <div className="py-10 text-center text-text-secondary">Loading queen tracker...</div>
@@ -1113,7 +1088,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
             <div className="min-w-0">
               <label className="mb-1.5 block text-sm font-medium text-text-secondary">Group</label>
               <select
-                value={selectedGroupId}
+                value={safeSelectedGroupId}
                 onChange={(event) => {
                   const value = event.target.value
                   startTransition(() => {
@@ -1139,7 +1114,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
             <div className="min-w-0">
               <label className="mb-1.5 block text-sm font-medium text-text-secondary">Member</label>
               <select
-                value={selectedMemberId}
+                value={safeSelectedMemberId}
                 onChange={(event) => {
                   const value = event.target.value
                   startTransition(() => {
@@ -1162,7 +1137,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
             <div className="min-w-0">
               <label className="mb-1.5 block text-sm font-medium text-text-secondary">Batch</label>
               <select
-                value={selectedBatchId}
+                value={safeSelectedBatchId}
                 onChange={(event) => {
                   const value = event.target.value
                   startTransition(() => setSelectedBatchId(value))
@@ -1431,10 +1406,10 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                               ownerDisplayName={ownerDisplayName}
                               isReadOnly={isReadOnly}
                               isUpdating={isUpdating}
-                              onOverwinteredDateChange={(id, date) => handleOverwinteredDateChange(id, distribution.overwintered, date)}
+                              onOverwinteredDateChange={handleOverwinteredDateChange}
                               onHybridisationDateChange={handleHybridisationDateChange}
-                              onFailureDateChange={(id, date) => handleFailureDateChange(id, distribution.queen_failure_comment, date)}
-                              onFailureCommentChange={(id, comment) => handleFailureCommentChange(id, distribution.queen_failed_date, comment)}
+                              onFailureDateChange={handleFailureDateChange}
+                              onFailureCommentChange={handleFailureCommentChange}
                             />
                           </td>
                         </tr>
