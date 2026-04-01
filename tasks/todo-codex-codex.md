@@ -1,26 +1,26 @@
-# Task: Queen Ledger Action Alignment And Reflow
+# Task: Queen Ledger Expanded Detail Layout
 **Date:** 01/04/2026
 **Status:** Completed
 
 ## 1. Objective
-Refine the Queen Ledger action column by centring the action labels over their controls and reflowing the remaining actions cleanly when `Mated` is no longer shown.
+Compact the Queen Ledger expanded detail row and replace the current sparse equal-panel layout with a denser, clearer information layout.
 
 ## 2. Impact Analysis
 * **Files to Modify:** * `src/components/batches/QueenTrackerTab.tsx`
-  * `docs/features/queen-ledger-action-alignment-and-reflow-plan.md`
+  * `docs/features/queen-ledger-expanded-detail-layout-plan.md`
   * `docs/features/queen-tracker.md`
-* **Simplicity Check:** This is a surgical layout refinement inside the Queen Ledger component. It keeps the current action logic, inline date-capture editor, and outcome behaviour intact, and only adjusts alignment and conditional grid arrangement.
+* **Simplicity Check:** This remained a focused layout refactor inside the expanded Queen Ledger row. The data, editing behaviour, and outcome controls stayed intact, while only the grouping and presentation of the existing content changed.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Centre the action labels over their respective controls so the action cell reads cleanly.
-- [x] **Step 2:** Reflow the control grid when `Mated` is absent so the remaining actions do not leave an empty slot.
-- [x] **Step 3:** Keep the inline date-capture editor attached below the controls without disturbing the denser action layout.
+- [x] **Step 1:** Replace the current four equal-width detail cards with a denser asymmetric layout that gives more room to the editable Outcomes area and less room to sparse read-only fields.
+- [x] **Step 2:** Collapse repetitive single-field stacking into compact key-value grids so the expanded row uses materially less vertical space.
+- [x] **Step 3:** Keep all current editable fields available, but group them into a clearer workflow-oriented layout rather than four parallel data buckets.
 - [x] **Step 4:** Update documentation in `docs/features/queen-tracker.md`
 - [x] **Step 5:** Prompt user to test the build
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The previous label-and-toggle split still left the grid structure too rigid, so rows without `Mated` kept an awkward dead slot and the labels were not visually anchored over their controls.
-* **Summary of Changes:** Centred the action labels, rebuilt the action rows from a dynamic layout map, and collapsed the remaining controls cleanly when `Mated` is absent while keeping the inline date-capture editor attached below.
-* **Notes for User:** No schema or behaviour change was needed. Build tests were not run per repository instruction.
+* **Root Cause Found (if applicable):** The expanded ledger row was still laid out as four equal cards even though the read-only context was sparse and the editable outcomes needed materially more room. That forced the view into unnecessary height and made the working area feel cramped.
+* **Summary of Changes:** Rebuilt the expanded row into a denser two-panel layout, added a compact reference fact strip, folded read-only context into tighter grids, widened the outcomes workspace, and removed the old bottom chip strip.
+* **Notes for User:** No MCP or schema change was needed. Build tests were not run per repository instruction.

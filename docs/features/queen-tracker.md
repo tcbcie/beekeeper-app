@@ -101,7 +101,7 @@ Each tracked queen now renders as a dense summary row with:
 The summary row spacing between `Queen` and `Actions` has also been tightened so the identity and action area reads as one denser working block.
 
 Read-only member rows now use a distinct row treatment instead of a dedicated `Read only` badge in the Status column.
-Expanded rows now hold the broader queen record panels and supporting context, including group, member, batch, latest weight, the editable failure date and comment, and the editable outcome dates.
+Expanded rows now use a denser two-panel layout instead of four equal cards. A compact `Reference Context` panel carries the broader queen, breeding, batch, and distribution facts, while a wider `Outcomes` workspace keeps the editable failure date and comment, plus the editable outcome dates, together in one clear area.
 Read-only records still show their restricted-edit explanation inside the expanded Outcomes panel.
 Stage data is no longer surfaced in the Queen Ledger UI.
 
