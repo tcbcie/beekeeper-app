@@ -46,6 +46,7 @@ type DerivedTrackerRow = TrackedQueen & {
   current_stage_label: string
   latest_weight_label: string
   queen_age_label: string
+  queen_tagged_label: string | null
   marking_colour_label: string
   marking_status_label: string
   mother_queen_age_label: string
@@ -290,14 +291,14 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
   const motherQueenMarkingColour = distribution.mother_queen_marking_color || (
     distribution.mother_queen_birth_date ? getQueenColorFromYear(distribution.mother_queen_birth_date) : ''
   )
-  const queenDisplayName = distribution.queen_number || `Cell #${distribution.cell_number}`
+  const queenDisplayName = `Cell #${distribution.cell_number}`
+  const queenTaggedLabel = distribution.queen_number ? `Queen Tagged ${distribution.queen_number}` : null
   const markingStatusLabel = distribution.queen_marked
     ? markingColour
       ? `Marked (${markingColour})`
       : 'Marked'
     : 'Unmarked'
   const queenSecondaryParts = [
-    `Cell #${distribution.cell_number}`,
     distribution.queen_marked ? 'Marked' : 'Unmarked',
     distribution.emergence_date ? calculateQueenAge(distribution.emergence_date) : null,
   ].filter(Boolean)
@@ -326,6 +327,7 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
     current_stage_label: formatGraftStatus(distribution.graft_status),
     latest_weight_label: latestWeightLabel,
     queen_age_label: distribution.emergence_date ? calculateQueenAge(distribution.emergence_date) : 'N/A',
+    queen_tagged_label: queenTaggedLabel,
     marking_colour_label: markingColour || '-',
     marking_status_label: markingStatusLabel,
     mother_queen_age_label: distribution.mother_queen_birth_date ? calculateQueenAge(distribution.mother_queen_birth_date) : 'N/A',
@@ -651,6 +653,11 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             <Tag size={13} />
                             {distribution.marking_status_label}
                           </span>
+                          {distribution.queen_tagged_label && (
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
+                              <span>{distribution.queen_tagged_label}</span>
+                            </span>
+                          )}
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
                             <Scale size={13} />
                             {distribution.latest_weight_label === '-' ? 'No weight logged' : distribution.latest_weight_label}
@@ -674,7 +681,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                 <div className={isExpanded ? 'block' : 'hidden'}>
                   <div className="grid gap-4 p-4 sm:p-5 xl:grid-cols-2 2xl:grid-cols-4">
                     <TrackerPanel title="Queen Record" icon={Crown}>
-                      <DetailItem label="Queen label" value={distribution.queen_display_name} />
+                      <DetailItem label="Queen Tagged" value={distribution.queen_number || '-'} />
                       <DetailItem label="Cell number" value={`#${distribution.cell_number}`} />
                       <DetailItem label="Marking" value={distribution.marking_status_label} />
                       <DetailItem label="Age" value={distribution.queen_age_label} />
