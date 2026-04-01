@@ -37,6 +37,8 @@ type DerivedTrackerRow = TrackedQueen & {
   queen_display_name: string
   queen_secondary_label: string
   recipient_display_name: string
+  recipient_type_label: string
+  recipient_type_class: string
   recipient_contact_label: string
   destination_label: string
   recipient_apiary_label: string
@@ -304,11 +306,12 @@ function ExpandedTrackerRowContent({
           <DetailItem label="Source mating apiary" value={distribution.origin_mating_apiary_label} />
         </TrackerPanel>
 
-        <TrackerPanel title="Destination" icon={UserRound}>
+        <TrackerPanel title="Distribution" icon={UserRound}>
+          <DetailItem label="Distribution type" value={distribution.recipient_type_label} />
           <DetailItem label="Recipient" value={distribution.recipient_display_name} />
           <DetailItem label="Contact" value={distribution.recipient_contact_label} />
           <DetailItem label="Recipient apiary" value={distribution.recipient_apiary_label} />
-          <DetailItem label="Recorded location" value={distribution.destination_label} />
+          <DetailItem label="Distribution location" value={distribution.destination_label} />
           <DetailItem label="Distribution date" value={formatOptionalDate(distribution.distribution_date)} />
           <DetailItem label="Notes" value={distribution.notes || '-'} />
         </TrackerPanel>
@@ -440,10 +443,11 @@ function formatLifecycle(distribution: TrackedQueen) {
 function getRecipientName(distribution: TrackedQueen): string {
   const name = distribution.recipient_name || distribution.external_recipient_name || null
   const email = distribution.recipient_email || distribution.external_recipient_email || null
+  const phone = distribution.external_recipient_phone || null
 
-  if (name && email) return `${name} (${email})`
   if (name) return name
   if (email) return email
+  if (phone) return phone
   return 'Unknown recipient'
 }
 
@@ -478,6 +482,26 @@ function getRecipientApiaryLabel(distribution: TrackedQueen): string {
     : apiaryLabel
 }
 
+function getRecipientTypePresentation(distribution: TrackedQueen) {
+  switch (distribution.recipient_type) {
+    case 'group_member':
+      return {
+        label: 'Group Member',
+        className: 'border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900/35 dark:text-green-300',
+      }
+    case 'app_user':
+      return {
+        label: 'App User',
+        className: 'border-sky-200 bg-sky-100 text-sky-800 dark:border-sky-800 dark:bg-sky-900/35 dark:text-sky-300',
+      }
+    default:
+      return {
+        label: 'Public Recipient',
+        className: 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300',
+      }
+  }
+}
+
 function getOriginMatingApiaryLabel(distribution: TrackedQueen): string {
   if (!distribution.mating_apiary_name) return '-'
   return distribution.mating_apiary_eircode
@@ -510,6 +534,7 @@ function getGroupScopeLabel(distribution: TrackedQueen, groupName: string | null
 function buildDerivedRow(distribution: TrackedQueen, groupName: string): DerivedTrackerRow {
   const typeInfo = formatDistributionType(distribution.distribution_type)
   const lifecycleInfo = formatLifecycle(distribution)
+  const recipientTypeInfo = getRecipientTypePresentation(distribution)
   const markingColour = distribution.queen_marked && distribution.emergence_date
     ? getQueenColorFromYear(distribution.emergence_date)
     : ''
@@ -542,6 +567,8 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
     queen_display_name: queenDisplayName,
     queen_secondary_label: queenSecondaryLabel,
     recipient_display_name: getRecipientName(distribution),
+    recipient_type_label: recipientTypeInfo.label,
+    recipient_type_class: recipientTypeInfo.className,
     recipient_contact_label: getRecipientContact(distribution),
     destination_label: getDestinationLabel(distribution),
     recipient_apiary_label: getRecipientApiaryLabel(distribution),
@@ -1033,9 +1060,9 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                 <tr>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Details</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Queen</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Status</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Destination</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Actions</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Status</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Distribution</th>
                 </tr>
               </thead>
               <tbody>
@@ -1140,6 +1167,16 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                           </div>
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
+                          <OutcomeActionStack
+                            overwintered={distribution.overwintered}
+                            hybridised={distribution.offspring_hybridised}
+                            disabled={isUpdating || isReadOnly}
+                            queenLabel={distribution.queen_display_name}
+                            onOverwinteredChange={(value) => handleOverwinteredChange(distribution.id, value)}
+                            onHybridisationChange={(value) => handleHybridisationChange(distribution.id, value)}
+                          />
+                        </td>
+                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
                           <div className="min-w-[7.5rem] space-y-1.5">
                             <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.display_type_class}`}>
                               {distribution.display_type_label}
@@ -1150,21 +1187,17 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                           </div>
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <div className="min-w-[13rem]">
+                          <div className="min-w-[13rem] space-y-1.5">
                             <p className="font-medium text-foreground">{distribution.recipient_display_name}</p>
-                            <p className="mt-1 text-xs text-text-secondary">{distribution.destination_label}</p>
-                            <p className="mt-1 text-xs text-text-secondary">Distributed {formatOptionalDate(distribution.distribution_date)}</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${distribution.recipient_type_class}`}>
+                                {distribution.recipient_type_label}
+                              </span>
+                              <span className="text-xs text-text-secondary">
+                                Distributed {formatOptionalDate(distribution.distribution_date)}
+                              </span>
+                            </div>
                           </div>
-                        </td>
-                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <OutcomeActionStack
-                            overwintered={distribution.overwintered}
-                            hybridised={distribution.offspring_hybridised}
-                            disabled={isUpdating || isReadOnly}
-                            queenLabel={distribution.queen_display_name}
-                            onOverwinteredChange={(value) => handleOverwinteredChange(distribution.id, value)}
-                            onHybridisationChange={(value) => handleHybridisationChange(distribution.id, value)}
-                          />
                         </td>
                       </tr>
                       {isExpanded && (
