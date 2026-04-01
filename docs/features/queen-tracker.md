@@ -51,6 +51,7 @@ The ledger visibility path now normalises nullable group IDs before owner checks
 The ledger also normalises the batch owner profile join before deriving `batch_owner_name`, so the `Member` filter shows the real distributing member name when profile data exists.
 Non-group batches are intentionally limited to the current user's own ledger rows.
 The ledger fetch path now queries owned ledger rows directly from `graft_distributions.user_id`, only adds additional group rows for groups owned by the current user, deduplicates graft IDs before the `queen_weights` lookup, and skips malformed rows without a valid cell number instead of fabricating `Cell #0`.
+The recent hardening pass also required a follow-up parse fix in `useQueenTracker` so the owned-row and owned-group query-builder path compiles cleanly.
 
 ## 4. Visibility Rules
 - **Group members:** See their own distributions from group-linked batches
