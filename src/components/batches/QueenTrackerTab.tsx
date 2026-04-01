@@ -304,15 +304,15 @@ function OutcomeActionStack({
   onFailureToggle: () => void
 }) {
   const compactButtonClass = 'inline-flex w-full items-center justify-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition-colors'
-  const tileClass = 'rounded-2xl border border-border bg-surface-secondary/55 px-2.5 py-2 text-center dark:bg-surface/55'
-  const titleClass = 'mb-2 text-[10px] font-semibold leading-3 text-text-tertiary'
+  const titleClass = 'text-[10px] font-semibold leading-3 text-text-tertiary'
 
   return (
-    <div className="min-w-[10.25rem] space-y-2.5">
-      <div className="grid grid-cols-2 gap-2">
-        {showMatedAction && (
-          <div className={tileClass}>
+    <div className="min-w-[9.25rem] space-y-2">
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+        {showMatedAction ? (
+          <>
             <p className={titleClass}>Mated</p>
+            <p className={titleClass}>Hybridised</p>
             <button
               type="button"
               onClick={onMatingToggle}
@@ -322,57 +322,54 @@ function OutcomeActionStack({
               className={`${compactButtonClass} ${
                 mated
                   ? 'border-green-300 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-900/50 dark:text-green-300'
-                  : 'border-border bg-surface text-text-secondary dark:bg-surface-elevated'
+                  : 'border-border bg-surface-secondary text-text-secondary dark:bg-surface-elevated'
               } ${matingDisabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-85'}`}
             >
               <Check size={12} aria-hidden="true" />
               <span>{mated ? 'Clear' : 'Mark'}</span>
             </button>
-          </div>
+          </>
+        ) : (
+          <>
+            <span />
+            <p className={titleClass}>Hybridised</p>
+            <span />
+          </>
         )}
+        <ThreeStateActionButton
+          value={hybridised}
+          onClick={onHybridisationClick}
+          labels={{ true: 'Yes', false: 'No', null: '?' }}
+          disabled={outcomeDisabled}
+          ariaLabel={`Queen ${queenLabel} hybridised`}
+          size="compact"
+        />
 
-        <div className={`${tileClass} ${showMatedAction ? '' : 'col-span-2'}`}>
-          <p className={titleClass}>Hybridised</p>
-          <ThreeStateActionButton
-            value={hybridised}
-            onClick={onHybridisationClick}
-            labels={{ true: 'Yes', false: 'No', null: '?' }}
-            disabled={outcomeDisabled}
-            ariaLabel={`Queen ${queenLabel} hybridised`}
-            size="compact"
-          />
-        </div>
-
-        <div className={tileClass}>
-          <p className={titleClass}>Overwintered</p>
-          <ThreeStateActionButton
-            value={overwintered}
-            onClick={onOverwinteredClick}
-            labels={{ true: 'Yes', false: 'No', null: '?' }}
-            disabled={outcomeDisabled}
-            ariaLabel={`Queen ${queenLabel} overwintered`}
-            size="compact"
-          />
-        </div>
-
-        <div className={tileClass}>
-          <p className={titleClass}>Failed</p>
-          <button
-            type="button"
-            onClick={onFailureToggle}
-            disabled={failureDisabled}
-            aria-pressed={failed}
-            aria-label={`Queen ${queenLabel} failure status: ${failed ? 'Failed' : 'Not failed'}`}
-            className={`${compactButtonClass} ${
-              failed
-                ? 'border-red-300 bg-red-100 text-red-700 dark:border-red-700 dark:bg-red-900/50 dark:text-red-300'
-                : 'border-border bg-surface text-text-secondary dark:bg-surface-elevated'
-            } ${failureDisabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-85'}`}
-          >
-            <X size={12} aria-hidden="true" />
-            <span>{failed ? 'Clear' : 'Mark'}</span>
-          </button>
-        </div>
+        <p className={titleClass}>Overwintered</p>
+        <p className={titleClass}>Failed</p>
+        <ThreeStateActionButton
+          value={overwintered}
+          onClick={onOverwinteredClick}
+          labels={{ true: 'Yes', false: 'No', null: '?' }}
+          disabled={outcomeDisabled}
+          ariaLabel={`Queen ${queenLabel} overwintered`}
+          size="compact"
+        />
+        <button
+          type="button"
+          onClick={onFailureToggle}
+          disabled={failureDisabled}
+          aria-pressed={failed}
+          aria-label={`Queen ${queenLabel} failure status: ${failed ? 'Failed' : 'Not failed'}`}
+          className={`${compactButtonClass} ${
+            failed
+              ? 'border-red-300 bg-red-100 text-red-700 dark:border-red-700 dark:bg-red-900/50 dark:text-red-300'
+              : 'border-border bg-surface-secondary text-text-secondary dark:bg-surface-elevated'
+          } ${failureDisabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-85'}`}
+        >
+          <X size={12} aria-hidden="true" />
+          <span>{failed ? 'Clear' : 'Mark'}</span>
+        </button>
       </div>
     </div>
   )
