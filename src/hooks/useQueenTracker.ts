@@ -246,48 +246,47 @@ export function useQueenTracker() {
           .filter((graftId): graftId is string => graftId !== null)
       ))
       const groupMemberIdsByGroupId = new Map<string, Set<string>>()
+      const latestWeights = new Map<string, { weight_mg: number; weighed_at: string }>()
 
-      if (groupIds.length > 0) {
-        const { data: groupMembers, error: groupMembersError } = await supabase
-          .from('rearing_group_members')
-          .select('group_id, user_id')
-          .in('group_id', groupIds)
+      const [groupMembersResult, weightsResult] = await Promise.all([
+        groupIds.length > 0
+          ? supabase
+              .from('rearing_group_members')
+              .select('group_id, user_id')
+              .in('group_id', groupIds)
+          : Promise.resolve({ data: [] as { group_id: string; user_id: string }[], error: null }),
+        graftIds.length > 0
+          ? supabase
+              .from('queen_weights')
+              .select('graft_id, weight_mg, weighed_at')
+              .in('graft_id', graftIds)
+              .order('weighed_at', { ascending: false })
+          : Promise.resolve({ data: [] as { graft_id: string; weight_mg: number; weighed_at: string }[], error: null }),
+      ])
 
-        if (groupMembersError) {
-          console.error('Error fetching rearing group members for tracker:', groupMembersError)
-        } else {
-          for (const member of groupMembers || []) {
-            if (typeof member.group_id !== 'string' || typeof member.user_id !== 'string') continue
+      if (groupMembersResult.error) {
+        console.error('Error fetching rearing group members for tracker:', groupMembersResult.error)
+      } else {
+        for (const member of groupMembersResult.data || []) {
+          if (typeof member.group_id !== 'string' || typeof member.user_id !== 'string') continue
 
-            if (!groupMemberIdsByGroupId.has(member.group_id)) {
-              groupMemberIdsByGroupId.set(member.group_id, new Set())
-            }
-
-            groupMemberIdsByGroupId.get(member.group_id)?.add(member.user_id)
+          if (!groupMemberIdsByGroupId.has(member.group_id)) {
+            groupMemberIdsByGroupId.set(member.group_id, new Set())
           }
+
+          groupMemberIdsByGroupId.get(member.group_id)?.add(member.user_id)
         }
       }
 
-      if (requestId !== fetchCounter.current) return
-
-      const latestWeights = new Map<string, { weight_mg: number; weighed_at: string }>()
-      if (graftIds.length > 0) {
-        const { data: weightRows, error: weightError } = await supabase
-          .from('queen_weights')
-          .select('graft_id, weight_mg, weighed_at')
-          .in('graft_id', graftIds)
-          .order('weighed_at', { ascending: false })
-
-        if (weightError) {
-          console.error('Error fetching queen weights for tracker:', weightError)
-        } else {
-          for (const weight of weightRows || []) {
-            if (!latestWeights.has(weight.graft_id)) {
-              latestWeights.set(weight.graft_id, {
-                weight_mg: weight.weight_mg,
-                weighed_at: weight.weighed_at,
-              })
-            }
+      if (weightsResult.error) {
+        console.error('Error fetching queen weights for tracker:', weightsResult.error)
+      } else {
+        for (const weight of weightsResult.data || []) {
+          if (!latestWeights.has(weight.graft_id)) {
+            latestWeights.set(weight.graft_id, {
+              weight_mg: weight.weight_mg,
+              weighed_at: weight.weighed_at,
+            })
           }
         }
       }
