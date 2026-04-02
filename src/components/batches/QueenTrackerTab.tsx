@@ -1,14 +1,12 @@
 'use client'
 
-import { Fragment, startTransition, useState, useEffect, useCallback, useMemo, useRef, type ComponentType, type ReactNode } from 'react'
+import { Fragment, startTransition, useState, useEffect, useCallback, useMemo, useRef, type ReactNode } from 'react'
 import {
   Check,
   ChevronDown,
   ChevronUp,
   HelpCircle,
   CalendarDays,
-  Package2,
-  Sprout,
   Tag,
   X,
 } from 'lucide-react'
@@ -451,7 +449,7 @@ function OutcomeDateField({
   }, [date, dateEnabled, disabled, draftDate, id, onDateChange])
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
       <input
         type="date"
@@ -464,10 +462,10 @@ function OutcomeDateField({
           }
         }}
         disabled={disabled || !dateEnabled}
-        className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
+        className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
       />
       {!dateEnabled && (
-        <p className="text-xs text-text-secondary">{disabledMessage}</p>
+        <p className="text-[11px] text-text-secondary">{disabledMessage}</p>
       )}
     </div>
   )
@@ -512,7 +510,7 @@ function OutcomeCommentField({
   }, [comment, disabled, draftComment, enabled, id, onCommentChange])
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
         <span className="text-[11px] text-text-tertiary">{draftComment.length}/{maxLength}</span>
@@ -522,11 +520,11 @@ function OutcomeCommentField({
         onChange={(event) => setDraftComment(event.target.value.slice(0, maxLength))}
         onBlur={() => void commitComment()}
         disabled={disabled || !enabled}
-        rows={3}
-        className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
+        rows={2}
+        className="w-full resize-none rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
       />
       {!enabled && (
-        <p className="text-xs text-text-secondary">{disabledMessage}</p>
+        <p className="text-[11px] text-text-secondary">{disabledMessage}</p>
       )}
     </div>
   )
@@ -552,29 +550,11 @@ function SummaryPill({
   )
 }
 
-function TrackerPanel({
-  title,
-  icon: Icon,
-  children,
-  className = '',
-  contentClassName = 'space-y-3',
-}: {
-  title: string
-  icon: ComponentType<{ size?: number; className?: string }>
-  children: ReactNode
-  className?: string
-  contentClassName?: string
-}) {
+function SectionHeading({ children }: { children: ReactNode }) {
   return (
-    <section className={`rounded-2xl border border-border bg-surface-secondary/45 p-4 dark:bg-surface-elevated/55 ${className}`}>
-      <div className="mb-4 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-text-tertiary">
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-forest-50 text-forest-700 dark:bg-forest-900/30 dark:text-forest-300">
-          <Icon size={14} />
-        </span>
-        <span>{title}</span>
-      </div>
-      <div className={contentClassName}>{children}</div>
-    </section>
+    <p className="mb-2 border-b border-border pb-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-text-tertiary">
+      {children}
+    </p>
   )
 }
 
@@ -590,47 +570,13 @@ function DetailItem({
   valueClassName?: string
 }) {
   return (
-    <div className={className}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
-      <div className={`mt-1 ${valueClassName}`}>{value}</div>
+    <div className={`flex items-baseline gap-2 ${className}`}>
+      <span className="shrink-0 text-xs text-text-tertiary">{label}</span>
+      <span className={valueClassName}>{value}</span>
     </div>
   )
 }
 
-function DetailSection({
-  title,
-  children,
-}: {
-  title: string
-  children: ReactNode
-}) {
-  return (
-    <div className="space-y-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-tertiary">{title}</p>
-      {children}
-    </div>
-  )
-}
-
-function CompactFactCard({
-  label,
-  value,
-  detail,
-}: {
-  label: string
-  value: ReactNode
-  detail?: ReactNode
-}) {
-  return (
-    <div className="rounded-2xl border border-border bg-surface px-3.5 py-3 shadow-sm dark:bg-surface-elevated/95">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
-      <div className="mt-1 text-sm font-semibold text-foreground">{value}</div>
-      {detail && (
-        <div className="mt-1 text-xs text-text-secondary">{detail}</div>
-      )}
-    </div>
-  )
-}
 
 function formatTriStateValue(value: boolean | null): string {
   if (value === true) return 'Yes'
@@ -666,90 +612,58 @@ function ExpandedTrackerRowContent({
   const showMatingDateEditor = distribution.distribution_type !== 'mated_queen'
 
   return (
-    <div className="grid gap-4 p-4 sm:p-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.95fr)]">
-      <TrackerPanel title="Reference Context" icon={Package2} className="h-full" contentClassName="space-y-5">
-        <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-4">
-          <CompactFactCard
-            label="Queen Tagged"
-            value={formatQueenTaggedValue(distribution.queen_number) || 'Not tagged'}
-            detail={distribution.marking_status_label}
-          />
-          <CompactFactCard
-            label="Batch"
-            value={distribution.batch_name}
-            detail={`${distribution.group_name} / ${ownerDisplayName}`}
-          />
-          <CompactFactCard
-            label="Distributed"
-            value={formatOptionalDate(distribution.distribution_date)}
-            detail={distribution.destination_label}
-          />
-          <CompactFactCard
-            label="Contact"
-            value={distribution.recipient_contact_label}
-            detail={distribution.recipient_apiary_label}
-          />
+    <div className="grid gap-4 px-4 py-3 sm:px-5 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.95fr)]">
+      {/* Reference */}
+      <div className="space-y-3">
+        <SectionHeading>Reference</SectionHeading>
+        <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+          <DetailItem label="Queen tagged" value={formatQueenTaggedValue(distribution.queen_number) || 'Not tagged'} />
+          <DetailItem label="Marking" value={distribution.marking_status_label} />
+          <DetailItem label="Batch" value={distribution.batch_name} />
+          <DetailItem label="Group / Member" value={`${distribution.group_name} / ${ownerDisplayName}`} />
+          <DetailItem label="Distributed" value={formatOptionalDate(distribution.distribution_date)} />
+          <DetailItem label="Location" value={distribution.destination_label} />
+          <DetailItem label="Graft date" value={formatOptionalDate(distribution.graft_date)} />
+          <DetailItem label="Emergence date" value={formatOptionalDate(distribution.emergence_date)} />
+          <DetailItem label="Mother queen" value={distribution.mother_queen_label} />
+          <DetailItem label="Mother marking" value={distribution.mother_queen_marking_label} />
+          <DetailItem label="Mother age" value={distribution.mother_queen_age_label} />
+          <DetailItem label="Latest weight" value={distribution.latest_weight_label} />
+          <DetailItem label="Source mating apiary" value={distribution.origin_mating_apiary_label} />
+          <DetailItem label="Recipient" value={distribution.recipient_display_name} />
+          <DetailItem label="Recipient type" value={distribution.recipient_type_label} />
+          <DetailItem label="Contact" value={distribution.recipient_contact_label} />
+          <DetailItem label="Recipient apiary" value={distribution.recipient_apiary_label} />
+          {distribution.notes && (
+            <DetailItem
+              label="Notes"
+              value={distribution.notes}
+              className="sm:col-span-2"
+              valueClassName="text-sm whitespace-pre-wrap text-foreground"
+            />
+          )}
         </div>
+      </div>
 
-        <div className="grid gap-5 2xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-          <DetailSection title="Breeding Context">
-            <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-              <DetailItem label="Group" value={distribution.group_name} />
-              <DetailItem label="Member" value={ownerDisplayName} />
-              <DetailItem label="Mother queen" value={distribution.mother_queen_label} />
-              <DetailItem label="Mother marking" value={distribution.mother_queen_marking_label} />
-              <DetailItem label="Mother age" value={distribution.mother_queen_age_label} />
-              <DetailItem label="Latest weight" value={distribution.latest_weight_label} />
-              <DetailItem label="Graft date" value={formatOptionalDate(distribution.graft_date)} />
-              <DetailItem label="Emergence date" value={formatOptionalDate(distribution.emergence_date)} />
-              <DetailItem
-                label="Source mating apiary"
-                value={distribution.origin_mating_apiary_label}
-                className="sm:col-span-2"
-              />
-            </div>
-          </DetailSection>
+      {/* Outcomes */}
+      <div className="space-y-3">
+        <SectionHeading>Outcomes</SectionHeading>
 
-          <DetailSection title="Distribution Reference">
-            <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-              <DetailItem label="Distribution type" value={distribution.recipient_type_label} />
-              <DetailItem label="Recipient" value={distribution.recipient_display_name} />
-              <DetailItem label="Contact" value={distribution.recipient_contact_label} />
-              <DetailItem label="Recipient apiary" value={distribution.recipient_apiary_label} />
-              <DetailItem label="Distribution location" value={distribution.destination_label} />
-              <DetailItem
-                label="Notes"
-                value={distribution.notes || '-'}
-                className="sm:col-span-2"
-                valueClassName="text-sm whitespace-pre-wrap text-foreground"
-              />
-            </div>
-          </DetailSection>
-        </div>
-      </TrackerPanel>
-
-      <TrackerPanel title="Outcomes" icon={Sprout} className="h-full" contentClassName="space-y-4">
         {isReadOnly && (
-          <div className="rounded-2xl border border-border bg-surface px-3 py-3 text-sm text-text-secondary dark:bg-surface-elevated">
-            Only the distributing member can update failure, overwintering, and hybridisation outcomes for this record.
-          </div>
+          <p className="text-xs text-text-secondary">
+            Only the distributing member can update outcomes for this record.
+          </p>
         )}
 
-        <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-          <DetailItem
-            label="Mated"
-            value={isMatedDistribution(distribution) ? 'Confirmed' : 'Pending'}
-          />
+        <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+          <DetailItem label="Mated" value={isMatedDistribution(distribution) ? 'Confirmed' : 'Pending'} />
           <DetailItem label="Mated date" value={formatOptionalDate(distribution.mating_confirmed_date)} />
           <DetailItem label="Mated location" value={distribution.mating_location || '-'} />
           <DetailItem label="Failed" value={distribution.queen_failed ? 'Yes' : 'No'} />
           <DetailItem label="Overwintered" value={formatTriStateValue(distribution.overwintered)} />
-          <DetailItem label="Hybridised offspring" value={formatTriStateValue(distribution.offspring_hybridised)} />
+          <DetailItem label="Hybridised" value={formatTriStateValue(distribution.offspring_hybridised)} />
           {(isReadOnly || distribution.queen_failed) && (
-            <DetailItem
-              label="Failure date"
-              value={formatOptionalDate(distribution.queen_failed_date)}
-            />
+            <DetailItem label="Failure date" value={formatOptionalDate(distribution.queen_failed_date)} />
           )}
           {(isReadOnly || distribution.queen_failed) && (
             <DetailItem
@@ -760,29 +674,23 @@ function ExpandedTrackerRowContent({
             />
           )}
           {(isReadOnly || distribution.overwintered !== null) && (
-            <DetailItem
-              label="Overwintered date"
-              value={formatOptionalDate(distribution.overwintered_date)}
-            />
+            <DetailItem label="Overwintered date" value={formatOptionalDate(distribution.overwintered_date)} />
           )}
           {(isReadOnly || distribution.offspring_hybridised !== null) && (
-            <DetailItem
-              label="Hybridisation date"
-              value={formatOptionalDate(distribution.hybridisation_date)}
-            />
+            <DetailItem label="Hybridisation date" value={formatOptionalDate(distribution.hybridisation_date)} />
           )}
         </div>
 
         {!isReadOnly && (
-          <div className="space-y-3 rounded-2xl border border-border bg-surface px-3 py-3 dark:bg-surface-elevated">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-tertiary">
-              Update outcome details
+          <div className="mt-2 space-y-2 border-t border-border pt-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+              Record dates
             </p>
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-2 md:grid-cols-2">
               {showMatingDateEditor && (
                 <OutcomeDateField
                   id={distribution.id}
-                  label="Record mated date"
+                  label="Mated date"
                   date={distribution.mating_confirmed_date}
                   disabled={isUpdating}
                   dateEnabled={distribution.mating_confirmed}
@@ -792,7 +700,7 @@ function ExpandedTrackerRowContent({
               )}
               <OutcomeDateField
                 id={distribution.id}
-                label="Record failure date"
+                label="Failure date"
                 date={distribution.queen_failed_date}
                 disabled={isUpdating}
                 dateEnabled={distribution.queen_failed}
@@ -801,7 +709,7 @@ function ExpandedTrackerRowContent({
               />
               <OutcomeDateField
                 id={distribution.id}
-                label="Record overwintered date"
+                label="Overwintered date"
                 date={distribution.overwintered_date}
                 disabled={isUpdating}
                 dateEnabled={distribution.overwintered !== null && !distribution.queen_failed}
@@ -812,7 +720,7 @@ function ExpandedTrackerRowContent({
               />
               <OutcomeDateField
                 id={distribution.id}
-                label="Record hybridisation date"
+                label="Hybridisation date"
                 date={distribution.hybridisation_date}
                 disabled={isUpdating}
                 dateEnabled={distribution.offspring_hybridised === true && !distribution.queen_failed}
@@ -834,7 +742,7 @@ function ExpandedTrackerRowContent({
             </div>
           </div>
         )}
-      </TrackerPanel>
+      </div>
     </div>
   )
 }
