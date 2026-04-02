@@ -513,7 +513,7 @@ function OutcomeCommentField({
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
-        <span className="text-[11px] text-text-tertiary">{draftComment.length}/{maxLength}</span>
+        <span className="text-[11px] text-text-tertiary">{enabled ? draftComment.length : 0}/{maxLength}</span>
       </div>
       <textarea
         value={enabled ? draftComment : ''}
@@ -1128,13 +1128,17 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   }, [filteredDistributions, groupNameById])
 
   useEffect(() => {
-    if (!selectedId) return
+    if (!selectedId && !expandedId) return
 
-    const hasSelectedRow = trackerRows.some((distribution) => distribution.id === selectedId)
-    if (!hasSelectedRow) {
+    const visibleIds = new Set(trackerRows.map((d) => d.id))
+
+    if (selectedId && !visibleIds.has(selectedId)) {
       setSelectedId(null)
     }
-  }, [selectedId, trackerRows])
+    if (expandedId && !visibleIds.has(expandedId)) {
+      setExpandedId(null)
+    }
+  }, [selectedId, expandedId, trackerRows])
 
   useEffect(() => {
     if (!actionDraft) return
@@ -1267,40 +1271,41 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   const handleSaveOutcomeAction = useCallback(async () => {
     if (!actionDraft || updatingIdsRef.current.has(actionDraft.rowId)) return
 
-    const requiresDate = outcomeNeedsDate(actionDraft.kind, actionDraft.value)
-    const nextDate = actionDraft.date.trim()
+    const { rowId, kind, value, date } = actionDraft
+    const requiresDate = outcomeNeedsDate(kind, value)
+    const nextDate = date.trim()
     if (requiresDate && nextDate === '') {
       toast.error('Please record the date before saving this outcome')
       return
     }
 
-    setUpdatingIds((prev) => new Set(prev).add(actionDraft.rowId))
+    setUpdatingIds((prev) => new Set(prev).add(rowId))
     try {
       let success = false
 
-      switch (actionDraft.kind) {
+      switch (kind) {
         case 'mated':
-          success = await updateMating(actionDraft.rowId, true, nextDate)
+          success = await updateMating(rowId, true, nextDate)
           if (success) toast.success('Mating confirmed')
           break
         case 'overwintered':
           success = await updateOverwintered(
-            actionDraft.rowId,
-            actionDraft.value,
-            actionDraft.value === null ? null : nextDate
+            rowId,
+            value,
+            value === null ? null : nextDate
           )
           if (success) toast.success('Overwintering status updated')
           break
         case 'hybridised':
           success = await updateHybridisation(
-            actionDraft.rowId,
-            actionDraft.value,
-            actionDraft.value === true ? nextDate : null
+            rowId,
+            value,
+            value === true ? nextDate : null
           )
           if (success) toast.success('Hybridisation status updated')
           break
         case 'failed':
-          success = await updateFailure(actionDraft.rowId, true, nextDate)
+          success = await updateFailure(rowId, true, nextDate)
           if (success) toast.success('Queen marked as failed')
           break
       }
@@ -1313,7 +1318,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     } finally {
       setUpdatingIds((prev) => {
         const next = new Set(prev)
-        next.delete(actionDraft.rowId)
+        next.delete(rowId)
         return next
       })
     }
