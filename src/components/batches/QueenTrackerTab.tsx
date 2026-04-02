@@ -641,7 +641,7 @@ function ExpandedTrackerRowContent({
       </div>
 
       {/* Outcomes */}
-      <div className="space-y-3">
+      <div className="min-w-0 space-y-3">
         <SectionHeading>Outcomes</SectionHeading>
 
         {isReadOnly && (
@@ -708,7 +708,7 @@ function ExpandedTrackerRowContent({
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
               Record dates
             </p>
-            <div className="grid gap-2 md:grid-cols-2">
+            <div className="grid gap-2">
               {showMatingDateEditor && distribution.mating_confirmed && (
                 <OutcomeDateField
                   id={distribution.id}
@@ -750,7 +750,7 @@ function ExpandedTrackerRowContent({
                 />
               )}
               {distribution.queen_failed && (
-                <div className="md:col-span-2">
+                <div>
                   <OutcomeCommentField
                     id={distribution.id}
                     label="Failure comment"
