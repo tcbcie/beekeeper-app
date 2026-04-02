@@ -621,9 +621,13 @@ function ExpandedTrackerRowContent({
           <DetailItem label="Recipient" value={distribution.recipient_display_name} />
           <DetailItem label="Type" value={distribution.recipient_type_label} />
           <DetailItem label="Contact" value={distribution.recipient_contact_label} />
-          <DetailItem label="Apiary" value={distribution.recipient_apiary_label} />
-          {distribution.destination_label !== '-' && (
-            <DetailItem label="Recipient mating site" value={distribution.destination_label} />
+          {!(distribution.distribution_type === 'mated_queen' && distribution.recipient_type === 'public') && (
+            <>
+              <DetailItem label="Apiary" value={distribution.recipient_apiary_label} />
+              {distribution.destination_label !== '-' && (
+                <DetailItem label="Recipient mating site" value={distribution.destination_label} />
+              )}
+            </>
           )}
           {distribution.notes && (
             <DetailItem
