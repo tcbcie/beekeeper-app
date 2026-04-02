@@ -559,7 +559,7 @@ function DetailItem({
 }) {
   return (
     <div className={`flex items-baseline gap-2 ${className}`}>
-      <span className="shrink-0 text-xs text-text-tertiary">{label}</span>
+      <span className="shrink-0 text-xs text-text-tertiary">{label}:</span>
       <span className={valueClassName}>{value}</span>
     </div>
   )
@@ -610,18 +610,21 @@ function ExpandedTrackerRowContent({
           <DetailItem label="Batch" value={distribution.batch_name} />
           <DetailItem label="Group / Member" value={`${distribution.group_name} / ${ownerDisplayName}`} />
           <DetailItem label="Distributed" value={formatOptionalDate(distribution.distribution_date)} />
-          <DetailItem label="Location" value={distribution.destination_label} />
-          <DetailItem label="Graft date" value={formatOptionalDate(distribution.graft_date)} />
           <DetailItem label="Emergence date" value={formatOptionalDate(distribution.emergence_date)} />
           <DetailItem label="Mother queen" value={distribution.mother_queen_label} />
-          <DetailItem label="Mother marking" value={distribution.mother_queen_marking_label} />
           <DetailItem label="Mother age" value={distribution.mother_queen_age_label} />
+          <DetailItem label="Mating apiary" value={distribution.origin_mating_apiary_label} />
           <DetailItem label="Latest weight" value={distribution.latest_weight_label} />
-          <DetailItem label="Source mating apiary" value={distribution.origin_mating_apiary_label} />
+        </div>
+
+        <div className="mt-3 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
           <DetailItem label="Recipient" value={distribution.recipient_display_name} />
-          <DetailItem label="Recipient type" value={distribution.recipient_type_label} />
+          <DetailItem label="Type" value={distribution.recipient_type_label} />
           <DetailItem label="Contact" value={distribution.recipient_contact_label} />
-          <DetailItem label="Recipient apiary" value={distribution.recipient_apiary_label} />
+          <DetailItem label="Apiary" value={distribution.recipient_apiary_label} />
+          {distribution.destination_label !== '-' && (
+            <DetailItem label="Recipient mating site" value={distribution.destination_label} />
+          )}
           {distribution.notes && (
             <DetailItem
               label="Notes"
