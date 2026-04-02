@@ -418,7 +418,6 @@ function OutcomeDateField({
   date,
   disabled,
   dateEnabled,
-  disabledMessage = 'Set the outcome first to record a date.',
   onDateChange,
 }: {
   id: string
@@ -426,7 +425,6 @@ function OutcomeDateField({
   date: string | null
   disabled: boolean
   dateEnabled: boolean
-  disabledMessage?: string
   onDateChange: (id: string, date: string) => Promise<boolean>
 }) {
   const [draftDate, setDraftDate] = useState(date || '')
@@ -464,9 +462,6 @@ function OutcomeDateField({
         disabled={disabled || !dateEnabled}
         className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
       />
-      {!dateEnabled && (
-        <p className="text-[11px] text-text-secondary">{disabledMessage}</p>
-      )}
     </div>
   )
 }
@@ -476,18 +471,14 @@ function OutcomeCommentField({
   label,
   comment,
   disabled,
-  enabled,
   maxLength = MAX_FAILURE_COMMENT_LENGTH,
-  disabledMessage = 'Mark the queen as failed to record a comment.',
   onCommentChange,
 }: {
   id: string
   label: string
   comment: string | null
   disabled: boolean
-  enabled: boolean
   maxLength?: number
-  disabledMessage?: string
   onCommentChange: (id: string, comment: string) => Promise<boolean>
 }) {
   const [draftComment, setDraftComment] = useState(comment || '')
@@ -497,7 +488,7 @@ function OutcomeCommentField({
   }, [comment, id])
 
   const commitComment = useCallback(async () => {
-    if (disabled || !enabled) return
+    if (disabled) return
 
     const nextValue = draftComment.trim()
     const currentValue = comment?.trim() || ''
@@ -507,25 +498,22 @@ function OutcomeCommentField({
     if (!success) {
       setDraftComment(comment || '')
     }
-  }, [comment, disabled, draftComment, enabled, id, onCommentChange])
+  }, [comment, disabled, draftComment, id, onCommentChange])
 
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
-        <span className="text-[11px] text-text-tertiary">{enabled ? draftComment.length : 0}/{maxLength}</span>
+        <span className="text-[11px] text-text-tertiary">{draftComment.length}/{maxLength}</span>
       </div>
       <textarea
-        value={enabled ? draftComment : ''}
+        value={draftComment}
         onChange={(event) => setDraftComment(event.target.value.slice(0, maxLength))}
         onBlur={() => void commitComment()}
-        disabled={disabled || !enabled}
+        disabled={disabled}
         rows={2}
         className="w-full resize-none rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
       />
-      {!enabled && (
-        <p className="text-[11px] text-text-secondary">{disabledMessage}</p>
-      )}
     </div>
   )
 }
@@ -657,88 +645,95 @@ function ExpandedTrackerRowContent({
 
         <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
           <DetailItem label="Mated" value={isMatedDistribution(distribution) ? 'Confirmed' : 'Pending'} />
-          <DetailItem label="Mated date" value={formatOptionalDate(distribution.mating_confirmed_date)} />
-          <DetailItem label="Mated location" value={distribution.mating_location || '-'} />
+          {distribution.mating_confirmed_date && (
+            <DetailItem label="Mated date" value={formatOptionalDate(distribution.mating_confirmed_date)} />
+          )}
+          {distribution.mating_location && (
+            <DetailItem label="Mated location" value={distribution.mating_location} />
+          )}
           <DetailItem label="Failed" value={distribution.queen_failed ? 'Yes' : 'No'} />
-          <DetailItem label="Overwintered" value={formatTriStateValue(distribution.overwintered)} />
-          <DetailItem label="Hybridised" value={formatTriStateValue(distribution.offspring_hybridised)} />
-          {(isReadOnly || distribution.queen_failed) && (
+          {distribution.queen_failed && distribution.queen_failed_date && (
             <DetailItem label="Failure date" value={formatOptionalDate(distribution.queen_failed_date)} />
           )}
-          {(isReadOnly || distribution.queen_failed) && (
+          {distribution.queen_failed && distribution.queen_failure_comment && (
             <DetailItem
               label="Failure comment"
-              value={distribution.queen_failure_comment || '-'}
+              value={distribution.queen_failure_comment}
               className="sm:col-span-2"
               valueClassName="text-sm whitespace-pre-wrap text-foreground"
             />
           )}
-          {(isReadOnly || distribution.overwintered !== null) && (
+          <DetailItem label="Overwintered" value={formatTriStateValue(distribution.overwintered)} />
+          {distribution.overwintered !== null && distribution.overwintered_date && (
             <DetailItem label="Overwintered date" value={formatOptionalDate(distribution.overwintered_date)} />
           )}
-          {(isReadOnly || distribution.offspring_hybridised !== null) && (
+          <DetailItem label="Hybridised" value={formatTriStateValue(distribution.offspring_hybridised)} />
+          {distribution.offspring_hybridised !== null && distribution.hybridisation_date && (
             <DetailItem label="Hybridisation date" value={formatOptionalDate(distribution.hybridisation_date)} />
           )}
         </div>
 
-        {!isReadOnly && (
+        {!isReadOnly && (showMatingDateEditor && distribution.mating_confirmed
+          || distribution.queen_failed
+          || (distribution.overwintered !== null && !distribution.queen_failed)
+          || (distribution.offspring_hybridised === true && !distribution.queen_failed)
+        ) && (
           <div className="mt-2 space-y-2 border-t border-border pt-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
               Record dates
             </p>
             <div className="grid gap-2 md:grid-cols-2">
-              {showMatingDateEditor && (
+              {showMatingDateEditor && distribution.mating_confirmed && (
                 <OutcomeDateField
                   id={distribution.id}
                   label="Mated date"
                   date={distribution.mating_confirmed_date}
                   disabled={isUpdating}
-                  dateEnabled={distribution.mating_confirmed}
-                  disabledMessage="Mark the queen as mated to record a date."
+                  dateEnabled
                   onDateChange={onMatingDateChange}
                 />
               )}
-              <OutcomeDateField
-                id={distribution.id}
-                label="Failure date"
-                date={distribution.queen_failed_date}
-                disabled={isUpdating}
-                dateEnabled={distribution.queen_failed}
-                disabledMessage="Mark the queen as failed to record a date."
-                onDateChange={onFailureDateChange}
-              />
-              <OutcomeDateField
-                id={distribution.id}
-                label="Overwintered date"
-                date={distribution.overwintered_date}
-                disabled={isUpdating}
-                dateEnabled={distribution.overwintered !== null && !distribution.queen_failed}
-                disabledMessage={distribution.queen_failed
-                  ? 'Clear the failure outcome to edit overwintering.'
-                  : 'Set the outcome first to record a date.'}
-                onDateChange={onOverwinteredDateChange}
-              />
-              <OutcomeDateField
-                id={distribution.id}
-                label="Hybridisation date"
-                date={distribution.hybridisation_date}
-                disabled={isUpdating}
-                dateEnabled={distribution.offspring_hybridised === true && !distribution.queen_failed}
-                disabledMessage={distribution.queen_failed
-                  ? 'Clear the failure outcome to edit hybridisation.'
-                  : 'Set the outcome first to record a date.'}
-                onDateChange={onHybridisationDateChange}
-              />
-              <div className="md:col-span-2">
-                <OutcomeCommentField
+              {distribution.queen_failed && (
+                <OutcomeDateField
                   id={distribution.id}
-                  label="Failure comment"
-                  comment={distribution.queen_failure_comment}
+                  label="Failure date"
+                  date={distribution.queen_failed_date}
                   disabled={isUpdating}
-                  enabled={distribution.queen_failed}
-                  onCommentChange={onFailureCommentChange}
+                  dateEnabled
+                  onDateChange={onFailureDateChange}
                 />
-              </div>
+              )}
+              {distribution.overwintered !== null && !distribution.queen_failed && (
+                <OutcomeDateField
+                  id={distribution.id}
+                  label="Overwintered date"
+                  date={distribution.overwintered_date}
+                  disabled={isUpdating}
+                  dateEnabled
+                  onDateChange={onOverwinteredDateChange}
+                />
+              )}
+              {distribution.offspring_hybridised === true && !distribution.queen_failed && (
+                <OutcomeDateField
+                  id={distribution.id}
+                  label="Hybridisation date"
+                  date={distribution.hybridisation_date}
+                  disabled={isUpdating}
+                  dateEnabled
+                  onDateChange={onHybridisationDateChange}
+                />
+              )}
+              {distribution.queen_failed && (
+                <div className="md:col-span-2">
+                  <OutcomeCommentField
+                    id={distribution.id}
+                    label="Failure comment"
+                    comment={distribution.queen_failure_comment}
+                    disabled={isUpdating}
+                    onCommentChange={onFailureCommentChange}
+                  />
+                </div>
+              )}
             </div>
           </div>
         )}
