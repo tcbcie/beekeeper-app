@@ -650,34 +650,53 @@ function ExpandedTrackerRowContent({
           </p>
         )}
 
-        <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
-          <DetailItem label="Mated" value={isMatedDistribution(distribution) ? 'Confirmed' : 'Pending'} />
-          {distribution.mating_confirmed_date && (
-            <DetailItem label="Mated date" value={formatOptionalDate(distribution.mating_confirmed_date)} />
-          )}
-          {distribution.mating_location && (
-            <DetailItem label="Mated location" value={distribution.mating_location} />
-          )}
-          <DetailItem label="Failed" value={distribution.queen_failed ? 'Yes' : 'No'} />
-          {distribution.queen_failed && distribution.queen_failed_date && (
-            <DetailItem label="Failure date" value={formatOptionalDate(distribution.queen_failed_date)} />
-          )}
+        <div className="space-y-1.5">
+          <DetailItem
+            label="Mated"
+            value={<>
+              {isMatedDistribution(distribution) ? 'Confirmed' : 'Pending'}
+              {distribution.mating_confirmed_date && (
+                <span className="text-text-secondary">{` \u2014 ${formatOptionalDate(distribution.mating_confirmed_date)}`}</span>
+              )}
+              {distribution.mating_location && (
+                <span className="text-text-secondary">{` (${distribution.mating_location})`}</span>
+              )}
+            </>}
+          />
+          <DetailItem
+            label="Failed"
+            value={<>
+              {distribution.queen_failed ? 'Yes' : 'No'}
+              {distribution.queen_failed && distribution.queen_failed_date && (
+                <span className="text-text-secondary">{` \u2014 ${formatOptionalDate(distribution.queen_failed_date)}`}</span>
+              )}
+            </>}
+          />
           {distribution.queen_failed && distribution.queen_failure_comment && (
             <DetailItem
               label="Failure comment"
               value={distribution.queen_failure_comment}
-              className="sm:col-span-2"
               valueClassName="text-sm whitespace-pre-wrap text-foreground"
             />
           )}
-          <DetailItem label="Overwintered" value={formatTriStateValue(distribution.overwintered)} />
-          {distribution.overwintered !== null && distribution.overwintered_date && (
-            <DetailItem label="Overwintered date" value={formatOptionalDate(distribution.overwintered_date)} />
-          )}
-          <DetailItem label="Hybridised" value={formatTriStateValue(distribution.offspring_hybridised)} />
-          {distribution.offspring_hybridised !== null && distribution.hybridisation_date && (
-            <DetailItem label="Hybridisation date" value={formatOptionalDate(distribution.hybridisation_date)} />
-          )}
+          <DetailItem
+            label="Overwintered"
+            value={<>
+              {formatTriStateValue(distribution.overwintered)}
+              {distribution.overwintered !== null && distribution.overwintered_date && (
+                <span className="text-text-secondary">{` \u2014 ${formatOptionalDate(distribution.overwintered_date)}`}</span>
+              )}
+            </>}
+          />
+          <DetailItem
+            label="Hybridised"
+            value={<>
+              {formatTriStateValue(distribution.offspring_hybridised)}
+              {distribution.offspring_hybridised !== null && distribution.hybridisation_date && (
+                <span className="text-text-secondary">{` \u2014 ${formatOptionalDate(distribution.hybridisation_date)}`}</span>
+              )}
+            </>}
+          />
         </div>
 
         {!isReadOnly && (showMatingDateEditor && distribution.mating_confirmed
