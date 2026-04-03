@@ -1,32 +1,34 @@
-# Queen Tracker Expanded Details — Compact Redesign
+# Queen Tracker Table Layout Improvements
 
-**Date:** 02/04/2026
+**Date:** 03/04/2026
 **Status:** Complete
-
-## Goal
-Tidy up the expanded row details in the Queen Tracker tab. The information is reference-only and should be easy to follow and synthesise, not "visually" presented. Make it compact and logically grouped.
 
 ## Plan
 
-- [x] 1. Replace `CompactFactCard` row with a simple inline key:value list (no bordered cards)
-- [x] 2. Replace `TrackerPanel` wrappers with lightweight section headers (simple text dividers, no icon circles)
-- [x] 3. Merge Breeding Context + Distribution Reference into a single compact key:value grid
-- [x] 4. Compact the Outcomes read-only display into a tighter layout
-- [x] 5. Tighten the Update Outcome Details form — less spacing and visual weight
-- [x] 6. Prompt user to test visually
+- [x] 1. Remove Details column — make cell name clickable to expand/collapse with chevron
+- [x] 2. Compact action buttons — icon-only toggles in a single row with tooltips
+- [x] 3. Status column — show only lifecycle badge, drop distribution type badge
+- [x] 4. Fix "Age Future date" bug in calculateQueenAge
+- [x] 5. Move summary count inline with filters, remove separate Ledger Summary section
+- [x] 6. Verify row height reduction (natural result of #1, #2, #3)
 
 ## Review
 
 ### Changes Made
-- **`src/components/batches/QueenTrackerTab.tsx`**:
-  - Removed `CompactFactCard` component — replaced with inline `DetailItem` key:value pairs
-  - Removed `TrackerPanel` component (icon circle headers) — replaced with `SectionHeading` (simple underlined text)
-  - Removed `DetailSection` component — no longer needed
-  - Removed unused imports (`Package2`, `Sprout`, `ComponentType`)
-  - `DetailItem` changed from stacked label-over-value to inline `label  value` using flexbox baseline alignment
-  - Merged "Breeding Context" and "Distribution Reference" into a single "Reference" section with a 2-column key:value grid
-  - Outcomes read-only notice simplified from bordered card to a single line of text
-  - "Update outcome details" form: reduced from bordered card to a simple border-top divider, tighter spacing
-  - `OutcomeDateField`: reduced padding (`py-2` → `py-1.5`), rounded-xl → rounded-lg, smaller disabled message text
-  - `OutcomeCommentField`: textarea rows reduced from 3 → 2, same spacing/padding reductions
-  - Notes field only shown when notes exist (no empty "-" row)
+
+1. **Details column removed** — Queen name is now clickable with a chevron icon to expand/collapse details. Merged into the Queen td cell. Fixed `queenSecondaryLabel` variable scoping bug (was referencing a local variable instead of `distribution.queen_secondary_label`). Updated `colSpan` from 5 to 4 on expanded rows. Table min-width reduced from 66rem to 48rem.
+
+2. **Action buttons compacted** — Replaced the labelled 2x2 `ThreeStateActionButton` grid with a single row of `OutcomeActionIcon` circular icon buttons (Check, Snowflake, GitMerge, X). Each button is 28px with a tooltip showing state.
+
+3. **Status column simplified** — Removed the `display_type_label` badge. Only the `lifecycle_label` badge is now shown (e.g. "Cell Stage", "Mated", "Overwintered", "Failed").
+
+4. **Age bug fixed** — `calculateQueenAge` now returns "Not yet emerged" instead of "Future date" for queens with birth dates in the future.
+
+5. **Summary moved inline** — Removed the separate collapsible "Ledger Summary" section and its `SummaryPill` components. Summary counts are now displayed as compact coloured-dot labels inline with the filter section header. Removed `isSummaryExpanded` state.
+
+6. **Row height reduced** — Natural result of removing the Details column, compacting action buttons to icon-only, and removing the distribution type badge from Status.
+
+### Cleanup
+- Removed unused `ThreeStateActionButton` component
+- Removed unused `SummaryPill` component
+- Removed unused `HelpCircle` import from lucide-react

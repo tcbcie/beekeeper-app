@@ -5,8 +5,9 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
-  HelpCircle,
+  GitMerge,
   CalendarDays,
+  Snowflake,
   Tag,
   X,
 } from 'lucide-react'
@@ -56,52 +57,6 @@ type OutcomeActionDraft = {
 }
 
 const MAX_FAILURE_COMMENT_LENGTH = 280
-
-function ThreeStateActionButton({
-  value,
-  onClick,
-  labels = { true: 'Yes', false: 'No', null: '?' },
-  disabled = false,
-  ariaLabel,
-  size = 'default',
-}: {
-  value: boolean | null
-  onClick: () => void
-  labels?: { true: string; false: string; null: string }
-  disabled?: boolean
-  ariaLabel?: string
-  size?: 'default' | 'compact'
-}) {
-  const bgColor = value === true
-    ? 'border-green-300 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-900/50 dark:text-green-300'
-    : value === false
-      ? 'border-red-300 bg-red-100 text-red-700 dark:border-red-700 dark:bg-red-900/50 dark:text-red-300'
-      : 'border-border bg-surface-secondary text-text-secondary dark:bg-surface-elevated'
-
-  const Icon = value === true ? Check : value === false ? X : HelpCircle
-  const displayLabel = value === null ? labels.null : value ? labels.true : labels.false
-  const sizingClass = size === 'compact'
-    ? 'min-w-[4.15rem] px-2.5 py-1 text-xs'
-    : 'min-w-[4.75rem] px-3 py-1.5 text-sm'
-  const iconSize = size === 'compact' ? 12 : 14
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-pressed={value === true ? 'true' : value === false ? 'false' : 'mixed'}
-      aria-label={ariaLabel ? `${ariaLabel}: ${displayLabel}` : displayLabel}
-      className={`inline-flex items-center justify-center gap-1 rounded-full border font-medium transition-colors ${sizingClass} ${bgColor} ${
-        disabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-85'
-      }`}
-      title={displayLabel}
-    >
-      <Icon size={iconSize} aria-hidden="true" />
-      <span>{displayLabel}</span>
-    </button>
-  )
-}
 
 function getTodayLocalDate(): string {
   return toLocalDateString(new Date())
@@ -267,6 +222,41 @@ function OutcomeActionEditor({
   )
 }
 
+function OutcomeActionIcon({
+  icon: Icon,
+  label,
+  active,
+  activeClass,
+  disabled,
+  onClick,
+  ariaLabel,
+}: {
+  icon: typeof Check
+  label: string
+  active: boolean | null
+  activeClass: string
+  disabled: boolean
+  onClick: () => void
+  ariaLabel: string
+}) {
+  const isOn = active === true
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={`${label}: ${isOn ? 'On' : active === false ? 'Off' : '?'}`}
+      aria-label={ariaLabel}
+      aria-pressed={isOn ? 'true' : active === false ? 'false' : 'mixed'}
+      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border transition-colors ${
+        isOn ? activeClass : 'border-border bg-surface-secondary text-text-tertiary dark:bg-surface-elevated'
+      } ${disabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-80'}`}
+    >
+      <Icon size={13} aria-hidden="true" />
+    </button>
+  )
+}
+
 function OutcomeActionStack({
   showMatedAction,
   mated,
@@ -296,118 +286,46 @@ function OutcomeActionStack({
   onHybridisationClick: () => void
   onFailureToggle: () => void
 }) {
-  const compactButtonClass = 'inline-flex w-full items-center justify-center gap-1 rounded-full border px-2 py-1 text-xs font-medium transition-colors'
-  const titleClass = 'text-center text-[10px] font-semibold leading-3 text-text-tertiary'
-
-  const actionContent = {
-    mated: {
-      label: 'Mated',
-      control: (
-        <button
-          type="button"
-          onClick={onMatingToggle}
-          disabled={matingDisabled}
-          aria-pressed={mated}
-          aria-label={`Queen ${queenLabel} mating status: ${mated ? 'Confirmed' : 'Pending mating'}`}
-          className={`${compactButtonClass} ${
-            mated
-              ? 'border-green-300 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-900/50 dark:text-green-300'
-              : 'border-border bg-surface-secondary text-text-secondary dark:bg-surface-elevated'
-          } ${matingDisabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-85'}`}
-        >
-          <Check size={12} aria-hidden="true" />
-          <span>{mated ? 'Clear' : 'Mark'}</span>
-        </button>
-      ),
-    },
-    hybridised: {
-      label: 'Hybridised',
-      control: (
-        <ThreeStateActionButton
-          value={hybridised}
-          onClick={onHybridisationClick}
-          labels={{ true: 'Yes', false: 'No', null: '?' }}
-          disabled={outcomeDisabled}
-          ariaLabel={`Queen ${queenLabel} hybridised`}
-          size="compact"
-        />
-      ),
-    },
-    overwintered: {
-      label: 'Overwintered',
-      control: (
-        <ThreeStateActionButton
-          value={overwintered}
-          onClick={onOverwinteredClick}
-          labels={{ true: 'Yes', false: 'No', null: '?' }}
-          disabled={outcomeDisabled}
-          ariaLabel={`Queen ${queenLabel} overwintered`}
-          size="compact"
-        />
-      ),
-    },
-    failed: {
-      label: 'Failed',
-      control: (
-        <button
-          type="button"
-          onClick={onFailureToggle}
-          disabled={failureDisabled}
-          aria-pressed={failed}
-          aria-label={`Queen ${queenLabel} failure status: ${failed ? 'Failed' : 'Not failed'}`}
-          className={`${compactButtonClass} ${
-            failed
-              ? 'border-red-300 bg-red-100 text-red-700 dark:border-red-700 dark:bg-red-900/50 dark:text-red-300'
-              : 'border-border bg-surface-secondary text-text-secondary dark:bg-surface-elevated'
-          } ${failureDisabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-85'}`}
-        >
-          <X size={12} aria-hidden="true" />
-          <span>{failed ? 'Clear' : 'Mark'}</span>
-        </button>
-      ),
-    },
-  } as const
-
-  const actionRows = showMatedAction
-    ? [
-        ['mated', 'hybridised'],
-        ['overwintered', 'failed'],
-      ]
-    : [
-        ['hybridised', 'overwintered'],
-        ['failed'],
-      ]
-
   return (
-    <div className="min-w-[9.25rem] space-y-2">
-      {actionRows.map((row, index) => {
-        const isSingle = row.length === 1
-        const gridClass = isSingle
-          ? 'grid-cols-1 place-items-center'
-          : 'grid-cols-2'
-
-        return (
-          <div key={`${row.join('-')}-${index}`} className="space-y-1">
-            <div className={`grid ${gridClass} gap-x-3 gap-y-1`}>
-              {row.map((key) => (
-                <p key={`${key}-label`} className={titleClass}>
-                  {actionContent[key as keyof typeof actionContent].label}
-                </p>
-              ))}
-            </div>
-            <div className={`grid ${gridClass} gap-x-3 gap-y-1`}>
-              {row.map((key) => (
-                <div
-                  key={`${key}-control`}
-                  className={isSingle ? 'w-[4.75rem]' : 'w-full'}
-                >
-                  {actionContent[key as keyof typeof actionContent].control}
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-      })}
+    <div className="flex items-center gap-1.5">
+      {showMatedAction && (
+        <OutcomeActionIcon
+          icon={Check}
+          label="Mated"
+          active={mated}
+          activeClass="border-green-300 bg-green-100 text-green-700 dark:border-green-700 dark:bg-green-900/50 dark:text-green-300"
+          disabled={matingDisabled}
+          onClick={onMatingToggle}
+          ariaLabel={`${queenLabel} mated: ${mated ? 'Confirmed' : 'Pending'}`}
+        />
+      )}
+      <OutcomeActionIcon
+        icon={Snowflake}
+        label="Overwintered"
+        active={overwintered}
+        activeClass="border-blue-300 bg-blue-100 text-blue-700 dark:border-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+        disabled={outcomeDisabled}
+        onClick={onOverwinteredClick}
+        ariaLabel={`${queenLabel} overwintered: ${formatTriStateValue(overwintered)}`}
+      />
+      <OutcomeActionIcon
+        icon={GitMerge}
+        label="Hybridised"
+        active={hybridised}
+        activeClass="border-amber-300 bg-amber-100 text-amber-700 dark:border-amber-700 dark:bg-amber-900/50 dark:text-amber-300"
+        disabled={outcomeDisabled}
+        onClick={onHybridisationClick}
+        ariaLabel={`${queenLabel} hybridised: ${formatTriStateValue(hybridised)}`}
+      />
+      <OutcomeActionIcon
+        icon={X}
+        label="Failed"
+        active={failed}
+        activeClass="border-red-300 bg-red-100 text-red-700 dark:border-red-700 dark:bg-red-900/50 dark:text-red-300"
+        disabled={failureDisabled}
+        onClick={onFailureToggle}
+        ariaLabel={`${queenLabel} failed: ${failed ? 'Yes' : 'No'}`}
+      />
     </div>
   )
 }
@@ -514,26 +432,6 @@ function OutcomeCommentField({
         rows={2}
         className="w-full resize-none rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
       />
-    </div>
-  )
-}
-
-function SummaryPill({
-  label,
-  value,
-  accentClass,
-}: {
-  label: string
-  value: number
-  accentClass: string
-}) {
-  return (
-    <div className="inline-flex min-w-[10.5rem] flex-1 items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm dark:bg-surface-elevated/95">
-      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${accentClass}`} />
-      <div className="min-w-0 space-y-0.5">
-        <div className="text-lg font-semibold text-foreground">{value}</div>
-        <div className="text-xs text-text-secondary">{label}</div>
-      </div>
     </div>
   )
 }
@@ -934,9 +832,12 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
       ? `Marked (${markingColour})`
       : 'Marked'
     : 'Unmarked'
-  const queenSecondaryLabel = distribution.emergence_date
-    ? `Age ${calculateQueenAge(distribution.emergence_date)}`
-    : 'Age N/A'
+  const queenAge = distribution.emergence_date ? calculateQueenAge(distribution.emergence_date) : null
+  const queenSecondaryLabel = queenAge === 'Not yet emerged'
+    ? 'Not yet emerged'
+    : queenAge
+      ? `Age ${queenAge}`
+      : ''
   const latestWeightLabel = distribution.latest_weight_mg
     !== null
     ? distribution.latest_weight_date
@@ -1000,7 +901,6 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   const [selectedBatchId, setSelectedBatchId] = useState<string>('')
   const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear())
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all')
-  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [actionDraft, setActionDraft] = useState<OutcomeActionDraft | null>(null)
@@ -1435,7 +1335,14 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-tertiary">Ledger filters</p>
-              <p className="mt-1 text-xs text-text-secondary">Group, member, batch, year, and outcome status</p>
+              <p className="mt-1 text-xs text-text-secondary">{summaryLabel}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 text-text-secondary"><span className="h-2 w-2 rounded-full bg-slate-500" />{stats.total} tracked</span>
+              <span className="inline-flex items-center gap-1.5 text-text-secondary"><span className="h-2 w-2 rounded-full bg-green-500" />{stats.mated} mated</span>
+              <span className="inline-flex items-center gap-1.5 text-text-secondary"><span className="h-2 w-2 rounded-full bg-blue-500" />{stats.overwintered} overwintered</span>
+              <span className="inline-flex items-center gap-1.5 text-text-secondary"><span className="h-2 w-2 rounded-full bg-red-500" />{stats.failed} failed</span>
+              <span className="inline-flex items-center gap-1.5 text-text-secondary"><span className="h-2 w-2 rounded-full bg-amber-500" />{stats.hybridised} hybridised</span>
             </div>
           </div>
 
@@ -1552,38 +1459,6 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-[1.6rem] border border-border bg-surface shadow-sm dark:bg-surface-elevated/95">
-        <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-tertiary">Ledger summary</p>
-            <p className="mt-1 text-sm text-text-secondary">{summaryLabel}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsSummaryExpanded((current) => !current)}
-            className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-3 text-sm font-medium text-text-secondary transition-colors hover:text-foreground dark:bg-surface-elevated"
-            aria-expanded={isSummaryExpanded}
-            aria-controls="queen-ledger-summary-panel"
-          >
-            <span>{isSummaryExpanded ? 'Hide summary' : 'Show summary'}</span>
-            {isSummaryExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-          </button>
-        </div>
-
-        <div
-          id="queen-ledger-summary-panel"
-          className={isSummaryExpanded ? 'border-t border-border px-4 py-4 sm:px-5' : 'hidden'}
-        >
-          <div className="flex flex-wrap gap-3">
-            <SummaryPill label="Tracked queens" value={stats.total} accentClass="bg-slate-500" />
-            <SummaryPill label="Mated" value={stats.mated} accentClass="bg-green-500" />
-            <SummaryPill label="Overwintered" value={stats.overwintered} accentClass="bg-blue-500" />
-            <SummaryPill label="Failed" value={stats.failed} accentClass="bg-red-500" />
-            <SummaryPill label="Hybridised" value={stats.hybridised} accentClass="bg-amber-500" />
-          </div>
-        </div>
-      </section>
-
       {trackerRows.length === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-10 text-center shadow-sm dark:bg-surface-elevated/95">
           <p className="text-sm text-text-secondary">
@@ -1595,10 +1470,9 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       ) : (
         <div className="overflow-hidden rounded-[1.6rem] border border-border bg-surface shadow-sm dark:bg-surface-elevated/95">
           <div className="overflow-x-auto">
-            <table className="min-w-[66rem] w-full border-separate border-spacing-0 text-sm">
+            <table className="min-w-[48rem] w-full border-separate border-spacing-0 text-sm">
               <thead className="bg-surface-secondary/70 dark:bg-surface-elevated/85">
                 <tr>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Details</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Queen</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Actions</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Status</th>
@@ -1645,68 +1519,53 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                         onFocusCapture={() => setSelectedId(distribution.id)}
                         className="transition-colors"
                       >
-                        <td className={`relative border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass} ${leadingAccentClass}`}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedId(distribution.id)
-                              setExpandedId(isExpanded ? null : distribution.id)
-                            }}
-                            className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-2.5 text-sm font-medium transition-colors ${
-                              isSelected
-                                ? 'border-emerald-300 bg-emerald-100 text-emerald-800 hover:text-emerald-900 dark:border-emerald-700 dark:bg-emerald-900/45 dark:text-emerald-200'
-                                : isReadOnly
-                                  ? 'border-slate-300 bg-slate-100 text-slate-700 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900/55 dark:text-slate-200'
-                                  : 'border-border bg-surface text-text-secondary hover:text-foreground dark:bg-surface-elevated'
-                            }`}
-                            aria-expanded={isExpanded}
-                            aria-label={isExpanded ? 'Collapse queen details' : 'Expand queen details'}
-                          >
-                            <span>{isExpanded ? 'Hide' : 'Show'}</span>
-                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          </button>
-                        </td>
-                        <td className={`border-t border-border pl-4 pr-2 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <div className="min-w-[8.75rem] space-y-1.5">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <p className="font-semibold text-foreground">{distribution.queen_display_name}</p>
-                              <div className="flex shrink-0 items-center gap-1">
-                                <span
-                                  title={distribution.marking_status_label}
-                                  aria-label={distribution.marking_status_label}
-                                  className={`inline-flex h-8 w-8 items-center justify-center rounded-full border ${
-                                    distribution.queen_marked
-                                      ? 'border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-900/35 dark:text-green-300'
-                                      : 'border-border bg-surface text-text-secondary dark:bg-surface-elevated'
-                                  }`}
-                                >
-                                  {distribution.queen_marked ? (
-                                    <span className="flex items-center gap-1">
-                                      {markingColourDotClass && (
-                                        <span className={`inline-block h-2.5 w-2.5 rounded-full ${markingColourDotClass}`} />
-                                      )}
-                                      <Check size={13} />
-                                    </span>
-                                  ) : (
-                                    <X size={13} />
+                        <td className={`relative border-t border-border px-4 py-2.5 align-top ${cellHighlightClass} ${rowFrameClass} ${leadingAccentClass}`}>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedId(distribution.id)
+                                setExpandedId(isExpanded ? null : distribution.id)
+                              }}
+                              className="inline-flex items-center gap-1 font-semibold text-foreground hover:text-emerald-700 dark:hover:text-emerald-300"
+                              aria-expanded={isExpanded}
+                              aria-label={isExpanded ? 'Collapse queen details' : 'Expand queen details'}
+                            >
+                              {isExpanded ? <ChevronUp size={14} className="shrink-0" /> : <ChevronDown size={14} className="shrink-0" />}
+                              <span>{distribution.queen_display_name}</span>
+                            </button>
+                            <span
+                              title={distribution.marking_status_label}
+                              className={`inline-flex h-6 w-6 items-center justify-center rounded-full border ${
+                                distribution.queen_marked
+                                  ? 'border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-900/35 dark:text-green-300'
+                                  : 'border-border bg-surface text-text-tertiary dark:bg-surface-elevated'
+                              }`}
+                            >
+                              {distribution.queen_marked ? (
+                                <span className="flex items-center gap-0.5">
+                                  {markingColourDotClass && (
+                                    <span className={`inline-block h-2 w-2 rounded-full ${markingColourDotClass}`} />
                                   )}
+                                  <Check size={11} />
                                 </span>
-                                <span
-                                  title={queenTaggedValue ? `Tagged ${queenTaggedValue}` : 'Untagged'}
-                                  aria-label={queenTaggedValue ? `Tagged ${queenTaggedValue}` : 'Untagged'}
-                                  className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium ${
-                                    queenTaggedValue
-                                      ? 'border-border bg-surface text-text-secondary dark:bg-surface-elevated'
-                                      : 'border-border bg-surface-secondary text-text-tertiary dark:bg-surface-elevated'
-                                  }`}
-                                >
-                                  <Tag size={12} />
-                                  {queenTaggedValue && <span>{queenTaggedValue}</span>}
-                                </span>
-                              </div>
-                            </div>
-                            <p className="text-xs text-text-secondary">{distribution.queen_secondary_label}</p>
+                              ) : (
+                                <X size={11} />
+                              )}
+                            </span>
+                            {queenTaggedValue && (
+                              <span
+                                title={`Tagged ${queenTaggedValue}`}
+                                className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-[11px] font-medium text-text-secondary dark:bg-surface-elevated"
+                              >
+                                <Tag size={10} />
+                                <span>{queenTaggedValue}</span>
+                              </span>
+                            )}
                           </div>
+                          {distribution.queen_secondary_label && (
+                            <p className="mt-0.5 pl-5 text-xs text-text-secondary">{distribution.queen_secondary_label}</p>
+                          )}
                         </td>
                         <td className={`border-t border-border pl-2 pr-3 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
                           <OutcomeActionStack
@@ -1748,14 +1607,9 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                           )}
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <div className="min-w-[7.5rem] space-y-1.5">
-                            <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.display_type_class}`}>
-                              {distribution.display_type_label}
-                            </span>
-                            <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.lifecycle_class}`}>
-                              {distribution.lifecycle_label}
-                            </span>
-                          </div>
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.lifecycle_class}`}>
+                            {distribution.lifecycle_label}
+                          </span>
                         </td>
                         <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
                           <div className="min-w-[13rem] space-y-1.5">
@@ -1774,7 +1628,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                       {isExpanded && (
                         <tr>
                           <td
-                            colSpan={5}
+                            colSpan={4}
                             className={`border-t border-border p-0 ${
                               isSelected
                                 ? 'bg-emerald-50/80 dark:bg-emerald-950/20'
