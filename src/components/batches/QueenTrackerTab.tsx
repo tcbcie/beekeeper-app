@@ -1519,7 +1519,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                         onFocusCapture={() => setSelectedId(distribution.id)}
                         className="transition-colors"
                       >
-                        <td className={`relative border-t border-border px-4 py-2.5 align-top ${cellHighlightClass} ${rowFrameClass} ${leadingAccentClass}`}>
+                        <td className={`relative border-t border-border px-4 py-2 align-top ${cellHighlightClass} ${rowFrameClass} ${leadingAccentClass}`}>
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
@@ -1567,7 +1567,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             <p className="mt-0.5 pl-5 text-xs text-text-secondary">{distribution.queen_secondary_label}</p>
                           )}
                         </td>
-                        <td className={`border-t border-border pl-2 pr-3 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
+                        <td className={`border-t border-border pl-2 pr-3 py-2 align-top ${cellHighlightClass} ${rowFrameClass}`}>
                           <OutcomeActionStack
                             showMatedAction={distribution.distribution_type !== 'mated_queen'}
                             mated={distribution.mating_confirmed}
@@ -1606,22 +1606,20 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             />
                           )}
                         </td>
-                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
+                        <td className={`border-t border-border px-4 py-2 align-top ${cellHighlightClass} ${rowFrameClass}`}>
                           <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.lifecycle_class}`}>
                             {distribution.lifecycle_label}
                           </span>
                         </td>
-                        <td className={`border-t border-border px-4 py-3 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <div className="min-w-[13rem] space-y-1.5">
-                            <p className="font-medium text-foreground">{distribution.recipient_display_name}</p>
-                            <div className="space-y-1">
-                              <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${distribution.recipient_type_class}`}>
-                                {distribution.recipient_type_label}
-                              </span>
-                              <p className="text-xs text-text-secondary">
-                                Distributed {formatOptionalDate(distribution.distribution_date)}
-                              </p>
-                            </div>
+                        <td className={`border-t border-border px-4 py-2 align-top ${cellHighlightClass} ${rowFrameClass}`}>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span className="font-medium text-foreground">{distribution.recipient_display_name}</span>
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${distribution.recipient_type_class}`}>
+                              {distribution.recipient_type_label}
+                            </span>
+                            <span className="text-xs text-text-secondary">
+                              {formatOptionalDate(distribution.distribution_date)}
+                            </span>
                           </div>
                         </td>
                       </tr>
