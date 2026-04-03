@@ -1,34 +1,33 @@
-# Queen Tracker Table Layout Improvements
+# Mating Nucs Layout Improvements
 
 **Date:** 03/04/2026
 **Status:** Complete
 
 ## Plan
 
-- [x] 1. Remove Details column — make cell name clickable to expand/collapse with chevron
-- [x] 2. Compact action buttons — icon-only toggles in a single row with tooltips
-- [x] 3. Status column — show only lifecycle badge, drop distribution type badge
-- [x] 4. Fix "Age Future date" bug in calculateQueenAge
-- [x] 5. Move summary count inline with filters, remove separate Ledger Summary section
-- [x] 6. Verify row height reduction (natural result of #1, #2, #3)
+- [x] 1. Replace detail card grid with compact inline text — Batch, Source, Location shown as middot-separated line under the nuc name
+- [x] 2. Move timeline dates to expanded section — collapsed row shows just name + status + context + actions
+- [x] 3. Compact action buttons — 28px icon-only circular buttons (matching Queen Tracker style)
+- [x] 4. Make nuc name clickable with chevron to expand/collapse, removed separate expand button
+- [x] 5. Reduce card padding and spacing (p-4 → px-3 py-2, space-y-2 → space-y-1.5)
+- [x] 6. Expanded section shows timeline dates as inline key:value pairs with flex-wrap
 
 ## Review
 
 ### Changes Made
 
-1. **Details column removed** — Queen name is now clickable with a chevron icon to expand/collapse details. Merged into the Queen td cell. Fixed `queenSecondaryLabel` variable scoping bug (was referencing a local variable instead of `distribution.queen_secondary_label`). Updated `colSpan` from 5 to 4 on expanded rows. Table min-width reduced from 66rem to 48rem.
+1. **Inline context line** — Batch, Cell, Source queen, and Location merged into a single middot-separated line under the nuc name, replacing the grid of individually-styled `NUC_DETAIL_CARD_CLASS` cards.
 
-2. **Action buttons compacted** — Replaced the labelled 2x2 `ThreeStateActionButton` grid with a single row of `OutcomeActionIcon` circular icon buttons (Check, Snowflake, GitMerge, X). Each button is 28px with a tooltip showing state.
+2. **Timeline in expanded section** — Setup, Cell In, Emerged, Mated, Dead, Queen Seen, Marked, Weight, and Updated dates moved out of the collapsed row into an inline flex-wrap section shown only when expanded.
 
-3. **Status column simplified** — Removed the `display_type_label` badge. Only the `lifecycle_label` badge is now shown (e.g. "Cell Stage", "Mated", "Overwintered", "Failed").
+3. **Compact action buttons** — Replaced the large 44px touch-target `Button` components with 28px icon-only circular `<button>` elements matching the Queen Tracker style. Icon size reduced from 18px to 13px.
 
-4. **Age bug fixed** — `calculateQueenAge` now returns "Not yet emerged" instead of "Future date" for queens with birth dates in the future.
+4. **Clickable nuc name** — Nuc name is now a `<button>` with a chevron icon (same pattern as Queen Tracker), removing the separate expand/collapse `Button`.
 
-5. **Summary moved inline** — Removed the separate collapsible "Ledger Summary" section and its `SummaryPill` components. Summary counts are now displayed as compact coloured-dot labels inline with the filter section header. Removed `isSummaryExpanded` state.
+5. **Reduced padding** — Card padding from `p-4` to `px-3 py-2`, list spacing from `space-y-2` to `space-y-1.5`.
 
-6. **Row height reduced** — Natural result of removing the Details column, compacting action buttons to icon-only, and removing the distribution type badge from Status.
+6. **Inline expanded timeline** — Timeline dates shown as `key: value` text pairs in a flex-wrap layout with `gap-x-5 gap-y-1`.
 
 ### Cleanup
-- Removed unused `ThreeStateActionButton` component
-- Removed unused `SummaryPill` component
-- Removed unused `HelpCircle` import from lucide-react
+- Removed unused `NUC_DETAIL_CARD_CLASS` constant
+- Removed unused `MapPin` and `Calendar` imports from lucide-react

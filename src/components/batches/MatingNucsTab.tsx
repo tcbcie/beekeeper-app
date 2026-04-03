@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Plus, Edit2, Archive, Trash2, X, ClipboardList, MapPin, Calendar, ChevronDown, ChevronUp, History, Eye, EyeOff, Send } from 'lucide-react'
+import { Plus, Edit2, Archive, Trash2, X, ClipboardList, ChevronDown, ChevronUp, History, Eye, EyeOff, Send } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
 import NucInspectionPanel from './NucInspectionPanel'
@@ -107,8 +107,7 @@ const formatDateIrish = (dateString: string | null): string => {
 }
 
 const NUC_DISTRIBUTABLE_STATUSES = ['virgin', 'mating', 'laying']
-const NUC_ACTION_BUTTON_CLASS = 'flex min-h-[44px] flex-1 basis-[44px] items-center justify-center rounded-lg border border-border/70 bg-surface-secondary/60 transition-colors disabled:cursor-not-allowed disabled:opacity-50 dark:bg-surface-elevated/80 md:flex-none md:basis-auto md:border-transparent md:bg-transparent'
-const NUC_DETAIL_CARD_CLASS = 'rounded-lg bg-surface-secondary/60 px-3 py-2 dark:bg-surface-elevated/70'
+const NUC_ACTION_BUTTON_CLASS = 'inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface-secondary text-text-tertiary transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-surface-elevated'
 const BULK_MODES: { value: MatingNucBulkMode; label: string }[] = [
  { value: 'numbered', label: 'Numbered Nucs' },
  { value: 'unnumbered', label: 'Unnumbered from Sealed Cells' },
@@ -1309,181 +1308,114 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </p>
  </div>
  ) : (
- <div className="space-y-2">
- {nucs.map(nuc => (
- <div key={nuc.id} id={`nuc-${nuc.id}`} className={`bg-surface dark:bg-surface rounded-lg shadow border overflow-hidden ${(highlightNucId === nuc.id || highlightNucNumber === nuc.nuc_number) ? 'border-forest-500 ring-2 ring-forest-500/20' : 'border-border'}`}>
- {/* Nuc Row */}
- <div className="p-4">
- <div className="flex flex-wrap items-start gap-3 md:flex-nowrap">
- {/* Expand/Collapse Button */}
- <Button
- onClick={() => toggleExpand(nuc.id)}
- className="p-2 text-text-secondary hover:text-foreground hover:bg-surface-secondary rounded transition-colors shrink-0"
- title={expandedNucId === nuc.id ? 'Collapse' : 'Expand inspections'}
- >
- {expandedNucId === nuc.id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
- </Button>
+ <div className="space-y-1.5">
+ {nucs.map(nuc => {
+ const isExpanded = expandedNucId === nuc.id
+ const isHighlighted = highlightNucId === nuc.id || highlightNucNumber === nuc.nuc_number
+ const statusInfo = NUC_STATUSES.find(s => s.value === nuc.status)
+ const inspectionCount = nuc.mating_nuc_inspections?.[0]?.count || 0
+ const markingColour = nuc.rearing_batches?.emergence_date ? getQueenColorFromYear(nuc.rearing_batches.emergence_date) : ''
 
- {/* Main Content */}
- <div className="min-w-0 flex-1">
- <div className="mb-3 flex flex-wrap items-start gap-2">
- <span className="font-semibold text-foreground text-lg">{nuc.nuc_number || nuc.reference_code || 'Unnumbered Nuc'}</span>
- {nucTagCodes[nuc.id] && (
-   <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-xs font-medium text-text-secondary dark:bg-surface-elevated">{nucTagCodes[nuc.id]}</span>
- )}
- <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(nuc.status)}`}>
- {NUC_STATUSES.find(s => s.value === nuc.status)?.label}
- </span>
- <span className="inline-flex items-center gap-1 rounded-full bg-surface-secondary px-2.5 py-1 text-xs font-medium text-text-secondary dark:bg-surface-elevated">
- <ClipboardList size={14} />
- {(nuc.mating_nuc_inspections?.[0]?.count || 0)} inspection{(nuc.mating_nuc_inspections?.[0]?.count || 0) !== 1 ? 's' : ''}
- </span>
- </div>
-
- <div className="grid grid-cols-1 gap-2 text-sm text-text-secondary min-[420px]:grid-cols-2 xl:grid-cols-3">
- {nuc.rearing_batches && (
- <div className={NUC_DETAIL_CARD_CLASS}>
- <div className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Batch</div>
- <div className="mt-1 break-words font-medium text-foreground">
- {nuc.rearing_batches.batch_name}
- {nuc.batch_grafts && ` - Cell #${nuc.batch_grafts.cell_number}`}
- </div>
- </div>
- )}
- {nuc.queens && (
- <div className={NUC_DETAIL_CARD_CLASS}>
- <div className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Grafted From</div>
- <div className="mt-1 break-words font-medium text-foreground">{nuc.queens.queen_number}</div>
- </div>
- )}
- {nuc.mating_location && (
- <div className={NUC_DETAIL_CARD_CLASS}>
- <div className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Location</div>
- <div className="mt-1 flex items-start gap-1.5 font-medium text-foreground">
- <MapPin size={14} className="mt-0.5 shrink-0 text-text-secondary" />
- <span className="min-w-0 break-words">{nuc.mating_location}</span>
- </div>
- </div>
- )}
- <div className={NUC_DETAIL_CARD_CLASS}>
- <div className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Setup</div>
- <div className="mt-1 flex items-center gap-1.5 font-medium text-foreground">
- <Calendar size={14} className="shrink-0 text-text-secondary" />
- <span>{formatDateIrish(nuc.setup_date)}</span>
- </div>
- </div>
- {nuc.cell_introduced_at && (
- <div className={NUC_DETAIL_CARD_CLASS}>
- <div className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Cell In</div>
- <div className="mt-1 font-medium text-foreground">{formatDateIrish(nuc.cell_introduced_at)}</div>
- </div>
- )}
- {nuc.queen_emerged_at && (
- <div className={NUC_DETAIL_CARD_CLASS}>
- <div className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Emerged</div>
- <div className="mt-1 font-medium text-foreground">{formatDateIrish(nuc.queen_emerged_at)}</div>
- </div>
- )}
- {nuc.mating_confirmed_at && (
- <div className={NUC_DETAIL_CARD_CLASS}>
- <div className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Mated</div>
- <div className="mt-1 font-medium text-foreground">{formatDateIrish(nuc.mating_confirmed_at)}</div>
- </div>
- )}
- {nuc.failed_at && (
- <div className={NUC_DETAIL_CARD_CLASS}>
- <div className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Dead</div>
- <div className="mt-1 font-medium text-red-600 dark:text-red-400">{formatDateIrish(nuc.failed_at)}</div>
- </div>
- )}
- {nuc.queen_last_seen_at && (
- <div className={NUC_DETAIL_CARD_CLASS}>
- <div className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Queen Seen</div>
- <div className="mt-1 font-medium text-foreground">{formatDateIrish(nuc.queen_last_seen_at)}</div>
- </div>
- )}
- {(nuc.queen_marked_at || nuc.batch_grafts?.queen_marked) && (() => {
- const colour = nuc.rearing_batches?.emergence_date ? getQueenColorFromYear(nuc.rearing_batches.emergence_date) : ''
  return (
- <div className={NUC_DETAIL_CARD_CLASS}>
- <div className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Marked</div>
- <div className="mt-1 flex items-center gap-1.5 font-medium text-foreground">
- {colour && COLOUR_DOTS[colour] && <span className={`inline-block h-3 w-3 shrink-0 rounded-full ${COLOUR_DOTS[colour]}`} />}
- <span className="min-w-0 break-words">
- {nuc.queen_marked_at ? formatDateIrish(nuc.queen_marked_at) : 'Recorded'}
- {nuc.batch_grafts?.queen_number && ` (#${nuc.batch_grafts.queen_number})`}
+ <div key={nuc.id} id={`nuc-${nuc.id}`} className={`overflow-hidden rounded-xl border bg-surface shadow-sm dark:bg-surface-elevated/95 ${isHighlighted ? 'border-forest-500 ring-2 ring-forest-500/20' : 'border-border'}`}>
+ {/* Collapsed row */}
+ <div className="flex items-center gap-2 px-3 py-2">
+ {/* Name + badges */}
+ <div className="min-w-0 flex-1">
+ <div className="flex flex-wrap items-center gap-1.5">
+ <button
+ type="button"
+ onClick={() => toggleExpand(nuc.id)}
+ className="inline-flex items-center gap-1 font-semibold text-foreground hover:text-emerald-700 dark:hover:text-emerald-300"
+ aria-expanded={isExpanded}
+ aria-label={isExpanded ? 'Collapse nuc details' : 'Expand nuc details'}
+ >
+ {isExpanded ? <ChevronUp size={14} className="shrink-0" /> : <ChevronDown size={14} className="shrink-0" />}
+ <span>{nuc.nuc_number || nuc.reference_code || 'Unnumbered Nuc'}</span>
+ </button>
+ {nucTagCodes[nuc.id] && (
+ <span className="rounded-full bg-surface-secondary px-1.5 py-0.5 text-[11px] font-medium text-text-secondary dark:bg-surface-elevated">{nucTagCodes[nuc.id]}</span>
+ )}
+ <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${getStatusBadge(nuc.status)}`}>
+ {statusInfo?.label}
+ </span>
+ <span className="inline-flex items-center gap-1 text-[11px] text-text-tertiary">
+ <ClipboardList size={11} />
+ {inspectionCount}
  </span>
  </div>
- </div>
- )
- })()}
- {nucWeights[nuc.id] && (
- <div className={NUC_DETAIL_CARD_CLASS}>
- <div className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Weight</div>
- <div className="mt-1 font-semibold text-foreground">{nucWeights[nuc.id]} mg</div>
- </div>
- )}
- <div className={NUC_DETAIL_CARD_CLASS}>
- <div className="text-[11px] font-medium uppercase tracking-wide text-text-tertiary">Updated</div>
- <div className="mt-1 font-medium text-text-secondary">{formatDateIrish(nuc.updated_at)}</div>
- </div>
- </div>
+ {/* Inline context line */}
+ <p className="mt-0.5 pl-5 text-xs text-text-secondary">
+ {[
+ nuc.rearing_batches && `${nuc.rearing_batches.batch_name}${nuc.batch_grafts ? ` · Cell #${nuc.batch_grafts.cell_number}` : ''}`,
+ nuc.queens && `Source: ${nuc.queens.queen_number}`,
+ nuc.mating_location,
+ ].filter(Boolean).join(' · ') || 'No batch assigned'}
+ </p>
  </div>
 
- {/* Action Buttons - hidden for retired nucs (read-only) */}
+ {/* Action buttons */}
  {!nuc.retired_at && (
- <div className="w-full basis-full pl-11 md:w-auto md:basis-auto md:pl-0">
- <div className="flex flex-wrap gap-2 border-t border-border/70 pt-3 md:border-0 md:pt-0">
+ <div className="flex shrink-0 items-center gap-1">
  {nuc.graft_id && NUC_DISTRIBUTABLE_STATUSES.includes(nuc.status) && (
- <Button
- onClick={() => setDistributeNuc(nuc)}
- className={`${NUC_ACTION_BUTTON_CLASS} text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20`}
- title="Distribute"
- >
- <Send size={18} />
- </Button>
+ <button type="button" onClick={() => setDistributeNuc(nuc)} className={`${NUC_ACTION_BUTTON_CLASS} text-indigo-600`} title="Distribute">
+ <Send size={13} />
+ </button>
  )}
- <Button
- onClick={() => nuc.nuc_number ? fetchHistory(nuc.nuc_number) : null}
- disabled={!nuc.nuc_number}
- className={`${NUC_ACTION_BUTTON_CLASS} text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20`}
- title="View History"
- >
- <History size={18} />
- </Button>
+ <button type="button" onClick={() => nuc.nuc_number ? fetchHistory(nuc.nuc_number) : null} disabled={!nuc.nuc_number} className={`${NUC_ACTION_BUTTON_CLASS} text-blue-600`} title="View History">
+ <History size={13} />
+ </button>
  {nuc.status !== 'sold' && (
  <>
- <Button
- onClick={() => handleEdit(nuc)}
- className={`${NUC_ACTION_BUTTON_CLASS} text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20`}
- title="Edit"
- >
- <Edit2 size={18} />
- </Button>
- <Button
- onClick={() => handleDelete(nuc.id)}
- className={`${NUC_ACTION_BUTTON_CLASS} text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20`}
- title="Delete"
- >
- <Trash2 size={18} />
- </Button>
+ <button type="button" onClick={() => handleEdit(nuc)} className={`${NUC_ACTION_BUTTON_CLASS} text-amber-600`} title="Edit">
+ <Edit2 size={13} />
+ </button>
+ <button type="button" onClick={() => handleDelete(nuc.id)} className={`${NUC_ACTION_BUTTON_CLASS} text-red-500`} title="Delete">
+ <Trash2 size={13} />
+ </button>
  </>
  )}
- <Button
- onClick={() => handleRetire(nuc.id)}
- className={`${NUC_ACTION_BUTTON_CLASS} text-text-secondary hover:bg-surface-secondary`}
- title="Retire"
- >
- <Archive size={18} />
- </Button>
- </div>
+ <button type="button" onClick={() => handleRetire(nuc.id)} className={`${NUC_ACTION_BUTTON_CLASS} text-text-secondary`} title="Retire">
+ <Archive size={13} />
+ </button>
  </div>
  )}
  </div>
- </div>
 
- {/* Expandable Inspection Panel */}
- {expandedNucId === nuc.id && (
+ {/* Expanded details + inspection panel */}
+ {isExpanded && (
+ <div className="border-t border-border">
+ <div className="bg-surface-secondary/30 px-4 py-3 dark:bg-surface/35">
+ <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
+ <span className="text-text-tertiary">Setup: <span className="font-medium text-foreground">{formatDateIrish(nuc.setup_date)}</span></span>
+ {nuc.cell_introduced_at && (
+ <span className="text-text-tertiary">Cell in: <span className="font-medium text-foreground">{formatDateIrish(nuc.cell_introduced_at)}</span></span>
+ )}
+ {nuc.queen_emerged_at && (
+ <span className="text-text-tertiary">Emerged: <span className="font-medium text-foreground">{formatDateIrish(nuc.queen_emerged_at)}</span></span>
+ )}
+ {nuc.mating_confirmed_at && (
+ <span className="text-text-tertiary">Mated: <span className="font-medium text-foreground">{formatDateIrish(nuc.mating_confirmed_at)}</span></span>
+ )}
+ {nuc.failed_at && (
+ <span className="text-text-tertiary">Dead: <span className="font-medium text-red-600 dark:text-red-400">{formatDateIrish(nuc.failed_at)}</span></span>
+ )}
+ {nuc.queen_last_seen_at && (
+ <span className="text-text-tertiary">Queen seen: <span className="font-medium text-foreground">{formatDateIrish(nuc.queen_last_seen_at)}</span></span>
+ )}
+ {(nuc.queen_marked_at || nuc.batch_grafts?.queen_marked) && (
+ <span className="text-text-tertiary">Marked: <span className="inline-flex items-center gap-1 font-medium text-foreground">
+ {markingColour && COLOUR_DOTS[markingColour] && <span className={`inline-block h-2 w-2 rounded-full ${COLOUR_DOTS[markingColour]}`} />}
+ {nuc.queen_marked_at ? formatDateIrish(nuc.queen_marked_at) : 'Recorded'}
+ {nuc.batch_grafts?.queen_number && ` (#${nuc.batch_grafts.queen_number})`}
+ </span></span>
+ )}
+ {nucWeights[nuc.id] && (
+ <span className="text-text-tertiary">Weight: <span className="font-medium text-foreground">{nucWeights[nuc.id]} mg</span></span>
+ )}
+ <span className="text-text-tertiary">Updated: <span className="font-medium text-text-secondary">{formatDateIrish(nuc.updated_at)}</span></span>
+ </div>
+ </div>
  <NucInspectionPanel
  nucId={nuc.id}
  nucNumber={nuc.nuc_number || nuc.reference_code || 'Unnumbered Nuc'}
@@ -1498,9 +1430,11 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  autoOpenForm={!!(highlightNucNumber === nuc.nuc_number || highlightNucId === nuc.id)}
  graftStatus={nuc.batch_grafts?.status || null}
  />
+ </div>
  )}
  </div>
- ))}
+ )
+ })}
  </div>
  )}
 
