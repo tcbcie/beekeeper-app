@@ -132,6 +132,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [showForm, setShowForm] = useState(false)
  const [editingNuc, setEditingNuc] = useState<MatingNuc | null>(null)
  const [expandedNucId, setExpandedNucId] = useState<string | null>(null)
+ const [selectedNucId, setSelectedNucId] = useState<string | null>(null)
  const [showRetired, setShowRetired] = useState(false)
  const [historyNucNumber, setHistoryNucNumber] = useState<string | null>(null)
  const [historyData, setHistoryData] = useState<MatingNuc[]>([])
@@ -1311,13 +1312,25 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <div className="space-y-1.5">
  {nucs.map(nuc => {
  const isExpanded = expandedNucId === nuc.id
+ const isSelected = selectedNucId === nuc.id
  const isHighlighted = highlightNucId === nuc.id || highlightNucNumber === nuc.nuc_number
  const statusInfo = NUC_STATUSES.find(s => s.value === nuc.status)
  const inspectionCount = nuc.mating_nuc_inspections?.[0]?.count || 0
  const markingColour = nuc.rearing_batches?.emergence_date ? getQueenColorFromYear(nuc.rearing_batches.emergence_date) : ''
 
  return (
- <div key={nuc.id} id={`nuc-${nuc.id}`} className={`overflow-hidden rounded-xl border bg-surface shadow-sm dark:bg-surface-elevated/95 ${isHighlighted ? 'border-forest-500 ring-2 ring-forest-500/20' : 'border-border'}`}>
+ <div
+ key={nuc.id}
+ id={`nuc-${nuc.id}`}
+ onClick={() => setSelectedNucId(nuc.id)}
+ className={`overflow-hidden rounded-xl border shadow-sm transition-colors ${
+ isHighlighted
+ ? 'border-forest-500 ring-2 ring-forest-500/20 bg-surface dark:bg-surface-elevated/95'
+ : isSelected
+ ? 'border-emerald-400 bg-emerald-50/80 dark:border-emerald-700 dark:bg-emerald-950/25'
+ : 'border-border bg-surface dark:bg-surface-elevated/95'
+ }`}
+ >
  {/* Collapsed row */}
  <div className="flex items-center gap-2 px-3 py-2">
  {/* Name + badges */}
@@ -1325,7 +1338,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <div className="flex flex-wrap items-center gap-1.5">
  <button
  type="button"
- onClick={() => toggleExpand(nuc.id)}
+ onClick={() => { setSelectedNucId(nuc.id); toggleExpand(nuc.id) }}
  className="inline-flex items-center gap-1 font-semibold text-foreground hover:text-emerald-700 dark:hover:text-emerald-300"
  aria-expanded={isExpanded}
  aria-label={isExpanded ? 'Collapse nuc details' : 'Expand nuc details'}
