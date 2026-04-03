@@ -34,6 +34,7 @@ type DerivedTrackerRow = TrackedQueen & {
   recipient_display_name: string
   recipient_type_label: string
   recipient_type_class: string
+  recipient_type_dot: string
   recipient_contact_label: string
   destination_label: string
   recipient_apiary_label: string
@@ -772,16 +773,19 @@ function getRecipientTypePresentation(distribution: TrackedQueen) {
     case 'group_member':
       return {
         label: 'Group Member',
+        dotClass: 'bg-green-500',
         className: 'border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900/35 dark:text-green-300',
       }
     case 'app_user':
       return {
         label: 'App User',
+        dotClass: 'bg-sky-500',
         className: 'border-sky-200 bg-sky-100 text-sky-800 dark:border-sky-800 dark:bg-sky-900/35 dark:text-sky-300',
       }
     default:
       return {
         label: 'Public Recipient',
+        dotClass: 'bg-amber-500',
         className: 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300',
       }
   }
@@ -857,6 +861,7 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
     recipient_display_name: getRecipientName(distribution),
     recipient_type_label: recipientTypeInfo.label,
     recipient_type_class: recipientTypeInfo.className,
+    recipient_type_dot: recipientTypeInfo.dotClass,
     recipient_contact_label: getRecipientContact(distribution),
     destination_label: getDestinationLabel(distribution),
     recipient_apiary_label: getRecipientApiaryLabel(distribution),
@@ -1613,10 +1618,8 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                         </td>
                         <td className={`border-t border-border px-4 py-2 align-top ${cellHighlightClass} ${rowFrameClass}`}>
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${distribution.recipient_type_dot}`} title={distribution.recipient_type_label} />
                             <span className="font-medium text-foreground">{distribution.recipient_display_name}</span>
-                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${distribution.recipient_type_class}`}>
-                              {distribution.recipient_type_label}
-                            </span>
                             <span className="text-xs text-text-secondary">
                               {formatOptionalDate(distribution.distribution_date)}
                             </span>
