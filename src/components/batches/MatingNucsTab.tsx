@@ -258,21 +258,23 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
    setNucWeights({})
  }
 
- // Sync graft statuses: ensure grafts assigned to active nucs show 'in_nuc'
- const activeGraftIds = data
-   .filter(n => !n.retired_at && n.graft_id && n.status !== 'failed')
-   .map(n => n.graft_id)
-   .filter(Boolean) as string[]
- if (activeGraftIds.length > 0) {
-   supabase
-     .from('batch_grafts')
-     .update({ status: 'in_nuc' })
-     .in('id', activeGraftIds)
-     .in('status', ['sealed', 'caged', 'emerged'])
-     .eq('user_id', userId)
-     .then(({ error: syncError }) => {
-       if (syncError) console.error('Failed to sync graft statuses:', syncError)
-     })
+ // Sync graft statuses: only when viewing active nucs without bulk filter
+ if (!showRetired && !activeBulkBatchId) {
+   const activeGraftIds = data
+     .filter(n => !n.retired_at && n.graft_id && n.status !== 'failed')
+     .map(n => n.graft_id)
+     .filter(Boolean) as string[]
+   if (activeGraftIds.length > 0) {
+     supabase
+       .from('batch_grafts')
+       .update({ status: 'in_nuc' })
+       .in('id', activeGraftIds)
+       .in('status', ['sealed', 'caged', 'emerged'])
+       .eq('user_id', userId)
+       .then(({ error: syncError }) => {
+         if (syncError) console.error('Failed to sync graft statuses:', syncError)
+       })
+   }
  }
  }
  setLoading(false)
@@ -440,6 +442,14 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  return () => clearTimeout(timer)
  }
  }, [highlightNucId, highlightNucNumber, nucs, loading])
+
+ // Clear stale selection/expansion when nucs change
+ useEffect(() => {
+ if (!selectedNucId && !expandedNucId) return
+ const visibleIds = new Set(nucs.map((n) => n.id))
+ if (selectedNucId && !visibleIds.has(selectedNucId)) setSelectedNucId(null)
+ if (expandedNucId && !visibleIds.has(expandedNucId)) setExpandedNucId(null)
+ }, [selectedNucId, expandedNucId, nucs])
 
  // Filter grafts by selected batch (include the nuc's current graft when editing)
  useEffect(() => {
@@ -1322,8 +1332,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <div
  key={nuc.id}
  id={`nuc-${nuc.id}`}
- onClick={() => setSelectedNucId(nuc.id)}
- className={`overflow-hidden rounded-xl border shadow-sm transition-colors ${
+ onClick={(e) => { if ((e.target as HTMLElement).closest('button')) return; setSelectedNucId(nuc.id) }}
+ className={`overflow-hidden rounded-xl border shadow-sm transition-colors cursor-pointer ${
  isHighlighted
  ? 'border-forest-500 ring-2 ring-forest-500/20 bg-surface dark:bg-surface-elevated/95'
  : isSelected
@@ -1375,7 +1385,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <Send size={13} />
  </button>
  )}
- <button type="button" onClick={() => nuc.nuc_number ? fetchHistory(nuc.nuc_number) : null} disabled={!nuc.nuc_number} className={`${NUC_ACTION_BUTTON_CLASS} text-blue-600`} title="View History">
+ <button type="button" onClick={() => { if (nuc.nuc_number) fetchHistory(nuc.nuc_number) }} disabled={!nuc.nuc_number} className={`${NUC_ACTION_BUTTON_CLASS} text-blue-600`} title="View History">
  <History size={13} />
  </button>
  {nuc.status !== 'sold' && (
