@@ -202,7 +202,7 @@ export function useQueenTracker() {
           hives!graft_distributions_recipient_hive_id_fkey(hive_number),
           rearing_batches!inner(
             id, batch_name, graft_date, emergence_date, rearing_group_id, user_id,
-            profiles(first_name, last_name),
+            profiles!rearing_batches_user_id_profiles_fkey(first_name, last_name),
             apiaries!mating_apiary_id(name, eircode),
             queens!mother_queen_id(queen_number, subspecies, marking_color, birth_date)
           )

@@ -1348,8 +1348,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <p className="mt-0.5 pl-5 text-xs text-text-secondary">
  {[
  nuc.rearing_batches && `${nuc.rearing_batches.batch_name}${nuc.batch_grafts ? ` · Cell #${nuc.batch_grafts.cell_number}` : ''}`,
- nuc.queens && `Source: ${nuc.queens.queen_number}`,
- nuc.mating_location,
+ nuc.queens && `Breeder Queen: ${nuc.queens.queen_number}`,
+ nuc.mating_location && `Mating Site: ${nuc.mating_location}`,
  ].filter(Boolean).join(' · ') || 'No batch assigned'}
  </p>
  </div>
