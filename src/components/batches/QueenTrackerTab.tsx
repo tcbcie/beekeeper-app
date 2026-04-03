@@ -423,7 +423,7 @@ function OutcomeCommentField({
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
-        <span className="text-[11px] text-text-tertiary">{draftComment.length}/{maxLength}</span>
+        <span className="text-[11px] text-text-tertiary">{disabled ? 0 : draftComment.length}/{maxLength}</span>
       </div>
       <textarea
         value={draftComment}
