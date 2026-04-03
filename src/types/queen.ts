@@ -103,7 +103,7 @@ export const calculateQueenAge = (birthDate: string): string => {
   const today = new Date()
   const ageInDays = Math.floor((today.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24))
 
-  if (ageInDays < 0) return 'Future date'
+  if (ageInDays < 0) return 'Not yet emerged'
   if (ageInDays === 0) return 'Today'
   if (ageInDays === 1) return '1 day'
   if (ageInDays < 7) return `${ageInDays} days`
