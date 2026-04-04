@@ -135,9 +135,10 @@ export async function requireAdmin(): Promise<void> {
   }
 }
 
-// Cache for account active status (5 second TTL)
+// Cache for account active status (5 second TTL, max 10 entries)
 const accountActiveCache = new Map<string, { value: boolean; timestamp: number }>()
 const CACHE_TTL = 5000 // 5 seconds
+const CACHE_MAX_SIZE = 10
 
 /**
  * Clear the account active cache (useful for testing)
@@ -190,8 +191,15 @@ export async function getAccountStatus(): Promise<AccountStatus> {
   // 2. deleted_at is null or undefined (not soft-deleted)
   const isActive = data.is_active !== false && !data.deleted_at
 
-  // Update cache
-  accountActiveCache.set(userId, { value: isActive, timestamp: Date.now() })
+  // Evict expired entries before writing to prevent unbounded growth
+  const now = Date.now()
+  for (const [key, entry] of accountActiveCache) {
+    if (now - entry.timestamp >= CACHE_TTL) accountActiveCache.delete(key)
+  }
+  // Hard cap as safety net
+  if (accountActiveCache.size >= CACHE_MAX_SIZE) accountActiveCache.clear()
+
+  accountActiveCache.set(userId, { value: isActive, timestamp: now })
 
   return isActive ? 'active' : 'deactivated'
 }
@@ -204,20 +212,6 @@ export async function getAccountStatus(): Promise<AccountStatus> {
 export async function isAccountActive(): Promise<boolean> {
   const status = await getAccountStatus()
   return status === 'active'
-}
-
-/**
- * Require the current user's account to be active, throw error if disabled
- * @throws Error if account is disabled
- */
-export async function requireActiveAccount(): Promise<void> {
-  const active = await isAccountActive()
-
-  if (!active) {
-    // Sign out the user since their account is disabled - use local scope
-    await supabase.auth.signOut({ scope: 'local' })
-    throw new Error('Your account has been disabled. Please contact an administrator.')
-  }
 }
 
 /**

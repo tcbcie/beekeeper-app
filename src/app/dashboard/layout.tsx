@@ -27,6 +27,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const checkingAccountRef = useRef(false)
 
   useEffect(() => {
+    let cancelled = false
+
     const checkAccount = async () => {
       if (authLoading) return
 
@@ -37,10 +39,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
       // Check if account is active
       const status = await getAccountStatus()
+      if (cancelled) return // User changed during async call
+
       if (status !== 'active') {
         if (!hasShownDisabledAlert.current) {
           hasShownDisabledAlert.current = true
-          await supabase.auth.signOut({ scope: 'local' })
+          try { await supabase.auth.signOut({ scope: 'local' }) } catch { /* proceed to redirect regardless */ }
           if (status === 'deactivated') {
             toast.error('Your account has been deactivated. You can request account reactivation from the login page.', 8000)
           } else {
@@ -55,6 +59,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     }
 
     checkAccount()
+
+    return () => { cancelled = true }
   }, [user, authLoading, router, toast])
 
   // Initialize update manager
@@ -70,18 +76,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }, [])
 
   // Periodically check if account is still active (every 30 seconds)
+  // Only starts after initial check completes (checkingAccount === false)
   useEffect(() => {
-    if (!user) return
+    if (!user || checkingAccount) return
+    let cancelled = false
 
     const accountCheckInterval = setInterval(async () => {
       if (checkingAccountRef.current) return
       checkingAccountRef.current = true
       try {
         const status = await getAccountStatus()
+        if (cancelled) return // User changed during async call
+
         if (status !== 'active') {
           if (!hasShownDisabledAlert.current) {
             hasShownDisabledAlert.current = true
-            await supabase.auth.signOut({ scope: 'local' })
+            try { await supabase.auth.signOut({ scope: 'local' }) } catch { /* proceed to redirect regardless */ }
             if (status === 'deactivated') {
               toast.error('Your account has been deactivated. You can request account reactivation from the login page.', 8000)
             } else {
@@ -95,12 +105,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       } finally {
         checkingAccountRef.current = false
       }
-    }, 30000) // Check every 30 seconds
+    }, 30000)
 
     return () => {
+      cancelled = true
       clearInterval(accountCheckInterval)
     }
-  }, [user, router, toast])
+  }, [user, checkingAccount, router, toast])
 
   if (authLoading || checkingAccount) {
     return (
