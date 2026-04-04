@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { isAccountActive } from '@/lib/auth'
+import { getAccountStatus } from '@/lib/auth'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import Navbar from '@/components/Navbar'
 import Sidebar from '@/components/Sidebar'
@@ -36,12 +36,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       }
 
       // Check if account is active
-      const accountActive = await isAccountActive()
-      if (!accountActive) {
+      const status = await getAccountStatus()
+      if (status !== 'active') {
         if (!hasShownDisabledAlert.current) {
           hasShownDisabledAlert.current = true
           await supabase.auth.signOut({ scope: 'local' })
-          toast.error('Your account has been deactivated. You can request account reactivation from the login page.', 8000)
+          if (status === 'deactivated') {
+            toast.error('Your account has been deactivated. You can request account reactivation from the login page.', 8000)
+          } else {
+            toast.error('You have been locked out. Please log on again.', 8000)
+          }
           router.push('/login')
         }
         return
@@ -73,19 +77,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       if (checkingAccountRef.current) return
       checkingAccountRef.current = true
       try {
-        const accountActive = await isAccountActive()
-        if (!accountActive) {
+        const status = await getAccountStatus()
+        if (status !== 'active') {
           if (!hasShownDisabledAlert.current) {
             hasShownDisabledAlert.current = true
             await supabase.auth.signOut({ scope: 'local' })
-            toast.error('Your account has been deactivated. You can request account reactivation from the login page.', 8000)
+            if (status === 'deactivated') {
+              toast.error('Your account has been deactivated. You can request account reactivation from the login page.', 8000)
+            } else {
+              toast.error('You have been locked out. Please log on again.', 8000)
+            }
             router.push('/login')
           }
         }
       } catch (err) {
         console.error('Account check failed:', err)
-        // Account check now fails closed — if DB is unreachable, isAccountActive returns false.
-        // The interval will retry on the next cycle (30s).
       } finally {
         checkingAccountRef.current = false
       }

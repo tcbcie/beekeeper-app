@@ -148,21 +148,25 @@ export function clearAccountActiveCache(): void {
 }
 
 /**
- * Check if the current user's account is active
- * Uses a short-lived cache to avoid repeated database calls
- * @returns true if account is active, false if disabled
+ * Account status result type
  */
-export async function isAccountActive(): Promise<boolean> {
+export type AccountStatus = 'active' | 'deactivated' | 'error' | 'no_session'
+
+/**
+ * Get the current user's account status with specific failure reasons
+ * Uses a short-lived cache to avoid repeated database calls
+ */
+export async function getAccountStatus(): Promise<AccountStatus> {
   const userId = await getCurrentUserId()
 
   if (!userId) {
-    return false
+    return 'no_session'
   }
 
   // Check cache
   const cached = accountActiveCache.get(userId)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached.value
+    return cached.value ? 'active' : 'deactivated'
   }
 
   const { data, error } = await supabase
@@ -173,15 +177,12 @@ export async function isAccountActive(): Promise<boolean> {
 
   if (error) {
     console.error('Error fetching account status:', error)
-    // Fail closed: deny access on error to prevent disabled accounts staying active
-    // The cached value (if any) will have already returned above for transient failures
-    return false
+    return 'error'
   }
 
   if (!data) {
     console.error('No profile data found for user:', userId)
-    // If profile doesn't exist, account is not active
-    return false
+    return 'error'
   }
 
   // Account is active if:
@@ -192,7 +193,17 @@ export async function isAccountActive(): Promise<boolean> {
   // Update cache
   accountActiveCache.set(userId, { value: isActive, timestamp: Date.now() })
 
-  return isActive
+  return isActive ? 'active' : 'deactivated'
+}
+
+/**
+ * Check if the current user's account is active
+ * Uses a short-lived cache to avoid repeated database calls
+ * @returns true if account is active, false if disabled
+ */
+export async function isAccountActive(): Promise<boolean> {
+  const status = await getAccountStatus()
+  return status === 'active'
 }
 
 /**
