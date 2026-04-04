@@ -1366,6 +1366,31 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <ClipboardList size={11} />
  {inspectionCount}
  </span>
+ {!nuc.retired_at && (
+ <>
+ {nuc.graft_id && NUC_DISTRIBUTABLE_STATUSES.includes(nuc.status) && (
+ <button type="button" onClick={() => setDistributeNuc(nuc)} className={`${NUC_ACTION_BUTTON_CLASS} text-indigo-600`} title="Distribute">
+ <Send size={13} />
+ </button>
+ )}
+ <button type="button" onClick={() => { if (nuc.nuc_number) fetchHistory(nuc.nuc_number) }} disabled={!nuc.nuc_number} className={`${NUC_ACTION_BUTTON_CLASS} text-blue-600`} title="View History">
+ <History size={13} />
+ </button>
+ {nuc.status !== 'sold' && (
+ <>
+ <button type="button" onClick={() => handleEdit(nuc)} className={`${NUC_ACTION_BUTTON_CLASS} text-amber-600`} title="Edit">
+ <Edit2 size={13} />
+ </button>
+ <button type="button" onClick={() => handleDelete(nuc.id)} className={`${NUC_ACTION_BUTTON_CLASS} text-red-500`} title="Delete">
+ <Trash2 size={13} />
+ </button>
+ </>
+ )}
+ <button type="button" onClick={() => handleRetire(nuc.id)} className={`${NUC_ACTION_BUTTON_CLASS} text-text-secondary`} title="Retire">
+ <Archive size={13} />
+ </button>
+ </>
+ )}
  </div>
  {/* Inline context line */}
  <p className="mt-0.5 pl-5 text-xs text-text-secondary">
@@ -1376,65 +1401,12 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  ].filter(Boolean).join(' · ') || 'No batch assigned'}
  </p>
  </div>
-
- {/* Action buttons — desktop only in header */}
- {!nuc.retired_at && (
- <div className="hidden shrink-0 items-center gap-1 md:flex">
- {nuc.graft_id && NUC_DISTRIBUTABLE_STATUSES.includes(nuc.status) && (
- <button type="button" onClick={() => setDistributeNuc(nuc)} className={`${NUC_ACTION_BUTTON_CLASS} text-indigo-600`} title="Distribute">
- <Send size={13} />
- </button>
- )}
- <button type="button" onClick={() => { if (nuc.nuc_number) fetchHistory(nuc.nuc_number) }} disabled={!nuc.nuc_number} className={`${NUC_ACTION_BUTTON_CLASS} text-blue-600`} title="View History">
- <History size={13} />
- </button>
- {nuc.status !== 'sold' && (
- <>
- <button type="button" onClick={() => handleEdit(nuc)} className={`${NUC_ACTION_BUTTON_CLASS} text-amber-600`} title="Edit">
- <Edit2 size={13} />
- </button>
- <button type="button" onClick={() => handleDelete(nuc.id)} className={`${NUC_ACTION_BUTTON_CLASS} text-red-500`} title="Delete">
- <Trash2 size={13} />
- </button>
- </>
- )}
- <button type="button" onClick={() => handleRetire(nuc.id)} className={`${NUC_ACTION_BUTTON_CLASS} text-text-secondary`} title="Retire">
- <Archive size={13} />
- </button>
- </div>
- )}
  </div>
 
  {/* Expanded details + inspection panel */}
  {isExpanded && (
  <div className="border-t border-border">
  <div className="bg-surface-secondary/30 px-4 py-3 dark:bg-surface/35">
- {/* Action buttons — mobile only in expanded section */}
- {!nuc.retired_at && (
- <div className="mb-2 flex items-center gap-1.5 md:hidden">
- {nuc.graft_id && NUC_DISTRIBUTABLE_STATUSES.includes(nuc.status) && (
- <button type="button" onClick={() => setDistributeNuc(nuc)} className={`${NUC_ACTION_BUTTON_CLASS} text-indigo-600`} title="Distribute">
- <Send size={13} />
- </button>
- )}
- <button type="button" onClick={() => { if (nuc.nuc_number) fetchHistory(nuc.nuc_number) }} disabled={!nuc.nuc_number} className={`${NUC_ACTION_BUTTON_CLASS} text-blue-600`} title="View History">
- <History size={13} />
- </button>
- {nuc.status !== 'sold' && (
- <>
- <button type="button" onClick={() => handleEdit(nuc)} className={`${NUC_ACTION_BUTTON_CLASS} text-amber-600`} title="Edit">
- <Edit2 size={13} />
- </button>
- <button type="button" onClick={() => handleDelete(nuc.id)} className={`${NUC_ACTION_BUTTON_CLASS} text-red-500`} title="Delete">
- <Trash2 size={13} />
- </button>
- </>
- )}
- <button type="button" onClick={() => handleRetire(nuc.id)} className={`${NUC_ACTION_BUTTON_CLASS} text-text-secondary`} title="Retire">
- <Archive size={13} />
- </button>
- </div>
- )}
  <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
  <span className="text-text-tertiary">Setup: <span className="font-medium text-foreground">{formatDateIrish(nuc.setup_date)}</span></span>
  {nuc.cell_introduced_at && (
