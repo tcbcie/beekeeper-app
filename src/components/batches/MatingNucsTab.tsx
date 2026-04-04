@@ -1345,7 +1345,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <div className="flex items-center gap-2 px-3 py-2">
  {/* Name + badges */}
  <div className="min-w-0 flex-1">
- <div className="flex flex-wrap items-center gap-1.5">
+ {/* Line 1: nuc name + tag */}
+ <div className="flex items-center gap-1.5">
  <button
  type="button"
  onClick={() => { setSelectedNucId(nuc.id); toggleExpand(nuc.id) }}
@@ -1359,6 +1360,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  {nucTagCodes[nuc.id] && (
  <span className="rounded-full bg-surface-secondary px-1.5 py-0.5 text-[11px] font-medium text-text-secondary dark:bg-surface-elevated">{nucTagCodes[nuc.id]}</span>
  )}
+ </div>
+ {/* Line 2: status + inspections + actions */}
+ <div className="mt-0.5 flex flex-wrap items-center gap-1 pl-5">
  <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${getStatusBadge(nuc.status)}`}>
  {statusInfo?.label}
  </span>
@@ -1392,7 +1396,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </>
  )}
  </div>
- {/* Inline context line */}
+ {/* Line 3: context */}
  <p className="mt-0.5 pl-5 text-xs text-text-secondary">
  {[
  nuc.rearing_batches && `${nuc.rearing_batches.batch_name}${nuc.batch_grafts ? ` · Cell #${nuc.batch_grafts.cell_number}` : ''}`,
