@@ -37,6 +37,7 @@ export interface Hive {
   status: string
   archived_at: string | null
   user_id: string
+  qr_tag_code?: string | null
 }
 
 export interface Apiary {

@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Edit2, Trash2, Search, Camera } from 'lucide-react'
+import { Edit2, Trash2, Search, Camera, QrCode } from 'lucide-react'
 import Image from 'next/image'
-import type { Inspection, Hive } from '@/types/records'
+import Link from 'next/link'
+import type { Inspection, Hive, Apiary } from '@/types/records'
 import { getLevelLabel } from '@/types/records'
 import IconButton from '@/components/ui/IconButton'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
@@ -14,6 +15,7 @@ interface InspectionCardProps {
   sharedHiveIds: string[]
   userHasActiveSubscription: boolean
   hives: Hive[]
+  apiaries: Apiary[]
   onEdit: (inspection: Inspection) => void
   onDelete: (id: string) => void
   onImageClick: (url: string) => void
@@ -46,11 +48,13 @@ export default function InspectionCard({
   sharedHiveIds,
   userHasActiveSubscription,
   hives,
+  apiaries,
   onEdit,
   onDelete,
   onImageClick
 }: InspectionCardProps) {
   const hive = hives.find(h => h.id === inspection.hive_id)
+  const apiary = apiaries.find(a => a.id === hive?.apiary_id)
   const normalisedImageUrl = normaliseStoragePublicUrl(inspection.image_url)
   const [thumbnailLoadFailed, setThumbnailLoadFailed] = useState(false)
 
@@ -116,6 +120,19 @@ export default function InspectionCard({
               <h3 className="text-base font-bold flex items-center gap-1.5">
                 <Search size={14} className="text-blue-500 flex-shrink-0" />
                 Hive: {inspection.hives?.hive_number || 'Unknown'}
+                {apiary && (
+                  <span className="font-normal text-text-tertiary">({apiary.name})</span>
+                )}
+                {hive?.qr_tag_code && (
+                  <Link
+                    href={`/dashboard/hive-scan/tag/${hive.qr_tag_code}`}
+                    className="text-blue-500 hover:text-blue-700 transition-colors"
+                    title={`QR tag: ${hive.qr_tag_code}`}
+                    aria-label="Open QR tag page"
+                  >
+                    <QrCode size={14} />
+                  </Link>
+                )}
               </h3>
               <span className="text-xs text-text-tertiary">
                 {formattedDate}

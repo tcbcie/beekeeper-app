@@ -455,7 +455,31 @@ export function useRecordsData(): UseRecordsDataReturn {
       new Map(allHives.map(h => [h.id, h])).values()
     ).sort((a, b) => a.hive_number.localeCompare(b.hive_number))
 
-    setHives(uniqueHives as Hive[])
+    // Batch-fetch the most recently assigned QR tag per hive
+    const hiveIds = uniqueHives.map(h => h.id)
+    const qrCodeMap = new Map<string, string>()
+    if (hiveIds.length > 0) {
+      const { data: qrTags } = await supabase
+        .from('qr_tags')
+        .select('hive_id, code')
+        .in('hive_id', hiveIds)
+        .not('hive_id', 'is', null)
+        .order('assigned_at', { ascending: false })
+
+      // Keep only the first (most recent) code per hive
+      for (const tag of qrTags ?? []) {
+        if (tag.hive_id && !qrCodeMap.has(tag.hive_id)) {
+          qrCodeMap.set(tag.hive_id, tag.code)
+        }
+      }
+    }
+
+    const hivesWithQr = uniqueHives.map(h => ({
+      ...h,
+      qr_tag_code: qrCodeMap.get(h.id) ?? null
+    }))
+
+    setHives(hivesWithQr as Hive[])
   }, [])
 
   const fetchApiaries = useCallback(async (userId: string) => {
