@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react'
 import { Edit2, Trash2, Search, Camera, QrCode } from 'lucide-react'
 import Image from 'next/image'
-import Link from 'next/link'
 import type { Inspection, Hive, Apiary } from '@/types/records'
 import { getLevelLabel } from '@/types/records'
 import IconButton from '@/components/ui/IconButton'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
+import ModalShell from '@/components/ui/ModalShell'
+import HiveQRCode from '@/components/hive/HiveQRCode'
 
 interface InspectionCardProps {
   inspection: Inspection
@@ -57,6 +58,7 @@ export default function InspectionCard({
   const apiary = apiaries.find(a => a.id === hive?.apiary_id)
   const normalisedImageUrl = normaliseStoragePublicUrl(inspection.image_url)
   const [thumbnailLoadFailed, setThumbnailLoadFailed] = useState(false)
+  const [qrModalOpen, setQrModalOpen] = useState(false)
 
   const givenTakenItems = [
     { label: 'Foundation', value: inspection.frames_foundation },
@@ -124,14 +126,15 @@ export default function InspectionCard({
                   <span className="font-normal text-text-tertiary">({apiary.name})</span>
                 )}
                 {hive?.qr_tag_code && (
-                  <Link
-                    href={`/dashboard/hive-scan/tag/${hive.qr_tag_code}`}
+                  <button
+                    type="button"
+                    onClick={() => setQrModalOpen(true)}
                     className="text-blue-500 hover:text-blue-700 transition-colors"
                     title={`QR tag: ${hive.qr_tag_code}`}
-                    aria-label="Open QR tag page"
+                    aria-label="Show QR code"
                   >
                     <QrCode size={14} />
-                  </Link>
+                  </button>
                 )}
               </h3>
               <span className="text-xs text-text-tertiary">
@@ -316,6 +319,17 @@ export default function InspectionCard({
         )}
 
       </div>
+
+      {qrModalOpen && hive?.qr_tag_code && (
+        <ModalShell
+          title={`Hive ${inspection.hives?.hive_number || hive.hive_number} — QR Code`}
+          onClose={() => setQrModalOpen(false)}
+          closeOnBackdrop
+          maxWidthClassName="max-w-sm"
+        >
+          <HiveQRCode tagCode={hive.qr_tag_code} hiveNumber={inspection.hives?.hive_number || hive.hive_number} />
+        </ModalShell>
+      )}
     </div>
   )
 }
