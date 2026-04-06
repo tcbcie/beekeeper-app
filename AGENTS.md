@@ -21,3 +21,5 @@
 
 * **Template:** When generating your plan in tasks/todo-codex.md, always use the structure provided in tasks/todo-codex-template.md
 * **Feature Planning:** When implementing a new feature, document the plan in docs/features/ using a uniquely named markdown file (e.g., feature-name-plan.md). Always base this document strictly on the structure found in docs/features/feature-template.md.
+
+When providing summaries, plans, etc., omit the lengthy file names and file paths.
