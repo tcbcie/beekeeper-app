@@ -1255,6 +1255,7 @@ export default function RecordsPage() {
                       sharedHiveIds={sharedHiveIds}
                       userHasActiveSubscription={userHasActiveSubscription}
                       hives={hives}
+                      apiaries={apiaries}
                       onEdit={handleInspectionEdit}
                       onDelete={handleInspectionDelete}
                       onImageClick={handleImageClick}
