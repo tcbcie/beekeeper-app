@@ -1325,9 +1325,12 @@ export default function RecordsPage() {
                 <div
                   key={recordKey}
                   id={`record-card-${recordKey}`}
-                  className={`scroll-mt-24 rounded-lg transition-shadow ${
-                    isHighlighted ? 'ring-2 ring-blue-500/60 ring-offset-2 ring-offset-background shadow-lg' : ''
+                  className={`scroll-mt-24 rounded-lg transition-all cursor-pointer ${
+                    isHighlighted
+                      ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-background shadow-lg bg-blue-50 dark:bg-blue-950/30'
+                      : 'hover:ring-1 hover:ring-border'
                   }`}
+                  onClick={() => setHighlightedRecordKey(isHighlighted ? null : recordKey)}
                 >
                   {card}
                 </div>
