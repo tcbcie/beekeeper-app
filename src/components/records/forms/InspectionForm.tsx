@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { ChevronDown, ChevronUp, Camera, X } from 'lucide-react'
 import Image from 'next/image'
 import type { Hive, Apiary, InspectionFormData } from '@/types/records'
-import { getDefaultInspectionFormData } from '@/types/records'
+import { getDefaultInspectionFormData, LEVEL_NOT_RECORDED } from '@/types/records'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import Button from '@/components/ui/Button'
 
@@ -124,6 +124,7 @@ export default function InspectionForm({
   // Collapsible section states
   const [queenCellsExpanded, setQueenCellsExpanded] = useState(false)
   const [dronesExpanded, setDronesExpanded] = useState(false)
+  const [propolisExpanded, setPropolisExpanded] = useState(false)
   const [givenTakenExpanded, setGivenTakenExpanded] = useState(false)
   const [hygienicBehaviourExpanded, setHygienicBehaviourExpanded] = useState(false)
   const [diseaseExpanded, setDiseaseExpanded] = useState(false)
@@ -165,6 +166,8 @@ export default function InspectionForm({
         setFormData(defaultFormData)
         setGivenTakenDrafts(createGivenTakenDrafts(defaultFormData))
         setFormApiaryId(selectedApiaryId)
+        setDronesExpanded(false)
+        setPropolisExpanded(false)
         resetImage()
       }
       previousInitialDataRef.current = null
@@ -174,6 +177,16 @@ export default function InspectionForm({
     setFormData(initialData)
     setGivenTakenDrafts(createGivenTakenDrafts(initialData))
     setFormApiaryId(getApiaryIdForHive(initialData.hive_id))
+
+    // Auto-expand sections that have recorded data so the user sees them immediately
+    setDronesExpanded(
+      (initialData.drones_present !== LEVEL_NOT_RECORDED && initialData.drones_present !== null) ||
+      initialData.drone_brood_present !== null
+    )
+    setPropolisExpanded(
+      initialData.propolis_level !== LEVEL_NOT_RECORDED && initialData.propolis_level !== null
+    )
+
     if (initialData.image_url) {
       setPreviewFromUrl(initialData.image_url)
     } else {
@@ -743,7 +756,7 @@ export default function InspectionForm({
                   <Button
                     unstyled
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, drones_present: -1 }))}
+                    onClick={() => setFormData(prev => ({ ...prev, drones_present: LEVEL_NOT_RECORDED }))}
                     className="min-h-[36px] w-full px-3 sm:min-h-[32px] sm:w-auto rounded-md border border-border bg-surface-elevated text-[11px] sm:text-xs font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
                   >
                     Clear
@@ -781,6 +794,58 @@ export default function InspectionForm({
                 />
                 <span className="text-sm font-medium text-text-secondary">Drone Brood Present</span>
               </label>
+            </div>
+          )}
+        </div>
+
+        {/* Propolis Section - Collapsible */}
+        <div className="md:col-span-2 rounded-lg border border-border">
+          <Button
+          unstyled
+            type="button"
+            onClick={() => setPropolisExpanded(!propolisExpanded)}
+            className="w-full p-4 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-lg"
+          >
+            <h4 className="text-sm font-semibold text-foreground">Propolis</h4>
+            {propolisExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          </Button>
+          {propolisExpanded && (
+            <div className="p-4 pt-0 space-y-4">
+              <div>
+                <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <label className="text-sm font-medium text-text-secondary">Propolis Level</label>
+                  <Button
+                    unstyled
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, propolis_level: LEVEL_NOT_RECORDED }))}
+                    className="min-h-[36px] w-full px-3 sm:min-h-[32px] sm:w-auto rounded-md border border-border bg-surface-elevated text-[11px] sm:text-xs font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+                  >
+                    Clear
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { value: 0, label: 'Low' },
+                    { value: 1, label: 'Medium' },
+                    { value: 2, label: 'High' },
+                    { value: 3, label: 'Extreme' }
+                  ].map((option) => (
+                    <Button
+                    unstyled
+                      key={option.value}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, propolis_level: option.value }))}
+                      className={`min-h-[44px] sm:min-h-[48px] px-2 rounded-lg font-semibold text-xs sm:text-sm leading-tight whitespace-nowrap transition-all ${
+                        formData.propolis_level === option.value
+                          ? 'bg-amber-800 text-white shadow-lg'
+                          : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
+                      }`}
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>

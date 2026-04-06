@@ -1,5 +1,21 @@
 // Shared type definitions for the Records page and related components
 
+// Sentinel value used in form state to mean "not recorded" (stored as NULL in DB)
+export const LEVEL_NOT_RECORDED = -1
+
+// Shared label map for integer level fields (drones_present, propolis_level)
+export const LEVEL_LABELS: Readonly<Record<number, string>> = {
+  0: 'Low',
+  1: 'Medium',
+  2: 'High',
+  3: 'Extreme',
+}
+
+export function getLevelLabel(value: number | null | undefined): string | null {
+  if (value === null || value === undefined || value === LEVEL_NOT_RECORDED) return null
+  return LEVEL_LABELS[value] ?? null
+}
+
 export interface HiveConfiguration {
   brood_boxes?: number
   brood_boxes_full?: number
@@ -46,6 +62,7 @@ export interface Inspection {
   eggs_present: boolean
   drones_present: number
   drone_brood_present: boolean | null
+  propolis_level: number
   brood_frames: number | null
   right_sized_frames: number | null
   brood_pattern_rating: number
@@ -219,6 +236,7 @@ export interface InspectionFormData {
   eggs_present: boolean
   drones_present: number
   drone_brood_present: boolean | null
+  propolis_level: number
   brood_frames: number | null
   right_sized_frames: number | null
   brood_pattern_rating: number
@@ -380,6 +398,7 @@ export function getDefaultInspectionFormData(): InspectionFormData {
     eggs_present: false,
     drones_present: -1,
     drone_brood_present: null,
+    propolis_level: -1,
     brood_frames: null,
     right_sized_frames: null,
     brood_pattern_rating: 0,

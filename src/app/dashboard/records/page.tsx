@@ -197,6 +197,7 @@ export default function RecordsPage() {
       eggs_present: editingInspection.eggs_present ?? defaults.eggs_present,
       drones_present: editingInspection.drones_present ?? defaults.drones_present,
       drone_brood_present: editingInspection.drone_brood_present ?? defaults.drone_brood_present,
+      propolis_level: editingInspection.propolis_level ?? defaults.propolis_level,
       brood_frames: editingInspection.brood_frames ?? defaults.brood_frames,
       right_sized_frames: editingInspection.right_sized_frames ?? defaults.right_sized_frames,
       brood_pattern_rating: editingInspection.brood_pattern_rating ?? defaults.brood_pattern_rating,
@@ -637,6 +638,7 @@ export default function RecordsPage() {
       const submitData = {
         ...formData,
         drones_present: formData.drones_present === -1 ? null : formData.drones_present,
+        propolis_level: formData.propolis_level === -1 ? null : formData.propolis_level,
         image_url: imageUrl,
         weather_temp: weatherData?.temp ?? null,
         weather_condition: weatherData?.condition ?? null,
