@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Edit2, Trash2, Search, Camera } from 'lucide-react'
 import Image from 'next/image'
 import type { Inspection, Hive } from '@/types/records'
+import { getLevelLabel } from '@/types/records'
 import IconButton from '@/components/ui/IconButton'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 
@@ -214,22 +215,17 @@ export default function InspectionCard({
       )}
 
       {/* Drones Section */}
-      {((inspection.drones_present !== -1 && inspection.drones_present !== null) || inspection.drone_brood_present !== null) && (
+      {(getLevelLabel(inspection.drones_present) !== null || inspection.drone_brood_present !== null) && (
         <div className="mb-3 overflow-hidden rounded border border-border">
           <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
             <h4 className="text-sm font-semibold text-foreground">Drones</h4>
           </div>
           <div className="p-2">
             <div className="grid grid-cols-2 gap-2 text-sm">
-              {inspection.drones_present !== -1 && inspection.drones_present !== null && (
+              {getLevelLabel(inspection.drones_present) !== null && (
                 <div className="flex items-center gap-2">
                   <span className="text-text-secondary">Level:</span>
-                  <span className="font-semibold text-amber-800">
-                    {inspection.drones_present === 0 && 'Low'}
-                    {inspection.drones_present === 1 && 'Medium'}
-                    {inspection.drones_present === 2 && 'High'}
-                    {inspection.drones_present === 3 && 'Extreme'}
-                  </span>
+                  <span className="font-semibold text-amber-800">{getLevelLabel(inspection.drones_present)}</span>
                 </div>
               )}
               {inspection.drone_brood_present !== null && (
@@ -238,6 +234,21 @@ export default function InspectionCard({
                   <span className="text-base">{inspection.drone_brood_present ? '✅' : '❌'}</span>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Propolis Section */}
+      {getLevelLabel(inspection.propolis_level) !== null && (
+        <div className="mb-3 overflow-hidden rounded border border-border">
+          <div className="bg-surface-elevated dark:bg-surface-elevated px-3 py-1.5 border-b border-border">
+            <h4 className="text-sm font-semibold text-foreground">Propolis</h4>
+          </div>
+          <div className="p-2">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-text-secondary">Level:</span>
+              <span className="font-semibold text-amber-800">{getLevelLabel(inspection.propolis_level)}</span>
             </div>
           </div>
         </div>
