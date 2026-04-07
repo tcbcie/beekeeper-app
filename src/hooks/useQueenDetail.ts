@@ -114,6 +114,103 @@ const averageRatings = (rows: InspectionRatingRow[]): TraitAverages => {
   }
 }
 
+// Standalone report fetcher — no hook state required. Exported so non-hook
+// callers (e.g. the queen comparison page) can reuse it without paying for
+// an unused useQueenDetail() instance.
+export async function fetchQueenReportData(
+  motherId: string | null | undefined,
+  targetQueenId: string,
+  hiveId: string | null,
+  range: ReportTimeWindow
+): Promise<QueenReport> {
+  const since = sinceForRange(range)
+
+  // 1. Sisters (same mother, exclude self) — including hive/apiary/mating site
+  let sisters: SisterSummary[] = []
+  if (motherId) {
+    const { data: sisterData, error: sisterErr } = await supabase
+      .from('queens')
+      .select('id, queen_number, marking_color, status, mated_date, mated_at_eircode, hives!queen_id(id, hive_number, apiaries(name))')
+      .eq('mother_id', motherId)
+      .neq('id', targetQueenId)
+      .order('birth_date', { ascending: false })
+    if (sisterErr) throw sisterErr
+    sisters = (sisterData ?? []).map((row) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = row as any
+      const hiveData = Array.isArray(raw.hives) ? raw.hives[0] : raw.hives
+      const apiaryData = hiveData?.apiaries
+      const apiary = Array.isArray(apiaryData) ? apiaryData[0] : apiaryData
+      return {
+        id: raw.id,
+        queen_number: raw.queen_number,
+        marking_color: raw.marking_color,
+        status: raw.status,
+        mated_date: raw.mated_date ?? null,
+        mated_at_eircode: raw.mated_at_eircode ?? null,
+        hive_id: hiveData?.id ?? null,
+        hive_number: hiveData?.hive_number ?? null,
+        apiary_name: apiary?.name ?? null,
+      }
+    })
+  }
+  const sisterHiveIds = sisters
+    .map((s) => s.hive_id)
+    .filter((id): id is string => id !== null)
+
+  // 2. Trait averages + latest snapshot for this queen's hive
+  let traitAverages: TraitAverages = EMPTY_AVERAGES
+  let latestSnapshot: LatestInspectionSnapshot | null = null
+  if (hiveId) {
+    let ratingsQuery = supabase
+      .from('inspections')
+      .select('temperament_rating, population_strength, brood_pattern_rating, calmness, swarming_tendency')
+      .eq('hive_id', hiveId)
+    if (since) ratingsQuery = ratingsQuery.gte('inspection_date', since)
+    const { data: ratingRows, error: ratingErr } = await ratingsQuery
+    if (ratingErr) throw ratingErr
+    traitAverages = averageRatings((ratingRows ?? []) as InspectionRatingRow[])
+
+    const diseaseCols = DISEASE_COLUMNS.map((d) => d.col).join(', ')
+    const { data: latestRows, error: latestErr } = await supabase
+      .from('inspections')
+      .select(`inspection_date, queen_seen, eggs_present, ${diseaseCols}`)
+      .eq('hive_id', hiveId)
+      .order('inspection_date', { ascending: false })
+      .limit(1)
+    if (latestErr) throw latestErr
+    if (latestRows && latestRows.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const r = latestRows[0] as any
+      const flagged: string[] = []
+      for (const d of DISEASE_COLUMNS) {
+        if (typeof r[d.col] === 'number' && r[d.col] > 0) flagged.push(d.label)
+      }
+      latestSnapshot = {
+        inspection_date: r.inspection_date,
+        queen_seen: r.queen_seen ?? null,
+        eggs_present: r.eggs_present ?? null,
+        diseases: flagged,
+      }
+    }
+  }
+
+  // 3. Sister averages — combined across all sister hives
+  let sisterAverages: TraitAverages = EMPTY_AVERAGES
+  if (sisterHiveIds.length > 0) {
+    let sisterQuery = supabase
+      .from('inspections')
+      .select('temperament_rating, population_strength, brood_pattern_rating, calmness, swarming_tendency')
+      .in('hive_id', sisterHiveIds)
+    if (since) sisterQuery = sisterQuery.gte('inspection_date', since)
+    const { data: sRows, error: sErr } = await sisterQuery
+    if (sErr) throw sErr
+    sisterAverages = averageRatings((sRows ?? []) as InspectionRatingRow[])
+  }
+
+  return { sisters, traitAverages, sisterAverages, latestSnapshot }
+}
+
 export function useQueenDetail(queenId: string): UseQueenDetailReturn {
   const toast = useToast()
   const [queen, setQueen] = useState<Queen | null>(null)
@@ -253,104 +350,6 @@ export function useQueenDetail(queenId: string): UseQueenDetailReturn {
     }
   }, [queenId, toast])
 
-  const fetchQueenReport = useCallback(async (
-    motherId: string | null | undefined,
-    targetQueenId: string,
-    hiveId: string | null,
-    range: ReportTimeWindow
-  ): Promise<QueenReport> => {
-    const since = sinceForRange(range)
-
-    // 1. Sisters (same mother, exclude self) — including their hive/apiary/mating site.
-    // Pure transformation: no side-effects inside .map(); hive_id is captured on each
-    // SisterSummary so the caller can derive the list later.
-    let sisters: SisterSummary[] = []
-    if (motherId) {
-      const { data: sisterData, error: sisterErr } = await supabase
-        .from('queens')
-        .select('id, queen_number, marking_color, status, mated_date, mated_at_eircode, hives!queen_id(id, hive_number, apiaries(name))')
-        .eq('mother_id', motherId)
-        .neq('id', targetQueenId)
-        .order('birth_date', { ascending: false })
-
-      if (sisterErr) throw sisterErr
-      sisters = (sisterData ?? []).map((row) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const raw = row as any
-        const hiveData = Array.isArray(raw.hives) ? raw.hives[0] : raw.hives
-        const apiaryData = hiveData?.apiaries
-        const apiary = Array.isArray(apiaryData) ? apiaryData[0] : apiaryData
-        return {
-          id: raw.id,
-          queen_number: raw.queen_number,
-          marking_color: raw.marking_color,
-          status: raw.status,
-          mated_date: raw.mated_date ?? null,
-          mated_at_eircode: raw.mated_at_eircode ?? null,
-          hive_id: hiveData?.id ?? null,
-          hive_number: hiveData?.hive_number ?? null,
-          apiary_name: apiary?.name ?? null,
-        }
-      })
-    }
-    const sisterHiveIds = sisters
-      .map((s) => s.hive_id)
-      .filter((id): id is string => id !== null)
-
-    // 2. Trait averages + latest snapshot for this queen's hive
-    let traitAverages: TraitAverages = EMPTY_AVERAGES
-    let latestSnapshot: LatestInspectionSnapshot | null = null
-    if (hiveId) {
-      let ratingsQuery = supabase
-        .from('inspections')
-        .select('temperament_rating, population_strength, brood_pattern_rating, calmness, swarming_tendency')
-        .eq('hive_id', hiveId)
-      if (since) ratingsQuery = ratingsQuery.gte('inspection_date', since)
-      const { data: ratingRows, error: ratingErr } = await ratingsQuery
-      if (ratingErr) throw ratingErr
-      traitAverages = averageRatings((ratingRows ?? []) as InspectionRatingRow[])
-
-      // Latest inspection snapshot — independent of time window so we always show the most recent
-      const diseaseCols = DISEASE_COLUMNS.map((d) => d.col).join(', ')
-      const { data: latestRows, error: latestErr } = await supabase
-        .from('inspections')
-        .select(`inspection_date, queen_seen, eggs_present, ${diseaseCols}`)
-        .eq('hive_id', hiveId)
-        .order('inspection_date', { ascending: false })
-        .limit(1)
-      if (latestErr) throw latestErr
-      if (latestRows && latestRows.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const r = latestRows[0] as any
-        const flagged: string[] = []
-        for (const d of DISEASE_COLUMNS) {
-          if (typeof r[d.col] === 'number' && r[d.col] > 0) flagged.push(d.label)
-        }
-        latestSnapshot = {
-          inspection_date: r.inspection_date,
-          queen_seen: r.queen_seen ?? null,
-          eggs_present: r.eggs_present ?? null,
-          diseases: flagged,
-        }
-      }
-    }
-
-    // 3. Sister averages — combined inspections across all sister hives
-    let sisterAverages: TraitAverages = EMPTY_AVERAGES
-    if (sisterHiveIds.length > 0) {
-      let sisterQuery = supabase
-        .from('inspections')
-        .select('temperament_rating, population_strength, brood_pattern_rating, calmness, swarming_tendency')
-        .in('hive_id', sisterHiveIds)
-      if (since) sisterQuery = sisterQuery.gte('inspection_date', since)
-      const { data: sRows, error: sErr } = await sisterQuery
-      if (sErr) throw sErr
-      sisterAverages = averageRatings((sRows ?? []) as InspectionRatingRow[])
-    }
-
-    return { sisters, traitAverages, sisterAverages, latestSnapshot }
-  }, [])
-
   return {
     queen,
     hive,
@@ -359,6 +358,7 @@ export function useQueenDetail(queenId: string): UseQueenDetailReturn {
     loading,
     isOwner,
     fetchQueenData,
-    fetchQueenReport,
+    // Module-level reference is already stable; no useCallback needed.
+    fetchQueenReport: fetchQueenReportData,
   }
 }
