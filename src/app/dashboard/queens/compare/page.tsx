@@ -33,12 +33,16 @@ interface RawQueenRow {
   father_id: string | null
   batch_id: string | null
   batch?: { id: string; batch_name: string } | { id: string; batch_name: string }[] | null
-  mother?: { id: string; queen_number: string; marking_color: string } | { id: string; queen_number: string; marking_color: string }[] | null
-  father?: { id: string; queen_number: string; marking_color: string } | { id: string; queen_number: string; marking_color: string }[] | null
   hives?:
     | { id: string; hive_number: string; apiaries?: { name: string } | { name: string }[] | null }
     | { id: string; hive_number: string; apiaries?: { name: string } | { name: string }[] | null }[]
     | null
+}
+
+interface ParentQueen {
+  id: string
+  queen_number: string
+  marking_color: string
 }
 
 const firstOf = <T,>(v: T | T[] | null | undefined): T | null => {
@@ -117,8 +121,6 @@ export default function QueenComparePage() {
               queen_clipped, status, performance_notes, mated_at_eircode, mated_date,
               mother_id, father_id, batch_id,
               batch:rearing_batches!batch_id(id, batch_name),
-              mother:queens!mother_id(id, queen_number, marking_color),
-              father:queens!father_id(id, queen_number, marking_color),
               hives!queen_id(id, hive_number, apiaries(name))
             `
             )
@@ -146,8 +148,6 @@ export default function QueenComparePage() {
         const raw = result.value.data as unknown as RawQueenRow
         const hive = firstOf(raw.hives)
         const apiary = hive ? firstOf(hive.apiaries) : null
-        const mother = firstOf(raw.mother)
-        const father = firstOf(raw.father)
         const batch = firstOf(raw.batch)
         const queen: Queen = {
           id: raw.id,
@@ -166,8 +166,11 @@ export default function QueenComparePage() {
           mother_id: raw.mother_id,
           father_id: raw.father_id,
           batch_id: raw.batch_id,
-          mother: mother ?? null,
-          father: father ?? null,
+          // Parents are populated below via a separate batched query —
+          // PostgREST self-referential embeds (`queens!mother_id`) are
+          // unreliable here and silently return null rows.
+          mother: null,
+          father: null,
           batch: batch ?? null,
         }
         return {
@@ -178,6 +181,34 @@ export default function QueenComparePage() {
           apiaryName: apiary?.name ?? null,
           error: null,
         }
+      })
+
+      // Fetch all parents (mother + father) in a single batched query.
+      // PostgREST self-referential embeds are unreliable on `queens -> queens`,
+      // so we collect unique parent IDs and resolve them in one round-trip.
+      const parentIdSet = new Set<string>()
+      intermediates.forEach((inter) => {
+        if (inter.queen?.mother_id) parentIdSet.add(inter.queen.mother_id)
+        if (inter.queen?.father_id) parentIdSet.add(inter.queen.father_id)
+      })
+      const parentMap = new Map<string, ParentQueen>()
+      if (parentIdSet.size > 0) {
+        const { data: parents, error: parentsErr } = await supabase
+          .from('queens')
+          .select('id, queen_number, marking_color')
+          .in('id', [...parentIdSet])
+        if (parentsErr) throw parentsErr
+        if (isStale()) return
+        ;(parents ?? []).forEach((p) => parentMap.set(p.id, p as ParentQueen))
+      }
+      intermediates.forEach((inter) => {
+        if (!inter.queen) return
+        inter.queen.mother = inter.queen.mother_id
+          ? parentMap.get(inter.queen.mother_id) ?? null
+          : null
+        inter.queen.father = inter.queen.father_id
+          ? parentMap.get(inter.queen.father_id) ?? null
+          : null
       })
 
       // Now fetch reports in parallel for queens that loaded successfully.
