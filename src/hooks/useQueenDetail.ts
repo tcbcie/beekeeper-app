@@ -64,6 +64,14 @@ const EMPTY_AVERAGES: TraitAverages = {
   n: 0,
 }
 
+// Defensive upper bound on rows streamed back for averaging. A prolific hive
+// with many years of inspections could otherwise pull thousands of rows just
+// to compute a mean — wasteful on slow networks and a latent client-side DoS
+// on a 4-queen comparison that fans out sister aggregation. 1000 inspections
+// is well beyond any realistic average window while comfortably under
+// PostgREST's default row cap.
+const INSPECTION_FETCH_CAP = 1000
+
 const DISEASE_COLUMNS: { col: string; label: string }[] = [
   { col: 'afb_disease', label: 'AFB' },
   { col: 'efb_disease', label: 'EFB' },
@@ -94,7 +102,9 @@ interface InspectionRatingRow {
 const averageRatings = (rows: InspectionRatingRow[]): TraitAverages => {
   const sums = { docility: 0, population: 0, brood_pattern: 0, calmness: 0, swarm_tendency: 0 }
   const counts = { docility: 0, population: 0, brood_pattern: 0, calmness: 0, swarm_tendency: 0 }
-  let any = 0
+  // `usedRows` = number of inspections that contributed at least one trait.
+  // Reported back as `n` so the UI can say "averaged across N inspections".
+  let usedRows = 0
   for (const r of rows) {
     let used = false
     if (r.temperament_rating != null) { sums.docility += r.temperament_rating; counts.docility++; used = true }
@@ -102,7 +112,7 @@ const averageRatings = (rows: InspectionRatingRow[]): TraitAverages => {
     if (r.brood_pattern_rating != null) { sums.brood_pattern += r.brood_pattern_rating; counts.brood_pattern++; used = true }
     if (r.calmness != null) { sums.calmness += r.calmness; counts.calmness++; used = true }
     if (r.swarming_tendency != null) { sums.swarm_tendency += r.swarming_tendency; counts.swarm_tendency++; used = true }
-    if (used) any++
+    if (used) usedRows++
   }
   return {
     docility: counts.docility ? sums.docility / counts.docility : null,
@@ -110,7 +120,7 @@ const averageRatings = (rows: InspectionRatingRow[]): TraitAverages => {
     brood_pattern: counts.brood_pattern ? sums.brood_pattern / counts.brood_pattern : null,
     calmness: counts.calmness ? sums.calmness / counts.calmness : null,
     swarm_tendency: counts.swarm_tendency ? sums.swarm_tendency / counts.swarm_tendency : null,
-    n: any,
+    n: usedRows,
   }
 }
 
@@ -166,6 +176,8 @@ export async function fetchQueenReportData(
       .from('inspections')
       .select('temperament_rating, population_strength, brood_pattern_rating, calmness, swarming_tendency')
       .eq('hive_id', hiveId)
+      .order('inspection_date', { ascending: false })
+      .limit(INSPECTION_FETCH_CAP)
     if (since) ratingsQuery = ratingsQuery.gte('inspection_date', since)
     const { data: ratingRows, error: ratingErr } = await ratingsQuery
     if (ratingErr) throw ratingErr
@@ -202,6 +214,8 @@ export async function fetchQueenReportData(
       .from('inspections')
       .select('temperament_rating, population_strength, brood_pattern_rating, calmness, swarming_tendency')
       .in('hive_id', sisterHiveIds)
+      .order('inspection_date', { ascending: false })
+      .limit(INSPECTION_FETCH_CAP)
     if (since) sisterQuery = sisterQuery.gte('inspection_date', since)
     const { data: sRows, error: sErr } = await sisterQuery
     if (sErr) throw sErr

@@ -42,6 +42,13 @@ const TRAITS: TraitDef[] = [
 const formatDate = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleDateString('en-IE') : '—'
 
+// Display precision is one decimal (`4.5 / 5`), so two averages within this
+// epsilon are visually identical and must be treated as tied. Using strict
+// equality here would let floating-point noise (e.g. `4.5` vs `4.4999999…`)
+// crown a "winner" that the user cannot distinguish — exactly what the
+// don't-mislead-on-ties rule exists to prevent.
+const TIE_EPSILON = 0.05
+
 // Compute the best index for a trait row. Returns null on ties or when all
 // values are null (don't mislead the user).
 const bestIndex = (values: (number | null)[], direction: 'high' | 'low'): number | null => {
@@ -50,7 +57,9 @@ const bestIndex = (values: (number | null)[], direction: 'high' | 'low'): number
     .filter((x): x is { v: number; i: number } => x.v != null)
   if (defined.length === 0) return null
   defined.sort((a, b) => (direction === 'high' ? b.v - a.v : a.v - b.v))
-  if (defined.length >= 2 && defined[0].v === defined[1].v) return null // tie
+  if (defined.length >= 2 && Math.abs(defined[0].v - defined[1].v) < TIE_EPSILON) {
+    return null // tie within display precision
+  }
   return defined[0].i
 }
 
@@ -88,11 +97,15 @@ const HeaderCell = ({ col }: { col: CompareColumn }) => {
   )
 }
 
+// NB: `sticky left-0` cannot pin a colSpan cell to the viewport edge in a
+// horizontally scrolling table, so it's omitted intentionally — the section
+// heading scrolls with the row, which is the expected behaviour for a
+// banner-style heading.
 const SectionHeading = ({ label, colCount }: { label: string; colCount: number }) => (
   <tr>
     <td
       colSpan={colCount + 1}
-      className="px-4 py-2 bg-surface-secondary/60 dark:bg-surface-elevated text-xs font-semibold text-text-tertiary uppercase tracking-wide sticky left-0"
+      className="px-4 py-2 bg-surface-secondary/60 dark:bg-surface-elevated text-xs font-semibold text-text-tertiary uppercase tracking-wide"
     >
       {label}
     </td>
@@ -132,7 +145,7 @@ export default function QueenCompareTable({ columns }: QueenCompareTableProps) {
 
   return (
     <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border overflow-x-auto">
-      <table className="min-w-full border-collapse">
+      <table className="min-w-full border-collapse" aria-label="Queen comparison table">
         <thead>
           <tr>
             <th

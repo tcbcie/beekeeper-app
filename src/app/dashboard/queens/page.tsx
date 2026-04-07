@@ -12,6 +12,11 @@ import QueenLineageTree from '@/components/QueenLineageTree'
 import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
 import Button from '@/components/ui/Button'
 
+// Module-level so the identity is stable across renders and the limit lives
+// in one place. Selection persistence key kept alongside for the same reason.
+const COMPARE_MAX = 4
+const COMPARE_SELECTION_STORAGE_KEY = 'queen-compare-selection'
+
 const getInvalidLineageParentIds = (queens: Queen[], queenId: string): Set<string> => {
  const invalidIds = new Set<string>([queenId])
  const queue = [queenId]
@@ -61,7 +66,7 @@ export default function QueensPage() {
  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
   if (typeof window === 'undefined') return new Set()
   try {
-   const raw = sessionStorage.getItem('queen-compare-selection')
+   const raw = sessionStorage.getItem(COMPARE_SELECTION_STORAGE_KEY)
    if (!raw) return new Set()
    const parsed = JSON.parse(raw)
    return new Set(Array.isArray(parsed) ? parsed : [])
@@ -69,7 +74,6 @@ export default function QueensPage() {
    return new Set()
   }
  })
- const COMPARE_MAX = 4
  const [formData, setFormData] = useState<QueenFormData>({
  queen_number: '',
  birth_date: '',
@@ -91,11 +95,29 @@ export default function QueensPage() {
  useEffect(() => {
   if (typeof window === 'undefined') return
   try {
-   sessionStorage.setItem('queen-compare-selection', JSON.stringify([...selectedIds]))
+   sessionStorage.setItem(COMPARE_SELECTION_STORAGE_KEY, JSON.stringify([...selectedIds]))
   } catch {
    // sessionStorage full or unavailable — selection just won't persist.
   }
  }, [selectedIds])
+
+ // Prune selection IDs that no longer exist in the loaded queen set (e.g. a
+ // queen deleted in another tab between visits). Without this the Compare
+ // button counts ghost selections and the compare page surfaces them as
+ // "Unavailable" columns. Only fires once queens have actually loaded.
+ useEffect(() => {
+  if (queens.length === 0) return
+  const liveIds = new Set(queens.map((q) => q.id))
+  setSelectedIds((prev) => {
+   let changed = false
+   const next = new Set<string>()
+   prev.forEach((id) => {
+    if (liveIds.has(id)) next.add(id)
+    else changed = true
+   })
+   return changed ? next : prev
+  })
+ }, [queens])
 
  const toggleSelect = useCallback((id: string) => {
   setSelectedIds((prev) => {

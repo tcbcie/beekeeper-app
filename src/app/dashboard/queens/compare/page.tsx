@@ -225,6 +225,13 @@ export default function QueenComparePage() {
       toast.error('Failed to load comparison')
       setLoading(false)
     })
+
+    // Invalidate this request when the effect re-runs or the component
+    // unmounts. Pending async checkpoints will see isStale() === true and
+    // bail before touching state on a dead component.
+    return () => {
+      requestIdRef.current = requestId + 1
+    }
   }, [ids, timeWindow, router, toast])
 
   if (ids.length < 2) {
