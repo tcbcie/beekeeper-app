@@ -19,9 +19,9 @@ export interface Queen {
   distributed_mother_queen?: string | null
   distributed_drone_source?: string | null
   created_at?: string
-  mother_id?: string
-  father_id?: string
-  batch_id?: string
+  mother_id?: string | null
+  father_id?: string | null
+  batch_id?: string | null
   mother?: {
     id: string
     queen_number: string
@@ -65,6 +65,44 @@ export interface QueenFormData {
 export interface Batch {
   id: string
   batch_name: string
+}
+
+// Report tab types
+export type ReportTimeWindow = 'all' | '30' | '90'
+
+export interface TraitAverages {
+  docility: number | null      // temperament_rating
+  population: number | null    // population_strength
+  brood_pattern: number | null // brood_pattern_rating
+  calmness: number | null      // calmness
+  swarm_tendency: number | null // swarming_tendency
+  n: number                    // sample size (inspections counted)
+}
+
+export interface SisterSummary {
+  id: string
+  queen_number: string
+  marking_color: string
+  status: string
+  mated_date: string | null
+  mated_at_eircode: string | null
+  hive_id: string | null
+  hive_number: string | null
+  apiary_name: string | null
+}
+
+export interface LatestInspectionSnapshot {
+  inspection_date: string
+  queen_seen: boolean | null
+  eggs_present: boolean | null
+  diseases: string[] // names of disease columns with rating > 0
+}
+
+export interface QueenReport {
+  sisters: SisterSummary[]
+  traitAverages: TraitAverages
+  sisterAverages: TraitAverages
+  latestSnapshot: LatestInspectionSnapshot | null
 }
 
 // Calculate queen marking colour based on birth year

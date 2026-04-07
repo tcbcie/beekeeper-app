@@ -8,6 +8,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import QueenLineageTree from '@/components/QueenLineageTree'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
+import NavTabButton from '@/components/ui/NavTabButton'
+import QueenReportTab from '@/components/queens/QueenReportTab'
 import { useQueenDetail } from '@/hooks'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
@@ -18,6 +20,7 @@ export default function QueenDetailPage() {
   const router = useRouter()
   const toast = useToast()
   const queenId = params.id as string
+  const [activeTab, setActiveTab] = useState<'overview' | 'report'>('overview')
   const [lineageExpanded, setLineageExpanded] = useState(true)
   const [showMatedForm, setShowMatedForm] = useState(false)
   const [matedDate, setMatedDate] = useState('')
@@ -33,6 +36,7 @@ export default function QueenDetailPage() {
     loading,
     isOwner,
     fetchQueenData,
+    fetchQueenReport,
   } = useQueenDetail(queenId)
 
   useEffect(() => {
@@ -292,6 +296,32 @@ export default function QueenDetailPage() {
         </div>
       )}
 
+      {/* Tab Navigation */}
+      <div className="border-b border-border">
+        <nav className="flex flex-wrap -mb-px">
+          <NavTabButton
+            onClick={() => setActiveTab('overview')}
+            size="lg"
+            tone="forest"
+            active={activeTab === 'overview'}
+          >
+            Overview
+          </NavTabButton>
+          <NavTabButton
+            onClick={() => setActiveTab('report')}
+            size="lg"
+            tone="forest"
+            active={activeTab === 'report'}
+          >
+            Report
+          </NavTabButton>
+        </nav>
+      </div>
+
+      {activeTab === 'report' ? (
+        <QueenReportTab queen={queen} hive={hive} fetchQueenReport={fetchQueenReport} />
+      ) : (
+      <>
       {/* Info Card */}
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -466,6 +496,8 @@ export default function QueenDetailPage() {
             ))}
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   )
