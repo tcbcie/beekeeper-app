@@ -622,10 +622,13 @@ export default function QueensPage() {
  }
 
  const filteredQueens = queens.filter((q) => {
- // Apply search filter
+ // Apply search filter — queen number, subspecies, or mother's queen number
+ const needle = searchTerm.toLowerCase()
  const matchesSearch =
- q.queen_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
- (q.subspecies && q.subspecies.toLowerCase().includes(searchTerm.toLowerCase()))
+ needle === '' ||
+ q.queen_number.toLowerCase().includes(needle) ||
+ (q.subspecies && q.subspecies.toLowerCase().includes(needle)) ||
+ (q.mother?.queen_number && q.mother.queen_number.toLowerCase().includes(needle))
 
  if (!matchesSearch) return false
 
@@ -1004,7 +1007,7 @@ export default function QueensPage() {
  />
  <input
  type="text"
- placeholder="Search by queen number or subspecies..."
+ placeholder="Search by queen number, mother, or subspecies..."
  value={searchTerm}
  onChange={(e) => setSearchTerm(e.target.value)}
  className="w-full pl-10 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
