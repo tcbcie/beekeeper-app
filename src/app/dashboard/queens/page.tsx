@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown, GitBranch } from 'lucide-react'
+import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown, GitBranch, GitCompareArrows } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
@@ -56,6 +56,20 @@ export default function QueensPage() {
  const [batches, setBatches] = useState<Batch[]>([])
  const [showLineage, setShowLineage] = useState(false)
  const [deleting, setDeleting] = useState(false)
+ // Comparison selection — persisted in sessionStorage so it survives
+ // back-navigation from the compare page without leaking across tabs.
+ const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
+  if (typeof window === 'undefined') return new Set()
+  try {
+   const raw = sessionStorage.getItem('queen-compare-selection')
+   if (!raw) return new Set()
+   const parsed = JSON.parse(raw)
+   return new Set(Array.isArray(parsed) ? parsed : [])
+  } catch {
+   return new Set()
+  }
+ })
+ const COMPARE_MAX = 4
  const [formData, setFormData] = useState<QueenFormData>({
  queen_number: '',
  birth_date: '',
@@ -72,6 +86,38 @@ export default function QueensPage() {
  father_id: '',
  batch_id: '',
  })
+
+ // Persist selection so back-navigation from /compare restores the same ticks.
+ useEffect(() => {
+  if (typeof window === 'undefined') return
+  try {
+   sessionStorage.setItem('queen-compare-selection', JSON.stringify([...selectedIds]))
+  } catch {
+   // sessionStorage full or unavailable — selection just won't persist.
+  }
+ }, [selectedIds])
+
+ const toggleSelect = useCallback((id: string) => {
+  setSelectedIds((prev) => {
+   const next = new Set(prev)
+   if (next.has(id)) {
+    next.delete(id)
+   } else {
+    if (next.size >= COMPARE_MAX) {
+     toast.error(`You can compare up to ${COMPARE_MAX} queens at once`)
+     return prev
+    }
+    next.add(id)
+   }
+   return next
+  })
+ }, [toast])
+
+ const handleCompare = useCallback(() => {
+  if (selectedIds.size < 2) return
+  const ids = [...selectedIds].slice(0, COMPARE_MAX).join(',')
+  router.push(`/dashboard/queens/compare?ids=${ids}`)
+ }, [selectedIds, router])
 
  const fetchQueens = useCallback(async (userIdParam?: string) => {
  const currentUserId = userIdParam || userId
@@ -607,6 +653,18 @@ export default function QueensPage() {
  <div className="flex justify-between items-center">
  <h1 className="text-3xl font-bold text-foreground">Queens 👑</h1>
  <div className="flex gap-2">
+ <Button
+ onClick={handleCompare}
+ disabled={selectedIds.size < 2}
+ tone="neutral"
+ className={`px-4 py-2 rounded-lg font-medium flex items-center gap-2 min-h-[48px] border ${
+  selectedIds.size >= 2
+   ? 'bg-forest-600 dark:bg-forest-500 text-white border-forest-700 dark:border-forest-600 hover:bg-forest-700 dark:hover:bg-forest-600'
+   : 'bg-surface-secondary text-text-tertiary border-border cursor-not-allowed opacity-60'
+ }`}
+ >
+ <GitCompareArrows size={16} /> Compare{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}
+ </Button>
  <Link href="/dashboard/queens/lineage">
  <Button
  tone="neutral"
@@ -967,6 +1025,9 @@ export default function QueensPage() {
  <table className="min-w-full divide-y divide-border">
  <thead className="bg-surface-secondary">
  <tr>
+ <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase w-12">
+ <span className="sr-only">Select for comparison</span>
+ </th>
  <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
  Actions
  </th>
@@ -1006,6 +1067,15 @@ export default function QueensPage() {
  : 'hover:bg-surface-secondary'
  }`}
  >
+ <td className="px-4 py-4 whitespace-nowrap w-12">
+ <input
+ type="checkbox"
+ checked={selectedIds.has(queen.id)}
+ onChange={() => toggleSelect(queen.id)}
+ aria-label={`Select queen ${queen.queen_number} for comparison`}
+ className="w-5 h-5 rounded border-border text-forest-600 focus:ring-2 focus:ring-forest-500 cursor-pointer"
+ />
+ </td>
  <td className="px-6 py-4 whitespace-nowrap text-sm flex gap-2">
  <Button
  onClick={() => handleEdit(queen)}
