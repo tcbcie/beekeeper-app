@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown, GitBranch, GitCompareArrows } from 'lucide-react'
+import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown, GitBranch, GitCompareArrows, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
@@ -16,6 +16,57 @@ import Button from '@/components/ui/Button'
 // in one place. Selection persistence key kept alongside for the same reason.
 const COMPARE_MAX = 4
 const COMPARE_SELECTION_STORAGE_KEY = 'queen-compare-selection'
+
+// Column keys the queens table supports sorting on. Actions, Colour, and Hive
+// are intentionally omitted — they either carry no natural order (actions) or
+// would produce a sort the user doesn't think of as "sortable" (marking colour
+// is a visual tag, not an ordered attribute).
+type SortKey = 'queen_number' | 'mother' | 'age' | 'apiary' | 'status'
+
+// Priority order for status so sorting groups by liveness rather than
+// alphabetically. Lower index = "more alive".
+const STATUS_PRIORITY: Record<string, number> = {
+  active: 0,
+  cell: 1,
+  retired: 2,
+  dead: 3,
+}
+
+interface SortableThProps {
+  label: string
+  colKey: SortKey
+  sortKey: SortKey | null
+  sortDir: 'asc' | 'desc'
+  onToggle: (key: SortKey) => void
+}
+
+// A <th> that owns its click handler and draws the current sort state as an
+// inline arrow. Extracted so the five sortable headers stay terse and the
+// keyboard/ARIA wiring lives in exactly one place.
+function SortableTh({ label, colKey, sortKey, sortDir, onToggle }: SortableThProps) {
+  const isActive = sortKey === colKey
+  const ariaSort = !isActive ? 'none' : sortDir === 'asc' ? 'ascending' : 'descending'
+  const Icon = !isActive ? ArrowUpDown : sortDir === 'asc' ? ArrowUp : ArrowDown
+  return (
+    <th
+      scope="col"
+      aria-sort={ariaSort}
+      className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase"
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(colKey)}
+        className={`inline-flex items-center gap-1.5 min-h-[32px] hover:text-foreground focus:outline-none focus:text-foreground transition-colors ${
+          isActive ? 'text-foreground' : ''
+        }`}
+        aria-label={`Sort by ${label}`}
+      >
+        <span>{label}</span>
+        <Icon size={14} className={isActive ? 'text-forest-600 dark:text-forest-400' : 'text-text-tertiary/60'} />
+      </button>
+    </th>
+  )
+}
 
 const getInvalidLineageParentIds = (queens: Queen[], queenId: string): Set<string> => {
  const invalidIds = new Set<string>([queenId])
@@ -61,6 +112,9 @@ export default function QueensPage() {
  const [batches, setBatches] = useState<Batch[]>([])
  const [showLineage, setShowLineage] = useState(false)
  const [deleting, setDeleting] = useState(false)
+ // Table sorting — null key means "natural order from the fetch query".
+ const [sortKey, setSortKey] = useState<SortKey | null>(null)
+ const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
  // Comparison selection — persisted in sessionStorage so it survives
  // back-navigation from the compare page without leaking across tabs.
  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
@@ -140,6 +194,19 @@ export default function QueensPage() {
   const ids = [...selectedIds].slice(0, COMPARE_MAX).join(',')
   router.push(`/dashboard/queens/compare?ids=${ids}`)
  }, [selectedIds, router])
+
+ // Click a column header: first click sorts ascending, clicking the same
+ // header again flips direction, clicking a different header resets to asc.
+ const toggleSort = useCallback((key: SortKey) => {
+  setSortKey((prevKey) => {
+   if (prevKey === key) {
+    setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    return prevKey
+   }
+   setSortDir('asc')
+   return key
+  })
+ }, [])
 
  const fetchQueens = useCallback(async (userIdParam?: string) => {
  const currentUserId = userIdParam || userId
@@ -591,7 +658,7 @@ export default function QueensPage() {
  'Status',
  'Performance Notes',
  ],
- ...filteredQueens.map((q) => [
+ ...sortedQueens.map((q) => [
  escapeCSV(q.queen_number),
  escapeCSV(q.birth_date),
  escapeCSV(calculateQueenAge(q.birth_date)),
@@ -649,6 +716,49 @@ export default function QueensPage() {
  return true
  }
  })
+
+ // Apply column sort. Rows with a null/blank sort value always sink to the
+ // bottom regardless of direction, so direction only flips the comparison
+ // between rows that actually have data — otherwise "asc" and "desc" would
+ // shuffle blanks to the top, which users never want.
+ const sortedQueens = sortKey
+ ? [...filteredQueens].sort((a, b) => {
+ const dir = sortDir === 'asc' ? 1 : -1
+ let av: string | number | null = null
+ let bv: string | number | null = null
+ switch (sortKey) {
+ case 'queen_number':
+ av = a.queen_number || null
+ bv = b.queen_number || null
+ break
+ case 'mother':
+ av = a.mother?.queen_number || null
+ bv = b.mother?.queen_number || null
+ break
+ case 'age':
+ // Older birth = larger age. Sort on the timestamp and invert so
+ // "asc" reads as youngest-first (smallest age).
+ av = a.birth_date ? -new Date(a.birth_date).getTime() : null
+ bv = b.birth_date ? -new Date(b.birth_date).getTime() : null
+ break
+ case 'apiary':
+ av = a.hives?.apiaries?.name || null
+ bv = b.hives?.apiaries?.name || null
+ break
+ case 'status':
+ av = a.status ? (STATUS_PRIORITY[a.status] ?? 99) : null
+ bv = b.status ? (STATUS_PRIORITY[b.status] ?? 99) : null
+ break
+ }
+ if (av == null && bv == null) return 0
+ if (av == null) return 1 // nulls last
+ if (bv == null) return -1
+ if (typeof av === 'number' && typeof bv === 'number') {
+ return (av - bv) * dir
+ }
+ return String(av).localeCompare(String(bv), undefined, { numeric: true, sensitivity: 'base' }) * dir
+ })
+ : filteredQueens
 
  // Summary stats (computed from ALL queens so user can see what's hidden by filters)
  const activeQueens = queens.filter(q => q.status === 'active').length
@@ -1056,31 +1166,21 @@ export default function QueensPage() {
  <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
  Actions
  </th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
- Queen Number
- </th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
- Mother
- </th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
- Age
- </th>
+ <SortableTh label="Queen Number" colKey="queen_number" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+ <SortableTh label="Mother" colKey="mother" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+ <SortableTh label="Age" colKey="age" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
  <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
  Color
  </th>
  <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
  Hive
  </th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
- Apiary
- </th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
- Status
- </th>
+ <SortableTh label="Apiary" colKey="apiary" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+ <SortableTh label="Status" colKey="status" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
  </tr>
  </thead>
  <tbody className="divide-y divide-border">
- {filteredQueens.map((queen) => (
+ {sortedQueens.map((queen) => (
  <tr
  key={queen.id}
  ref={(el) => {
