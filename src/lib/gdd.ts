@@ -1,5 +1,10 @@
 // Shared GDD (Growing Degree Days) utilities
 // Extracted from GDDTracker.tsx to avoid duplication
+//
+// NOTE: getSeasonalMultiplier, calculateGDDFromDaily, and calculateForagingHours
+// are also duplicated in public/embed/tcbc-research-widget.js (vanilla JS).
+// If you change the formulas here, update the widget too.
+// See: docs/features/tcbc-wordpress-research-widget.md
 
 // --- Types ---
 
