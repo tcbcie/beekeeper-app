@@ -21,11 +21,12 @@ export default function EmbedLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="bg-background text-foreground">
-      <main className="px-3 py-4 sm:px-5 sm:py-5">
-        {children}
-      </main>
-      <IframeHeightReporter />
-    </div>
+    <IframeHeightReporter>
+      <div className="bg-background text-foreground">
+        <main className="px-3 py-4 sm:px-5 sm:py-5">
+          {children}
+        </main>
+      </div>
+    </IframeHeightReporter>
   )
 }
