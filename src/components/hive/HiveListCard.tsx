@@ -50,10 +50,11 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {hive.qr_tag_code && (
  <span
  title={`QR tag ${hive.qr_tag_code}`}
- className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-surface-secondary text-text-primary border border-border"
+ className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-surface-secondary text-text-primary border border-border max-w-[10rem] whitespace-nowrap"
  >
- <QrCode size={12} />
- QR: {hive.qr_tag_code}
+ <QrCode size={12} className="flex-shrink-0" />
+ <span className="flex-shrink-0">QR:</span>
+ <span className="truncate">{hive.qr_tag_code}</span>
  </span>
  )}
  </h3>

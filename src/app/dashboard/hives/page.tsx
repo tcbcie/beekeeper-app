@@ -223,11 +223,19 @@ export default function HivesPage() {
  })
  }
 
- // Batch query for QR tags assigned to these hives
- const { data: qrTagsData } = await supabase
+ // Batch query for QR tags assigned to these hives.
+ // Order deterministically so the "most recently assigned" tag wins
+ // when a hive has multiple rows (prevents flickering codes on reload).
+ const { data: qrTagsData, error: qrTagsError } = await supabase
  .from('qr_tags')
- .select('hive_id, code')
+ .select('hive_id, code, assigned_at, created_at')
  .in('hive_id', hiveIds)
+ .order('assigned_at', { ascending: false, nullsFirst: false })
+ .order('created_at', { ascending: false, nullsFirst: false })
+
+ if (qrTagsError) {
+ console.error('Error fetching qr_tags for hive cards:', qrTagsError)
+ }
 
  const qrTagByHive = new Map<string, string>()
  qrTagsData?.forEach(tag => {
@@ -380,7 +388,7 @@ export default function HivesPage() {
  last_record: lastRecord,
  last_inspection_date: lastInspectionByHive.get(hive.id) || null,
  active_tasks_count: activeTasksByHive.get(hive.id) || 0,
- qr_tag_code: qrTagByHive.get(hive.id) || null,
+ qr_tag_code: qrTagByHive.get(hive.id) ?? null,
  }
  })
 
