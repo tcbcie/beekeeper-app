@@ -60,14 +60,33 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION: packageJson.version,
   },
   async headers() {
+    // Hosts allowed to iframe /embed/* pages.
+    // CSP frame-ancestors is the modern replacement for X-Frame-Options ALLOW-FROM
+    // and is what gates the TCBC WordPress embed.
+    // See: docs/features/tcbc-wordpress-research-widget.md
+    const embedFrameAncestors = "frame-ancestors 'self' https://www.tcbc.ie https://tcbc.ie"
+
     return [
       {
-        source: '/(.*)',
+        // Catch-all security headers for everything except /embed/*
+        // (path-to-regexp negative lookahead — embed routes get their own block below).
+        source: '/:path((?!embed/|embed$).*)',
         headers: [
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+        ],
+      },
+      {
+        // Iframe-embeddable routes — keep the other hardening headers but
+        // swap X-Frame-Options DENY for a CSP that whitelists allowed parent origins.
+        source: '/embed/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'Content-Security-Policy', value: embedFrameAncestors },
         ],
       },
     ];
