@@ -707,7 +707,9 @@ export default function CommunityMapPage() {
         // Build popup title and footer based on confirmation status
         const popupTitle = match
           ? (match.confirmed ? 'Confirmed DCA' : 'Denied DCA')
-          : 'Predicted DCA'
+          : pred.isFallback
+            ? 'Fallback DCA Guess'
+            : 'Predicted DCA'
         const titleColour = match ? (match.confirmed ? '#059669' : '#9ca3af') : '#e11d48'
 
         let footerHtml: string
@@ -715,6 +717,8 @@ export default function CommunityMapPage() {
           const statusLabel = match.confirmed ? 'Confirmed' : 'Denied'
           const statusColour = match.confirmed ? '#059669' : '#9ca3af'
           footerHtml = `<div style="font-size: 10px; color: ${statusColour}; margin-top: 4px;">${statusLabel} on ${escapeHtml(match.observation_date)}</div>`
+        } else if (pred.isFallback) {
+          footerHtml = `<div style="font-size: 10px; color: #9ca3af; margin-top: 4px;">Low-confidence fallback hotspot for this apiary</div>`
         } else {
           footerHtml = `<div style="display: flex; gap: 6px; margin-top: 6px;">
             <button onclick="window.__dcaConfirm(${pred.latitude}, ${pred.longitude}, true)" style="font-size: 10px; padding: 2px 8px; border-radius: 4px; border: 1px solid #059669; background: #ecfdf5; color: #059669; cursor: pointer;">Drones seen</button>
@@ -963,8 +967,14 @@ export default function CommunityMapPage() {
             {dca.error && (
               <p className="text-xs text-red-500 mt-1">{dca.error}</p>
             )}
-            {dca.predictions.length > 0 && (
+            {!dca.error && dca.runStatus === 'success' && dca.predictions.length > 0 && (
               <p className="text-xs text-rose-600 mt-1">{dca.predictions.length} area{dca.predictions.length !== 1 ? 's' : ''} found</p>
+            )}
+            {!dca.error && dca.runStatus === 'fallback' && dca.predictions.length > 0 && (
+              <p className="text-xs text-amber-600 mt-1">Showing a low-confidence fallback hotspot for this selection.</p>
+            )}
+            {!dca.error && dca.runStatus === 'empty' && (
+              <p className="text-xs text-text-secondary mt-1">No DCA hotspot could be generated for this selection.</p>
             )}
           </div>
         )}

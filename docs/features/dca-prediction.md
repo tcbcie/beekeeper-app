@@ -44,7 +44,7 @@ Confidence is based on the number and strength of independent signals rather tha
 
 - **High** - several strong signals, cross-apiary support, and no flat or fallback-heavy context
 - **Medium** - moderate support from multiple signals
-- **Low** - best local guess only, weak support, flat terrain, or fallback-heavy conditions
+- **Low** - best local guess only, weak support, flat terrain, fallback-heavy conditions, or an explicit preserved fallback hotspot
 
 Display radius remains:
 
@@ -61,6 +61,7 @@ Display radius remains:
 - User selects apiaries and clicks `Predict DCAs`
 - Predicted hotspots appear as rose circles with dashed flyway lines from contributing apiaries
 - Popup content includes score, confidence, contributing apiaries, and a compact `Signals:` summary showing the strongest landscape evidence
+- When thresholding would otherwise remove every result, the panel can still show a low-confidence fallback hotspot instead of silently showing nothing
 
 ## Technical Details
 
@@ -90,12 +91,14 @@ Beekeepers can still confirm or deny DCA hotspots from the map popups.
 - Clustered or recent confirmations reinforce a hotspot more strongly than isolated or stale records
 - Negative confirmations suppress score and confidence locally, but do not act as absolute bans
 - Recent positive confirmations can still seed a plausible hotspot when no terrain-generated candidate lands nearby
+- A valid selected apiary can preserve one low-confidence fallback hotspot if normal filtering would otherwise return no visible result
 - Confirmations remain user-private only
 
 ## Edge Cases
 
 - **No apiaries with coordinates:** DCA toggle remains hidden
 - **Flat terrain:** The engine still returns ranked guesses, but confidence is deliberately held down
+- **Threshold collapse:** If normal filtering removes every candidate for a valid selected apiary, the strongest candidate can be preserved as a low-confidence fallback
 - **Sparse support:** Single-apiary candidates usually remain low confidence
 - **API failure:** Error message in the selector panel and no predictions shown
 - **10+ apiaries selected:** First 10 are used
