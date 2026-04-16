@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ExternalLink, MoreVertical, ArchiveRestore, Scale, Clock } from 'lucide-react'
+import { ExternalLink, MoreVertical, ArchiveRestore, Scale, Clock, QrCode } from 'lucide-react'
 import type { Hive } from '@/types/hive'
 import Button from '@/components/ui/Button'
 
@@ -45,6 +45,15 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {hive.wolf_scale_id && (
  <span title="Wolf Waagen scale connected">
  <Scale size={18} className="text-blue-600" />
+ </span>
+ )}
+ {hive.qr_tag_code && (
+ <span
+ title={`QR tag ${hive.qr_tag_code}`}
+ className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-surface-secondary text-text-primary border border-border"
+ >
+ <QrCode size={12} />
+ QR: {hive.qr_tag_code}
  </span>
  )}
  </h3>
