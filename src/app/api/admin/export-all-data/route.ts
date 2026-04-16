@@ -81,6 +81,7 @@ interface MetadataFunctionRow {
 interface MetadataViewRow {
   view_name: string
   view_definition: string
+  depends_on: string[] | null
 }
 
 interface StorageBucketRow {
@@ -247,6 +248,32 @@ async function runSafeSelect<T>(query: string): Promise<T[]> {
   }
 
   return data as T[]
+}
+
+function topoSortViews(views: MetadataViewRow[]): MetadataViewRow[] {
+  const byName = new Map(views.map(v => [v.view_name, v]))
+  const visited = new Set<string>()
+  const visiting = new Set<string>()
+  const result: MetadataViewRow[] = []
+
+  function visit(name: string) {
+    if (visited.has(name) || visiting.has(name)) return
+    const view = byName.get(name)
+    if (!view) return
+    visiting.add(name)
+    for (const dep of view.depends_on ?? []) {
+      if (dep !== name && byName.has(dep)) visit(dep)
+    }
+    visiting.delete(name)
+    visited.add(name)
+    result.push(view)
+  }
+
+  for (const view of [...views].sort((a, b) => a.view_name.localeCompare(b.view_name))) {
+    visit(view.view_name)
+  }
+
+  return result
 }
 
 function parseExportMode(rawBody: string): AdminExportMode | null {
@@ -629,14 +656,36 @@ export async function POST(request: NextRequest) {
       ORDER BY p.proname, pg_get_function_identity_arguments(p.oid)
     `)
 
-    const viewMetadata = await runSafeSelect<MetadataViewRow>(`
+    const viewMetadataRaw = await runSafeSelect<MetadataViewRow>(`
       SELECT
-        viewname AS view_name,
-        definition AS view_definition
-      FROM pg_views
-      WHERE schemaname = '${PUBLIC_SCHEMA}'
-      ORDER BY viewname
+        v.viewname AS view_name,
+        v.definition AS view_definition,
+        COALESCE(
+          ARRAY(
+            SELECT DISTINCT dep_c.relname
+            FROM pg_rewrite r
+            JOIN pg_depend d
+              ON d.objid = r.oid
+              AND d.classid = 'pg_rewrite'::regclass
+              AND d.refobjid <> c.oid
+            JOIN pg_class dep_c
+              ON dep_c.oid = d.refobjid
+              AND dep_c.relkind IN ('v', 'm')
+            JOIN pg_namespace dep_n
+              ON dep_n.oid = dep_c.relnamespace
+              AND dep_n.nspname = '${PUBLIC_SCHEMA}'
+            WHERE r.ev_class = c.oid
+          ),
+          ARRAY[]::text[]
+        ) AS depends_on
+      FROM pg_views v
+      JOIN pg_namespace n ON n.nspname = v.schemaname
+      JOIN pg_class c ON c.relname = v.viewname AND c.relnamespace = n.oid
+      WHERE v.schemaname = '${PUBLIC_SCHEMA}'
+      ORDER BY v.viewname
     `)
+
+    const viewMetadata = topoSortViews(viewMetadataRaw)
 
     let authUsers: AuthUserSeedRow[] = []
     let authUsersExportError: string | null = null

@@ -4,7 +4,12 @@
 
 Embed HiveCraic's research / GDD functionality into the existing TCBC WordPress site at [www.tcbc.ie](https://www.tcbc.ie) so visitors can see current Galway-region Growing Degree Day data, what's blooming now, and the week's foraging outlook — without requiring a HiveCraic account.
 
-Implemented as a drop-in JavaScript widget backed by a new public Supabase view scoped to the Galway bounding box. No WordPress plugin required — a short `functions.php` shortcode and a `<script>` tag on the relevant page.
+Two complementary delivery modes share the same backend (a public Supabase view scoped to the Galway bounding box):
+
+1. **Vanilla JS card widget** — a single ~13 KB script (`public/embed/tcbc-research-widget.js`) that drops three summary cards (current GDD, blooming now, week's forage outlook) into any page via a `<script>` tag and target div. Lightweight, no iframe.
+2. **Full iframe embed** — `/embed/research/[region]` renders the full `PublicGDDTab` (a slimmed-down clone of the in-app `GDDDataTab`) inside a minimal Next.js layout. Drops into WordPress with a single `<iframe>` and gives TCBC visitors the same accumulation chart, phenology comparison and data table that authenticated HiveCraic users see.
+
+No WordPress plugin required for either — a short `functions.php` shortcode and a `<script>` or `<iframe>` tag on the relevant page.
 
 ## Goals
 
@@ -27,16 +32,21 @@ Implemented as a drop-in JavaScript widget backed by a new public Supabase view 
 ## Architecture
 
 ```
-┌─────────────────────┐          ┌─────────────────────┐
-│  www.tcbc.ie        │          │  HiveCraic (Vercel) │
-│  (WordPress)        │          │                     │
-│                     │          │                     │
-│  [tcbc_gdd_widget]  │ ───────► │  Supabase view:     │
-│  shortcode          │  HTTPS   │  public_galway_gdd  │
-│                     │          │  (anon-readable)    │
-│  tcbc-research-     │          │                     │
-│  widget.js (CDN)    │          │                     │
-└─────────┬───────────┘          └─────────────────────┘
+┌─────────────────────┐          ┌─────────────────────────────┐
+│  www.tcbc.ie        │          │  HiveCraic (Vercel)         │
+│  (WordPress)        │          │                             │
+│                     │          │  Mode A: card widget        │
+│  [tcbc_gdd_widget]  │ ───────► │    public/embed/            │
+│   <script>          │  HTTPS   │    tcbc-research-widget.js  │
+│                     │          │                             │
+│  [tcbc_gdd_iframe]  │ ───────► │  Mode B: iframe page        │
+│   <iframe>          │  HTTPS   │    /embed/research/galway   │
+│                     │          │    (PublicGDDTab clone)     │
+│                     │          │                             │
+│                     │ ───────► │  Supabase view:             │
+│                     │  HTTPS   │    public_galway_gdd        │
+│                     │          │    (anon-readable)          │
+└─────────┬───────────┘          └─────────────────────────────┘
           │
           │  HTTPS
           ▼
@@ -46,6 +56,8 @@ Implemented as a drop-in JavaScript widget backed by a new public Supabase view 
 │   Galway centroid)  │
 └─────────────────────┘
 ```
+
+Both modes hit the same Supabase view and the same Open-Meteo endpoints; they differ only in how they render. The card widget is best as a sidebar/teaser, the iframe embed as a "Research" tab on the TCBC site.
 
 ## Data sources
 
@@ -215,32 +227,105 @@ Or with overrides:
 [tcbc_gdd_widget region="galway" theme="light"]
 ```
 
+## Mode B — Full iframe embed
+
+### Source
+
+- `src/components/embed/PublicGDDTab.tsx` — slimmed-down clone of `src/components/research/GDDDataTab.tsx` for unauthenticated use. Reads only from `public_galway_gdd`, drops the "Add Records" / "Apiary" / "Nearby Data" / "Events" / "Share" affordances, and takes a hard-coded region centroid instead of an apiary GPS. Keeps the year/vegetation/period filters, accumulation chart, phenology chart, temperature overlay, average monthly temps chart, vegetation info modal and formula footnote.
+- `src/app/embed/layout.tsx` — minimal iframe layout (no app header, footer, nav, install prompt or auth gate).
+- `src/app/embed/research/[region]/page.tsx` — server component that maps the region slug to a `{ viewName, label, latitude, longitude }` and renders `PublicGDDTab`. Uses `generateStaticParams` + `dynamicParams = false` so only known regions resolve; everything else 404s.
+
+### Region routing
+
+```
+/embed/research/galway   →  public_galway_gdd, lat 53.2707, lon -9.0568
+```
+
+Add new regions by:
+1. Creating a `public_<region>_gdd` view (same shape as `public_galway_gdd`).
+2. Adding an entry to the `REGIONS` map in `src/app/embed/research/[region]/page.tsx`.
+
+### Framing rules
+
+`next.config.ts` previously set `X-Frame-Options: DENY` for every route. The header rules are now split:
+
+- `/:path((?!embed/|embed$).*)` — keeps the original DENY for the entire app.
+- `/embed/:path*` — drops X-Frame-Options entirely and instead sets `Content-Security-Policy: frame-ancestors 'self' https://www.tcbc.ie https://tcbc.ie`. CSP `frame-ancestors` is the modern replacement for the deprecated `X-Frame-Options: ALLOW-FROM`, and supports multiple allowed origins.
+
+To allow another origin (e.g. a staging WP host) just extend the `embedFrameAncestors` constant in `next.config.ts`.
+
+### WordPress shortcode for the iframe
+
+```php
+// Shortcode: [tcbc_gdd_iframe region="galway" height="900"]
+add_shortcode( 'tcbc_gdd_iframe', function( $atts ) {
+  $atts = shortcode_atts( [
+    'region' => 'galway',
+    'height' => '900',
+  ], $atts, 'tcbc_gdd_iframe' );
+
+  $region = esc_attr( $atts['region'] );
+  $height = (int) $atts['height'];
+
+  return sprintf(
+    '<iframe src="https://www.hivecraic.com/embed/research/%s" ' .
+    'style="width:100%%;border:0;display:block;" height="%d" ' .
+    'loading="lazy" title="HiveCraic GDD Research"></iframe>',
+    $region,
+    $height
+  );
+} );
+```
+
+Usage inside any WordPress page/post:
+
+```
+[tcbc_gdd_iframe]
+```
+
+The iframe is intentionally fixed-height (no auto-resize): the embed page is mostly a single chart and a table, so a generous default (~900px) avoids the postMessage/iframe-resizer dance.
+
 ## Files
 
 ### Created
-- `public/embed/tcbc-research-widget.js` — the widget itself
-- `public/embed/tcbc-research-widget.css` — optional standalone CSS (or inlined into the JS)
-- `sql/migrations/YYYYMMDD_public_galway_gdd_view.sql` — new view + grant (applied via MCP, not raw SQL file — see CLAUDE.md)
+- `public/embed/tcbc-research-widget.js` — Mode A card widget
+- `public/embed/tcbc-research-widget-preview.html` — local preview for Mode A
+- `src/components/embed/PublicGDDTab.tsx` — Mode B React component
+- `src/app/embed/layout.tsx` — Mode B minimal layout
+- `src/app/embed/research/[region]/page.tsx` — Mode B route
 - `docs/features/tcbc-wordpress-research-widget.md` — this document
+- `public_galway_gdd` view (applied via Supabase MCP — see CLAUDE.md)
 
 ### Modified
-- `src/lib/gdd.ts` — add comment header pointing at the embed widget copy so future edits stay in sync
+- `src/lib/gdd.ts` — comment header pointing at the Mode A widget copy
+- `next.config.ts` — split header rules so `/embed/*` allows framing from tcbc.ie via CSP
 
 ### External (not in this repo)
-- TCBC `functions.php` snippet (provided to whoever manages the WP site)
+- TCBC `functions.php` snippet for `[tcbc_gdd_widget]` and/or `[tcbc_gdd_iframe]`
 
 ## Tasks
 
+### Mode A — vanilla JS card widget
 - [x] Apply `public_galway_gdd` view migration via Supabase MCP
 - [x] Verify view returns data — 60 records, 4 cities, 30 vegetation types, years 2025–2026
-- [ ] Add `https://www.tcbc.ie` and `https://tcbc.ie` to Supabase CORS allow-list in project settings (**manual — Supabase dashboard**)
 - [x] Write `public/embed/tcbc-research-widget.js` — three cards, Chart.js for the forage sparkline
 - [x] Copy relevant pure functions from `src/lib/gdd.ts` into the widget with a sync comment
 - [x] Create preview HTML (`public/embed/tcbc-research-widget-preview.html`) for local testing
-- [ ] User: smoke-test the preview file via `npm run dev` (visit `/embed/tcbc-research-widget-preview.html`)
-- [ ] Deploy to Vercel — verify `https://www.hivecraic.com/embed/tcbc-research-widget.js` is cacheable and fast
-- [ ] Hand over the `functions.php` snippet + usage instructions to the TCBC WP admin
-- [ ] Smoke-test the embedded widget on a staging WP page before adding it to a live page
+
+### Mode B — full iframe embed
+- [x] Build `PublicGDDTab` (slimmed-down `GDDDataTab` clone) at `src/components/embed/PublicGDDTab.tsx`
+- [x] Add minimal `src/app/embed/layout.tsx`
+- [x] Add `src/app/embed/research/[region]/page.tsx` with a region map (Galway only for now)
+- [x] Update `next.config.ts` to allow framing of `/embed/*` from tcbc.ie via CSP `frame-ancestors`
+- [x] Verify `vegetation_info` table is anon-readable (used by the modal inside the iframe)
+
+### Pre-launch (manual / external)
+- [ ] Add `https://www.tcbc.ie` and `https://tcbc.ie` to Supabase CORS allow-list in project settings (**manual — Supabase dashboard**)
+- [ ] User: smoke-test Mode A locally via `npm run dev` (visit `/embed/tcbc-research-widget-preview.html`)
+- [ ] User: smoke-test Mode B locally via `npm run dev` (visit `/embed/research/galway`)
+- [ ] Deploy to Vercel — verify `https://www.hivecraic.com/embed/tcbc-research-widget.js` is cacheable and that `https://www.hivecraic.com/embed/research/galway` returns the expected `Content-Security-Policy: frame-ancestors …` header
+- [ ] Hand over the `functions.php` snippet(s) + usage instructions to the TCBC WP admin
+- [ ] Smoke-test the embedded widget / iframe on a staging WP page before adding to a live page
 - [ ] Update the review section below once shipped
 
 ## Open questions
@@ -281,10 +366,16 @@ This matches the intuition that beekeepers log a bloom start but rarely log the 
 
 **GDD sync** — `getSeasonalMultiplier`, `calculateGDDFromDaily`, and `calculateForagingHours` are duplicated verbatim from `src/lib/gdd.ts`. A header comment in the widget points at the source file. If the TypeScript version changes, the widget must be updated manually — flagged for future extraction into a shared package if other embeds emerge.
 
+**Mode B — iframe embed** — `PublicGDDTab` is a server-rendered React component (well, a `'use client'` component rendered inside a server page) that re-uses the in-app `VegetationInfoModal` and runs the same Open-Meteo + Supabase logic as the dashboard `GDDDataTab`. Because it's a Next.js page, no formula duplication is needed: it imports from the same TypeScript modules as the dashboard. The trade-off vs Mode A is bundle size (full React + Chart.js + react-chartjs-2 are loaded inside the iframe) and an extra network round-trip for the HTML. For TCBC's traffic this is fine; the iframe is `loading="lazy"` so it doesn't slow down the host page.
+
+**Framing security** — Browsers ignore `X-Frame-Options` when a `Content-Security-Policy: frame-ancestors` header is present, so the embed-only block in `next.config.ts` deliberately omits `X-Frame-Options` and relies on CSP. This avoids the contradictory-headers footgun where some browsers honour XFO and others honour CSP.
+
 **Preview** — `public/embed/tcbc-research-widget-preview.html` renders the widget twice (light and dark) for local verification. Visit it via `npm run dev` at `/embed/tcbc-research-widget-preview.html`.
 
 ### Still TODO before TCBC go-live
 
-1. **Supabase CORS** — Manually add `https://www.tcbc.ie` and `https://tcbc.ie` to the Supabase project's CORS allow-list via the dashboard. MCP doesn't expose this setting. Without it, the browser will block the REST call from WordPress.
-2. **Vercel deployment** — Push to main, let Vercel build, confirm `https://www.hivecraic.com/embed/tcbc-research-widget.js` is reachable and returns `Content-Type: application/javascript`.
-3. **Hand-off snippet** — Give the TCBC WP admin the `functions.php` shortcode snippet and the `[tcbc_gdd_widget]` usage instructions.
+1. **Supabase CORS** — Manually add `https://www.tcbc.ie` and `https://tcbc.ie` to the Supabase project's CORS allow-list via the dashboard. MCP doesn't expose this setting. Without it, the browser will block the REST call from WordPress *for Mode A*. Mode B (iframe) is unaffected — the Supabase call originates from `www.hivecraic.com` inside the iframe, so it's already in scope of the existing CORS rules.
+2. **Vercel deployment** — Push to main, let Vercel build, then confirm:
+   - `https://www.hivecraic.com/embed/tcbc-research-widget.js` is reachable and returns `Content-Type: application/javascript`.
+   - `https://www.hivecraic.com/embed/research/galway` returns the `PublicGDDTab` HTML and the response carries `Content-Security-Policy: frame-ancestors 'self' https://www.tcbc.ie https://tcbc.ie` and **no** `X-Frame-Options` header.
+3. **Hand-off snippet** — Give the TCBC WP admin the `functions.php` shortcode snippet(s) and usage instructions for `[tcbc_gdd_widget]` (card) and/or `[tcbc_gdd_iframe]` (full embed). They can choose either or both depending on the page.
