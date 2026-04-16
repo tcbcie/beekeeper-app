@@ -12,6 +12,7 @@ export interface DCAPrediction {
   longitude: number
   score: number
   confidence: 'high' | 'medium' | 'low'
+  isFallback: boolean
   radiusKm: number
   contributingApiaries: string[]
   direction: string
@@ -90,6 +91,7 @@ interface ScoredCandidate extends CandidateSeed {
   confirmationMixedEvidence: boolean
   recentPositiveEvidence: boolean
   recentNegativeEvidence: boolean
+  isFallback: boolean
   score: number
 }
 
@@ -557,6 +559,7 @@ function addSupportScores(candidates: ScoredCandidate[]): ScoredCandidate[] {
     return {
       ...candidate,
       supportScore,
+      isFallback: candidate.isFallback,
       score: candidate.score + supportScore,
     }
   })
@@ -611,6 +614,7 @@ function mergePredictions(predictions: ScoredCandidate[]): ScoredCandidate[] {
       recentNegativeEvidence: group.some(candidate => candidate.recentNegativeEvidence),
       injectedByConfirmation: group.some(candidate => candidate.injectedByConfirmation),
       confirmationAnchorScore: Math.max(...group.map(candidate => candidate.confirmationAnchorScore)),
+      isFallback: group.every(candidate => candidate.isFallback),
       isFlatSource: group.every(candidate => candidate.isFlatSource),
       lowContrast: group.every(candidate => candidate.lowContrast),
     })
@@ -662,6 +666,19 @@ function radiusForConfidence(confidence: DCAPrediction['confidence']): number {
   return 1
 }
 
+function selectFallbackCandidate(candidates: ScoredCandidate[]): ScoredCandidate | null {
+  if (candidates.length === 0) return null
+
+  const mergedCandidates = mergePredictions(candidates)
+  if (mergedCandidates.length === 0) return null
+
+  const bestCandidate = [...mergedCandidates].sort((left, right) => right.score - left.score)[0]
+  return {
+    ...bestCandidate,
+    isFallback: true,
+  }
+}
+
 function buildReasonFlags(candidate: ScoredCandidate): string[] {
   const flags: string[] = []
   if (candidate.skylineContrastScore >= 6) flags.push('landscape-supported')
@@ -673,6 +690,7 @@ function buildReasonFlags(candidate: ScoredCandidate): string[] {
   }
   if (candidate.confirmationSuppressionScore >= 4) flags.push('confirmation-suppressed')
   if (candidate.confirmationMixedEvidence) flags.push('mixed-confirmation')
+  if (candidate.isFallback) flags.push('fallback-only')
   if (candidate.isFlatSource || candidate.lowContrast) flags.push('fallback-heavy')
   return flags
 }
@@ -690,6 +708,7 @@ function buildSignalSummary(candidate: ScoredCandidate): string {
     .filter(signal => signal.value > 0)
     .sort((a, b) => b.value - a.value)
 
+  if (candidate.isFallback && signals.length === 0) return 'Fallback local guess'
   if (signals.length === 0) return 'Weak landscape evidence'
   if (signals.length === 1) return signals[0].label
   return `${signals[0].label}, ${signals[1].label}`
@@ -842,6 +861,7 @@ export async function predictDCAs(
         confirmationMixedEvidence: confirmationInfluence.mixedEvidence,
         recentPositiveEvidence: confirmationInfluence.recentPositiveEvidence,
         recentNegativeEvidence: confirmationInfluence.recentNegativeEvidence,
+        isFallback: false,
         supportScore: 0,
         score:
           distanceScore +
@@ -866,17 +886,23 @@ export async function predictDCAs(
     ? MIN_SCORE - MAX_CONFIRMATION_SUPPORT_SCORE
     : MIN_SCORE
 
+  const fallbackCandidate = selectFallbackCandidate(scored)
+
   scored = scored.filter(candidate => candidate.score >= filterThreshold)
   scored = mergePredictions(scored)
+  if (scored.length === 0 && fallbackCandidate) {
+    scored = [fallbackCandidate]
+  }
   scored = scored.slice(0, MAX_RESULTS)
 
   const predictions: DCAPrediction[] = scored.map(candidate => {
-    const confidence = confidenceForCandidate(candidate)
+    const confidence = candidate.isFallback ? 'low' : confidenceForCandidate(candidate)
     return {
       latitude: candidate.latitude,
       longitude: candidate.longitude,
       score: Math.min(Math.round(candidate.score), 100),
       confidence,
+      isFallback: candidate.isFallback,
       radiusKm: radiusForConfidence(confidence),
       contributingApiaries: candidate.apiaryId.split(','),
       direction: DIRECTION_LABELS[candidate.directionIndex],

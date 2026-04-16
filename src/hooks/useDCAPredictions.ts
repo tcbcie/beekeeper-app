@@ -31,6 +31,8 @@ interface CachedResult {
   timestamp: number
 }
 
+type PredictionRunStatus = 'idle' | 'success' | 'fallback' | 'empty'
+
 const CONFIRMATION_DUPLICATE_RADIUS_KM = 0.05
 const CONFIRMATION_DUPLICATE_WINDOW_DAYS = 7
 
@@ -95,6 +97,7 @@ function isValidPrediction(value: unknown): value is DCAPrediction {
     typeof score === 'number' &&
     Number.isFinite(score) &&
     (candidate.confidence === 'high' || candidate.confidence === 'medium' || candidate.confidence === 'low') &&
+    typeof candidate.isFallback === 'boolean' &&
     typeof radiusKm === 'number' &&
     Number.isFinite(radiusKm) &&
     Array.isArray(contributingApiaries) &&
@@ -214,6 +217,7 @@ export function useDCAPredictions(apiaries: Apiary[]) {
   const [confirmations, setConfirmations] = useState<DCAConfirmation[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hasCalculated, setHasCalculated] = useState(false)
   const callIdRef = useRef(0)
   const confirmationsRef = useRef<DCAConfirmation[]>([])
   const pendingConfirmationKeysRef = useRef<Set<string>>(new Set())
@@ -257,6 +261,7 @@ export function useDCAPredictions(apiaries: Apiary[]) {
       setPredictions([])
       setFlyways([])
       setError(null)
+      setHasCalculated(false)
       setLoading(false)
       return
     }
@@ -275,6 +280,7 @@ export function useDCAPredictions(apiaries: Apiary[]) {
       setPredictions(cached.predictions)
       setFlyways(cached.flyways)
       setError(null)
+      setHasCalculated(true)
       return
     }
 
@@ -300,12 +306,14 @@ export function useDCAPredictions(apiaries: Apiary[]) {
 
       setPredictions(result.predictions)
       setFlyways(result.flyways)
+      setHasCalculated(true)
       saveCache(cacheKey, { ...result, timestamp: Date.now() })
     } catch {
       if (callIdRef.current === thisCallId) {
         setError('Failed to calculate DCA predictions. Please try again.')
         setPredictions([])
         setFlyways([])
+        setHasCalculated(false)
       }
     } finally {
       if (callIdRef.current === thisCallId) setLoading(false)
@@ -355,8 +363,17 @@ export function useDCAPredictions(apiaries: Apiary[]) {
     setPredictions([])
     setFlyways([])
     setError(null)
+    setHasCalculated(false)
     setLoading(false)
   }, [])
 
-  return { predictions, flyways, confirmations, loading, error, calculate, clear, confirmDCA }
+  const runStatus: PredictionRunStatus = !hasCalculated
+    ? 'idle'
+    : predictions.length === 0
+      ? 'empty'
+      : predictions.every(prediction => prediction.isFallback)
+        ? 'fallback'
+        : 'success'
+
+  return { predictions, flyways, confirmations, loading, error, calculate, clear, confirmDCA, hasCalculated, runStatus }
 }

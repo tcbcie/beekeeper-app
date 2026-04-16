@@ -235,3 +235,39 @@ Implement phase 3 of the DCA engine redesign by replacing the current lightweigh
 * **Scope Covered:** Phase 3 DCA engine implementation.
 * **Summary of Changes:** The engine in `src/lib/dca-prediction.ts` now converts confirmations into recency-weighted local priors, applies bounded support and suppression directly during candidate scoring, and still allows recent positive confirmations to seed nearby hotspots when terrain generation misses them. The hook in `src/hooks/useDCAPredictions.ts` now removes the old nearest-confirmation score patch, passes `observation_date` into the engine, and uses a `v5` cache namespace keyed by both apiary geometry and confirmation state.
 * **Notes for User:** Please test single and multi-apiary predictions in locations with recent confirmations, stale confirmations, and nearby denials so you can judge whether the revised behaviour feels more stable and less arbitrary.
+
+---
+
+# Task: DCA Fallback Hotspot Fix
+**Date:** 16/04/2026
+**Status:** Completed
+
+## 1. Objective
+Ensure that a valid selected apiary on the community map always returns at least one low-confidence DCA hotspot instead of silently returning nothing, and make the fallback state visible in the existing DCA panel.
+
+## 2. Impact Analysis
+* **Files to Modify:** * `src/lib/dca-prediction.ts`
+  * `src/hooks/useDCAPredictions.ts`
+  * `src/app/dashboard/community-map/page.tsx`
+  * `docs/features/dca-prediction.md`
+  * `docs/features/dca-fallback-hotspot-fix-plan.md`
+* **Simplicity Check:** This stays inside the existing DCA engine, hook, and current map panel. It does not add schema changes, new services, or a broader model rewrite. The fix is limited to preserving a bounded fallback result and making the zero-result or fallback state legible to the user.
+
+## 3. Execution Plan
+*(Agent: STOP and wait for user verification before beginning execution)*
+- [x] **Step 1:** Adjust the DCA engine filtering so a valid selected apiary can preserve its best candidate as a low-confidence fallback when normal thresholding would otherwise remove every result.
+- [x] **Step 2:** Update the result shape and hook flow as needed so fallback-only output is distinguishable from stronger predictions without breaking the current map rendering path.
+- [x] **Step 3:** Update the community-map DCA panel so it communicates whether a fallback hotspot was returned or whether no result could be produced at all.
+- [x] **Step 4:** Update documentation in `docs/features/dca-prediction.md` and capture the implementation intent in `docs/features/dca-fallback-hotspot-fix-plan.md`.
+- [x] **Step 5:** Present the completed fix and prompt you to test the build.
+
+## 4. Post-Task Review
+*(Agent: Fill this out ONLY after all checklist items are complete)*
+* **Root Cause Found (if applicable):** The DCA engine filtered all low-scoring candidates out before the map ever received a result, and the community-map panel had no explicit fallback or zero-result state. For flat or single-apiary locations that made a real apiary appear to have no DCA at all.
+* **Summary of Changes:** Added a bounded fallback path in the DCA engine so the strongest candidate is preserved as an explicit low-confidence hotspot only when normal filtering yields no result. Extended prediction objects with an `isFallback` flag, exposed run status through the hook, updated the community-map popup and selector panel to distinguish fallback guesses from stronger results, and updated the DCA documentation and fix plan.
+* **Notes for User:** No build testing was run by me per repository instruction. Please test the build and verify both normal DCA results and low-confidence fallback results on the community map.
+
+## Review
+* **Scope Covered:** DCA fallback hotspot fix.
+* **Summary of Changes:** The engine in `src/lib/dca-prediction.ts` now preserves one explicit low-confidence fallback hotspot when normal thresholding removes every candidate for a valid selection, instead of silently returning nothing. The hook in `src/hooks/useDCAPredictions.ts` now tracks whether a calculation returned a stronger result, a fallback-only result, or an empty result, and the community map in `src/app/dashboard/community-map/page.tsx` now surfaces that state in the selector panel and popup copy.
+* **Notes for User:** Please test a flat or coastal apiary that previously returned nothing, and compare it against a stronger inland case so you can confirm the app now distinguishes fallback guesses from higher-quality DCA predictions.

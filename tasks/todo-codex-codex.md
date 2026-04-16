@@ -1,27 +1,28 @@
-# Task: DCA Engine Phase 3 Implementation
+# Task: DCA Fallback Hotspot Fix
 **Date:** 16/04/2026
 **Status:** Completed
 
 ## 1. Objective
-Implement phase 3 of the DCA engine redesign by replacing the current lightweight confirmation adjustments with a more disciplined confirmation-prior model, while keeping the existing client-side architecture, Supabase flow, and community-map workflow intact.
+Ensure that a valid selected apiary on the community map always returns at least one low-confidence DCA hotspot instead of silently returning nothing, and make the fallback state visible in the existing DCA panel.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `src/hooks/useDCAPredictions.ts`
-  * `src/lib/dca-prediction.ts`
+* **Files to Modify:** * `src/lib/dca-prediction.ts`
+  * `src/hooks/useDCAPredictions.ts`
+  * `src/app/dashboard/community-map/page.tsx`
   * `docs/features/dca-prediction.md`
-  * `docs/features/dca-engine-phase3-implementation-plan.md`
-* **Simplicity Check:** This phase stays inside the existing hook and prediction engine. It does not add schema changes, backend services, or new map surfaces. The work is limited to improving how existing confirmation data influences ranking, confidence, and cache invalidation.
+  * `docs/features/dca-fallback-hotspot-fix-plan.md`
+* **Simplicity Check:** This stays inside the existing DCA engine, hook, and current map panel. It does not add schema changes, new services, or a broader model rewrite. The fix is limited to preserving a bounded fallback result and making the zero-result or fallback state legible to the user.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [ ] **Step 1:** Refactor confirmation input handling so the engine can use structured confirmation priors, including recency-aware positive support and negative suppression, instead of the current blunt nearby score delta.
-- [ ] **Step 2:** Update candidate scoring and confidence rules so local confirmation density, polarity, and freshness reinforce or suppress hotspots without overwhelming the terrain and landscape signals from phases 1 and 2.
-- [ ] **Step 3:** Update the hook cache key and result post-processing so cached predictions invalidate when local confirmation state changes and the map continues to render the revised predictions cleanly.
-- [ ] **Step 4:** Update documentation in `docs/features/dca-prediction.md` and capture the implementation intent in `docs/features/dca-engine-phase3-implementation-plan.md`.
-- [ ] **Step 5:** Present the completed phase 3 changes and prompt you to test the build.
+- [x] **Step 1:** Adjust the DCA engine filtering so a valid selected apiary can preserve its best candidate as a low-confidence fallback when normal thresholding would otherwise remove every result.
+- [x] **Step 2:** Update the result shape and hook flow as needed so fallback-only output is distinguishable from stronger predictions without breaking the current map rendering path.
+- [x] **Step 3:** Update the community-map DCA panel so it communicates whether a fallback hotspot was returned or whether no result could be produced at all.
+- [x] **Step 4:** Update documentation in `docs/features/dca-prediction.md` and capture the implementation intent in `docs/features/dca-fallback-hotspot-fix-plan.md`.
+- [x] **Step 5:** Present the completed fix and prompt you to test the build.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The current confirmation model still behaves like a small additive patch on top of the engine. It does not account for confirmation age, clustering, or repeated local denials, so it can underuse strong field evidence and overuse weak or stale observations.
-* **Summary of Changes:** Implemented structured confirmation priors inside the DCA engine, including recency-aware support, negative suppression, lightweight positive seeding, and cache invalidation tied to confirmation state. Updated the hook to pass observation dates, removed the old post-processing score patch, updated the DCA feature note, and marked the phase 3 plan as implemented.
-* **Notes for User:** No build testing was run by me per repository instruction. No database schema change was required for this phase.
+* **Root Cause Found (if applicable):** The current engine prefers returning no result over returning a weak but explicit fallback. In low-relief or single-apiary cases this leaves the user with no DCA marker and no useful explanation, even when a low-confidence local guess would be more appropriate.
+* **Summary of Changes:** Implemented a bounded fallback hotspot path inside the DCA engine, added explicit fallback state to predictions, surfaced fallback or empty-result messaging in the community-map panel, and updated the DCA documentation and fallback fix plan.
+* **Notes for User:** No build testing was run by me per repository instruction. No database schema change was required for this fix.
