@@ -223,6 +223,19 @@ export default function HivesPage() {
  })
  }
 
+ // Batch query for QR tags assigned to these hives
+ const { data: qrTagsData } = await supabase
+ .from('qr_tags')
+ .select('hive_id, code')
+ .in('hive_id', hiveIds)
+
+ const qrTagByHive = new Map<string, string>()
+ qrTagsData?.forEach(tag => {
+ if (tag.hive_id && !qrTagByHive.has(tag.hive_id)) {
+ qrTagByHive.set(tag.hive_id, tag.code)
+ }
+ })
+
  // Batch query for all inspections for these hives
  const { data: allInspections } = await supabase
  .from('inspections')
@@ -367,6 +380,7 @@ export default function HivesPage() {
  last_record: lastRecord,
  last_inspection_date: lastInspectionByHive.get(hive.id) || null,
  active_tasks_count: activeTasksByHive.get(hive.id) || 0,
+ qr_tag_code: qrTagByHive.get(hive.id) || null,
  }
  })
 

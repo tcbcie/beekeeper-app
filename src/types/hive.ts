@@ -73,6 +73,7 @@ export interface Hive {
   beep_device_name?: string | null
   wolf_scale_id?: string | null
   wolf_scale_name?: string | null
+  qr_tag_code?: string | null
   configuration_changed_at?: string | null
   configuration_changed_by?: string | null
   configuration_changer?: {
