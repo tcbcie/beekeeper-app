@@ -1,26 +1,27 @@
-# Task: Queen Ledger Expanded Detail Layout
-**Date:** 01/04/2026
+# Task: DCA Engine Phase 3 Implementation
+**Date:** 16/04/2026
 **Status:** Completed
 
 ## 1. Objective
-Compact the Queen Ledger expanded detail row and replace the current sparse equal-panel layout with a denser, clearer information layout.
+Implement phase 3 of the DCA engine redesign by replacing the current lightweight confirmation adjustments with a more disciplined confirmation-prior model, while keeping the existing client-side architecture, Supabase flow, and community-map workflow intact.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `src/components/batches/QueenTrackerTab.tsx`
-  * `docs/features/queen-ledger-expanded-detail-layout-plan.md`
-  * `docs/features/queen-tracker.md`
-* **Simplicity Check:** This remained a focused layout refactor inside the expanded Queen Ledger row. The data, editing behaviour, and outcome controls stayed intact, while only the grouping and presentation of the existing content changed.
+* **Files to Modify:** * `src/hooks/useDCAPredictions.ts`
+  * `src/lib/dca-prediction.ts`
+  * `docs/features/dca-prediction.md`
+  * `docs/features/dca-engine-phase3-implementation-plan.md`
+* **Simplicity Check:** This phase stays inside the existing hook and prediction engine. It does not add schema changes, backend services, or new map surfaces. The work is limited to improving how existing confirmation data influences ranking, confidence, and cache invalidation.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Replace the current four equal-width detail cards with a denser asymmetric layout that gives more room to the editable Outcomes area and less room to sparse read-only fields.
-- [x] **Step 2:** Collapse repetitive single-field stacking into compact key-value grids so the expanded row uses materially less vertical space.
-- [x] **Step 3:** Keep all current editable fields available, but group them into a clearer workflow-oriented layout rather than four parallel data buckets.
-- [x] **Step 4:** Update documentation in `docs/features/queen-tracker.md`
-- [x] **Step 5:** Prompt user to test the build
+- [ ] **Step 1:** Refactor confirmation input handling so the engine can use structured confirmation priors, including recency-aware positive support and negative suppression, instead of the current blunt nearby score delta.
+- [ ] **Step 2:** Update candidate scoring and confidence rules so local confirmation density, polarity, and freshness reinforce or suppress hotspots without overwhelming the terrain and landscape signals from phases 1 and 2.
+- [ ] **Step 3:** Update the hook cache key and result post-processing so cached predictions invalidate when local confirmation state changes and the map continues to render the revised predictions cleanly.
+- [ ] **Step 4:** Update documentation in `docs/features/dca-prediction.md` and capture the implementation intent in `docs/features/dca-engine-phase3-implementation-plan.md`.
+- [ ] **Step 5:** Present the completed phase 3 changes and prompt you to test the build.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The expanded ledger row was still laid out as four equal cards even though the read-only context was sparse and the editable outcomes needed materially more room. That forced the view into unnecessary height and made the working area feel cramped.
-* **Summary of Changes:** Rebuilt the expanded row into a denser two-panel layout, added a compact reference fact strip, folded read-only context into tighter grids, widened the outcomes workspace, and removed the old bottom chip strip.
-* **Notes for User:** No MCP or schema change was needed. Build tests were not run per repository instruction.
+* **Root Cause Found (if applicable):** The current confirmation model still behaves like a small additive patch on top of the engine. It does not account for confirmation age, clustering, or repeated local denials, so it can underuse strong field evidence and overuse weak or stale observations.
+* **Summary of Changes:** Implemented structured confirmation priors inside the DCA engine, including recency-aware support, negative suppression, lightweight positive seeding, and cache invalidation tied to confirmation state. Updated the hook to pass observation dates, removed the old post-processing score patch, updated the DCA feature note, and marked the phase 3 plan as implemented.
+* **Notes for User:** No build testing was run by me per repository instruction. No database schema change was required for this phase.

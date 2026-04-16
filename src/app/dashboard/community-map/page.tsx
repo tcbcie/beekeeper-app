@@ -700,6 +700,9 @@ export default function CommunityMapPage() {
         const apiaryNames = pred.contributingApiaries.length > 0
           ? userApiaries.filter(a => pred.contributingApiaries.includes(a.id)).map(a => escapeHtml(a.name)).join(', ')
           : 'Unknown'
+        const signalSummary = pred.signalSummary
+          ? escapeHtml(pred.signalSummary)
+          : 'Weak landscape evidence'
 
         // Build popup title and footer based on confirmation status
         const popupTitle = match
@@ -731,6 +734,7 @@ export default function CommunityMapPage() {
               <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${confidenceColour}; margin-right: 4px;"></span>
               ${escapeHtml(pred.confidence)} confidence
             </div>
+            <div style="font-size: 10px; opacity: 0.8; margin-top: 4px;">Signals: ${signalSummary}</div>
             <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">From: ${apiaryNames}</div>
             ${footerHtml}
           </div>
@@ -796,8 +800,11 @@ export default function CommunityMapPage() {
   // Global callback for DCA confirmation buttons in Mapbox popups
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(window as any).__dcaConfirm = (lat: number, lng: number, confirmed: boolean) => {
-      dca.confirmDCA(lat, lng, confirmed)
+    ;(window as any).__dcaConfirm = async (lat: number, lng: number, confirmed: boolean) => {
+      const saved = await dca.confirmDCA(lat, lng, confirmed)
+      if (!saved) {
+        console.warn('Failed to save DCA confirmation')
+      }
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return () => { delete (window as any).__dcaConfirm }
