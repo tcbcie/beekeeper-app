@@ -129,11 +129,12 @@ export default function InspectionCard({
                   <button
                     type="button"
                     onClick={() => setQrModalOpen(true)}
-                    className="text-blue-500 hover:text-blue-700 transition-colors"
-                    title={`QR tag: ${hive.qr_tag_code}`}
-                    aria-label="Show QR code"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-surface-secondary text-text-primary border border-border hover:bg-surface-elevated transition-colors max-w-full whitespace-nowrap"
+                    title={`QR tag: ${hive.qr_tag_code} — tap to view`}
+                    aria-label={`Show QR code ${hive.qr_tag_code}`}
                   >
-                    <QrCode size={14} />
+                    <QrCode size={12} className="flex-shrink-0 text-blue-500" />
+                    <span className="truncate">{hive.qr_tag_code}</span>
                   </button>
                 )}
               </h3>
