@@ -35,29 +35,32 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
 
  <div className="flex justify-between items-start mb-3">
  <div className="flex flex-col gap-1">
- <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+ <h3 className="text-xl font-bold text-foreground whitespace-nowrap">
  {hive.hive_number}
+ </h3>
+ {(hive.beep_device_id || hive.wolf_scale_id || hive.qr_tag_code) && (
+ <div className="flex flex-wrap items-center gap-2">
  {hive.beep_device_id && (
- <span title="BEEP scale connected">
- <Scale size={18} className="text-amber-600" />
+ <span title="BEEP scale connected" className="inline-flex">
+ <Scale size={16} className="text-amber-600" />
  </span>
  )}
  {hive.wolf_scale_id && (
- <span title="Wolf Waagen scale connected">
- <Scale size={18} className="text-blue-600" />
+ <span title="Wolf Waagen scale connected" className="inline-flex">
+ <Scale size={16} className="text-blue-600" />
  </span>
  )}
  {hive.qr_tag_code && (
  <span
  title={`QR tag ${hive.qr_tag_code}`}
- className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-surface-secondary text-text-primary border border-border max-w-[10rem] whitespace-nowrap"
+ className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-surface-secondary text-text-primary border border-border max-w-full whitespace-nowrap"
  >
  <QrCode size={12} className="flex-shrink-0" />
- <span className="flex-shrink-0">QR:</span>
  <span className="truncate">{hive.qr_tag_code}</span>
  </span>
  )}
- </h3>
+ </div>
+ )}
  {hive.is_shared && hive.team_name && (
  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-xs font-medium rounded flex items-center gap-1 w-fit border border-blue-300 dark:border-blue-800">
  <span>👥</span>
