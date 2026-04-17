@@ -12,9 +12,20 @@ import {
   getGroupedItems,
   getAfterGroupItems,
   getBottomItems,
+  navGroups,
   adminNavItems,
   type NavGroupId,
 } from '@/lib/navigation'
+
+const VALID_GROUP_IDS: ReadonlySet<string> = new Set(navGroups.map(g => g.id))
+
+function safeGetItem(key: string): string | null {
+  try { return localStorage.getItem(key) } catch { return null }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try { localStorage.setItem(key, value) } catch { /* storage unavailable or quota exceeded */ }
+}
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -23,31 +34,41 @@ export default function Sidebar() {
   const [collapsedGroups, setCollapsedGroups] = useState<NavGroupId[]>([])
 
   useEffect(() => {
-    const saved = localStorage.getItem('sidebar-collapsed')
+    const saved = safeGetItem('sidebar-collapsed')
     if (saved !== null) {
       setIsCollapsed(saved === 'true')
     }
-    const savedGroups = localStorage.getItem('sidebar-collapsed-groups')
+    const savedGroups = safeGetItem('sidebar-collapsed-groups')
     if (savedGroups) {
       try {
-        const parsed = JSON.parse(savedGroups)
-        if (Array.isArray(parsed)) setCollapsedGroups(parsed)
+        const parsed: unknown = JSON.parse(savedGroups)
+        if (Array.isArray(parsed)) {
+          const validated = parsed.filter(
+            (v): v is NavGroupId => typeof v === 'string' && VALID_GROUP_IDS.has(v)
+          )
+          setCollapsedGroups(validated)
+        }
       } catch { /* ignore invalid JSON */ }
     }
   }, [])
 
   useEffect(() => {
-    const fetchRole = async () => {
-      const role = await getUserRole()
-      setUserRole(role)
-    }
-    fetchRole()
+    let cancelled = false
+    ;(async () => {
+      try {
+        const role = await getUserRole()
+        if (!cancelled) setUserRole(role)
+      } catch { /* keep default 'User' on failure */ }
+    })()
+    return () => { cancelled = true }
   }, [])
 
   const toggleCollapsed = () => {
-    const newState = !isCollapsed
-    setIsCollapsed(newState)
-    localStorage.setItem('sidebar-collapsed', String(newState))
+    setIsCollapsed(prev => {
+      const next = !prev
+      safeSetItem('sidebar-collapsed', String(next))
+      return next
+    })
   }
 
   const toggleGroup = (groupId: NavGroupId) => {
@@ -55,7 +76,7 @@ export default function Sidebar() {
       const next = prev.includes(groupId)
         ? prev.filter(id => id !== groupId)
         : [...prev, groupId]
-      localStorage.setItem('sidebar-collapsed-groups', JSON.stringify(next))
+      safeSetItem('sidebar-collapsed-groups', JSON.stringify(next))
       return next
     })
   }
@@ -65,17 +86,19 @@ export default function Sidebar() {
   const afterGroupItems = getAfterGroupItems()
   const bottomItems = getBottomItems()
 
+  const isActive = (href: string) =>
+    href === '/dashboard' ? pathname === href : pathname.startsWith(href)
+
   const linkClasses = (href: string) => {
-    const isActive = href === '/dashboard' ? pathname === href : pathname.startsWith(href)
     return `w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-      isActive
+      isActive(href)
         ? 'bg-forest-600 text-white font-medium border-l-2 border-forest-400'
         : 'text-text-secondary hover:bg-surface-elevated hover:text-foreground'
     } ${isCollapsed ? 'justify-center px-2' : ''}`
   }
 
   return (
-    <aside className={`hidden md:block sticky top-4 self-start field-journal-panel p-4 h-fit transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
+    <aside className={`hidden md:block sticky top-20 self-start field-journal-panel p-4 h-fit max-h-[calc(100vh-6rem)] overflow-y-auto transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-64'}`}>
       {/* Collapse Toggle */}
       <IconButton
         onClick={toggleCollapsed}
@@ -88,7 +111,13 @@ export default function Sidebar() {
       <nav className="space-y-1">
         {/* Top items (Overview) */}
         {topItems.map(item => (
-          <Link key={item.href} href={item.href} className={linkClasses(item.href)} title={isCollapsed ? item.label : undefined}>
+          <Link
+            key={item.href}
+            href={item.href}
+            className={linkClasses(item.href)}
+            title={isCollapsed ? item.label : undefined}
+            aria-current={isActive(item.href) ? 'page' : undefined}
+          >
             <item.icon size={20} className="shrink-0" />
             {!isCollapsed && <span>{item.label}</span>}
           </Link>
@@ -98,6 +127,7 @@ export default function Sidebar() {
         {!isCollapsed ? (
           groupedItems.map(({ group, items }) => {
             const isGroupCollapsed = collapsedGroups.includes(group.id)
+            const groupRegionId = `nav-group-${group.id}`
             return (
               <div key={group.id} className="pt-2">
                 <Button
@@ -105,6 +135,8 @@ export default function Sidebar() {
                   tone="neutral"
                   size="xs"
                   className="w-full justify-between px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-text-tertiary hover:text-text-secondary"
+                  aria-expanded={!isGroupCollapsed}
+                  aria-controls={groupRegionId}
                 >
                   <span>{group.label}</span>
                   <ChevronDown
@@ -113,9 +145,14 @@ export default function Sidebar() {
                   />
                 </Button>
                 {!isGroupCollapsed && (
-                  <div className="space-y-1 mt-1">
+                  <div id={groupRegionId} className="space-y-1 mt-1">
                     {items.map(item => (
-                      <Link key={item.href} href={item.href} className={linkClasses(item.href)}>
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={linkClasses(item.href)}
+                        aria-current={isActive(item.href) ? 'page' : undefined}
+                      >
                         <item.icon size={20} className="shrink-0" />
                         <span>{item.label}</span>
                       </Link>
@@ -129,7 +166,13 @@ export default function Sidebar() {
           /* Icon-only mode: flat list without group headers */
           groupedItems.flatMap(({ items }) =>
             items.map(item => (
-              <Link key={item.href} href={item.href} className={linkClasses(item.href)} title={item.label}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className={linkClasses(item.href)}
+                title={item.label}
+                aria-current={isActive(item.href) ? 'page' : undefined}
+              >
                 <item.icon size={20} className="shrink-0" />
               </Link>
             ))
@@ -138,7 +181,13 @@ export default function Sidebar() {
 
         {/* After-group items (Tools) */}
         {afterGroupItems.map(item => (
-          <Link key={item.href} href={item.href} className={linkClasses(item.href)} title={isCollapsed ? item.label : undefined}>
+          <Link
+            key={item.href}
+            href={item.href}
+            className={linkClasses(item.href)}
+            title={isCollapsed ? item.label : undefined}
+            aria-current={isActive(item.href) ? 'page' : undefined}
+          >
             <item.icon size={20} className="shrink-0" />
             {!isCollapsed && <span>{item.label}</span>}
           </Link>
@@ -149,7 +198,13 @@ export default function Sidebar() {
 
         {/* Bottom items (Profile, About) */}
         {bottomItems.map(item => (
-          <Link key={item.href} href={item.href} className={linkClasses(item.href)} title={isCollapsed ? item.label : undefined}>
+          <Link
+            key={item.href}
+            href={item.href}
+            className={linkClasses(item.href)}
+            title={isCollapsed ? item.label : undefined}
+            aria-current={isActive(item.href) ? 'page' : undefined}
+          >
             <item.icon size={20} className="shrink-0" />
             {!isCollapsed && <span>{item.label}</span>}
           </Link>
@@ -157,7 +212,13 @@ export default function Sidebar() {
 
         {/* Admin */}
         {userRole === 'Admin' && adminNavItems.map(item => (
-          <Link key={item.href} href={item.href} className={linkClasses(item.href)} title={isCollapsed ? item.label : undefined}>
+          <Link
+            key={item.href}
+            href={item.href}
+            className={linkClasses(item.href)}
+            title={isCollapsed ? item.label : undefined}
+            aria-current={isActive(item.href) ? 'page' : undefined}
+          >
             <item.icon size={20} className="shrink-0" />
             {!isCollapsed && <span>{item.label}</span>}
           </Link>
