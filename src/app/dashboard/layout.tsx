@@ -38,7 +38,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       }
 
       // Check if account is active
-      const status = await getAccountStatus()
+      let status: Awaited<ReturnType<typeof getAccountStatus>>
+      try {
+        status = await getAccountStatus()
+      } catch (err) {
+        console.error('Initial account status check failed:', err)
+        // Fail open: let the periodic check (below) re-evaluate rather than stranding the user on Loading
+        if (!cancelled) setCheckingAccount(false)
+        return
+      }
       if (cancelled) return // User changed during async call
 
       if (status !== 'active') {
@@ -65,14 +73,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Initialize update manager
   useEffect(() => {
+    let cancelled = false
     const initUpdateManager = async () => {
-      const registration = await registerServiceWorker()
-      if (registration) {
-        updateManager.initialize(registration)
+      try {
+        const registration = await registerServiceWorker()
+        if (cancelled) return
+        if (registration) {
+          updateManager.initialize(registration)
+        }
+      } catch (err) {
+        console.error('Service worker registration failed:', err)
       }
     }
 
     initUpdateManager()
+    return () => { cancelled = true }
   }, [])
 
   // Periodically check if account is still active (every 30 seconds)
