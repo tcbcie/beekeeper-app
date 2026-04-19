@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ChevronDown, ChevronUp, Camera, X } from 'lucide-react'
+import { ChevronDown, ChevronUp, Camera, X, Mic, Square, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import type { Hive, Apiary, InspectionFormData } from '@/types/records'
 import { getDefaultInspectionFormData, LEVEL_NOT_RECORDED } from '@/types/records'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
+import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
 
 interface InspectionFormProps {
@@ -141,6 +143,78 @@ export default function InspectionForm({
     folder: 'inspections'
   })
 
+  const {
+    isRecording: isVoiceRecording,
+    isSupported: isVoiceSupported,
+    error: voiceRecorderError,
+    startRecording: startVoiceRecording,
+    stopRecording: stopVoiceRecording,
+    reset: resetVoiceRecorder
+  } = useVoiceRecorder()
+  const [voiceProcessing, setVoiceProcessing] = useState(false)
+  const [voiceError, setVoiceError] = useState<string | null>(null)
+
+  const appendVoiceTranscript = useCallback((cleaned: string) => {
+    if (!cleaned) return
+    setFormData(prev => {
+      const existing = (prev.notes || '').trimEnd()
+      const merged = existing ? `${existing}\n\n${cleaned}` : cleaned
+      return { ...prev, notes: merged }
+    })
+  }, [])
+
+  const handleToggleVoice = useCallback(async () => {
+    if (voiceProcessing) return
+    if (isVoiceRecording) {
+      const blob = await stopVoiceRecording()
+      if (!blob) {
+        setVoiceError('Recording was empty. Please try again.')
+        return
+      }
+      setVoiceProcessing(true)
+      setVoiceError(null)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+        if (!token) {
+          setVoiceError('You need to be signed in to transcribe voice notes.')
+          return
+        }
+        const fd = new FormData()
+        const ext = blob.type.includes('mp4') ? 'mp4' : blob.type.includes('ogg') ? 'ogg' : 'webm'
+        fd.append('audio', blob, `voice-note.${ext}`)
+        const res = await fetch('/api/voice-notes-transcribe', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd
+        })
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({})) as { error?: string; code?: string }
+          if (body.code === 'SUBSCRIPTION_REQUIRED') {
+            setVoiceError('An active subscription is required to use voice notes.')
+          } else {
+            setVoiceError(body.error || 'Could not transcribe the recording.')
+          }
+          return
+        }
+        const { cleaned } = await res.json() as { transcript: string; cleaned: string }
+        if (!cleaned) {
+          setVoiceError('Nothing was transcribed. Please try recording again.')
+          return
+        }
+        appendVoiceTranscript(cleaned)
+      } catch (err) {
+        console.error('Voice transcription failed:', err)
+        setVoiceError('Could not transcribe the recording. Please try again.')
+      } finally {
+        setVoiceProcessing(false)
+      }
+    } else {
+      setVoiceError(null)
+      await startVoiceRecording()
+    }
+  }, [appendVoiceTranscript, isVoiceRecording, startVoiceRecording, stopVoiceRecording, voiceProcessing])
+
   const getApiaryIdForHive = useCallback((hiveId: string) => {
     if (!hiveId) {
       return ''
@@ -169,6 +243,9 @@ export default function InspectionForm({
         setDronesExpanded(false)
         setPropolisExpanded(false)
         resetImage()
+        resetVoiceRecorder()
+        setVoiceError(null)
+        setVoiceProcessing(false)
       }
       previousInitialDataRef.current = null
       return
@@ -193,7 +270,7 @@ export default function InspectionForm({
       resetImage()
     }
     previousInitialDataRef.current = initialData
-  }, [getApiaryIdForHive, initialData, resetImage, selectedApiaryId, setPreviewFromUrl])
+  }, [getApiaryIdForHive, initialData, resetImage, resetVoiceRecorder, selectedApiaryId, setPreviewFromUrl])
 
   useEffect(() => {
     if (isEditing || initialData?.hive_id) {
@@ -332,6 +409,9 @@ export default function InspectionForm({
 
   const handleCancel = () => {
     resetImage()
+    resetVoiceRecorder()
+    setVoiceError(null)
+    setVoiceProcessing(false)
     onCancel()
   }
 
@@ -1010,6 +1090,46 @@ export default function InspectionForm({
             rows={4}
             placeholder="Optional notes about the inspection"
           />
+          {userHasActiveSubscription && isVoiceSupported && (
+            <div className="mt-2 flex flex-col gap-2">
+              <Button
+                unstyled
+                type="button"
+                onClick={handleToggleVoice}
+                disabled={voiceProcessing}
+                aria-label={isVoiceRecording ? 'Stop voice recording' : 'Record voice note'}
+                className={`inline-flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-lg text-white font-medium transition-all touch-manipulation disabled:cursor-not-allowed ${
+                  voiceProcessing
+                    ? 'bg-purple-400 dark:bg-purple-500'
+                    : isVoiceRecording
+                      ? 'bg-red-600 hover:bg-red-700 animate-pulse'
+                      : 'bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600'
+                }`}
+              >
+                {voiceProcessing ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Transcribing...</span>
+                  </>
+                ) : isVoiceRecording ? (
+                  <>
+                    <Square size={18} />
+                    <span>Stop recording</span>
+                  </>
+                ) : (
+                  <>
+                    <Mic size={18} />
+                    <span>Record voice note</span>
+                  </>
+                )}
+              </Button>
+              {(voiceError || voiceRecorderError) && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {voiceError || voiceRecorderError}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Image Upload Section */}
