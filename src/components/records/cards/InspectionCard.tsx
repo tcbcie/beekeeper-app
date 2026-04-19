@@ -119,12 +119,16 @@ export default function InspectionCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-              <h3 className="text-base font-bold flex items-center gap-1.5">
-                <Search size={14} className="text-blue-500 flex-shrink-0" />
-                Hive: {inspection.hives?.hive_number || 'Unknown'}
-                {apiary && (
-                  <span className="font-normal text-text-tertiary">({apiary.name})</span>
-                )}
+              <h3 className="text-base font-bold flex flex-wrap items-center gap-x-1.5 gap-y-1 min-w-0">
+                <span className="inline-flex items-center gap-1.5 min-w-0">
+                  <Search size={14} className="text-blue-500 flex-shrink-0" />
+                  <span className="break-words">
+                    Hive: {inspection.hives?.hive_number || 'Unknown'}
+                    {apiary && (
+                      <span className="font-normal text-text-tertiary"> ({apiary.name})</span>
+                    )}
+                  </span>
+                </span>
                 {hive?.qr_tag_code && (
                   <button
                     type="button"
