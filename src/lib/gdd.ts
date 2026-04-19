@@ -178,14 +178,17 @@ export function getBloomingPlants(currentGDD: number, vegetation: VegetationEntr
     const gddRange = parseGDDRange(veg.typicalGddRange)
     const bloomMonths = parseBloomMonths(veg.bloomPeriod)
 
-    // Must pass at least one filter (GDD range or calendar month)
     const gddMatch = gddRange ? currentGDD >= gddRange.min && currentGDD <= gddRange.max : false
     const calendarMatch = bloomMonths ? bloomMonths.has(currentMonth) : false
 
-    // Include if both GDD and calendar agree, or if only one source is available and it matches
+    // When both signals are available, treat the calendar as authoritative for the bloom window
+    // and use GDD only as a "has it warmed up enough to start" gate. The GDD max is a typical
+    // reference, not a hard stop — many plants bloom past it. Without this, plants like
+    // Dandelion (GDD 50–250, blooms March–May) get excluded once GDD climbs past 250 despite
+    // April clearly being in their bloom window.
     const include = gddRange && bloomMonths
-      ? gddMatch && calendarMatch   // Both available: must both match (strongest signal)
-      : gddMatch || calendarMatch   // Only one available: use whichever we have
+      ? calendarMatch && currentGDD >= gddRange.min
+      : gddMatch || calendarMatch
 
     if (include) {
       blooming.push({
