@@ -1064,6 +1064,26 @@ export default function InspectionForm({
             </div>
           </div>
         )}
+
+        {/* Bottom Save/Cancel Buttons - mirror of top for long forms */}
+        <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 pt-2 border-t border-border">
+          <Button
+          unstyled
+            type="submit"
+            disabled={submitting || fetchingWeather}
+            className="px-6 py-3 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 disabled:bg-surface-secondary disabled:cursor-not-allowed transition-all touch-manipulation font-medium w-full sm:w-auto"
+          >
+            {submitting ? 'Saving...' : fetchingWeather ? 'Fetching Weather...' : initialData?.hive_id ? 'Update' : 'Save'} Inspection
+          </Button>
+          <Button
+          unstyled
+            type="button"
+            onClick={handleCancel}
+            className="px-6 py-3 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated touch-manipulation font-medium w-full sm:w-auto"
+          >
+            Cancel
+          </Button>
+        </div>
       </form>
     </div>
   )
