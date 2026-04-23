@@ -142,6 +142,7 @@ export default function SettingsPage() {
   const [roleFilter, setRoleFilter] = useState<'all' | 'User' | 'Power User' | 'Admin'>('all')
   const [accountStatusFilter, setAccountStatusFilter] = useState<'all' | 'active' | 'disabled'>('all')
   const [subscriptionFilter, setSubscriptionFilter] = useState<'all' | 'active' | 'expiring' | 'expired' | 'none'>('all')
+  const [lastActiveSort, setLastActiveSort] = useState<'default' | 'recent_first' | 'oldest_first' | 'never_first'>('default')
   const [currentUsersPage, setCurrentUsersPage] = useState(1)
   const [restoringUserId, setRestoringUserId] = useState<string | null>(null)
   const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null)
@@ -192,7 +193,7 @@ export default function SettingsPage() {
   useEffect(() => {
     setCurrentUsersPage(1)
     setExpandedUserId(null)
-  }, [userSearch, roleFilter, accountStatusFilter, subscriptionFilter, showDeletedUsers])
+  }, [userSearch, roleFilter, accountStatusFilter, subscriptionFilter, lastActiveSort, showDeletedUsers])
 
   // User Management Functions
   const fetchUsers = useCallback(async () => {
@@ -1081,6 +1082,20 @@ export default function SettingsPage() {
                   <option value="none">No Subscription</option>
                 </SelectField>
 
+                {/* Last Active Sort */}
+                <SelectField
+                  value={lastActiveSort}
+                  onChange={(e) => setLastActiveSort(e.target.value as 'default' | 'recent_first' | 'oldest_first' | 'never_first')}
+                  tone="purple"
+                  className="fj-control-inline text-sm"
+                  aria-label="Sort by last activity"
+                >
+                  <option value="default">Sort: Default</option>
+                  <option value="recent_first">Last active: newest first</option>
+                  <option value="oldest_first">Last active: oldest first</option>
+                  <option value="never_first">Never active first</option>
+                </SelectField>
+
                 {/* Refresh Button */}
                 <Button
                   onClick={() => showDeletedUsers ? fetchDeletedUsers() : fetchUsers()}
@@ -1109,7 +1124,7 @@ export default function SettingsPage() {
             ) : (() => {
               // Apply all filters to the appropriate user list
               const sourceUsers = showDeletedUsers ? deletedUsers : users
-              const filteredUsers = sourceUsers
+              const filteredUsersUnsorted = sourceUsers
                 .filter(user => {
                   // Search filter
                   if (userSearch) {
@@ -1145,6 +1160,29 @@ export default function SettingsPage() {
 
                   return true
                 })
+              const filteredUsers = lastActiveSort === 'default'
+                ? filteredUsersUnsorted
+                : [...filteredUsersUnsorted].sort((a, b) => {
+                    const aTime = a.last_sign_in_at ? new Date(a.last_sign_in_at).getTime() : null
+                    const bTime = b.last_sign_in_at ? new Date(b.last_sign_in_at).getTime() : null
+                    if (lastActiveSort === 'never_first') {
+                      if (aTime === null && bTime === null) return 0
+                      if (aTime === null) return -1
+                      if (bTime === null) return 1
+                      return bTime - aTime
+                    }
+                    if (lastActiveSort === 'recent_first') {
+                      if (aTime === null && bTime === null) return 0
+                      if (aTime === null) return 1
+                      if (bTime === null) return -1
+                      return bTime - aTime
+                    }
+                    // oldest_first
+                    if (aTime === null && bTime === null) return 0
+                    if (aTime === null) return 1
+                    if (bTime === null) return -1
+                    return aTime - bTime
+                  })
               const totalPages = Math.max(1, Math.ceil(filteredUsers.length / USERS_PER_PAGE))
               const safeCurrentUsersPage = Math.min(currentUsersPage, totalPages)
 
