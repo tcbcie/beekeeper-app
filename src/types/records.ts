@@ -86,6 +86,11 @@ export interface Inspection {
   nosemosis_disease: number
   dwv_disease: number
   iapv_cbpv_disease: number
+  varroa_disease: number
+  varroa_seen_on_bees: boolean
+  varroa_seen_in_brood: boolean
+  varroa_brood_worker: boolean
+  varroa_brood_drone: boolean
   queen_cups: boolean
   queen_cups_number: number
   queen_cups_removed_all: boolean
@@ -260,6 +265,11 @@ export interface InspectionFormData {
   nosemosis_disease: number
   dwv_disease: number
   iapv_cbpv_disease: number
+  varroa_disease: number
+  varroa_seen_on_bees: boolean
+  varroa_seen_in_brood: boolean
+  varroa_brood_worker: boolean
+  varroa_brood_drone: boolean
   queen_cups: boolean
   queen_cups_number: number
   queen_cups_removed_all: boolean
@@ -422,6 +432,11 @@ export function getDefaultInspectionFormData(): InspectionFormData {
     nosemosis_disease: 0,
     dwv_disease: 0,
     iapv_cbpv_disease: 0,
+    varroa_disease: 0,
+    varroa_seen_on_bees: false,
+    varroa_seen_in_brood: false,
+    varroa_brood_worker: false,
+    varroa_brood_drone: false,
     queen_cups: false,
     queen_cups_number: 0,
     queen_cups_removed_all: false,

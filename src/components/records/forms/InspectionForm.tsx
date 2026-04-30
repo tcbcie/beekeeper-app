@@ -1056,6 +1056,65 @@ export default function InspectionForm({
               {renderStarRating(formData.nosemosis_disease, (val) => setFormData(prev => ({ ...prev, nosemosis_disease: val })), 'Nosemosis')}
               {renderStarRating(formData.dwv_disease, (val) => setFormData(prev => ({ ...prev, dwv_disease: val })), 'DWV')}
               {renderStarRating(formData.iapv_cbpv_disease, (val) => setFormData(prev => ({ ...prev, iapv_cbpv_disease: val })), 'IAPV & CBPV')}
+              <div>
+                {renderStarRating(
+                  formData.varroa_disease,
+                  (val) => setFormData(prev => val === 0
+                    ? { ...prev, varroa_disease: 0, varroa_seen_on_bees: false, varroa_seen_in_brood: false, varroa_brood_worker: false, varroa_brood_drone: false }
+                    : { ...prev, varroa_disease: val }
+                  ),
+                  'Varroa'
+                )}
+                <div className="mt-3 space-y-2" role="group" aria-labelledby="varroa-where-seen-label">
+                  <p id="varroa-where-seen-label" className="text-xs font-medium text-text-secondary">Where seen</p>
+                  <div className="flex flex-wrap gap-2">
+                    <label className="flex items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-purple-200 dark:border-purple-800">
+                      <input
+                        type="checkbox"
+                        checked={formData.varroa_seen_on_bees}
+                        onChange={(e) => setFormData(prev => ({ ...prev, varroa_seen_on_bees: e.target.checked }))}
+                        className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-border text-purple-600 focus:ring-2 focus:ring-purple-500"
+                      />
+                      <span className="text-sm font-medium text-text-secondary">On bees</span>
+                    </label>
+                    <label className="flex items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-purple-200 dark:border-purple-800">
+                      <input
+                        type="checkbox"
+                        checked={formData.varroa_seen_in_brood}
+                        onChange={(e) => setFormData(prev => e.target.checked
+                          ? { ...prev, varroa_seen_in_brood: true }
+                          : { ...prev, varroa_seen_in_brood: false, varroa_brood_worker: false, varroa_brood_drone: false }
+                        )}
+                        className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-border text-purple-600 focus:ring-2 focus:ring-purple-500"
+                      />
+                      <span className="text-sm font-medium text-text-secondary">In brood</span>
+                    </label>
+                  </div>
+                  {formData.varroa_seen_in_brood && (
+                    <div className="flex flex-wrap gap-2 pl-4" role="group" aria-labelledby="varroa-brood-type-label">
+                      <p id="varroa-brood-type-label" className="sr-only">Brood type where varroa was observed</p>
+                      <label className="flex items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-border">
+                        <input
+                          type="checkbox"
+                          checked={formData.varroa_brood_worker}
+                          onChange={(e) => setFormData(prev => ({ ...prev, varroa_brood_worker: e.target.checked }))}
+                          className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-border text-purple-600 focus:ring-2 focus:ring-purple-500"
+                        />
+                        <span className="text-sm font-medium text-text-secondary">Worker brood</span>
+                      </label>
+                      <label className="flex items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-border">
+                        <input
+                          type="checkbox"
+                          checked={formData.varroa_brood_drone}
+                          onChange={(e) => setFormData(prev => ({ ...prev, varroa_brood_drone: e.target.checked }))}
+                          className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-border text-purple-600 focus:ring-2 focus:ring-purple-500"
+                        />
+                        <span className="text-sm font-medium text-text-secondary">Drone brood</span>
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -79,7 +79,14 @@ export default function InspectionCard({
   const hasQueenCells = inspection.queen_cups || inspection.swarm_cells || inspection.supercedure_cells || inspection.emergency_cells
   const hasBehaviour = inspection.population_strength > 0 || inspection.temperament_rating > 0 || inspection.brood_pattern_rating > 0 || inspection.swarming_tendency > 0 || inspection.calmness > 0
   const hasHygienic = (inspection.recapping !== 3 && inspection.recapping !== 0) || (inspection.vsh !== 3 && inspection.vsh !== 0) || (inspection.smr !== 3 && inspection.smr !== 0)
-  const hasDisease = inspection.afb_disease > 0 || inspection.efb_disease > 0 || inspection.chalkbrood_disease > 0 || inspection.nosemosis_disease > 0 || inspection.dwv_disease > 0 || inspection.iapv_cbpv_disease > 0
+  const hasVarroa = inspection.varroa_disease > 0 || inspection.varroa_seen_on_bees || inspection.varroa_seen_in_brood
+  const hasDisease = inspection.afb_disease > 0 || inspection.efb_disease > 0 || inspection.chalkbrood_disease > 0 || inspection.nosemosis_disease > 0 || inspection.dwv_disease > 0 || inspection.iapv_cbpv_disease > 0 || hasVarroa
+  const varroaLocations = [
+    inspection.varroa_seen_on_bees ? 'bees' : null,
+    inspection.varroa_seen_in_brood && inspection.varroa_brood_worker ? 'worker brood' : null,
+    inspection.varroa_seen_in_brood && inspection.varroa_brood_drone ? 'drone brood' : null,
+    inspection.varroa_seen_in_brood && !inspection.varroa_brood_worker && !inspection.varroa_brood_drone ? 'brood' : null,
+  ].filter((v): v is string => Boolean(v))
   const hasWeather = inspection.weather_temp !== null || !!inspection.weather_condition
 
   const formattedDate = formatInspectionDate(inspection.inspection_date)
@@ -301,6 +308,15 @@ export default function InspectionCard({
             {inspection.nosemosis_disease > 0 && <span><span className="text-text-secondary">Nosemosis:</span> {renderStars(inspection.nosemosis_disease)}</span>}
             {inspection.dwv_disease > 0 && <span><span className="text-text-secondary">DWV:</span> {renderStars(inspection.dwv_disease)}</span>}
             {inspection.iapv_cbpv_disease > 0 && <span><span className="text-text-secondary">IAPV & CBPV:</span> {renderStars(inspection.iapv_cbpv_disease)}</span>}
+            {hasVarroa && (
+              <span>
+                <span className="text-text-secondary">Varroa:</span>{' '}
+                {inspection.varroa_disease > 0 && renderStars(inspection.varroa_disease)}
+                {varroaLocations.length > 0 && (
+                  <span className="text-text-tertiary">{inspection.varroa_disease > 0 ? ' ' : ''}({varroaLocations.join(', ')})</span>
+                )}
+              </span>
+            )}
           </div>
         )}
 
