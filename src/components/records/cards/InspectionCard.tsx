@@ -270,7 +270,7 @@ export default function InspectionCard({
         {/* Given/Taken */}
         {givenTakenItems.length > 0 && (
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide self-center">Frames:</span>
+            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide self-center">Given/Taken:</span>
             {givenTakenItems.map(item => (
               <span key={item.label}>
                 <span className="text-text-secondary">{item.label}:</span>{' '}
