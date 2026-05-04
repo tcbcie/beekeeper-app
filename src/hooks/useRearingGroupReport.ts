@@ -78,11 +78,22 @@ export function useRearingGroupReport() {
       // 1. Were grafted in the selected month (for batch counts, cell counts)
       // 2. Have emergence in the selected month (for hatched/mated counts)
       // We fetch a wider range and filter accordingly
+      const { data: groupBatchRows, error: groupBatchRowsError } = await supabase
+        .from('rearing_batches')
+        .select('id')
+        .in('user_id', userIds)
+        .eq('rearing_group_id', groupId)
+
+      if (groupBatchRowsError) throw groupBatchRowsError
+
+      const groupBatchIds = (groupBatchRows || []).map((b) => b.id).filter(Boolean)
+
       const widerStartDate = `${month === 1 ? year - 1 : year}-${String(month === 1 ? 12 : month - 1).padStart(2, '0')}-01`
       const { data: batches, error: batchesError } = await supabase
         .from('rearing_batches')
-        .select('id, user_id, graft_date, emergence_date, cell_count, queens_hatched, queens_mated, mating_apiary_id')
+        .select('id, user_id, graft_date, emergence_date, cell_count, queens_hatched, queens_mated, mating_apiary_id, rearing_group_id')
         .in('user_id', userIds)
+        .eq('rearing_group_id', groupId)
         .gte('graft_date', widerStartDate)
         .lt('graft_date', endDate)
 
@@ -126,19 +137,22 @@ export function useRearingGroupReport() {
         }
       }
 
-      // Fetch queen_cell distributions by distribution_date (independent of batch graft_date)
+      // Fetch queen_cell distributions by distribution_date, scoped to this group's batches.
       const queenCellCountPerMember = new Map<string, number>()
-      const { data: qcDists, error: qcError } = await supabase
-        .from('graft_distributions')
-        .select('user_id')
-        .eq('distribution_type', 'queen_cell')
-        .in('user_id', userIds)
-        .gte('distribution_date', startDate)
-        .lt('distribution_date', endDate)
+      if (groupBatchIds.length > 0) {
+        const { data: qcDists, error: qcError } = await supabase
+          .from('graft_distributions')
+          .select('user_id')
+          .eq('distribution_type', 'queen_cell')
+          .in('user_id', userIds)
+          .in('batch_id', groupBatchIds)
+          .gte('distribution_date', startDate)
+          .lt('distribution_date', endDate)
 
-      if (qcError) throw qcError
-      for (const d of (qcDists || [])) {
-        queenCellCountPerMember.set(d.user_id, (queenCellCountPerMember.get(d.user_id) || 0) + 1)
+        if (qcError) throw qcError
+        for (const d of (qcDists || [])) {
+          queenCellCountPerMember.set(d.user_id, (queenCellCountPerMember.get(d.user_id) || 0) + 1)
+        }
       }
 
       // Fetch profiles for display names
