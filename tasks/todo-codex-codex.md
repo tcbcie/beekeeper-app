@@ -1,28 +1,26 @@
-# Task: DCA Fallback Hotspot Fix
-**Date:** 16/04/2026
+# Task: Rearing Group Report Batch Scope Fix
+**Date:** 04/05/2026
 **Status:** Completed
 
 ## 1. Objective
-Ensure that a valid selected apiary on the community map always returns at least one low-confidence DCA hotspot instead of silently returning nothing, and make the fallback state visible in the existing DCA panel.
+Fix the rearing group report so it only aggregates batches explicitly linked to the selected rearing group, preventing private batches or batches from another group from being included in the selected group's totals.
 
 ## 2. Impact Analysis
-* **Files to Modify:** * `src/lib/dca-prediction.ts`
-  * `src/hooks/useDCAPredictions.ts`
-  * `src/app/dashboard/community-map/page.tsx`
-  * `docs/features/dca-prediction.md`
-  * `docs/features/dca-fallback-hotspot-fix-plan.md`
-* **Simplicity Check:** This stays inside the existing DCA engine, hook, and current map panel. It does not add schema changes, new services, or a broader model rewrite. The fix is limited to preserving a bounded fallback result and making the zero-result or fallback state legible to the user.
+* **Files to Modify:** * `src/hooks/useRearingGroupReport.ts`
+  * `docs/features/rearing-group-report-batch-scope-fix-plan.md`
+  * `tasks/todo-codex.md`
+* **Simplicity Check:** The fix is limited to the report data query and documentation. It does not alter group membership, invitations, batch creation, RLS policies, or the normal batch list visibility model.
 
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
-- [x] **Step 1:** Adjust the DCA engine filtering so a valid selected apiary can preserve its best candidate as a low-confidence fallback when normal thresholding would otherwise remove every result.
-- [x] **Step 2:** Update the result shape and hook flow as needed so fallback-only output is distinguishable from stronger predictions without breaking the current map rendering path.
-- [x] **Step 3:** Update the community-map DCA panel so it communicates whether a fallback hotspot was returned or whether no result could be produced at all.
-- [x] **Step 4:** Update documentation in `docs/features/dca-prediction.md` and capture the implementation intent in `docs/features/dca-fallback-hotspot-fix-plan.md`.
-- [x] **Step 5:** Present the completed fix and prompt you to test the build.
+- [x] **Step 1:** Update the report batch query to include `rearing_group_id` in the selected fields and filter batches with `.eq('rearing_group_id', groupId)`.
+- [x] **Step 2:** Review the derived graft and distribution queries to confirm they continue to use only batch ids from the now group-scoped batch set.
+- [x] **Step 3:** Update documentation in `docs/features/rearing-group-report-batch-scope-fix-plan.md`.
+- [x] **Step 4:** Update `tasks/todo-codex.md` checklist status and append the post-task review after implementation.
+- [x] **Step 5:** Prompt user to test the build and verify the selected group report totals.
 
 ## 4. Post-Task Review
 *(Agent: Fill this out ONLY after all checklist items are complete)*
-* **Root Cause Found (if applicable):** The current engine prefers returning no result over returning a weak but explicit fallback. In low-relief or single-apiary cases this leaves the user with no DCA marker and no useful explanation, even when a low-confidence local guess would be more appropriate.
-* **Summary of Changes:** Implemented a bounded fallback hotspot path inside the DCA engine, added explicit fallback state to predictions, surfaced fallback or empty-result messaging in the community-map panel, and updated the DCA documentation and fallback fix plan.
-* **Notes for User:** No build testing was run by me per repository instruction. No database schema change was required for this fix.
+* **Root Cause Found (if applicable):** The report selected batches by group member user ids and month, but did not require those batches to be linked to the selected rearing group.
+* **Summary of Changes:** Scoped the report batch query to the selected `rearing_group_id` and limited queen-cell distribution counts to batch ids that belong to that same group.
+* **Notes for User:** No build testing was run per repository instruction. Please test the build and verify the selected group report totals.

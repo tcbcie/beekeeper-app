@@ -271,3 +271,70 @@ Ensure that a valid selected apiary on the community map always returns at least
 * **Scope Covered:** DCA fallback hotspot fix.
 * **Summary of Changes:** The engine in `src/lib/dca-prediction.ts` now preserves one explicit low-confidence fallback hotspot when normal thresholding removes every candidate for a valid selection, instead of silently returning nothing. The hook in `src/hooks/useDCAPredictions.ts` now tracks whether a calculation returned a stronger result, a fallback-only result, or an empty result, and the community map in `src/app/dashboard/community-map/page.tsx` now surfaces that state in the selector panel and popup copy.
 * **Notes for User:** Please test a flat or coastal apiary that previously returned nothing, and compare it against a stronger inland case so you can confirm the app now distinguishes fallback guesses from higher-quality DCA predictions.
+
+---
+
+# Task: TBKA Kilcornan Inspection Transcription
+**Date:** 26/04/2026
+**Status:** Completed
+
+## 1. Objective
+Transcribe the five supplied TBKA Kilcornan inspection PDFs into clean, readable text while preserving the original wording and marking uncertain handwriting explicitly.
+
+## 2. Impact Analysis
+* **Files to Modify:** * `tasks/todo-codex.md`
+  * `tasks/todo-codex-codex.md`
+* **Simplicity Check:** This avoids application changes entirely. The work is limited to reading the supplied scans, extracting the handwritten inspection content, and recording the completed task in the existing task files.
+
+## 3. Execution Plan
+*(Agent: STOP and wait for user verification before beginning execution)*
+- [x] **Step 1:** Rasterise or otherwise inspect each supplied PDF page so the inspection handwriting can be read reliably.
+- [x] **Step 2:** Transcribe each inspection record into plain text, grouped by source PDF, and mark any illegible or uncertain text explicitly.
+- [x] **Step 3:** Perform a consistency pass across the five transcriptions so dates, hive identifiers, and repeated field labels are rendered uniformly without changing meaning.
+- [x] **Step 4:** Update `tasks/todo-codex.md` with completed checklist items and append a short review note for the transcription task.
+- [x] **Step 5:** Deliver the completed transcriptions to you and note that build testing is not applicable for this non-code task.
+
+## 4. Post-Task Review
+*(Agent: Fill this out ONLY after all checklist items are complete)*
+* **Root Cause Found (if applicable):** Not applicable. This was a transcription task rather than a product defect.
+* **Summary of Changes:** Rendered the PDFs into local page images, read the handwritten summary note and four hive sheets directly from those renders, and prepared a cleaned transcription with uncertainty markers where the scan obscures individual words.
+* **Notes for User:** No build testing applies for this non-code task. The attached set includes individual sheets for Hives 1, 2, 3, and 5, plus one narrative summary page. Hive 4 is mentioned in the summary note, but there is no standalone Hive 4 sheet among the supplied PDFs.
+
+## Review
+* **Scope Covered:** TBKA Kilcornan inspection transcription.
+* **Summary of Changes:** Converted the five supplied PDFs into readable local renders, transcribed the handwritten content, standardised the dates and hive references for readability, and flagged the few obscured words instead of guessing.
+* **Notes for User:** The narrative note is dated 25 April 2026. The attached Hive 5 sheet is dated 26 April 2026. If you want, I can turn this transcription into a structured inspection table next.
+
+---
+
+# Task: Rearing Group Report Batch Scope Fix
+**Date:** 04/05/2026
+**Status:** Completed
+
+## 1. Objective
+Fix the rearing group report so it only aggregates batches explicitly linked to the selected rearing group, preventing private batches or batches from another group from being included in the selected group's totals.
+
+## 2. Impact Analysis
+* **Files to Modify:** * `src/hooks/useRearingGroupReport.ts`
+  * `docs/features/rearing-group-report-batch-scope-fix-plan.md`
+  * `tasks/todo-codex.md`
+* **Simplicity Check:** The fix stayed inside the report data query and documentation. It did not alter group membership, invitations, batch creation, RLS policies, or the normal batch list visibility model.
+
+## 3. Execution Plan
+*(Agent: STOP and wait for user verification before beginning execution)*
+- [x] **Step 1:** Update the report batch query to include `rearing_group_id` in the selected fields and filter batches with `.eq('rearing_group_id', groupId)`.
+- [x] **Step 2:** Review the derived graft and distribution queries to confirm they continue to use only batch ids from the now group-scoped batch set.
+- [x] **Step 3:** Update documentation in `docs/features/rearing-group-report-batch-scope-fix-plan.md`.
+- [x] **Step 4:** Update `tasks/todo-codex.md` checklist status and append the post-task review after implementation.
+- [x] **Step 5:** Prompt user to test the build and verify the selected group report totals.
+
+## 4. Post-Task Review
+*(Agent: Fill this out ONLY after all checklist items are complete)*
+* **Root Cause Found (if applicable):** The report selected batches by group member user ids and month, but did not require those batches to be linked to the selected rearing group.
+* **Summary of Changes:** Scoped the report batch query to the selected `rearing_group_id` and limited queen-cell distribution counts to batch ids that belong to that same group.
+* **Notes for User:** No build testing was run per repository instruction. Please test the build and verify the selected group report totals.
+
+## Review
+* **Scope Covered:** Rearing group report batch scoping.
+* **Summary of Changes:** The report now counts grafted, emerged, mated, and queen-cell-distributed values only from batches linked to the selected rearing group.
+* **Notes for User:** Please test the build and compare the Tribes QRQB Group report totals against known group-linked batches for May 2026.
