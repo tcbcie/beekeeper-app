@@ -199,7 +199,15 @@ export default function InspectionCard({
           <span><span className="text-text-secondary">Queen:</span> {inspection.queen_seen ? '✅' : '❌'}</span>
           <span><span className="text-text-secondary">Eggs:</span> {inspection.eggs_present ? '✅' : '❌'}</span>
           {inspection.brood_frames !== null && (
-            <span><span className="text-text-secondary">Brood:</span> <span className="font-bold text-purple-800">{inspection.brood_frames}</span></span>
+            <span>
+              <span className="text-text-secondary">Brood:</span>{' '}
+              <span className="font-bold text-purple-800">{inspection.brood_frames}</span>
+              {inspection.brood_frames_per_box && inspection.brood_frames_per_box.length > 1 && (
+                <span className="text-text-tertiary">
+                  {' '}({inspection.brood_frames_per_box.map(b => `B${b.box ?? '?'} ${b.frames ?? 0}`).join(', ')})
+                </span>
+              )}
+            </span>
           )}
           {hive?.configuration?.right_sized_broodbox && inspection.right_sized_frames !== null && (
             <span><span className="text-text-secondary">Right-Sized:</span> <span className="font-bold text-amber-800">{inspection.right_sized_frames}</span></span>

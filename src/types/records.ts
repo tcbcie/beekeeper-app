@@ -52,6 +52,14 @@ export interface ProfileInfo {
   email: string
 }
 
+export type BroodBoxType = 'full' | 'half'
+
+export interface BroodBoxFrames {
+  box: number
+  type: BroodBoxType
+  frames: number
+}
+
 export interface Inspection {
   id: string
   hive_id: string
@@ -65,6 +73,7 @@ export interface Inspection {
   drone_brood_present: boolean | null
   propolis_level: number
   brood_frames: number | null
+  brood_frames_per_box: BroodBoxFrames[] | null
   right_sized_frames: number | null
   brood_pattern_rating: number
   temperament_rating: number
@@ -244,6 +253,7 @@ export interface InspectionFormData {
   drone_brood_present: boolean | null
   propolis_level: number
   brood_frames: number | null
+  brood_frames_per_box: BroodBoxFrames[] | null
   right_sized_frames: number | null
   brood_pattern_rating: number
   temperament_rating: number
@@ -432,6 +442,7 @@ export function getDefaultInspectionFormData(): InspectionFormData {
     drone_brood_present: null,
     propolis_level: -1,
     brood_frames: null,
+    brood_frames_per_box: null,
     right_sized_frames: null,
     brood_pattern_rating: 0,
     temperament_rating: 0,
