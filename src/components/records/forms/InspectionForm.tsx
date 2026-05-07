@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { ChevronDown, ChevronUp, Camera, X, Mic, Square, Loader2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Camera, X, Mic, Square, Loader2, Plus, Trash2 } from 'lucide-react'
 import Image from 'next/image'
-import type { Hive, Apiary, InspectionFormData } from '@/types/records'
-import { getDefaultInspectionFormData, LEVEL_NOT_RECORDED } from '@/types/records'
+import type { Hive, Apiary, InspectionFormData, FollowUpTaskDraft, FollowUpTaskPriority } from '@/types/records'
+import { getDefaultInspectionFormData, getDefaultFollowUpTaskDraft, LEVEL_NOT_RECORDED } from '@/types/records'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
 import { supabase } from '@/lib/supabase'
@@ -19,7 +19,7 @@ interface InspectionFormProps {
   selectedHiveId?: string
   isEditing?: boolean
   userHasActiveSubscription: boolean
-  onSubmit: (formData: InspectionFormData, imageFile: File | null) => Promise<void>
+  onSubmit: (formData: InspectionFormData, imageFile: File | null, followUpTasks: FollowUpTaskDraft[]) => Promise<void>
   onCancel: () => void
   onHiveChange: (hiveId: string) => Promise<void>
   onImageClick: (url: string) => void
@@ -97,6 +97,21 @@ function normaliseGivenTakenValues(
   return nextData
 }
 
+const FOLLOW_UP_DEFAULT_DAYS = 14
+
+function addDaysToIsoDate(isoDate: string, days: number): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate)
+  if (!match) {
+    const fallback = new Date()
+    fallback.setUTCDate(fallback.getUTCDate() + days)
+    return fallback.toISOString().slice(0, 10)
+  }
+  const [, y, m, d] = match
+  const utc = new Date(Date.UTC(Number(y), Number(m) - 1, Number(d)))
+  utc.setUTCDate(utc.getUTCDate() + days)
+  return utc.toISOString().slice(0, 10)
+}
+
 export default function InspectionForm({
   initialData,
   hives,
@@ -130,6 +145,8 @@ export default function InspectionForm({
   const [givenTakenExpanded, setGivenTakenExpanded] = useState(false)
   const [hygienicBehaviourExpanded, setHygienicBehaviourExpanded] = useState(false)
   const [diseaseExpanded, setDiseaseExpanded] = useState(false)
+  const [followUpExpanded, setFollowUpExpanded] = useState(false)
+  const [followUpDrafts, setFollowUpDrafts] = useState<FollowUpTaskDraft[]>([])
 
   const {
     imageFile,
@@ -242,6 +259,8 @@ export default function InspectionForm({
         setFormApiaryId(selectedApiaryId)
         setDronesExpanded(false)
         setPropolisExpanded(false)
+        setFollowUpExpanded(false)
+        setFollowUpDrafts([])
         resetImage()
         resetVoiceRecorder()
         setVoiceError(null)
@@ -254,6 +273,8 @@ export default function InspectionForm({
     setFormData(initialData)
     setGivenTakenDrafts(createGivenTakenDrafts(initialData))
     setFormApiaryId(getApiaryIdForHive(initialData.hive_id))
+    setFollowUpExpanded(false)
+    setFollowUpDrafts([])
 
     // Auto-expand sections that have recorded data so the user sees them immediately
     setDronesExpanded(
@@ -401,11 +422,35 @@ export default function InspectionForm({
     setGivenTakenDrafts(createGivenTakenDrafts(submitData))
     setSubmitting(true)
     try {
-      await onSubmit(submitData, imageFile)
+      const tasks = followUpDrafts
+        .map(draft => ({
+          ...draft,
+          title: draft.title.trim(),
+          description: draft.description.trim(),
+          equipment_needed: draft.equipment_needed.trim(),
+        }))
+        .filter(draft => draft.title !== '')
+      await onSubmit(submitData, imageFile, tasks)
     } finally {
       setSubmitting(false)
     }
   }
+
+  const addFollowUpTask = useCallback(() => {
+    setFollowUpDrafts(prev => {
+      const lastDate = prev.length > 0 ? prev[prev.length - 1].due_date : null
+      const baseDate = lastDate || addDaysToIsoDate(formData.inspection_date, FOLLOW_UP_DEFAULT_DAYS)
+      return [...prev, getDefaultFollowUpTaskDraft(baseDate)]
+    })
+  }, [formData.inspection_date])
+
+  const updateFollowUpDraft = useCallback((index: number, patch: Partial<FollowUpTaskDraft>) => {
+    setFollowUpDrafts(prev => prev.map((draft, i) => (i === index ? { ...draft, ...patch } : draft)))
+  }, [])
+
+  const removeFollowUpDraft = useCallback((index: number) => {
+    setFollowUpDrafts(prev => prev.filter((_, i) => i !== index))
+  }, [])
 
   const handleCancel = () => {
     resetImage()
@@ -1187,6 +1232,129 @@ export default function InspectionForm({
                   {voiceError || voiceRecorderError}
                 </p>
               )}
+            </div>
+          )}
+        </div>
+
+        {/* Next Visit Plan - Collapsible */}
+        <div className="md:col-span-2 rounded-lg border border-border">
+          <Button
+            unstyled
+            type="button"
+            onClick={() => setFollowUpExpanded(!followUpExpanded)}
+            className="w-full p-4 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-lg"
+          >
+            <div className="text-left">
+              <h4 className="text-sm font-semibold text-foreground">Next Visit Plan</h4>
+              <p className="mt-1 text-xs text-text-tertiary">
+                Optional. Each task is added to your Tasks list, linked to this hive.
+                {followUpDrafts.length > 0 && ` (${followUpDrafts.length} task${followUpDrafts.length === 1 ? '' : 's'} ready)`}
+              </p>
+            </div>
+            {followUpExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          </Button>
+          {followUpExpanded && (
+            <div className="space-y-4 p-4 pt-0">
+              {initialData && (
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
+                  Follow-up tasks already created from this inspection live in your Tasks list. Adding rows here creates new tasks — re-typing existing ones will produce duplicates.
+                </p>
+              )}
+              {followUpDrafts.length === 0 && (
+                <p className="text-sm text-text-tertiary">
+                  No follow-up tasks yet. Add tasks for what needs doing on the next visit and the equipment to bring.
+                </p>
+              )}
+              {followUpDrafts.map((draft, index) => (
+                <div key={index} className="rounded-lg border border-border bg-surface-secondary/40 p-3 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Task {index + 1}</span>
+                    <Button
+                      unstyled
+                      type="button"
+                      onClick={() => removeFollowUpDraft(index)}
+                      aria-label={`Remove task ${index + 1}`}
+                      className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center gap-1 text-xs font-medium"
+                    >
+                      <Trash2 size={14} />
+                      Remove
+                    </Button>
+                  </div>
+                  <div>
+                    <label htmlFor={`follow-up-title-${index}`} className="block text-xs font-medium text-text-secondary mb-1">
+                      Title <span className="text-red-600 dark:text-red-400">*</span>
+                    </label>
+                    <input
+                      id={`follow-up-title-${index}`}
+                      type="text"
+                      value={draft.title}
+                      onChange={(e) => updateFollowUpDraft(index, { title: e.target.value })}
+                      placeholder="e.g. Treat varroa"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor={`follow-up-date-${index}`} className="block text-xs font-medium text-text-secondary mb-1">Due date</label>
+                      <input
+                        id={`follow-up-date-${index}`}
+                        type="date"
+                        value={draft.due_date}
+                        onChange={(e) => updateFollowUpDraft(index, { due_date: e.target.value })}
+                        className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`follow-up-priority-${index}`} className="block text-xs font-medium text-text-secondary mb-1">Priority</label>
+                      <select
+                        id={`follow-up-priority-${index}`}
+                        value={draft.priority}
+                        onChange={(e) => updateFollowUpDraft(index, { priority: e.target.value as FollowUpTaskPriority })}
+                        className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+                      >
+                        <option value="low">Low</option>
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor={`follow-up-equipment-${index}`} className="block text-xs font-medium text-text-secondary mb-1">
+                      Equipment / consumables to bring
+                    </label>
+                    <input
+                      id={`follow-up-equipment-${index}`}
+                      type="text"
+                      value={draft.equipment_needed}
+                      onChange={(e) => updateFollowUpDraft(index, { equipment_needed: e.target.value })}
+                      placeholder="e.g. oxalic acid, applicator"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+                    />
+                    <p className="mt-1 text-xs text-text-tertiary">Separate multiple items with a comma.</p>
+                  </div>
+                  <div>
+                    <label htmlFor={`follow-up-description-${index}`} className="block text-xs font-medium text-text-secondary mb-1">Notes</label>
+                    <textarea
+                      id={`follow-up-description-${index}`}
+                      value={draft.description}
+                      onChange={(e) => updateFollowUpDraft(index, { description: e.target.value })}
+                      rows={2}
+                      placeholder="Optional details"
+                      className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+                    />
+                  </div>
+                </div>
+              ))}
+              <Button
+                unstyled
+                type="button"
+                onClick={addFollowUpTask}
+                className="inline-flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-lg border border-border bg-surface text-sm font-medium text-foreground hover:bg-surface-elevated transition-colors"
+              >
+                <Plus size={16} />
+                Add task
+              </Button>
             </div>
           )}
         </div>

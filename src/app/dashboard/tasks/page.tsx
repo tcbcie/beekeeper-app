@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, Filter, ClipboardList, Printer } from 'lucide-react'
@@ -89,6 +89,7 @@ export default function TasksEventsPage() {
   const [filterApiary, setFilterApiary] = useState<string>('all')
   const [filterOwnership, setFilterOwnership] = useState<'all' | 'my' | 'team'>('all')
   const [showChecklist, setShowChecklist] = useState(false)
+  const [checklistApiaryId, setChecklistApiaryId] = useState<string>('all')
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null)
   const appliedTaskDeepLinkRef = useRef<string | null>(null)
@@ -500,6 +501,75 @@ export default function TasksEventsPage() {
     return true
   })
 
+  // Tasks shown inside the Visit Checklist modal. Scoped only by the modal's
+  // apiary picker and active-status; the page-level filters don't apply so the
+  // checklist always reflects "what needs doing on this visit". Events and
+  // reminders are excluded — only event_type='task' belongs in a hive-side
+  // checkable list.
+  const checklistTasks = useMemo(() => {
+    return tasks.filter(task => {
+      if (task.event_type !== 'task') return false
+      if (task.completed) return false
+      if (checklistApiaryId !== 'all' && task.apiary_id !== checklistApiaryId) return false
+      return true
+    })
+  }, [tasks, checklistApiaryId])
+
+  // Group checklist tasks for printable display: apiary -> hive -> tasks.
+  // Tasks without a hive_id sit in a synthetic 'general' group at the end of
+  // each apiary. Tasks without an apiary_id sit in a synthetic 'unassigned' apiary.
+  const checklistGroups = useMemo(() => {
+    type HiveGroup = { hiveId: string | null; hiveNumber: string; tasks: TaskEvent[] }
+    type ApiaryGroup = { apiaryId: string | null; apiaryName: string; hives: HiveGroup[] }
+
+    const apiaryById = new Map(apiaries.map(a => [a.id, a]))
+    const hiveById = new Map(hives.map(h => [h.id, h]))
+    const apiaryMap = new Map<string, ApiaryGroup>()
+
+    for (const task of checklistTasks) {
+      const apiaryKey = task.apiary_id ?? '__none__'
+      const apiaryName = task.apiary_id
+        ? apiaryById.get(task.apiary_id)?.name ?? 'Unknown apiary'
+        : 'Unassigned'
+
+      let apiaryGroup = apiaryMap.get(apiaryKey)
+      if (!apiaryGroup) {
+        apiaryGroup = { apiaryId: task.apiary_id, apiaryName, hives: [] }
+        apiaryMap.set(apiaryKey, apiaryGroup)
+      }
+
+      const hiveKey = task.hive_id ?? '__general__'
+      const hiveNumber = task.hive_id
+        ? hiveById.get(task.hive_id)?.hive_number ?? 'Unknown hive'
+        : 'General apiary tasks'
+
+      let hiveGroup = apiaryGroup.hives.find(h => (h.hiveId ?? '__general__') === hiveKey)
+      if (!hiveGroup) {
+        hiveGroup = { hiveId: task.hive_id, hiveNumber, tasks: [] }
+        apiaryGroup.hives.push(hiveGroup)
+      }
+      hiveGroup.tasks.push(task)
+    }
+
+    const sortedApiaries = Array.from(apiaryMap.values()).sort((a, b) => a.apiaryName.localeCompare(b.apiaryName))
+    for (const apiaryGroup of sortedApiaries) {
+      apiaryGroup.hives.sort((a, b) => {
+        if (a.hiveId === null) return 1
+        if (b.hiveId === null) return -1
+        return a.hiveNumber.localeCompare(b.hiveNumber, undefined, { numeric: true })
+      })
+      for (const hiveGroup of apiaryGroup.hives) {
+        hiveGroup.tasks.sort((a, b) => a.start_date.localeCompare(b.start_date))
+      }
+    }
+    return sortedApiaries
+  }, [checklistTasks, apiaries, hives])
+
+  const openChecklist = useCallback(() => {
+    setChecklistApiaryId(filterApiary !== 'all' ? filterApiary : 'all')
+    setShowChecklist(true)
+  }, [filterApiary])
+
   useEffect(() => {
     if (!highlightedTaskId || scrolledTaskRef.current === highlightedTaskId) return
     if (!filteredTasks.some(task => task.id === highlightedTaskId)) return
@@ -553,12 +623,11 @@ export default function TasksEventsPage() {
     return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   }
 
-  // Get unique equipment items from filtered tasks
+  // Unique equipment items aggregated across all tasks in the checklist scope.
   const getEquipmentList = () => {
     const equipmentSet = new Set<string>()
-    filteredTasks.forEach(task => {
+    checklistTasks.forEach(task => {
       if (task.equipment_needed) {
-        // Split by comma or newline and add each item
         task.equipment_needed.split(/[,\n]/).forEach(item => {
           const trimmed = item.trim()
           if (trimmed) equipmentSet.add(trimmed)
@@ -568,10 +637,11 @@ export default function TasksEventsPage() {
     return Array.from(equipmentSet).sort()
   }
 
-  // Get selected apiary name
-  const getSelectedApiaryName = () => {
-    const apiary = apiaries.find(a => a.id === filterApiary)
-    return apiary?.name || 'Unknown Apiary'
+  // Title shown in the checklist modal header.
+  const getChecklistScopeName = () => {
+    if (checklistApiaryId === 'all') return 'All apiaries'
+    const apiary = apiaries.find(a => a.id === checklistApiaryId)
+    return apiary?.name || 'Unknown apiary'
   }
 
   if (loading) {
@@ -585,16 +655,26 @@ export default function TasksEventsPage() {
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <h1 className="text-responsive-3xl font-bold text-foreground">Tasks & Events 📅</h1>
-        <Button
-          onClick={() => setShowForm(true)}
-          tone="success"
-        >
-          <Plus size={20} />
-          <span className="hidden sm:inline">Add Task/Event</span>
-          <span className="sm:hidden">Add</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={openChecklist}
+            tone="neutral"
+          >
+            <ClipboardList size={18} />
+            <span className="hidden sm:inline">Visit Checklist</span>
+            <span className="sm:hidden">Checklist</span>
+          </Button>
+          <Button
+            onClick={() => setShowForm(true)}
+            tone="success"
+          >
+            <Plus size={20} />
+            <span className="hidden sm:inline">Add Task/Event</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -688,18 +768,6 @@ export default function TasksEventsPage() {
           </div>
         </div>
 
-        {/* Visit Checklist Button - shown when apiary is selected */}
-        {filterApiary !== 'all' && (
-          <div className="mt-4 pt-4 border-t border-border">
-            <Button
-              onClick={() => setShowChecklist(true)}
-              tone="success"
-            >
-              <ClipboardList size={18} />
-              Visit Checklist
-            </Button>
-          </div>
-        )}
       </Card>
 
       {/* Task List */}
@@ -1134,9 +1202,9 @@ export default function TasksEventsPage() {
             {/* Header */}
             <div className="sticky top-0 bg-surface-elevated dark:bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between print:static print:bg-background print:border-b-2 print:border-black">
               <div>
-                <h2 className="text-xl font-semibold text-foreground">Apiary Visit Checklist</h2>
+                <h2 className="text-xl font-semibold text-foreground">Visit Checklist</h2>
                 <p className="text-sm text-text-secondary">
-                  {getSelectedApiaryName()} - {new Date().toLocaleDateString('en-IE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  {getChecklistScopeName()} — {new Date().toLocaleDateString('en-IE', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </p>
               </div>
               <IconButton
@@ -1149,10 +1217,25 @@ export default function TasksEventsPage() {
             </div>
 
             <div className="p-6 space-y-6">
+              {/* Apiary picker (hidden when printing) */}
+              <div className="print:hidden">
+                <FieldLabel htmlFor="checklist-apiary">Apiary</FieldLabel>
+                <SelectField
+                  id="checklist-apiary"
+                  value={checklistApiaryId}
+                  onChange={(e) => setChecklistApiaryId(e.target.value)}
+                >
+                  <option value="all">All apiaries</option>
+                  {apiaries.map(apiary => (
+                    <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                  ))}
+                </SelectField>
+              </div>
+
               {/* Equipment Section */}
               <div>
                 <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <span>📦</span> Equipment Needed
+                  <span>📦</span> Equipment to bring
                 </h3>
                 {getEquipmentList().length > 0 ? (
                   <Surface tone="amber" padded="sm">
@@ -1170,39 +1253,69 @@ export default function TasksEventsPage() {
                 )}
               </div>
 
-              {/* Tasks Section */}
+              {/* Tasks grouped by apiary -> hive */}
               <div>
                 <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <span>✅</span> Tasks to Complete
+                  <span>✅</span> Tasks to complete
                 </h3>
-                {filteredTasks.length > 0 ? (
-                  <Surface padded="sm" className="bg-surface-secondary">
-                    <ul className="space-y-3">
-                      {filteredTasks.map(task => (
-                        <li key={task.id} className="flex items-start gap-3">
-                          <CheckboxInput
-                            defaultChecked={task.completed}
-                            className="mt-1 print:border-black"
-                          />
-                          <div className="flex-1">
-                            <span className={`text-foreground ${task.completed ? 'line-through text-text-tertiary' : ''}`}>
-                              {task.title}
-                            </span>
-                            {task.hive_id && (
-                              <span className="ml-2 text-xs text-text-secondary">
-                                (Hive {hives.find(h => h.id === task.hive_id)?.hive_number || 'Unknown'})
-                              </span>
-                            )}
-                            {task.description && (
-                              <p className="text-sm text-text-tertiary mt-1">{task.description}</p>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </Surface>
+                {checklistGroups.length > 0 ? (
+                  <div className="space-y-4">
+                    {checklistGroups.map(apiaryGroup => (
+                      <div key={apiaryGroup.apiaryId ?? '__none__'} className="space-y-3">
+                        {checklistApiaryId === 'all' && (
+                          <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wide">
+                            {apiaryGroup.apiaryName}
+                          </h4>
+                        )}
+                        {apiaryGroup.hives.map(hiveGroup => (
+                          <Surface
+                            key={hiveGroup.hiveId ?? '__general__'}
+                            padded="sm"
+                            className="bg-surface-secondary"
+                          >
+                            <p className="text-sm font-semibold text-foreground mb-2">
+                              {hiveGroup.hiveId ? `Hive ${hiveGroup.hiveNumber}` : 'General apiary tasks'}
+                            </p>
+                            <ul className="space-y-3">
+                              {hiveGroup.tasks.map(task => (
+                                <li key={task.id} className="flex items-start gap-3">
+                                  <CheckboxInput
+                                    defaultChecked={task.completed}
+                                    className="mt-1 print:border-black"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                                      <span className={`text-foreground ${task.completed ? 'line-through text-text-tertiary' : ''}`}>
+                                        {task.title}
+                                      </span>
+                                      <span className="text-xs text-text-tertiary">
+                                        {formatLocalDate(task.start_date)}
+                                      </span>
+                                      {task.priority && task.priority !== 'normal' && (
+                                        <Badge tone={getPriorityBadgeTone(task.priority)} className="uppercase">
+                                          {task.priority}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    {task.description && (
+                                      <p className="text-sm text-text-tertiary mt-1">{task.description}</p>
+                                    )}
+                                    {task.equipment_needed && (
+                                      <p className="text-xs text-text-tertiary mt-1">
+                                        Equipment: {task.equipment_needed}
+                                      </p>
+                                    )}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </Surface>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-text-tertiary italic">No tasks for this apiary</p>
+                  <p className="text-text-tertiary italic">No outstanding tasks for this scope</p>
                 )}
               </div>
 

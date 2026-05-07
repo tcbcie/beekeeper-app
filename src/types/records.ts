@@ -296,6 +296,27 @@ export interface ArchiveFormData {
   archive_notes: string
 }
 
+// Transient draft for follow-up tasks captured at the end of an inspection.
+// These are NOT persisted on the inspections table — each draft is inserted
+// into tasks_events at submit time and then forgotten.
+export type FollowUpTaskPriority = 'low' | 'normal' | 'high' | 'urgent'
+
+export interface FollowUpTaskDraft {
+  title: string
+  description: string
+  due_date: string
+  priority: FollowUpTaskPriority
+  equipment_needed: string
+}
+
+export const getDefaultFollowUpTaskDraft = (defaultDate: string): FollowUpTaskDraft => ({
+  title: '',
+  description: '',
+  due_date: defaultDate,
+  priority: 'normal',
+  equipment_needed: '',
+})
+
 // Filter state
 export interface FilterState {
   hiveId: string

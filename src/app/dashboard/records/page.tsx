@@ -44,7 +44,8 @@ import type {
   Feeding,
   Harvest,
   InspectionFormData,
-  ArchiveFormData
+  ArchiveFormData,
+  FollowUpTaskDraft
 } from '@/types/records'
 import { getDefaultArchiveFormData, getDefaultInspectionFormData } from '@/types/records'
 
@@ -619,12 +620,17 @@ export default function RecordsPage() {
       p_delta: delta,
     })
     if (error) {
+      console.error('Hive super sync failed:', error)
       toast.warning('Inspection saved. The hive\'s super count could not be updated — open the hive to verify it\'s correct.')
     }
   }, [userId, toast])
 
   // Inspection handlers
-  const handleInspectionSubmit = async (formData: InspectionFormData, imageFile: File | null) => {
+  const handleInspectionSubmit = async (
+    formData: InspectionFormData,
+    imageFile: File | null,
+    followUpTasks: FollowUpTaskDraft[] = []
+  ) => {
     if (!userId) return
 
     try {
@@ -705,6 +711,35 @@ export default function RecordsPage() {
         if (error) throw error
 
         await adjustHiveHoneySupers(formData.hive_id, formData.honey_supers)
+      }
+
+      if (followUpTasks.length > 0) {
+        const selectedHive = hives.find(h => h.id === formData.hive_id)
+        const apiaryId = selectedHive?.apiary_id ?? null
+        const isTeamTask = !!selectedHive && sharedHiveIds.includes(selectedHive.id)
+
+        const taskRows = followUpTasks.map(draft => ({
+          user_id: userId,
+          title: draft.title,
+          description: draft.description || null,
+          event_type: 'task' as const,
+          category: 'inspection' as const,
+          priority: draft.priority,
+          start_date: draft.due_date,
+          all_day: true,
+          hive_id: formData.hive_id,
+          apiary_id: apiaryId,
+          equipment_needed: draft.equipment_needed || null,
+          notes: `Auto-created from inspection on ${formData.inspection_date}.`,
+          is_team_task: isTeamTask,
+          completed: false,
+        }))
+
+        const { error: tasksError } = await supabase.from('tasks_events').insert(taskRows)
+        if (tasksError) {
+          console.error('Follow-up task insert failed:', tasksError)
+          toast.warning(`Inspection saved, but ${taskRows.length} follow-up task(s) could not be created. Open Tasks to add them manually.`)
+        }
       }
 
       await fetchInspections(userId, filters.ownershipFilter)
