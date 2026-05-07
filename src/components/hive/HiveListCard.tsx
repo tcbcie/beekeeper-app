@@ -18,9 +18,11 @@ interface HiveListCardProps {
 export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchive, openMenuId, setOpenMenuId }: HiveListCardProps) {
  const router = useRouter()
 
- // Days since last inspection badge
- const daysSinceInspection = hive.last_record?.date
- ? Math.floor((Date.now() - new Date(hive.last_record.date).getTime()) / (1000 * 60 * 60 * 24))
+ // Days since last inspection badge. Must use last_inspection_date specifically —
+ // last_record covers any record type (inspections, varroa treatments, feedings,
+ // harvests), so a recent treatment would mask an older overdue inspection.
+ const daysSinceInspection = hive.last_inspection_date
+ ? Math.floor((Date.now() - new Date(hive.last_inspection_date).getTime()) / (1000 * 60 * 60 * 24))
  : null
 
  return (
