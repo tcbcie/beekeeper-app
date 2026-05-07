@@ -604,6 +604,25 @@ export default function RecordsPage() {
     }
   }
 
+  // Apply a Given/Taken honey-super delta to a hive's stored configuration.
+  // Atomic via Postgres RPC: clamps at 0, only mutates the honey_supers key,
+  // and serialises concurrent adjustments via row-level lock.
+  const HONEY_SUPER_DELTA_MAX = 100
+  const adjustHiveHoneySupers = useCallback(async (hiveId: string, delta: number) => {
+    if (delta === 0 || !userId) return
+    if (!Number.isInteger(delta) || Math.abs(delta) > HONEY_SUPER_DELTA_MAX) {
+      toast.warning('Hive super count not updated: adjustment is out of safe range.')
+      return
+    }
+    const { error } = await supabase.rpc('adjust_hive_honey_supers', {
+      p_hive_id: hiveId,
+      p_delta: delta,
+    })
+    if (error) {
+      toast.warning('Inspection saved. The hive\'s super count could not be updated — open the hive to verify it\'s correct.')
+    }
+  }, [userId, toast])
+
   // Inspection handlers
   const handleInspectionSubmit = async (formData: InspectionFormData, imageFile: File | null) => {
     if (!userId) return
@@ -652,22 +671,44 @@ export default function RecordsPage() {
       }
 
       if (editingInspection?.id) {
-        const { error } = await supabase
+        const { data: updatedRows, error } = await supabase
           .from('inspections')
           .update(submitData)
           .eq('id', editingInspection.id)
           .eq('user_id', userId)
+          .select('id')
 
         if (error) throw error
+        if (!updatedRows || updatedRows.length !== 1) {
+          toast.error('Inspection could not be updated. It may have been changed elsewhere — please refresh.')
+          return
+        }
+
+        const oldHiveId = editingInspection.hive_id
+        const oldHoneySupers = Number.isInteger(editingInspection.honey_supers)
+          ? editingInspection.honey_supers
+          : 0
+
+        if (oldHiveId === formData.hive_id) {
+          await adjustHiveHoneySupers(formData.hive_id, formData.honey_supers - oldHoneySupers)
+        } else {
+          // Apply on the new hive first; if the second call fails we end up with
+          // an inflated count (visible to the user) rather than a missing one (silent).
+          await adjustHiveHoneySupers(formData.hive_id, formData.honey_supers)
+          await adjustHiveHoneySupers(oldHiveId, -oldHoneySupers)
+        }
       } else {
         const { error } = await supabase
           .from('inspections')
           .insert([{ ...submitData, user_id: userId }])
 
         if (error) throw error
+
+        await adjustHiveHoneySupers(formData.hive_id, formData.honey_supers)
       }
 
       await fetchInspections(userId, filters.ownershipFilter)
+      await fetchHives(userId)
       resetForm()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error saving inspection')
@@ -686,15 +727,31 @@ export default function RecordsPage() {
 
   const handleInspectionDelete = async (id: string) => {
     if (!userId) return
-    if (confirm('Are you sure you want to delete this inspection?')) {
-      const { error } = await supabase
-        .from('inspections')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', userId)
+    if (!confirm('Are you sure you want to delete this inspection?')) return
 
-      if (!error && userId) await fetchInspections(userId, filters.ownershipFilter)
+    const { data: deletedRows, error } = await supabase
+      .from('inspections')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId)
+      .select('hive_id, honey_supers')
+
+    if (error) {
+      toast.error(error.message)
+      return
     }
+    if (!deletedRows || deletedRows.length !== 1) {
+      toast.error('Inspection could not be deleted. It may have been removed already.')
+      return
+    }
+
+    const removed = deletedRows[0]
+    const removedSupers = Number.isInteger(removed.honey_supers) ? removed.honey_supers : 0
+    if (removedSupers) {
+      await adjustHiveHoneySupers(removed.hive_id, -removedSupers)
+    }
+    await fetchInspections(userId, filters.ownershipFilter)
+    await fetchHives(userId)
   }
 
   // Treatment handlers
