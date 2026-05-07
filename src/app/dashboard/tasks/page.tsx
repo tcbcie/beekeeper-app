@@ -68,6 +68,17 @@ interface Batch {
   batch_name: string
 }
 
+// Per-hive context surfaced in the Visit Checklist's overview table.
+// Mirrors the apiary-overview report shape but only for hives that have
+// outstanding tasks in the current checklist scope.
+interface HiveOverviewSummary {
+  status: string
+  last_inspection_date: string | null
+  queen_seen: boolean | null
+  population_strength: number | null
+  notes: string | null
+}
+
 export default function TasksEventsPage() {
   const searchParams = useSearchParams()
   const toast = useToast()
@@ -90,6 +101,8 @@ export default function TasksEventsPage() {
   const [filterOwnership, setFilterOwnership] = useState<'all' | 'my' | 'team'>('all')
   const [showChecklist, setShowChecklist] = useState(false)
   const [checklistApiaryId, setChecklistApiaryId] = useState<string>('all')
+  const [hiveOverview, setHiveOverview] = useState<Map<string, HiveOverviewSummary>>(new Map())
+  const [loadingOverview, setLoadingOverview] = useState(false)
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null)
   const appliedTaskDeepLinkRef = useRef<string | null>(null)
@@ -569,6 +582,70 @@ export default function TasksEventsPage() {
     setChecklistApiaryId(filterApiary !== 'all' ? filterApiary : 'all')
     setShowChecklist(true)
   }, [filterApiary])
+
+  // Load per-hive context (status + latest inspection summary) for the
+  // current checklist scope. Refreshes whenever the modal opens or the
+  // task scope changes so the overview table reflects fresh DB state.
+  useEffect(() => {
+    if (!showChecklist) return
+
+    const hiveIds = Array.from(new Set(
+      checklistTasks.map(t => t.hive_id).filter((id): id is string => Boolean(id))
+    ))
+
+    if (hiveIds.length === 0) {
+      setHiveOverview(new Map())
+      return
+    }
+
+    let cancelled = false
+    setLoadingOverview(true)
+    ;(async () => {
+      try {
+        const [{ data: hivesData, error: hivesError }, { data: inspectionsData, error: inspectionsError }] = await Promise.all([
+          supabase
+            .from('hives')
+            .select('id, status')
+            .in('id', hiveIds),
+          supabase
+            .from('inspections')
+            .select('hive_id, inspection_date, queen_seen, population_strength, notes')
+            .in('hive_id', hiveIds)
+            .order('inspection_date', { ascending: false }),
+        ])
+
+        if (hivesError) console.error('Checklist hive fetch failed:', hivesError)
+        if (inspectionsError) console.error('Checklist inspection fetch failed:', inspectionsError)
+
+        const latestByHive = new Map<string, HiveOverviewSummary>()
+        for (const hive of hivesData || []) {
+          latestByHive.set(hive.id, {
+            status: hive.status ?? 'active',
+            last_inspection_date: null,
+            queen_seen: null,
+            population_strength: null,
+            notes: null,
+          })
+        }
+        for (const insp of inspectionsData || []) {
+          const existing = latestByHive.get(insp.hive_id)
+          if (!existing || existing.last_inspection_date !== null) continue
+          existing.last_inspection_date = insp.inspection_date
+          existing.queen_seen = insp.queen_seen
+          existing.population_strength = insp.population_strength
+          existing.notes = insp.notes
+        }
+
+        if (!cancelled) setHiveOverview(latestByHive)
+      } finally {
+        if (!cancelled) setLoadingOverview(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [showChecklist, checklistTasks])
 
   useEffect(() => {
     if (!highlightedTaskId || scrolledTaskRef.current === highlightedTaskId) return
@@ -1197,7 +1274,7 @@ export default function TasksEventsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 print:bg-background print:p-0">
           <Card
             padding="none"
-            className="max-w-lg w-full max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:shadow-none print:border-none"
+            className="max-w-4xl w-full max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:shadow-none print:border-none"
           >
             {/* Header */}
             <div className="sticky top-0 bg-surface-elevated dark:bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between print:static print:bg-background print:border-b-2 print:border-black">
@@ -1253,71 +1330,133 @@ export default function TasksEventsPage() {
                 )}
               </div>
 
-              {/* Tasks grouped by apiary -> hive */}
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <span>✅</span> Tasks to complete
-                </h3>
-                {checklistGroups.length > 0 ? (
-                  <div className="space-y-4">
-                    {checklistGroups.map(apiaryGroup => (
-                      <div key={apiaryGroup.apiaryId ?? '__none__'} className="space-y-3">
+              {/* Hive overview + Tasks tables (one pair per apiary) */}
+              {checklistGroups.length > 0 ? (
+                <div className="space-y-8">
+                  {checklistGroups.map(apiaryGroup => {
+                    const overviewRows = apiaryGroup.hives
+                      .filter(h => h.hiveId !== null)
+                      .map(h => ({
+                        hiveId: h.hiveId as string,
+                        hiveNumber: h.hiveNumber,
+                        summary: hiveOverview.get(h.hiveId as string),
+                      }))
+
+                    const taskRows = apiaryGroup.hives.flatMap(h =>
+                      h.tasks.map(task => ({ task, hiveLabel: h.hiveId ? `Hive ${h.hiveNumber}` : 'General' }))
+                    )
+
+                    return (
+                      <section key={apiaryGroup.apiaryId ?? '__none__'} className="space-y-4 print:break-inside-avoid">
                         {checklistApiaryId === 'all' && (
-                          <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wide">
+                          <h4 className="text-base font-semibold text-foreground border-b border-border pb-1 print:border-black">
                             {apiaryGroup.apiaryName}
                           </h4>
                         )}
-                        {apiaryGroup.hives.map(hiveGroup => (
-                          <Surface
-                            key={hiveGroup.hiveId ?? '__general__'}
-                            padded="sm"
-                            className="bg-surface-secondary"
-                          >
-                            <p className="text-sm font-semibold text-foreground mb-2">
-                              {hiveGroup.hiveId ? `Hive ${hiveGroup.hiveNumber}` : 'General apiary tasks'}
-                            </p>
-                            <ul className="space-y-3">
-                              {hiveGroup.tasks.map(task => (
-                                <li key={task.id} className="flex items-start gap-3">
-                                  <CheckboxInput
-                                    defaultChecked={task.completed}
-                                    className="mt-1 print:border-black"
-                                  />
-                                  <div className="flex-1">
-                                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                                      <span className={`text-foreground ${task.completed ? 'line-through text-text-tertiary' : ''}`}>
-                                        {task.title}
-                                      </span>
-                                      <span className="text-xs text-text-tertiary">
-                                        {formatLocalDate(task.start_date)}
-                                      </span>
-                                      {task.priority && task.priority !== 'normal' && (
-                                        <Badge tone={getPriorityBadgeTone(task.priority)} className="uppercase">
+
+                        {/* Hive overview table */}
+                        {overviewRows.length > 0 && (
+                          <div>
+                            <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <span aria-hidden="true">🐝</span> Hive overview
+                            </h3>
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full border-collapse text-sm">
+                                <thead>
+                                  <tr className="bg-surface-elevated text-xs uppercase tracking-wide text-text-secondary">
+                                    <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Hive</th>
+                                    <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Status</th>
+                                    <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Last inspected</th>
+                                    <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Queen seen</th>
+                                    <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Pop.</th>
+                                    <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Last notes</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {overviewRows.map(row => {
+                                    const summary = row.summary
+                                    const queenLabel = summary?.queen_seen === null || summary?.queen_seen === undefined
+                                      ? '–'
+                                      : summary.queen_seen ? 'Yes' : 'No'
+                                    const popLabel = summary?.population_strength == null ? '–' : String(summary.population_strength)
+                                    const dateLabel = summary?.last_inspection_date
+                                      ? formatLocalDate(summary.last_inspection_date)
+                                      : 'Never'
+                                    const statusLabel = summary?.status ?? 'active'
+                                    return (
+                                      <tr key={row.hiveId} className="even:bg-surface-secondary/40 print:even:bg-transparent">
+                                        <td className="border border-border px-3 py-2 align-top font-medium text-foreground print:border-black">{row.hiveNumber}</td>
+                                        <td className="border border-border px-3 py-2 align-top text-foreground print:border-black capitalize">{statusLabel}</td>
+                                        <td className="border border-border px-3 py-2 align-top text-foreground print:border-black">{dateLabel}</td>
+                                        <td className="border border-border px-3 py-2 align-top text-foreground print:border-black">{queenLabel}</td>
+                                        <td className="border border-border px-3 py-2 align-top text-foreground print:border-black">{popLabel}</td>
+                                        <td className="border border-border px-3 py-2 align-top text-text-secondary print:border-black print:text-black">{summary?.notes ?? '–'}</td>
+                                      </tr>
+                                    )
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                            {loadingOverview && (
+                              <p className="mt-1 text-xs text-text-tertiary print:hidden">Loading hive context…</p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Tasks table */}
+                        <div>
+                          <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                            <span aria-hidden="true">✅</span> Tasks for this visit
+                          </h3>
+                          <div className="overflow-x-auto">
+                            <table className="min-w-full border-collapse text-sm">
+                              <thead>
+                                <tr className="bg-surface-elevated text-xs uppercase tracking-wide text-text-secondary">
+                                  <th className="border border-border px-3 py-2 text-center font-semibold w-10 print:border-black" aria-label="Done"></th>
+                                  <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Hive</th>
+                                  <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Task</th>
+                                  <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Due</th>
+                                  <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Priority</th>
+                                  <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Equipment</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {taskRows.map(({ task, hiveLabel }) => (
+                                  <tr key={task.id} className="even:bg-surface-secondary/40 print:even:bg-transparent">
+                                    <td className="border border-border px-3 py-2 align-top text-center print:border-black">
+                                      <CheckboxInput defaultChecked={task.completed} className="print:border-black" />
+                                    </td>
+                                    <td className="border border-border px-3 py-2 align-top text-foreground print:border-black whitespace-nowrap">{hiveLabel}</td>
+                                    <td className="border border-border px-3 py-2 align-top text-foreground print:border-black">
+                                      <span className={task.completed ? 'line-through text-text-tertiary' : ''}>{task.title}</span>
+                                      {task.description && (
+                                        <p className="mt-1 text-xs text-text-tertiary print:text-black">{task.description}</p>
+                                      )}
+                                    </td>
+                                    <td className="border border-border px-3 py-2 align-top text-foreground print:border-black whitespace-nowrap">{formatLocalDate(task.start_date)}</td>
+                                    <td className="border border-border px-3 py-2 align-top print:border-black capitalize">
+                                      {task.priority && task.priority !== 'normal' ? (
+                                        <Badge tone={getPriorityBadgeTone(task.priority)} className="uppercase print:border print:border-black">
                                           {task.priority}
                                         </Badge>
+                                      ) : (
+                                        <span className="text-text-tertiary">{task.priority ?? '–'}</span>
                                       )}
-                                    </div>
-                                    {task.description && (
-                                      <p className="text-sm text-text-tertiary mt-1">{task.description}</p>
-                                    )}
-                                    {task.equipment_needed && (
-                                      <p className="text-xs text-text-tertiary mt-1">
-                                        Equipment: {task.equipment_needed}
-                                      </p>
-                                    )}
-                                  </div>
-                                </li>
-                              ))}
-                            </ul>
-                          </Surface>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-text-tertiary italic">No outstanding tasks for this scope</p>
-                )}
-              </div>
+                                    </td>
+                                    <td className="border border-border px-3 py-2 align-top text-foreground print:border-black">{task.equipment_needed || '–'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </section>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-text-tertiary italic">No outstanding tasks for this scope</p>
+              )}
 
               {/* Notes Section */}
               <div className="print:block">
