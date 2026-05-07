@@ -200,6 +200,7 @@ export default function RecordsPage() {
       drone_brood_present: editingInspection.drone_brood_present ?? defaults.drone_brood_present,
       propolis_level: editingInspection.propolis_level ?? defaults.propolis_level,
       brood_frames: editingInspection.brood_frames ?? defaults.brood_frames,
+      brood_frames_per_box: editingInspection.brood_frames_per_box ?? defaults.brood_frames_per_box,
       right_sized_frames: editingInspection.right_sized_frames ?? defaults.right_sized_frames,
       brood_pattern_rating: editingInspection.brood_pattern_rating ?? defaults.brood_pattern_rating,
       temperament_rating: editingInspection.temperament_rating ?? defaults.temperament_rating,

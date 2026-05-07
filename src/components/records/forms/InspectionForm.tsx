@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { ChevronDown, ChevronUp, Camera, X, Mic, Square, Loader2, Plus, Trash2 } from 'lucide-react'
 import Image from 'next/image'
-import type { Hive, Apiary, InspectionFormData, FollowUpTaskDraft, FollowUpTaskPriority } from '@/types/records'
+import type { Hive, Apiary, InspectionFormData, FollowUpTaskDraft, FollowUpTaskPriority, BroodBoxFrames, BroodBoxType } from '@/types/records'
 import { getDefaultInspectionFormData, getDefaultFollowUpTaskDraft, LEVEL_NOT_RECORDED } from '@/types/records'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
@@ -471,6 +471,62 @@ export default function InspectionForm({
 
   const selectedHive = hives.find(h => h.id === formData.hive_id)
 
+  // Brood box list for the selected hive. Full boxes first, then half-depth.
+  // Falls back to legacy `brood_boxes` total when full/half aren't broken out.
+  const broodBoxFullCount = selectedHive?.configuration?.brood_boxes_full
+    ?? selectedHive?.configuration?.brood_boxes
+    ?? 0
+  const broodBoxHalfCount = selectedHive?.configuration?.brood_boxes_half ?? 0
+  const broodBoxList = useMemo<{ box: number; type: BroodBoxType }[]>(() => {
+    const boxes: { box: number; type: BroodBoxType }[] = []
+    let idx = 1
+    for (let i = 0; i < broodBoxFullCount; i++) boxes.push({ box: idx++, type: 'full' })
+    for (let i = 0; i < broodBoxHalfCount; i++) boxes.push({ box: idx++, type: 'half' })
+    return boxes
+  }, [broodBoxFullCount, broodBoxHalfCount])
+  const isMultiBox = broodBoxList.length > 1
+
+  // Reconcile formData.brood_frames_per_box with the hive's current box list.
+  // Single-box hives clear it to null. Multi-box hives initialise from the
+  // existing total (Box 1 seed) when transitioning from null, and otherwise
+  // preserve already-entered values when the box list shape changes.
+  useEffect(() => {
+    setFormData(prev => {
+      if (!isMultiBox) {
+        if (prev.brood_frames_per_box === null) return prev
+        // Coming from multi-box: brood_frames was a sum across boxes and has
+        // no meaning for the new hive's single picker. Clear both fields so
+        // the previous hive's total can't leak forward as a stale prefill.
+        return { ...prev, brood_frames_per_box: null, brood_frames: null }
+      }
+      const existing = prev.brood_frames_per_box
+      const next: BroodBoxFrames[] = broodBoxList.map(({ box, type }) => {
+        const match = existing?.find(b => b.box === box && b.type === type)
+        if (match) return match
+        if (box === 1 && existing == null && prev.brood_frames !== null) {
+          return { box: 1, type, frames: prev.brood_frames }
+        }
+        return { box, type, frames: 0 }
+      })
+      const sameLength = existing != null && existing.length === next.length
+      const unchanged = sameLength && existing!.every((b, i) =>
+        b.box === next[i].box && b.type === next[i].type && b.frames === next[i].frames
+      )
+      if (unchanged) return prev
+      const total = next.reduce((sum, b) => sum + b.frames, 0)
+      return { ...prev, brood_frames_per_box: next, brood_frames: total }
+    })
+  }, [isMultiBox, broodBoxList])
+
+  const setBroodFramesForBox = useCallback((boxIndex: number, frames: number) => {
+    setFormData(prev => {
+      const list = prev.brood_frames_per_box ?? []
+      const updated = list.map(b => b.box === boxIndex ? { ...b, frames } : b)
+      const total = updated.reduce((sum, b) => sum + b.frames, 0)
+      return { ...prev, brood_frames_per_box: updated, brood_frames: total }
+    })
+  }, [])
+
   // Render star rating component
   const renderStarRating = useCallback((value: number, onChange: (val: number) => void, label: string) => (
     <div>
@@ -782,10 +838,36 @@ export default function InspectionForm({
             </label>
           </div>
 
-          {renderNumberSelector(
-            formData.brood_frames,
-            (val) => setFormData(prev => ({ ...prev, brood_frames: val })),
-            'Frames with Brood'
+          {isMultiBox ? (
+            <div className="space-y-3">
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-medium text-text-secondary">Frames with Brood per box</span>
+                <span className="text-xs text-text-tertiary">Total: {formData.brood_frames ?? 0}</span>
+              </div>
+              {(formData.brood_frames_per_box ?? []).map(box => (
+                <div key={`box-${box.box}-${box.type}`}>
+                  {renderNumberSelector(
+                    box.frames,
+                    (val) => setBroodFramesForBox(box.box, val ?? 0),
+                    `Box ${box.box} (${box.type})`
+                  )}
+                </div>
+              ))}
+              {isEditing
+                && initialData?.brood_frames_per_box == null
+                && initialData?.brood_frames != null
+                && initialData.brood_frames > 0 && (
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
+                  Per-box detail wasn&apos;t recorded when this inspection was first saved. Box 1 reflects the original total of {initialData.brood_frames}; please adjust if needed.
+                </p>
+              )}
+            </div>
+          ) : (
+            renderNumberSelector(
+              formData.brood_frames,
+              (val) => setFormData(prev => ({ ...prev, brood_frames: val })),
+              'Frames with Brood'
+            )
           )}
 
           {selectedHive?.configuration?.right_sized_broodbox && renderNumberSelector(
