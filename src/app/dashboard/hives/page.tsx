@@ -244,12 +244,14 @@ export default function HivesPage() {
  }
  })
 
- // Batch query for all inspections for these hives
+ // Batch query for all inspections for these hives.
+ // RLS already restricts to records the user can see (own + shared apiary);
+ // do NOT add .eq('user_id', currentUserId) here or team-mate inspections on
+ // shared hives are hidden from the hive card aggregates.
  const { data: allInspections } = await supabase
  .from('inspections')
  .select('hive_id, inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength, queen_seen, eggs_present')
  .in('hive_id', hiveIds)
- .eq('user_id', currentUserId)
  .order('inspection_date', { ascending: false })
 
  // Group inspections by hive_id
@@ -261,7 +263,17 @@ export default function HivesPage() {
  inspectionsByHive.get(inspection.hive_id)!.push(inspection)
  })
 
- // Batch query for last record of each type for these hives
+ // Batch query for last record of each type across all hives.
+ // Notes:
+ //   - No .eq('user_id', currentUserId): RLS already restricts the result to
+ //     records the user is allowed to see (own + shared via team_apiaries).
+ //     Filtering client-side on user_id wrongly hides team-mate records on
+ //     shared hives (e.g. badges showed "Never" because a team-mate's
+ //     inspection was filtered out).
+ //   - No .limit(hiveIds.length): PostgREST's limit is a total row cap, not a
+ //     per-hive cap. With the limit set, hives whose latest record is older
+ //     than the global top N would silently disappear from the dedupe map.
+ //     We rely on the dedupe-first-hit loop below to keep one row per hive.
  const [
  { data: lastInspections },
  { data: lastTreatments },
@@ -274,37 +286,27 @@ export default function HivesPage() {
  .from('inspections')
  .select('hive_id, inspection_date')
  .in('hive_id', hiveIds)
- .eq('user_id', currentUserId)
- .order('inspection_date', { ascending: false })
- .limit(hiveIds.length),
+ .order('inspection_date', { ascending: false }),
  supabase
  .from('varroa_treatments')
  .select('hive_id, treatment_date')
  .in('hive_id', hiveIds)
- .eq('user_id', currentUserId)
- .order('treatment_date', { ascending: false })
- .limit(hiveIds.length),
+ .order('treatment_date', { ascending: false }),
  supabase
  .from('varroa_checks')
  .select('hive_id, check_date')
  .in('hive_id', hiveIds)
- .eq('user_id', currentUserId)
- .order('check_date', { ascending: false })
- .limit(hiveIds.length),
+ .order('check_date', { ascending: false }),
  supabase
  .from('feedings')
  .select('hive_id, feed_date')
  .in('hive_id', hiveIds)
- .eq('user_id', currentUserId)
- .order('feed_date', { ascending: false })
- .limit(hiveIds.length),
+ .order('feed_date', { ascending: false }),
  supabase
  .from('harvests')
  .select('hive_id, harvest_date')
  .in('hive_id', hiveIds)
- .eq('user_id', currentUserId)
- .order('harvest_date', { ascending: false })
- .limit(hiveIds.length),
+ .order('harvest_date', { ascending: false }),
  supabase
  .from('tasks_events')
  .select('hive_id')
