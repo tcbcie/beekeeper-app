@@ -2,9 +2,16 @@
 
 ## Overview
 
-A lightweight variant of the planned `voice-inspection.md` feature. Instead of extracting 40+ structured fields from speech, this feature records a voice note, transcribes it via OpenAI Whisper, cleans up the transcript via GPT (punctuation, grammar, removal of filler words), and **pastes the cleaned text into the inspection's Notes textarea only** — nothing else in the form is touched.
+A lightweight variant of the planned `voice-inspection.md` feature. Instead of extracting 40+ structured fields from speech, this feature records a voice note, transcribes it via OpenAI Whisper, cleans up the transcript via GPT (punctuation, grammar, removal of filler words), and **pastes the cleaned text into a Notes textarea** — nothing else in the form is touched.
 
 This keeps scope minimal, ships fast, and gives beekeepers the biggest immediate win (dictating a paragraph of observations while gloved up) without the complexity of field extraction.
+
+## Where it is wired up
+
+- **Inspection form** — `src/components/records/forms/InspectionForm.tsx` (Notes section).
+- **Queen Rearing batch form** — `src/app/dashboard/batches/page.tsx` (Notes section under the grafting/batch form).
+
+Both surfaces share the exact same UI and reuse the same `useVoiceRecorder` hook and the single `/api/voice-notes-transcribe` endpoint. The API route does its own subscription gating, so adding the feature to a new Notes field is a copy-paste of state + button + handler.
 
 ## Problem
 
