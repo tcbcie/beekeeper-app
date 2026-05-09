@@ -1,8 +1,8 @@
 'use client'
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getCurrentUserId } from '@/lib/auth'
-import { Plus, Edit2, Trash2, X, Minus, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { getCurrentUserId, hasActiveSubscription } from '@/lib/auth'
+import { Plus, Edit2, Trash2, X, Minus, MessageCircle, ChevronDown, ChevronUp, Mic, Square, Loader2 } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
@@ -19,6 +19,7 @@ import QueenTrackerTab from '@/components/batches/QueenTrackerTab'
 import QueenRearingPlanningTab from '@/components/batches/QueenRearingPlanningTab'
 import NucReportsTab from '@/components/batches/NucReportsTab'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
+import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
 
 interface Queen {
  id: string
@@ -205,6 +206,18 @@ export default function BatchesPage() {
  const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
  const [loading, setLoading] = useState(true)
  const [userId, setUserId] = useState<string | null>(null)
+ const [userHasActiveSubscription, setUserHasActiveSubscription] = useState(false)
+ const {
+ isRecording: isVoiceRecording,
+ isSupported: isVoiceSupported,
+ error: voiceRecorderError,
+ startRecording: startVoiceRecording,
+ stopRecording: stopVoiceRecording,
+ reset: resetVoiceRecorder
+ } = useVoiceRecorder()
+ const [voiceProcessing, setVoiceProcessing] = useState(false)
+ const [voiceError, setVoiceError] = useState<string | null>(null)
+ const voiceAbortRef = useRef<AbortController | null>(null)
  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'completed'>('active')
  const [filterYear, setFilterYear] = useState<string>('all')
 
@@ -446,6 +459,8 @@ export default function BatchesPage() {
  return
  }
  setUserId(id)
+ const hasSubscription = await hasActiveSubscription()
+ setUserHasActiveSubscription(hasSubscription)
  fetchBatches(id)
  fetchQueens(id)
  fetchApiaries(id)
@@ -458,6 +473,14 @@ export default function BatchesPage() {
  // Initialize browser notifications
  useEffect(() => {
  initializeNotifications()
+ }, [])
+
+ // Abort any in-flight voice transcription on page unmount
+ useEffect(() => {
+ return () => {
+ voiceAbortRef.current?.abort()
+ voiceAbortRef.current = null
+ }
  }, [])
 
  // Schedule notifications for batches with browser notifications enabled
@@ -792,9 +815,89 @@ export default function BatchesPage() {
  }
  }, [activeTab, selectedApiary, timePeriod, customStartDate, customEndDate, weights, optionalColumns, calculateHiveScores])
 
+ const appendVoiceTranscript = useCallback((cleaned: string) => {
+ if (!cleaned) return
+ setFormData(prev => {
+ const existing = (prev.notes || '').trimEnd()
+ const merged = existing ? `${existing}\n\n${cleaned}` : cleaned
+ return { ...prev, notes: merged }
+ })
+ }, [])
+
+ const handleToggleVoice = useCallback(async () => {
+ if (voiceProcessing) return
+ if (isVoiceRecording) {
+ const blob = await stopVoiceRecording()
+ if (!blob) {
+ setVoiceError('Recording was empty. Please try again.')
+ return
+ }
+ voiceAbortRef.current?.abort()
+ const controller = new AbortController()
+ voiceAbortRef.current = controller
+ setVoiceProcessing(true)
+ setVoiceError(null)
+ try {
+ const { data: { session } } = await supabase.auth.getSession()
+ const token = session?.access_token
+ if (!token) {
+ setVoiceError('You need to be signed in to transcribe voice notes.')
+ return
+ }
+ const fd = new FormData()
+ const ext = blob.type.includes('mp4') ? 'mp4' : blob.type.includes('ogg') ? 'ogg' : 'webm'
+ fd.append('audio', blob, `voice-note.${ext}`)
+ const res = await fetch('/api/voice-notes-transcribe', {
+ method: 'POST',
+ headers: { Authorization: `Bearer ${token}` },
+ body: fd,
+ signal: controller.signal
+ })
+ if (!res.ok) {
+ const body = await res.json().catch(() => ({})) as { error?: string; code?: string }
+ if (controller.signal.aborted) return
+ if (body.code === 'SUBSCRIPTION_REQUIRED') {
+ setVoiceError('An active subscription is required to use voice notes.')
+ } else {
+ setVoiceError(body.error || 'Could not transcribe the recording.')
+ }
+ return
+ }
+ const { cleaned } = await res.json() as { transcript: string; cleaned: string }
+ if (controller.signal.aborted) return
+ if (!cleaned) {
+ setVoiceError('Nothing was transcribed. Please try recording again.')
+ return
+ }
+ appendVoiceTranscript(cleaned)
+ } catch (err) {
+ if ((err as Error)?.name === 'AbortError' || controller.signal.aborted) {
+ return
+ }
+ console.error('Voice transcription failed:', err)
+ setVoiceError('Could not transcribe the recording. Please try again.')
+ } finally {
+ if (voiceAbortRef.current === controller) {
+ voiceAbortRef.current = null
+ }
+ if (!controller.signal.aborted) {
+ setVoiceProcessing(false)
+ }
+ }
+ } else {
+ setVoiceError(null)
+ await startVoiceRecording()
+ }
+ }, [appendVoiceTranscript, isVoiceRecording, startVoiceRecording, stopVoiceRecording, voiceProcessing])
+
  const resetForm = () => {
  setShowForm(false)
  setEditingBatch(null)
+ voiceAbortRef.current?.abort()
+ voiceAbortRef.current = null
+ resetVoiceRecorder()
+ setVoiceError(null)
+ setVoiceProcessing(false)
  setFormData({
  batch_name: '',
  mother_queen_id: '',
@@ -1392,6 +1495,46 @@ export default function BatchesPage() {
  placeholder="Weather conditions, acceptance rate, observations..."
  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
  />
+ {userHasActiveSubscription && isVoiceSupported && (
+ <div className="mt-2 flex flex-col gap-2">
+ <Button
+ unstyled
+ type="button"
+ onClick={handleToggleVoice}
+ disabled={voiceProcessing}
+ aria-label={isVoiceRecording ? 'Stop voice recording' : 'Record voice note'}
+ className={`inline-flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-lg text-white font-medium transition-all touch-manipulation disabled:cursor-not-allowed ${
+ voiceProcessing
+ ? 'bg-purple-400 dark:bg-purple-500'
+ : isVoiceRecording
+ ? 'bg-red-600 hover:bg-red-700 animate-pulse'
+ : 'bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600'
+ }`}
+ >
+ {voiceProcessing ? (
+ <>
+ <Loader2 size={18} className="animate-spin" />
+ <span>Transcribing...</span>
+ </>
+ ) : isVoiceRecording ? (
+ <>
+ <Square size={18} />
+ <span>Stop recording</span>
+ </>
+ ) : (
+ <>
+ <Mic size={18} />
+ <span>Record voice note</span>
+ </>
+ )}
+ </Button>
+ {(voiceError || voiceRecorderError) && (
+ <p className="text-sm text-red-600 dark:text-red-400">
+ {voiceError || voiceRecorderError}
+ </p>
+ )}
+ </div>
+ )}
  </div>
 
  {/* Notification Preferences - Grouped */}
