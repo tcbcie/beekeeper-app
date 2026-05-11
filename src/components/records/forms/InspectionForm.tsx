@@ -296,6 +296,12 @@ export default function InspectionForm({
       return
     }
 
+    // Switching the form to a different inspection must also tear down any
+    // in-flight voice transcription from the previous one — otherwise its
+    // cleaned text will land in the new inspection's notes via setFormData.
+    voiceAbortRef.current?.abort()
+    voiceAbortRef.current = null
+
     setFormData(initialData)
     setGivenTakenDrafts(createGivenTakenDrafts(initialData))
     setFormApiaryId(getApiaryIdForHive(initialData.hive_id))
