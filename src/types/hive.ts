@@ -34,6 +34,7 @@ export interface HiveFormData {
   queen_marking_color: string
   queen_mated: boolean
   queen_clipped: boolean
+  is_queenless: boolean
   status: string
   notes: string
   colony_established_date: string
@@ -54,6 +55,7 @@ export interface Hive {
   queen_marking_color: string | null
   queen_mated: boolean
   queen_clipped: boolean
+  is_queenless: boolean
   status: string
   notes: string | null
   colony_established_date: string | null

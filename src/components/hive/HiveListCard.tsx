@@ -92,12 +92,16 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  <div className="flex items-center gap-2">
  <span className={`px-2 py-1 rounded text-xs font-medium ${
  hive.status === 'active' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-800' :
- hive.status === 'queenless' ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800' :
  hive.status === 'archived' ? 'bg-surface dark:bg-surface-elevated text-text-primary border border-border' :
  'bg-surface dark:bg-surface-elevated text-text-primary border border-border'
  }`}>
  {hive.status}
  </span>
+ {hive.is_queenless && !hive.archived_at && (
+ <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800">
+ Queenless
+ </span>
+ )}
  {/* Days since inspection badge */}
  {!hive.archived_at && (
  daysSinceInspection !== null ? (

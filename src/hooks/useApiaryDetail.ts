@@ -8,6 +8,7 @@ interface ApiaryHive {
   id: string
   hive_number: string
   status: string
+  is_queenless: boolean
   archived_at: string | null
   queens?: {
     id: string
@@ -83,7 +84,7 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
       // Fetch hives in this apiary
       const { data: hivesData, error: hivesError } = await supabase
         .from('hives')
-        .select('id, hive_number, status, archived_at, queens(id, queen_number, marking_color)')
+        .select('id, hive_number, status, is_queenless, archived_at, queens(id, queen_number, marking_color)')
         .eq('apiary_id', apiaryId)
         .order('hive_number')
 

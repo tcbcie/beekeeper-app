@@ -58,6 +58,7 @@ export default function HivesPage() {
  queen_marking_color: '',
  queen_mated: false,
  queen_clipped: false,
+ is_queenless: false,
  status: 'active',
  notes: '',
  colony_established_date: new Date().toISOString().split('T')[0],
@@ -819,7 +820,8 @@ export default function HivesPage() {
  queen_marked: formData.queen_marked,
  queen_marking_color: formData.queen_marking_color || null,
  queen_mated: formData.queen_mated,
- queen_clipped: formData.queen_clipped
+ queen_clipped: formData.queen_clipped,
+ is_queenless: formData.is_queenless
  }])
 
  if (historyError) {
@@ -851,6 +853,7 @@ export default function HivesPage() {
  queen_marking_color: hive.queen_marking_color || '',
  queen_mated: hive.queen_mated || false,
  queen_clipped: hive.queen_clipped || false,
+ is_queenless: hive.is_queenless || false,
  status: hive.status,
  notes: hive.notes || '',
  colony_established_date: hive.colony_established_date || '',
@@ -945,6 +948,7 @@ export default function HivesPage() {
  queen_marking_color: '',
  queen_mated: false,
  queen_clipped: false,
+ is_queenless: false,
  status: 'active',
  notes: '',
  colony_established_date: new Date().toISOString().split('T')[0],
@@ -1290,7 +1294,6 @@ export default function HivesPage() {
  className="w-full fj-control"
  >
  <option value="active">Active</option>
- <option value="queenless">Queenless</option>
  <option value="retired">Retired</option>
  </select>
  </div>
@@ -1330,8 +1333,26 @@ export default function HivesPage() {
  />
  </div>
 
- {/* Show queen checkboxes only when no queen is assigned */}
- {!formData.queen_id && (
+ <div className="md:col-span-2">
+ <Button
+ type="button"
+ onClick={() => setFormData({ ...formData, is_queenless: !formData.is_queenless })}
+ className={`w-full px-4 py-3 min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
+ formData.is_queenless
+ ? 'bg-red-600 dark:bg-red-700 text-white shadow-md hover:bg-red-700 dark:hover:bg-red-800 active:bg-red-800 dark:active:bg-red-900'
+ : 'bg-surface dark:bg-surface-elevated text-text-primary hover:bg-surface-elevated active:bg-surface-elevated border border-border'
+ }`}
+ >
+ <span className="text-lg">{formData.is_queenless ? '✓' : '○'}</span>
+ Confirmed Queenless
+ </Button>
+ <p className="mt-1 text-xs text-text-tertiary">
+ Tick this if the colony has no queen (for example, after a swarm). The hive will display a red Queenless badge.
+ </p>
+ </div>
+
+ {/* Show queen attribute toggles only when there is a queen to describe */}
+ {!formData.queen_id && !formData.is_queenless && (
  <>
  <div className="md:col-span-2">
  <label className="block text-sm font-medium text-text-secondary mb-3">Queen Status (if no specific queen assigned)</label>

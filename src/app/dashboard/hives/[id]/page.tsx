@@ -549,14 +549,20 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
           <div className="space-y-2 text-sm">
             <div className="flex justify-between items-center">
               <span className="text-text-tertiary">Status:</span>
-              <span className={`font-medium px-2 py-1 rounded text-xs ${
-                hive.status === 'active' ? 'bg-green-900/50 text-green-300 border border-green-800' :
-                hive.status === 'queenless' ? 'bg-red-900/50 text-red-300 border border-red-800' :
-                hive.status === 'archived' ? 'bg-surface-secondary text-text-primary' :
-                'bg-surface-secondary text-text-primary'
-              }`}>
-                {hive.status}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`font-medium px-2 py-1 rounded text-xs ${
+                  hive.status === 'active' ? 'bg-green-900/50 text-green-300 border border-green-800' :
+                  hive.status === 'archived' ? 'bg-surface-secondary text-text-primary' :
+                  'bg-surface-secondary text-text-primary'
+                }`}>
+                  {hive.status}
+                </span>
+                {hive.is_queenless && !hive.archived_at && (
+                  <span className="font-medium px-2 py-1 rounded text-xs bg-red-900/50 text-red-300 border border-red-800">
+                    Queenless
+                  </span>
+                )}
+              </div>
             </div>
             {hive.hive_type && (
               <div className="flex justify-between">
