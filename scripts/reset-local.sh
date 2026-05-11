@@ -1,10 +1,17 @@
 #!/bin/bash
 set -e
 
-# Edit these values before running
-PROD_SUPABASE_URL="https://tbhofdmfzwibysnnssnx.supabase.co"
-PROD_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiaG9mZG1mendpYnlzbm5zc254Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDc2NzYyOCwiZXhwIjoyMDc2MzQzNjI4fQ.6j1OTuC-9-dkPo8aiu5XnMTTdfglzdKeJcxvf4dweps"
-LOCAL_SUPABASE_URL="http://127.0.0.1:54321"
+# Required environment variables:
+#   PROD_SUPABASE_URL       e.g. https://tbhofdmfzwibysnnssnx.supabase.co
+#   PROD_SERVICE_ROLE_KEY   service-role JWT from Supabase dashboard (Settings -> API).
+#                           NEVER hard-code this. The previously committed value has
+#                           been removed; if it was in git history, rotate the key
+#                           in the Supabase dashboard before continuing.
+#   LOCAL_SUPABASE_URL      defaults to http://127.0.0.1:54321 if unset.
+
+: "${PROD_SUPABASE_URL:?Set PROD_SUPABASE_URL before running}"
+: "${PROD_SERVICE_ROLE_KEY:?Set PROD_SERVICE_ROLE_KEY before running}"
+LOCAL_SUPABASE_URL="${LOCAL_SUPABASE_URL:-http://127.0.0.1:54321}"
 
 echo "=== Step 1: Reset local database ==="
 supabase db reset --local

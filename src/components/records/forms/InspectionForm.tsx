@@ -170,6 +170,16 @@ export default function InspectionForm({
   } = useVoiceRecorder()
   const [voiceProcessing, setVoiceProcessing] = useState(false)
   const [voiceError, setVoiceError] = useState<string | null>(null)
+  const voiceAbortRef = useRef<AbortController | null>(null)
+
+  // Abort any in-flight voice transcription on unmount so a late response
+  // cannot leak the cleaned transcript into a different inspection's notes.
+  useEffect(() => {
+    return () => {
+      voiceAbortRef.current?.abort()
+      voiceAbortRef.current = null
+    }
+  }, [])
 
   const appendVoiceTranscript = useCallback((cleaned: string) => {
     if (!cleaned) return
@@ -188,6 +198,9 @@ export default function InspectionForm({
         setVoiceError('Recording was empty. Please try again.')
         return
       }
+      voiceAbortRef.current?.abort()
+      const controller = new AbortController()
+      voiceAbortRef.current = controller
       setVoiceProcessing(true)
       setVoiceError(null)
       try {
@@ -203,10 +216,12 @@ export default function InspectionForm({
         const res = await fetch('/api/voice-notes-transcribe', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
-          body: fd
+          body: fd,
+          signal: controller.signal
         })
         if (!res.ok) {
           const body = await res.json().catch(() => ({})) as { error?: string; code?: string }
+          if (controller.signal.aborted) return
           if (body.code === 'SUBSCRIPTION_REQUIRED') {
             setVoiceError('An active subscription is required to use voice notes.')
           } else {
@@ -215,16 +230,25 @@ export default function InspectionForm({
           return
         }
         const { cleaned } = await res.json() as { transcript: string; cleaned: string }
+        if (controller.signal.aborted) return
         if (!cleaned) {
           setVoiceError('Nothing was transcribed. Please try recording again.')
           return
         }
         appendVoiceTranscript(cleaned)
       } catch (err) {
+        if ((err as Error)?.name === 'AbortError' || controller.signal.aborted) {
+          return
+        }
         console.error('Voice transcription failed:', err)
         setVoiceError('Could not transcribe the recording. Please try again.')
       } finally {
-        setVoiceProcessing(false)
+        if (voiceAbortRef.current === controller) {
+          voiceAbortRef.current = null
+        }
+        if (!controller.signal.aborted) {
+          setVoiceProcessing(false)
+        }
       }
     } else {
       setVoiceError(null)
@@ -262,6 +286,8 @@ export default function InspectionForm({
         setFollowUpExpanded(false)
         setFollowUpDrafts([])
         resetImage()
+        voiceAbortRef.current?.abort()
+        voiceAbortRef.current = null
         resetVoiceRecorder()
         setVoiceError(null)
         setVoiceProcessing(false)
