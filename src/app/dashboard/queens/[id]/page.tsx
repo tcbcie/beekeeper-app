@@ -199,9 +199,19 @@ export default function QueenDetailPage() {
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
                 : queen.status === 'cell'
                 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                : queen.status === 'swarmed'
+                ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-700'
+                : queen.status === 'superseded'
+                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700'
                 : 'bg-surface-secondary text-text-secondary border-border'
             }`}>
-              {queen.status === 'cell' ? 'Cell' : queen.status}
+              {queen.status === 'cell'
+                ? 'Cell'
+                : queen.status === 'swarmed'
+                ? 'Swarmed'
+                : queen.status === 'superseded'
+                ? 'Superseded'
+                : queen.status}
             </span>
           </div>
           <p className="text-sm text-text-secondary mt-1">Age: {age}</p>

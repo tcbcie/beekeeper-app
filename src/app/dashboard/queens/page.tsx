@@ -38,12 +38,13 @@ interface SortableThProps {
   sortKey: SortKey | null
   sortDir: 'asc' | 'desc'
   onToggle: (key: SortKey) => void
+  paddingClass?: string
 }
 
 // A <th> that owns its click handler and draws the current sort state as an
 // inline arrow. Extracted so the five sortable headers stay terse and the
 // keyboard/ARIA wiring lives in exactly one place.
-function SortableTh({ label, colKey, sortKey, sortDir, onToggle }: SortableThProps) {
+function SortableTh({ label, colKey, sortKey, sortDir, onToggle, paddingClass = 'px-6' }: SortableThProps) {
   const isActive = sortKey === colKey
   const ariaSort = !isActive ? 'none' : sortDir === 'asc' ? 'ascending' : 'descending'
   const Icon = !isActive ? ArrowUpDown : sortDir === 'asc' ? ArrowUp : ArrowDown
@@ -51,7 +52,7 @@ function SortableTh({ label, colKey, sortKey, sortDir, onToggle }: SortableThPro
     <th
       scope="col"
       aria-sort={ariaSort}
-      className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase"
+      className={`${paddingClass} py-3 text-left text-xs font-medium text-text-tertiary uppercase`}
     >
       <button
         type="button"
@@ -103,7 +104,7 @@ export default function QueensPage() {
  const [searchTerm, setSearchTerm] = useState('')
  const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
  const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all')
- const [statusFilter, setStatusFilter] = useState<'active' | 'cell' | 'retired' | 'dead' | 'all'>('active')
+ const [statusFilter, setStatusFilter] = useState<'active' | 'cell' | 'retired' | 'dead' | 'swarmed' | 'superseded' | 'all'>('active')
  const [loading, setLoading] = useState(true)
  const [userId, setUserId] = useState<string | null>(null)
  const [isTeamMember, setIsTeamMember] = useState(false)
@@ -765,6 +766,8 @@ export default function QueensPage() {
  const cellQueens = queens.filter(q => q.status === 'cell').length
  const retiredQueens = queens.filter(q => q.status === 'retired').length
  const deadQueens = queens.filter(q => q.status === 'dead').length
+ const swarmedQueens = queens.filter(q => q.status === 'swarmed').length
+ const supersededQueens = queens.filter(q => q.status === 'superseded').length
  const avgAgeMonths = (() => {
  const activeWithDates = queens.filter(q => q.status === 'active' && q.birth_date)
  if (activeWithDates.length === 0) return 0
@@ -1043,6 +1046,8 @@ export default function QueensPage() {
  <option value="cell">Cell</option>
  <option value="retired">Retired</option>
  <option value="dead">Dead</option>
+ <option value="swarmed">Swarmed</option>
+ <option value="superseded">Superseded</option>
  </select>
  </div>
 
@@ -1104,7 +1109,7 @@ export default function QueensPage() {
  {/* Summary stats */}
  {queens.length > 0 && (
  <p className="text-sm text-text-secondary">
- {activeQueens} Active{cellQueens > 0 ? ` | ${cellQueens} Cell${cellQueens !== 1 ? 's' : ''}` : ''} | {retiredQueens} Retired | {deadQueens} Dead | Avg Age: {avgAgeMonths} months
+ {activeQueens} Active{cellQueens > 0 ? ` | ${cellQueens} Cell${cellQueens !== 1 ? 's' : ''}` : ''} | {retiredQueens} Retired | {deadQueens} Dead{swarmedQueens > 0 ? ` | ${swarmedQueens} Swarmed` : ''}{supersededQueens > 0 ? ` | ${supersededQueens} Superseded` : ''} | Avg Age: {avgAgeMonths} months
  </p>
  )}
 
@@ -1136,13 +1141,15 @@ export default function QueensPage() {
  )}
  <select
  value={statusFilter}
- onChange={(e) => setStatusFilter(e.target.value as 'active' | 'cell' | 'retired' | 'dead' | 'all')}
+ onChange={(e) => setStatusFilter(e.target.value as 'active' | 'cell' | 'retired' | 'dead' | 'swarmed' | 'superseded' | 'all')}
  className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500 transition-all"
  >
  <option value="active">Active</option>
  <option value="cell">Cells</option>
  <option value="retired">Retired</option>
  <option value="dead">Dead</option>
+ <option value="swarmed">Swarmed</option>
+ <option value="superseded">Superseded</option>
  <option value="all">All Statuses</option>
  </select>
  <select
@@ -1163,20 +1170,20 @@ export default function QueensPage() {
  <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase w-12">
  <span className="sr-only">Select for comparison</span>
  </th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
+ <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
  Actions
  </th>
  <SortableTh label="Queen Number" colKey="queen_number" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
  <SortableTh label="Mother" colKey="mother" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
  <SortableTh label="Age" colKey="age" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
+ <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
  Color
  </th>
- <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
+ <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
  Hive
  </th>
- <SortableTh label="Apiary" colKey="apiary" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
- <SortableTh label="Status" colKey="status" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+ <SortableTh label="Apiary" colKey="apiary" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} paddingClass="px-3" />
+ <SortableTh label="Status" colKey="status" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} paddingClass="px-3" />
  </tr>
  </thead>
  <tbody className="divide-y divide-border">
@@ -1201,7 +1208,7 @@ export default function QueensPage() {
  className="w-5 h-5 rounded border-border text-forest-600 focus:ring-2 focus:ring-forest-500 cursor-pointer"
  />
  </td>
- <td className="px-6 py-4 whitespace-nowrap text-sm flex gap-2">
+ <td className="px-3 py-4 whitespace-nowrap text-sm flex gap-2">
  <Button
  onClick={() => handleEdit(queen)}
  className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
@@ -1242,7 +1249,7 @@ export default function QueensPage() {
  )}
  </span>
  </td>
- <td className="px-6 py-4 whitespace-nowrap">
+ <td className="px-3 py-4 whitespace-nowrap">
  <span
  className={`px-2 py-1 rounded text-xs font-medium ${
  queen.marking_color === 'Yellow'
@@ -1259,7 +1266,7 @@ export default function QueensPage() {
  {queen.marking_color || 'None'}
  </span>
  </td>
- <td className="px-6 py-4 whitespace-nowrap text-text-secondary">
+ <td className="px-3 py-4 whitespace-nowrap text-text-secondary">
  {queen.hives?.id ? (
  <Link
  href={`/dashboard/hives/${queen.hives.id}`}
@@ -1272,20 +1279,30 @@ export default function QueensPage() {
  'N/A'
  )}
  </td>
- <td className="px-6 py-4 whitespace-nowrap text-text-secondary">
+ <td className="px-3 py-4 text-text-secondary">
  {queen.hives?.apiaries?.name || 'N/A'}
  </td>
- <td className="px-6 py-4 whitespace-nowrap">
+ <td className="px-3 py-4 whitespace-nowrap">
  <span
  className={`px-2 py-1 rounded text-xs font-medium ${
  queen.status === 'active'
  ? 'bg-green-100 dark:bg-green-900/30 text-foreground dark:text-green-300 border border-green-300 dark:border-green-800'
  : queen.status === 'cell'
  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
+ : queen.status === 'swarmed'
+ ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border border-orange-300 dark:border-orange-700'
+ : queen.status === 'superseded'
+ ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700'
  : 'bg-surface-secondary text-text-secondary border border-border'
  }`}
  >
- {queen.status === 'cell' ? 'Cell' : queen.status}
+ {queen.status === 'cell'
+ ? 'Cell'
+ : queen.status === 'swarmed'
+ ? 'Swarmed'
+ : queen.status === 'superseded'
+ ? 'Superseded'
+ : queen.status}
  </span>
  </td>
  </tr>

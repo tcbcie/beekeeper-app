@@ -88,9 +88,19 @@ const HeaderCell = ({ col }: { col: CompareColumn }) => {
             ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
             : q.status === 'cell'
             ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
+            : q.status === 'swarmed'
+            ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300'
+            : q.status === 'superseded'
+            ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
             : 'bg-surface-secondary text-text-secondary'
         }`}>
-          {q.status === 'cell' ? 'Cell' : q.status}
+          {q.status === 'cell'
+            ? 'Cell'
+            : q.status === 'swarmed'
+            ? 'Swarmed'
+            : q.status === 'superseded'
+            ? 'Superseded'
+            : q.status}
         </span>
       </div>
     </th>
