@@ -15,6 +15,7 @@ import WolfScalePanel from '@/components/hive/WolfScalePanel'
 import { useHiveDetail } from '@/hooks'
 import HiveQRCode from '@/components/hive/HiveQRCode'
 import { supabase } from '@/lib/supabase'
+import { formatQueenlessLabel } from '@/lib/queenless'
 import type { Hive, HiveInspection, HiveVarroaCheck, HiveVarroaTreatment, HiveFeeding, HiveHarvest, InspectionAverages, HiveTask } from '@/types/hive'
 import Button from '@/components/ui/Button'
 
@@ -559,7 +560,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                 </span>
                 {hive.is_queenless && !hive.archived_at && (
                   <span className="font-medium px-2 py-1 rounded text-xs bg-red-900/50 text-red-300 border border-red-800">
-                    Queenless
+                    {formatQueenlessLabel(hive.queenless_reason)}
                   </span>
                 )}
               </div>

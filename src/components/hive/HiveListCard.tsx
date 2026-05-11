@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { ExternalLink, MoreVertical, ArchiveRestore, Scale, Clock, QrCode } from 'lucide-react'
 import type { Hive } from '@/types/hive'
 import Button from '@/components/ui/Button'
+import { formatQueenlessLabel } from '@/lib/queenless'
 
 interface HiveListCardProps {
  hive: Hive
@@ -99,7 +100,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </span>
  {hive.is_queenless && !hive.archived_at && (
  <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800">
- Queenless
+ {formatQueenlessLabel(hive.queenless_reason)}
  </span>
  )}
  {/* Days since inspection badge */}
