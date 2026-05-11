@@ -1144,13 +1144,13 @@ export default function QueensPage() {
  onChange={(e) => setStatusFilter(e.target.value as 'active' | 'cell' | 'retired' | 'dead' | 'swarmed' | 'superseded' | 'all')}
  className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500 transition-all"
  >
+ <option value="all">All Statuses</option>
  <option value="active">Active</option>
  <option value="cell">Cells</option>
  <option value="retired">Retired</option>
  <option value="dead">Dead</option>
  <option value="swarmed">Swarmed</option>
  <option value="superseded">Superseded</option>
- <option value="all">All Statuses</option>
  </select>
  <select
  value={assignmentFilter}
