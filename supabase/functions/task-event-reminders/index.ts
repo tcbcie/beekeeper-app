@@ -139,9 +139,14 @@ async function getUpcomingReminders(supabase: any, frequency: string): Promise<M
   for (const event of tasksEvents || []) {
     const hoursUntil = getHoursUntil(event.start_date, event.start_time)
     const reminderHours = Math.floor(event.reminder_minutes_before / 60)
+    // All-day events with no explicit start_time should fire any time during
+    // the event day, not just in the pre-event window. Without this, a single
+    // missed cron tick between 08:00 and 09:00 UTC (the default time for
+    // all-day events) drops the reminder permanently.
+    const minHoursUntil = event.all_day && !event.start_time ? -24 : 0
 
     // Check if we should send reminder now
-    if (hoursUntil <= reminderHours && hoursUntil >= 0) {
+    if (hoursUntil <= reminderHours && hoursUntil >= minHoursUntil) {
       // Always add to task creator
       if (!eventsByUser.has(event.user_id)) {
         eventsByUser.set(event.user_id, [])
