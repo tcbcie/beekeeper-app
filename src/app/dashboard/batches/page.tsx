@@ -287,6 +287,7 @@ export default function BatchesPage() {
  const [hiveScores, setHiveScores] = useState<HiveScore[]>([])
  const [loadingScores, setLoadingScores] = useState(false)
  const [quantitiesOpen, setQuantitiesOpen] = useState(true)
+ const [notificationPrefsOpen, setNotificationPrefsOpen] = useState(false)
  const [formData, setFormData] = useState<FormData>({
  batch_name: '',
  mother_queen_id: '',
@@ -1539,10 +1540,23 @@ export default function BatchesPage() {
 
  {/* Notification Preferences - Grouped */}
  <div className="md:col-span-2 bg-amber-50 dark:bg-amber-950/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
- <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-3">Notification Preferences</h4>
+ <div className="flex items-center justify-between">
+ <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100">Notification Preferences</h4>
+ <button
+ type="button"
+ onClick={() => setNotificationPrefsOpen(!notificationPrefsOpen)}
+ className="flex items-center gap-1 px-2 py-1.5 text-xs text-amber-800 dark:text-amber-200 hover:text-amber-900 dark:hover:text-amber-100 rounded"
+ aria-expanded={notificationPrefsOpen}
+ >
+ {notificationPrefsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+ {notificationPrefsOpen ? 'Hide' : 'Show'}
+ </button>
+ </div>
 
+ {notificationPrefsOpen && (
+ <>
  {/* Notification Status Card */}
- <div className="mb-4">
+ <div className="mt-3 mb-4">
  <NotificationStatusCard />
  </div>
 
@@ -1614,6 +1628,8 @@ export default function BatchesPage() {
  )}
  </div>
  </div>
+ </>
+ )}
  </div>
 
  <div className="md:col-span-2 flex gap-3">
