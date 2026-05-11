@@ -87,7 +87,14 @@ function scan() {
     // This is an added line. Advance the line counter after we check it.
     const lineContent = rawLine.slice(1)
 
-    if (currentFile && ALLOWLIST_FILES.some(rx => rx.test(currentFile))) {
+    if (!currentFile) {
+      // Defensive: ran into a `+` line before any `+++ b/` header. Treat
+      // as a parser glitch rather than blocking the commit with a `null:N`
+      // hit that no one can act on.
+      currentLineNo++
+      continue
+    }
+    if (ALLOWLIST_FILES.some(rx => rx.test(currentFile))) {
       currentLineNo++
       continue
     }
@@ -99,9 +106,12 @@ function scan() {
     for (const { name, regex } of PATTERNS) {
       const match = lineContent.match(regex)
       if (match) {
-        const masked = match[0].length > 24
-          ? `${match[0].slice(0, 12)}...${match[0].slice(-6)}`
-          : match[0]
+        // Show only the prefix and length. Trailing bytes of a JWT or PEM
+        // body carry signature/key material; logging them — even masked —
+        // would survive in scrollback or a pasted bug report.
+        const masked = match[0].length > 16
+          ? `${match[0].slice(0, 8)}... (${match[0].length} chars)`
+          : `${match[0].slice(0, 4)}... (${match[0].length} chars)`
         hits.push({
           file: currentFile,
           line: currentLineNo,
