@@ -19,7 +19,7 @@ interface Batch {
 }
 
 interface UserProfile {
-  user_id: string
+  id: string
   email: string
   first_name: string | null
   last_name: string | null
@@ -186,9 +186,9 @@ serve(async (req) => {
     // Get user emails
     const userIds = Object.keys(batchesByUser)
     const { data: userProfiles, error: profilesError } = await supabase
-      .from('user_profiles')
-      .select('user_id, email, first_name, last_name')
-      .in('user_id', userIds)
+      .from('profiles')
+      .select('id, email, first_name, last_name')
+      .in('id', userIds)
 
     if (profilesError) {
       throw new Error(`Error fetching user profiles: ${profilesError.message}`)
@@ -199,7 +199,7 @@ serve(async (req) => {
 
     // Process each user
     for (const profile of userProfiles || []) {
-      const userBatches = batchesByUser[profile.user_id]
+      const userBatches = batchesByUser[profile.id]
       if (!userBatches) continue
 
       // Get all upcoming events for this user's batches
