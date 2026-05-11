@@ -208,12 +208,15 @@ export default function ApiaryDetailPage() {
                       ? 'bg-surface dark:bg-surface text-text-tertiary border border-border'
                       : hive.status === 'active'
                       ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700'
-                      : hive.status === 'queenless'
-                      ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700'
                       : 'bg-surface-secondary text-text-primary border border-border'
                   }`}>
                     {hive.archived_at ? 'Archived' : hive.status}
                   </span>
+                  {hive.is_queenless && !hive.archived_at && (
+                    <span className="px-2 py-0.5 text-xs font-medium rounded bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700">
+                      Queenless
+                    </span>
+                  )}
                 </div>
               </Link>
             ))}
