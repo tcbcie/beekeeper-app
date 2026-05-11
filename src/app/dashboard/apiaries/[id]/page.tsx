@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 import { useApiaryDetail } from '@/hooks'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
+import { formatQueenlessLabel } from '@/lib/queenless'
 
 export default function ApiaryDetailPage() {
   const params = useParams()
@@ -214,7 +215,7 @@ export default function ApiaryDetailPage() {
                   </span>
                   {hive.is_queenless && !hive.archived_at && (
                     <span className="px-2 py-0.5 text-xs font-medium rounded bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700">
-                      Queenless
+                      {formatQueenlessLabel(hive.queenless_reason)}
                     </span>
                   )}
                 </div>

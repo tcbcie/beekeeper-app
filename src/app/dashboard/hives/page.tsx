@@ -8,6 +8,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import { Hive, HiveFormData } from '@/types/hive'
+import { QUEENLESS_REASONS, mapReasonToQueenStatus } from '@/lib/queenless'
 import HiveListCard from '@/components/hive/HiveListCard'
 import Button from '@/components/ui/Button'
 
@@ -59,6 +60,7 @@ export default function HivesPage() {
  queen_mated: false,
  queen_clipped: false,
  is_queenless: false,
+ queenless_reason: '',
  status: 'active',
  notes: '',
  colony_established_date: new Date().toISOString().split('T')[0],
@@ -646,10 +648,26 @@ export default function HivesPage() {
  e.preventDefault()
  if (!userId) return
 
+ // Validate: queenless requires a reason
+ if (formData.is_queenless && !formData.queenless_reason) {
+ toast.warning('Please select a reason for the queenless status before saving.')
+ return
+ }
+
+ // The queen the workflow needs to "send off" on this save. We only do
+ // the queen-status update when we are TRANSITIONING into queenless on
+ // this save — re-editing an already-queenless hive (queen_id was cleared
+ // on the previous save) must not re-touch the queen.
+ const queenIdToReassign =
+ formData.is_queenless && !editingHive?.is_queenless
+ ? (editingHive?.queen_id || formData.queen_id || null)
+ : null
+
  try {
- type HiveSubmitData = Omit<typeof formData, 'apiary_id' | 'queen_id'> & {
+ type HiveSubmitData = Omit<typeof formData, 'apiary_id' | 'queen_id' | 'queenless_reason'> & {
  apiary_id: string | null
  queen_id: string | null
+ queenless_reason: string | null
  configuration_changed_at?: string
  configuration_changed_by?: string
  }
@@ -657,7 +675,11 @@ export default function HivesPage() {
  let dataToSubmit: HiveSubmitData = {
  ...formData,
  apiary_id: formData.apiary_id || null,
- queen_id: formData.queen_id || null,
+ // When queenless, the hive has no current queen — clear the link.
+ queen_id: formData.is_queenless ? null : (formData.queen_id || null),
+ // Reason only persists when queenless; null it out otherwise so the
+ // column never carries a stale value from a prior queenless period.
+ queenless_reason: formData.is_queenless ? formData.queenless_reason : null,
  }
 
  // Check if configuration has changed (for existing hives)
@@ -831,6 +853,23 @@ export default function HivesPage() {
  }
  }
 
+ // If the hive just transitioned to queenless and had a linked queen,
+ // update that queen's record so her status matches the reason. Lineage
+ // queries depend on each queen's own status being truthful.
+ if (queenIdToReassign && formData.queenless_reason) {
+ const nextQueenStatus = mapReasonToQueenStatus(formData.queenless_reason)
+
+ const { error: queenUpdateError } = await supabase
+ .from('queens')
+ .update({ status: nextQueenStatus })
+ .eq('id', queenIdToReassign)
+
+ if (queenUpdateError) {
+ console.error('Failed to update queen status after queenless transition:', queenUpdateError)
+ toast.warning('Hive saved, but the linked queen\'s status could not be updated. Open Queens to set it manually.')
+ }
+ }
+
  if (userId) fetchHives(userId)
  resetForm()
  } catch (error) {
@@ -854,6 +893,7 @@ export default function HivesPage() {
  queen_mated: hive.queen_mated || false,
  queen_clipped: hive.queen_clipped || false,
  is_queenless: hive.is_queenless || false,
+ queenless_reason: hive.queenless_reason || '',
  status: hive.status,
  notes: hive.notes || '',
  colony_established_date: hive.colony_established_date || '',
@@ -949,6 +989,7 @@ export default function HivesPage() {
  queen_mated: false,
  queen_clipped: false,
  is_queenless: false,
+ queenless_reason: '',
  status: 'active',
  notes: '',
  colony_established_date: new Date().toISOString().split('T')[0],
@@ -1336,7 +1377,15 @@ export default function HivesPage() {
  <div className="md:col-span-2">
  <Button
  type="button"
- onClick={() => setFormData({ ...formData, is_queenless: !formData.is_queenless })}
+ onClick={() => {
+ const next = !formData.is_queenless
+ setFormData({
+ ...formData,
+ is_queenless: next,
+ // Clear the reason when toggling off; preserve any previous reason when toggling back on
+ queenless_reason: next ? formData.queenless_reason : '',
+ })
+ }}
  className={`w-full px-4 py-3 min-h-[48px] rounded-lg font-medium text-sm sm:text-base transition-all flex items-center justify-center gap-2 touch-manipulation ${
  formData.is_queenless
  ? 'bg-red-600 dark:bg-red-700 text-white shadow-md hover:bg-red-700 dark:hover:bg-red-800 active:bg-red-800 dark:active:bg-red-900'
@@ -1349,6 +1398,30 @@ export default function HivesPage() {
  <p className="mt-1 text-xs text-text-tertiary">
  Tick this if the colony has no queen (for example, after a swarm). The hive will display a red Queenless badge.
  </p>
+ {formData.is_queenless && (
+ <div className="mt-3">
+ <label htmlFor="queenless-reason" className="block text-sm font-medium text-text-secondary mb-1">
+ Reason <span className="text-red-600">*</span>
+ </label>
+ <select
+ id="queenless-reason"
+ value={formData.queenless_reason}
+ onChange={(e) => setFormData({ ...formData, queenless_reason: e.target.value })}
+ required
+ className="w-full fj-control"
+ >
+ <option value="">Select a reason...</option>
+ {QUEENLESS_REASONS.map((r) => (
+ <option key={r.value} value={r.value}>{r.formLabel}</option>
+ ))}
+ </select>
+ {formData.queen_id && (
+ <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+ The linked queen will be updated to reflect this outcome and removed from this hive on save.
+ </p>
+ )}
+ </div>
+ )}
  </div>
 
  {/* Show queen attribute toggles only when there is a queen to describe */}
