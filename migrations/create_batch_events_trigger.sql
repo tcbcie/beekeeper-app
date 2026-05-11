@@ -27,6 +27,8 @@ BEGIN
       SET
         title = 'Acceptance Check: ' || NEW.batch_name,
         start_date = NEW.acceptance_check_date::date,
+        reminder_enabled = COALESCE(NEW.enable_batch_event_reminders, false),
+        reminder_minutes_before = COALESCE(NEW.batch_reminder_minutes_before, 60),
         updated_at = NOW()
       WHERE id = event_id;
     ELSE
@@ -41,7 +43,9 @@ BEGIN
         start_date,
         all_day,
         batch_id,
-        completed
+        completed,
+        reminder_enabled,
+        reminder_minutes_before
       ) VALUES (
         NEW.user_id,
         'Acceptance Check: ' || NEW.batch_name,
@@ -52,7 +56,9 @@ BEGIN
         NEW.acceptance_check_date::date,
         true,
         NEW.id,
-        false
+        false,
+        COALESCE(NEW.enable_batch_event_reminders, false),
+        COALESCE(NEW.batch_reminder_minutes_before, 60)
       );
     END IF;
   END IF;
@@ -71,6 +77,8 @@ BEGIN
       SET
         title = '1st Cage Option: ' || NEW.batch_name,
         start_date = NEW.first_option_to_cage_date::date,
+        reminder_enabled = COALESCE(NEW.enable_batch_event_reminders, false),
+        reminder_minutes_before = COALESCE(NEW.batch_reminder_minutes_before, 60),
         updated_at = NOW()
       WHERE id = event_id;
     ELSE
@@ -84,7 +92,9 @@ BEGIN
         start_date,
         all_day,
         batch_id,
-        completed
+        completed,
+        reminder_enabled,
+        reminder_minutes_before
       ) VALUES (
         NEW.user_id,
         '1st Cage Option: ' || NEW.batch_name,
@@ -95,7 +105,9 @@ BEGIN
         NEW.first_option_to_cage_date::date,
         true,
         NEW.id,
-        false
+        false,
+        COALESCE(NEW.enable_batch_event_reminders, false),
+        COALESCE(NEW.batch_reminder_minutes_before, 60)
       );
     END IF;
   END IF;
@@ -114,6 +126,8 @@ BEGIN
       SET
         title = '2nd Cage Option: ' || NEW.batch_name,
         start_date = NEW.second_option_to_cage_date::date,
+        reminder_enabled = COALESCE(NEW.enable_batch_event_reminders, false),
+        reminder_minutes_before = COALESCE(NEW.batch_reminder_minutes_before, 60),
         updated_at = NOW()
       WHERE id = event_id;
     ELSE
@@ -127,7 +141,9 @@ BEGIN
         start_date,
         all_day,
         batch_id,
-        completed
+        completed,
+        reminder_enabled,
+        reminder_minutes_before
       ) VALUES (
         NEW.user_id,
         '2nd Cage Option: ' || NEW.batch_name,
@@ -138,7 +154,9 @@ BEGIN
         NEW.second_option_to_cage_date::date,
         true,
         NEW.id,
-        false
+        false,
+        COALESCE(NEW.enable_batch_event_reminders, false),
+        COALESCE(NEW.batch_reminder_minutes_before, 60)
       );
     END IF;
   END IF;
@@ -157,6 +175,8 @@ BEGIN
       SET
         title = 'Expected Emergence: ' || NEW.batch_name,
         start_date = NEW.emergence_date::date,
+        reminder_enabled = COALESCE(NEW.enable_batch_event_reminders, false),
+        reminder_minutes_before = COALESCE(NEW.batch_reminder_minutes_before, 60),
         updated_at = NOW()
       WHERE id = event_id;
     ELSE
@@ -170,7 +190,9 @@ BEGIN
         start_date,
         all_day,
         batch_id,
-        completed
+        completed,
+        reminder_enabled,
+        reminder_minutes_before
       ) VALUES (
         NEW.user_id,
         'Expected Emergence: ' || NEW.batch_name,
@@ -181,7 +203,9 @@ BEGIN
         NEW.emergence_date::date,
         true,
         NEW.id,
-        false
+        false,
+        COALESCE(NEW.enable_batch_event_reminders, false),
+        COALESCE(NEW.batch_reminder_minutes_before, 60)
       );
     END IF;
   END IF;
