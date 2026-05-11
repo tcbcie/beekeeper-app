@@ -90,8 +90,8 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </span>
  )}
  </div>
- <div className="flex items-center gap-2">
- <span className={`px-2 py-1 rounded text-xs font-medium ${
+ <div className="flex flex-wrap items-center gap-2">
+ <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
  hive.status === 'active' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-800' :
  hive.status === 'archived' ? 'bg-surface dark:bg-surface-elevated text-text-primary border border-border' :
  'bg-surface dark:bg-surface-elevated text-text-primary border border-border'
@@ -99,7 +99,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {hive.status}
  </span>
  {hive.is_queenless && !hive.archived_at && (
- <span className="px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800">
+ <span className="px-2 py-1 rounded text-xs font-medium whitespace-nowrap bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800">
  {formatQueenlessLabel(hive.queenless_reason)}
  </span>
  )}
