@@ -40,6 +40,14 @@ at migration time — was reconciled to `status='active' + is_queenless=true`.
   the Status row.
 - **Apiary detail page** (`/dashboard/apiaries/[id]`) — same red badge on
   each hive in the apiary's hive list.
+- **Dashboard apiary card** (`/dashboard`) — the `Possible issue` summary
+  now treats `is_queenless` as the source of truth for queen presence.
+  Confirmed queenless hives are listed first using the reason short label
+  (e.g. `1 hive queenless (Swarmed)`) so the dashboard wording matches the
+  badge. Inspection-stale hives are reported separately so a confirmed
+  queenless apiary is never re-flagged with the generic
+  `lack queen signal` wording. See `dashboard-apiary-weather.md` for the
+  full rule.
 
 ## Workflow: queenless reason and queen-record reconciliation
 

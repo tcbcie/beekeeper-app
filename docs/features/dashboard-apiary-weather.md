@@ -15,9 +15,9 @@ Horizontally scrollable row of daily forecasts: day abbreviation, weather emoji,
 - Hive count
 - Last inspection recency, colour-coded: green (<7 days), amber (7-13 days), red (14+ days), grey (never)
 - Queen status block:
-  - `Healthy` when every hive in the apiary has a recent queenright signal
-  - `Possible issue` when any hive lacks a recent queenright signal or has a broodless run older than 21 days
-- Warning detail text showing how many hives are affected and whether the concern is queen signal, brood, or both
+  - `Healthy` when every hive in the apiary has a recent queenright signal and none are user-confirmed queenless
+  - `Possible issue` when any hive is user-confirmed queenless, lacks a recent queenright signal, or has a broodless run older than 21 days
+- Warning detail text showing how many hives are affected. User-confirmed queenless hives are named with their reason (e.g. `1 hive queenless (Swarmed)`) so the dashboard wording matches the red badge on the hive card. Inspection-derived risk hives use the older `lack queen signal` / `no brood 21+d` wording. When both kinds of risk are present, the strings are concatenated
 - Active task pill when incomplete apiary tasks exist
 
 ### Line 4 - Scale Weights (conditional)
@@ -38,8 +38,9 @@ Only displayed if the apiary has hives with connected scales (BEEP or Wolf Waage
 - Apiary warning counts are derived per hive rather than from one shared apiary date
 
 ### Queen Issue Rules
-- A hive is flagged for queen-signal risk when it has no queenright signal in the last 21 days
-- A hive is flagged for brood risk only when a confirmed broodless run has lasted more than 21 days
+- A hive flagged `is_queenless=true` (see `hive-queenless-flag.md`) is the source of truth for queen presence and is reported separately as a confirmed-queenless count, with the chosen reason surfaced inline
+- A hive is flagged for queen-signal risk only when `is_queenless=false` **and** it has no queenright signal in the last 21 days. The inspection heuristic never re-flags a hive the user has already classified
+- A hive is flagged for brood risk only when `is_queenless=false` **and** a confirmed broodless run has lasted more than 21 days. A queenless hive without brood is an expected state, not a separate alarm
 - Recent broodless inspections do not immediately trigger a brood warning, which avoids overreacting to short summer brood breaks
 - Nullable inspection fields are treated defensively and do not count as positive evidence
 
@@ -52,6 +53,7 @@ Only displayed if the apiary has hives with connected scales (BEEP or Wolf Waage
 - Apiaries without GPS show a small cloud-off icon instead of weather data
 - Apiaries with 0 hives show a neutral dash for inspection and queen status
 - Apiaries with one healthy hive and one risky hive now show `Possible issue`; healthy hives no longer hide risky ones
+- An apiary with a user-confirmed-queenless hive **and** a separate inspection-stale hive shows both in the summary (e.g. `1 hive queenless (Swarmed), 1 hive lack queen signal`), so the dashboard wording always matches reality
 - Apiaries with recent broodless inspections only show a brood warning once the confirmed broodless run exceeds 21 days
 - Invalid date strings degrade safely to a neutral fallback instead of rendering a broken age
 - Scale API failures are skipped per hive; successful scale readings remain visible and `No data` is shown only if no scale readings can be rendered
@@ -61,4 +63,6 @@ Only displayed if the apiary has hives with connected scales (BEEP or Wolf Waage
 - `src/types/dashboard.ts` - `DashboardApiary`, `DashboardApiaryScale`, and dashboard inspection typing
 - `src/hooks/useDashboardStats.ts` - dashboard apiary fetch, per-hive signal roll-up, and defensive error bubbling
 - `src/components/dashboard/ApiaryWeatherRow.tsx` - dashboard apiary card rendering and warning display
+- `src/lib/queenless.ts` - shared reason list and `formatQueenlessShortLabel` helper used by both the hive badge and the dashboard summary
+- `src/sql/create_dashboard_rpc_functions.sql` - `get_dashboard_overview` RPC, including the `confirmed_queenless` CTE that emits `queenlessConfirmedHiveCount` and `queenlessConfirmedReasons` per apiary
 - `src/app/dashboard/page.tsx` - "My Apiaries" section that renders the cards

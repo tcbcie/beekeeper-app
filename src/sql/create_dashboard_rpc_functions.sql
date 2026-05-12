@@ -14,7 +14,7 @@ DECLARE
 BEGIN
   RETURN (
     WITH active_hives AS (
-      SELECT id, apiary_id, beep_device_id, wolf_scale_id
+      SELECT id, apiary_id, beep_device_id, wolf_scale_id, is_queenless, queenless_reason
       FROM hives
       WHERE user_id = p_user_id AND archived_at IS NULL
     ),
@@ -41,6 +41,18 @@ BEGIN
         FROM active_hives WHERE wolf_scale_id IS NOT NULL
       ) devs GROUP BY apiary_id
     ),
+    confirmed_queenless AS (
+      SELECT
+        apiary_id,
+        count(*) AS cnt,
+        COALESCE(
+          jsonb_agg(DISTINCT COALESCE(queenless_reason, 'unknown') ORDER BY COALESCE(queenless_reason, 'unknown')),
+          '[]'::jsonb
+        ) AS reasons
+      FROM active_hives
+      WHERE is_queenless = true
+      GROUP BY apiary_id
+    ),
     last_queenright_per_hive AS (
       SELECT i.hive_id, max(i.inspection_date) AS last_qr_date
       FROM inspections i JOIN active_hives h ON h.id = i.hive_id
@@ -56,7 +68,8 @@ BEGIN
       SELECT h.apiary_id, count(*) AS cnt
       FROM active_hives h
       LEFT JOIN last_queenright_per_hive lq ON lq.hive_id = h.id
-      WHERE lq.last_qr_date IS NULL OR lq.last_qr_date < v_queen_cutoff
+      WHERE h.is_queenless = false
+        AND (lq.last_qr_date IS NULL OR lq.last_qr_date < v_queen_cutoff)
       GROUP BY h.apiary_id
     ),
     close_dates AS (
@@ -79,7 +92,8 @@ BEGIN
       SELECT h.apiary_id, count(*) AS cnt
       FROM active_hives h
       JOIN brood_absent_since bas ON bas.hive_id = h.id
-      WHERE bas.absent_since < v_queen_cutoff
+      WHERE h.is_queenless = false
+        AND bas.absent_since < v_queen_cutoff
       GROUP BY h.apiary_id
     ),
     queen_issue AS (
@@ -87,7 +101,8 @@ BEGIN
       FROM active_hives h
       LEFT JOIN last_queenright_per_hive lq ON lq.hive_id = h.id
       LEFT JOIN brood_absent_since bas ON bas.hive_id = h.id
-      WHERE (lq.last_qr_date IS NULL OR lq.last_qr_date < v_queen_cutoff)
+      WHERE h.is_queenless = true
+         OR (lq.last_qr_date IS NULL OR lq.last_qr_date < v_queen_cutoff)
          OR (bas.absent_since IS NOT NULL AND bas.absent_since < v_queen_cutoff)
       GROUP BY h.apiary_id
     ),
@@ -102,6 +117,8 @@ BEGIN
           'queenIssueHiveCount', COALESCE(qi.cnt, 0),
           'queenrightAtRiskHiveCount', COALESCE(qr.cnt, 0),
           'broodAtRiskHiveCount', COALESCE(br.cnt, 0),
+          'queenlessConfirmedHiveCount', COALESCE(cq.cnt, 0),
+          'queenlessConfirmedReasons', COALESCE(cq.reasons, '[]'::jsonb),
           'scales', COALESCE(sd.scales, '[]'::jsonb),
           'activeTaskCount', COALESCE(atk.cnt, 0)
         ) ORDER BY a.name
@@ -113,6 +130,7 @@ BEGIN
       LEFT JOIN queen_issue qi ON qi.apiary_id = a.id
       LEFT JOIN queenright_risk qr ON qr.apiary_id = a.id
       LEFT JOIN brood_risk br ON br.apiary_id = a.id
+      LEFT JOIN confirmed_queenless cq ON cq.apiary_id = a.id
       LEFT JOIN scale_devices sd ON sd.apiary_id = a.id
       LEFT JOIN apiary_tasks atk ON atk.apiary_id = a.id
       WHERE a.user_id = p_user_id

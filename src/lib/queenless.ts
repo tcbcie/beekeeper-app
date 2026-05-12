@@ -33,3 +33,11 @@ export function mapReasonToQueenStatus(reason: string | null | undefined): strin
   if (!reason) return 'retired'
   return REASON_BY_VALUE.get(reason)?.queenStatus ?? 'retired'
 }
+
+// Bare shortLabel (no surrounding "Queenless (...)") for places that want to
+// embed the reason inline alongside other text — e.g. dashboard summary copy.
+// Returns null for null/unknown/unrecognised so callers can omit cleanly.
+export function formatQueenlessShortLabel(reason: string | null | undefined): string | null {
+  if (!reason || reason === 'unknown') return null
+  return REASON_BY_VALUE.get(reason)?.shortLabel ?? null
+}
