@@ -10,6 +10,7 @@ import { calculateForagingHours, fetchCurrentYearGDD, getBloomingPlants, getNect
 import type { BloomingPlant, NectarCondition, PollenCondition, VegetationEntry } from '@/lib/gdd'
 import { supabase } from '@/lib/supabase'
 import type { DashboardApiary } from '@/types/dashboard'
+import { formatQueenlessShortLabel } from '@/lib/queenless'
 import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
 
 interface DailyForecast {
@@ -105,24 +106,48 @@ function getDaysSinceDate(dateString: string | null): number | null {
   return Math.max(differenceInCalendarDays(parsedDate, new Date()), 0)
 }
 
-function formatHiveRiskLabel(count: number): string {
-  return `${count} hive${count === 1 ? '' : 's'}`
+// Inflects "{count} hive[s] {singularVerb|pluralVerb}" so the summary copy
+// stays grammatical at count=1. Verb args are optional for telegraphic
+// clauses like "no brood 21+d" where no verb is needed.
+function formatHiveClause(count: number, singularVerb: string, pluralVerb: string, predicate: string): string {
+  const noun = count === 1 ? 'hive' : 'hives'
+  const verb = count === 1 ? singularVerb : pluralVerb
+  return verb ? `${count} ${noun} ${verb} ${predicate}` : `${count} ${noun} ${predicate}`
+}
+
+function formatConfirmedQueenlessSuffix(reasons: readonly string[]): string {
+  const labels = reasons.map(formatQueenlessShortLabel).filter((s): s is string => !!s)
+  return labels.length === 0 ? '' : ` (${labels.join(', ')})`
 }
 
 function getQueenIssueSummary(apiary: DashboardApiary): string {
-  if (apiary.queenrightAtRiskHiveCount > 0 && apiary.broodAtRiskHiveCount > 0) {
-    return `${formatHiveRiskLabel(apiary.queenIssueHiveCount)} need queen/brood check`
+  // The RPC payload is jsonb at the wire boundary — types are aspirational, not enforced.
+  // Normalise here so a stale/partial payload can't crash the row.
+  const confirmedCount = apiary.queenlessConfirmedHiveCount ?? 0
+  const confirmedReasons = Array.isArray(apiary.queenlessConfirmedReasons) ? apiary.queenlessConfirmedReasons : []
+  const queenAtRisk = apiary.queenrightAtRiskHiveCount ?? 0
+  const broodAtRisk = apiary.broodAtRiskHiveCount ?? 0
+  const totalIssue = apiary.queenIssueHiveCount ?? 0
+
+  const parts: string[] = []
+
+  if (confirmedCount > 0) {
+    const suffix = formatConfirmedQueenlessSuffix(confirmedReasons)
+    parts.push(`${confirmedCount} ${confirmedCount === 1 ? 'hive' : 'hives'} queenless${suffix}`)
   }
 
-  if (apiary.queenrightAtRiskHiveCount > 0) {
-    return `${formatHiveRiskLabel(apiary.queenrightAtRiskHiveCount)} lack queen signal`
+  if (queenAtRisk > 0 && broodAtRisk > 0) {
+    // Distinct count of hives flagged by inspection signals only — strip out
+    // any confirmed-queenless hives, which are already named above.
+    const inspectionIssueDistinct = Math.max(0, totalIssue - confirmedCount)
+    parts.push(formatHiveClause(inspectionIssueDistinct, 'needs', 'need', 'queen/brood check'))
+  } else if (queenAtRisk > 0) {
+    parts.push(formatHiveClause(queenAtRisk, 'lacks', 'lack', 'queen signal'))
+  } else if (broodAtRisk > 0) {
+    parts.push(formatHiveClause(broodAtRisk, '', '', 'no brood 21+d'))
   }
 
-  if (apiary.broodAtRiskHiveCount > 0) {
-    return `${formatHiveRiskLabel(apiary.broodAtRiskHiveCount)} no brood 21+d`
-  }
-
-  return 'All hives recent'
+  return parts.length === 0 ? 'All hives recent' : parts.join(', ')
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']

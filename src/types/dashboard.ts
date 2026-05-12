@@ -103,6 +103,8 @@ export interface DashboardApiary {
   queenIssueHiveCount: number
   queenrightAtRiskHiveCount: number
   broodAtRiskHiveCount: number
+  queenlessConfirmedHiveCount: number
+  queenlessConfirmedReasons: string[]
   scales: DashboardApiaryScale[]
   activeTaskCount: number
 }
