@@ -120,17 +120,20 @@ Stores the manual-entry fields per group per month.
 
 ## Graft-Derived Counter Fallback
 
-When batch-level counters (`grafts_accepted`, `queens_hatched`, `queens_mated`) are NULL in the database, both `useNIHBSReport` and `useRearingGroupReport` derive counts from individual graft statuses in `batch_grafts`:
+Both `useNIHBSReport` and `useRearingGroupReport` derive counters from individual graft statuses in `batch_grafts`, with a fallback to mating-nuc inspection timestamps. Derived counts always take precedence over the stale batch-level columns once any grafts exist for the batch.
 
-- **grafts_accepted** = grafts not in `grafted` or `failed` status
-- **queens_hatched** = grafts in `emerged`, `in_nuc`, or `mated` status
-- **queens_mated** = grafts in `mated` status
-- **sold grafts** — checked against `graft_distributions` to determine actual stage:
-  - `queen_cell` distribution → counts as accepted only (not hatched or mated)
-  - `virgin_queen` distribution → counts as hatched only
-  - `mated_queen` distribution → counts as both hatched and mated
+- **grafts_accepted** = grafts not in `grafted` or `failed` status (i.e. cells that reached at least `accepted` / `sealed`).
+- **queens_hatched** = a graft is counted if **any** of the following is true:
+  - graft status is `emerged` or `mated`
+  - graft status is `sold` and the linked `graft_distributions.distribution_type` is `virgin_queen` or `mated_queen`
+  - the linked `mating_nucs` row has a non-null `queen_emerged_at` **or** `mating_confirmed_at`
+- **queens_mated** = a graft is counted if **any** of the following is true:
+  - graft status is `mated`
+  - graft status is `sold` and the linked `graft_distributions.distribution_type` is `mated_queen` (or `mating_confirmed = true`)
+  - the linked `mating_nucs` row has a non-null `mating_confirmed_at`
+- **sold grafts** with `distribution_type = queen_cell` count as accepted only (not hatched or mated).
 
-Batch-level values take precedence when explicitly set (uses `??` nullish coalescing).
+**Why `in_nuc` is not a hatched signal.** When a sealed cell is transferred into a mating nuc via the bulk-setup flow, its graft status is set to `in_nuc` immediately — regardless of whether the queen has actually emerged. Counting `in_nuc` as hatched produced inflated B13 figures in NIHBS reports. Hatching is recognised once an inspection records the queen (`NucInspectionPanel` auto-promotes the graft to `emerged`/`mated` **and** stamps `mating_nucs.queen_emerged_at` / `mating_confirmed_at`, which the nuc-timestamp fallback also picks up).
 
 ## Hybridised Offspring — Distribution-Based Tracking
 
