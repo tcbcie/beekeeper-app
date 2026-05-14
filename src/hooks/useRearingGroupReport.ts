@@ -99,41 +99,65 @@ export function useRearingGroupReport() {
 
       if (batchesError) throw batchesError
 
-      // Fetch graft statuses + distributions to derive counters when batch-level values are NULL
+      // Fetch graft statuses + distributions + nuc timestamps in one round trip.
+      // See useNIHBSReport for rationale on the batch_id filter and Set aggregation.
       const batchIds = (batches || []).map((b) => b.id).filter(Boolean)
       const derivedCounts = new Map<string, { queens_hatched: number; queens_mated: number }>()
       if (batchIds.length > 0) {
-        const [graftsRes, distsRes] = await Promise.all([
+        type GraftRow = { id: string; batch_id: string; status: string }
+        type DistRow = { graft_id: string; batch_id: string; distribution_type: string }
+        type NucRow = { graft_id: string | null; queen_emerged_at: string | null; mating_confirmed_at: string | null }
+
+        const [graftsRes, distsRes, nucsRes] = await Promise.all([
           supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIds),
           supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type').in('batch_id', batchIds),
+          supabase.from('mating_nucs').select('graft_id, queen_emerged_at, mating_confirmed_at').in('batch_id', batchIds),
         ])
 
         if (graftsRes.error) throw graftsRes.error
         if (distsRes.error) throw distsRes.error
-        const allDists = distsRes.data || []
+        if (nucsRes.error) throw nucsRes.error
 
         // Build graft_id → distribution_type lookup for sold grafts
         const graftDistType = new Map<string, string>()
-        for (const d of allDists) {
+        for (const d of (distsRes.data || []) as DistRow[]) {
           graftDistType.set(d.graft_id, d.distribution_type)
         }
 
-        if (graftsRes.data) {
-          for (const g of graftsRes.data) {
-            if (!derivedCounts.has(g.batch_id)) {
-              derivedCounts.set(g.batch_id, { queens_hatched: 0, queens_mated: 0 })
-            }
-            const dc = derivedCounts.get(g.batch_id)!
-            if (g.status === 'sold') {
-              const distType = graftDistType.get(g.id)
-              if (distType === 'mated_queen') { dc.queens_hatched++; dc.queens_mated++ }
-              else if (distType === 'virgin_queen') { dc.queens_hatched++ }
-              // queen_cell → don't count as hatched or mated
-            } else {
-              if (['emerged', 'in_nuc', 'mated'].includes(g.status)) dc.queens_hatched++
-              if (g.status === 'mated') dc.queens_mated++
-            }
+        // Aggregate nuc timestamps as sets so multiple nuc rows per graft OR together.
+        const hatchedViaNuc = new Set<string>()
+        const matedViaNuc = new Set<string>()
+        for (const n of (nucsRes.data || []) as NucRow[]) {
+          if (!n.graft_id) continue
+          if (n.queen_emerged_at || n.mating_confirmed_at) hatchedViaNuc.add(n.graft_id)
+          if (n.mating_confirmed_at) matedViaNuc.add(n.graft_id)
+        }
+
+        for (const g of (graftsRes.data || []) as GraftRow[]) {
+          if (!derivedCounts.has(g.batch_id)) {
+            derivedCounts.set(g.batch_id, { queens_hatched: 0, queens_mated: 0 })
           }
+          const dc = derivedCounts.get(g.batch_id)!
+
+          let isHatched = false
+          let isMated = false
+
+          if (g.status === 'sold') {
+            const distType = graftDistType.get(g.id)
+            if (distType === 'mated_queen') { isHatched = true; isMated = true }
+            else if (distType === 'virgin_queen') { isHatched = true }
+            // queen_cell → don't count as hatched or mated
+          } else {
+            // 'in_nuc' alone is not a hatched signal; see useNIHBSReport for rationale.
+            if (g.status === 'emerged' || g.status === 'mated') isHatched = true
+            if (g.status === 'mated') isMated = true
+          }
+
+          if (hatchedViaNuc.has(g.id)) isHatched = true
+          if (matedViaNuc.has(g.id)) isMated = true
+
+          if (isHatched) dc.queens_hatched++
+          if (isMated) dc.queens_mated++
         }
       }
 

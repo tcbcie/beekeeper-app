@@ -97,19 +97,26 @@ export function useNIHBSReport() {
 
         if (batchesError) throw batchesError
 
-        // 2a. Fetch graft statuses + distributions to derive counters when batch-level values are NULL
+        // 2a. Fetch graft statuses + distributions + nuc timestamps in one round trip.
+        //     Filtering all three by batch_id keeps the URL bounded (batches are typically
+        //     small in count) and avoids a sequential round trip on graft_id IN (…).
         const batchIdList = (batches || []).map((b: { id: string }) => b.id).filter(Boolean)
         const derivedCounts = new Map<string, { grafts_accepted: number; queens_hatched: number; queens_mated: number }>()
         // Also store distributions for reuse in step 2b
         let allDists: { graft_id: string; batch_id: string; distribution_type: string; recipient_user_id: string | null; mating_confirmed: boolean | null; distribution_date: string | null; offspring_hybridised: boolean | null; hybridisation_date: string | null }[] = []
         if (batchIdList.length > 0) {
-          const [graftsRes, distsRes] = await Promise.all([
+          type GraftRow = { id: string; batch_id: string; status: string }
+          type NucRow = { graft_id: string | null; queen_emerged_at: string | null; mating_confirmed_at: string | null }
+
+          const [graftsRes, distsRes, nucsRes] = await Promise.all([
             supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIdList),
             supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type, recipient_user_id, mating_confirmed, distribution_date, offspring_hybridised, hybridisation_date').in('batch_id', batchIdList),
+            supabase.from('mating_nucs').select('graft_id, queen_emerged_at, mating_confirmed_at').in('batch_id', batchIdList),
           ])
 
           if (graftsRes.error) throw graftsRes.error
           if (distsRes.error) throw distsRes.error
+          if (nucsRes.error) throw nucsRes.error
           allDists = distsRes.data || []
 
           // Build graft_id → distribution_type lookup for sold grafts
@@ -118,25 +125,50 @@ export function useNIHBSReport() {
             graftDistType.set(d.graft_id, d.distribution_type)
           }
 
-          if (graftsRes.data) {
-            for (const g of graftsRes.data) {
-              if (!derivedCounts.has(g.batch_id)) {
-                derivedCounts.set(g.batch_id, { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 })
-              }
-              const dc = derivedCounts.get(g.batch_id)!
-              if (!['grafted', 'failed'].includes(g.status)) dc.grafts_accepted++
+          // Fallback: a graft is "hatched" / "mated" if its linked mating_nuc has the
+          // corresponding inspection timestamp set. This catches cases where a sealed
+          // cell was placed in a nuc (graft.status = 'in_nuc') and later confirmed via
+          // a nuc inspection, without the graft status itself moving to 'emerged'/'mated'.
+          // Aggregated as sets so multiple nuc rows per graft (no UNIQUE constraint on
+          // graft_id) OR together — any signal wins.
+          const hatchedViaNuc = new Set<string>()
+          const matedViaNuc = new Set<string>()
+          for (const n of (nucsRes.data || []) as NucRow[]) {
+            if (!n.graft_id) continue
+            if (n.queen_emerged_at || n.mating_confirmed_at) hatchedViaNuc.add(n.graft_id)
+            if (n.mating_confirmed_at) matedViaNuc.add(n.graft_id)
+          }
+          const graftRows = (graftsRes.data || []) as GraftRow[]
 
-              if (g.status === 'sold') {
-                // For sold grafts, use distribution_type to determine what stage was reached
-                const distType = graftDistType.get(g.id)
-                if (distType === 'mated_queen') { dc.queens_hatched++; dc.queens_mated++ }
-                else if (distType === 'virgin_queen') { dc.queens_hatched++ }
-                // queen_cell → don't count as hatched or mated
-              } else {
-                if (['emerged', 'in_nuc', 'mated'].includes(g.status)) dc.queens_hatched++
-                if (g.status === 'mated') dc.queens_mated++
-              }
+          for (const g of graftRows) {
+            if (!derivedCounts.has(g.batch_id)) {
+              derivedCounts.set(g.batch_id, { grafts_accepted: 0, queens_hatched: 0, queens_mated: 0 })
             }
+            const dc = derivedCounts.get(g.batch_id)!
+            if (!['grafted', 'failed'].includes(g.status)) dc.grafts_accepted++
+
+            let isHatched = false
+            let isMated = false
+
+            if (g.status === 'sold') {
+              // For sold grafts, use distribution_type to determine what stage was reached
+              const distType = graftDistType.get(g.id)
+              if (distType === 'mated_queen') { isHatched = true; isMated = true }
+              else if (distType === 'virgin_queen') { isHatched = true }
+              // queen_cell → don't count as hatched or mated
+            } else {
+              // 'in_nuc' on its own is NOT a hatched signal — it just means the cell
+              // was placed in a nuc. Hatching is confirmed via an inspection (which
+              // auto-promotes status to 'emerged'/'mated' and stamps the nuc).
+              if (g.status === 'emerged' || g.status === 'mated') isHatched = true
+              if (g.status === 'mated') isMated = true
+            }
+
+            if (hatchedViaNuc.has(g.id)) isHatched = true
+            if (matedViaNuc.has(g.id)) isMated = true
+
+            if (isHatched) dc.queens_hatched++
+            if (isMated) dc.queens_mated++
           }
         }
 

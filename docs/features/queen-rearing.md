@@ -323,6 +323,12 @@ A single batch may therefore contribute data to two different monthly buckets. P
 
 > **Temporary:** `queens_mated` and `queens_hybridised` currently use the emergence date month as a proxy because there is no explicit mating or hybridisation date stored on the batch. This needs to be revisited — ideally these should be attributed to the month when mating was actually confirmed or when hybridised offspring were observed.
 
+### Hatched / Mated Counter Derivation
+
+`queens_hatched` and `queens_mated` are derived from individual grafts, not from the batch-level columns. A graft counts as **hatched** when its status is `emerged`/`mated`, when it was sold as a virgin/mated queen, or when its linked `mating_nucs` row has a `queen_emerged_at` or `mating_confirmed_at` timestamp set by an inspection. The status `in_nuc` is **not** a hatched signal on its own — the bulk-setup flow sets that status on sealed cells the moment they are transferred into a nuc, before any queen has actually emerged. Hatching is recognised once a nuc inspection records `queen_status = 'virgin'` / `'mated'` / `'laying'`, which both auto-promotes the graft status and stamps the nuc.
+
+The same rule applies in `useRearingGroupReport` and to the persisted `rearing_batches.queens_hatched` / `queens_mated` counters written by `useBatchGrafts`.
+
 ---
 
 ## Related Documentation

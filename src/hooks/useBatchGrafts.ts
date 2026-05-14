@@ -23,6 +23,11 @@ interface UseBatchGraftsProps {
 export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, graftDate, onCountsChange }: UseBatchGraftsProps) {
   const toast = useToast()
   const [grafts, setGrafts] = useState<Graft[]>([])
+  // Sets aggregate signal across multiple nuc rows per graft. mating_nucs has no
+  // UNIQUE constraint on graft_id, so a graft can legitimately have several rows
+  // (e.g. retired + active). Using sets means any non-null timestamp wins.
+  const [hatchedViaNuc, setHatchedViaNuc] = useState<Set<string>>(new Set())
+  const [matedViaNuc, setMatedViaNuc] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [distributeGraft, setDistributeGraft] = useState<Graft | null>(null)
   const [groupMemberIds, setGroupMemberIds] = useState<string[]>([])
@@ -76,21 +81,45 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       console.error('Error fetching grafts:', error)
       toast.error('Failed to load grafts')
     } else if (data) {
-      // Fetch latest weights for each graft
+      // Fetch latest weights and nuc timestamps in parallel. Filtering mating_nucs by
+      // batch_id (rather than graft_id IN …) keeps the URL bounded and picks up nucs
+      // that were created without a graft link, harmlessly.
+      type NucRow = { graft_id: string | null; queen_emerged_at: string | null; mating_confirmed_at: string | null }
       const graftIds = (data as Graft[]).map(g => g.id)
       const weightMap = new Map<string, number>()
+      const nextHatched = new Set<string>()
+      const nextMated = new Set<string>()
       if (graftIds.length > 0) {
-        const { data: weights } = await supabase
-          .from('queen_weights')
-          .select('graft_id, weight_mg')
-          .in('graft_id', graftIds)
-          .order('weighed_at', { ascending: false })
-        if (weights) {
-          for (const w of weights) {
+        const [weightsRes, nucsRes] = await Promise.all([
+          supabase
+            .from('queen_weights')
+            .select('graft_id, weight_mg')
+            .in('graft_id', graftIds)
+            .order('weighed_at', { ascending: false }),
+          supabase
+            .from('mating_nucs')
+            .select('graft_id, queen_emerged_at, mating_confirmed_at')
+            .eq('batch_id', batchId),
+        ])
+        // Fail loud: persisting `queens_hatched` from a partial nuc result would write
+        // an under-reported counter back to rearing_batches. Bail before the persist
+        // effect runs (loading stays true so the effect's guard short-circuits).
+        if (nucsRes.error) {
+          console.error('Error fetching mating nuc timestamps:', nucsRes.error)
+          toast.error('Failed to load nuc data')
+          return
+        }
+        if (weightsRes.data) {
+          for (const w of weightsRes.data) {
             if (!weightMap.has(w.graft_id)) {
               weightMap.set(w.graft_id, w.weight_mg)
             }
           }
+        }
+        for (const n of (nucsRes.data || []) as NucRow[]) {
+          if (!n.graft_id) continue
+          if (n.queen_emerged_at || n.mating_confirmed_at) nextHatched.add(n.graft_id)
+          if (n.mating_confirmed_at) nextMated.add(n.graft_id)
         }
       }
       const graftsWithWeights = (data as Graft[]).map(g => ({
@@ -98,6 +127,8 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
         latest_weight_mg: weightMap.get(g.id) ?? null,
       }))
       setGrafts(graftsWithWeights)
+      setHatchedViaNuc(nextHatched)
+      setMatedViaNuc(nextMated)
       // Prune frame selected IDs to only include grafts still on the frame
       setSelectedIds(prev => {
         if (prev.size === 0) return prev
@@ -169,17 +200,36 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   useEffect(() => {
     if (loading) return
     const accepted = grafts.length === 0 ? 0 : grafts.filter(g => !['grafted', 'failed'].includes(g.status)).length
-    const hatched = grafts.length === 0 ? 0 : grafts.filter(g => ['emerged', 'in_nuc', 'mated', 'sold'].includes(g.status)).length
     const distributionByGraftId = new Map(distributions.map((distribution) => [distribution.graft_id, distribution]))
-    const mated = grafts.length === 0 ? 0 : grafts.filter((graft) => {
+
+    // A graft counts as "hatched" when its status is emerged/mated, when a sold graft
+    // was distributed as a virgin or mated queen, or when its linked mating_nuc has a
+    // queen_emerged_at / mating_confirmed_at timestamp (set by inspection). 'in_nuc'
+    // on its own is NOT a hatched signal — sealed cells get that status on transfer.
+    const isHatched = (graft: Graft): boolean => {
+      if (graft.status === 'sold') {
+        const dist = distributionByGraftId.get(graft.id)
+        if (!dist) return false
+        if (dist.distribution_type === 'virgin_queen' || dist.distribution_type === 'mated_queen') return true
+        if (dist.mating_confirmed) return true
+        return false
+      }
+      if (graft.status === 'emerged' || graft.status === 'mated') return true
+      return hatchedViaNuc.has(graft.id)
+    }
+
+    const isMated = (graft: Graft): boolean => {
       if (graft.status === 'mated') return true
-      if (graft.status !== 'sold') return false
+      if (graft.status === 'sold') {
+        const dist = distributionByGraftId.get(graft.id)
+        if (!dist) return false
+        return dist.distribution_type === 'mated_queen' || !!dist.mating_confirmed
+      }
+      return matedViaNuc.has(graft.id)
+    }
 
-      const distribution = distributionByGraftId.get(graft.id)
-      if (!distribution) return false
-
-      return distribution.distribution_type === 'mated_queen' || distribution.mating_confirmed
-    }).length
+    const hatched = grafts.length === 0 ? 0 : grafts.filter(isHatched).length
+    const mated = grafts.length === 0 ? 0 : grafts.filter(isMated).length
 
     const cb = onCountsChangeRef.current
     if (cb) cb({ grafts_accepted: accepted, queens_hatched: hatched, queens_mated: mated })
@@ -200,7 +250,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
           if (error) console.error('Failed to persist batch counts:', error)
         })
     }
-  }, [grafts, loading, distributions, batchId])
+  }, [grafts, loading, distributions, hatchedViaNuc, matedViaNuc, batchId])
 
   // --- CRUD ---
 
