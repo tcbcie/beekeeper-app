@@ -1,10 +1,11 @@
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useMemo } from 'react'
 import { XCircle, Trash2, CheckSquare, Square, ChevronDown, ChevronUp, Grid3X3 } from 'lucide-react'
-import { Graft, GRAFT_STATUSES, FRAME_STATUSES, FRAME_STATUS_VALUES, CUP_COLORS } from './graftConstants'
+import { Graft, GRAFT_STATUSES, FRAME_STATUSES, FRAME_STATUS_VALUES, CUP_COLORS, BatchBreederQueen } from './graftConstants'
 import Button from '@/components/ui/Button'
 
 interface CellFrameProps {
   grafts: Graft[]
+  breederQueens?: BatchBreederQueen[]
   frameRows?: number | null
   cellsPerRow?: number | null
   frameCollapsed: boolean
@@ -26,6 +27,7 @@ interface CellFrameProps {
 
 export default function CellFrame({
   grafts,
+  breederQueens,
   frameRows,
   cellsPerRow,
   frameCollapsed,
@@ -43,6 +45,12 @@ export default function CellFrame({
   updateGraftStatus,
   updateGraftStatusDate,
 }: CellFrameProps) {
+  const isMultiBreeder = (breederQueens?.length ?? 0) > 0
+  const breederNumberById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const q of breederQueens || []) m.set(q.queen_id, q.queen_number)
+    return m
+  }, [breederQueens])
   if (grafts.length === 0) {
     return (
       <div className="border border-dashed border-amber-300 dark:border-amber-700 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 p-6 text-center">
@@ -175,10 +183,18 @@ export default function CellFrame({
                                 ? 'ring-2 ring-forest-500 ring-offset-1'
                                 : ''
                             }`}
-                            title={`#${graft.cell_number} - ${GRAFT_STATUSES.find(s => s.value === graft.status)?.label || graft.status}`}
+                            title={`#${graft.cell_number} - ${GRAFT_STATUSES.find(s => s.value === graft.status)?.label || graft.status}${isMultiBreeder ? ` · Breeder ${breederNumberById.get(graft.breeder_queen_id ?? '') || '—'}` : ''}`}
                           >
                             {graft.cell_number}
                           </Button>
+                          {isMultiBreeder && (
+                            <span
+                              className="mt-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-200 truncate max-w-[3.5rem]"
+                              title={`Breeder: ${breederNumberById.get(graft.breeder_queen_id ?? '') || 'unassigned'}`}
+                            >
+                              {breederNumberById.get(graft.breeder_queen_id ?? '') || '—'}
+                            </span>
+                          )}
                           {/* Status dropdown + delete (frame-stage grafts only) */}
                           {!selectMode && isFrameStage && (
                             <div className="flex flex-col items-center mt-1 gap-0.5">

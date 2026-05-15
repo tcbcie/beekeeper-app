@@ -6,7 +6,13 @@ import { useToast } from '@/components/ui/Toast'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
 import type { GraftDistribution, BulkDistributionData } from '@/hooks/useGraftDistributions'
 import { getQueenColorFromYear } from '@/types/queen'
-import { Graft, GRAFT_STATUSES, FRAME_STATUS_VALUES } from '@/components/batches/graftConstants'
+import { Graft, GRAFT_STATUSES, FRAME_STATUS_VALUES, BatchBreederQueen } from '@/components/batches/graftConstants'
+
+export interface BreederRange {
+  queen_id: string
+  start: number
+  end: number
+}
 
 const VALID_GRAFT_STATUS_VALUES = GRAFT_STATUSES.map(s => s.value)
 
@@ -23,6 +29,7 @@ interface UseBatchGraftsProps {
 export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, graftDate, onCountsChange }: UseBatchGraftsProps) {
   const toast = useToast()
   const [grafts, setGrafts] = useState<Graft[]>([])
+  const [breederQueens, setBreederQueens] = useState<BatchBreederQueen[]>([])
   // Sets aggregate signal across multiple nuc rows per graft. mating_nucs has no
   // UNIQUE constraint on graft_id, so a graft can legitimately have several rows
   // (e.g. retired + active). Using sets means any non-null timestamp wins.
@@ -70,12 +77,39 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   // --- Data fetching ---
 
   const fetchGrafts = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('batch_grafts')
-      .select('*')
-      .eq('batch_id', batchId)
-      .eq('user_id', userId)
-      .order('cell_number')
+    // Load grafts and the batch's breeder-queen set in parallel. Both are
+    // batch-scoped and `loading` must reflect "everything I need is here"
+    // before the section can let the user click Generate — otherwise the
+    // modal-vs-direct decision can be made against an empty breeder set,
+    // silently writing cells with breeder_queen_id = NULL.
+    const [graftsRes, breedersRes] = await Promise.all([
+      supabase
+        .from('batch_grafts')
+        .select('*')
+        .eq('batch_id', batchId)
+        .eq('user_id', userId)
+        .order('cell_number'),
+      supabase
+        .from('batch_breeder_queens')
+        .select('queen_id, queens(queen_number)')
+        .eq('batch_id', batchId),
+    ])
+
+    // Fail loud on the breeder fetch: a silent empty set would corrupt
+    // attribution of cells generated next. Bail before setLoading(false).
+    if (breedersRes.error) {
+      console.error('Error fetching batch breeder queens:', breedersRes.error)
+      toast.error('Failed to load breeder queens')
+      return
+    }
+    type BreederRow = { queen_id: string; queens: { queen_number: string }[] | { queen_number: string } | null }
+    const mappedBreeders: BatchBreederQueen[] = ((breedersRes.data || []) as BreederRow[]).map(r => {
+      const q = Array.isArray(r.queens) ? r.queens[0] : r.queens
+      return { queen_id: r.queen_id, queen_number: q?.queen_number || '?' }
+    })
+    setBreederQueens(mappedBreeders)
+
+    const { data, error } = graftsRes
 
     if (error) {
       console.error('Error fetching grafts:', error)
@@ -254,7 +288,11 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
   // --- CRUD ---
 
-  const generateGrafts = useCallback(async () => {
+  // generateGrafts: inserts `cellCount` new graft rows for this batch.
+  // If `ranges` is provided (multi-breeder case), each new cell's breeder_queen_id
+  // is set from the range it falls into. Ranges are 1-indexed against the slice of
+  // cells being created now (1..cellCount), not against absolute cell numbers.
+  const generateGrafts = useCallback(async (opts?: { ranges?: BreederRange[] }) => {
     if (!cellCount || cellCount <= 0) {
       toast.error('Populate Batch Quantities')
       return
@@ -264,6 +302,13 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       if (!confirm(`This will add ${cellCount} new grafts. Existing grafts will be kept. Continue?`)) {
         return
       }
+    }
+
+    const ranges = opts?.ranges
+    const breederForLocalIndex = (i1: number): string | null => {
+      if (!ranges || ranges.length === 0) return null
+      const hit = ranges.find(r => i1 >= r.start && i1 <= r.end)
+      return hit ? hit.queen_id : null
     }
 
     const newGrafts = []
@@ -278,6 +323,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
         status: 'grafted',
         status_date: graftDate || null,
         user_id: userId,
+        breeder_queen_id: breederForLocalIndex(i + 1),
       })
     }
 
@@ -294,6 +340,22 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       toast.error('Failed to create grafts')
     }
   }, [cellCount, grafts, batchId, userId, graftDate, toast, fetchGrafts])
+
+  const updateGraftBreederQueen = useCallback(async (graftId: string, queenId: string | null) => {
+    const previous = grafts.find(g => g.id === graftId)?.breeder_queen_id ?? null
+    setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, breeder_queen_id: queenId } : g))
+    try {
+      const { error } = await supabase
+        .from('batch_grafts')
+        .update({ breeder_queen_id: queenId })
+        .eq('id', graftId)
+      if (error) throw error
+    } catch (error) {
+      console.error('Error updating breeder queen:', error)
+      toast.error('Failed to update breeder queen')
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, breeder_queen_id: previous } : g))
+    }
+  }, [toast, grafts])
 
   const updateGraftStatus = useCallback(async (graftId: string, newStatus: string) => {
     if (!VALID_GRAFT_STATUS_VALUES.includes(newStatus)) {
@@ -704,6 +766,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   return {
     // State
     grafts,
+    breederQueens,
     loading,
     distributeGraft,
     setDistributeGraft,
@@ -741,6 +804,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     updateGraftStatusDate,
     updateGraftQueenNumber,
     updateGraftWeight,
+    updateGraftBreederQueen,
 
     // Distribution wrappers
     handleDistributeSave,

@@ -139,8 +139,13 @@ Both `useNIHBSReport` and `useRearingGroupReport` derive counters from individua
 
 Row 21 ("Number of newly mated queens showing hybridised offspring") is auto-calculated from individual `graft_distributions` records where `offspring_hybridised === true`, grouped by `hybridisation_date` month. This replaces the previous batch-level `rearing_batches.queens_hybridised` field (which is no longer written to from the batch form). The Queen Tracker provides a three-state toggle (Yes/No/?) with a user-selectable date picker when set to Yes. Manual overrides from `nihbs_monthly_returns.hybridised_offspring` still take precedence when explicitly saved.
 
+## Multi-Breeder Batches
+
+NIHBS report figures are aggregated **per batch** (sealed cells, hatched, mated, distributions). Multi-breeder batches — where a batch's cells were grafted from more than one breeder queen, tracked via `batch_breeder_queens` and `batch_grafts.breeder_queen_id` (see [multi-breeder-queens-per-batch.md](./multi-breeder-queens-per-batch.md)) — do **not** split the figures by breeder. They contribute to the same per-batch totals as before. Per-breeder reporting is out of scope for this iteration.
+
 ## RLS Policies
 
 - `nihbs_monthly_returns`: Group owners only (SELECT/INSERT/UPDATE).
 - `batch_grafts`: Group owners can view member grafts (SELECT) — enables graft-derived counter fallback for the NIHBS and rearing reports.
+- `batch_breeder_queens`: Group owners can view member rows (SELECT) — mirrors the `batch_grafts` policy so multi-breeder batches are readable by group owners. Insert/update/delete are owner-only.
 - `apiaries`: The `can_access_apiary` function grants SELECT access when an apiary is used as a mating apiary in a rearing group the user belongs to — enables the NIHBS report to show mating apiary details (name, grid reference, altitude) for all group members' mating apiaries.

@@ -9,7 +9,13 @@ export interface Graft {
   notes: string | null
   queen_marked: boolean
   queen_number: string | null
+  breeder_queen_id: string | null
   latest_weight_mg?: number | null
+}
+
+export interface BatchBreederQueen {
+  queen_id: string
+  queen_number: string
 }
 
 const STATUS_CHIP_CLASSES = {

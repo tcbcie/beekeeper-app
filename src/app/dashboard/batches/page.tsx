@@ -83,6 +83,8 @@ interface Batch {
 interface FormData {
  batch_name: string
  mother_queen_id: string
+ multiple_breeders: boolean
+ breeder_queen_ids: string[]
  starter_apiary_id: string
  starter_colony_hive_id: string
  graft_date: string
@@ -288,9 +290,15 @@ export default function BatchesPage() {
  const [loadingScores, setLoadingScores] = useState(false)
  const [quantitiesOpen, setQuantitiesOpen] = useState(true)
  const [notificationPrefsOpen, setNotificationPrefsOpen] = useState(false)
+ const [editingBatchHasGrafts, setEditingBatchHasGrafts] = useState(false)
+ // Stale-fetch guard: rapid Edit clicks across batches can interleave their
+ // async loads; we only apply the result that matches the latest invocation.
+ const editFetchGenRef = useRef(0)
  const [formData, setFormData] = useState<FormData>({
  batch_name: '',
  mother_queen_id: '',
+ multiple_breeders: false,
+ breeder_queen_ids: [],
  starter_apiary_id: '',
  starter_colony_hive_id: '',
  graft_date: toLocalDateString(new Date()),
@@ -554,10 +562,17 @@ export default function BatchesPage() {
  return
  }
 
+ // Multi-breeder intent + empty selection: don't silently save a no-breeder batch.
+ if (formData.multiple_breeders && formData.breeder_queen_ids.length === 0) {
+ toast.error('Select at least one breeder queen, or uncheck "Graft from multiple breeder queens".')
+ return
+ }
+
  try {
+ const isMulti = formData.multiple_breeders && formData.breeder_queen_ids.length > 0
  const dataToSubmit = {
  batch_name: formData.batch_name,
- mother_queen_id: formData.mother_queen_id || null,
+ mother_queen_id: isMulti ? null : (formData.mother_queen_id || null),
  starter_colony_hive_id: formData.starter_colony_hive_id || null,
  graft_date: formData.graft_date,
  cell_count: formData.cell_count ? parseInt(formData.cell_count, 10) || null : null,
@@ -579,6 +594,7 @@ export default function BatchesPage() {
  batch_reminder_minutes_before: formData.batch_reminder_minutes_before ? parseInt(formData.batch_reminder_minutes_before, 10) || 60 : 60,
  }
 
+ let batchId: string
  if (editingBatch) {
  const { error } = await supabase
  .from('rearing_batches')
@@ -587,12 +603,28 @@ export default function BatchesPage() {
  .eq('user_id', userId)
 
  if (error) throw error
+ batchId = editingBatch.id
  } else {
- const { error } = await supabase
+ const { data: inserted, error } = await supabase
  .from('rearing_batches')
  .insert([{ ...dataToSubmit, user_id: userId }])
+ .select('id')
+ .single()
 
  if (error) throw error
+ if (!inserted?.id) throw new Error('Batch was created but no id was returned')
+ batchId = inserted.id
+ }
+
+ // Breeder-queen junction: only writable while no grafts exist (UI locks the inputs;
+ // we skip the write when locked rather than letting a stray submit clear the set).
+ // Uses an RPC so DELETE+INSERT happen in one transaction — see audit C1.
+ if (!(editingBatch && editingBatchHasGrafts)) {
+ const { error: rpcErr } = await supabase.rpc('replace_batch_breeder_queens', {
+ p_batch_id: batchId,
+ p_breeder_queen_ids: isMulti ? formData.breeder_queen_ids : [],
+ })
+ if (rpcErr) throw rpcErr
  }
 
  fetchBatches()
@@ -603,13 +635,41 @@ export default function BatchesPage() {
  }
  }
 
- const handleEdit = (batch: Batch) => {
+ const handleEdit = async (batch: Batch) => {
  setEditingBatch(batch)
  // Find the apiary_id from the hive if it exists
  const hive = hives.find(h => h.id === batch.starter_colony_hive_id)
+
+ // Load existing breeder-queen set and whether grafts already exist (locks the toggle).
+ // Stale-fetch guard: if the user clicks Edit on another batch before this resolves,
+ // we discard the result so the form doesn't end up showing data from the wrong batch.
+ const gen = ++editFetchGenRef.current
+ let breederIds: string[] = []
+ let hasGrafts = false
+ try {
+ const [breederRes, graftCountRes] = await Promise.all([
+ supabase.from('batch_breeder_queens').select('queen_id').eq('batch_id', batch.id),
+ supabase.from('batch_grafts').select('id', { count: 'exact', head: true }).eq('batch_id', batch.id),
+ ])
+ if (gen !== editFetchGenRef.current) return
+ if (breederRes.error) throw breederRes.error
+ if (graftCountRes.error) throw graftCountRes.error
+ breederIds = (breederRes.data || []).map(r => r.queen_id as string)
+ hasGrafts = (graftCountRes.count ?? 0) > 0
+ } catch (err) {
+ if (gen !== editFetchGenRef.current) return
+ console.error('Error loading batch edit data:', err)
+ toast.error('Failed to load batch data. Please try again.')
+ setEditingBatch(null)
+ return
+ }
+ setEditingBatchHasGrafts(hasGrafts)
+
  setFormData({
  batch_name: batch.batch_name,
  mother_queen_id: batch.mother_queen_id || '',
+ multiple_breeders: breederIds.length > 0,
+ breeder_queen_ids: breederIds,
  starter_apiary_id: hive?.apiary_id || '',
  starter_colony_hive_id: batch.starter_colony_hive_id || '',
  graft_date: batch.graft_date,
@@ -894,6 +954,7 @@ export default function BatchesPage() {
  const resetForm = () => {
  setShowForm(false)
  setEditingBatch(null)
+ setEditingBatchHasGrafts(false)
  voiceAbortRef.current?.abort()
  voiceAbortRef.current = null
  resetVoiceRecorder()
@@ -902,6 +963,8 @@ export default function BatchesPage() {
  setFormData({
  batch_name: '',
  mother_queen_id: '',
+ multiple_breeders: false,
+ breeder_queen_ids: [],
  starter_apiary_id: '',
  starter_colony_hive_id: '',
  graft_date: toLocalDateString(new Date()),
@@ -998,6 +1061,25 @@ export default function BatchesPage() {
 
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-1">Breeder Queen</label>
+ <label className="flex items-center gap-2 mb-2 cursor-pointer">
+ <input
+ type="checkbox"
+ checked={formData.multiple_breeders}
+ disabled={!!editingBatch && editingBatchHasGrafts}
+ onChange={(e) => {
+ const checked = e.target.checked
+ setFormData(prev => ({
+ ...prev,
+ multiple_breeders: checked,
+ mother_queen_id: checked ? '' : prev.mother_queen_id,
+ breeder_queen_ids: checked ? prev.breeder_queen_ids : [],
+ }))
+ }}
+ className="h-4 w-4"
+ />
+ <span className="text-sm text-text-secondary">Graft from multiple breeder queens</span>
+ </label>
+ {!formData.multiple_breeders ? (
  <select
  value={formData.mother_queen_id}
  onChange={(e) => setFormData({...formData, mother_queen_id: e.target.value})}
@@ -1016,6 +1098,45 @@ export default function BatchesPage() {
  )
  })}
  </select>
+ ) : (
+ <div className="border border-border rounded-md max-h-48 overflow-y-auto bg-surface dark:bg-surface">
+ {queens.length === 0 ? (
+ <p className="text-sm text-text-tertiary p-3">No active queens available</p>
+ ) : (
+ queens.map((q: Queen) => {
+ const hive = q.hives && q.hives.length > 0 ? q.hives[0] : null
+ const apiary = hive?.apiaries?.name || ''
+ const hiveNumber = hive?.hive_number || ''
+ const location = apiary && hiveNumber ? ` (${apiary} - ${hiveNumber})` : ''
+ const isSelected = formData.breeder_queen_ids.includes(q.id)
+ const locked = !!editingBatch && editingBatchHasGrafts
+ return (
+ <label key={q.id} className={`flex items-center gap-2 px-3 py-2 border-b border-border last:border-b-0 ${locked ? 'opacity-60' : 'cursor-pointer hover:bg-surface-elevated'}`}>
+ <input
+ type="checkbox"
+ checked={isSelected}
+ disabled={locked}
+ onChange={(e) => {
+ const checked = e.target.checked
+ setFormData(prev => ({
+ ...prev,
+ breeder_queen_ids: checked
+ ? [...prev.breeder_queen_ids, q.id]
+ : prev.breeder_queen_ids.filter(id => id !== q.id),
+ }))
+ }}
+ className="h-4 w-4"
+ />
+ <span className="text-foreground">{q.queen_number}{location}</span>
+ </label>
+ )
+ })
+ )}
+ </div>
+ )}
+ {!!editingBatch && editingBatchHasGrafts && (
+ <p className="text-xs text-text-tertiary mt-1">Cell records exist — breeder queens are locked. Edit per-cell on the frame.</p>
+ )}
  </div>
 
  {/* Timeline Dates - Grouped */}
