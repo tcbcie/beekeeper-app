@@ -23,7 +23,8 @@ The active tab is mirrored to the `?tab=` query parameter so deep links, refresh
 
 **`rearing_batches`** — batch lifecycle
 - `id`, `user_id`, `batch_name`, `graft_date`
-- `mother_queen_id` (FK → queens), `starter_colony_hive_id` (FK → hives)
+- `mother_queen_id` (FK → queens) — single breeder queen for single-breeder batches (NULL when the batch uses multiple breeders; see `batch_breeder_queens`). See also [multi-breeder-queens-per-batch.md](./multi-breeder-queens-per-batch.md).
+- `starter_colony_hive_id` (FK → hives)
 - `cell_count`, `frame_rows`, `cells_per_row` (cell_count auto-calculated as rows × cells per row)
 - `grafts_accepted`, `queens_hatched`, `queens_mated`, `queens_hybridised`
 - Auto-calculated dates: `acceptance_check_date` (+1d), `first_option_to_cage_date` (+5d), `second_option_to_cage_date` (+10d), `emergence_date` (+12d)
@@ -36,9 +37,14 @@ The active tab is mirrored to the `?tab=` query parameter so deep links, refresh
 - `status_date` (DATE, nullable) — date the status was last changed (auto-set to today on single-row status changes, editable for backdating; frame bulk mode can apply an explicit chosen date when saving)
 - `queen_marked` (BOOLEAN, default false) — whether the queen has been marked
 - `queen_number` (TEXT, nullable) — queen identification number
+- `breeder_queen_id` (FK → queens, SET NULL, nullable) — per-cell breeder attribution for multi-breeder batches. NULL on single-breeder batches (the cell inherits from `rearing_batches.mother_queen_id`)
 - Status values: `grafted` → `accepted` → `caged` → `emerged` → `in_nuc` → `mated` | `failed` | `sold`
 - **Frame view**: shows grafts with status `grafted` or `accepted` only (active early-lifecycle cells). Collapsible via a "Cell Frame ▼/▲" toggle; auto-collapses on page load when any grafts are already in the queen tracking table
 - **Queen tracking table**: shows grafts with status `caged`, `emerged`, `in_nuc`, `mated`, `failed`, or `sold` (i.e. everything that has progressed past the frame stage). Rows with status `sold` (distributed) or `failed` are automatically locked with a badge ("Distributed" or "Failed") and can be toggled unlocked for correction
+
+**`batch_breeder_queens`** — junction for multi-breeder batches (see [multi-breeder-queens-per-batch.md](./multi-breeder-queens-per-batch.md))
+- Composite PK `(batch_id, queen_id)`; `user_id` for RLS
+- Used only when the batch is created/edited with "Graft from multiple breeder queens" checked. Single-breeder batches use `rearing_batches.mother_queen_id` and leave this table empty.
 
 **`graft_distributions`** — distribution tracking (see [batch-distributions.md](./batch-distributions.md))
 - One distribution per graft (UNIQUE on graft_id)

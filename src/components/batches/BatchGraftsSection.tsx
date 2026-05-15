@@ -1,13 +1,16 @@
 'use client'
 
+import { useState } from 'react'
 import { Plus, CheckSquare, HelpCircle } from 'lucide-react'
 import { useBatchGrafts } from '@/hooks/useBatchGrafts'
+import type { BreederRange } from '@/hooks/useBatchGrafts'
 import { GRAFT_STATUSES } from './graftConstants'
 import GraftHelpBanner from './GraftHelpBanner'
 import CellFrame from './CellFrame'
 import QueenTrackingSection from './QueenTrackingSection'
 import DistributionList from './DistributionList'
 import DistributeGraftModal from './DistributeGraftModal'
+import BreederRangeModal from './BreederRangeModal'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 
@@ -26,6 +29,7 @@ interface BatchGraftsSectionProps {
 
 export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, emergenceDate, graftDate, matingApiaryName, onCountsChange }: BatchGraftsSectionProps) {
   const hook = useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, graftDate, onCountsChange })
+  const [showRangeModal, setShowRangeModal] = useState(false)
 
   const handleFrameBulkButtonClick = async () => {
     if (hook.selectMode) {
@@ -39,6 +43,23 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
     hook.exitTableSelectMode()
     hook.enterSelectMode()
   }
+
+  const handleGenerateClick = () => {
+    if (hook.breederQueens.length > 0 && cellCount && cellCount > 0) {
+      setShowRangeModal(true)
+      return
+    }
+    hook.generateGrafts()
+  }
+
+  const handleRangeConfirm = (ranges: BreederRange[]) => {
+    setShowRangeModal(false)
+    hook.generateGrafts({ ranges })
+  }
+
+  const nextStartCellNumber = hook.grafts.length > 0
+    ? hook.grafts.reduce((max, g) => g.cell_number > max ? g.cell_number : max, 0) + 1
+    : 1
 
   if (hook.loading) {
     return <div className="text-sm text-text-secondary">Loading grafts...</div>
@@ -81,7 +102,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
             )}
             <Button
               type="button"
-              onClick={hook.generateGrafts}
+              onClick={handleGenerateClick}
               tone="success"
               size="sm"
               className="inline-flex items-center gap-1"
@@ -110,6 +131,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       {/* Cell Frame */}
       <CellFrame
         grafts={hook.grafts}
+        breederQueens={hook.breederQueens}
         frameRows={frameRows}
         cellsPerRow={cellsPerRow}
         frameCollapsed={hook.frameCollapsed}
@@ -187,6 +209,17 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
           onSave={hook.handleDistributeSave}
           onClose={() => hook.setDistributeGraft(null)}
           defaultMatingLocation={hook.distributeGraft.status === 'mated' ? (matingApiaryName || undefined) : undefined}
+        />
+      )}
+
+      {/* Range Assignment Modal (multi-breeder cell generation) */}
+      {showRangeModal && cellCount && cellCount > 0 && (
+        <BreederRangeModal
+          breederQueens={hook.breederQueens}
+          cellCount={cellCount}
+          startCellNumber={nextStartCellNumber}
+          onConfirm={handleRangeConfirm}
+          onClose={() => setShowRangeModal(false)}
         />
       )}
 
