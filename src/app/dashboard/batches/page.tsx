@@ -1060,8 +1060,9 @@ export default function BatchesPage() {
  </div>
 
  <div>
- <label className="block text-sm font-medium text-text-secondary mb-1">Breeder Queen</label>
- <label className="flex items-center gap-2 mb-2 cursor-pointer">
+ <div className="flex items-center justify-between gap-2 mb-1 flex-wrap">
+ <label className="block text-sm font-medium text-text-secondary">Breeder Queen</label>
+ <label className="flex items-center gap-2 cursor-pointer text-sm text-text-secondary">
  <input
  type="checkbox"
  checked={formData.multiple_breeders}
@@ -1077,8 +1078,9 @@ export default function BatchesPage() {
  }}
  className="h-4 w-4"
  />
- <span className="text-sm text-text-secondary">Graft from multiple breeder queens</span>
+ <span>Graft from multiple breeder queens</span>
  </label>
+ </div>
  {!formData.multiple_breeders ? (
  <select
  value={formData.mother_queen_id}
