@@ -459,9 +459,12 @@ export default function InspectionForm({
         const body = await res.json() as {
           lastValues?: { weight_kg?: number; weight_kg_corrected?: number }
         }
-        const kg = body.lastValues?.weight_kg_corrected ?? body.lastValues?.weight_kg
-        if (typeof kg !== 'number' || !Number.isFinite(kg)) return
+        const kgRaw = body.lastValues?.weight_kg_corrected ?? body.lastValues?.weight_kg
+        if (typeof kgRaw !== 'number' || !Number.isFinite(kgRaw)) return
         if (controller.signal.aborted) return
+        // Round to one decimal — scale APIs return full sensor precision (e.g.
+        // 47.049202787406 kg) which is meaningless for a hive weight reading.
+        const kg = Math.round(kgRaw * 10) / 10
 
         // Only prefill if still no manual entry by the time the network resolves.
         setFormData(prev => prev.weight !== null && prev.weight !== undefined
