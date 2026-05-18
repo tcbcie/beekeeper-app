@@ -38,6 +38,8 @@ export interface Hive {
   archived_at: string | null
   user_id: string
   qr_tag_code?: string | null
+  beep_device_id?: string | null
+  wolf_scale_id?: string | null
 }
 
 export interface Apiary {

@@ -435,6 +435,12 @@ Added Wolf scale icon to hive cards:
 
 ---
 
+## Inspection auto-fill
+
+When a hive is linked to a Wolf Waagen scale (`hives.wolf_scale_id`) and a beekeeper starts a **new** inspection for that hive, `InspectionForm.tsx` pre-fills the **Weight (kg)** field with the scale's latest reading (`lastValues.weight_kg`). The field shows a small "Auto-filled from Wolf Waagen scale" hint that clears as soon as the user edits the value. Editing an existing inspection never auto-fills — historical readings are preserved. If the user already typed a weight, it is not overwritten. The fetch uses an `AbortController` and silently falls through to manual entry on any error. When both `wolf_scale_id` and `beep_device_id` are set on the hive, Wolf takes precedence.
+
+---
+
 ## Files Created/Modified
 
 | File | Status | Description |

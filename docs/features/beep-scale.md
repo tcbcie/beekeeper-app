@@ -269,6 +269,10 @@ BEEP section with email/password login form:
 
 ---
 
+## Inspection auto-fill
+
+When a hive is linked to a BEEP device (`hives.beep_device_id`) and a beekeeper starts a **new** inspection for that hive, `InspectionForm.tsx` pre-fills the **Weight (kg)** field with the device's latest reading (`lastValues.weight_kg_corrected ?? lastValues.weight_kg`). The field shows a small "Auto-filled from BEEP scale" hint that clears as soon as the user edits the value. Editing an existing inspection never auto-fills — historical readings are preserved. If the user already typed a weight, it is not overwritten. The fetch uses an `AbortController` and silently falls through to manual entry on any error. Precedence vs Wolf Waagen: if both `wolf_scale_id` and `beep_device_id` are set on the hive, Wolf is preferred.
+
 ## Feature Updates
 
 ### January 15, 2026 - Grouping and Weight Changes
