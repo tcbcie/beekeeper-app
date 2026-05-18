@@ -171,6 +171,11 @@ export default function InspectionForm({
   const [voiceProcessing, setVoiceProcessing] = useState(false)
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const voiceAbortRef = useRef<AbortController | null>(null)
+  // Scale-weight auto-fill: tracks which hive we've already prefetched for so the
+  // effect doesn't loop on every formData change. Cleared on hive change.
+  const lastScalePrefillHiveIdRef = useRef<string | null>(null)
+  const scaleFetchAbortRef = useRef<AbortController | null>(null)
+  const [weightFromScale, setWeightFromScale] = useState<{ kg: number; source: 'beep' | 'wolf' } | null>(null)
 
   // Abort any in-flight voice transcription on unmount so a late response
   // cannot leak the cleaned transcript into a different inspection's notes.
@@ -394,6 +399,87 @@ export default function InspectionForm({
         : prev
     ))
   }, [formData.hive_id, getPreviousRightSizedFrames, isEditing])
+
+  // Auto-fill the Weight (kg) field from a connected scale when starting a new
+  // inspection. Skipped in edit mode so historical readings are never overwritten.
+  // Skipped if the user (or initial data) already supplied a weight, so we don't
+  // clobber explicit input. Silent fall-through on any error — the field is
+  // optional and manual entry is always available.
+  useEffect(() => {
+    if (isEditing) return
+    const hiveId = formData.hive_id
+    if (!hiveId) {
+      // Hive deselected mid-fetch: abort so a late response can't write a stale weight.
+      scaleFetchAbortRef.current?.abort()
+      lastScalePrefillHiveIdRef.current = null
+      setWeightFromScale(null)
+      return
+    }
+    if (lastScalePrefillHiveIdRef.current === hiveId) return
+    lastScalePrefillHiveIdRef.current = hiveId
+
+    // Cancel any prior in-flight fetch (rapid hive switches).
+    scaleFetchAbortRef.current?.abort()
+
+    // Don't overwrite an existing weight value (e.g. user already typed one).
+    if (formData.weight !== null && formData.weight !== undefined) {
+      setWeightFromScale(null)
+      return
+    }
+
+    const hive = hives.find(h => h.id === hiveId)
+    if (!hive) return
+    // Precedence: Wolf first, then BEEP. Either is fine when only one is set.
+    const useWolf = !!hive.wolf_scale_id
+    const useBeep = !useWolf && !!hive.beep_device_id
+    if (!useWolf && !useBeep) {
+      setWeightFromScale(null)
+      return
+    }
+
+    const controller = new AbortController()
+    scaleFetchAbortRef.current = controller
+
+    ;(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+        if (!token) return
+
+        const url = useWolf
+          ? `/api/wolf-waagen/data?scaleId=${encodeURIComponent(hive.wolf_scale_id!)}&hiveId=${encodeURIComponent(hiveId)}`
+          : `/api/beep/data?deviceId=${encodeURIComponent(hive.beep_device_id!)}&hiveId=${encodeURIComponent(hiveId)}`
+
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
+        })
+        if (controller.signal.aborted) return
+        if (!res.ok) return
+        const body = await res.json() as {
+          lastValues?: { weight_kg?: number; weight_kg_corrected?: number }
+        }
+        const kg = body.lastValues?.weight_kg_corrected ?? body.lastValues?.weight_kg
+        if (typeof kg !== 'number' || !Number.isFinite(kg)) return
+        if (controller.signal.aborted) return
+
+        // Only prefill if still no manual entry by the time the network resolves.
+        setFormData(prev => prev.weight !== null && prev.weight !== undefined
+          ? prev
+          : { ...prev, weight: kg }
+        )
+        setWeightFromScale({ kg, source: useWolf ? 'wolf' : 'beep' })
+      } catch (err) {
+        if ((err as { name?: string })?.name === 'AbortError') return
+        console.error('Scale weight auto-fill failed:', err)
+      }
+    })()
+  }, [formData.hive_id, formData.weight, hives, isEditing])
+
+  // Cancel any pending scale fetch on unmount.
+  useEffect(() => {
+    return () => { scaleFetchAbortRef.current?.abort() }
+  }, [])
 
   const handleHiveSelect = async (hiveId: string) => {
     setFormData(prev => ({ ...prev, hive_id: hiveId }))
@@ -836,10 +922,20 @@ export default function InspectionForm({
                 type="number"
                 step="0.1"
                 value={formData.weight ?? ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, weight: e.target.value ? parseFloat(e.target.value) : null }))}
+                onChange={(e) => {
+                  const next = e.target.value ? parseFloat(e.target.value) : null
+                  // User typed → drop the auto-fill marker.
+                  if (weightFromScale && next !== weightFromScale.kg) setWeightFromScale(null)
+                  setFormData(prev => ({ ...prev, weight: next }))
+                }}
                 className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
                 placeholder="Optional"
               />
+              {weightFromScale && (
+                <p className="mt-1 text-xs text-text-tertiary">
+                  Auto-filled from {weightFromScale.source === 'wolf' ? 'Wolf Waagen' : 'BEEP'} scale
+                </p>
+              )}
             </div>
           </div>
         </div>
