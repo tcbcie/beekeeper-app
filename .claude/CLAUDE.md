@@ -172,7 +172,7 @@ When assisting with this project:
 2. **Maintain type safety** - Use TypeScript properly, avoid `any`
 3. **Consider RLS policies** - All queries must respect Row Level Security
 4. **Test thoroughly** - Check linting and TypeScript errors
-5. **Document changes** - Update relevant docs when adding features
+5. Document changes - Update relevant HTML docs when adding features or media
 6. **Commit hygiene** - Clear commit messages, logical grouping of changes
 
 ### When Making Changes
@@ -205,16 +205,24 @@ When assisting with this project:
 **Note:** This configuration is optimized for Claude AI assistance on the HiveCraic beekeeping application. Keep this document updated as the project evolves.
 
 Obey those Claude Rules:
-1. First think through the problem, read the codebase for relevant files, and write a plan to tasks/todo.md.
-2. The plan should have a list of todo items that you can check off as you complete them
-3. Before you begin working, check in with me and I will verify the plan.
-4. Then, begin working on the todo items, marking them as complete as you go.
-5. Please, every step of the way just give me a high-level explanation of what changes you made
-6. Make every task and code change you do as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity.
-7. Finally, add a review section to the todo.md file with a summary of the changes you made and any other relevant information.
-8. DO NOT BE LAZY. NEVER BE LAZY. IF THERE IS A BUG FIND THE ROOT CAUSE AND FIX IT. NO TEMPORARY FIXES. YOU ARE A SENIOR DEVELOPER. NEVER BE LAZY
-9. MAKE ALL FIXES AND CODE CHANGES AS SIMPLE AS HUMANLY POSSIBLE. THEY SHOULD ONLY IMPACT NECESSARY CODE RELEVANT TO THE TASK AND NOTHING ELSE. IT SHOULD IMPACT AS LITTLE CODE AS POSSIBLE. YOUR GOAL IS TO NOT INTRODUCE ANY BUGS. IT'S ALL ABOUT SIMPLICITY
 
+First think through the problem, read the codebase for relevant files, and write a plan to tasks/todo.html (using standard HTML formatting to allow for inline images, workflow diagrams, or media embeds).
+
+The plan should have a list of todo items that you can check off as you complete them.
+
+Before you begin working, check in with me and I will verify the plan.
+
+Then, begin working on the todo items, marking them as complete as you go.
+
+Please, every step of the way just give me a high-level explanation of what changes you made.
+
+Make every task and code change you do as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity.
+
+Finally, add a review section to the todo.html file with a summary of the changes you made and any other relevant information or visual evidence.
+
+DO NOT BE LAZY. NEVER BE LAZY. IF THERE IS A BUG FIND THE ROOT CAUSE AND FIX IT. NO TEMPORARY FIXES. YOU ARE A SENIOR DEVELOPER. NEVER BE LAZY
+
+MAKE ALL FIXES AND CODE CHANGES AS SIMPLE AS HUMANLY POSSIBLE. THEY SHOULD ONLY IMPACT NECESSARY CODE RELEVANT TO THE TASK AND NOTHING ELSE. IT SHOULD IMPACT AS LITTLE CODE AS POSSIBLE. YOUR GOAL IS TO NOT INTRODUCE ANY BUGS. IT'S ALL ABOUT SIMPLICITY
 When in planning mode and asked to implement a new feature, create a plan in the docs/feature folder with a unique name for future reference.
 
 DO NOT TEST the BUILD yourself but rather prompt the user to test it as this is taking to much time.
@@ -228,3 +236,6 @@ For any new or existing feature, create/update the documentation in docs/feature
 Use British English for everything.
 
 For the exploration task, always use multiple agents.
+
+
+
