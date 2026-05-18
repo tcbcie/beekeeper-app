@@ -568,6 +568,40 @@ export default function BatchesPage() {
  return
  }
 
+ // Batch-name uniqueness: solo batches unique per user, group batches unique within
+ // the group (both case-insensitive). DB has matching partial unique indexes — this
+ // pre-check just turns the violation into a friendly toast before the round trip.
+ try {
+ const groupIdForScope = formData.rearing_group_id || null
+ // Escape LIKE wildcards so '%' or '_' in a name are matched literally.
+ const escapedName = formData.batch_name.replace(/([\\%_])/g, '\\$1')
+ let dupQuery = supabase
+ .from('rearing_batches')
+ .select('id', { count: 'exact', head: true })
+ .ilike('batch_name', escapedName)
+ if (groupIdForScope) {
+ dupQuery = dupQuery.eq('rearing_group_id', groupIdForScope)
+ } else {
+ dupQuery = dupQuery.is('rearing_group_id', null).eq('user_id', userId)
+ }
+ if (editingBatch) {
+ dupQuery = dupQuery.neq('id', editingBatch.id)
+ }
+ const { count: dupCount, error: dupErr } = await dupQuery
+ if (dupErr) throw dupErr
+ if ((dupCount ?? 0) > 0) {
+ toast.error(
+ groupIdForScope
+ ? `A batch named "${formData.batch_name}" already exists in this rearing group. Choose a different name.`
+ : `You already have a batch named "${formData.batch_name}". Choose a different name.`
+ )
+ return
+ }
+ } catch (preCheckError) {
+ console.error('Batch-name uniqueness pre-check failed:', preCheckError)
+ // Fall through to the insert/update — the DB unique index is the authoritative check.
+ }
+
  try {
  const isMulti = formData.multiple_breeders && formData.breeder_queen_ids.length > 0
  const dataToSubmit = {
@@ -630,8 +664,21 @@ export default function BatchesPage() {
  fetchBatches()
  resetForm()
  } catch (error) {
+ // Surfaces from Supabase carry the Postgres SQLSTATE in `code`. 23505 =
+ // unique_violation. Our only unique constraints on rearing_batches besides
+ // the primary key are the two batch_name partial indexes, so any 23505 here
+ // means the user's chosen name collides with an existing batch in scope.
+ const pgError = error as { code?: string; message?: string }
+ if (pgError?.code === '23505') {
+ toast.error(
+ formData.rearing_group_id
+ ? `A batch named "${formData.batch_name}" already exists in this rearing group. Choose a different name.`
+ : `You already have a batch named "${formData.batch_name}". Choose a different name.`
+ )
+ } else {
  const errorMessage = error instanceof Error ? error.message : 'An error occurred'
  toast.error(errorMessage)
+ }
  }
  }
 
