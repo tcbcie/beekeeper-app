@@ -23,6 +23,10 @@ The active tab is mirrored to the `?tab=` query parameter so deep links, refresh
 
 **`rearing_batches`** — batch lifecycle
 - `id`, `user_id`, `batch_name`, `graft_date`
+- `batch_name` uniqueness (case-insensitive) is enforced by two partial unique indexes:
+  - `rearing_batches_unique_solo_name (user_id, lower(batch_name)) WHERE rearing_group_id IS NULL` — a user can't reuse a name across their solo batches.
+  - `rearing_batches_unique_group_name (rearing_group_id, lower(batch_name)) WHERE rearing_group_id IS NOT NULL` — names must be unique within a rearing group (across all members).
+  - Different users may still pick the same name for their own solo batches. The Add/Edit form pre-checks and maps `23505` (Postgres `unique_violation`) to a friendly toast.
 - `mother_queen_id` (FK → queens) — single breeder queen for single-breeder batches (NULL when the batch uses multiple breeders; see `batch_breeder_queens`). See also [multi-breeder-queens-per-batch.md](./multi-breeder-queens-per-batch.md).
 - `starter_colony_hive_id` (FK → hives)
 - `cell_count`, `frame_rows`, `cells_per_row` (cell_count auto-calculated as rows × cells per row)
