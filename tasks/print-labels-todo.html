@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <title>Print Labels — Plan</title>
+  <style>
+    body { font: 14px/1.55 -apple-system, Segoe UI, Roboto, sans-serif; max-width: 900px; margin: 2em auto; padding: 0 1em; color: #1f2937; }
+    h1 { font-size: 22px; margin-bottom: 0.2em; }
+    h2 { font-size: 17px; margin-top: 1.6em; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+    h3 { font-size: 14px; margin-top: 1.3em; }
+    code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 12.5px; }
+    table { border-collapse: collapse; width: 100%; margin: 0.6em 0; }
+    th, td { border: 1px solid #e5e7eb; padding: 6px 9px; text-align: left; font-size: 13px; vertical-align: top; }
+    th { background: #f9fafb; font-weight: 600; }
+    ul.todo { list-style: none; padding-left: 0; }
+    ul.todo li { padding: 4px 0 4px 26px; position: relative; }
+    ul.todo li::before { content: "☐"; position: absolute; left: 0; top: 4px; color: #6b7280; font-size: 16px; }
+    ul.todo li.done { color: #6b7280; text-decoration: line-through; }
+    ul.todo li.done::before { content: "☑"; color: #16a34a; }
+    .muted { color: #6b7280; font-size: 13px; }
+    .diagram { background: #f9fafb; border: 1px dashed #d1d5db; padding: 10px 14px; border-radius: 6px; white-space: pre; font: 12.5px/1.4 ui-monospace, Menlo, Consolas, monospace; overflow-x: auto; }
+    .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; background: #eef2ff; color: #3730a3; }
+  </style>
+</head>
+<body>
+
+<h1>Printable Labels — Implementation Plan</h1>
+<p class="muted">Full design: <a href="../docs/features/print-labels.md"><code>docs/features/print-labels.md</code></a>. This file is the actionable todo list; tick items off as we go.</p>
+
+<h2>Headline approach</h2>
+<p>
+  Reuse the existing browser-print pattern (<code>window.print()</code> + <code>@media print</code> + <code>qrcode.react</code>) already used by <code>src/app/dashboard/qr-tags/page.tsx</code>.
+  No new PDF library — users can save as PDF from the system print dialog if they want one.
+  A single <code>LabelSheet</code> component renders any list of labels at a chosen page preset (Brother QL roll, DYMO, Avery sheet).
+</p>
+
+<h2>Confirmation needed before coding</h2>
+<table>
+  <tr><th>Question</th><th>Suggested default</th></tr>
+  <tr><td>v1 set of label-enabled sections</td><td>Hives, Mating Nucs, Queens</td></tr>
+  <tr><td>Default preset</td><td><code>brother_ql_62_29</code> (62 × 29 mm)</td></tr>
+  <tr><td>Default QR on/off</td><td>ON for Hives &amp; Nucs, OFF for Queens / Batches</td></tr>
+  <tr><td>Where the bulk button lives on list pages</td><td>Inline with the filter toolbar</td></tr>
+</table>
+
+<h2>Architecture sketch</h2>
+<div class="diagram">[entity list/detail page]
+        │
+        │  collect ids → fetch label data via existing hook
+        ▼
+   ┌──────────────────┐
+   │ PrintLabelsModal │  preset picker, QR toggle, content options
+   └─────────┬────────┘
+             │ map to LabelDatum[]
+             ▼
+   ┌──────────────────┐    @page + grid layout applied per preset
+   │   LabelSheet     │ ─── window.print() ───▶ thermal / sheet printer
+   └─────────┬────────┘                         (or "Save as PDF")
+             │
+             └── Label.tsx renders each cell: title / subtitle / fields / optional QR / optional year-colour dot</div>
+
+<h2>Presets to ship</h2>
+<table>
+  <tr><th>Id</th><th>Size</th><th>Notes</th></tr>
+  <tr><td><code>brother_ql_62_29</code></td><td>62 × 29 mm</td><td>Default for hive / nuc / queen</td></tr>
+  <tr><td><code>brother_ql_62_100</code></td><td>62 × 100 mm</td><td>Bigger hive label with extra fields</td></tr>
+  <tr><td><code>brother_ql_29_90</code></td><td>29 × 90 mm</td><td>Slim graft / batch labels</td></tr>
+  <tr><td><code>dymo_lw_89_36</code></td><td>89 × 36 mm</td><td>DYMO LabelWriter</td></tr>
+  <tr><td><code>avery_l7160_a4</code></td><td>A4 sheet, 21 / page</td><td>Sheet-printer fallback (Europe)</td></tr>
+  <tr><td><code>avery_5160_letter</code></td><td>US letter, 30 / page</td><td>Sheet-printer fallback (US)</td></tr>
+</table>
+
+<h2>Todos</h2>
+
+<h3>Foundation</h3>
+<ul class="todo">
+  <li>1. Confirm scope with user (the four questions above) before coding.</li>
+  <li>2. Create <code>src/components/labels/</code> with <code>types.ts</code>, <code>presets.ts</code>, <code>Label.tsx</code>, <code>LabelSheet.tsx</code>.</li>
+  <li>3. Add <code>@page</code> rules per preset + a <code>.print-labels</code> root in <code>src/app/globals.css</code> (using the existing <code>@media print</code> block).</li>
+  <li>4. New <code>PrintLabelsModal</code> wrapping <code>LabelSheet</code> with the preset picker and a <em>Print</em> button.</li>
+</ul>
+
+<h3>Wire-ups (per entity, in priority order)</h3>
+<ul class="todo">
+  <li>5. <strong>Hives</strong> — bulk button on <code>dashboard/hives/page.tsx</code> (scoped to current filter), single-hive button on <code>dashboard/hives/[id]/page.tsx</code>. Reuses the QR tag flow's QR rendering.</li>
+  <li>6. <strong>Mating nucs</strong> — bulk + single from <code>components/batches/ManageNucsTab.tsx</code>; reuses existing <code>NucQRCode</code> data shape.</li>
+  <li>7. <strong>Queens</strong> — bulk button on <code>dashboard/queens/page.tsx</code>, single button on <code>dashboard/queens/[id]/page.tsx</code>. Includes year-colour dot.</li>
+  <li>8. <strong>Rearing batches</strong> — single label per batch, from <code>dashboard/batches/page.tsx</code>.</li>
+  <li>9. <strong>Batch grafts (per cell)</strong> — bulk print of all cells in a batch, from <code>BatchGraftsSection</code>.</li>
+  <li>10. <strong>Apiaries</strong> — single A4/A5 apiary sign from <code>dashboard/apiaries/[id]/page.tsx</code> (not a thermal label).</li>
+</ul>
+
+<h3>Polish &amp; docs</h3>
+<ul class="todo">
+  <li>11. Cross-reference the existing QR-tag page so its bulk-print button can call the new <code>LabelSheet</code> too — eliminates the duplicated print code.</li>
+  <li>12. Add a short note to each affected feature doc in <code>docs/features/</code> linking to <code>print-labels.md</code>.</li>
+  <li>13. Manual verification on Brother QL-820NWB (continuous and die-cut roll) and on an A4 sheet print.</li>
+</ul>
+
+<h2>Out of scope (v1)</h2>
+<ul>
+  <li>Direct USB / Bluetooth printer comms — iOS doesn't support it.</li>
+  <li>Drag-and-drop label designer — keep to fixed presets.</li>
+  <li>Server-rendered PDF — browser's "Save as PDF" already covers this.</li>
+  <li>Print queue / history.</li>
+</ul>
+
+<h2>Risks &amp; mitigations</h2>
+<table>
+  <tr><th>Risk</th><th>Mitigation</th></tr>
+  <tr><td>Print dialog scaling differs per browser / OS.</td><td>Use CSS <code>@page</code> with absolute mm units; recommend users disable "fit to page" in the dialog. Document this once in the print modal.</td></tr>
+  <tr><td>QR readability on small (29 mm) labels.</td><td>Generate at a fixed pixel density (already done in <code>qr-tags/page.tsx</code>); cap content size; allow QR toggle off.</td></tr>
+  <tr><td>iOS printing inconsistencies via AirPrint.</td><td>Stick to portrait single-label rolls for thermal; AirPrint handles sheets reliably.</td></tr>
+  <tr><td>Existing QR-tag page diverges from the new component.</td><td>Item 11: refactor the existing bulk-print to use <code>LabelSheet</code> once it's stable.</td></tr>
+</table>
+
+<h2>Review</h2>
+<p class="muted">To be filled in once the foundation lands and at least one entity is wired up.</p>
+
+</body>
+</html>
