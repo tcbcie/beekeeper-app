@@ -87,6 +87,50 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Look up the target's current role so we can detect Admin demotion and
+    // run the last-Admin guard below.
+    const { data: targetProfile, error: targetProfileError } = await supabaseAdmin
+      .from('profiles')
+      .select('role')
+      .eq('id', targetUserId)
+      .single()
+
+    if (targetProfileError || !targetProfile) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    const previousRole = targetProfile.role as string
+    const isDemotionFromAdmin = previousRole === 'Admin' && newRole !== 'Admin'
+
+    // Last-Admin guard: if the change would demote the only remaining Admin,
+    // refuse. Without this, two admins can collude (or one compromised admin
+    // can act unilaterally) to lock everyone out of the admin surface.
+    if (isDemotionFromAdmin) {
+      const { count: adminCount, error: countError } = await supabaseAdmin
+        .from('profiles')
+        .select('id', { count: 'exact', head: true })
+        .eq('role', 'Admin')
+
+      if (countError) {
+        console.error('Error counting admins:', countError)
+        return NextResponse.json(
+          { error: 'Failed to validate role change' },
+          { status: 500 }
+        )
+      }
+
+      if ((adminCount ?? 0) <= 1) {
+        console.warn(`[AUDIT] Admin role change: admin=${user.id} target=${targetUserId} old_role=${previousRole} new_role=${newRole} status=forbidden reason=last_admin timestamp=${new Date().toISOString()}`)
+        return NextResponse.json(
+          { error: 'Cannot demote the last remaining administrator' },
+          { status: 409 }
+        )
+      }
+    }
+
     // Update the user's role using service role (bypasses RLS)
     const { data, error } = await supabaseAdmin
       .from('profiles')
@@ -96,8 +140,9 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error updating role:', error)
+      console.warn(`[AUDIT] Admin role change: admin=${user.id} target=${targetUserId} old_role=${previousRole} new_role=${newRole} status=failed timestamp=${new Date().toISOString()}`)
       return NextResponse.json(
-        { error: 'Failed to update role', details: error.message },
+        { error: 'Failed to update role' },
         { status: 500 }
       )
     }
@@ -108,6 +153,8 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       )
     }
+
+    console.warn(`[AUDIT] Admin role change: admin=${user.id} target=${targetUserId} old_role=${previousRole} new_role=${newRole} status=success timestamp=${new Date().toISOString()}`)
 
     return NextResponse.json({
       success: true,

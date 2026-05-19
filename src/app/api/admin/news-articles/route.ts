@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateEmbedding } from '@/lib/openai'
+import {
+  assertSafePublicUrl,
+  fetchHtmlWithBounds,
+  FetchTooLargeError,
+} from '@/lib/admin-url-fetch'
 import * as cheerio from 'cheerio'
+
+const URL_FETCH_MAX_BYTES = 5 * 1024 * 1024
 
 // Create admin client with service role key
 function getSupabaseAdmin() {
@@ -48,34 +55,6 @@ async function verifyAdmin(request: NextRequest): Promise<{ userId: string } | N
   return { userId: user.id }
 }
 
-// SSRF guard for user-supplied URLs (admin can still mistype or be XSS'd).
-// Mirrors the inline guard already present in knowledge-base/route.ts.
-function assertSafePublicUrl(rawUrl: string): { ok: true } | { ok: false; reason: string } {
-  let parsed: URL
-  try {
-    parsed = new URL(rawUrl)
-  } catch {
-    return { ok: false, reason: 'Invalid URL format' }
-  }
-  if (parsed.protocol !== 'https:') {
-    return { ok: false, reason: 'Only HTTPS URLs are allowed' }
-  }
-  const hostname = parsed.hostname.toLowerCase()
-  const isPrivate =
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname === '0.0.0.0' ||
-    hostname.endsWith('.local') ||
-    hostname.startsWith('10.') ||
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('169.254.') ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
-  if (isPrivate) {
-    return { ok: false, reason: 'Internal/private URLs are not allowed' }
-  }
-  return { ok: true }
-}
-
 // Extract metadata from URL (Open Graph, Twitter Cards, meta tags)
 interface UrlMetadata {
   title: string
@@ -88,107 +67,91 @@ interface UrlMetadata {
 }
 
 async function extractUrlMetadata(url: string): Promise<UrlMetadata> {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30000)
+  // Fetch + body cap delegated to the shared admin-url-fetch lib. This
+  // function only owns the cheerio parsing and metadata extraction.
+  const html = await fetchHtmlWithBounds(url, { maxBytes: URL_FETCH_MAX_BYTES })
+  const $ = cheerio.load(html)
 
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; HiveCraic/1.0; +https://hivecraic.com)'
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch URL: ${response.status}`)
+  // Extract Open Graph / Twitter / standard meta tags
+  const getMetaContent = (selectors: string[]): string | null => {
+    for (const selector of selectors) {
+      const content = $(selector).attr('content')
+      if (content) return content.trim()
     }
+    return null
+  }
 
-    const html = await response.text()
-    const $ = cheerio.load(html)
+  // Title - priority: og:title > twitter:title > title tag
+  const title = getMetaContent([
+    'meta[property="og:title"]',
+    'meta[name="twitter:title"]'
+  ]) || $('title').text().trim() || url
 
-    // Extract Open Graph / Twitter / standard meta tags
-    const getMetaContent = (selectors: string[]): string | null => {
-      for (const selector of selectors) {
-        const content = $(selector).attr('content')
-        if (content) return content.trim()
-      }
-      return null
+  // Description
+  const description = getMetaContent([
+    'meta[property="og:description"]',
+    'meta[name="twitter:description"]',
+    'meta[name="description"]'
+  ])
+
+  // Image
+  const imageUrl = getMetaContent([
+    'meta[property="og:image"]',
+    'meta[name="twitter:image"]',
+    'meta[name="twitter:image:src"]'
+  ])
+
+  // Site name
+  const siteName = getMetaContent([
+    'meta[property="og:site_name"]'
+  ]) || new URL(url).hostname.replace('www.', '')
+
+  // Published date
+  const publishedDate = getMetaContent([
+    'meta[property="article:published_time"]',
+    'meta[name="date"]',
+    'meta[name="pubdate"]',
+    'meta[name="publishdate"]',
+    'meta[property="og:article:published_time"]'
+  ])
+
+  // Author
+  const author = getMetaContent([
+    'meta[property="article:author"]',
+    'meta[name="author"]',
+    'meta[property="og:article:author"]'
+  ])
+
+  // Extract main content for knowledge base
+  $('script, style, nav, header, footer, aside, iframe, noscript, .comments, #comments, .sidebar, .advertisement, .ad').remove()
+
+  let content = ''
+  const contentSelectors = ['article', 'main', '.content', '.post', '.article-body', '#content', '.entry-content', '.post-content']
+
+  for (const selector of contentSelectors) {
+    const el = $(selector)
+    if (el.length > 0) {
+      content = el.text()
+      break
     }
+  }
 
-    // Title - priority: og:title > twitter:title > title tag
-    const title = getMetaContent([
-      'meta[property="og:title"]',
-      'meta[name="twitter:title"]'
-    ]) || $('title').text().trim() || url
+  // Fallback to body
+  if (!content || content.length < 100) {
+    content = $('body').text()
+  }
 
-    // Description
-    const description = getMetaContent([
-      'meta[property="og:description"]',
-      'meta[name="twitter:description"]',
-      'meta[name="description"]'
-    ])
+  // Clean up whitespace
+  content = content.replace(/\s+/g, ' ').trim()
 
-    // Image
-    const imageUrl = getMetaContent([
-      'meta[property="og:image"]',
-      'meta[name="twitter:image"]',
-      'meta[name="twitter:image:src"]'
-    ])
-
-    // Site name
-    const siteName = getMetaContent([
-      'meta[property="og:site_name"]'
-    ]) || new URL(url).hostname.replace('www.', '')
-
-    // Published date
-    const publishedDate = getMetaContent([
-      'meta[property="article:published_time"]',
-      'meta[name="date"]',
-      'meta[name="pubdate"]',
-      'meta[name="publishdate"]',
-      'meta[property="og:article:published_time"]'
-    ])
-
-    // Author
-    const author = getMetaContent([
-      'meta[property="article:author"]',
-      'meta[name="author"]',
-      'meta[property="og:article:author"]'
-    ])
-
-    // Extract main content for knowledge base
-    $('script, style, nav, header, footer, aside, iframe, noscript, .comments, #comments, .sidebar, .advertisement, .ad').remove()
-
-    let content = ''
-    const contentSelectors = ['article', 'main', '.content', '.post', '.article-body', '#content', '.entry-content', '.post-content']
-
-    for (const selector of contentSelectors) {
-      const el = $(selector)
-      if (el.length > 0) {
-        content = el.text()
-        break
-      }
-    }
-
-    // Fallback to body
-    if (!content || content.length < 100) {
-      content = $('body').text()
-    }
-
-    // Clean up whitespace
-    content = content.replace(/\s+/g, ' ').trim()
-
-    return {
-      title,
-      description,
-      imageUrl,
-      siteName,
-      publishedDate,
-      author,
-      content
-    }
-  } finally {
-    clearTimeout(timeoutId)
+  return {
+    title,
+    description,
+    imageUrl,
+    siteName,
+    publishedDate,
+    author,
+    content
   }
 }
 
@@ -378,6 +341,12 @@ export async function POST(request: NextRequest) {
     try {
       metadata = await extractUrlMetadata(url)
     } catch (fetchError) {
+      if (fetchError instanceof FetchTooLargeError) {
+        return NextResponse.json(
+          { error: `URL response exceeds size limit (${fetchError.maxBytes} bytes)` },
+          { status: 413 }
+        )
+      }
       const detail = fetchError instanceof Error ? fetchError.message : 'Unknown fetch error'
       return NextResponse.json(
         { error: `Could not fetch URL: ${detail}` },

@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateEmbedding } from '@/lib/openai'
+import {
+  assertSafePublicUrl,
+  fetchHtmlWithBounds,
+  FetchTooLargeError,
+  withDeadline,
+} from '@/lib/admin-url-fetch'
 import * as cheerio from 'cheerio'
+
+const PDF_PARSE_TIMEOUT_MS = 30_000
+const URL_FETCH_MAX_BYTES = 5 * 1024 * 1024
 
 // Lazy load pdf-parse to avoid module initialization issues in serverless
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -145,57 +154,46 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ data, total: count, view: 'entries' })
 }
 
-// Helper to extract text from PDF buffer
+// Helper to extract text from PDF buffer. pdf-parse is CPU-bound and has no
+// native cancellation; the deadline surfaces a timeout error to the caller
+// (the underlying work continues until natural completion or function-timeout).
 async function extractTextFromPdf(buffer: Buffer): Promise<string> {
-  const data = await getPdfParse()(buffer)
+  const data = await withDeadline(
+    getPdfParse()(buffer) as Promise<{ text: string }>,
+    PDF_PARSE_TIMEOUT_MS,
+    'PDF parse'
+  )
   return data.text
 }
 
-// Helper to extract text from URL
+// Helper to extract text from URL. Fetch + body cap delegated to the shared
+// admin-url-fetch lib; this function only owns the cheerio extraction.
 async function extractTextFromUrl(url: string): Promise<string> {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+  const html = await fetchHtmlWithBounds(url, { maxBytes: URL_FETCH_MAX_BYTES })
+  const $ = cheerio.load(html)
 
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; HiveCraic/1.0; +https://hivecraic.com)'
-      }
-    })
+  // Remove unwanted elements
+  $('script, style, nav, header, footer, aside, iframe, noscript').remove()
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch URL: ${response.status}`)
+  // Get main content - try common selectors first
+  let content = ''
+  const selectors = ['article', 'main', '.content', '.post', '#content', '.article-body']
+
+  for (const selector of selectors) {
+    const el = $(selector)
+    if (el.length > 0) {
+      content = el.text()
+      break
     }
-
-    const html = await response.text()
-    const $ = cheerio.load(html)
-
-    // Remove unwanted elements
-    $('script, style, nav, header, footer, aside, iframe, noscript').remove()
-
-    // Get main content - try common selectors first
-    let content = ''
-    const selectors = ['article', 'main', '.content', '.post', '#content', '.article-body']
-
-    for (const selector of selectors) {
-      const el = $(selector)
-      if (el.length > 0) {
-        content = el.text()
-        break
-      }
-    }
-
-    // Fallback to body if no main content found
-    if (!content) {
-      content = $('body').text()
-    }
-
-    // Clean up whitespace
-    return content.replace(/\s+/g, ' ').trim()
-  } finally {
-    clearTimeout(timeoutId)
   }
+
+  // Fallback to body if no main content found
+  if (!content) {
+    content = $('body').text()
+  }
+
+  // Clean up whitespace
+  return content.replace(/\s+/g, ' ').trim()
 }
 
 // Helper to process content and add to knowledge base
@@ -334,33 +332,24 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'URL is required' }, { status: 400 })
         }
 
-        // Validate URL format and protocol
-        let parsedUrl: URL
+        // SSRF guard: HTTPS only, reject loopback / .local / RFC1918 /
+        // 169.254.* (cloud metadata). Shared with news-articles route.
+        const urlCheck = assertSafePublicUrl(url)
+        if (!urlCheck.ok) {
+          return NextResponse.json({ error: urlCheck.reason }, { status: 400 })
+        }
+
         try {
-          parsedUrl = new URL(url)
-        } catch {
-          return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
+          textContent = await extractTextFromUrl(url)
+        } catch (fetchError) {
+          if (fetchError instanceof FetchTooLargeError) {
+            return NextResponse.json(
+              { error: `URL response exceeds size limit (${fetchError.maxBytes} bytes)` },
+              { status: 413 }
+            )
+          }
+          throw fetchError
         }
-
-        // SSRF protection: only allow HTTPS, block private/internal addresses
-        if (parsedUrl.protocol !== 'https:') {
-          return NextResponse.json({ error: 'Only HTTPS URLs are allowed' }, { status: 400 })
-        }
-        const hostname = parsedUrl.hostname.toLowerCase()
-        const isPrivate =
-          hostname === 'localhost' ||
-          hostname === '127.0.0.1' ||
-          hostname === '0.0.0.0' ||
-          hostname.endsWith('.local') ||
-          hostname.startsWith('10.') ||
-          hostname.startsWith('192.168.') ||
-          hostname.startsWith('169.254.') ||
-          /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
-        if (isPrivate) {
-          return NextResponse.json({ error: 'Internal/private URLs are not allowed' }, { status: 400 })
-        }
-
-        textContent = await extractTextFromUrl(url)
         contentSource = source || url
         break
       }

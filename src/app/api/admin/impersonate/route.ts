@@ -161,13 +161,26 @@ export async function POST(request: NextRequest) {
 
     console.warn(`[AUDIT] Admin impersonation: admin=${user.id} target=${targetUserId} status=success timestamp=${new Date().toISOString()}`)
 
-    // Return the token_hash for client to use with verifyOtp
-    return NextResponse.json({
-      success: true,
-      tokenHash: linkData.properties.hashed_token,
-      email: targetUser.user.email,
-      displayName
-    })
+    // Return the token_hash for client to use with verifyOtp. The response
+    // body contains a single-use credential -- mark it uncacheable so it
+    // cannot be retained by any intermediate proxy or browser cache. Real
+    // exposure mitigation requires short magic-link TTL + post-impersonation
+    // session attribution, which is operational, not code-level.
+    return NextResponse.json(
+      {
+        success: true,
+        tokenHash: linkData.properties.hashed_token,
+        email: targetUser.user.email,
+        displayName
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+          'Pragma': 'no-cache',
+          'Referrer-Policy': 'no-referrer'
+        }
+      }
+    )
 
   } catch (error) {
     console.error('Error in impersonate:', error)
