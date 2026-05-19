@@ -61,6 +61,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Idempotency guard. Stripe can redeliver any event (retry on non-2xx,
+    // network blip, duplicate delivery). The activation RPC is not
+    // idempotent: a redelivery would create a second subscription_history
+    // row and reset profiles.subscription_expires_at to NOW + 12 months.
+    //
+    // INSERT ... ON CONFLICT DO NOTHING. If a row already existed for this
+    // event_id, the result set is empty -> we've seen this event before.
+    // Return 200 immediately and skip every side effect below.
+    //
+    // RETURNING event_id lets us distinguish a fresh insert (data.length
+    // === 1) from a duplicate (data.length === 0). A genuine DB error here
+    // returns 500 so Stripe retries -- safer than racing through to the
+    // RPC without an idempotency marker.
+    const { data: insertedEvent, error: insertError } = await supabase
+      .from('stripe_webhook_events')
+      .insert({ event_id: event.id, event_type: event.type })
+      .select('event_id')
+    if (insertError && insertError.code !== '23505') {
+      console.error(`Stripe webhook: failed to record event=${event.id}:`, insertError.message)
+      return NextResponse.json(
+        { error: 'Failed to record event' },
+        { status: 500 }
+      )
+    }
+    const isReplay = !insertedEvent || insertedEvent.length === 0 || insertError?.code === '23505'
+    if (isReplay) {
+      console.warn(`[AUDIT] Stripe webhook replay ignored: event=${event.id} type=${event.type} timestamp=${new Date().toISOString()}`)
+      return NextResponse.json({ received: true, replay: true })
+    }
+
     // Handle the event
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -113,11 +143,11 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Unexpected currency' }, { status: 400 })
         }
 
-        // Call the database function to activate subscription. Note: this
-        // RPC is NOT idempotent today. Stripe can redeliver this event on
-        // retry, which will create duplicate subscription_history rows and
-        // extend the subscription expiry. Route-level dedupe via a
-        // stripe_webhook_events table is the planned follow-up.
+        // Call the database function to activate subscription. The RPC
+        // itself is not idempotent (it always UPDATEs profiles and INSERTs
+        // into subscription_history); idempotency is enforced upstream by
+        // the stripe_webhook_events guard above. If we reach this line, it
+        // is the first time we have seen this event.id.
         const { data, error } = await supabase.rpc('activate_credit_card_subscription', {
           p_user_id: userId,
           p_stripe_payment_intent_id: paymentIntentId,
@@ -130,11 +160,27 @@ export async function POST(request: NextRequest) {
         if (error) {
           console.error(`Stripe webhook: activation RPC failed for event=${event.id} user=${userId}:`, error.message)
           console.warn(`[AUDIT] Stripe subscription activation: event=${event.id} user=${userId} pi=${paymentIntentId} status=failed timestamp=${new Date().toISOString()}`)
+          // Roll back the idempotency row so Stripe's retry can re-attempt
+          // the activation rather than being silently dropped as a replay.
+          // Best-effort: a failure here only affects whether the retry runs.
+          await supabase
+            .from('stripe_webhook_events')
+            .delete()
+            .eq('event_id', event.id)
           return NextResponse.json(
             { error: 'Failed to activate subscription' },
             { status: 500 }
           )
         }
+
+        // Mark the event as processed. Best-effort: a failure here does NOT
+        // fail the webhook (the activation already happened, Stripe must
+        // not redeliver). The row stays at processed_at = NULL, which is a
+        // forensic flag for follow-up but doesn't break correctness.
+        await supabase
+          .from('stripe_webhook_events')
+          .update({ processed_at: new Date().toISOString() })
+          .eq('event_id', event.id)
 
         console.warn(`[AUDIT] Stripe subscription activation: event=${event.id} user=${userId} pi=${paymentIntentId} price=${priceEur} association_member=${isAssociationMember} status=success timestamp=${new Date().toISOString()}`)
 
