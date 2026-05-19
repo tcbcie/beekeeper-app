@@ -1,5 +1,14 @@
 import OpenAI from 'openai'
 
+// Default request bounds applied to every call via this singleton client.
+// SDK defaults are 600s timeout x 2 retries -- a single hung request can
+// pin a Fluid Compute instance for ~30 minutes on an OpenAI partial-outage.
+// 30s + 1 retry is the right safety net for the short calls (embeddings,
+// classification). Long calls (chat completion) override per-call below.
+const DEFAULT_TIMEOUT_MS = 30_000
+const DEFAULT_MAX_RETRIES = 1
+const CHAT_TIMEOUT_MS = 60_000
+
 // Lazy initialization of OpenAI client (server-side only)
 let _openai: OpenAI | null = null
 
@@ -9,7 +18,11 @@ function getOpenAI(): OpenAI {
     if (!apiKey) {
       throw new Error('Missing OPENAI_API_KEY environment variable')
     }
-    _openai = new OpenAI({ apiKey })
+    _openai = new OpenAI({
+      apiKey,
+      timeout: DEFAULT_TIMEOUT_MS,
+      maxRetries: DEFAULT_MAX_RETRIES,
+    })
   }
   return _openai
 }
@@ -31,12 +44,15 @@ export async function generateChatResponse(
   messages: OpenAI.Chat.ChatCompletionMessageParam[],
   model: 'gpt-4o-mini' | 'gpt-4o' = 'gpt-4o-mini'
 ): Promise<string> {
-  const response = await getOpenAI().chat.completions.create({
-    model,
-    messages,
-    temperature: 0.7,
-    max_tokens: 1000,
-  })
+  const response = await getOpenAI().chat.completions.create(
+    {
+      model,
+      messages,
+      temperature: 0.7,
+      max_tokens: 1000,
+    },
+    { timeout: CHAT_TIMEOUT_MS }
+  )
   return response.choices?.[0]?.message?.content || ''
 }
 
