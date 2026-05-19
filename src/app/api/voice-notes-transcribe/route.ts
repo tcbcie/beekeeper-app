@@ -15,12 +15,42 @@ const supabaseAdmin = createClient(
 
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024
 
+// Apiculture vocabulary bias passed as the Whisper / gpt-4o-transcribe `prompt`.
+// Kept under ~200 tokens (cap is 224) and ordered most-distinctive-first so it
+// survives any silent truncation by the API.
+const APICULTURE_PROMPT =
+  'Beekeeping inspection note. Common vocabulary: varroa, Varroa destructor, ' +
+  'propolis, queen excluder, brood box, super, supers, supersedure, ' +
+  'drone laying, laying worker, foulbrood, AFB, EFB, Nosema, chalkbrood, ' +
+  'sacbrood, deformed wing virus, uncapping, smoker, hive tool, mating nuc, ' +
+  'graft, grafting, Jenter, Cupkit, Cloake board, oxalic acid, formic acid, ' +
+  'Apiguard, Apivar, sealed brood, open brood, capped brood, eggs, larvae, ' +
+  'queen cells, swarm cells, supersedure cells, apiary, eircode, ' +
+  'Buckfast, Carniolan, Italian, Native Irish black bee, NIHBS.'
+
 const CLEANUP_SYSTEM_PROMPT = `You are cleaning up dictated beekeeping notes for a field inspection record.
 Keep the meaning and every detail the speaker mentioned.
 Fix punctuation, capitalisation, and grammar.
 Remove filler words such as "um", "uh", "like", "you know", and false starts.
 Do not add information, interpretation, or headings that were not spoken.
 Use British English spelling and phrasing.
+
+Correct misheard beekeeping terminology where the speaker's intent is clear, e.g.:
+  "borrow a" / "boroughs" / "barrow"      -> "varroa"
+  "proper list" / "propers"               -> "propolis"
+  "super seed" / "super seeded"           -> "supersede" / "supersedure"
+  "drone lying"                           -> "drone laying"
+  "fowl brood" / "fall brood"             -> "foulbrood"
+  "a f b" / "e f b"                       -> "AFB" / "EFB"
+  "no Sema" / "no see ma"                 -> "Nosema"
+  "chalk brewed"                          -> "chalkbrood"
+  "queen sell" / "queen sells"            -> "queen cell" / "queen cells"
+  "broad box" / "brewed box"              -> "brood box"
+  "ock zalic" / "ox alec"                 -> "oxalic"
+  "appy guard" / "appy var"               -> "Apiguard" / "Apivar"
+  "buck fast"                             -> "Buckfast"
+  "ny bs" / "nibs"                        -> "NIHBS"
+Never invent a correction if the spoken word is unclear -- leave it as the speaker said it.
 Return only the cleaned note text with no preamble, quotes, or labels.`
 
 export async function POST(request: NextRequest) {
@@ -70,13 +100,14 @@ export async function POST(request: NextRequest) {
     let transcript: string
     try {
       const whisperResult = await client.audio.transcriptions.create({
-        model: 'whisper-1',
+        model: 'gpt-4o-transcribe',
         file: audio,
-        language: 'en'
+        language: 'en',
+        prompt: APICULTURE_PROMPT
       })
       transcript = (whisperResult.text || '').trim()
     } catch (err) {
-      console.error('Whisper transcription failed:', err)
+      console.error('Audio transcription failed:', err)
       return NextResponse.json(
         { error: 'Transcription failed', code: 'OPENAI_ERROR' },
         { status: 502 }

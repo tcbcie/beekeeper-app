@@ -28,6 +28,17 @@ Typing free-form observation notes on a phone while inspecting a hive is awkward
 7. Cleaned text is **appended** to whatever is already in the Notes textarea (with a leading newline if the field is non-empty), so existing typed notes are never overwritten.
 8. User can edit the result freely before saving.
 
+## Accuracy
+
+Apiculture vocabulary (varroa, propolis, supersedure, foulbrood, Apiguard, NIHBS, etc.) is generic-conversation-rare, so out-of-the-box speech-to-text routinely mishears it. Two server-side levers are applied in `src/app/api/voice-notes-transcribe/route.ts`:
+
+1. **Transcription bias** — `APICULTURE_PROMPT` (≈200 tokens, packed under the 224-token cap) is passed as the `prompt` parameter to the OpenAI transcription call. This biases the acoustic model toward beekeeping vocabulary before any text is produced.
+2. **Cleanup correction map** — `CLEANUP_SYSTEM_PROMPT` includes a misheard→corrected examples block (e.g. *"borrow a" → "varroa"*, *"proper list" → "propolis"*, *"fowl brood" → "foulbrood"*). GPT-4o-mini fixes leftover mishears the acoustic bias did not catch, with strict instructions never to invent a correction when the spoken word is unclear.
+
+Transcription model is `gpt-4o-transcribe` (upgraded from `whisper-1`) — same SDK call signature, materially better on accented and noisy audio, `prompt` parameter still respected.
+
+A future per-user glossary table is sketched in `tasks/voice-transcription-accuracy-todo.html` (Phase 2). It is gated on real-world evidence from Phase 1 — ship the static bias first, measure, then decide whether per-user terms add enough value to justify the schema and CRUD UI.
+
 ## Non-Goals (explicit)
 
 - **No audio storage.** The blob lives only in memory on the client and is discarded after transcription. No Supabase Storage bucket, no DB column.
