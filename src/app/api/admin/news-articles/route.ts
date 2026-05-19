@@ -37,15 +37,43 @@ async function verifyAdmin(request: NextRequest): Promise<{ userId: string } | N
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, is_active')
     .eq('id', user.id)
     .single()
 
-  if (!profile || profile.role !== 'Admin') {
+  if (!profile || profile.role !== 'Admin' || profile.is_active === false) {
     return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
   }
 
   return { userId: user.id }
+}
+
+// SSRF guard for user-supplied URLs (admin can still mistype or be XSS'd).
+// Mirrors the inline guard already present in knowledge-base/route.ts.
+function assertSafePublicUrl(rawUrl: string): { ok: true } | { ok: false; reason: string } {
+  let parsed: URL
+  try {
+    parsed = new URL(rawUrl)
+  } catch {
+    return { ok: false, reason: 'Invalid URL format' }
+  }
+  if (parsed.protocol !== 'https:') {
+    return { ok: false, reason: 'Only HTTPS URLs are allowed' }
+  }
+  const hostname = parsed.hostname.toLowerCase()
+  const isPrivate =
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '0.0.0.0' ||
+    hostname.endsWith('.local') ||
+    hostname.startsWith('10.') ||
+    hostname.startsWith('192.168.') ||
+    hostname.startsWith('169.254.') ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+  if (isPrivate) {
+    return { ok: false, reason: 'Internal/private URLs are not allowed' }
+  }
+  return { ok: true }
 }
 
 // Extract metadata from URL (Open Graph, Twitter Cards, meta tags)
@@ -290,7 +318,13 @@ export async function GET(request: NextRequest) {
   }
 
   if (search) {
-    query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`)
+    // Strip PostgREST filter delimiters, LIKE wildcards, and quote chars so the
+    // value cannot break out of the .or() expression or widen the match
+    // pattern. Cap length to keep the filter expression bounded.
+    const safeSearch = search.replace(/[^\p{L}\p{N}\s.\-']/gu, '').slice(0, 100)
+    if (safeSearch) {
+      query = query.or(`title.ilike.%${safeSearch}%,description.ilike.%${safeSearch}%`)
+    }
   }
 
   const { data, error, count } = await query
@@ -315,11 +349,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }
 
-    // Validate URL
-    try {
-      new URL(url)
-    } catch {
-      return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
+    // SSRF protection: validate format + reject non-HTTPS + reject private/
+    // internal hosts. Cloud metadata services on 169.254.169.254 are the
+    // canonical pivot; loopback and RFC1918 ranges are the others.
+    const urlCheck = assertSafePublicUrl(url)
+    if (!urlCheck.ok) {
+      return NextResponse.json({ error: urlCheck.reason }, { status: 400 })
     }
 
     const supabase = getSupabaseAdmin()

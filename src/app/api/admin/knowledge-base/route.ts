@@ -49,7 +49,7 @@ async function verifyAdmin(request: NextRequest): Promise<{ userId: string } | N
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, is_active')
     .eq('id', user.id)
     .single()
 
@@ -58,8 +58,9 @@ async function verifyAdmin(request: NextRequest): Promise<{ userId: string } | N
     return NextResponse.json({ error: 'Failed to fetch profile', details: profileError.message }, { status: 500 })
   }
 
-  if (!profile || profile.role !== 'Admin') {
-    console.error('Admin check failed. User:', user.id, 'Email:', user.email, 'Role:', profile?.role)
+  // Soft-deleted admin must lose access even if their JWT is still valid.
+  if (!profile || profile.role !== 'Admin' || profile.is_active === false) {
+    console.error('Admin check failed. User:', user.id, 'Email:', user.email, 'Role:', profile?.role, 'Active:', profile?.is_active)
     return NextResponse.json({ error: 'Admin access required', role: profile?.role }, { status: 403 })
   }
 
@@ -302,14 +303,23 @@ export async function POST(request: NextRequest) {
 
     switch (type) {
       case 'pdf': {
-        if (!pdfData) {
+        if (!pdfData || typeof pdfData !== 'string') {
           return NextResponse.json({ error: 'PDF data is required' }, { status: 400 })
+        }
+
+        // Reject by encoded length before decoding so a hostile 50MB base64
+        // string is not first allocated into memory only to fail the size
+        // check below. Base64 inflates payload by ~4/3, so the encoded
+        // string for a 5MB PDF is at most ~6.85MB.
+        if (pdfData.length > 7 * 1024 * 1024) {
+          return NextResponse.json({ error: 'PDF too large (max 5MB)' }, { status: 400 })
         }
 
         // Decode base64 and extract text
         const buffer = Buffer.from(pdfData, 'base64')
 
-        // Check file size (5MB limit)
+        // Final check on the decoded buffer (defence in depth -- the encoded-
+        // length check above is the primary gate).
         if (buffer.length > 5 * 1024 * 1024) {
           return NextResponse.json({ error: 'PDF too large (max 5MB)' }, { status: 400 })
         }
