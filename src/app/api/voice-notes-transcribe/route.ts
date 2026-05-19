@@ -2,18 +2,26 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { openai as getOpenAI } from '@/lib/openai'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
+// Fail-fast at module init so a missing env surfaces at deploy time, not in a
+// per-request 500 with a misleading `voice-notes-transcribe error` log line.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error(
+    'voice-notes-transcribe: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.'
+  )
+}
+
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
   }
-)
+})
 
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024
+const TRANSCRIPTION_TIMEOUT_MS = 60_000
+const CLEANUP_TIMEOUT_MS = 30_000
 
 // Apiculture vocabulary bias passed as the Whisper / gpt-4o-transcribe `prompt`.
 // Kept under ~200 tokens (cap is 224) and ordered most-distinctive-first so it
@@ -27,6 +35,17 @@ const APICULTURE_PROMPT =
   'Apiguard, Apivar, sealed brood, open brood, capped brood, eggs, larvae, ' +
   'queen cells, swarm cells, supersedure cells, apiary, eircode, ' +
   'Buckfast, Carniolan, Italian, Native Irish black bee, NIHBS.'
+
+// Whisper / gpt-4o-transcribe silently truncate the `prompt` parameter at
+// ~224 tokens. A char/4 heuristic is a safe lower bound; warn at boot if our
+// prompt approaches the cap so the next contributor sees it without needing
+// to discover the silent truncation in production.
+if (APICULTURE_PROMPT.length / 4 > 200) {
+  console.warn(
+    `voice-notes-transcribe: APICULTURE_PROMPT is ~${Math.ceil(APICULTURE_PROMPT.length / 4)} tokens; ` +
+    'the transcription API caps `prompt` at ~224 tokens and silently truncates. Trim the vocabulary.'
+  )
+}
 
 const CLEANUP_SYSTEM_PROMPT = `You are cleaning up dictated beekeeping notes for a field inspection record.
 Keep the meaning and every detail the speaker mentioned.
@@ -76,9 +95,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
+    // Soft-deleted / admin-disabled accounts must lose access even if their
+    // subscription clock has not yet run out. Mirrors src/lib/auth.ts.
+    if (profile.is_active === false) {
+      return NextResponse.json(
+        { error: 'Account is not active', code: 'ACCOUNT_INACTIVE' },
+        { status: 403 }
+      )
+    }
+
     const now = new Date()
     const expiresAt = profile.subscription_expires_at ? new Date(profile.subscription_expires_at) : null
-    const hasActiveSubscription = expiresAt && expiresAt > now
+    const hasActiveSubscription = expiresAt && !Number.isNaN(expiresAt.getTime()) && expiresAt > now
     if (!hasActiveSubscription) {
       return NextResponse.json(
         { error: 'Premium subscription required', code: 'SUBSCRIPTION_REQUIRED' },
@@ -86,26 +114,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const formData = await request.formData()
-    const audio = formData.get('audio')
-    if (!(audio instanceof File) || audio.size === 0) {
-      return NextResponse.json({ error: 'Missing or empty audio file' }, { status: 400 })
-    }
-    if (audio.size > MAX_AUDIO_BYTES) {
-      return NextResponse.json({ error: 'Audio exceeds 25MB limit' }, { status: 400 })
+    // Parse multipart body separately so a malformed payload returns 400
+    // rather than being swallowed by the outer catch as a generic 500.
+    let audio: File
+    try {
+      const formData = await request.formData()
+      const raw = formData.get('audio')
+      if (!(raw instanceof File) || raw.size === 0) {
+        return NextResponse.json({ error: 'Missing or empty audio file' }, { status: 400 })
+      }
+      if (raw.size > MAX_AUDIO_BYTES) {
+        return NextResponse.json({ error: 'Audio exceeds 25MB limit' }, { status: 400 })
+      }
+      audio = raw
+    } catch (err) {
+      console.error('voice-notes-transcribe: malformed multipart body:', err)
+      return NextResponse.json({ error: 'Malformed request body' }, { status: 400 })
     }
 
     const client = getOpenAI()
 
     let transcript: string
     try {
-      const whisperResult = await client.audio.transcriptions.create({
-        model: 'gpt-4o-transcribe',
-        file: audio,
-        language: 'en',
-        prompt: APICULTURE_PROMPT
-      })
-      transcript = (whisperResult.text || '').trim()
+      const result = await client.audio.transcriptions.create(
+        {
+          model: 'gpt-4o-transcribe',
+          file: audio,
+          language: 'en',
+          prompt: APICULTURE_PROMPT
+        },
+        { timeout: TRANSCRIPTION_TIMEOUT_MS, maxRetries: 1 }
+      )
+      transcript = (result.text || '').trim()
     } catch (err) {
       console.error('Audio transcription failed:', err)
       return NextResponse.json(
@@ -118,17 +158,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ transcript: '', cleaned: '' })
     }
 
+    // Scale the cleanup output cap to the actual transcript length so a long
+    // dictation is not silently truncated, while keeping a hard ceiling so a
+    // runaway model cannot produce unbounded text.
+    const approxTranscriptTokens = Math.ceil(transcript.length / 4)
+    const cleanupMaxTokens = Math.min(2000, Math.max(200, approxTranscriptTokens + 100))
+
     let cleaned = transcript
     try {
-      const completion = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: CLEANUP_SYSTEM_PROMPT },
-          { role: 'user', content: transcript }
-        ],
-        temperature: 0.2,
-        max_tokens: 600
-      })
+      const completion = await client.chat.completions.create(
+        {
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: CLEANUP_SYSTEM_PROMPT },
+            { role: 'user', content: transcript }
+          ],
+          temperature: 0.2,
+          max_tokens: cleanupMaxTokens
+        },
+        { timeout: CLEANUP_TIMEOUT_MS, maxRetries: 1 }
+      )
       const output = completion.choices?.[0]?.message?.content?.trim()
       if (output) {
         cleaned = output
