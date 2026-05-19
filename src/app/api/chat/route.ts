@@ -50,10 +50,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Soft-deleted / admin-disabled accounts must lose access even if their
+    // subscription clock has not yet run out. Mirrors src/lib/auth.ts.
+    if (profile.is_active === false) {
+      return NextResponse.json(
+        { error: 'Account is not active', code: 'ACCOUNT_INACTIVE' },
+        { status: 403 }
+      )
+    }
+
     // Check subscription status
     const now = new Date()
     const expiresAt = profile.subscription_expires_at ? new Date(profile.subscription_expires_at) : null
-    const hasActiveSubscription = expiresAt && expiresAt > now
+    const hasActiveSubscription = expiresAt && !Number.isNaN(expiresAt.getTime()) && expiresAt > now
 
     if (!hasActiveSubscription) {
       return NextResponse.json(
