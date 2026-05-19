@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <title>Voice Transcription Accuracy — Plan</title>
+  <style>
+    body { font: 14px/1.55 -apple-system, Segoe UI, Roboto, sans-serif; max-width: 920px; margin: 2em auto; padding: 0 1em; color: #1f2937; }
+    h1 { font-size: 22px; margin-bottom: 0.2em; }
+    h2 { font-size: 17px; margin-top: 1.6em; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+    h3 { font-size: 14px; margin-top: 1.3em; }
+    code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: 12.5px; }
+    pre { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 14px; overflow-x: auto; font: 12.5px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+    table { border-collapse: collapse; width: 100%; margin: 0.6em 0; }
+    th, td { border: 1px solid #e5e7eb; padding: 6px 9px; text-align: left; font-size: 13px; vertical-align: top; }
+    th { background: #f9fafb; font-weight: 600; }
+    ul.todo { list-style: none; padding-left: 0; }
+    ul.todo li { padding: 4px 0 4px 26px; position: relative; }
+    ul.todo li::before { content: "&#9744;"; position: absolute; left: 0; top: 4px; color: #6b7280; font-size: 16px; }
+    ul.todo li.done { color: #6b7280; text-decoration: line-through; }
+    ul.todo li.done::before { content: "&#9745;"; color: #16a34a; }
+    .muted { color: #6b7280; font-size: 13px; }
+    .diagram { background: #f9fafb; border: 1px dashed #d1d5db; padding: 10px 14px; border-radius: 6px; white-space: pre; font: 12.5px/1.4 ui-monospace, Menlo, Consolas, monospace; overflow-x: auto; }
+    .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; background: #eef2ff; color: #3730a3; margin-right: 4px; }
+    .pill.warn { background: #fef3c7; color: #92400e; }
+    .pill.ok { background: #dcfce7; color: #166534; }
+  </style>
+</head>
+<body>
+
+<h1>Voice Transcription Accuracy &mdash; Implementation Plan</h1>
+<p class="muted">
+  Improves recognition of apiculture vocabulary in the existing voice-notes feature
+  (<a href="../docs/features/voice-notes-field.md"><code>docs/features/voice-notes-field.md</code></a>).
+  Endpoint: <code>src/app/api/voice-notes-transcribe/route.ts</code>. Hook: <code>src/hooks/useVoiceRecorder.ts</code>.
+</p>
+
+<h2>Current state (audited)</h2>
+<table>
+  <tr><th>Lever</th><th>Status today</th><th>Gap</th></tr>
+  <tr><td>Whisper <code>prompt</code> bias</td><td><span class="pill warn">unused</span></td><td>No domain vocabulary passed; engine guesses generic words.</td></tr>
+  <tr><td>Cleanup LLM glossary</td><td><span class="pill warn">unused</span></td><td><code>CLEANUP_SYSTEM_PROMPT</code> only fixes filler/punctuation &mdash; no misheard&rarr;correct examples.</td></tr>
+  <tr><td>Transcription model</td><td><span class="pill warn"><code>whisper-1</code></span></td><td>Older model. <code>gpt-4o-transcribe</code> available with same SDK call.</td></tr>
+  <tr><td>Per-user glossary</td><td><span class="pill warn">none</span></td><td>Regional/dialect terms cannot be biased per user.</td></tr>
+  <tr><td>Correction feedback loop</td><td><span class="pill warn">none</span></td><td>User edits to <code>notes</code> are discarded &mdash; nothing learns from them.</td></tr>
+  <tr><td>Audio retention</td><td><span class="pill ok">explicitly off</span></td><td>By design (see <code>voice-notes-field.md</code>). Rules fine-tuning out of scope.</td></tr>
+</table>
+
+<h2>Headline approach</h2>
+<p>
+  Three phases, each independently shippable. Phase 1 alone is expected to eliminate the majority of misrecognitions
+  and requires <strong>no database changes</strong>. Phases 2 and 3 are gated on real user evidence collected after
+  Phase 1 lands.
+</p>
+
+<h2>Architecture sketch</h2>
+<div class="diagram">[Inspection / Batch form]
+        &#9474; record blob
+        &#9660;
+&#9484;&#9472;&#9472; /api/voice-notes-transcribe &#9472;&#9472;&#9488;
+&#9474;                                        &#9474;
+&#9474;  Phase 1:                               &#9474;
+&#9474;    APICULTURE_PROMPT &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9474;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                                        &#9474;                                              &#9474;
+&#9474;  Phase 2:                               &#9474;                                              &#9660;
+&#9474;    user.voice_glossary &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9474;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9624; OpenAI transcription
+&#9474;    rank by boost, pack &le;200 tok       &#9474;                                       (whisper-1 / gpt-4o-transcribe)
+&#9474;                                        &#9474;                                              &#9474;
+&#9474;                                  &#9484;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+&#9474;                                  &#9474;     raw transcript                       &#9474;
+&#9474;                                  &#9660;                                          &#9474;
+&#9474;            gpt-4o-mini cleanup &lt;&#9472; CLEANUP_SYSTEM_PROMPT (+ glossary)            &#9474;
+&#9474;                                  &#9474;     cleaned text                          &#9474;
+&#9492;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9488;
+                                   &#9474;     { transcript, cleaned, cleanedId }
+                                   &#9660;
+                              [form receives cleaned, appends to notes]
+                                   &#9474;
+                          (Phase 3) on save: diff cleaned vs final notes
+                                   &#9660;
+                              voice_glossary_candidates &mdash; user reviews next session</div>
+
+<h2>Phase 1 &mdash; Domain biasing (no DB, ~30&nbsp;min)</h2>
+<p class="muted">Expected to deliver the bulk of accuracy improvement. Ship and measure before doing more.</p>
+
+<h3>1.1 Whisper <code>prompt</code> parameter</h3>
+<p>
+  The Whisper API accepts a single &lsquo;previous segment&rsquo; string up to ~224 tokens that biases the model.
+  Pack a curated apiculture glossary into it.
+</p>
+<pre>// In src/app/api/voice-notes-transcribe/route.ts (module-scope const)
+const APICULTURE_PROMPT =
+  'Beekeeping inspection note. Common vocabulary: varroa, Varroa destructor, ' +
+  'propolis, queen excluder, brood box, super, supers, supersedure, ' +
+  'drone laying, laying worker, foulbrood, AFB, EFB, Nosema, chalkbrood, ' +
+  'sacbrood, deformed wing virus, uncapping, smoker, hive tool, mating nuc, ' +
+  'graft, grafting, Jenter, Cupkit, Cloake board, oxalic acid, formic acid, ' +
+  'Apiguard, Apivar, sealed brood, open brood, capped brood, eggs, larvae, ' +
+  'queen cells, swarm cells, supersedure cells, apiary, eircode, ' +
+  'Buckfast, Carniolan, Italian, Native Irish black bee, NIHBS.'
+
+whisperResult = await client.audio.transcriptions.create({
+  model: 'whisper-1',
+  file: audio,
+  language: 'en',
+  prompt: APICULTURE_PROMPT,
+})</pre>
+
+<h3>1.2 Cleanup LLM glossary</h3>
+<p>Extend <code>CLEANUP_SYSTEM_PROMPT</code> with explicit misheard&rarr;correct examples so GPT-4o-mini self-corrects the transcript:</p>
+<pre>const CLEANUP_SYSTEM_PROMPT = `You are cleaning up dictated beekeeping notes...
+[existing rules]
+
+Correct misheard beekeeping terminology where the speaker's intent is clear, e.g.:
+  "borrow a" / "boroughs" / "barrow"   &rarr; "varroa"
+  "proper list" / "propers"            &rarr; "propolis"
+  "super seed" / "super seeded"        &rarr; "supersede" / "supersedure"
+  "drone lying"                        &rarr; "drone laying"
+  "fowl brood" / "fall brood"          &rarr; "foulbrood"
+  "queen excluder" stays as-is.
+Never invent a correction if the spoken word is unclear &mdash; leave it as the speaker said it.`</pre>
+
+<h3>1.3 Upgrade transcription model (optional, same PR)</h3>
+<p>
+  Swap <code>whisper-1</code> &rarr; <code>gpt-4o-transcribe</code> (or <code>gpt-4o-mini-transcribe</code> for cost).
+  Same <code>client.audio.transcriptions.create()</code> signature. Materially better on accented / noisy audio.
+  Keep the <code>prompt</code> param &mdash; it is still respected.
+</p>
+
+<h3>1.4 Todos</h3>
+<ul class="todo">
+  <li class="done">1. Add <code>APICULTURE_PROMPT</code> constant in <code>src/app/api/voice-notes-transcribe/route.ts</code>.</li>
+  <li class="done">2. Pass <code>prompt: APICULTURE_PROMPT</code> to the transcription call.</li>
+  <li class="done">3. Extend <code>CLEANUP_SYSTEM_PROMPT</code> with the misheard&rarr;correct examples block.</li>
+  <li class="done">4. Upgrade model to <code>gpt-4o-transcribe</code>.</li>
+  <li class="done">5. Update <code>docs/features/voice-notes-field.md</code> with an &lsquo;Accuracy&rsquo; subsection.</li>
+  <li>6. User verification on a real recorded inspection containing &ge;5 apiculture terms.</li>
+</ul>
+
+<h3>1.5 Phase 1 review</h3>
+<p>All three server-side levers are now live, scoped to a single file plus a docs update:</p>
+<ul>
+  <li><strong><code>src/app/api/voice-notes-transcribe/route.ts</code></strong> &mdash;
+    <ul>
+      <li>Added <code>APICULTURE_PROMPT</code> module constant (apiculture glossary, packed under the 224-token cap).</li>
+      <li>Transcription call: <code>model: 'whisper-1'</code> &rarr; <code>model: 'gpt-4o-transcribe'</code>, with <code>prompt: APICULTURE_PROMPT</code> added.</li>
+      <li><code>CLEANUP_SYSTEM_PROMPT</code> now contains a misheard&rarr;correct examples block plus a strict &lsquo;do not invent corrections&rsquo; rule.</li>
+      <li>Error log line relabelled (no longer says &lsquo;Whisper&rsquo;).</li>
+    </ul>
+  </li>
+  <li><strong><code>docs/features/voice-notes-field.md</code></strong> &mdash; new <em>Accuracy</em> section describing the two levers, the model upgrade, and a forward link to this plan&apos;s Phase 2.</li>
+</ul>
+<p>No DB changes, no client changes, no new dependencies. Single endpoint affected; rollback is one revert.</p>
+<p><strong>Please verify (item 6):</strong> record a real inspection that uses at least five apiculture terms (e.g. &ldquo;Three frames of capped brood, no varroa drops on the board, propolis is heavy on the queen excluder, swarm cells on the bottom bars, treated with Apiguard last week.&rdquo;) and confirm the cleaned transcript spells those terms correctly.</p>
+
+<h2>Phase 2 &mdash; Per-user glossary <span class="pill">gated on Phase 1 evidence</span></h2>
+<p class="muted">Only build this once Phase 1 is in users' hands and we have evidence individual users have terms the global glossary cannot cover (regional names, treatment brands, queen breeding line names, etc.).</p>
+
+<h3>2.1 Schema (via Supabase MCP, per CLAUDE.md)</h3>
+<pre>create table public.voice_glossary (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  phrase text not null,
+  boost smallint not null default 1,                       -- 1..5, higher = pack first
+  source text not null default 'manual',                   -- 'manual' | 'accepted_candidate'
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, lower(phrase))
+);
+
+alter table public.voice_glossary enable row level security;
+create policy voice_glossary_owner on public.voice_glossary
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create index voice_glossary_user_boost_idx on public.voice_glossary (user_id, boost desc, updated_at desc);</pre>
+
+<h3>2.2 API integration</h3>
+<p>In <code>voice-notes-transcribe/route.ts</code>, after auth/subscription gating:</p>
+<ol>
+  <li>Select user's phrases ordered by <code>boost desc, updated_at desc</code>.</li>
+  <li>Greedy-pack into a string while staying under ~200 tokens (rough heuristic: 1 token &asymp; 4 chars). Cap exists because Whisper truncates at 224.</li>
+  <li>Prepend to <code>APICULTURE_PROMPT</code>: user phrases first (higher relevance), domain phrases as fallback.</li>
+  <li>Also append the user list to the cleanup system prompt under a &lsquo;User-specific terms&rsquo; section.</li>
+</ol>
+
+<h3>2.3 Settings UI</h3>
+<p>New page <code>src/app/dashboard/settings/voice-glossary/page.tsx</code> (mobile-first, matches existing settings pattern):</p>
+<ul>
+  <li>List of phrases with inline edit and a 1&ndash;5 boost slider.</li>
+  <li>&lsquo;Add phrase&rsquo; input with optimistic insert.</li>
+  <li>Delete via swipe / trash icon.</li>
+  <li>Link from the Account/Settings menu and from a small &lsquo;Improve transcription&rsquo; link below the Notes voice button.</li>
+</ul>
+
+<h3>2.4 Todos</h3>
+<ul class="todo">
+  <li>7. Create <code>voice_glossary</code> table + RLS via Supabase MCP.</li>
+  <li>8. Add server helper <code>buildBoostedPrompt(userId): Promise&lt;string&gt;</code> with the 200-token packing rule.</li>
+  <li>9. Wire helper into the Whisper call and the cleanup system prompt.</li>
+  <li>10. Settings page CRUD for the glossary.</li>
+  <li>11. Cross-link from the voice button (a small &lsquo;Improve&hellip;&rsquo; text link).</li>
+  <li>12. Doc: extend <code>docs/features/voice-notes-field.md</code> or split into <code>docs/features/voice-transcription-accuracy.md</code>.</li>
+</ul>
+
+<h2>Phase 3 &mdash; Correction feedback loop <span class="pill">gated on Phase 2</span></h2>
+<p class="muted">Closes the loop: every save with edits becomes a learning signal &mdash; without storing audio.</p>
+
+<h3>3.1 Capture pairs (cleaned vs. final)</h3>
+<ol>
+  <li>API already returns <code>cleaned</code>. Add a stable <code>cleanedId</code> (uuid) so the client can later reference it.</li>
+  <li>Form keeps <code>cleanedId</code> + <code>cleaned</code> in local state for the current note only (no DB write yet).</li>
+  <li>On inspection save, if the field that received the dictation was edited, POST <code>{ cleanedId, original: cleaned, final: notes }</code> to a new endpoint <code>/api/voice-notes-feedback</code>.</li>
+</ol>
+
+<h3>3.2 Candidate mining (server)</h3>
+<p>Cheap token-diff to spot probable corrections:</p>
+<ul>
+  <li>Tokenise both texts, align with a standard diff (e.g. <code>diff-match-patch</code> or hand-rolled token LCS &mdash; small dependency).</li>
+  <li>For each replaced span, compute Levenshtein distance between dropped phrase and inserted phrase. If &le;30% of the dropped length and the inserted phrase contains a non-stopword, record as a candidate.</li>
+  <li>Store in <code>voice_glossary_candidates (user_id, heard, corrected, occurrences, last_seen_at)</code> &mdash; aggregate by lowercased pair.</li>
+</ul>
+<pre>create table public.voice_glossary_candidates (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  heard text not null,
+  corrected text not null,
+  occurrences int not null default 1,
+  last_seen_at timestamptz not null default now(),
+  dismissed_at timestamptz,
+  unique (user_id, lower(heard), lower(corrected))
+);
+-- same RLS policy pattern as voice_glossary.</pre>
+
+<h3>3.3 Review UI</h3>
+<ul>
+  <li>On settings page (and as a small banner the next time the voice button is used), surface candidates with &ge;2 occurrences.</li>
+  <li>Three actions per candidate: <em>Add to glossary</em>, <em>Ignore</em>, <em>Snooze</em>.</li>
+  <li>Adding writes a row to <code>voice_glossary</code> with <code>source = 'accepted_candidate'</code> and bumps <code>boost = 3</code>.</li>
+  <li>Never auto-add &mdash; always review-gated.</li>
+</ul>
+
+<h3>3.4 Todos</h3>
+<ul class="todo">
+  <li>13. Extend API response with <code>cleanedId</code>.</li>
+  <li>14. Form-side state retention of <code>cleanedId</code> + cleaned text per dictation.</li>
+  <li>15. Create <code>voice_glossary_candidates</code> table + RLS.</li>
+  <li>16. New endpoint <code>/api/voice-notes-feedback</code> &mdash; diff + upsert.</li>
+  <li>17. Candidate review UI on the settings page.</li>
+  <li>18. Banner-style prompt above the Notes voice button when &ge;1 candidate exists.</li>
+</ul>
+
+<h2>Files touched (cumulative)</h2>
+<table>
+  <tr><th>Phase</th><th>File</th><th>Action</th></tr>
+  <tr><td>1</td><td><code>src/app/api/voice-notes-transcribe/route.ts</code></td><td>Add prompt + extend cleanup system prompt + optional model swap</td></tr>
+  <tr><td>1</td><td><code>docs/features/voice-notes-field.md</code></td><td>Add &lsquo;Accuracy&rsquo; subsection</td></tr>
+  <tr><td>2</td><td>Supabase &mdash; <code>voice_glossary</code></td><td>Create table + RLS via MCP</td></tr>
+  <tr><td>2</td><td><code>src/app/api/voice-notes-transcribe/route.ts</code></td><td>Read glossary, pack prompt</td></tr>
+  <tr><td>2</td><td><code>src/app/dashboard/settings/voice-glossary/page.tsx</code></td><td>New CRUD UI</td></tr>
+  <tr><td>2</td><td><code>docs/features/voice-transcription-accuracy.md</code></td><td>New feature doc</td></tr>
+  <tr><td>3</td><td>Supabase &mdash; <code>voice_glossary_candidates</code></td><td>Create table + RLS via MCP</td></tr>
+  <tr><td>3</td><td><code>src/app/api/voice-notes-feedback/route.ts</code></td><td>New endpoint</td></tr>
+  <tr><td>3</td><td><code>src/components/records/forms/InspectionForm.tsx</code> + <code>src/app/dashboard/batches/page.tsx</code></td><td>Retain <code>cleanedId</code>; POST feedback on save</td></tr>
+  <tr><td>3</td><td><code>src/app/dashboard/settings/voice-glossary/page.tsx</code></td><td>Candidate review section</td></tr>
+</table>
+
+<h2>Out of scope (deliberately)</h2>
+<ul>
+  <li><strong>Whisper fine-tuning.</strong> Requires audio retention, which <code>docs/features/voice-notes-field.md</code> explicitly forbids. Not justified at current scale.</li>
+  <li><strong>Server-side noise suppression.</strong> Whisper / gpt-4o-transcribe handle bee hum well. Measure WER before adding <code>rnnoise</code> or similar.</li>
+  <li><strong>Direct hardware mic integration.</strong> A short note in the feature doc recommending a Bluetooth lapel mic is the right ergonomic fix, not in-app code.</li>
+  <li><strong>Real-time / streaming transcription.</strong> Existing record-then-transcribe flow is sufficient for the Notes use case.</li>
+  <li><strong>Multi-language vocabulary packs.</strong> App is British-English-first per CLAUDE.md; revisit if internationalised.</li>
+</ul>
+
+<h2>Decisions needed before coding</h2>
+<table>
+  <tr><th>Question</th><th>Suggested default</th></tr>
+  <tr><td>Ship Phase 1 only, or Phase 1 + Phase 2 together?</td><td><strong>Phase 1 only.</strong> Measure first, then decide Phase 2.</td></tr>
+  <tr><td>Keep <code>whisper-1</code> or upgrade to <code>gpt-4o-transcribe</code> in Phase 1?</td><td><strong>Upgrade.</strong> Same SDK call, better accuracy, prompt still works.</td></tr>
+  <tr><td>Where does the glossary settings page live in nav?</td><td>Account &rarr; Voice glossary (new sub-item).</td></tr>
+  <tr><td>Minimum occurrences before a candidate is surfaced?</td><td>2 (avoids one-off typos becoming proposals).</td></tr>
+  <tr><td>Apiculture prompt &mdash; static constant or DB-stored editable?</td><td>Static constant in Phase 1; only move to DB if Phase 2 lands and we need admin-level edits without redeploy.</td></tr>
+</table>
+
+<h2>Risks &amp; mitigations</h2>
+<table>
+  <tr><th>Risk</th><th>Mitigation</th></tr>
+  <tr><td>Whisper 224-token prompt cap silently truncates the user&apos;s most-used phrases.</td><td>Server-side pack-and-budget with strict 200-token estimate; log when truncation occurs.</td></tr>
+  <tr><td>GPT-4o-mini over-corrects and changes the speaker&apos;s meaning.</td><td>Cleanup prompt already says &lsquo;do not invent&rsquo;. Add: &lsquo;Never invent a correction if the spoken word is unclear&rsquo;. Keep <code>temperature: 0.2</code>.</td></tr>
+  <tr><td>Model swap to <code>gpt-4o-transcribe</code> changes pricing.</td><td>Single config constant; documented in feature doc. Can revert with one-line change.</td></tr>
+  <tr><td>Candidate mining flags genuine prose edits (not misrecognitions).</td><td>Levenshtein cap &le;30% of dropped length + non-stopword inserted requirement filters most prose rewrites.</td></tr>
+  <tr><td>Feedback endpoint becomes a logging firehose.</td><td>Only POST when the original cleaned text was actually a Whisper result this session AND the final differs &mdash; not on every save.</td></tr>
+</table>
+
+<h2>Review</h2>
+<p class="muted">To be filled in after each phase lands, with: WER spot-checks on a fixed set of test recordings, list of terms the user accepted from candidates, and any surprising over-corrections.</p>
+
+</body>
+</html>
