@@ -281,6 +281,7 @@ async function processAndStoreContent(
 export async function POST(request: NextRequest) {
   const authResult = await verifyAdmin(request)
   if (authResult instanceof NextResponse) return authResult
+  const { userId: adminId } = authResult
 
   try {
     const body = await request.json()
@@ -371,13 +372,17 @@ export async function POST(request: NextRequest) {
     const result = await processAndStoreContent(textContent, contentSource, topic || 'General', author, published_year, source_url)
 
     if (!result.success) {
+      console.warn(`[AUDIT] Admin KB ingest: admin=${adminId} type=${type} source=${JSON.stringify(contentSource)} status=failed reason=${JSON.stringify(result.message)} timestamp=${new Date().toISOString()}`)
       return NextResponse.json({ error: result.message }, { status: 400 })
     }
+
+    console.warn(`[AUDIT] Admin KB ingest: admin=${adminId} type=${type} source=${JSON.stringify(contentSource)} source_id=${result.source_id} chunks=${result.chunks_created} status=success timestamp=${new Date().toISOString()}`)
 
     return NextResponse.json(result)
 
   } catch (error) {
     console.error('Knowledge base POST error:', error)
+    console.warn(`[AUDIT] Admin KB ingest: admin=${adminId} status=failed reason=exception timestamp=${new Date().toISOString()}`)
     return NextResponse.json(
       { error: 'Failed to add content', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -389,6 +394,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const authResult = await verifyAdmin(request)
   if (authResult instanceof NextResponse) return authResult
+  const { userId: adminId } = authResult
 
   try {
     const body = await request.json()
@@ -424,6 +430,7 @@ export async function PATCH(request: NextRequest) {
       .eq('id', source_id)
 
     if (error) {
+      console.warn(`[AUDIT] Admin KB source update: admin=${adminId} source_id=${source_id} status=failed timestamp=${new Date().toISOString()}`)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
@@ -440,10 +447,14 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    const changedFields = Object.keys(updates).filter(k => k !== 'updated_at').join(',')
+    console.warn(`[AUDIT] Admin KB source update: admin=${adminId} source_id=${source_id} fields=${changedFields} status=success timestamp=${new Date().toISOString()}`)
+
     return NextResponse.json({ success: true })
 
   } catch (error) {
     console.error('Knowledge base PATCH error:', error)
+    console.warn(`[AUDIT] Admin KB source update: admin=${adminId} status=failed reason=exception timestamp=${new Date().toISOString()}`)
     return NextResponse.json(
       { error: 'Failed to update source', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -455,6 +466,7 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const authResult = await verifyAdmin(request)
   if (authResult instanceof NextResponse) return authResult
+  const { userId: adminId } = authResult
 
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
@@ -479,8 +491,11 @@ export async function DELETE(request: NextRequest) {
       .eq('id', sourceId)
 
     if (error) {
+      console.warn(`[AUDIT] Admin KB source delete: admin=${adminId} source_id=${sourceId} status=failed timestamp=${new Date().toISOString()}`)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    console.warn(`[AUDIT] Admin KB source delete: admin=${adminId} source_id=${sourceId} name=${JSON.stringify(source.name)} chunks_deleted=${source.chunks_count} status=success timestamp=${new Date().toISOString()}`)
 
     return NextResponse.json({
       success: true,
@@ -501,8 +516,11 @@ export async function DELETE(request: NextRequest) {
     .eq('id', id)
 
   if (error) {
+    console.warn(`[AUDIT] Admin KB entry delete: admin=${adminId} entry_id=${id} status=failed timestamp=${new Date().toISOString()}`)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  console.warn(`[AUDIT] Admin KB entry delete: admin=${adminId} entry_id=${id} status=success timestamp=${new Date().toISOString()}`)
 
   return NextResponse.json({ success: true, deleted: 'entry' })
 }

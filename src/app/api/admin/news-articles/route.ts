@@ -303,6 +303,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const authResult = await verifyAdmin(request)
   if (authResult instanceof NextResponse) return authResult
+  const { userId: adminId } = authResult
 
   try {
     const body = await request.json()
@@ -398,8 +399,11 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) {
+      console.warn(`[AUDIT] Admin news article add: admin=${adminId} url=${JSON.stringify(url)} status=failed timestamp=${new Date().toISOString()}`)
       return NextResponse.json({ error: 'Failed to save article' }, { status: 500 })
     }
+
+    console.warn(`[AUDIT] Admin news article add: admin=${adminId} url=${JSON.stringify(url)} article_id=${article.id} kb_ingested=${!!kbSourceId} kb_source_id=${kbSourceId ?? 'null'} status=success timestamp=${new Date().toISOString()}`)
 
     return NextResponse.json({
       success: true,
@@ -410,6 +414,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('News articles POST error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
+    console.warn(`[AUDIT] Admin news article add: admin=${adminId} status=failed reason=exception timestamp=${new Date().toISOString()}`)
     return NextResponse.json(
       { error: `Failed to add article: ${message}` },
       { status: 500 }
@@ -421,6 +426,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const authResult = await verifyAdmin(request)
   if (authResult instanceof NextResponse) return authResult
+  const { userId: adminId } = authResult
 
   try {
     const body = await request.json()
@@ -467,8 +473,12 @@ export async function PATCH(request: NextRequest) {
           .update({ kb_source_id: null, updated_at: new Date().toISOString() })
           .eq('id', id)
 
+        console.warn(`[AUDIT] Admin news article kb-remove: admin=${adminId} article_id=${id} kb_source_id=${article.kb_source_id} status=success timestamp=${new Date().toISOString()}`)
+
         return NextResponse.json({ success: true, kb_removed: true, title: article.title })
       }
+
+      console.warn(`[AUDIT] Admin news article kb-remove: admin=${adminId} article_id=${id} status=noop reason=not_in_kb timestamp=${new Date().toISOString()}`)
 
       return NextResponse.json({ success: true, kb_removed: false, message: 'Article was not in knowledge base' })
     }
@@ -493,13 +503,18 @@ export async function PATCH(request: NextRequest) {
       .single()
 
     if (error) {
+      console.warn(`[AUDIT] Admin news article update: admin=${adminId} article_id=${id} status=failed timestamp=${new Date().toISOString()}`)
       return NextResponse.json({ error: 'Failed to update article' }, { status: 500 })
     }
+
+    const changedFields = Object.keys(updates).filter(k => k !== 'updated_at').join(',')
+    console.warn(`[AUDIT] Admin news article update: admin=${adminId} article_id=${id} fields=${changedFields} status=success timestamp=${new Date().toISOString()}`)
 
     return NextResponse.json({ success: true, article: data })
 
   } catch (error) {
     console.error('News articles PATCH error:', error)
+    console.warn(`[AUDIT] Admin news article update: admin=${adminId} status=failed reason=exception timestamp=${new Date().toISOString()}`)
     return NextResponse.json(
       { error: 'Failed to update article' },
       { status: 500 }
@@ -511,6 +526,7 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const authResult = await verifyAdmin(request)
   if (authResult instanceof NextResponse) return authResult
+  const { userId: adminId } = authResult
 
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
@@ -547,8 +563,11 @@ export async function DELETE(request: NextRequest) {
     .eq('id', id)
 
   if (error) {
+    console.warn(`[AUDIT] Admin news article delete: admin=${adminId} article_id=${id} status=failed timestamp=${new Date().toISOString()}`)
     return NextResponse.json({ error: 'Failed to delete article' }, { status: 500 })
   }
+
+  console.warn(`[AUDIT] Admin news article delete: admin=${adminId} article_id=${id} title=${JSON.stringify(article.title)} kb_source_id=${article.kb_source_id ?? 'null'} kb_removed=${!!article.kb_source_id} status=success timestamp=${new Date().toISOString()}`)
 
   return NextResponse.json({
     success: true,

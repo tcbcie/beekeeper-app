@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
 
     if (apiariesError) {
       console.error('Error fetching apiaries:', apiariesError)
+      console.warn(`[AUDIT] Admin user data access: admin=${user.id} target=${targetUserId} resource=apiaries status=failed timestamp=${new Date().toISOString()}`)
       return NextResponse.json(
         { error: 'Failed to fetch apiaries' },
         { status: 500 }
@@ -95,6 +96,8 @@ export async function GET(request: NextRequest) {
         }
       })
     )
+
+    console.warn(`[AUDIT] Admin user data access: admin=${user.id} target=${targetUserId} resource=apiaries count=${apiariesWithCounts.length} status=success timestamp=${new Date().toISOString()}`)
 
     return NextResponse.json({ apiaries: apiariesWithCounts })
 
