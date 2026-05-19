@@ -140,11 +140,23 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
     setError('')
 
     try {
+      // The checkout endpoint now requires the caller's Bearer token so it
+      // can verify the session belongs to the authenticated user. Without
+      // it the endpoint returns 401.
+      const { data: { session: authSession } } = await supabase.auth.getSession()
+      const token = authSession?.access_token
+      if (!token) {
+        setError('You need to be signed in to renew your subscription.')
+        setLoading(false)
+        return
+      }
+
       // Create Stripe checkout session for standard €24 payment
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           userId,
@@ -225,11 +237,23 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
         return
       }
 
-      // Step 2: Create Stripe checkout session for €12 with association code
+      // Step 2: Create Stripe checkout session for €12 with association code.
+      // Server now re-validates the code and derives the price independently;
+      // body.isAssociationMember and body.associationId are ignored. We still
+      // send them for backward compatibility but they have no effect.
+      const { data: { session: authSession } } = await supabase.auth.getSession()
+      const token = authSession?.access_token
+      if (!token) {
+        setError('You need to be signed in to renew your subscription.')
+        setLoading(false)
+        return
+      }
+
       const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           userId,
