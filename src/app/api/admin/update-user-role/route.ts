@@ -1,17 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Fail-fast at module init so a missing env surfaces at deploy time, not in a
+// per-request 500 with a generic 'update-user-role error' log line.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error(
+    'update-user-role: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.'
+  )
+}
+
 // Create admin client with service role key to bypass RLS
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
   }
-)
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,14 +42,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user is admin
+    // Check if user is admin AND active. A soft-deleted admin must lose access
+    // even if their JWT is still valid; otherwise an ex-employee retains admin
+    // powers until token expiry.
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('role')
+      .select('role, is_active')
       .eq('id', user.id)
       .single()
 
-    if (profileError || !profile || profile.role !== 'Admin') {
+    if (profileError || !profile || profile.role !== 'Admin' || profile.is_active === false) {
       return NextResponse.json(
         { error: 'Admin access required' },
         { status: 403 }
