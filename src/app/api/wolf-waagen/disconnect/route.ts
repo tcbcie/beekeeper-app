@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  { auth: { autoRefreshToken: false, persistSession: false } }
-)
+// Fail-fast at module init.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error(
+    'wolf-waagen/disconnect: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.'
+  )
+}
+
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false }
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,6 +40,7 @@ export async function POST(request: NextRequest) {
 
     if (profileError) {
       console.error('Failed to clear Wolf Waagen token:', profileError)
+      console.warn(`[AUDIT] Wolf Waagen disconnect: user=${user.id} status=failed reason=clear_token timestamp=${new Date().toISOString()}`)
       return NextResponse.json({ error: 'Failed to disconnect' }, { status: 500 })
     }
 
@@ -49,6 +57,8 @@ export async function POST(request: NextRequest) {
       console.error('Failed to clear Wolf scale assignments:', hivesError)
       // Continue anyway - profile was cleared
     }
+
+    console.warn(`[AUDIT] Wolf Waagen disconnect: user=${user.id} status=success timestamp=${new Date().toISOString()}`)
 
     return NextResponse.json({
       success: true,
