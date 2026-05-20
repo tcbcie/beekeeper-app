@@ -177,7 +177,17 @@ function AboutPageContent() {
  // Debounce the API call by 300ms
  searchTimeoutRef.current = setTimeout(async () => {
  try {
- const response = await fetch(`/api/news/search?q=${encodeURIComponent(newsSearch.trim())}&limit=20`)
+ // /api/news/search now requires Bearer auth (the route calls OpenAI
+ // embeddings on every request, so it must not be open).
+ const { data: { session } } = await supabase.auth.getSession()
+ const token = session?.access_token
+ if (!token) {
+ setSemanticSearching(false)
+ return
+ }
+ const response = await fetch(`/api/news/search?q=${encodeURIComponent(newsSearch.trim())}&limit=20`, {
+ headers: { Authorization: `Bearer ${token}` }
+ })
  if (response.ok) {
  const data = await response.json()
  // Map semantic results to NewsArticle format
