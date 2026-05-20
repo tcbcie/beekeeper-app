@@ -2,16 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
-// Fail-fast at module init so a missing env surfaces at deploy time.
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL
-if (!STRIPE_SECRET_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !APP_URL) {
-  throw new Error(
-    'stripe checkout: STRIPE_SECRET_KEY, NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and NEXT_PUBLIC_APP_URL must be set.'
-  )
+// Fail-fast at module init so a missing env surfaces at deploy time. The
+// helper returns a non-nullable `string` so the consts can be used inside the
+// POST closure without TS losing the narrowing across scopes.
+function requireEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`stripe checkout: ${name} must be set.`)
+  }
+  return value
 }
+const STRIPE_SECRET_KEY = requireEnv('STRIPE_SECRET_KEY')
+const SUPABASE_URL = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+const SUPABASE_SERVICE_ROLE_KEY = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
+const APP_URL = requireEnv('NEXT_PUBLIC_APP_URL')
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2025-10-29.clover'
