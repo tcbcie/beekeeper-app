@@ -3,16 +3,20 @@ import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
 // Fail-fast at module init so a missing env surfaces at deploy time, not in a
-// per-request 500 with an opaque 'Webhook error' log line.
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error(
-    'stripe webhook: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, NEXT_PUBLIC_SUPABASE_URL, and SUPABASE_SERVICE_ROLE_KEY must be set.'
-  )
+// per-request 500 with an opaque 'Webhook error' log line. The helper returns
+// a non-nullable `string` so the consts can be used inside the POST closure
+// without TS losing the narrowing across scopes.
+function requireEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`stripe webhook: ${name} must be set.`)
+  }
+  return value
 }
+const STRIPE_SECRET_KEY = requireEnv('STRIPE_SECRET_KEY')
+const STRIPE_WEBHOOK_SECRET = requireEnv('STRIPE_WEBHOOK_SECRET')
+const SUPABASE_URL = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+const SUPABASE_SERVICE_ROLE_KEY = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2025-10-29.clover'
