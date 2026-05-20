@@ -89,7 +89,12 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-    const isReplay = !insertedEvent || insertedEvent.length === 0 || insertError?.code === '23505'
+    // At this point insertError is either null (fresh insert succeeded) or
+    // its code is '23505' (PK conflict = replay). Anything else was already
+    // returned above as a 500. Treat any remaining insertError as a replay
+    // marker -- the explicit code re-check tripped TS narrowing because the
+    // union collapsed after the if-block above.
+    const isReplay = !!insertError || !insertedEvent || insertedEvent.length === 0
     if (isReplay) {
       console.warn(`[AUDIT] Stripe webhook replay ignored: event=${event.id} type=${event.type} timestamp=${new Date().toISOString()}`)
       return NextResponse.json({ received: true, replay: true })
