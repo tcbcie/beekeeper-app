@@ -24,16 +24,14 @@ interface TraceabilityToolProps {
 }
 
 function containerToLabelDatum(container: BulkContainer): LabelDatum {
-  const lines: string[] = []
   const extracted = formatDateGB(container.extraction_date)
-  if (extracted) lines.push(`Extracted ${extracted}`)
-  if (container.total_weight_kg != null) {
-    lines.push(`${container.total_weight_kg} kg`)
-  }
+  const secondaryLines: string[] = []
+  if (extracted) secondaryLines.push(`EXTRACTED   ${extracted}`)
   return {
     id: container.id,
     primaryText: container.container_code || '—',
-    secondaryLines: lines,
+    secondaryLines,
+    accentText: container.total_weight_kg != null ? `${container.total_weight_kg} kg` : undefined,
   }
 }
 

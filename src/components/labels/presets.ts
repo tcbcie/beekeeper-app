@@ -10,10 +10,10 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
   },
   brother_dk22251_balkani: {
     id: 'brother_dk22251_balkani',
-    name: 'Balkani label (62 × 90 mm)',
+    name: 'Balkani label (62 × 30 mm)',
     widthMm: 62,
-    heightMm: 90,
-    description: 'Brother QL-820 with DK-22251 continuous roll. Cut at 90 mm.',
+    heightMm: 30,
+    description: 'Brother QL-820 with DK-22251 continuous roll. Cut at 30 mm.',
   },
 }
 

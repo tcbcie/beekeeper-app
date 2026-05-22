@@ -5,6 +5,9 @@ export interface LabelDatum {
   primaryText: string
   secondaryLines?: string[]
   yearColour?: QueenYearColour | null
+  // Right-aligned hero text on supporting presets (e.g. balkani weight).
+  // Ignored by presets that don't lay out a hero row with a co-primary value.
+  accentText?: string
 }
 
 export type QueenYearColour = 'White' | 'Yellow' | 'Red' | 'Green' | 'Blue'
