@@ -27,7 +27,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = useCallback(async () => {
     if (refreshingRef.current) return
     refreshingRef.current = true
-    // Try to restore session from localStorage when offline
+    // Try to restore session from localStorage when offline. The cached
+    // session must still be within its expiry window -- a stale token from
+    // days ago must not be restored as if it were live, even offline.
     const tryOfflineFallback = (): boolean => {
       if (navigator.onLine) return false
       try {
@@ -35,6 +37,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cachedSession) {
           const parsed = JSON.parse(cachedSession)
           if (parsed?.currentSession?.user) {
+            // Reject expired cached sessions. Supabase stores expires_at as a
+            // Unix timestamp in seconds. If absent (older format), refuse to
+            // restore rather than fail-open.
+            const expiresAt = parsed.currentSession.expires_at
+            if (typeof expiresAt !== 'number' || !Number.isFinite(expiresAt)) {
+              return false
+            }
+            const nowSec = Math.floor(Date.now() / 1000)
+            if (nowSec >= expiresAt) {
+              return false
+            }
             setUser(parsed.currentSession.user)
             setUserId(parsed.currentSession.user.id)
             return true
