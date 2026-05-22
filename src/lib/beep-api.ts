@@ -4,6 +4,26 @@
  */
 
 const BEEP_API_BASE = 'https://api.beep.nl/api'
+const BEEP_FETCH_TIMEOUT_MS = 30_000
+
+/**
+ * Internal fetch wrapper with a hard timeout. SDK fetch has no default
+ * timeout; without this, a hung BEEP API will pin a Fluid Compute slot until
+ * the function-level deadline. AbortController + signal is the standard
+ * pattern.
+ */
+async function beepFetch(path: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), BEEP_FETCH_TIMEOUT_MS)
+  try {
+    return await fetch(`${BEEP_API_BASE}${path}`, {
+      ...init,
+      signal: controller.signal,
+    })
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
 
 export interface BeepDevice {
   id: number
@@ -65,7 +85,7 @@ export interface BeepDevicesResponse {
  * Login to BEEP API and get API token
  */
 export async function beepLogin(email: string, password: string): Promise<BeepLoginResponse> {
-  const response = await fetch(`${BEEP_API_BASE}/login`, {
+  const response = await beepFetch('/login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -76,7 +96,7 @@ export async function beepLogin(email: string, password: string): Promise<BeepLo
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Login failed' }))
-    throw new Error(error.message || 'Invalid credentials')
+    throw new Error(error.message || `Invalid credentials (status ${response.status})`)
   }
 
   return response.json()
@@ -86,7 +106,7 @@ export async function beepLogin(email: string, password: string): Promise<BeepLo
  * Get all devices for authenticated user
  */
 export async function beepGetDevices(apiToken: string): Promise<BeepDevice[]> {
-  const response = await fetch(`${BEEP_API_BASE}/devices`, {
+  const response = await beepFetch('/devices', {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${apiToken}`,
@@ -98,7 +118,7 @@ export async function beepGetDevices(apiToken: string): Promise<BeepDevice[]> {
     if (response.status === 401) {
       throw new Error('BEEP authentication expired')
     }
-    throw new Error('Failed to fetch devices')
+    throw new Error(`Failed to fetch devices (status ${response.status})`)
   }
 
   const data = await response.json()
@@ -111,7 +131,7 @@ export async function beepGetDevices(apiToken: string): Promise<BeepDevice[]> {
  * Get latest sensor values for a device
  */
 export async function beepGetLastValues(apiToken: string, deviceId: string): Promise<BeepSensorReading | null> {
-  const response = await fetch(`${BEEP_API_BASE}/sensors/lastvalues?device_id=${deviceId}`, {
+  const response = await beepFetch(`/sensors/lastvalues?device_id=${encodeURIComponent(deviceId)}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${apiToken}`,
@@ -123,7 +143,7 @@ export async function beepGetLastValues(apiToken: string, deviceId: string): Pro
     if (response.status === 401) {
       throw new Error('BEEP authentication expired')
     }
-    throw new Error('Failed to fetch sensor data')
+    throw new Error(`Failed to fetch sensor data (status ${response.status})`)
   }
 
   const data = await response.json()
@@ -145,7 +165,7 @@ export async function beepGetMeasurements(
     end: endDate,
   })
 
-  const response = await fetch(`${BEEP_API_BASE}/sensors/measurements?${params}`, {
+  const response = await beepFetch(`/sensors/measurements?${params.toString()}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${apiToken}`,
@@ -157,7 +177,7 @@ export async function beepGetMeasurements(
     if (response.status === 401) {
       throw new Error('BEEP authentication expired')
     }
-    throw new Error('Failed to fetch measurements')
+    throw new Error(`Failed to fetch measurements (status ${response.status})`)
   }
 
   const data = await response.json()
