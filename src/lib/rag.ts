@@ -1,6 +1,5 @@
 import { generateChatResponse, generateEmbedding, classifyQuery } from './openai'
 import { createClient } from '@supabase/supabase-js'
-import DB_SCHEMA from './db-schema'
 import { tools, executeTool, getToolDescriptions } from './ai/tools'
 
 // UUID validation regex
@@ -178,92 +177,31 @@ export async function searchNewsArticles(query: string, limit: number = 10): Pro
   return data || []
 }
 
-// Generate SQL query from natural language
-export async function generateSQLQuery(query: string, userId: string): Promise<string> {
-  // Validate userId to prevent SQL injection
-  if (!isValidUUID(userId)) {
-    throw new Error('Invalid user ID format')
-  }
+// LLM-generated SQL fallback was removed as part of the security audit.
+//
+// Previously this file exported generateSQLQuery() and executeQuery() which
+// together ran LLM-emitted SELECT statements via the public.execute_safe_query
+// RPC. That RPC is SECURITY DEFINER and does not enforce a user_id WHERE
+// clause at the data layer -- the system prompt asked the LLM to add one,
+// but prompt-injection could bypass the instruction and return cross-user
+// data. The RPC's keyword regex was also bypassable (pg_catalog reads,
+// pg_sleep, WITH-CTE forms).
+//
+// The structured ai/tools/* path is now the only data path from chat. Each
+// tool has explicit user_id scoping in its contract. Queries that no tool
+// covers are logged for tool-gap analysis and answered as "no data".
+//
+// public.execute_safe_query is retained because /api/admin/export-all-data
+// still uses it for hardcoded schema-metadata queries (not LLM output).
 
-  const systemPrompt = `You are a SQL query generator for a PostgreSQL beekeeping database.
-Given a user question, generate a safe SELECT query to answer it.
-
-${DB_SCHEMA}
-
-RULES:
-1. ONLY generate SELECT queries (no INSERT, UPDATE, DELETE)
-2. Always include WHERE user_id = '${userId}'
-3. Use proper date formatting for PostgreSQL
-4. Return ONLY the SQL query, nothing else
-5. If the question cannot be answered with the schema, return "CANNOT_QUERY"
-6. Limit results to 100 rows maximum
-7. For "latest" or "recent", order by date DESC and limit appropriately`
-
-  const response = await generateChatResponse([
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: query }
-  ], 'gpt-4o-mini')
-
-  return response.trim()
-}
-
-// Execute SQL query safely
-export async function executeQuery(sql: string): Promise<{
-  data: unknown[] | null
-  error: string | null
-}> {
-  // Remove markdown code blocks if present (LLM sometimes wraps SQL in ```sql ... ```)
-  let cleanSql = sql.trim()
-  if (cleanSql.startsWith('```')) {
-    // Remove opening code fence (```sql or ```)
-    cleanSql = cleanSql.replace(/^```(?:sql)?\s*\n?/, '')
-    // Remove closing code fence
-    cleanSql = cleanSql.replace(/\n?```\s*$/, '')
-    cleanSql = cleanSql.trim()
-  }
-
-  // Remove trailing semicolon (causes issues with RPC wrapper)
-  if (cleanSql.endsWith(';')) {
-    cleanSql = cleanSql.slice(0, -1)
-  }
-
-  // Validate query is SELECT only
-  const normalizedSql = cleanSql.toUpperCase().trim()
-  if (!normalizedSql.startsWith('SELECT')) {
-    return { data: null, error: 'Only SELECT queries are allowed' }
-  }
-
-  // Check for dangerous patterns
-  const dangerousPatterns = ['DROP', 'DELETE', 'INSERT', 'UPDATE', 'ALTER', 'CREATE', 'TRUNCATE', '--']
-  for (const pattern of dangerousPatterns) {
-    if (normalizedSql.includes(pattern)) {
-      return { data: null, error: 'Query contains forbidden operations' }
-    }
-  }
-
-  const supabase = getServerSupabase()
-
-  // Use RPC to execute the query safely
-  const { data, error } = await supabase.rpc('execute_safe_query', { query_text: cleanSql })
-
-  if (error) {
-    // If RPC doesn't exist, fall back to direct query (less safe, but works)
-    console.warn('Safe query RPC not found, using direct query')
-    // For now, return error - we'll implement the RPC later
-    return { data: null, error: error.message }
-  }
-
-  return { data, error: null }
-}
-
-// Log queries that fell back to SQL (no dedicated tool) for developer insights
-async function logToolSuggestion(query: string, generatedSql: string | null, hadResults: boolean, userId: string) {
+// Log queries that no tool covered, for developer insight into tool gaps.
+async function logToolSuggestion(query: string, userId: string) {
   try {
     const supabase = getServerSupabase()
     await supabase.from('tool_suggestions').insert({
       query,
-      generated_sql: generatedSql,
-      had_results: hadResults,
+      generated_sql: null,
+      had_results: false,
       user_id: userId
     })
   } catch (error) {
@@ -311,7 +249,10 @@ export async function handleChatQuery(
     }
 
     case 'sql': {
-      // Try tools first, then fall back to SQL generation
+      // Tools-only path. The LLM-SQL fallback was removed in the audit
+      // (see the note above logToolSuggestion). If no tool matches, the
+      // query is logged for tool-gap analysis and the user gets a "no
+      // data" response -- no free-form SQL ever reaches the database.
       const toolMatch = await matchQueryToTool(query)
 
       if (toolMatch?.toolName && tools[toolMatch.toolName]) {
@@ -324,31 +265,14 @@ export async function handleChatQuery(
           }
         } catch (error) {
           console.error('Tool execution error:', error)
-          // Fall through to SQL generation
         }
       }
 
-      // Fall back to SQL generation if no tool matched or tool failed
       if (!context) {
-        const sql = await generateSQLQuery(query, userId)
-        if (sql && sql !== 'CANNOT_QUERY') {
-          const result = await executeQuery(sql)
-          const hadResults = !!(result.data && Array.isArray(result.data) && result.data.length > 0)
-
-          // Log this SQL fallback for developer insights (helps identify needed tools)
-          logToolSuggestion(query, sql, hadResults, userId)
-
-          if (hadResults) {
-            context = `Here is the data from your records:\n\n${JSON.stringify(result.data, null, 2)}\n\nUse this data to answer the user's question directly.`
-          } else if (result.data && Array.isArray(result.data) && result.data.length === 0) {
-            context = `I searched your records but found no matching data. The user may not have recorded this information yet.`
-          } else if (result.error) {
-            console.error('SQL execution error:', result.error)
-            context = `I tried to look up your data but encountered an issue: ${result.error}. Let me answer based on general knowledge instead.`
-          }
-        } else {
-          context = `This question requires data that isn't available in your records.`
-        }
+        // No tool covered this query (or the tool threw). Log for tool-gap
+        // analysis and tell the user we don't have that data.
+        logToolSuggestion(query, userId)
+        context = `This question requires data that isn't available in your records.`
       }
       break
     }
