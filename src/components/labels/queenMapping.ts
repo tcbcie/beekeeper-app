@@ -11,24 +11,15 @@ export function queenToLabelDatum(queen: Queen): LabelDatum {
     ? (colourName as QueenYearColour)
     : null
 
-  const parents: string[] = []
-  if (queen.mother?.queen_number) parents.push(`♀ ${queen.mother.queen_number}`)
-  if (queen.father?.queen_number) parents.push(`♂ ${queen.father.queen_number}`)
-
-  const lines: string[] = []
-  if (parents.length > 0) lines.push(parents.join('  '))
-
-  const mated = formatDateGB(queen.mated_date)
-  if (mated) lines.push(`Mated ${mated}`)
-
-  if (queen.mated_at_eircode) {
-    lines.push(queen.mated_at_eircode)
-  }
-
   return {
     id: queen.id,
     primaryText: queen.queen_number || '—',
-    secondaryLines: lines,
     yearColour,
+    queenExtras: {
+      motherNumber: queen.mother?.queen_number || undefined,
+      fatherNumber: queen.father?.queen_number || undefined,
+      matedDate: formatDateGB(queen.mated_date) ?? undefined,
+      eircode: queen.mated_at_eircode || undefined,
+    },
   }
 }

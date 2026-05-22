@@ -8,6 +8,16 @@ export interface LabelDatum {
   // Right-aligned hero text on supporting presets (e.g. balkani weight).
   // Ignored by presets that don't lay out a hero row with a co-primary value.
   accentText?: string
+  // Structured fields used by the queen preset so the renderer can style
+  // lineage / mated / eircode rows differently. Other presets ignore this.
+  queenExtras?: QueenLabelExtras
+}
+
+export interface QueenLabelExtras {
+  motherNumber?: string
+  fatherNumber?: string
+  matedDate?: string
+  eircode?: string
 }
 
 export type QueenYearColour = 'White' | 'Yellow' | 'Red' | 'Green' | 'Blue'

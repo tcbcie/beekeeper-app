@@ -7,7 +7,7 @@ Optional thermal-label printing for two record types:
 - **Balkani** (bulk honey containers) — printed from the Traceability tool's Containers tab.
 - **Queens** — printed from the Queens list and the Queens detail page.
 
-The feature targets a single hardware setup: **Brother QL-820NWB** with the **DK-22251** continuous roll (62 mm wide, black / red thermal tape). All label layouts are 62 mm wide; cut length is set per label type (30 mm for both queens and balkani in v1).
+The feature targets a single hardware setup: **Brother QL-820NWB** with the **DK-22251** continuous roll (62 mm wide, black / red thermal tape). All label layouts are 62 mm wide; cut length is set per label type (32 mm for queens, 35 mm for balkani in v1).
 
 Label printing is **opt-in**. A user must enable it on their profile before any print buttons appear in the UI.
 
@@ -72,7 +72,7 @@ profiles.enable_label_printing  ◀── useLabelPrinting() hook ──┐
 |------|------|
 | `src/hooks/useLabelPrinting.ts` | Reads `profiles.enable_label_printing` for the current user |
 | `src/components/labels/types.ts` | `LabelDatum`, `LabelPresetId`, `LabelPreset`, `QueenYearColour`, year-colour hex map |
-| `src/components/labels/presets.ts` | Two presets: `brother_dk22251_queen` (62 × 30 mm), `brother_dk22251_balkani` (62 × 30 mm) |
+| `src/components/labels/presets.ts` | Two presets: `brother_dk22251_queen` (62 × 32 mm), `brother_dk22251_balkani` (62 × 35 mm) |
 | `src/components/labels/Label.tsx` | Single-cell preview component (mm-sized so on-screen matches printed) |
 | `src/components/labels/LabelSheet.tsx` | Wraps a list of `Label`s for the modal preview |
 | `src/components/labels/printHtml.ts` | Builds the self-contained HTML document for the isolated print window |
@@ -89,33 +89,43 @@ This avoids polluting `globals.css` with print-only rules and means each print j
 
 ## Label content
 
-### Queen label (62 × 30 mm)
+### Queen label (62 × 32 mm)
 
 ```
-┌────────────────────┐
-│ Q-A0142  ● (yellow)│  ← queen_number + year-colour swatch
-│ ♀ Q-A0091   ♂ Q-X07│  ← lineage (omitted if both blank)
-│ Mated 14 Apr 2026  │  ← omitted if mated_date null
-│ A41 X4P5           │  ← Eircode (omitted if blank)
-└────────────────────┘
+┌─┬─────────────────────────────────────────────┐
+│█│  Q-A0142                                    │  ← full-height year-colour stripe + code
+│█│  ─────────────────────                      │
+│█│  ♀ Q-A0091   ♂ Q-X07                        │  ← ♀ ♂ symbols in red
+│█│  MATED 14 Apr 2026                          │  ← uppercase tracked muted
+│█│  A41 X4P5                                   │  ← Eircode muted
+└─┴─────────────────────────────────────────────┘
 ```
 
-The year-colour swatch uses `getQueenColorFromYear(birth_date)` and only renders for one of the five international colours (White / Yellow / Red / Green / Blue).
+- The full-height 5 mm left stripe carries the international year-colour code (White / Yellow / Red / Green / Blue), derived from `getQueenColorFromYear(birth_date)`. A 0.2 mm grey edge separates the white stripe variant from the white label body. When `birth_date` is missing or maps to "None", the stripe falls back to a neutral grey so the layout still reads as deliberate.
+- `LabelDatum.queenExtras` carries structured per-field values (`motherNumber`, `fatherNumber`, `matedDate`, `eircode`) so the renderer can apply distinct typography per row:
+  - Lineage row at 9pt with `♀` and `♂` symbols in `#b91c1c` (red on a P-touch driver, black on others).
+  - "Mated DD MMM YYYY" at 7pt uppercase with 0.5pt letter-spacing in `#4b5563`.
+  - Eircode at 8pt regular in `#4b5563`.
+- Each row is conditional — empty fields drop entirely and the layout reflows.
 
-### Balkani label (62 × 30 mm)
+### Balkani label (62 × 35 mm)
 
 ```
-┌──────────────────────────────────────────┐
-│  BAL-2026-014                  28.4 kg   │  ← code (bold) + weight (bold, red)
-│  ──────────────────────────────────────  │  ← hairline rule
-│  EXTRACTED   02 May 2026                 │  ← uppercase mini-label + date
-└──────────────────────────────────────────┘
+┌────────────────────────────────────────────┐
+│▓▓▓▓ HIVECRAIC · TRACEABLE HONEY ▓▓▓▓▓▓▓▓▓▓│  ← solid red band, white tracked caps
+│                                            │
+│  BAL-2026-014           ┌────────────┐     │
+│                         │  28.4 kg   │     │  ← weight in a red-bordered chip
+│  EXTRACTED 02 May 2026  └────────────┘     │
+│                                            │
+└────────────────────────────────────────────┘
 ```
 
-- The container code is the headline on the left, the total weight is a co-headline on the right of the same row. Weight uses `#b91c1c` so it prints red on a Brother P-touch driver that recognises the DK-22251 two-colour track; falls back to black on any other driver.
-- The hairline rule (`0.25 mm`) separates the hero from the date caption.
-- Weight is omitted from the row when `total_weight_kg` is null; the date caption is omitted when `extraction_date` is missing or invalid.
-- At 30 mm cut length, a single DK-22251 roll yields roughly 500 balkani labels (up from ~170 at the original 90 mm).
+- A solid `#b91c1c` band runs the full width at the top — "HiveCraic · Traceable Honey" in 6.5pt white uppercase with 0.9pt letter-spacing. On a Brother P-touch driver configured for DK-22251's two-colour track this prints in red; on standard drivers it degrades cleanly to a solid black masthead.
+- Body: container code as the headline (13pt bold), a red-bordered chip on the right holding the total weight (12.5pt bold, `#b91c1c`), and `EXTRACTED   DD MMM YYYY` below the code as a tracked uppercase muted caption.
+- Weight chip is omitted when `total_weight_kg` is null; the caption is omitted when `extraction_date` is missing or invalid.
+- `print-color-adjust: exact` is set on the print document so browsers preserve the red background instead of stripping it for "ink-saving" print defaults.
+- At 35 mm cut length, a single DK-22251 roll yields roughly 435 balkani labels (vs ~170 at the original 90 mm draft).
 
 ## Edge cases & limits
 
