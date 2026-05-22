@@ -26,7 +26,7 @@ interface TraceabilityToolProps {
 function containerToLabelDatum(container: BulkContainer): LabelDatum {
   const extracted = formatDateGB(container.extraction_date)
   const secondaryLines: string[] = []
-  if (extracted) secondaryLines.push(`EXTRACTED   ${extracted}`)
+  if (extracted) secondaryLines.push(`EXTRACTED ${extracted}`)
   return {
     id: container.id,
     primaryText: container.container_code || '—',

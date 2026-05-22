@@ -42,10 +42,10 @@ function BalkaniCell({ datum, preset }: LabelProps) {
         style={{
           background: '#b91c1c',
           color: '#fff',
-          fontSize: '6.5pt',
-          letterSpacing: '0.9pt',
+          fontSize: '6pt',
+          letterSpacing: '0.8pt',
           fontWeight: 700,
-          padding: '1.3mm 4mm',
+          padding: '1mm 4mm',
           textAlign: 'center',
           textTransform: 'uppercase',
           flexShrink: 0,
@@ -57,58 +57,57 @@ function BalkaniCell({ datum, preset }: LabelProps) {
       <div
         style={{
           flex: 1,
-          padding: '3mm 4mm',
+          padding: '2mm 3.5mm',
           display: 'flex',
-          alignItems: 'center',
-          gap: '3mm',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          gap: '1.4mm',
           minHeight: 0,
         }}
       >
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '2.5mm' }}>
+          <span
             style={{
               fontWeight: 700,
-              fontSize: '13pt',
-              lineHeight: 1.1,
+              fontSize: '12pt',
+              lineHeight: 1.05,
+              flex: 1,
+              minWidth: 0,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
             }}
           >
             {datum.primaryText}
-          </div>
-          {caption && (
-            <div
+          </span>
+          {datum.accentText && (
+            <span
               style={{
-                marginTop: '2.2mm',
-                fontSize: '7.5pt',
-                color: '#4b5563',
-                letterSpacing: '0.5pt',
+                fontWeight: 700,
+                fontSize: '12pt',
+                lineHeight: 1.05,
+                color: '#b91c1c',
                 whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
+                flexShrink: 0,
               }}
             >
-              {caption}
-            </div>
+              {datum.accentText}
+            </span>
           )}
         </div>
 
-        {datum.accentText && (
+        {caption && (
           <div
             style={{
-              border: '0.4mm solid #b91c1c',
-              borderRadius: '1mm',
-              padding: '1.4mm 2.6mm',
-              color: '#b91c1c',
-              fontWeight: 700,
-              fontSize: '12.5pt',
-              lineHeight: 1.05,
-              flexShrink: 0,
+              fontSize: '6.5pt',
+              color: '#4b5563',
+              letterSpacing: '0.5pt',
               whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             }}
           >
-            {datum.accentText}
+            {caption}
           </div>
         )}
       </div>

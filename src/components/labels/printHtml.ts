@@ -13,12 +13,13 @@ function escapeHtml(value: unknown): string {
 
 function renderBalkaniHtml(datum: LabelDatum, preset: LabelPreset): string {
   const caption = datum.secondaryLines?.[0]
-  const captionHtml = caption
-    ? `<div style="margin-top:2.2mm;font-size:7.5pt;color:#4b5563;letter-spacing:0.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(caption)}</div>`
+
+  const accentHtml = datum.accentText
+    ? `<span style="font-weight:700;font-size:12pt;line-height:1.05;color:#b91c1c;white-space:nowrap;flex-shrink:0">${escapeHtml(datum.accentText)}</span>`
     : ''
 
-  const chipHtml = datum.accentText
-    ? `<div style="border:0.4mm solid #b91c1c;border-radius:1mm;padding:1.4mm 2.6mm;color:#b91c1c;font-weight:700;font-size:12.5pt;line-height:1.05;flex-shrink:0;white-space:nowrap">${escapeHtml(datum.accentText)}</div>`
+  const captionHtml = caption
+    ? `<div style="font-size:6.5pt;color:#4b5563;letter-spacing:0.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(caption)}</div>`
     : ''
 
   return `
@@ -35,13 +36,13 @@ function renderBalkaniHtml(datum: LabelDatum, preset: LabelPreset): string {
       overflow:hidden;
       page-break-after:always;
     ">
-      <div style="background:#b91c1c;color:#fff;font-size:6.5pt;letter-spacing:0.9pt;font-weight:700;padding:1.3mm 4mm;text-align:center;text-transform:uppercase;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact">HiveCraic · Traceable Honey</div>
-      <div style="flex:1;padding:3mm 4mm;display:flex;align-items:center;gap:3mm;min-height:0">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:13pt;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(datum.primaryText)}</div>
-          ${captionHtml}
+      <div style="background:#b91c1c;color:#fff;font-size:6pt;letter-spacing:0.8pt;font-weight:700;padding:1mm 4mm;text-align:center;text-transform:uppercase;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact">HiveCraic · Traceable Honey</div>
+      <div style="flex:1;padding:2mm 3.5mm;display:flex;flex-direction:column;justify-content:center;gap:1.4mm;min-height:0">
+        <div style="display:flex;align-items:baseline;gap:2.5mm">
+          <span style="font-weight:700;font-size:12pt;line-height:1.05;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(datum.primaryText)}</span>
+          ${accentHtml}
         </div>
-        ${chipHtml}
+        ${captionHtml}
       </div>
     </div>
   `
