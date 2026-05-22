@@ -38,6 +38,7 @@ interface UserProfile {
  enable_task_email_reminders?: boolean
  enable_event_email_reminders?: boolean
  task_reminder_frequency?: 'realtime' | 'daily' | 'weekly' | 'disabled'
+ enable_label_printing?: boolean
 }
 
 interface Association {
@@ -73,6 +74,7 @@ export default function ProfilePage() {
  enable_task_email_reminders: true,
  enable_event_email_reminders: true,
  task_reminder_frequency: 'daily' as 'realtime' | 'daily' | 'weekly' | 'disabled',
+ enable_label_printing: false,
  })
  const [savingProfile, setSavingProfile] = useState(false)
  const [associations, setAssociations] = useState<Association[]>([])
@@ -154,6 +156,7 @@ export default function ProfilePage() {
  enable_task_email_reminders: data.enable_task_email_reminders !== undefined ? data.enable_task_email_reminders : true,
  enable_event_email_reminders: data.enable_event_email_reminders !== undefined ? data.enable_event_email_reminders : true,
  task_reminder_frequency: data.task_reminder_frequency || 'daily',
+ enable_label_printing: data.enable_label_printing === true,
  })
  }
  } catch (error) {
@@ -181,6 +184,7 @@ export default function ProfilePage() {
  enable_task_email_reminders: profileFormData.enable_task_email_reminders,
  enable_event_email_reminders: profileFormData.enable_event_email_reminders,
  task_reminder_frequency: profileFormData.task_reminder_frequency,
+ enable_label_printing: profileFormData.enable_label_printing,
  })
  .eq('id', userId)
 
@@ -217,6 +221,7 @@ export default function ProfilePage() {
  enable_task_email_reminders: userProfile.enable_task_email_reminders !== undefined ? userProfile.enable_task_email_reminders : true,
  enable_event_email_reminders: userProfile.enable_event_email_reminders !== undefined ? userProfile.enable_event_email_reminders : true,
  task_reminder_frequency: userProfile.task_reminder_frequency || 'daily',
+ enable_label_printing: userProfile.enable_label_printing === true,
  })
  }
  }
@@ -1084,10 +1089,10 @@ export default function ProfilePage() {
  checked={profileFormData.enable_task_email_reminders}
  onChange={async (e) => {
  const newValue = e.target.checked
- setProfileFormData({
- ...profileFormData,
+ setProfileFormData(prev => ({
+ ...prev,
  enable_task_email_reminders: newValue
- })
+ }))
 
  // Update database immediately with new value
  if (!userId) return
@@ -1100,11 +1105,12 @@ export default function ProfilePage() {
  if (error) throw error
  } catch (error) {
  console.error('Error updating task reminders:', error)
+ toast.error('Could not save task-reminders setting. Please try again.')
  // Revert on error
- setProfileFormData({
- ...profileFormData,
+ setProfileFormData(prev => ({
+ ...prev,
  enable_task_email_reminders: !newValue
- })
+ }))
  }
  }}
  className="sr-only peer"
@@ -1126,10 +1132,10 @@ export default function ProfilePage() {
  checked={profileFormData.enable_event_email_reminders}
  onChange={async (e) => {
  const newValue = e.target.checked
- setProfileFormData({
- ...profileFormData,
+ setProfileFormData(prev => ({
+ ...prev,
  enable_event_email_reminders: newValue
- })
+ }))
 
  // Update database immediately with new value
  if (!userId) return
@@ -1142,11 +1148,12 @@ export default function ProfilePage() {
  if (error) throw error
  } catch (error) {
  console.error('Error updating event reminders:', error)
+ toast.error('Could not save event-reminders setting. Please try again.')
  // Revert on error
- setProfileFormData({
- ...profileFormData,
+ setProfileFormData(prev => ({
+ ...prev,
  enable_event_email_reminders: !newValue
- })
+ }))
  }
  }}
  className="sr-only peer"
@@ -1166,10 +1173,10 @@ export default function ProfilePage() {
  onChange={async (e) => {
  const newValue = e.target.value as 'realtime' | 'daily' | 'weekly' | 'disabled'
  const oldValue = profileFormData.task_reminder_frequency
- setProfileFormData({
- ...profileFormData,
+ setProfileFormData(prev => ({
+ ...prev,
  task_reminder_frequency: newValue
- })
+ }))
 
  // Update database immediately with new value
  if (!userId) return
@@ -1182,11 +1189,12 @@ export default function ProfilePage() {
  if (error) throw error
  } catch (error) {
  console.error('Error updating reminder frequency:', error)
+ toast.error('Could not save reminder frequency. Please try again.')
  // Revert on error
- setProfileFormData({
- ...profileFormData,
+ setProfileFormData(prev => ({
+ ...prev,
  task_reminder_frequency: oldValue
- })
+ }))
  }
  }}
  disabled={!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders}
@@ -1210,6 +1218,53 @@ export default function ProfilePage() {
  )}
  </div>
  </div>
+ </div>
+ </div>
+
+ <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+ <div className="mb-4">
+ <div className="font-medium text-foreground mb-1">Printing</div>
+ <div className="text-sm text-text-tertiary">Print thermal labels for queens and bulk honey containers (Brother QL-820 / DK-22251).</div>
+ </div>
+
+ <div className="flex items-center justify-between">
+ <div>
+ <label htmlFor="label-printing" className="text-sm font-medium text-foreground">Enable label printing</label>
+ <div className="text-xs text-text-tertiary">Adds print buttons in the Queens and Traceability sections</div>
+ </div>
+ <label className="relative inline-flex items-center cursor-pointer">
+ <input
+ type="checkbox"
+ id="label-printing"
+ checked={profileFormData.enable_label_printing}
+ onChange={async (e) => {
+ const newValue = e.target.checked
+ setProfileFormData(prev => ({
+ ...prev,
+ enable_label_printing: newValue
+ }))
+
+ if (!userId) return
+ try {
+ const { error } = await supabase
+ .from('profiles')
+ .update({ enable_label_printing: newValue })
+ .eq('id', userId)
+
+ if (error) throw error
+ } catch (error) {
+ console.error('Error updating label printing flag:', error)
+ toast.error('Could not save the label-printing setting. Please try again.')
+ setProfileFormData(prev => ({
+ ...prev,
+ enable_label_printing: !newValue
+ }))
+ }
+ }}
+ className="sr-only peer"
+ />
+ <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+ </label>
  </div>
  </div>
  </div>

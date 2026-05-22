@@ -341,6 +341,10 @@ When editing an existing public batch, a QR code preview is shown at the top of 
 - **External Honey Blending** - Track imported honey with manual country-of-origin
 - **Offline Mode** - Queue harvests when offline
 
+## Related Documentation
+
+- [Printable Labels](./print-labels.md) — opt-in thermal printing for balkani (bulk container) labels via Brother QL-820NWB.
+
 ## Changelog
 
 ### January 25, 2026
