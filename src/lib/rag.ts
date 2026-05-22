@@ -10,9 +10,17 @@ function isValidUUID(id: string): boolean {
   return UUID_REGEX.test(id)
 }
 
-// Create Supabase client for server-side operations
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+// Fail-fast at module init. Helper returns a non-nullable string so the
+// values can be used inside any closure without TS narrowing surprises.
+function requireEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`rag: ${name} must be set.`)
+  }
+  return value
+}
+const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+const supabaseServiceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
 
 export function getServerSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey)
