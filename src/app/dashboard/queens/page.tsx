@@ -4,13 +4,16 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown, GitBranch, GitCompareArrows, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
+import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown, GitBranch, GitCompareArrows, ArrowUp, ArrowDown, ArrowUpDown, Printer } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import QueenLineageTree from '@/components/QueenLineageTree'
 import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
 import Button from '@/components/ui/Button'
+import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
+import { queenToLabelDatum } from '@/components/labels/queenMapping'
+import { useLabelPrinting } from '@/hooks/useLabelPrinting'
 
 // Module-level so the identity is stable across renders and the limit lives
 // in one place. Selection persistence key kept alongside for the same reason.
@@ -113,6 +116,8 @@ export default function QueensPage() {
  const [batches, setBatches] = useState<Batch[]>([])
  const [showLineage, setShowLineage] = useState(false)
  const [deleting, setDeleting] = useState(false)
+ const { enabled: labelPrintingEnabled } = useLabelPrinting()
+ const [printQueens, setPrintQueens] = useState<Queen[] | null>(null)
  // Table sorting — null key means "natural order from the fetch query".
  const [sortKey, setSortKey] = useState<SortKey | null>(null)
  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
@@ -803,6 +808,15 @@ export default function QueensPage() {
  >
  <GitCompareArrows size={16} /> Compare{selectedIds.size > 0 ? ` (${selectedIds.size})` : ''}
  </Button>
+ {labelPrintingEnabled && selectedIds.size > 0 && (
+ <Button
+ onClick={() => setPrintQueens(queens.filter(q => selectedIds.has(q.id)))}
+ tone="neutral"
+ className="px-4 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated font-medium flex items-center gap-2 min-h-[48px] border border-border"
+ >
+ <Printer size={16} /> Print ({selectedIds.size})
+ </Button>
+ )}
  <Link href="/dashboard/queens/lineage">
  <Button
  tone="neutral"
@@ -1209,6 +1223,15 @@ export default function QueensPage() {
  />
  </td>
  <td className="px-3 py-4 whitespace-nowrap text-sm flex gap-2">
+ {labelPrintingEnabled && (
+ <Button
+ onClick={() => setPrintQueens([queen])}
+ className="text-text-secondary hover:text-foreground"
+ title="Print label"
+ >
+ <Printer size={16} />
+ </Button>
+ )}
  <Button
  onClick={() => handleEdit(queen)}
  className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
@@ -1322,6 +1345,16 @@ export default function QueensPage() {
  )}
  </div>
  </div>
+
+ <PrintLabelsModal
+ open={printQueens !== null}
+ onClose={() => setPrintQueens(null)}
+ data={(printQueens ?? []).map(queenToLabelDatum)}
+ presetId="brother_dk22251_queen"
+ title={printQueens && printQueens.length === 1
+ ? `Print label — ${printQueens[0].queen_number}`
+ : `Print ${printQueens?.length ?? 0} queen labels`}
+ />
  </div>
  )
 }

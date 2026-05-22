@@ -345,3 +345,4 @@ The same rule applies in `useRearingGroupReport` and to the persisted `rearing_b
 
 - [Mating Nucs](./mating-nucs.md) — detailed mating nuc feature docs with schema DDL and verification checklist
 - [Batch Distributions](./batch-distributions.md) — distribution tracking for grafts with NIHBS report integration
+- [Printable Labels](./print-labels.md) — opt-in thermal printing for queen labels (lineage + mated date + Eircode) via Brother QL-820NWB.

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Edit2, ExternalLink, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react'
+import { ArrowLeft, Edit2, ExternalLink, AlertTriangle, CheckCircle, XCircle, Clock, Printer } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import QueenLineageTree from '@/components/QueenLineageTree'
@@ -14,6 +14,9 @@ import { useQueenDetail } from '@/hooks'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
+import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
+import { queenToLabelDatum } from '@/components/labels/queenMapping'
+import { useLabelPrinting } from '@/hooks/useLabelPrinting'
 
 export default function QueenDetailPage() {
   const params = useParams()
@@ -27,6 +30,8 @@ export default function QueenDetailPage() {
   const [matedEircode, setMatedEircode] = useState('')
   const [cellActionLoading, setCellActionLoading] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [printOpen, setPrintOpen] = useState(false)
+  const { enabled: labelPrintingEnabled } = useLabelPrinting()
 
   const {
     queen,
@@ -216,6 +221,16 @@ export default function QueenDetailPage() {
           </div>
           <p className="text-sm text-text-secondary mt-1">Age: {age}</p>
         </div>
+        {labelPrintingEnabled && (
+          <button
+            type="button"
+            onClick={() => setPrintOpen(true)}
+            className="p-2 hover:bg-surface-secondary rounded-lg transition-colors"
+            title="Print label"
+          >
+            <Printer size={18} className="text-text-secondary" />
+          </button>
+        )}
         {isOwner && (
           <Link
             href={`/dashboard/queens?id=${queen.id}&edit=true`}
@@ -509,6 +524,14 @@ export default function QueenDetailPage() {
       )}
       </>
       )}
+
+      <PrintLabelsModal
+        open={printOpen}
+        onClose={() => setPrintOpen(false)}
+        data={[queenToLabelDatum(queen)]}
+        presetId="brother_dk22251_queen"
+        title={`Print label — ${queen.queen_number}`}
+      />
     </div>
   )
 }

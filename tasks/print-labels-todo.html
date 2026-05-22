@@ -2,7 +2,7 @@
 <html lang="en-GB">
 <head>
   <meta charset="utf-8" />
-  <title>Print Labels — Plan</title>
+  <title>Print Labels — Plan (v1: Balkani + Queens)</title>
   <style>
     body { font: 14px/1.55 -apple-system, Segoe UI, Roboto, sans-serif; max-width: 900px; margin: 2em auto; padding: 0 1em; color: #1f2937; }
     h1 { font-size: 22px; margin-bottom: 0.2em; }
@@ -20,102 +20,202 @@
     .muted { color: #6b7280; font-size: 13px; }
     .diagram { background: #f9fafb; border: 1px dashed #d1d5db; padding: 10px 14px; border-radius: 6px; white-space: pre; font: 12.5px/1.4 ui-monospace, Menlo, Consolas, monospace; overflow-x: auto; }
     .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; background: #eef2ff; color: #3730a3; }
+    .label-mock { display: inline-block; border: 1px dashed #9ca3af; padding: 8px 10px; margin: 6px 12px 6px 0; font: 12px/1.35 ui-monospace, Menlo, Consolas, monospace; background: #fff; vertical-align: top; white-space: pre; }
+    .red { color: #b91c1c; }
   </style>
 </head>
 <body>
 
-<h1>Printable Labels — Implementation Plan</h1>
-<p class="muted">Full design: <a href="../docs/features/print-labels.md"><code>docs/features/print-labels.md</code></a>. This file is the actionable todo list; tick items off as we go.</p>
+<h1>Printable Labels — Implementation Plan <span class="pill">v1: Balkani + Queens</span></h1>
+<p class="muted">Full design will go in <a href="../docs/features/print-labels.md"><code>docs/features/print-labels.md</code></a> once this plan is approved. This file is the actionable todo list; tick items off as we go.</p>
+
+<h2>Confirmed scope</h2>
+<table>
+  <tr><th>Decision</th><th>Value</th></tr>
+  <tr><td>v1 entities</td><td><strong>Balkani</strong> (bulk containers in Traceability) and <strong>Queens</strong>. All other entities deferred.</td></tr>
+  <tr><td>Hardware target</td><td>Brother QL-820NWB with DK-22251 roll (62 mm wide, continuous, black/red thermal)</td></tr>
+  <tr><td>Feature flag</td><td>New <code>enable_label_printing</code> boolean on <code>profiles</code>. UI hidden unless toggled on.</td></tr>
+  <tr><td>Flag location</td><td>Profile page, in a new "Printing" section beside the existing notification toggles</td></tr>
+  <tr><td>Balkani fields</td><td>Code + extracted date + weight (core trio)</td></tr>
+  <tr><td>Queen fields</td><td>Queen number + year-colour dot + lineage (mother/father) + mated date + mated Eircode</td></tr>
+  <tr><td>Button placement</td><td>Per-row print icon <em>and</em> a "Print selected" bulk toolbar button on each list</td></tr>
+  <tr><td>Two-colour red printing</td><td>Layout will use red CSS where appropriate; not promised — browser <code>window.print()</code> usually collapses red→black on this driver. Documented as a "set up via P-touch for red" footnote.</td></tr>
+</table>
 
 <h2>Headline approach</h2>
 <p>
-  Reuse the existing browser-print pattern (<code>window.print()</code> + <code>@media print</code> + <code>qrcode.react</code>) already used by <code>src/app/dashboard/qr-tags/page.tsx</code>.
-  No new PDF library — users can save as PDF from the system print dialog if they want one.
-  A single <code>LabelSheet</code> component renders any list of labels at a chosen page preset (Brother QL roll, DYMO, Avery sheet).
+  Reuse the existing browser-print pattern (<code>window.print()</code> + <code>@media print</code> + <code>qrcode.react</code>) already used by
+  <code>src/app/dashboard/qr-tags/page.tsx</code>. No new PDF library.
+  A single <code>LabelSheet</code> component renders any list of labels at the chosen preset.
+  Presets are data-driven so DYMO / Avery / die-cut Brother rolls can be added later without refactoring.
 </p>
 
-<h2>Confirmation needed before coding</h2>
-<table>
-  <tr><th>Question</th><th>Suggested default</th></tr>
-  <tr><td>v1 set of label-enabled sections</td><td>Hives, Mating Nucs, Queens</td></tr>
-  <tr><td>Default preset</td><td><code>brother_ql_62_29</code> (62 × 29 mm)</td></tr>
-  <tr><td>Default QR on/off</td><td>ON for Hives &amp; Nucs, OFF for Queens / Batches</td></tr>
-  <tr><td>Where the bulk button lives on list pages</td><td>Inline with the filter toolbar</td></tr>
-</table>
-
 <h2>Architecture sketch</h2>
-<div class="diagram">[entity list/detail page]
-        │
-        │  collect ids → fetch label data via existing hook
-        ▼
-   ┌──────────────────┐
-   │ PrintLabelsModal │  preset picker, QR toggle, content options
-   └─────────┬────────┘
-             │ map to LabelDatum[]
-             ▼
-   ┌──────────────────┐    @page + grid layout applied per preset
-   │   LabelSheet     │ ─── window.print() ───▶ thermal / sheet printer
-   └─────────┬────────┘                         (or "Save as PDF")
-             │
-             └── Label.tsx renders each cell: title / subtitle / fields / optional QR / optional year-colour dot</div>
+<div class="diagram">profiles.enable_label_printing  ◀── gate everywhere ──┐
+                                                      │
+[Traceability Containers tab]   [Queens list page]    │  flag off ⇒ no buttons
+        │                              │              │
+        │  pick rows                   │  pick rows   │
+        ▼                              ▼              │
+   ┌──────────────────┐         ┌──────────────────┐  │
+   │ Print modal      │         │ Print modal      │  │
+   │ (balkani preset) │         │ (queen preset)   │  │
+   └─────────┬────────┘         └────────┬─────────┘
+             │                           │
+             └────────────┬──────────────┘
+                          ▼
+                ┌──────────────────┐    @page size: 62mm × length
+                │   LabelSheet     │ ─── window.print() ───▶ Brother QL-820NWB
+                └─────────┬────────┘                         (DK-22251)
+                          │
+                          └── Label.tsx renders each cell from its preset</div>
 
-<h2>Presets to ship</h2>
+<h2>Presets to ship in v1</h2>
 <table>
-  <tr><th>Id</th><th>Size</th><th>Notes</th></tr>
-  <tr><td><code>brother_ql_62_29</code></td><td>62 × 29 mm</td><td>Default for hive / nuc / queen</td></tr>
-  <tr><td><code>brother_ql_62_100</code></td><td>62 × 100 mm</td><td>Bigger hive label with extra fields</td></tr>
-  <tr><td><code>brother_ql_29_90</code></td><td>29 × 90 mm</td><td>Slim graft / batch labels</td></tr>
-  <tr><td><code>dymo_lw_89_36</code></td><td>89 × 36 mm</td><td>DYMO LabelWriter</td></tr>
-  <tr><td><code>avery_l7160_a4</code></td><td>A4 sheet, 21 / page</td><td>Sheet-printer fallback (Europe)</td></tr>
-  <tr><td><code>avery_5160_letter</code></td><td>US letter, 30 / page</td><td>Sheet-printer fallback (US)</td></tr>
+  <tr><th>Id</th><th>Width × cut length</th><th>Used by</th></tr>
+  <tr><td><code>brother_dk22251_queen</code></td><td>62 × ~30 mm</td><td>Queen labels (small)</td></tr>
+  <tr><td><code>brother_dk22251_balkani</code></td><td>62 × ~90 mm</td><td>Balkani labels (bigger, fits weight + date prominently)</td></tr>
 </table>
+<p class="muted">Both render to the same 62 mm DK-22251 continuous roll — only the <code>@page</code> length differs.</p>
+
+<h2>Label mockups</h2>
+
+<div class="label-mock">┌──────────────────────┐
+│  BAL-2026-014        │
+│  Extracted 02 May 26 │
+│  <span class="red">28.4 kg</span>              │
+│         [QR if added]│
+└──────────────────────┘</div>
+
+<div class="label-mock">┌────────────────────┐
+│ Q-A0142  ● (yellow)│
+│ ♀ Q-A0091   ♂ Q-X07│
+│ Mated 14 Apr 26    │
+│ A41 X4P5  (Eircode)│
+└────────────────────┘</div>
 
 <h2>Todos</h2>
 
 <h3>Foundation</h3>
 <ul class="todo">
-  <li>1. Confirm scope with user (the four questions above) before coding.</li>
-  <li>2. Create <code>src/components/labels/</code> with <code>types.ts</code>, <code>presets.ts</code>, <code>Label.tsx</code>, <code>LabelSheet.tsx</code>.</li>
-  <li>3. Add <code>@page</code> rules per preset + a <code>.print-labels</code> root in <code>src/app/globals.css</code> (using the existing <code>@media print</code> block).</li>
-  <li>4. New <code>PrintLabelsModal</code> wrapping <code>LabelSheet</code> with the preset picker and a <em>Print</em> button.</li>
+  <li class="done">1. Add column <code>enable_label_printing boolean DEFAULT false</code> to <code>profiles</code> via Supabase MCP. Update profile page UI: new "Printing" section with the toggle (mirroring the existing <code>enable_task_email_reminders</code> toggle pattern).</li>
+  <li class="done">2. Create <code>src/components/labels/</code> with: <code>types.ts</code> (LabelDatum, PresetId, year-colour hex map), <code>presets.ts</code> (the two DK-22251 cut lengths + <code>getPreset</code>), <code>Label.tsx</code> (single-cell preview), <code>LabelSheet.tsx</code> (preview list), <code>printHtml.ts</code> (string builder for the isolated print window), <code>PrintLabelsModal.tsx</code> (Modal with preview + Print button).</li>
+  <li class="done">3. <s>Add the <code>@page</code> rules to <code>globals.css</code></s> — <strong>not needed</strong>. The existing <code>qr-tags</code> page uses an isolated <code>window.open()</code> print window pattern; <code>printHtml.ts</code> follows the same approach, so the <code>@page</code> rules live inside the print-job document instead of polluting global CSS.</li>
 </ul>
 
-<h3>Wire-ups (per entity, in priority order)</h3>
+<h3>Balkani (Traceability → Containers)</h3>
 <ul class="todo">
-  <li>5. <strong>Hives</strong> — bulk button on <code>dashboard/hives/page.tsx</code> (scoped to current filter), single-hive button on <code>dashboard/hives/[id]/page.tsx</code>. Reuses the QR tag flow's QR rendering.</li>
-  <li>6. <strong>Mating nucs</strong> — bulk + single from <code>components/batches/ManageNucsTab.tsx</code>; reuses existing <code>NucQRCode</code> data shape.</li>
-  <li>7. <strong>Queens</strong> — bulk button on <code>dashboard/queens/page.tsx</code>, single button on <code>dashboard/queens/[id]/page.tsx</code>. Includes year-colour dot.</li>
-  <li>8. <strong>Rearing batches</strong> — single label per batch, from <code>dashboard/batches/page.tsx</code>.</li>
-  <li>9. <strong>Batch grafts (per cell)</strong> — bulk print of all cells in a batch, from <code>BatchGraftsSection</code>.</li>
-  <li>10. <strong>Apiaries</strong> — single A4/A5 apiary sign from <code>dashboard/apiaries/[id]/page.tsx</code> (not a thermal label).</li>
+  <li class="done">4. In <code>src/components/tools/TraceabilityTool.tsx</code>, on each container card add a print icon (gated by the profile flag).</li>
+  <li class="done">5. Add a "Print selected" toolbar button when at least one container row is selected. Reuses <code>PrintLabelsModal</code>. (Selection via a small checkbox in each card's action row.)</li>
+  <li class="done">6. Map container → <code>LabelDatum</code>: title = <code>container_code</code>, secondary = formatted <code>extraction_date</code> (en-GB) + <code>total_weight_kg</code> kg. Lives as <code>containerToLabelDatum</code> at the top of TraceabilityTool.</li>
+</ul>
+
+<h3>Queens (list + detail)</h3>
+<ul class="todo">
+  <li class="done">7. In <code>src/app/dashboard/queens/page.tsx</code>: per-row print icon (next to Edit/Delete) and "Print (N)" toolbar button (next to Compare). Reuses the existing <code>selectedIds</code> selection — same checkbox drives Compare and Print.</li>
+  <li class="done">8. In <code>src/app/dashboard/queens/[id]/page.tsx</code>: single Print icon button in the header (between the title and the Edit link).</li>
+  <li class="done">9. Map queen → <code>LabelDatum</code> via shared helper <code>src/components/labels/queenMapping.ts</code>. Lines: lineage (♀ mother  ♂ father), <code>Mated DD MMM YYYY</code>, Eircode. Year-colour dot from <code>getQueenColorFromYear(birth_date)</code>.</li>
 </ul>
 
 <h3>Polish &amp; docs</h3>
 <ul class="todo">
-  <li>11. Cross-reference the existing QR-tag page so its bulk-print button can call the new <code>LabelSheet</code> too — eliminates the duplicated print code.</li>
-  <li>12. Add a short note to each affected feature doc in <code>docs/features/</code> linking to <code>print-labels.md</code>.</li>
-  <li>13. Manual verification on Brother QL-820NWB (continuous and die-cut roll) and on an A4 sheet print.</li>
+  <li class="done">10. Rewrote <code>docs/features/print-labels.md</code> to describe the as-shipped v1 (was the old multi-preset design doc): hardware, two presets, profile flag, file map, architecture diagram, label mockups, edge cases, scope.</li>
+  <li class="done">11. Added cross-links from <code>docs/features/queen-rearing.md</code> (existing Related Documentation list) and <code>docs/features/honey-traceability.md</code> (new Related Documentation section between Future Enhancements and Changelog) back to <code>print-labels.md</code>.</li>
+  <li>12. Manual verification on the QL-820NWB with a real DK-22251 roll: both presets, single + bulk, with the flag on and (verify hidden) with the flag off. <em>Awaiting user hardware test.</em></li>
 </ul>
 
 <h2>Out of scope (v1)</h2>
 <ul>
-  <li>Direct USB / Bluetooth printer comms — iOS doesn't support it.</li>
-  <li>Drag-and-drop label designer — keep to fixed presets.</li>
-  <li>Server-rendered PDF — browser's "Save as PDF" already covers this.</li>
-  <li>Print queue / history.</li>
+  <li>Hives, Mating Nucs, Rearing Batches, Grafts, Apiaries — deferred.</li>
+  <li>Direct USB / Bluetooth printer control (browsers can't drive the QL-820NWB directly; users print via the OS dialog).</li>
+  <li>Drag-and-drop label designer.</li>
+  <li>Server-rendered PDF.</li>
+  <li>QR codes on either label type. Both can be added later via the same <code>LabelDatum</code> shape.</li>
 </ul>
 
 <h2>Risks &amp; mitigations</h2>
 <table>
   <tr><th>Risk</th><th>Mitigation</th></tr>
-  <tr><td>Print dialog scaling differs per browser / OS.</td><td>Use CSS <code>@page</code> with absolute mm units; recommend users disable "fit to page" in the dialog. Document this once in the print modal.</td></tr>
-  <tr><td>QR readability on small (29 mm) labels.</td><td>Generate at a fixed pixel density (already done in <code>qr-tags/page.tsx</code>); cap content size; allow QR toggle off.</td></tr>
-  <tr><td>iOS printing inconsistencies via AirPrint.</td><td>Stick to portrait single-label rolls for thermal; AirPrint handles sheets reliably.</td></tr>
-  <tr><td>Existing QR-tag page diverges from the new component.</td><td>Item 11: refactor the existing bulk-print to use <code>LabelSheet</code> once it's stable.</td></tr>
+  <tr><td>Print dialog scaling differs per browser / OS — labels come out shrunk or shifted.</td><td>Use CSS <code>@page</code> with absolute mm units (62 mm width). Document "set scale to 100%, disable fit to page" in the print modal.</td></tr>
+  <tr><td>Red ink (DK-22251's two-colour feature) does not render via browser printing.</td><td>Design layouts that work in black-only; treat red as a bonus when the Brother P-touch driver is configured for red. Note this in the docs.</td></tr>
+  <tr><td>Users who turn the flag off later see broken UI / stale buttons.</td><td>Components read the flag on mount; flag false ⇒ buttons hidden entirely.</td></tr>
+  <tr><td>Existing <code>qr-tags</code> page diverges from the new <code>LabelSheet</code>.</td><td>Out of scope for v1; revisit once the new component is stable. Tracked as a follow-up.</td></tr>
 </table>
 
 <h2>Review</h2>
-<p class="muted">To be filled in once the foundation lands and at least one entity is wired up.</p>
+
+<h3>What shipped</h3>
+<p>
+  Items 1–11 are complete. Only item 12 (manual print test on the QL-820NWB) is outstanding and depends on the physical printer.
+</p>
+
+<table>
+  <tr><th>Layer</th><th>Files</th></tr>
+  <tr>
+    <td>Database</td>
+    <td>Migration <code>add_enable_label_printing_to_profiles</code> — adds <code>profiles.enable_label_printing boolean NOT NULL DEFAULT false</code>.</td>
+  </tr>
+  <tr>
+    <td>Profile UI</td>
+    <td><code>src/app/dashboard/profile/page.tsx</code> — new "Printing" block in Additional Settings, single toggle that writes the new flag on change (with optimistic revert on error).</td>
+  </tr>
+  <tr>
+    <td>Shared labels module</td>
+    <td>
+      <code>src/components/labels/</code>:
+      <code>types.ts</code>, <code>presets.ts</code>, <code>Label.tsx</code>, <code>LabelSheet.tsx</code>, <code>printHtml.ts</code>, <code>PrintLabelsModal.tsx</code>, <code>queenMapping.ts</code>
+    </td>
+  </tr>
+  <tr>
+    <td>Hook</td>
+    <td><code>src/hooks/useLabelPrinting.ts</code> — reads <code>profiles.enable_label_printing</code>; shared by Traceability and both Queens pages.</td>
+  </tr>
+  <tr>
+    <td>Balkani wire-up</td>
+    <td><code>src/components/tools/TraceabilityTool.tsx</code> — per-card checkbox + Print icon, "Print selected" toolbar button, modal render, inline <code>containerToLabelDatum</code> helper.</td>
+  </tr>
+  <tr>
+    <td>Queen wire-up</td>
+    <td>
+      <code>src/app/dashboard/queens/page.tsx</code> — per-row Print icon, "Print (N)" toolbar button reusing the existing Compare selection.<br>
+      <code>src/app/dashboard/queens/[id]/page.tsx</code> — header Print icon for single-queen print.
+    </td>
+  </tr>
+  <tr>
+    <td>Docs</td>
+    <td>
+      <code>docs/features/print-labels.md</code> — rewritten to match the shipped v1.<br>
+      <code>docs/features/queen-rearing.md</code> + <code>docs/features/honey-traceability.md</code> — Related Documentation pointers to <code>print-labels.md</code>.
+    </td>
+  </tr>
+</table>
+
+<h3>Deviations from the original plan</h3>
+<ul>
+  <li><strong>Item 3 (globals.css <code>@page</code> rules) was dropped.</strong> The existing <code>/dashboard/qr-tags</code> page already uses an isolated <code>window.open()</code> print window. <code>printHtml.ts</code> follows the same pattern, so <code>@page</code> sizing lives inside each print-job document instead of in global CSS. Cleaner; no risk of bleeding into other print flows.</li>
+  <li><strong>Preset picker dropped from the modal.</strong> Each call site passes a fixed preset (<code>brother_dk22251_queen</code> or <code>brother_dk22251_balkani</code>). A picker would have been dead UI in v1.</li>
+  <li><strong>Queens list reuses the existing Compare selection</strong> rather than adding a separate "select for print" checkbox column. The same row tick now drives both Compare and Print.</li>
+</ul>
+
+<h3>Things to test manually (item 12)</h3>
+<ol>
+  <li>Profile → toggle <em>Enable label printing</em> off, reload Traceability and Queens — no print UI anywhere.</li>
+  <li>Toggle on, reload — small Printer icon appears on every container card and queen row; header gains "Print selected" / "Print (N)" when at least one row is ticked.</li>
+  <li>Queen detail page → header shows Printer icon between title and Edit link.</li>
+  <li>Single Print on a queen → modal preview matches 62 × 30 mm; year-colour dot renders for queens born 2026 (yellow).</li>
+  <li>Single Print on a container → modal preview matches 62 × 90 mm; primary line shows container_code, secondaries show extracted date + weight.</li>
+  <li>Click "Print" → new browser tab opens with the print dialog already showing. Set scale to 100 %, disable "fit to page", send to the QL-820NWB. Verify alignment on the DK-22251 roll.</li>
+  <li>Bulk: tick 3 containers, click "Print selected (3)" → print job shows three pages, one label per page.</li>
+  <li>Pop-up blocker test: if the browser blocks <code>window.open()</code>, confirm the allow-pop-ups flow and re-try.</li>
+</ol>
+
+<h3>Follow-ups (not v1)</h3>
+<ul>
+  <li>Add QR codes to either label type — <code>LabelDatum</code> already has the shape room.</li>
+  <li>Add Hive / Nuc / Batch / Graft / Apiary label types when needed — just new presets and call-site wire-ups.</li>
+  <li>Add DYMO and Avery sheet presets if a user without a thermal printer needs labels.</li>
+  <li>Investigate enabling the DK-22251 red-ink track when print is sent through Brother's P-touch driver.</li>
+</ul>
 
 </body>
 </html>

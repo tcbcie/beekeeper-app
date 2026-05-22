@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
-import { Package, Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download, MapPin, AlertCircle, Star, MessageSquare } from 'lucide-react'
+import { Package, Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download, MapPin, AlertCircle, Star, MessageSquare, Printer } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useToast } from '@/components/ui/Toast'
 import { generateBatchCode } from '@/lib/batch-code'
@@ -12,6 +12,10 @@ import { calculateOriginPercentages, formatOrigins, calculateBestBeforeDate, for
 import { storyTemplates, replacePlaceholders, hasUnfilledPlaceholders, getUnfilledPlaceholders, stripMarkers } from '@/lib/story-templates'
 import type { BulkContainer, BatchRun, HarvestWithApiary, ContainerFormData, BatchFormData, OriginPercentage } from '@/types/traceability'
 import Button from '@/components/ui/Button'
+import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
+import type { LabelDatum } from '@/components/labels/types'
+import { formatDateGB } from '@/components/labels/dateFormat'
+import { useLabelPrinting } from '@/hooks/useLabelPrinting'
 
 type TabType = 'containers' | 'batches'
 
@@ -19,13 +23,47 @@ interface TraceabilityToolProps {
   userId: string
 }
 
+function containerToLabelDatum(container: BulkContainer): LabelDatum {
+  const lines: string[] = []
+  const extracted = formatDateGB(container.extraction_date)
+  if (extracted) lines.push(`Extracted ${extracted}`)
+  if (container.total_weight_kg != null) {
+    lines.push(`${container.total_weight_kg} kg`)
+  }
+  return {
+    id: container.id,
+    primaryText: container.container_code || '—',
+    secondaryLines: lines,
+  }
+}
+
 export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
   const toast = useToast()
+  const { enabled: labelPrintingEnabled } = useLabelPrinting(userId)
 
   const [activeTab, setActiveTab] = useState<TabType>('containers')
 
   // Container state
   const [containers, setContainers] = useState<BulkContainer[]>([])
+  const [selectedContainerIds, setSelectedContainerIds] = useState<Set<string>>(new Set())
+  const [printContainers, setPrintContainers] = useState<BulkContainer[] | null>(null)
+
+  // Prune selection of container ids that no longer exist after a refetch /
+  // delete. Without this the bulk-print button shows a count that includes
+  // deleted rows, and `containers.filter(...)` silently drops them.
+  useEffect(() => {
+    setSelectedContainerIds(prev => {
+      if (prev.size === 0) return prev
+      const live = new Set(containers.map(c => c.id))
+      let changed = false
+      const next = new Set<string>()
+      for (const id of prev) {
+        if (live.has(id)) next.add(id)
+        else changed = true
+      }
+      return changed ? next : prev
+    })
+  }, [containers])
   const [showContainerForm, setShowContainerForm] = useState(false)
   const [editingContainer, setEditingContainer] = useState<BulkContainer | null>(null)
   const [containerForm, setContainerForm] = useState<ContainerFormData>({
@@ -827,15 +865,27 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           <Package size={24} className="text-forest-600 dark:text-forest-400" />
           <h2 className="text-xl font-semibold text-foreground">Honey Provenance</h2>
         </div>
-        <Button
-          onClick={() => activeTab === 'containers' ? setShowContainerForm(true) : setShowBatchForm(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
-        >
-          <Plus size={20} />
-          <span className="hidden sm:inline">
-            {activeTab === 'containers' ? 'New Bulk Honey' : 'New Batch'}
-          </span>
-        </Button>
+        <div className="flex items-center gap-2">
+          {labelPrintingEnabled && activeTab === 'containers' && selectedContainerIds.size > 0 && (
+            <Button
+              onClick={() => setPrintContainers(containers.filter(c => selectedContainerIds.has(c.id)))}
+              className="flex items-center gap-2 px-4 py-2 bg-surface-elevated text-foreground border border-border rounded-lg hover:bg-surface-secondary transition-colors"
+            >
+              <Printer size={18} />
+              <span className="hidden sm:inline">Print selected ({selectedContainerIds.size})</span>
+              <span className="sm:hidden">{selectedContainerIds.size}</span>
+            </Button>
+          )}
+          <Button
+            onClick={() => activeTab === 'containers' ? setShowContainerForm(true) : setShowBatchForm(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+          >
+            <Plus size={20} />
+            <span className="hidden sm:inline">
+              {activeTab === 'containers' ? 'New Bulk Honey' : 'New Batch'}
+            </span>
+          </Button>
+        </div>
       </div>
 
       {/* Sub-tabs */}
@@ -1572,7 +1622,35 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                       )}
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
+                      {labelPrintingEnabled && (
+                        <>
+                          <label
+                            className="p-2 inline-flex items-center cursor-pointer"
+                            title="Select for bulk print"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              className="w-5 h-5 accent-amber-600 cursor-pointer"
+                              checked={selectedContainerIds.has(container.id)}
+                              onChange={e => {
+                                const next = new Set(selectedContainerIds)
+                                if (e.target.checked) next.add(container.id)
+                                else next.delete(container.id)
+                                setSelectedContainerIds(next)
+                              }}
+                            />
+                          </label>
+                          <Button
+                            onClick={() => setPrintContainers([container])}
+                            className="p-2 hover:bg-surface rounded-lg transition-colors"
+                            title="Print label"
+                          >
+                            <Printer size={18} />
+                          </Button>
+                        </>
+                      )}
                       <Button
                         onClick={() => handleEditContainer(container)}
                         className="p-2 hover:bg-surface rounded-lg transition-colors"
@@ -1844,6 +1922,16 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           </div>
         </div>
       )}
+
+      <PrintLabelsModal
+        open={printContainers !== null}
+        onClose={() => setPrintContainers(null)}
+        data={(printContainers ?? []).map(containerToLabelDatum)}
+        presetId="brother_dk22251_balkani"
+        title={printContainers && printContainers.length === 1
+          ? `Print label — ${printContainers[0].container_code}`
+          : `Print ${printContainers?.length ?? 0} balkani labels`}
+      />
     </div>
   )
 }
