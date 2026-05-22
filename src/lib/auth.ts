@@ -154,8 +154,14 @@ export function clearAccountActiveCache(): void {
 export type AccountStatus = 'active' | 'deactivated' | 'error' | 'no_session'
 
 /**
- * Get the current user's account status with specific failure reasons
- * Uses a short-lived cache to avoid repeated database calls
+ * Get the current user's account status with specific failure reasons.
+ * Uses a short-lived cache to avoid repeated database calls.
+ *
+ * Fail-closed semantics: on database error or missing profile data, this
+ * function returns `'error'` -- NOT `'active'`. Callers in dashboard
+ * /layout.tsx gate on `status === 'active'` and sign the user out for any
+ * other value (including 'error'), so a DB outage cannot leave a deactivated
+ * account in an authenticated state.
  */
 export async function getAccountStatus(): Promise<AccountStatus> {
   const userId = await getCurrentUserId()
