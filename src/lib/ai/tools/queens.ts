@@ -232,13 +232,16 @@ export const getQueenLineage: Tool = {
       return `Queen "${args.queenNumber}" not found.`
     }
 
-    // Helper to fetch a queen by ID
+    // Helper to fetch a queen by ID. Scoped to the requesting user so
+    // ancestors / descendants belonging to other users (e.g. a sold queen
+    // whose lineage points at one of theirs) are NOT returned.
     const fetchQueen = async (id: string | null) => {
       if (!id) return null
       const { data } = await supabase
         .from('queens')
         .select('id, queen_number, status, marking_color, subspecies, mother_id, father_id')
         .eq('id', id)
+        .eq('user_id', userId)
         .maybeSingle()
       return data
     }
@@ -264,20 +267,24 @@ export const getQueenLineage: Tool = {
     const greatGrandmother = grandmother ? await fetchQueen(grandmother.mother_id) : null
     const greatGrandfather = grandmother ? await fetchQueen(grandmother.father_id) : null
 
-    // Fetch daughters (queens where mother_id = this queen)
+    // Fetch daughters (queens where mother_id = this queen). Scoped so a
+    // queen sold to another user whose lineage points back here doesn't
+    // surface in this user's daughter list.
     const { data: daughters } = await supabase
       .from('queens')
       .select('queen_number, status, marking_color, hives(hive_number)')
       .eq('mother_id', queen.id)
+      .eq('user_id', userId)
       .order('birth_date', { ascending: false })
 
-    // Fetch siblings (same mother, excluding self)
+    // Fetch siblings (same mother, excluding self). Scoped likewise.
     let siblings: { queen_number: string; status: string; marking_color: string }[] = []
     if (queenData.mother_id) {
       const { data: siblingsData } = await supabase
         .from('queens')
         .select('queen_number, status, marking_color')
         .eq('mother_id', queenData.mother_id)
+        .eq('user_id', userId)
         .neq('id', queen.id)
         .limit(10)
       siblings = siblingsData || []

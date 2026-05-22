@@ -294,11 +294,14 @@ export const getColonyLineage: Tool = {
       }
     }
 
-    // Get all descendants (children and grandchildren)
+    // Get all descendants (children and grandchildren). Scoped so a colony
+    // sold to another user whose parent_colony_id points back here does not
+    // surface in this user's family tree.
     const { data: children } = await supabase
       .from('colonies')
       .select('id, colony_number, status, origin_type, origin_date')
       .or(`parent_colony_id.eq.${colonyData.id},secondary_parent_colony_id.eq.${colonyData.id}`)
+      .eq('user_id', userId)
       .order('origin_date', { ascending: true })
 
     // Get grandchildren
@@ -309,6 +312,7 @@ export const getColonyLineage: Tool = {
         .from('colonies')
         .select('colony_number, status, origin_type, origin_date, parent:colonies!colonies_parent_colony_id_fkey(colony_number)')
         .in('parent_colony_id', childIds)
+        .eq('user_id', userId)
 
       if (gcData) {
         grandchildren.push(...gcData.map(gc => {
@@ -325,13 +329,14 @@ export const getColonyLineage: Tool = {
       }
     }
 
-    // Get siblings (same parent)
+    // Get siblings (same parent). Scoped likewise.
     let siblings: Array<{ colony_number: string; status: string; origin_date: string }> = []
     if (parent) {
       const { data: siblingData } = await supabase
         .from('colonies')
         .select('colony_number, status, origin_date')
         .eq('parent_colony_id', parent.id)
+        .eq('user_id', userId)
         .neq('id', colonyData.id)
         .limit(10)
       siblings = siblingData || []

@@ -1,8 +1,12 @@
 import { z } from 'zod'
 import { Tool } from './index'
 import { getSupabase, findHiveByName, formatDate } from './utils'
+import { wolfGetMeasurements } from '../../wolf-waagen-api'
+import { beepGetMeasurements } from '../../beep-api'
 
-// Types for scale data
+// Local shape the tool surfaces to the LLM. Maps from the hardened API
+// libs so we inherit their timeouts, retries, and value parsing instead
+// of duplicating the logic here.
 interface ScaleReading {
   time: string
   weight_kg?: number
@@ -34,20 +38,9 @@ async function getBeepToken(userId: string): Promise<string | null> {
   return data?.beep_api_token || null
 }
 
-// Parse Wolf Waagen value - handles both formats:
-// - String with units: "23.550 [kg]" -> 23.550
-// - Direct number: 23.550 -> 23.550
-function parseWolfValue(value: string | number | undefined | null): number | undefined {
-  if (value === undefined || value === null) return undefined
-  if (typeof value === 'number') return isNaN(value) ? undefined : value
-  if (typeof value === 'string') {
-    const match = value.match(/^([\d.-]+)/)
-    return match ? parseFloat(match[1]) : undefined
-  }
-  return undefined
-}
-
-// Fetch Wolf Waagen data
+// Fetch Wolf Waagen data via the hardened API client (timeouts, retries,
+// NaN/Infinity-safe value parsing all included). Maps WolfParsedReading
+// to the local ScaleReading shape.
 async function fetchWolfData(
   apiToken: string,
   scaleId: string,
@@ -55,78 +48,39 @@ async function fetchWolfData(
   endTimestamp: number,
   resolution: 'hourly' | 'daily' = 'hourly'
 ): Promise<ScaleReading[]> {
-  const response = await fetch('https://new.app.wolf-waagen.de/api/v1/user/scale/export', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      scale: scaleId,
-      time_start: startTimestamp,
-      time_end: endTimestamp,
-      time_resolution: resolution,
-      format: 'json',
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch Wolf Waagen data')
-  }
-
-  const result = await response.json()
-  if (!result.success || !result.data) {
-    return []
-  }
-
-  return result.data.map((reading: Record<string, string | number>) => ({
-    time: reading.time as string,
-    weight_kg: parseWolfValue(reading.weight),
-    yield_kg: parseWolfValue(reading.yield),
-    temperature_c: parseWolfValue(reading.temperature),
-    brood_temp_c: parseWolfValue(reading.brood),
-    humidity_percent: parseWolfValue(reading.humidity),
+  const readings = await wolfGetMeasurements(
+    apiToken,
+    scaleId,
+    startTimestamp,
+    endTimestamp,
+    resolution
+  )
+  return readings.map(r => ({
+    time: r.time,
+    weight_kg: r.weight_kg,
+    yield_kg: r.yield_kg,
+    temperature_c: r.temperature_c,
+    brood_temp_c: r.brood_temp_c,
+    humidity_percent: r.humidity_percent,
   }))
 }
 
-// Fetch BEEP data
+// Fetch BEEP data via the hardened API client.
 async function fetchBeepData(
   apiToken: string,
   deviceId: string,
   startDate: string,
   endDate: string
 ): Promise<ScaleReading[]> {
-  const url = `https://api.beep.nl/api/sensors/measurements?device_id=${deviceId}&start=${startDate}&end=${endDate}`
-
-  const response = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${apiToken}`,
-    },
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch BEEP data')
-  }
-
-  const result = await response.json()
-
-  // BEEP returns arrays of values for each sensor type
-  const readings: ScaleReading[] = []
-  const timestamps = result.time || []
-  const weights = result.weight_kg_corrected || result.weight_kg || []
-  const temps = result.t_i || result.t || []
-  const humidity = result.h || []
-
-  for (let i = 0; i < timestamps.length; i++) {
-    readings.push({
-      time: timestamps[i],
-      weight_kg: weights[i],
-      temperature_c: temps[i],
-      humidity_percent: humidity[i],
-    })
-  }
-
-  return readings
+  const readings = await beepGetMeasurements(apiToken, deviceId, startDate, endDate)
+  return readings.map(r => ({
+    time: r.time,
+    // Prefer corrected weight when present (BEEP applies temperature
+    // compensation in weight_kg_corrected).
+    weight_kg: r.weight_kg_corrected ?? r.weight_kg,
+    temperature_c: r.t_i ?? r.t,
+    humidity_percent: r.h,
+  }))
 }
 
 // Get current scale data for a hive
