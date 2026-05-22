@@ -7,7 +7,7 @@ Optional thermal-label printing for two record types:
 - **Balkani** (bulk honey containers) — printed from the Traceability tool's Containers tab.
 - **Queens** — printed from the Queens list and the Queens detail page.
 
-The feature targets a single hardware setup: **Brother QL-820NWB** with the **DK-22251** continuous roll (62 mm wide, black / red thermal tape). All label layouts are 62 mm wide; cut length is set per label type (30 mm for queens, 90 mm for balkani).
+The feature targets a single hardware setup: **Brother QL-820NWB** with the **DK-22251** continuous roll (62 mm wide, black / red thermal tape). All label layouts are 62 mm wide; cut length is set per label type (30 mm for both queens and balkani in v1).
 
 Label printing is **opt-in**. A user must enable it on their profile before any print buttons appear in the UI.
 
@@ -72,7 +72,7 @@ profiles.enable_label_printing  ◀── useLabelPrinting() hook ──┐
 |------|------|
 | `src/hooks/useLabelPrinting.ts` | Reads `profiles.enable_label_printing` for the current user |
 | `src/components/labels/types.ts` | `LabelDatum`, `LabelPresetId`, `LabelPreset`, `QueenYearColour`, year-colour hex map |
-| `src/components/labels/presets.ts` | Two presets: `brother_dk22251_queen` (62 × 30 mm), `brother_dk22251_balkani` (62 × 90 mm) |
+| `src/components/labels/presets.ts` | Two presets: `brother_dk22251_queen` (62 × 30 mm), `brother_dk22251_balkani` (62 × 30 mm) |
 | `src/components/labels/Label.tsx` | Single-cell preview component (mm-sized so on-screen matches printed) |
 | `src/components/labels/LabelSheet.tsx` | Wraps a list of `Label`s for the modal preview |
 | `src/components/labels/printHtml.ts` | Builds the self-contained HTML document for the isolated print window |
@@ -102,15 +102,20 @@ This avoids polluting `globals.css` with print-only rules and means each print j
 
 The year-colour swatch uses `getQueenColorFromYear(birth_date)` and only renders for one of the five international colours (White / Yellow / Red / Green / Blue).
 
-### Balkani label (62 × 90 mm)
+### Balkani label (62 × 30 mm)
 
 ```
-┌──────────────────────┐
-│  BAL-2026-014        │  ← container_code
-│  Extracted 02 May 26 │  ← extraction_date (en-GB format)
-│  28.4 kg             │  ← total_weight_kg (omitted if null)
-└──────────────────────┘
+┌──────────────────────────────────────────┐
+│  BAL-2026-014                  28.4 kg   │  ← code (bold) + weight (bold, red)
+│  ──────────────────────────────────────  │  ← hairline rule
+│  EXTRACTED   02 May 2026                 │  ← uppercase mini-label + date
+└──────────────────────────────────────────┘
 ```
+
+- The container code is the headline on the left, the total weight is a co-headline on the right of the same row. Weight uses `#b91c1c` so it prints red on a Brother P-touch driver that recognises the DK-22251 two-colour track; falls back to black on any other driver.
+- The hairline rule (`0.25 mm`) separates the hero from the date caption.
+- Weight is omitted from the row when `total_weight_kg` is null; the date caption is omitted when `extraction_date` is missing or invalid.
+- At 30 mm cut length, a single DK-22251 roll yields roughly 500 balkani labels (up from ~170 at the original 90 mm).
 
 ## Edge cases & limits
 
