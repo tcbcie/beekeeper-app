@@ -9,6 +9,7 @@
  */
 
 const WOLF_API_BASE = 'https://app.wolf-waagen.de/api/v1'
+const WOLF_FETCH_TIMEOUT_MS = 30_000
 
 // ============================================================================
 // Types
@@ -100,7 +101,11 @@ interface WolfApiResponse<T> {
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 /**
- * Fetch with retry logic for rate limiting (429 errors)
+ * Fetch with retry logic for rate limiting (429 errors). Each attempt has a
+ * hard per-attempt timeout via AbortController; a hang aborts immediately
+ * rather than waiting up to the function-level deadline. The exponential
+ * backoff between attempts only kicks in for 429s, not timeouts -- a hung
+ * upstream is fail-fast.
  */
 async function fetchWithRetry(
   url: string,
@@ -108,7 +113,14 @@ async function fetchWithRetry(
   maxRetries: number = 3
 ): Promise<Response> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const response = await fetch(url, options)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), WOLF_FETCH_TIMEOUT_MS)
+    let response: Response
+    try {
+      response = await fetch(url, { ...options, signal: controller.signal })
+    } finally {
+      clearTimeout(timeoutId)
+    }
 
     if (response.status === 429 && attempt < maxRetries) {
       // Rate limited - wait and retry with exponential backoff
@@ -121,8 +133,9 @@ async function fetchWithRetry(
     return response
   }
 
-  // Should never reach here, but return a fake 429 response if it does
-  return new Response(null, { status: 429, statusText: 'Rate limited' })
+  // Exhausted retries on 429 -- caller will see the final 429 response above.
+  // This line is unreachable but kept to satisfy the type checker.
+  throw new Error('Wolf Waagen API rate limit exceeded after retries')
 }
 
 /**
@@ -134,15 +147,18 @@ async function fetchWithRetry(
 function parseWolfValue(value: string | number | undefined | null): number | undefined {
   if (value === undefined || value === null) return undefined
 
-  // If already a number, return directly
+  // If already a number, reject NaN AND Infinity (parseFloat can produce both
+  // from strings like "NaN [kg]" or "Infinity").
   if (typeof value === 'number') {
-    return isNaN(value) ? undefined : value
+    return Number.isFinite(value) ? value : undefined
   }
 
   // If string, parse out the numeric part
   if (typeof value === 'string') {
-    const match = value.match(/^([\d.-]+)/)
-    return match ? parseFloat(match[1]) : undefined
+    const match = value.match(/^(-?\d+(?:\.\d+)?)/)
+    if (!match) return undefined
+    const parsed = parseFloat(match[1])
+    return Number.isFinite(parsed) ? parsed : undefined
   }
 
   return undefined
@@ -192,7 +208,7 @@ export async function wolfGetScales(apiToken: string): Promise<WolfScale[]> {
     if (response.status === 403) {
       throw new Error('Access denied to Wolf Waagen API')
     }
-    throw new Error(`Wolf Waagen API error: ${response.status}`)
+    throw new Error(`Wolf Waagen API error (status ${response.status})`)
   }
 
   const data = await response.json()
@@ -255,7 +271,7 @@ export async function wolfGetMeasurements(
       const errorData = await response.json()
       throw new Error(errorData.message || 'Invalid request parameters')
     }
-    throw new Error(`Wolf Waagen API error: ${response.status}`)
+    throw new Error(`Wolf Waagen API error (status ${response.status})`)
   }
 
   const data: WolfApiResponse<WolfSensorReading[]> = await response.json()
