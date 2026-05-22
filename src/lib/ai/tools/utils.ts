@@ -1,11 +1,26 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-// Supabase client for server-side operations
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+// Fail-fast at module init. Returns a non-nullable string so the values can
+// be used inside any closure without TS narrowing surprises.
+function requireEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`ai/tools: ${name} must be set.`)
+  }
+  return value
+}
+const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+const supabaseServiceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
 
 let supabaseInstance: SupabaseClient | null = null
 
+// NOTE (audit): this client uses the service role key and bypasses RLS. Every
+// tool that queries user data MUST manually scope by user_id -- either via
+// .eq('user_id', userId) on user-owned tables, or via the accessor helpers
+// below (getOwnApiaryIds / getAccessibleApiaryIds / getAccessibleHiveIds).
+// The structural fix (switching to a user-scoped client so RLS applies)
+// is flagged as a follow-up; for now, every PR adding a tool must verify
+// scoping in code review.
 export function getSupabase(): SupabaseClient {
   if (!supabaseInstance) {
     supabaseInstance = createClient(supabaseUrl, supabaseServiceKey)
