@@ -10,10 +10,10 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
   },
   brother_dk22251_balkani: {
     id: 'brother_dk22251_balkani',
-    name: 'Balkani label (62 × 35 mm)',
+    name: 'Balkani label (62 × 22 mm)',
     widthMm: 62,
-    heightMm: 35,
-    description: 'Brother QL-820 with DK-22251 continuous roll. Cut at 35 mm. Solid red header band uses the DK-22251 two-colour track when the P-touch driver is configured for it; falls back to black on standard drivers.',
+    heightMm: 22,
+    description: 'Brother QL-820 with DK-22251 continuous roll. Cut at 22 mm. Solid red header band uses the DK-22251 two-colour track when the P-touch driver is configured for it; falls back to black on standard drivers.',
   },
 }
 
