@@ -8,17 +8,25 @@ export async function fetchElevation(
   latitude: number,
   longitude: number
 ): Promise<number | null> {
+  if (!isFinite(latitude) || !isFinite(longitude)) return null
+
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10_000)
+
   try {
     const response = await fetch(
-      `https://api.open-meteo.com/v1/elevation?latitude=${latitude}&longitude=${longitude}`
+      `https://api.open-meteo.com/v1/elevation?latitude=${latitude}&longitude=${longitude}`,
+      { signal: controller.signal }
     )
     if (!response.ok) return null
 
     const data = await response.json()
     const elevation = data?.elevation?.[0]
-    return typeof elevation === 'number' ? elevation : null
+    return typeof elevation === 'number' && isFinite(elevation) ? elevation : null
   } catch {
     return null
+  } finally {
+    clearTimeout(timeoutId)
   }
 }
 

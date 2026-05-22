@@ -145,11 +145,12 @@ export function getEntryTypeColor(type: string): string {
 }
 
 /**
- * Format date from ISO string or date string
+ * Format date from ISO string or date string. Uses British English to match
+ * the rest of the app per the project-wide locale rule.
  */
 export function formatChangelogDate(dateString: string): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString('en-GB', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
