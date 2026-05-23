@@ -53,12 +53,18 @@ function renderQueenHtml(datum: LabelDatum, preset: LabelPreset): string {
   const extras = datum.queenExtras
   const hasLineage = !!(extras?.motherNumber || extras?.fatherNumber)
 
+  const yearHtml = extras?.birthYear
+    ? `<span style="font-weight:600;font-size:10pt;line-height:1.05;color:#374151;flex-shrink:0;white-space:nowrap">&#39;${escapeHtml(extras.birthYear)}</span>`
+    : ''
+
   const lineageHtml = hasLineage
     ? `<div style="font-size:10pt;line-height:1.15;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[
         extras?.motherNumber
           ? `<span style="font-weight:700">♀</span> ${escapeHtml(extras.motherNumber)}`
           : '',
-        extras?.motherNumber && extras?.fatherNumber ? '   ' : '',
+        extras?.motherNumber && extras?.fatherNumber
+          ? '<span style="display:inline-block;width:4mm"></span>'
+          : '',
         extras?.fatherNumber
           ? `<span style="font-weight:700">♂</span> ${escapeHtml(extras.fatherNumber)}`
           : '',
@@ -91,6 +97,7 @@ function renderQueenHtml(datum: LabelDatum, preset: LabelPreset): string {
       <div style="flex:1;padding:3mm 4mm;min-width:0;display:flex;flex-direction:column;justify-content:space-between">
         <div style="display:flex;align-items:baseline;gap:4mm">
           <span style="font-weight:700;font-size:13pt;line-height:1.05;flex-shrink:0;white-space:nowrap">${escapeHtml(datum.primaryText)}</span>
+          ${yearHtml}
           ${lineageHtml}
         </div>
         <div style="border-top:0.2mm solid #d1d5db"></div>

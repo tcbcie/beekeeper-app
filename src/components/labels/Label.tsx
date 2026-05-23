@@ -150,6 +150,20 @@ function QueenCell({ datum, preset }: LabelProps) {
           >
             {datum.primaryText}
           </span>
+          {extras?.birthYear && (
+            <span
+              style={{
+                fontWeight: 600,
+                fontSize: '10pt',
+                lineHeight: 1.05,
+                color: '#374151',
+                flexShrink: 0,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              &apos;{extras.birthYear}
+            </span>
+          )}
           {hasLineage && (
             <div
               style={{
@@ -168,7 +182,9 @@ function QueenCell({ datum, preset }: LabelProps) {
                   {extras.motherNumber}
                 </>
               )}
-              {extras?.motherNumber && extras?.fatherNumber && '   '}
+              {extras?.motherNumber && extras?.fatherNumber && (
+                <span aria-hidden style={{ display: 'inline-block', width: '4mm' }} />
+              )}
               {extras?.fatherNumber && (
                 <>
                   <span style={{ fontWeight: 700 }}>♂</span>{' '}

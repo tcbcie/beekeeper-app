@@ -103,7 +103,7 @@ export default function PrintLabelsModal({
       )}
     >
       <div className="text-sm text-text-tertiary">
-        {preset.description} In the browser print dialog, set scale to <strong>100%</strong> and turn off &ldquo;fit to page&rdquo; so labels print at the correct size.
+        {preset.description} In the browser print dialog, set scale to <strong>100%</strong>, margins to <strong>None</strong>, and turn off &ldquo;fit to page&rdquo; so labels print at the correct size and align with the die-cut.
       </div>
 
       {status === 'blocked' && (
