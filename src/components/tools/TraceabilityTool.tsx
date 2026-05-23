@@ -28,6 +28,35 @@ interface ProducerContext {
   producerAddress?: string
 }
 
+// Walk the container -> harvest -> hive -> apiary chain to collect the
+// distinct producing cities. The output is the locality block on the wholesale
+// label: a single source apiary gives 'Athenry, Ireland'; two apiaries give
+// 'Athenry & Loughrea, Ireland'; three or more (or any missing city data)
+// falls back to plain 'Ireland' so the label never claims a locality it
+// can't substantiate from the linked source records.
+function aggregateOrigin(container: BulkContainer): string {
+  const cities = new Map<string, string>()
+  for (const ch of container.harvests ?? []) {
+    const harvestRaw = ch.harvest as unknown
+    const harvest = Array.isArray(harvestRaw) ? harvestRaw[0] : harvestRaw
+    const hivesRaw = (harvest as { hives?: unknown } | null)?.hives
+    const hive = Array.isArray(hivesRaw) ? hivesRaw[0] : hivesRaw
+    const apiariesRaw = (hive as { apiaries?: unknown } | null)?.apiaries
+    const apiary = Array.isArray(apiariesRaw) ? apiariesRaw[0] : apiariesRaw
+    const city = (apiary as { city?: string | null } | null)?.city?.trim()
+    if (!city) continue
+    const key = city.toLowerCase()
+    if (!cities.has(key)) cities.set(key, city)
+  }
+  if (cities.size === 0) return 'Ireland'
+  if (cities.size === 1) return `${cities.values().next().value}, Ireland`
+  if (cities.size === 2) {
+    const [a, b] = Array.from(cities.values())
+    return `${a} & ${b}, Ireland`
+  }
+  return 'Ireland'
+}
+
 function aggregateFloralSource(container: BulkContainer): string | undefined {
   // Dedupe case-insensitively (free-text field, 'Heather' and 'heather' should
   // collapse to the same source) but preserve the first cased value seen for
@@ -79,7 +108,7 @@ function containerToLabelDatum(
       lotCode: container.container_code || '—',
       extractedDate: extracted ?? undefined,
       bestBeforeDate: bestBefore ?? undefined,
-      origin: 'Ireland',
+      origin: aggregateOrigin(container),
       producerName: context.producerName,
       producerAddress: context.producerAddress,
     },
