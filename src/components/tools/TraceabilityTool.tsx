@@ -29,17 +29,23 @@ interface ProducerContext {
 }
 
 function aggregateFloralSource(container: BulkContainer): string | undefined {
-  const sources = new Set<string>()
+  // Dedupe case-insensitively (free-text field, 'Heather' and 'heather' should
+  // collapse to the same source) but preserve the first cased value seen for
+  // display so the label respects whatever convention the user types.
+  const seen = new Map<string, string>()
   for (const ch of container.harvests ?? []) {
     // PostgREST joins may surface as an array or a single object depending on
     // the projection — normalise both shapes before reading.
     const harvestRaw = ch.harvest as unknown
     const harvest = Array.isArray(harvestRaw) ? harvestRaw[0] : harvestRaw
-    const fs = (harvest as { floral_source?: string | null } | null)?.floral_source
-    if (fs && fs.trim()) sources.add(fs.trim())
+    const raw = (harvest as { floral_source?: string | null } | null)?.floral_source
+    const trimmed = raw?.trim()
+    if (!trimmed) continue
+    const key = trimmed.toLowerCase()
+    if (!seen.has(key)) seen.set(key, trimmed)
   }
-  if (sources.size === 0) return undefined
-  if (sources.size === 1) return Array.from(sources)[0]
+  if (seen.size === 0) return undefined
+  if (seen.size === 1) return seen.values().next().value
   return 'Wildflower'
 }
 
@@ -94,33 +100,40 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
 
   // Load the producer's name and address from their profile so EU-compliant
   // balkani labels can show the legally-required producer block. Read-only:
-  // if any field is missing the label degrades gracefully.
-  useEffect(() => {
-    if (!userId || !labelPrintingEnabled) return
-    let cancelled = false
-    ;(async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, producer_address')
-        .eq('id', userId)
-        .maybeSingle()
-      if (cancelled) return
-      if (error) {
-        console.error('Failed to load producer profile for labels', error)
-        return
-      }
-      const fullName = [data?.first_name, data?.last_name]
-        .filter((s): s is string => !!s && s.trim().length > 0)
-        .join(' ')
-      setProducerContext({
-        producerName: fullName || undefined,
-        producerAddress: data?.producer_address || undefined,
-      })
-    })()
-    return () => {
-      cancelled = true
+  // if any field is missing the label degrades gracefully. Re-runs whenever
+  // a print modal is opened so a user who has just edited their profile in
+  // another tab sees the fresh values without a full page reload.
+  const loadProducerContext = useCallback(async () => {
+    if (!userId) return
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, producer_address')
+      .eq('id', userId)
+      .maybeSingle()
+    if (error) {
+      console.error('Failed to load producer profile for labels', error)
+      return
     }
-  }, [userId, labelPrintingEnabled])
+    const fullName = [data?.first_name, data?.last_name]
+      .filter((s): s is string => !!s && s.trim().length > 0)
+      .join(' ')
+    setProducerContext({
+      producerName: fullName || undefined,
+      producerAddress: data?.producer_address || undefined,
+    })
+  }, [userId])
+
+  useEffect(() => {
+    if (!labelPrintingEnabled) return
+    loadProducerContext()
+  }, [labelPrintingEnabled, loadProducerContext])
+
+  // Refresh the producer context when the print modal opens so a profile
+  // edit (made in another tab/page since mount) shows up on the next label.
+  useEffect(() => {
+    if (printContainers === null) return
+    loadProducerContext()
+  }, [printContainers, loadProducerContext])
 
   // Prune selection of container ids that no longer exist after a refetch /
   // delete. Without this the bulk-print button shows a count that includes
