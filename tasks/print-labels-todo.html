@@ -73,26 +73,25 @@
 <h2>Presets to ship in v1</h2>
 <table>
   <tr><th>Id</th><th>Width × cut length</th><th>Used by</th></tr>
-  <tr><td><code>brother_dk22251_queen</code></td><td>62 × 32 mm</td><td>Queen labels — full-height year-colour stripe on the left, structured fields right (lineage with red ♀ ♂ symbols, uppercase MATED line, Eircode)</td></tr>
-  <tr><td><code>brother_dk22251_balkani</code></td><td>62 × 22 mm</td><td>Balkani labels — red header band ("HiveCraic · Traceable Honey"), 12pt code + co-headline weight (red bold) on the same row, 6.5pt caption underneath. Cut history: 90 → 30 → 35 → 22 mm (chip removed; same emphasis without the width cost).</td></tr>
+  <tr><td><code>queen_label</code></td><td>90 × 29 mm</td><td>Queen labels (DK-1201 landscape) — year-colour stripe on the left, code + lineage on the hero row, mated date + Eircode on the bottom row. Hardware-agnostic preset ID.</td></tr>
+  <tr><td><code>balkani_label</code></td><td>90 × 29 mm</td><td>Balkani labels (DK-1201 landscape) — masthead wordmark + rule, 14pt bold code and weight as co-headlines on the same row, caption underneath. Monochrome — DK-1201 has no red track.</td></tr>
 </table>
 <p class="muted">Both render to the same 62 mm DK-22251 continuous roll — only the <code>@page</code> length differs.</p>
 
 <h2>Label mockups</h2>
 
-<div class="label-mock">┌────────────────────────────────────────────┐
-│<span class="red">▓▓ HIVECRAIC · TRACEABLE HONEY ▓▓▓▓▓▓▓▓▓▓▓▓</span>│
-│ Bucket01-05-26                  <span class="red">13.9 kg</span>    │
-│ EXTRACTED 16 May 2026                      │
-└────────────────────────────────────────────┘</div>
+<div class="label-mock">┌──────────────────────────────────────────────────────────────────┐
+│ HIVECRAIC · TRACEABLE HONEY                                      │
+│ ──────────────────────────────────────────────────────────────── │
+│ Bucket01-05-26                                       13.9 kg     │
+│ EXTRACTED 16 May 2026                                            │
+└──────────────────────────────────────────────────────────────────┘</div>
 
-<div class="label-mock">┌─┬──────────────────────────────────┐
-│█│ Q-A0142                          │
-│█│ ─────────────                    │
-│█│ <span class="red">♀</span> Q-A0091   <span class="red">♂</span> Q-X07              │
-│█│ MATED 14 Apr 2026                │
-│█│ A41 X4P5                         │
-└─┴──────────────────────────────────┘</div>
+<div class="label-mock">┌─┬─────────────────────────────────────────────────────────────────┐
+│█│ Q-A0142             ♀ Q-A0091   ♂ Q-X07                         │
+│█│ ─────────────────────────────────────                           │
+│█│ MATED 14 Apr 2026                              A41 X4P5         │
+└─┴─────────────────────────────────────────────────────────────────┘</div>
 
 <h2>Todos</h2>
 

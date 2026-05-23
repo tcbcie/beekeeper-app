@@ -9,7 +9,7 @@ interface LabelProps {
 }
 
 export default function Label({ datum, preset }: LabelProps) {
-  if (preset.id === 'brother_dk22251_balkani') {
+  if (preset.id === 'balkani_label') {
     return <BalkaniCell datum={datum} preset={preset} />
   }
   return <QueenCell datum={datum} preset={preset} />
@@ -33,84 +33,72 @@ function BalkaniCell({ datum, preset }: LabelProps) {
     <div
       style={{
         ...labelShellStyle(preset),
-        padding: 0,
+        padding: '3mm 4mm',
         display: 'flex',
         flexDirection: 'column',
+        justifyContent: 'space-between',
       }}
     >
       <div
         style={{
-          background: '#b91c1c',
-          color: '#fff',
-          fontSize: '6pt',
-          letterSpacing: '0.8pt',
+          fontSize: '7pt',
           fontWeight: 700,
-          padding: '1mm 4mm',
-          textAlign: 'center',
+          letterSpacing: '1.1pt',
           textTransform: 'uppercase',
-          flexShrink: 0,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          borderBottom: '0.3mm solid #000',
+          paddingBottom: '1.2mm',
         }}
       >
         HiveCraic · Traceable Honey
       </div>
 
-      <div
-        style={{
-          flex: 1,
-          padding: '2mm 3.5mm',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          gap: '1.4mm',
-          minHeight: 0,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '2.5mm' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '3mm' }}>
+        <span
+          style={{
+            fontWeight: 700,
+            fontSize: '14pt',
+            lineHeight: 1.05,
+            flex: 1,
+            minWidth: 0,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {datum.primaryText}
+        </span>
+        {datum.accentText && (
           <span
             style={{
               fontWeight: 700,
-              fontSize: '12pt',
+              fontSize: '14pt',
               lineHeight: 1.05,
-              flex: 1,
-              minWidth: 0,
               whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              flexShrink: 0,
             }}
           >
-            {datum.primaryText}
+            {datum.accentText}
           </span>
-          {datum.accentText && (
-            <span
-              style={{
-                fontWeight: 700,
-                fontSize: '12pt',
-                lineHeight: 1.05,
-                color: '#b91c1c',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
-            >
-              {datum.accentText}
-            </span>
-          )}
-        </div>
-
-        {caption && (
-          <div
-            style={{
-              fontSize: '6.5pt',
-              color: '#4b5563',
-              letterSpacing: '0.5pt',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {caption}
-          </div>
         )}
       </div>
+
+      {caption && (
+        <div
+          style={{
+            fontSize: '7pt',
+            color: '#374151',
+            letterSpacing: '0.5pt',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+        >
+          {caption}
+        </div>
+      )}
     </div>
   )
 }
@@ -143,83 +131,94 @@ function QueenCell({ datum, preset }: LabelProps) {
       <div
         style={{
           flex: 1,
-          padding: '2.5mm 3mm',
+          padding: '3mm 4mm',
           minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.2mm',
+          justifyContent: 'space-between',
         }}
       >
-        <div
-          style={{
-            fontWeight: 700,
-            fontSize: '13pt',
-            lineHeight: 1.05,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {datum.primaryText}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4mm' }}>
+          <span
+            style={{
+              fontWeight: 700,
+              fontSize: '13pt',
+              lineHeight: 1.05,
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {datum.primaryText}
+          </span>
+          {hasLineage && (
+            <div
+              style={{
+                fontSize: '10pt',
+                lineHeight: 1.15,
+                flex: 1,
+                minWidth: 0,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {extras?.motherNumber && (
+                <>
+                  <span style={{ fontWeight: 700 }}>♀</span>{' '}
+                  {extras.motherNumber}
+                </>
+              )}
+              {extras?.motherNumber && extras?.fatherNumber && '   '}
+              {extras?.fatherNumber && (
+                <>
+                  <span style={{ fontWeight: 700 }}>♂</span>{' '}
+                  {extras.fatherNumber}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div style={{ borderTop: '0.2mm solid #d1d5db' }} />
 
-        {hasLineage && (
-          <div
-            style={{
-              fontSize: '9pt',
-              lineHeight: 1.15,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {extras?.motherNumber && (
-              <>
-                <span style={{ color: '#b91c1c', fontWeight: 700 }}>♀</span>{' '}
-                {extras.motherNumber}
-              </>
-            )}
-            {extras?.motherNumber && extras?.fatherNumber && '   '}
-            {extras?.fatherNumber && (
-              <>
-                <span style={{ color: '#b91c1c', fontWeight: 700 }}>♂</span>{' '}
-                {extras.fatherNumber}
-              </>
-            )}
-          </div>
-        )}
-
-        {extras?.matedDate && (
-          <div
-            style={{
-              fontSize: '7pt',
-              color: '#4b5563',
-              letterSpacing: '0.5pt',
-              textTransform: 'uppercase',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            Mated {extras.matedDate}
-          </div>
-        )}
-
-        {extras?.eircode && (
-          <div
-            style={{
-              fontSize: '8pt',
-              color: '#4b5563',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {extras.eircode}
-          </div>
-        )}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            gap: '3mm',
+          }}
+        >
+          {extras?.matedDate && (
+            <div
+              style={{
+                fontSize: '7pt',
+                color: '#374151',
+                letterSpacing: '0.5pt',
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
+              Mated {extras.matedDate}
+            </div>
+          )}
+          {extras?.eircode && (
+            <div
+              style={{
+                fontSize: '8pt',
+                color: '#374151',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              {extras.eircode}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

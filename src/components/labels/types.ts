@@ -1,4 +1,4 @@
-export type LabelPresetId = 'brother_dk22251_queen' | 'brother_dk22251_balkani'
+export type LabelPresetId = 'queen_label' | 'balkani_label'
 
 export interface LabelDatum {
   id: string
