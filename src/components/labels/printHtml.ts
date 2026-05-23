@@ -17,8 +17,8 @@ function renderBalkaniHtml(datum: LabelDatum, preset: LabelPreset): string {
 
   const traceRow = (label: string, value?: string): string => {
     if (!value) return ''
-    return `<span style="letter-spacing:0.5pt;color:#374151;text-transform:uppercase">${escapeHtml(label)}</span>
-            <span style="font-weight:600">${escapeHtml(value)}</span>`
+    return `<span style="letter-spacing:0.5pt;color:#374151;text-transform:uppercase;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(label)}</span>
+            <span style="font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(value)}</span>`
   }
 
   const floralHtml = e.floralSource

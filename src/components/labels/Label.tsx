@@ -167,6 +167,10 @@ function BalkaniCell({ datum, preset }: LabelProps) {
 }
 
 function FragmentRow({ label, value }: { label: string; value: string }) {
+  // min-width: 0 lets the value cell shrink inside the 1fr grid track so
+  // overflow / text-overflow can kick in instead of pushing past the label
+  // edge. Without these guards a long lot code wraps to a second line and
+  // breaks the trace block's alignment.
   return (
     <>
       <span
@@ -174,11 +178,25 @@ function FragmentRow({ label, value }: { label: string; value: string }) {
           letterSpacing: '0.5pt',
           color: '#374151',
           textTransform: 'uppercase',
+          minWidth: 0,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}
       >
         {label}
       </span>
-      <span style={{ fontWeight: 600 }}>{value}</span>
+      <span
+        style={{
+          fontWeight: 600,
+          minWidth: 0,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
+        {value}
+      </span>
     </>
   )
 }
