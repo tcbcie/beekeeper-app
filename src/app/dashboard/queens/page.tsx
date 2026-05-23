@@ -1350,7 +1350,7 @@ export default function QueensPage() {
  open={printQueens !== null}
  onClose={() => setPrintQueens(null)}
  data={(printQueens ?? []).map(queenToLabelDatum)}
- presetId="brother_dk22251_queen"
+ presetId="queen_label"
  title={printQueens && printQueens.length === 1
  ? `Print label — ${printQueens[0].queen_number}`
  : `Print ${printQueens?.length ?? 0} queen labels`}

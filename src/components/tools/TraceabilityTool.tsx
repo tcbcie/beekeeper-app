@@ -1925,7 +1925,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         open={printContainers !== null}
         onClose={() => setPrintContainers(null)}
         data={(printContainers ?? []).map(containerToLabelDatum)}
-        presetId="brother_dk22251_balkani"
+        presetId="balkani_label"
         title={printContainers && printContainers.length === 1
           ? `Print label — ${printContainers[0].container_code}`
           : `Print ${printContainers?.length ?? 0} balkani labels`}

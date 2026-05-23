@@ -15,11 +15,11 @@ function renderBalkaniHtml(datum: LabelDatum, preset: LabelPreset): string {
   const caption = datum.secondaryLines?.[0]
 
   const accentHtml = datum.accentText
-    ? `<span style="font-weight:700;font-size:12pt;line-height:1.05;color:#b91c1c;white-space:nowrap;flex-shrink:0">${escapeHtml(datum.accentText)}</span>`
+    ? `<span style="font-weight:700;font-size:14pt;line-height:1.05;white-space:nowrap;flex-shrink:0">${escapeHtml(datum.accentText)}</span>`
     : ''
 
   const captionHtml = caption
-    ? `<div style="font-size:6.5pt;color:#4b5563;letter-spacing:0.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(caption)}</div>`
+    ? `<div style="font-size:7pt;color:#374151;letter-spacing:0.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(caption)}</div>`
     : ''
 
   return `
@@ -27,23 +27,22 @@ function renderBalkaniHtml(datum: LabelDatum, preset: LabelPreset): string {
       width:${preset.widthMm}mm;
       height:${preset.heightMm}mm;
       box-sizing:border-box;
-      padding:0;
+      padding:3mm 4mm;
       font-family:'Helvetica Neue',Arial,sans-serif;
       color:#000;
       background:#fff;
       display:flex;
       flex-direction:column;
+      justify-content:space-between;
       overflow:hidden;
       page-break-after:always;
     ">
-      <div style="background:#b91c1c;color:#fff;font-size:6pt;letter-spacing:0.8pt;font-weight:700;padding:1mm 4mm;text-align:center;text-transform:uppercase;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact">HiveCraic · Traceable Honey</div>
-      <div style="flex:1;padding:2mm 3.5mm;display:flex;flex-direction:column;justify-content:center;gap:1.4mm;min-height:0">
-        <div style="display:flex;align-items:baseline;gap:2.5mm">
-          <span style="font-weight:700;font-size:12pt;line-height:1.05;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(datum.primaryText)}</span>
-          ${accentHtml}
-        </div>
-        ${captionHtml}
+      <div style="font-size:7pt;font-weight:700;letter-spacing:1.1pt;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:0.3mm solid #000;padding-bottom:1.2mm">HiveCraic · Traceable Honey</div>
+      <div style="display:flex;align-items:baseline;gap:3mm">
+        <span style="font-weight:700;font-size:14pt;line-height:1.05;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(datum.primaryText)}</span>
+        ${accentHtml}
       </div>
+      ${captionHtml}
     </div>
   `
 }
@@ -55,23 +54,23 @@ function renderQueenHtml(datum: LabelDatum, preset: LabelPreset): string {
   const hasLineage = !!(extras?.motherNumber || extras?.fatherNumber)
 
   const lineageHtml = hasLineage
-    ? `<div style="font-size:9pt;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[
+    ? `<div style="font-size:10pt;line-height:1.15;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${[
         extras?.motherNumber
-          ? `<span style="color:#b91c1c;font-weight:700">♀</span> ${escapeHtml(extras.motherNumber)}`
+          ? `<span style="font-weight:700">♀</span> ${escapeHtml(extras.motherNumber)}`
           : '',
         extras?.motherNumber && extras?.fatherNumber ? '   ' : '',
         extras?.fatherNumber
-          ? `<span style="color:#b91c1c;font-weight:700">♂</span> ${escapeHtml(extras.fatherNumber)}`
+          ? `<span style="font-weight:700">♂</span> ${escapeHtml(extras.fatherNumber)}`
           : '',
       ].join('')}</div>`
     : ''
 
   const matedHtml = extras?.matedDate
-    ? `<div style="font-size:7pt;color:#4b5563;letter-spacing:0.5pt;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Mated ${escapeHtml(extras.matedDate)}</div>`
+    ? `<div style="font-size:7pt;color:#374151;letter-spacing:0.5pt;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0">Mated ${escapeHtml(extras.matedDate)}</div>`
     : ''
 
   const eircodeHtml = extras?.eircode
-    ? `<div style="font-size:8pt;color:#4b5563;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(extras.eircode)}</div>`
+    ? `<div style="font-size:8pt;color:#374151;white-space:nowrap;flex-shrink:0">${escapeHtml(extras.eircode)}</div>`
     : ''
 
   return `
@@ -89,19 +88,23 @@ function renderQueenHtml(datum: LabelDatum, preset: LabelPreset): string {
       page-break-after:always;
     ">
       <div style="width:5mm;flex-shrink:0;background:${stripeFill};border-right:0.2mm solid #9ca3af"></div>
-      <div style="flex:1;padding:2.5mm 3mm;min-width:0;display:flex;flex-direction:column;gap:1.2mm">
-        <div style="font-weight:700;font-size:13pt;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(datum.primaryText)}</div>
+      <div style="flex:1;padding:3mm 4mm;min-width:0;display:flex;flex-direction:column;justify-content:space-between">
+        <div style="display:flex;align-items:baseline;gap:4mm">
+          <span style="font-weight:700;font-size:13pt;line-height:1.05;flex-shrink:0;white-space:nowrap">${escapeHtml(datum.primaryText)}</span>
+          ${lineageHtml}
+        </div>
         <div style="border-top:0.2mm solid #d1d5db"></div>
-        ${lineageHtml}
-        ${matedHtml}
-        ${eircodeHtml}
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:3mm">
+          ${matedHtml}
+          ${eircodeHtml}
+        </div>
       </div>
     </div>
   `
 }
 
 function renderLabelHtml(datum: LabelDatum, preset: LabelPreset): string {
-  if (preset.id === 'brother_dk22251_balkani') return renderBalkaniHtml(datum, preset)
+  if (preset.id === 'balkani_label') return renderBalkaniHtml(datum, preset)
   return renderQueenHtml(datum, preset)
 }
 

@@ -529,7 +529,7 @@ export default function QueenDetailPage() {
         open={printOpen}
         onClose={() => setPrintOpen(false)}
         data={[queenToLabelDatum(queen)]}
-        presetId="brother_dk22251_queen"
+        presetId="queen_label"
         title={`Print label — ${queen.queen_number}`}
       />
     </div>
