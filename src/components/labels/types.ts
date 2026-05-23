@@ -18,6 +18,10 @@ export interface QueenLabelExtras {
   fatherNumber?: string
   matedDate?: string
   eircode?: string
+  // Two-digit birth year (e.g. "26"). Printed alongside the queen number so
+  // that on a B&W thermal printer — where every year-colour fill collapses
+  // to identical solid black — the year is still legible from the label.
+  birthYear?: string
 }
 
 export type QueenYearColour = 'White' | 'Yellow' | 'Red' | 'Green' | 'Blue'
