@@ -72,14 +72,9 @@ function renderBalkaniHtml(datum: LabelDatum, preset: LabelPreset): string {
         ${traceRow('ORIGIN', e.origin)}
       </div>
 
-      <div style="border-top:0.2mm solid #9ca3af;margin:3mm 0"></div>
-
-      ${producerNameHtml}
-      ${producerAddressHtml}
-
-      <div style="margin-top:auto;padding-top:2.5mm;font-size:7pt;color:#374151;line-height:1.3">
-        Store in a cool, dry place.<br />
-        Do not feed to infants under 12 months.
+      <div style="margin-top:auto;border-top:0.2mm solid #9ca3af;padding-top:2.5mm">
+        ${producerNameHtml}
+        ${producerAddressHtml}
       </div>
     </div>
   `

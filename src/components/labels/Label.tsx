@@ -130,37 +130,30 @@ function BalkaniCell({ datum, preset }: LabelProps) {
         ) : null)}
       </div>
 
-      <div style={{ borderTop: '0.2mm solid #9ca3af', margin: '3mm 0' }} />
-
-      {e.producerName && (
-        <div style={{ fontSize: '9.5pt', fontWeight: 700, lineHeight: 1.15 }}>
-          {e.producerName}
-        </div>
-      )}
-      {e.producerAddress && (
-        <div
-          style={{
-            fontSize: '8.5pt',
-            color: '#374151',
-            lineHeight: 1.2,
-            marginTop: '0.5mm',
-          }}
-        >
-          {e.producerAddress}
-        </div>
-      )}
-
       <div
         style={{
           marginTop: 'auto',
+          borderTop: '0.2mm solid #9ca3af',
           paddingTop: '2.5mm',
-          fontSize: '7pt',
-          color: '#374151',
-          lineHeight: 1.3,
         }}
       >
-        Store in a cool, dry place.<br />
-        Do not feed to infants under 12 months.
+        {e.producerName && (
+          <div style={{ fontSize: '9.5pt', fontWeight: 700, lineHeight: 1.15 }}>
+            {e.producerName}
+          </div>
+        )}
+        {e.producerAddress && (
+          <div
+            style={{
+              fontSize: '8.5pt',
+              color: '#374151',
+              lineHeight: 1.2,
+              marginTop: '0.5mm',
+            }}
+          >
+            {e.producerAddress}
+          </div>
+        )}
       </div>
     </div>
   )

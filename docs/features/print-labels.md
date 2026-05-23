@@ -10,7 +10,7 @@ Optional thermal-label printing for two record types:
 The feature targets a single printer (**Brother QL-820NWB**) with two roll sizes — one per label type:
 
 - **Queen labels — DK-1201** (29 × 90 mm die-cut, landscape). Compact, inventory/cage labels.
-- **Balkani retail labels — DK-11202** (62 × 100 mm die-cut, portrait). Larger format with room for the full EU Honey Directive 2001/110/EC (+ 2024/1438 amendment) retail block — sales name, net weight, lot, dates, country of origin, producer name and address, infant warning. Buckets carrying this label can be sold.
+- **Balkani wholesale labels — 62 mm continuous roll** (DK-22251 or DK-22205), cut at 75 mm per label. Wholesale-grade — sales name, locality-tight origin (city + Ireland), net weight, lot, dates, producer block. Deliberately omits the consumer-protection text (storage hint + infant warning) because these buckets move via wholesale channels, not to end consumers. If a wholesale buyer re-packs and retails the honey, *they* apply the EU retail label on the consumer pack.
 
 Label printing is **opt-in**. A user must enable it on their profile before any print buttons appear in the UI.
 
@@ -31,10 +31,10 @@ When the profile flag is off, none of these UI elements are rendered.
 
 - **Printer:** Brother QL-820NWB
 - **Queen label roll:** Brother DK-1201 — standard address labels, 29 × 90 mm die-cut, monochrome
-- **Balkani retail roll:** Brother DK-11202 — shipping labels, 62 × 100 mm die-cut, monochrome
+- **Balkani label roll:** 62 mm continuous — DK-22251 (black/red) or DK-22205 (monochrome). The label design is monochrome, so either roll works; the red track on DK-22251 just goes unused.
 - Print is driven through the OS print dialog via `window.print()` — no direct printer SDK / USB / Bluetooth.
 
-Both rolls are monochrome only; the two-colour DK-22251 was tried in earlier iterations but red rendering through Chrome / Edge was inconsistent and the per-label cost was significantly higher. The balkani label needs the larger format to fit the EU Honey Directive's mandatory retail content (sales name, lot, dates, origin, producer name and address, infant warning).
+The 62 mm continuous slot was originally specced for DK-22251 to exploit the two-colour track, but browser printing through Chrome / Edge doesn't reliably honour the red track unless the user has Brother's P-touch driver configured for it. The design was rebuilt as monochrome so it prints identically regardless of which 62 mm roll is loaded. A previous iteration targeted DK-11202 (62 × 100 mm die-cut) for a fully EU-retail-compliant label including consumer-protection text; this was scaled back to a wholesale label on the continuous roll once it became clear the buckets move B2B rather than B2C.
 
 ## Database
 
@@ -82,7 +82,7 @@ profiles.enable_label_printing  ◀── useLabelPrinting() hook ──┐
 |------|------|
 | `src/hooks/useLabelPrinting.ts` | Reads `profiles.enable_label_printing` for the current user |
 | `src/components/labels/types.ts` | `LabelDatum`, `LabelPresetId`, `LabelPreset`, `QueenYearColour`, year-colour hex map |
-| `src/components/labels/presets.ts` | Two presets, both at 90 × 29 mm (DK-1201 landscape): `queen_label`, `balkani_label`. IDs are hardware-agnostic so a future roll change does not ripple through call sites. |
+| `src/components/labels/presets.ts` | Two presets with different dimensions per label type: `queen_label` (90 × 29 mm DK-1201 landscape), `balkani_label` (62 × 75 mm, 62 mm continuous portrait — DK-22251 or DK-22205). IDs are hardware-agnostic so a future roll change does not ripple through call sites. |
 | `src/components/labels/Label.tsx` | Single-cell preview component (mm-sized so on-screen matches printed) |
 | `src/components/labels/LabelSheet.tsx` | Wraps a list of `Label`s for the modal preview |
 | `src/components/labels/printHtml.ts` | Builds the self-contained HTML document for the isolated print window |
@@ -117,7 +117,7 @@ This avoids polluting `globals.css` with print-only rules and means each print j
   - Eircode at 8pt regular in `#374151`, right-aligned via `justify-content: space-between`.
 - Each row is conditional — empty fields drop entirely and the layout reflows.
 
-### Balkani retail label (62 × 100 mm portrait, DK-11202)
+### Balkani wholesale label (62 × 75 mm portrait, 62 mm continuous roll)
 
 ```
 ┌────────────────────────────────────┐
@@ -134,40 +134,47 @@ This avoids polluting `globals.css` with print-only rules and means each print j
 │ LOT          Bucket01-05-26        │  ← Two-column grid: 25 mm label
 │ EXTRACTED    16 May 2026           │     + 1fr value
 │ BEST BEFORE  16 May 2028           │
-│ ORIGIN       Ireland               │
+│ ORIGIN       Athenry, Ireland      │  ← derived from linked apiary cities
 │                                    │
 │ ────────────────────────────────── │  ← 0.2 mm separator rule
 │                                    │
 │ Rico Zmarzly                       │  ← Producer name 9.5pt bold
 │ Mossfield Apiary, Co. Galway       │  ← Producer address 8.5pt muted
-│                                    │
-│ Store in a cool, dry place.        │  ← Statutory text 7pt muted
-│ Do not feed to infants under 12    │     (pushed to bottom via margin: auto)
-│ months.                            │
 └────────────────────────────────────┘
 ```
 
-**Content — EU Honey Directive 2001/110/EC (+ 2024/1438 amendment) coverage:**
+**Content — wholesale-grade fields:**
 
-| EU mandatory field | Source | Notes |
+| Field | Source | Notes |
 |---|---|---|
-| Sales name | hardcoded `"Irish Honey"` | per business policy; could become per-country in future |
-| Net quantity | `bulk_containers.total_weight_kg` | optional if null |
+| Sales name | hardcoded `"Irish Honey"` | per business policy |
+| Net quantity | `bulk_containers.total_weight_kg` | row omitted if null |
 | Best-before date | `extraction_date + 2 years` | computed in `addYears()` helper |
-| Lot identification | `bulk_containers.container_code` | falls back to `"—"` if blank |
-| Country of origin | hardcoded `"Ireland"` | aligns with the "Irish Honey" sales name |
-| Producer name | `profiles.first_name + last_name` | joined with a space; omitted if both blank |
-| Producer address | `profiles.producer_address` | new column; nullable; omitted if blank |
-| Infant warning | hardcoded `"Do not feed to infants under 12 months."` | static text on every label |
-| Floral source (optional) | aggregated from `harvests.floral_source` via `container_harvests` join | single distinct value → that name; multiple → `"Wildflower"`; none → no subtitle |
+| Lot identification | `bulk_containers.container_code` | falls back to `"—"` |
+| Origin | aggregated apiary cities (see below) | replaces the previous hardcoded `"Ireland"` |
+| Producer name | `profiles.first_name + last_name` | joined with a space; block omitted if both blank |
+| Producer address | `profiles.producer_address` | nullable; row omitted if blank |
+| Floral source (optional) | aggregated from `harvests.floral_source` via `container_harvests` join, case-insensitive dedupe | single distinct value → that name; multiple → `"Wildflower"`; none → no subtitle |
+
+**Why no storage / infant warning?** Buckets are wholesale-only — they pass to packagers and re-sellers who apply their own EU-compliant consumer label when the honey is bottled. The wholesale label is for traceability and packer-to-packer identification, not end-consumer protection.
+
+**Locality-tight origin (`aggregateOrigin`):**
+
+```
+1 distinct apiary city  → "Athenry, Ireland"
+2 distinct apiary cities → "Athenry & Loughrea, Ireland"
+3+ or no city data       → "Ireland"
+```
+
+The aggregator walks `container → container_harvests → harvests → hives → apiaries.city`, deduping case-insensitively. PostgREST joins are normalised to single objects (array projection guards inside the loop). The fallback is the truthful country-only string when locality can't be substantiated from the data — never asserting a proximity claim we don't own.
 
 **Layout:**
 
-- Padding 4 mm on all sides; structure is flex column with the statutory block pinned to the bottom via `margin-top: auto`.
+- Padding 4 mm on all sides; structure is flex column.
 - Three visual zones separated by `0.2 mm` rules (`#9ca3af`):
   1. **Hero** — masthead + sales name + (optional) floral source + net weight row
-  2. **Traceability grid** — CSS grid `25mm 1fr` so the four LOT/EXTRACTED/BBD/ORIGIN labels line up regardless of value length
-  3. **Producer + statutory** — name, address, storage hint, infant warning
+  2. **Traceability grid** — CSS grid `25mm 1fr` so the four LOT/EXTRACTED/BBD/ORIGIN labels line up regardless of value length; cells have `min-width: 0` + `text-overflow: ellipsis` so long values clip rather than wrap
+  3. **Producer** — name + address, pinned to the bottom of the label via `margin-top: auto`
 - Print pipeline: same `window.open` → write self-contained doc → `window.print()` as queens. `print-color-adjust: exact` retained as defence-in-depth.
 
 ## Edge cases & limits

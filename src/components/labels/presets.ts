@@ -10,10 +10,10 @@ export const LABEL_PRESETS: Record<LabelPresetId, LabelPreset> = {
   },
   balkani_label: {
     id: 'balkani_label',
-    name: 'Balkani retail label (62 × 100 mm)',
+    name: 'Balkani wholesale label (62 × 75 mm)',
     widthMm: 62,
-    heightMm: 100,
-    description: 'Brother QL-820 with DK-11202 shipping label roll (62 × 100 mm die-cut, portrait). EU Honey Directive compliant — sales name, net weight, lot code, dates, origin, producer name and address, infant warning.',
+    heightMm: 75,
+    description: 'Brother QL-820 with a 62 mm continuous roll (DK-22251 black/red or DK-22205 monochrome — design is monochrome so either works, red track on DK-22251 just goes unused). Cut at 75 mm per label. Wholesale-grade: sales name, locality-tight origin (city + Ireland) aggregated from linked apiaries, net weight, lot, dates, producer block. No consumer-protection disclaimers — these buckets move via wholesale channels, not retail.',
   },
 }
 
