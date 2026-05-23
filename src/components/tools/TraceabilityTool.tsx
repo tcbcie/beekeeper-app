@@ -23,15 +23,60 @@ interface TraceabilityToolProps {
   userId: string
 }
 
-function containerToLabelDatum(container: BulkContainer): LabelDatum {
+interface ProducerContext {
+  producerName?: string
+  producerAddress?: string
+}
+
+function aggregateFloralSource(container: BulkContainer): string | undefined {
+  const sources = new Set<string>()
+  for (const ch of container.harvests ?? []) {
+    // PostgREST joins may surface as an array or a single object depending on
+    // the projection — normalise both shapes before reading.
+    const harvestRaw = ch.harvest as unknown
+    const harvest = Array.isArray(harvestRaw) ? harvestRaw[0] : harvestRaw
+    const fs = (harvest as { floral_source?: string | null } | null)?.floral_source
+    if (fs && fs.trim()) sources.add(fs.trim())
+  }
+  if (sources.size === 0) return undefined
+  if (sources.size === 1) return Array.from(sources)[0]
+  return 'Wildflower'
+}
+
+function addYears(iso: string | null | undefined, years: number): string | null {
+  if (!iso) return null
+  // Accept 'YYYY-MM-DD' (DB date) and full ISO; both safe to parse.
+  const normalised = iso.includes('T') ? iso : `${iso}T00:00:00`
+  const d = new Date(normalised)
+  if (Number.isNaN(d.getTime())) return null
+  d.setFullYear(d.getFullYear() + years)
+  // Re-encode as YYYY-MM-DD so formatDateGB can normalise/format.
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+function containerToLabelDatum(
+  container: BulkContainer,
+  context: ProducerContext
+): LabelDatum {
   const extracted = formatDateGB(container.extraction_date)
-  const secondaryLines: string[] = []
-  if (extracted) secondaryLines.push(`EXTRACTED ${extracted}`)
+  const bestBefore = formatDateGB(addYears(container.extraction_date, 2))
   return {
     id: container.id,
     primaryText: container.container_code || '—',
-    secondaryLines,
-    accentText: container.total_weight_kg != null ? `${container.total_weight_kg} kg` : undefined,
+    balkaniExtras: {
+      salesName: 'Irish Honey',
+      floralSource: aggregateFloralSource(container),
+      netWeight: container.total_weight_kg != null ? `${container.total_weight_kg} kg` : undefined,
+      lotCode: container.container_code || '—',
+      extractedDate: extracted ?? undefined,
+      bestBeforeDate: bestBefore ?? undefined,
+      origin: 'Ireland',
+      producerName: context.producerName,
+      producerAddress: context.producerAddress,
+    },
   }
 }
 
@@ -45,6 +90,37 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
   const [containers, setContainers] = useState<BulkContainer[]>([])
   const [selectedContainerIds, setSelectedContainerIds] = useState<Set<string>>(new Set())
   const [printContainers, setPrintContainers] = useState<BulkContainer[] | null>(null)
+  const [producerContext, setProducerContext] = useState<ProducerContext>({})
+
+  // Load the producer's name and address from their profile so EU-compliant
+  // balkani labels can show the legally-required producer block. Read-only:
+  // if any field is missing the label degrades gracefully.
+  useEffect(() => {
+    if (!userId || !labelPrintingEnabled) return
+    let cancelled = false
+    ;(async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, producer_address')
+        .eq('id', userId)
+        .maybeSingle()
+      if (cancelled) return
+      if (error) {
+        console.error('Failed to load producer profile for labels', error)
+        return
+      }
+      const fullName = [data?.first_name, data?.last_name]
+        .filter((s): s is string => !!s && s.trim().length > 0)
+        .join(' ')
+      setProducerContext({
+        producerName: fullName || undefined,
+        producerAddress: data?.producer_address || undefined,
+      })
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [userId, labelPrintingEnabled])
 
   // Prune selection of container ids that no longer exist after a refetch /
   // delete. Without this the bulk-print button shows a count that includes
@@ -358,6 +434,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
             harvest_date,
             honey_weight,
             unit,
+            floral_source,
             hive_id,
             hives(
               hive_number,
@@ -1924,7 +2001,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       <PrintLabelsModal
         open={printContainers !== null}
         onClose={() => setPrintContainers(null)}
-        data={(printContainers ?? []).map(containerToLabelDatum)}
+        data={(printContainers ?? []).map(c => containerToLabelDatum(c, producerContext))}
         presetId="balkani_label"
         title={printContainers && printContainers.length === 1
           ? `Print label — ${printContainers[0].container_code}`

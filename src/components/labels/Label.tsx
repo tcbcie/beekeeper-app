@@ -27,16 +27,23 @@ const labelShellStyle = (preset: LabelPreset): React.CSSProperties => ({
 })
 
 function BalkaniCell({ datum, preset }: LabelProps) {
-  const caption = datum.secondaryLines?.[0]
+  const e = datum.balkaniExtras
+  if (!e) return null
+
+  const traceRows: Array<[string, string | undefined]> = [
+    ['LOT', e.lotCode],
+    ['EXTRACTED', e.extractedDate],
+    ['BEST BEFORE', e.bestBeforeDate],
+    ['ORIGIN', e.origin],
+  ]
 
   return (
     <div
       style={{
         ...labelShellStyle(preset),
-        padding: '3mm 4mm',
+        padding: '4mm',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
       }}
     >
       <div
@@ -55,51 +62,124 @@ function BalkaniCell({ datum, preset }: LabelProps) {
         HiveCraic · Traceable Honey
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '3mm' }}>
-        <span
+      <div style={{ marginTop: '3mm' }}>
+        <div
           style={{
+            fontSize: '16pt',
             fontWeight: 700,
-            fontSize: '14pt',
+            letterSpacing: '0.4pt',
             lineHeight: 1.05,
-            flex: 1,
-            minWidth: 0,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            textTransform: 'uppercase',
           }}
         >
-          {datum.primaryText}
-        </span>
-        {datum.accentText && (
-          <span
+          {e.salesName}
+        </div>
+        {e.floralSource && (
+          <div
             style={{
-              fontWeight: 700,
-              fontSize: '14pt',
-              lineHeight: 1.05,
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
+              fontSize: '9.5pt',
+              fontStyle: 'italic',
+              color: '#374151',
+              marginTop: '0.6mm',
             }}
           >
-            {datum.accentText}
-          </span>
+            {e.floralSource}
+          </div>
         )}
       </div>
 
-      {caption && (
+      {e.netWeight && (
         <div
           style={{
-            fontSize: '7pt',
-            color: '#374151',
-            letterSpacing: '0.5pt',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            marginTop: '3mm',
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            gap: '3mm',
           }}
         >
-          {caption}
+          <span
+            style={{
+              fontSize: '8pt',
+              letterSpacing: '0.6pt',
+              color: '#374151',
+              textTransform: 'uppercase',
+            }}
+          >
+            Net Weight
+          </span>
+          <span style={{ fontWeight: 700, fontSize: '14pt', lineHeight: 1.05 }}>
+            {e.netWeight}
+          </span>
         </div>
       )}
+
+      <div style={{ borderTop: '0.2mm solid #9ca3af', margin: '3mm 0' }} />
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '25mm 1fr',
+          columnGap: '2mm',
+          rowGap: '0.8mm',
+          fontSize: '8.5pt',
+        }}
+      >
+        {traceRows.map(([label, value]) => value ? (
+          <FragmentRow key={label} label={label} value={value} />
+        ) : null)}
+      </div>
+
+      <div style={{ borderTop: '0.2mm solid #9ca3af', margin: '3mm 0' }} />
+
+      {e.producerName && (
+        <div style={{ fontSize: '9.5pt', fontWeight: 700, lineHeight: 1.15 }}>
+          {e.producerName}
+        </div>
+      )}
+      {e.producerAddress && (
+        <div
+          style={{
+            fontSize: '8.5pt',
+            color: '#374151',
+            lineHeight: 1.2,
+            marginTop: '0.5mm',
+          }}
+        >
+          {e.producerAddress}
+        </div>
+      )}
+
+      <div
+        style={{
+          marginTop: 'auto',
+          paddingTop: '2.5mm',
+          fontSize: '7pt',
+          color: '#374151',
+          lineHeight: 1.3,
+        }}
+      >
+        Store in a cool, dry place.<br />
+        Do not feed to infants under 12 months.
+      </div>
     </div>
+  )
+}
+
+function FragmentRow({ label, value }: { label: string; value: string }) {
+  return (
+    <>
+      <span
+        style={{
+          letterSpacing: '0.5pt',
+          color: '#374151',
+          textTransform: 'uppercase',
+        }}
+      >
+        {label}
+      </span>
+      <span style={{ fontWeight: 600 }}>{value}</span>
+    </>
   )
 }
 

@@ -7,7 +7,10 @@ Optional thermal-label printing for two record types:
 - **Balkani** (bulk honey containers) — printed from the Traceability tool's Containers tab.
 - **Queens** — printed from the Queens list and the Queens detail page.
 
-The feature targets a single hardware setup: **Brother QL-820NWB** with the **DK-1201** standard address roll — 29 × 90 mm die-cut, monochrome thermal tape. Both label types print at 90 mm wide × 29 mm tall (landscape orientation). An earlier draft used the two-colour DK-22251 (62 mm continuous) but the red track was unreliable through browser print and the format was working against the content; DK-1201 is cheaper, simpler, and the wider landscape format suits both label types better.
+The feature targets a single printer (**Brother QL-820NWB**) with two roll sizes — one per label type:
+
+- **Queen labels — DK-1201** (29 × 90 mm die-cut, landscape). Compact, inventory/cage labels.
+- **Balkani retail labels — DK-11202** (62 × 100 mm die-cut, portrait). Larger format with room for the full EU Honey Directive 2001/110/EC (+ 2024/1438 amendment) retail block — sales name, net weight, lot, dates, country of origin, producer name and address, infant warning. Buckets carrying this label can be sold.
 
 Label printing is **opt-in**. A user must enable it on their profile before any print buttons appear in the UI.
 
@@ -27,23 +30,30 @@ When the profile flag is off, none of these UI elements are rendered.
 ## Hardware
 
 - **Printer:** Brother QL-820NWB
-- **Roll:** Brother DK-1201 — standard address labels, 29 × 90 mm die-cut, monochrome
+- **Queen label roll:** Brother DK-1201 — standard address labels, 29 × 90 mm die-cut, monochrome
+- **Balkani retail roll:** Brother DK-11202 — shipping labels, 62 × 100 mm die-cut, monochrome
 - Print is driven through the OS print dialog via `window.print()` — no direct printer SDK / USB / Bluetooth.
 
-DK-1201 is monochrome only; the two-colour DK-22251 was tried in earlier iterations but red rendering through Chrome / Edge was inconsistent and the per-label cost was significantly higher. Switching to DK-1201 also unlocked the wider 90 mm landscape format that suits both inventory and queen labels.
+Both rolls are monochrome only; the two-colour DK-22251 was tried in earlier iterations but red rendering through Chrome / Edge was inconsistent and the per-label cost was significantly higher. The balkani label needs the larger format to fit the EU Honey Directive's mandatory retail content (sales name, lot, dates, origin, producer name and address, infant warning).
 
 ## Database
 
-Single column on `profiles`:
+Two columns on `profiles`:
 
 ```sql
 ALTER TABLE profiles
 ADD COLUMN enable_label_printing boolean NOT NULL DEFAULT false;
+
+ALTER TABLE profiles
+ADD COLUMN producer_address text;
 ```
 
-Applied via Supabase MCP migration `add_enable_label_printing_to_profiles`. New users default to off.
+- `enable_label_printing` — the opt-in feature flag (default off). New users see no print UI until they enable it.
+- `producer_address` — free-text postal address for EU-compliant retail balkani labels (e.g. `"Mossfield Apiary, Athenry, Co. Galway"`). Nullable — if the user only ever prints labels for personal inventory it can stay blank.
 
-No other tables are involved; label content is derived from existing `bulk_containers` and `queens` records at print time.
+Both applied via Supabase MCP migrations (`add_enable_label_printing_to_profiles`, `add_producer_address_to_profiles`).
+
+Label content is otherwise derived from existing `bulk_containers`, `container_harvests` (with `harvests.floral_source` joined for the sales-name aggregation), and `queens` records at print time. Best-before date is computed in the mapping helper as `extraction_date + 2 years` — honey's standard EU shelf-life convention — and never persisted, so editing extraction date on a container updates the BBD on the next print.
 
 ## Architecture
 
@@ -107,23 +117,58 @@ This avoids polluting `globals.css` with print-only rules and means each print j
   - Eircode at 8pt regular in `#374151`, right-aligned via `justify-content: space-between`.
 - Each row is conditional — empty fields drop entirely and the layout reflows.
 
-### Balkani label (90 × 29 mm landscape)
+### Balkani retail label (62 × 100 mm portrait, DK-11202)
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│ HIVECRAIC · TRACEABLE HONEY                                      │  ← masthead wordmark, tracked caps
-│ ──────────────────────────────────────────────────────────────── │  ← 0.3 mm rule
-│ Bucket01-05-26                                       13.9 kg     │  ← code + weight as co-headlines
-│ EXTRACTED 16 May 2026                                            │  ← caption tracked muted
-└──────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────┐
+│ HIVECRAIC · TRACEABLE HONEY        │  ← masthead 7pt bold tracked uppercase
+│ ────────────────────────────────── │  ← 0.3 mm rule
+│                                    │
+│ IRISH HONEY                        │  ← Sales name 16pt bold uppercase
+│ Wildflower                         │  ← Floral source 9.5pt italic (if available)
+│                                    │
+│ NET WEIGHT             13.9 kg     │  ← Weight stat row
+│                                    │
+│ ────────────────────────────────── │  ← 0.2 mm separator rule
+│                                    │
+│ LOT          Bucket01-05-26        │  ← Two-column grid: 25 mm label
+│ EXTRACTED    16 May 2026           │     + 1fr value
+│ BEST BEFORE  16 May 2028           │
+│ ORIGIN       Ireland               │
+│                                    │
+│ ────────────────────────────────── │  ← 0.2 mm separator rule
+│                                    │
+│ Rico Zmarzly                       │  ← Producer name 9.5pt bold
+│ Mossfield Apiary, Co. Galway       │  ← Producer address 8.5pt muted
+│                                    │
+│ Store in a cool, dry place.        │  ← Statutory text 7pt muted
+│ Do not feed to infants under 12    │     (pushed to bottom via margin: auto)
+│ months.                            │
+└────────────────────────────────────┘
 ```
 
-- Top masthead: "HiveCraic · Traceable Honey" in 7pt bold uppercase with 1.1pt letter-spacing, separated from the body by a 0.3 mm black rule. Reads like a magazine column head, not a sticker.
-- Body: container code (14pt bold) and weight (14pt bold) as co-headlines on the same row, separated by a 3 mm gap. The 90 mm width comfortably fits a 14-char code + 7-char weight side-by-side at hero typography without truncation.
-- Caption row: `EXTRACTED DD MMM YYYY` at 7pt with 0.5pt letter-spacing in `#374151`.
-- Weight is omitted from the row when `total_weight_kg` is null; the caption is omitted when `extraction_date` is missing or invalid.
-- `print-color-adjust: exact` is still set on the print document — not strictly required for the monochrome design, but kept as defence-in-depth in case future iterations re-introduce any background colour.
-- DK-1201 is sold as die-cut so each label has the 29 × 90 mm dimensions stamped at manufacture; no cut-length tuning is needed.
+**Content — EU Honey Directive 2001/110/EC (+ 2024/1438 amendment) coverage:**
+
+| EU mandatory field | Source | Notes |
+|---|---|---|
+| Sales name | hardcoded `"Irish Honey"` | per business policy; could become per-country in future |
+| Net quantity | `bulk_containers.total_weight_kg` | optional if null |
+| Best-before date | `extraction_date + 2 years` | computed in `addYears()` helper |
+| Lot identification | `bulk_containers.container_code` | falls back to `"—"` if blank |
+| Country of origin | hardcoded `"Ireland"` | aligns with the "Irish Honey" sales name |
+| Producer name | `profiles.first_name + last_name` | joined with a space; omitted if both blank |
+| Producer address | `profiles.producer_address` | new column; nullable; omitted if blank |
+| Infant warning | hardcoded `"Do not feed to infants under 12 months."` | static text on every label |
+| Floral source (optional) | aggregated from `harvests.floral_source` via `container_harvests` join | single distinct value → that name; multiple → `"Wildflower"`; none → no subtitle |
+
+**Layout:**
+
+- Padding 4 mm on all sides; structure is flex column with the statutory block pinned to the bottom via `margin-top: auto`.
+- Three visual zones separated by `0.2 mm` rules (`#9ca3af`):
+  1. **Hero** — masthead + sales name + (optional) floral source + net weight row
+  2. **Traceability grid** — CSS grid `25mm 1fr` so the four LOT/EXTRACTED/BBD/ORIGIN labels line up regardless of value length
+  3. **Producer + statutory** — name, address, storage hint, infant warning
+- Print pipeline: same `window.open` → write self-contained doc → `window.print()` as queens. `print-color-adjust: exact` retained as defence-in-depth.
 
 ## Edge cases & limits
 
