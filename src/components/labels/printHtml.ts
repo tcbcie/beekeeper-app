@@ -12,14 +12,32 @@ function escapeHtml(value: unknown): string {
 }
 
 function renderBalkaniHtml(datum: LabelDatum, preset: LabelPreset): string {
-  const caption = datum.secondaryLines?.[0]
+  const e = datum.balkaniExtras
+  if (!e) return ''
 
-  const accentHtml = datum.accentText
-    ? `<span style="font-weight:700;font-size:14pt;line-height:1.05;white-space:nowrap;flex-shrink:0">${escapeHtml(datum.accentText)}</span>`
+  const traceRow = (label: string, value?: string): string => {
+    if (!value) return ''
+    return `<span style="letter-spacing:0.5pt;color:#374151;text-transform:uppercase">${escapeHtml(label)}</span>
+            <span style="font-weight:600">${escapeHtml(value)}</span>`
+  }
+
+  const floralHtml = e.floralSource
+    ? `<div style="font-size:9.5pt;font-style:italic;color:#374151;margin-top:0.6mm">${escapeHtml(e.floralSource)}</div>`
     : ''
 
-  const captionHtml = caption
-    ? `<div style="font-size:7pt;color:#374151;letter-spacing:0.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(caption)}</div>`
+  const netWeightHtml = e.netWeight
+    ? `<div style="margin-top:3mm;display:flex;align-items:baseline;justify-content:space-between;gap:3mm">
+        <span style="font-size:8pt;letter-spacing:0.6pt;color:#374151;text-transform:uppercase">Net Weight</span>
+        <span style="font-weight:700;font-size:14pt;line-height:1.05">${escapeHtml(e.netWeight)}</span>
+      </div>`
+    : ''
+
+  const producerNameHtml = e.producerName
+    ? `<div style="font-size:9.5pt;font-weight:700;line-height:1.15">${escapeHtml(e.producerName)}</div>`
+    : ''
+
+  const producerAddressHtml = e.producerAddress
+    ? `<div style="font-size:8.5pt;color:#374151;line-height:1.2;margin-top:0.5mm">${escapeHtml(e.producerAddress)}</div>`
     : ''
 
   return `
@@ -27,22 +45,42 @@ function renderBalkaniHtml(datum: LabelDatum, preset: LabelPreset): string {
       width:${preset.widthMm}mm;
       height:${preset.heightMm}mm;
       box-sizing:border-box;
-      padding:3mm 4mm;
+      padding:4mm;
       font-family:'Helvetica Neue',Arial,sans-serif;
       color:#000;
       background:#fff;
       display:flex;
       flex-direction:column;
-      justify-content:space-between;
       overflow:hidden;
       page-break-after:always;
     ">
       <div style="font-size:7pt;font-weight:700;letter-spacing:1.1pt;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:0.3mm solid #000;padding-bottom:1.2mm">HiveCraic · Traceable Honey</div>
-      <div style="display:flex;align-items:baseline;gap:3mm">
-        <span style="font-weight:700;font-size:14pt;line-height:1.05;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(datum.primaryText)}</span>
-        ${accentHtml}
+
+      <div style="margin-top:3mm">
+        <div style="font-size:16pt;font-weight:700;letter-spacing:0.4pt;line-height:1.05;text-transform:uppercase">${escapeHtml(e.salesName)}</div>
+        ${floralHtml}
       </div>
-      ${captionHtml}
+
+      ${netWeightHtml}
+
+      <div style="border-top:0.2mm solid #9ca3af;margin:3mm 0"></div>
+
+      <div style="display:grid;grid-template-columns:25mm 1fr;column-gap:2mm;row-gap:0.8mm;font-size:8.5pt">
+        ${traceRow('LOT', e.lotCode)}
+        ${traceRow('EXTRACTED', e.extractedDate)}
+        ${traceRow('BEST BEFORE', e.bestBeforeDate)}
+        ${traceRow('ORIGIN', e.origin)}
+      </div>
+
+      <div style="border-top:0.2mm solid #9ca3af;margin:3mm 0"></div>
+
+      ${producerNameHtml}
+      ${producerAddressHtml}
+
+      <div style="margin-top:auto;padding-top:2.5mm;font-size:7pt;color:#374151;line-height:1.3">
+        Store in a cool, dry place.<br />
+        Do not feed to infants under 12 months.
+      </div>
     </div>
   `
 }

@@ -25,6 +25,7 @@ export interface ContainerHarvest {
     harvest_date: string
     honey_weight: number | null
     unit: string
+    floral_source: string | null
     hive_id: string
     hives?: {
       hive_number: string

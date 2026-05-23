@@ -29,6 +29,7 @@ interface UserProfile {
  first_name?: string
  last_name?: string
  mobile_number?: string
+ producer_address?: string
  user_id?: string
  association_id?: string | null
  member_fibka?: boolean
@@ -66,6 +67,7 @@ export default function ProfilePage() {
  first_name: '',
  last_name: '',
  mobile_number: '',
+ producer_address: '',
  association_id: null as string | null,
  member_fibka: false,
  member_iba: false,
@@ -148,6 +150,7 @@ export default function ProfilePage() {
  first_name: data.first_name || '',
  last_name: data.last_name || '',
  mobile_number: data.mobile_number || '',
+ producer_address: data.producer_address || '',
  association_id: data.association_id || null,
  member_fibka: data.member_fibka || false,
  member_iba: data.member_iba || false,
@@ -176,6 +179,7 @@ export default function ProfilePage() {
  first_name: profileFormData.first_name || null,
  last_name: profileFormData.last_name || null,
  mobile_number: profileFormData.mobile_number || null,
+ producer_address: profileFormData.producer_address || null,
  association_id: profileFormData.association_id || null,
  member_fibka: profileFormData.member_fibka,
  member_iba: profileFormData.member_iba,
@@ -213,6 +217,7 @@ export default function ProfilePage() {
  first_name: userProfile.first_name || '',
  last_name: userProfile.last_name || '',
  mobile_number: userProfile.mobile_number || '',
+ producer_address: userProfile.producer_address || '',
  association_id: userProfile.association_id || null,
  member_fibka: userProfile.member_fibka || false,
  member_iba: userProfile.member_iba || false,
@@ -748,6 +753,21 @@ export default function ProfilePage() {
  />
  </div>
 
+ <div className="md:col-span-2">
+ <FieldLabel>Producer Address</FieldLabel>
+ <TextInput
+ type="text"
+ value={profileFormData.producer_address}
+ onChange={(e) =>
+ setProfileFormData({ ...profileFormData, producer_address: e.target.value })
+ }
+ placeholder="e.g. Mossfield Apiary, Athenry, Co. Galway"
+ />
+ <p className="mt-1 text-xs text-text-tertiary">
+ Printed on retail honey labels alongside your name (EU Honey Directive requires the producer&apos;s name and address). Leave blank if you don&apos;t sell.
+ </p>
+ </div>
+
  {/* Location */}
  <div className="md:col-span-2 pt-4 border-t">
  <h3 className="text-md font-medium text-foreground mb-3">Location</h3>
@@ -905,6 +925,13 @@ export default function ProfilePage() {
  <div className="text-foreground">
  {userProfile?.mobile_number || <span className="text-text-tertiary italic">Not set</span>}
  </div>
+ </div>
+ </div>
+
+ <div className="md:col-span-2 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+ <div className="text-sm font-medium text-text-secondary mb-1">Producer Address</div>
+ <div className="text-foreground">
+ {userProfile?.producer_address || <span className="text-text-tertiary italic">Not set</span>}
  </div>
  </div>
 

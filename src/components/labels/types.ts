@@ -11,6 +11,10 @@ export interface LabelDatum {
   // Structured fields used by the queen preset so the renderer can style
   // lineage / mated / eircode rows differently. Other presets ignore this.
   queenExtras?: QueenLabelExtras
+  // Structured fields used by the balkani retail preset (EU Honey Directive
+  // compliance: sales name, country of origin, BBD, producer name+address,
+  // infant warning). Other presets ignore this.
+  balkaniExtras?: BalkaniLabelExtras
 }
 
 export interface QueenLabelExtras {
@@ -22,6 +26,22 @@ export interface QueenLabelExtras {
   // that on a B&W thermal printer — where every year-colour fill collapses
   // to identical solid black — the year is still legible from the label.
   birthYear?: string
+}
+
+export interface BalkaniLabelExtras {
+  // EU Honey Directive 2001/110/EC (+ 2024/1438 amendment) retail fields.
+  // Every field is optional so the renderer can degrade gracefully when
+  // profile/harvest data is missing, but a fully-populated label is the
+  // intended state for selling honey buckets.
+  salesName: string             // e.g. "Irish Honey" (large hero text)
+  floralSource?: string         // e.g. "Wildflower", "Heather" — subtitle
+  netWeight?: string            // e.g. "13.9 kg"
+  lotCode: string               // container_code
+  extractedDate?: string        // pre-formatted en-GB
+  bestBeforeDate?: string       // pre-formatted en-GB (extraction + 2 years)
+  origin: string                // e.g. "Ireland"
+  producerName?: string         // first_name + last_name
+  producerAddress?: string      // free-text postal address line
 }
 
 export type QueenYearColour = 'White' | 'Yellow' | 'Red' | 'Green' | 'Blue'
