@@ -25,8 +25,12 @@ Bulk honey represents physical storage vessels (buckets, tanks, drums) that hold
 - **Container Type** - bucket, tank, drum, or other
 - **Extraction Date** - When honey was extracted into this container
 - **Total Weight (kg)** - Optional weight of honey in container
+- **Moisture Content (%)** - Optional moisture reading for quality control
 - **Notes** - Optional notes
 - **Linked Harvests** - Select which harvest records contributed to this bulk honey
+
+**Multi-Bucket Creation:**
+When creating new bulk honey, you can specify a **Number of Buckets** (default 1). When set to more than 1, the system creates multiple containers with sequenced codes — e.g., entering code "BH-01" with 3 buckets creates "BH-01-1", "BH-01-2", "BH-01-3". All containers share the same extraction date, type, moisture content, notes, and linked harvests. Weight is left blank so you can record the actual weight per bucket afterwards.
 
 **Origin Tracking:**
 When you link harvests from different apiaries, the system automatically calculates origin percentages based on harvest weights (e.g., "60% Cork, 40% Kerry").

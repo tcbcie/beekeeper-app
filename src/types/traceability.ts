@@ -7,6 +7,7 @@ export interface BulkContainer {
   container_type: string
   extraction_date: string
   total_weight_kg: number | null
+  moisture_content: number | null
   notes: string | null
   created_at: string
   updated_at: string
@@ -80,8 +81,10 @@ export interface ContainerFormData {
   container_type: string
   extraction_date: string
   total_weight_kg: string
+  moisture_content: string
   notes: string
   harvest_ids: string[]
+  bucket_count: string
 }
 
 export interface BatchFormData {

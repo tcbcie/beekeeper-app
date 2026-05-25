@@ -187,8 +187,10 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     container_type: 'bucket',
     extraction_date: formatDateForInput(new Date()),
     total_weight_kg: '',
+    moisture_content: '',
     notes: '',
-    harvest_ids: []
+    harvest_ids: [],
+    bucket_count: '1'
   })
   const [availableHarvests, setAvailableHarvests] = useState<HarvestWithApiary[]>([])
 
@@ -644,8 +646,10 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       container_type: 'bucket',
       extraction_date: formatDateForInput(new Date()),
       total_weight_kg: '',
+      moisture_content: '',
       notes: '',
-      harvest_ids: []
+      harvest_ids: [],
+      bucket_count: '1'
     })
     setEditingContainer(null)
     setShowContainerForm(false)
@@ -658,8 +662,10 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       container_type: container.container_type,
       extraction_date: container.extraction_date,
       total_weight_kg: container.total_weight_kg?.toString() || '',
+      moisture_content: container.moisture_content?.toString() || '',
       notes: container.notes || '',
-      harvest_ids: container.harvests?.map(h => h.harvest_id) || []
+      harvest_ids: container.harvests?.map(h => h.harvest_id) || [],
+      bucket_count: '1'
     })
     setShowContainerForm(true)
     fetchAvailableHarvests()
@@ -668,61 +674,87 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
   const handleContainerSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    const safeFloat = (v: string): number | null => {
+      if (!v) return null
+      const n = parseFloat(v)
+      return Number.isFinite(n) ? n : null
+    }
+
     try {
-      const containerData = {
+      const baseCode = containerForm.container_code.trim()
+      const bucketCount = editingContainer ? 1 : Math.max(1, Math.min(50, parseInt(containerForm.bucket_count) || 1))
+      const baseData = {
         user_id: userId,
-        container_code: containerForm.container_code.trim(),
         container_type: containerForm.container_type,
         extraction_date: containerForm.extraction_date,
-        total_weight_kg: containerForm.total_weight_kg ? parseFloat(containerForm.total_weight_kg) : null,
+        moisture_content: safeFloat(containerForm.moisture_content),
         notes: containerForm.notes.trim() || null,
         updated_at: new Date().toISOString()
       }
 
-      let containerId: string
-
       if (editingContainer) {
-        // Update existing
         const { error } = await supabase
           .from('bulk_containers')
-          .update(containerData)
+          .update({
+            ...baseData,
+            container_code: baseCode,
+            total_weight_kg: safeFloat(containerForm.total_weight_kg),
+          })
           .eq('id', editingContainer.id)
 
         if (error) throw error
-        containerId = editingContainer.id
 
-        // Delete existing harvest links
-        await supabase
+        const { error: deleteError } = await supabase
           .from('container_harvests')
           .delete()
-          .eq('container_id', containerId)
+          .eq('container_id', editingContainer.id)
+
+        if (deleteError) throw deleteError
+
+        if (containerForm.harvest_ids.length > 0) {
+          const links = containerForm.harvest_ids.map(harvest_id => ({
+            container_id: editingContainer.id,
+            harvest_id
+          }))
+          const { error: linkError } = await supabase
+            .from('container_harvests')
+            .insert(links)
+          if (linkError) throw linkError
+        }
       } else {
-        // Create new
-        const { data, error } = await supabase
-          .from('bulk_containers')
-          .insert(containerData)
-          .select('id')
-          .single()
-
-        if (error) throw error
-        containerId = data.id
-      }
-
-      // Add harvest links
-      if (containerForm.harvest_ids.length > 0) {
-        const links = containerForm.harvest_ids.map(harvest_id => ({
-          container_id: containerId,
-          harvest_id
+        const rows = Array.from({ length: bucketCount }, (_, i) => ({
+          ...baseData,
+          container_code: bucketCount === 1 ? baseCode : `${baseCode}-${i + 1}`,
+          total_weight_kg: bucketCount === 1 ? safeFloat(containerForm.total_weight_kg) : null,
         }))
 
-        const { error: linkError } = await supabase
-          .from('container_harvests')
-          .insert(links)
+        const { data, error } = await supabase
+          .from('bulk_containers')
+          .insert(rows)
+          .select('id')
 
-        if (linkError) throw linkError
+        if (error) throw error
+
+        if (containerForm.harvest_ids.length > 0 && data.length > 0) {
+          const links = data.flatMap(row =>
+            containerForm.harvest_ids.map(harvest_id => ({
+              container_id: row.id,
+              harvest_id
+            }))
+          )
+          const { error: linkError } = await supabase
+            .from('container_harvests')
+            .insert(links)
+          if (linkError) throw linkError
+        }
       }
 
-      toast.success(editingContainer ? 'Bulk honey updated' : 'Bulk honey created')
+      const msg = editingContainer
+        ? 'Bulk honey updated'
+        : bucketCount > 1
+          ? `${bucketCount} bulk honey containers created`
+          : 'Bulk honey created'
+      toast.success(msg)
       resetContainerForm()
       fetchContainers()
     } catch (error) {
@@ -1098,6 +1130,41 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                   placeholder="e.g., 25.5"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">
+                  Moisture Content (%)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={containerForm.moisture_content}
+                  onChange={(e) => setContainerForm(prev => ({ ...prev, moisture_content: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
+                  placeholder="e.g., 18.2"
+                />
+              </div>
+              {!editingContainer && (
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                    Number of Buckets
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={containerForm.bucket_count}
+                    onChange={(e) => setContainerForm(prev => ({ ...prev, bucket_count: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
+                  />
+                  {parseInt(containerForm.bucket_count) > 1 && (
+                    <p className="text-xs text-text-secondary mt-1">
+                      Creates {containerForm.bucket_count} containers: {containerForm.container_code || '...'}-1 to {containerForm.container_code || '...'}-{containerForm.bucket_count}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
@@ -1695,10 +1762,16 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                           <span className="font-medium">Extracted:</span>{' '}
                           {new Date(container.extraction_date).toLocaleDateString()}
                         </div>
-                        {container.total_weight_kg && (
+                        {container.total_weight_kg != null && (
                           <div>
                             <span className="font-medium">Weight:</span>{' '}
                             {container.total_weight_kg} kg
+                          </div>
+                        )}
+                        {container.moisture_content != null && (
+                          <div>
+                            <span className="font-medium">Moisture:</span>{' '}
+                            {container.moisture_content}%
                           </div>
                         )}
                         <div>

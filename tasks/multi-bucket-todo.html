@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Multi-Bucket Creation + Moisture Content — Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; }
+    .task { padding: 0.4rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    .done { text-decoration: line-through; color: #6b7280; }
+  </style>
+</head>
+<body>
+
+<h1>Multi-Bucket Creation + Moisture Content</h1>
+
+<h2>Problem</h2>
+<p>
+  When creating a new Bulk Honey entry, selected harvests may total more honey than fits in a single bucket.
+  The user needs to specify how many buckets the honey will be split across, and the system should create
+  multiple containers with sequenced codes (e.g., <code>BH-01-1</code>, <code>BH-01-2</code>, <code>BH-01-3</code>).
+  Each container also needs a <strong>moisture content (%)</strong> field to record the honey's water percentage.
+</p>
+
+<h2>Tasks</h2>
+<div class="task"><input type="checkbox" id="t1" checked><label for="t1" class="done">1. Run Supabase migration: add <code>moisture_content</code> column</label></div>
+<div class="task"><input type="checkbox" id="t2" checked><label for="t2" class="done">2. Update TypeScript types (<code>BulkContainer</code> + <code>ContainerFormData</code>)</label></div>
+<div class="task"><input type="checkbox" id="t3" checked><label for="t3" class="done">3. Update form initial state, <code>resetContainerForm</code>, and <code>handleEditContainer</code></label></div>
+<div class="task"><input type="checkbox" id="t4" checked><label for="t4" class="done">4. Update <code>handleContainerSubmit</code> — include moisture + multi-bucket loop</label></div>
+<div class="task"><input type="checkbox" id="t5" checked><label for="t5" class="done">5. Add moisture content + bucket count inputs to the form UI</label></div>
+<div class="task"><input type="checkbox" id="t6" checked><label for="t6" class="done">6. Show moisture content on the container card</label></div>
+<div class="task"><input type="checkbox" id="t7" checked><label for="t7" class="done">7. Update feature documentation</label></div>
+<div class="task"><input type="checkbox" id="t8"><label for="t8">8. User verifies build and tests</label></div>
+
+<h2>Review</h2>
+
+<h3>Database</h3>
+<p>Added <code>moisture_content numeric NULL</code> to <code>bulk_containers</code> via Supabase migration.</p>
+
+<h3>Types (<code>src/types/traceability.ts</code>)</h3>
+<ul>
+  <li><code>BulkContainer</code> — added <code>moisture_content: number | null</code></li>
+  <li><code>ContainerFormData</code> — added <code>moisture_content: string</code> and <code>bucket_count: string</code></li>
+</ul>
+
+<h3>TraceabilityTool.tsx</h3>
+<ul>
+  <li><strong>Form state + reset + edit handler</strong> — all include <code>moisture_content</code> and <code>bucket_count: '1'</code></li>
+  <li><strong>Submit handler</strong> — when creating with <code>bucket_count &gt; 1</code>, loops and inserts N containers with sequenced codes (<code>base-1</code>, <code>base-2</code>, etc.). Each shares the same harvests, date, type, notes, moisture. Weight left blank for multi-bucket (user fills later). Single bucket behaves exactly as before.</li>
+  <li><strong>Form UI</strong> — added Moisture Content (%) input. Added Number of Buckets input (create mode only) with preview text showing the sequenced codes.</li>
+  <li><strong>Card display</strong> — shows moisture percentage when present.</li>
+</ul>
+
+<h3>Documentation (<code>docs/features/honey-traceability.md</code>)</h3>
+<p>Added moisture content field and multi-bucket creation section.</p>
+
+<div class="note">
+  <strong>Design decisions:</strong>
+  <ul>
+    <li>Weight is blank on multi-bucket to avoid guessing splits — user fills per bucket after creation.</li>
+    <li>Moisture content is shared across all created buckets (same extraction = same refractometer reading).</li>
+    <li>Bucket count only appears in create mode — editing always targets a single container.</li>
+    <li>When bucket count is 1, no suffix is appended — completely backwards compatible.</li>
+  </ul>
+</div>
+
+</body>
+</html>
