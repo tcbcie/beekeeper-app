@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Breeder Queen Display Fix — Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; }
+    .task { padding: 0.4rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>Breeder Queen Display Fix</h1>
+
+<h2>Problem</h2>
+<p>
+  The batch list shows "N/A" for breeder queen when queens are linked via the
+  <code>batch_breeder_queens</code> junction table instead of the single
+  <code>mother_queen_id</code> FK on <code>rearing_batches</code>.
+</p>
+
+<h2>Root Cause</h2>
+<p>
+  The Supabase query only joins <code>queens!mother_queen_id(queen_number)</code>.
+  Batches that use the many-to-many junction table have <code>mother_queen_id = null</code>,
+  so <code>batch.queens</code> is null and the display falls back to "N/A".
+</p>
+
+<h2>Fix (single file: batches/page.tsx)</h2>
+<ol>
+  <li>Add <code>batch_breeder_queens(queens(queen_number))</code> to the select query</li>
+  <li>Add <code>batch_breeder_queens</code> array type to the Batch interface</li>
+  <li>Create a helper to extract breeder queen display: mother_queen_id first, then junction table, then "N/A"</li>
+  <li>Use the helper in both mobile card and desktop table views</li>
+</ol>
+
+<h2>Tasks</h2>
+<div class="task"><input type="checkbox" id="t1"><label for="t1">1. Update query, type, display helper, and both render sites</label></div>
+<div class="task"><input type="checkbox" id="t2"><label for="t2">2. User verifies</label></div>
+
+<h2>Review</h2>
+<p><em>To be filled after implementation.</em></p>
+
+</body>
+</html>
