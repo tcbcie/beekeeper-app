@@ -25,11 +25,22 @@ function renderBalkaniHtml(datum: LabelDatum, preset: LabelPreset): string {
     ? `<div style="font-size:9.5pt;font-style:italic;color:#374151;margin-top:0.6mm">${escapeHtml(e.floralSource)}</div>`
     : ''
 
-  const netWeightHtml = e.netWeight
-    ? `<div style="margin-top:3mm;display:flex;align-items:baseline;justify-content:space-between;gap:3mm">
+  const netWeightRow = e.netWeight
+    ? `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:3mm">
         <span style="font-size:8pt;letter-spacing:0.6pt;color:#374151;text-transform:uppercase">Net Weight</span>
         <span style="font-weight:700;font-size:14pt;line-height:1.05">${escapeHtml(e.netWeight)}</span>
       </div>`
+    : ''
+
+  const moistureRow = e.moistureContent
+    ? `<div style="display:flex;align-items:baseline;justify-content:space-between;gap:3mm">
+        <span style="font-size:8pt;letter-spacing:0.6pt;color:#374151;text-transform:uppercase">Moisture</span>
+        <span style="font-weight:700;font-size:14pt;line-height:1.05">${escapeHtml(e.moistureContent)}</span>
+      </div>`
+    : ''
+
+  const netWeightHtml = (netWeightRow || moistureRow)
+    ? `<div style="margin-top:3mm;display:flex;flex-direction:column;gap:1mm">${netWeightRow}${moistureRow}</div>`
     : ''
 
   const producerNameHtml = e.producerName

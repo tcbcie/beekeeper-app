@@ -88,29 +88,56 @@ function BalkaniCell({ datum, preset }: LabelProps) {
         )}
       </div>
 
-      {e.netWeight && (
-        <div
-          style={{
-            marginTop: '3mm',
-            display: 'flex',
-            alignItems: 'baseline',
-            justifyContent: 'space-between',
-            gap: '3mm',
-          }}
-        >
-          <span
-            style={{
-              fontSize: '8pt',
-              letterSpacing: '0.6pt',
-              color: '#374151',
-              textTransform: 'uppercase',
-            }}
-          >
-            Net Weight
-          </span>
-          <span style={{ fontWeight: 700, fontSize: '14pt', lineHeight: 1.05 }}>
-            {e.netWeight}
-          </span>
+      {(e.netWeight || e.moistureContent) && (
+        <div style={{ marginTop: '3mm', display: 'flex', flexDirection: 'column', gap: '1mm' }}>
+          {e.netWeight && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                gap: '3mm',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '8pt',
+                  letterSpacing: '0.6pt',
+                  color: '#374151',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Net Weight
+              </span>
+              <span style={{ fontWeight: 700, fontSize: '14pt', lineHeight: 1.05 }}>
+                {e.netWeight}
+              </span>
+            </div>
+          )}
+          {e.moistureContent && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'baseline',
+                justifyContent: 'space-between',
+                gap: '3mm',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '8pt',
+                  letterSpacing: '0.6pt',
+                  color: '#374151',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Moisture
+              </span>
+              <span style={{ fontWeight: 700, fontSize: '14pt', lineHeight: 1.05 }}>
+                {e.moistureContent}
+              </span>
+            </div>
+          )}
         </div>
       )}
 
