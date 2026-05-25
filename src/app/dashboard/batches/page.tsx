@@ -78,21 +78,6 @@ interface Batch {
  name: string
  }
  } | null
- batch_breeder_queens?: {
- queens: { queen_number: string }[]
- }[]
-}
-
-function breederQueenDisplay(batch: Batch): string {
- if (batch.queens?.queen_number) return batch.queens.queen_number
- const breeders = batch.batch_breeder_queens
- if (breeders && breeders.length > 0) {
-  const names = breeders
-   .map(b => b.queens?.[0]?.queen_number)
-   .filter(Boolean) as string[]
-  if (names.length > 0) return names.join(', ')
- }
- return 'N/A'
 }
 
 interface FormData {
@@ -215,6 +200,7 @@ export default function BatchesPage() {
  const toast = useToast()
  const [batches, setBatches] = useState<Batch[]>([])
  const [sealedCellCounts, setSealedCellCounts] = useState<Record<string, number>>({})
+ const [breederQueenNames, setBreederQueenNames] = useState<Record<string, string>>({})
  const [queens, setQueens] = useState<Queen[]>([])
  const [apiaries, setApiaries] = useState<Apiary[]>([])
  const [hives, setHives] = useState<Hive[]>([])
@@ -348,7 +334,7 @@ export default function BatchesPage() {
 
  const { data, error } = await supabase
  .from('rearing_batches')
- .select('*, queens!mother_queen_id(queen_number), hives!starter_colony_hive_id(hive_number, apiaries(name)), batch_breeder_queens(queens(queen_number))')
+ .select('*, queens!mother_queen_id(queen_number), hives!starter_colony_hive_id(hive_number, apiaries(name))')
  .eq('user_id', currentUserId)
  .order('graft_date', { ascending: false })
 
@@ -376,6 +362,29 @@ export default function BatchesPage() {
  setSealedCellCounts(counts)
  } else {
  setSealedCellCounts({})
+ }
+
+ // Fetch breeder queen names from junction table
+ if (batchIds.length > 0) {
+ const { data: bbqData } = await supabase
+   .from('batch_breeder_queens')
+   .select('batch_id, queens(queen_number)')
+   .in('batch_id', batchIds)
+
+ const names: Record<string, string> = {}
+ if (bbqData) {
+   for (const row of bbqData) {
+     const bId = row.batch_id as string
+     const qRaw = row.queens as unknown
+     const qn = Array.isArray(qRaw) ? qRaw[0]?.queen_number : (qRaw as { queen_number?: string })?.queen_number
+     if (bId && qn) {
+       names[bId] = names[bId] ? `${names[bId]}, ${qn}` : qn
+     }
+   }
+ }
+ setBreederQueenNames(names)
+ } else {
+ setBreederQueenNames({})
  }
  }
  setLoading(false)
@@ -1886,7 +1895,7 @@ export default function BatchesPage() {
  <div className="space-y-2 text-sm">
  <div className="flex justify-between">
  <span className="text-text-tertiary">Breeder Queen:</span>
- <span className="text-foreground font-medium">{breederQueenDisplay(batch)}</span>
+ <span className="text-foreground font-medium">{batch.queens?.queen_number || breederQueenNames[batch.id] || 'N/A'}</span>
  </div>
  <div className="flex justify-between">
  <span className="text-text-tertiary">Graft Date:</span>
@@ -1961,7 +1970,7 @@ export default function BatchesPage() {
  )}
  </span>
  </td>
- <td className="px-3 py-4 whitespace-nowrap">{breederQueenDisplay(batch)}</td>
+ <td className="px-3 py-4 whitespace-nowrap">{batch.queens?.queen_number || breederQueenNames[batch.id] || 'N/A'}</td>
  <td className="px-3 py-4 whitespace-nowrap">{formatDateIrish(batch.graft_date)}</td>
  <td className="px-3 py-4 whitespace-nowrap">{batch.cell_count || '-'}</td>
  <td className="px-3 py-4 whitespace-nowrap">{batch.grafts_accepted || '-'}</td>
