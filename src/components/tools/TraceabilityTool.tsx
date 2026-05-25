@@ -105,6 +105,7 @@ function containerToLabelDatum(
       salesName: 'Irish Honey',
       floralSource: aggregateFloralSource(container),
       netWeight: container.total_weight_kg != null ? `${container.total_weight_kg} kg` : undefined,
+      moistureContent: container.moisture_content != null ? `${container.moisture_content}%` : undefined,
       lotCode: container.container_code || '—',
       extractedDate: extracted ?? undefined,
       bestBeforeDate: bestBefore ?? undefined,

@@ -36,6 +36,7 @@ export interface BalkaniLabelExtras {
   salesName: string             // e.g. "Irish Honey" (large hero text)
   floralSource?: string         // e.g. "Wildflower", "Heather" — subtitle
   netWeight?: string            // e.g. "13.9 kg"
+  moistureContent?: string      // e.g. "18.2%"
   lotCode: string               // container_code
   extractedDate?: string        // pre-formatted en-GB
   bestBeforeDate?: string       // pre-formatted en-GB (extraction + 2 years)
