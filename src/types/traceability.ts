@@ -8,6 +8,9 @@ export interface BulkContainer {
   extraction_date: string
   total_weight_kg: number | null
   moisture_content: number | null
+  excluded: boolean
+  excluded_reason: string | null
+  excluded_note: string | null
   notes: string | null
   created_at: string
   updated_at: string
@@ -82,6 +85,8 @@ export interface ContainerFormData {
   extraction_date: string
   total_weight_kg: string
   moisture_content: string
+  excluded_reason: string
+  excluded_note: string
   notes: string
   harvest_ids: string[]
   bucket_count: string

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Exclude Containers from Batches — Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; }
+    .task { padding: 0.4rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Exclude Containers from Batches</h1>
+
+<h2>Problem</h2>
+<p>
+  Some bulk honey buckets are given away or sold wholesale and should not appear as
+  available sources when creating bottling batches.
+</p>
+
+<h2>Approach</h2>
+<p>Add a boolean <code>excluded</code> column (default false). Excluded containers are hidden
+  from the batch form's container selection. A checkbox in the edit form toggles the flag.
+  The card shows a visual badge when excluded.</p>
+
+<h2>Tasks</h2>
+<div class="task"><input type="checkbox" id="t1"><label for="t1">1. DB migration: add <code>excluded</code> column</label></div>
+<div class="task"><input type="checkbox" id="t2"><label for="t2">2. Update <code>BulkContainer</code> type + <code>ContainerFormData</code></label></div>
+<div class="task"><input type="checkbox" id="t3"><label for="t3">3. Form state, reset, edit handler, submit handler</label></div>
+<div class="task"><input type="checkbox" id="t4"><label for="t4">4. Add checkbox to edit/create form UI</label></div>
+<div class="task"><input type="checkbox" id="t5"><label for="t5">5. Filter excluded containers from batch form</label></div>
+<div class="task"><input type="checkbox" id="t6"><label for="t6">6. Show badge on excluded container cards</label></div>
+<div class="task"><input type="checkbox" id="t7"><label for="t7">7. Update docs</label></div>
+<div class="task"><input type="checkbox" id="t8"><label for="t8">8. User verifies</label></div>
+
+<h2>Review</h2>
+<p><em>To be filled after implementation.</em></p>
+
+</body>
+</html>

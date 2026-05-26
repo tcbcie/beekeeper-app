@@ -124,6 +124,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
 
   // Container state
   const [containers, setContainers] = useState<BulkContainer[]>([])
+  const [containerFilter, setContainerFilter] = useState<'available' | 'excluded' | 'all'>('available')
   const [selectedContainerIds, setSelectedContainerIds] = useState<Set<string>>(new Set())
   const [printContainers, setPrintContainers] = useState<BulkContainer[] | null>(null)
   const [producerContext, setProducerContext] = useState<ProducerContext>({})
@@ -189,6 +190,8 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     extraction_date: formatDateForInput(new Date()),
     total_weight_kg: '',
     moisture_content: '',
+    excluded_reason: '',
+    excluded_note: '',
     notes: '',
     harvest_ids: [],
     bucket_count: '1'
@@ -648,6 +651,8 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       extraction_date: formatDateForInput(new Date()),
       total_weight_kg: '',
       moisture_content: '',
+      excluded_reason: '',
+      excluded_note: '',
       notes: '',
       harvest_ids: [],
       bucket_count: '1'
@@ -664,6 +669,8 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       extraction_date: container.extraction_date,
       total_weight_kg: container.total_weight_kg?.toString() || '',
       moisture_content: container.moisture_content?.toString() || '',
+      excluded_reason: container.excluded_reason || '',
+      excluded_note: container.excluded_note || '',
       notes: container.notes || '',
       harvest_ids: container.harvests?.map(h => h.harvest_id) || [],
       bucket_count: '1'
@@ -689,6 +696,9 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         container_type: containerForm.container_type,
         extraction_date: containerForm.extraction_date,
         moisture_content: safeFloat(containerForm.moisture_content),
+        excluded: containerForm.excluded_reason !== '',
+        excluded_reason: containerForm.excluded_reason || null,
+        excluded_note: containerForm.excluded_note.trim() || null,
         notes: containerForm.notes.trim() || null,
         updated_at: new Date().toISOString()
       }
@@ -1179,6 +1189,36 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">
+                Exclude from Batches
+              </label>
+              <select
+                value={containerForm.excluded_reason}
+                onChange={(e) => setContainerForm(prev => ({
+                  ...prev,
+                  excluded_reason: e.target.value,
+                  excluded_note: e.target.value !== 'Other' ? '' : prev.excluded_note
+                }))}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
+              >
+                <option value="">No — available for batches</option>
+                <option value="Given Away">Given Away</option>
+                <option value="Sold Wholesale">Sold Wholesale</option>
+                <option value="Personal Use">Personal Use</option>
+                <option value="Other">Other</option>
+              </select>
+              {containerForm.excluded_reason === 'Other' && (
+                <input
+                  type="text"
+                  value={containerForm.excluded_note}
+                  onChange={(e) => setContainerForm(prev => ({ ...prev, excluded_note: e.target.value }))}
+                  className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-surface"
+                  placeholder="Reason..."
+                />
+              )}
+            </div>
+
             {/* Harvest Selection */}
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">
@@ -1401,12 +1441,12 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                 Bulk Honey Source ({batchForm.container_ids.length} selected)
               </label>
               <div className="max-h-48 overflow-y-auto border border-border rounded-lg p-2 space-y-1">
-                {containers.length === 0 ? (
+                {containers.filter(c => !c.excluded).length === 0 ? (
                   <p className="text-sm text-text-secondary text-center py-2">
                     No bulk honey available. Create bulk honey first.
                   </p>
                 ) : (
-                  containers.map(container => (
+                  containers.filter(c => !c.excluded).map(container => (
                     <Button
                       key={container.id}
                       type="button"
@@ -1723,13 +1763,35 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       {/* Container List */}
       {activeTab === 'containers' && (
         <div className="space-y-4">
+          {containers.length > 0 && (
+            <div className="flex items-center gap-2">
+              <select
+                value={containerFilter}
+                onChange={(e) => setContainerFilter(e.target.value as 'available' | 'excluded' | 'all')}
+                className="px-3 py-1.5 rounded-lg border border-border bg-surface text-sm"
+              >
+                <option value="available">Available</option>
+                <option value="excluded">Excluded</option>
+                <option value="all">All</option>
+              </select>
+              <span className="text-sm text-text-secondary">
+                {containers.filter(c =>
+                  containerFilter === 'available' ? !c.excluded :
+                  containerFilter === 'excluded' ? c.excluded : true
+                ).length} of {containers.length}
+              </span>
+            </div>
+          )}
           {containers.length === 0 ? (
             <div className="text-center py-12 text-text-secondary">
               <Package size={48} className="mx-auto mb-4 opacity-50" />
               <p>No bulk honey yet. Create one to start tracking your honey.</p>
             </div>
           ) : (
-            containers.map(container => {
+            containers.filter(c =>
+              containerFilter === 'available' ? !c.excluded :
+              containerFilter === 'excluded' ? c.excluded : true
+            ).map(container => {
               const origins = getContainerOrigins(container)
               const harvestCount = container.harvests?.length || 0
               // Get batch usage info
@@ -1756,6 +1818,13 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                         <span className="px-2 py-0.5 bg-surface rounded text-xs text-text-secondary">
                           {container.container_type}
                         </span>
+                        {container.excluded && (
+                          <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-xs font-medium">
+                            {container.excluded_reason === 'Other' && container.excluded_note
+                              ? container.excluded_note
+                              : container.excluded_reason || 'Excluded'}
+                          </span>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-text-secondary">

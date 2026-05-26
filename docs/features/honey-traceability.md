@@ -26,6 +26,7 @@ Bulk honey represents physical storage vessels (buckets, tanks, drums) that hold
 - **Extraction Date** - When honey was extracted into this container
 - **Total Weight (kg)** - Optional weight of honey in container
 - **Moisture Content (%)** - Optional moisture reading for quality control
+- **Exclude from Batches** - Dropdown to mark containers that should not be used for bottling batches: "Given Away", "Sold Wholesale", "Personal Use", or "Other" (with free-text note). Excluded containers are hidden from the batch source selection. The container list defaults to showing only available containers, with a filter to switch between Available / Excluded / All
 - **Notes** - Optional notes
 - **Linked Harvests** - Select which harvest records contributed to this bulk honey
 
