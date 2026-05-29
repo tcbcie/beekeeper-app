@@ -84,7 +84,7 @@ Key columns used by this feature:
 
 Indexes:
 - active nuc lookup by user/number
-- `creation_batch_id` index for bulk run filtering
+- `creation_batch_id` records the originating bulk run (the "View Nucs" filter operates on `batch_id`, not this column)
 - unique per-user `reference_code` when present
 
 ### `mating_nuc_batches`
@@ -172,7 +172,7 @@ Used for cell eligibility:
 - [x] Unnumbered bulk creation creates one row per selected sealed cell
 - [x] Assigned grafts are updated to `in_nuc`
 - [x] Bulk runs table lists run mode and counts
-- [x] "View Nucs" filters list by selected run
+- [x] "View Nucs" filters list by the run's **rearing batch** (`batch_id`), so individually-created nucs of that batch (e.g. Virgin Queen nucs with no `creation_batch_id`) are also shown
 - [x] Inspection with `virgin` sets nuc to `virgin`, graft to `emerged`, and `queen_emerged_at`
 - [x] Inspection with `mated` sets nuc to `mating`, graft to `mated`, and `mating_confirmed_at`
 - [x] Inspection with `laying` sets nuc to `laying`, graft to `mated`
