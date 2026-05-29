@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { NUC_HATCHED_STATUSES, NUC_MATED_STATUSES } from '@/components/batches/graftConstants'
+import { buildNucSignalSets, NucSignalRow } from '@/components/batches/graftConstants'
 
 export interface MatingApiaryInfo {
   id: string
@@ -107,7 +107,6 @@ export function useNIHBSReport() {
         let allDists: { graft_id: string; batch_id: string; distribution_type: string; recipient_user_id: string | null; mating_confirmed: boolean | null; distribution_date: string | null; offspring_hybridised: boolean | null; hybridisation_date: string | null }[] = []
         if (batchIdList.length > 0) {
           type GraftRow = { id: string; batch_id: string; status: string }
-          type NucRow = { graft_id: string | null; status: string | null; queen_emerged_at: string | null; mating_confirmed_at: string | null }
 
           const [graftsRes, distsRes, nucsRes] = await Promise.all([
             supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIdList),
@@ -133,13 +132,7 @@ export function useNIHBSReport() {
           // confirmed via a nuc inspection, AND cases where the nuc was set straight to
           // 'virgin' without an inspection stamping queen_emerged_at. Aggregated as sets
           // so multiple nuc rows per graft (no UNIQUE constraint on graft_id) OR together.
-          const hatchedViaNuc = new Set<string>()
-          const matedViaNuc = new Set<string>()
-          for (const n of (nucsRes.data || []) as NucRow[]) {
-            if (!n.graft_id) continue
-            if (n.queen_emerged_at || n.mating_confirmed_at || (n.status && NUC_HATCHED_STATUSES.includes(n.status))) hatchedViaNuc.add(n.graft_id)
-            if (n.mating_confirmed_at || (n.status && NUC_MATED_STATUSES.includes(n.status))) matedViaNuc.add(n.graft_id)
-          }
+          const { hatched: hatchedViaNuc, mated: matedViaNuc } = buildNucSignalSets((nucsRes.data || []) as NucSignalRow[])
           const graftRows = (graftsRes.data || []) as GraftRow[]
 
           for (const g of graftRows) {

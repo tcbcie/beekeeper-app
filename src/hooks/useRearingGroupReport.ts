@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { NUC_HATCHED_STATUSES, NUC_MATED_STATUSES } from '@/components/batches/graftConstants'
+import { buildNucSignalSets, NucSignalRow } from '@/components/batches/graftConstants'
 
 export interface RearingGroupMemberReport {
   user_id: string
@@ -107,7 +107,6 @@ export function useRearingGroupReport() {
       if (batchIds.length > 0) {
         type GraftRow = { id: string; batch_id: string; status: string }
         type DistRow = { graft_id: string; batch_id: string; distribution_type: string }
-        type NucRow = { graft_id: string | null; status: string | null; queen_emerged_at: string | null; mating_confirmed_at: string | null }
 
         const [graftsRes, distsRes, nucsRes] = await Promise.all([
           supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIds),
@@ -125,14 +124,8 @@ export function useRearingGroupReport() {
           graftDistType.set(d.graft_id, d.distribution_type)
         }
 
-        // Aggregate nuc timestamps as sets so multiple nuc rows per graft OR together.
-        const hatchedViaNuc = new Set<string>()
-        const matedViaNuc = new Set<string>()
-        for (const n of (nucsRes.data || []) as NucRow[]) {
-          if (!n.graft_id) continue
-          if (n.queen_emerged_at || n.mating_confirmed_at || (n.status && NUC_HATCHED_STATUSES.includes(n.status))) hatchedViaNuc.add(n.graft_id)
-          if (n.mating_confirmed_at || (n.status && NUC_MATED_STATUSES.includes(n.status))) matedViaNuc.add(n.graft_id)
-        }
+        // Aggregate nuc signals as sets so multiple nuc rows per graft OR together.
+        const { hatched: hatchedViaNuc, mated: matedViaNuc } = buildNucSignalSets((nucsRes.data || []) as NucSignalRow[])
 
         for (const g of (graftsRes.data || []) as GraftRow[]) {
           if (!derivedCounts.has(g.batch_id)) {
