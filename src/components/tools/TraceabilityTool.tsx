@@ -267,22 +267,19 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     fetchJarSizes()
   }, [fetchJarSizes])
 
-  // Auto-calculate total weight as the sum of (net weight × count) across all jar sizes
+  // Auto-tally total weight from the selected bulk honey sources. The batch's
+  // total weight is the sum of the linked containers' weights (the raw honey
+  // going into the batch). Manual edits to Total Weight are preserved until the
+  // source selection changes again.
   useEffect(() => {
-    const totalGrams = batchForm.jars.reduce((sum, jar) => {
-      const weight = parseInt(jar.jar_weight_g)
-      const count = parseInt(jar.jar_count)
-      if (Number.isFinite(weight) && Number.isFinite(count) && weight > 0 && count > 0) {
-        return sum + weight * count
-      }
-      return sum
-    }, 0)
+    const totalKg = containers
+      .filter(c => batchForm.container_ids.includes(c.id))
+      .reduce((sum, c) => sum + (c.total_weight_kg ?? 0), 0)
 
-    if (totalGrams > 0) {
-      const calculatedKg = (totalGrams / 1000).toFixed(2)
-      setBatchForm(prev => ({ ...prev, total_weight_kg: calculatedKg }))
+    if (totalKg > 0) {
+      setBatchForm(prev => ({ ...prev, total_weight_kg: totalKg.toFixed(2) }))
     }
-  }, [batchForm.jars])
+  }, [batchForm.container_ids, containers])
 
   // Public preview state
   interface PublicPreviewData {
@@ -1471,6 +1468,27 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
               >
                 <Plus size={16} /> Add jar size
               </Button>
+              {(() => {
+                // Proposed bottled output from the jar rows: Σ(net weight × count).
+                let grams = 0
+                let jarCount = 0
+                for (const jar of batchForm.jars) {
+                  const weight = parseInt(jar.jar_weight_g)
+                  const count = parseInt(jar.jar_count)
+                  if (Number.isFinite(weight) && Number.isFinite(count) && weight > 0 && count > 0) {
+                    grams += weight * count
+                    jarCount += count
+                  }
+                }
+                if (grams <= 0) return null
+                return (
+                  <p className="mt-2 text-sm text-text-secondary">
+                    Proposed bottled output:{' '}
+                    <span className="font-medium text-foreground">{(grams / 1000).toFixed(2)} kg</span>
+                    {' '}across {jarCount} jar{jarCount === 1 ? '' : 's'}
+                  </p>
+                )
+              })()}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
