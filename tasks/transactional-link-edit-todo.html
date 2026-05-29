@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Transactional Link Editing — Plan &amp; Review</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #1f2937; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 1.8rem; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .task { padding: 0.35rem 0; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>Transactional Link Editing (audit MEDIUM 1)</h1>
+
+<h2>Problem</h2>
+<p>
+  Editing a batch or a bulk container replaced its junction rows with a
+  <strong>delete-then-insert</strong> across two separate Supabase calls. If the re-insert
+  failed after the delete succeeded, the record was left with <strong>zero</strong> links
+  (data loss), with only a toast shown.
+</p>
+
+<h2>Fix</h2>
+<p>Two <code>plpgsql</code> RPCs perform delete + insert inside a single (atomic) function body:</p>
+<ul>
+  <li><code>replace_batch_links(p_batch_id, p_container_ids uuid[], p_jars jsonb)</code> — replaces
+    <code>batch_containers</code> <em>and</em> <code>batch_jars</code> together.</li>
+  <li><code>replace_container_harvests(p_container_id, p_harvest_ids uuid[])</code> — replaces
+    <code>container_harvests</code>.</li>
+</ul>
+<p>Both are <code>SECURITY DEFINER</code> with an explicit <code>auth.uid()</code> ownership check, and
+  EXECUTE is granted to <code>authenticated</code> only (revoked from <code>anon</code>/<code>public</code>
+  — flagged by the Supabase linter and fixed).</p>
+
+<div class="note">
+  Used by <strong>both</strong> create and edit. On create the delete is a no-op, so the container
+  and jar writes also become atomic as a bonus. The parent <code>batch_runs</code>/<code>bulk_containers</code>
+  UPDATE/INSERT remains a single prior statement (atomic on its own); only the multi-step link
+  replacement needed wrapping.
+</div>
+
+<h2>Tasks</h2>
+<div class="task"><input type="checkbox" checked> 1. Create <code>replace_batch_links</code> RPC (transactional)</div>
+<div class="task"><input type="checkbox" checked> 2. Create <code>replace_container_harvests</code> RPC (transactional)</div>
+<div class="task"><input type="checkbox" checked> 3. Lock EXECUTE to <code>authenticated</code> (linter fix)</div>
+<div class="task"><input type="checkbox" checked> 4. Route batch create + edit through <code>replace_batch_links</code></div>
+<div class="task"><input type="checkbox" checked> 5. Route container edit through <code>replace_container_harvests</code></div>
+<div class="task"><input type="checkbox" checked> 6. Update feature documentation</div>
+<div class="task"><input type="checkbox"> 7. User verifies build &amp; tests</div>
+
+<h2>Review</h2>
+<ul>
+  <li><strong>4 migrations</strong>: two function definitions + one grant lockdown migration.</li>
+  <li><strong>Client</strong>: removed the separate delete/insert blocks in
+    <code>handleBatchSubmit</code> and <code>handleContainerSubmit</code>, replaced with one
+    <code>supabase.rpc(...)</code> call each. Net reduction in client code.</li>
+  <li><strong>Container multi-bucket create</strong> left unchanged (single bulk insert, no
+    delete-then-insert, so not the flagged risk).</li>
+  <li><strong>Security</strong>: ownership enforced inside the definer functions; anon callers get
+    "Not authorised" (and now cannot EXECUTE at all).</li>
+</ul>
+
+</body>
+</html>

@@ -727,23 +727,13 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
 
         if (error) throw error
 
-        const { error: deleteError } = await supabase
-          .from('container_harvests')
-          .delete()
-          .eq('container_id', editingContainer.id)
-
-        if (deleteError) throw deleteError
-
-        if (containerForm.harvest_ids.length > 0) {
-          const links = containerForm.harvest_ids.map(harvest_id => ({
-            container_id: editingContainer.id,
-            harvest_id
-          }))
-          const { error: linkError } = await supabase
-            .from('container_harvests')
-            .insert(links)
-          if (linkError) throw linkError
-        }
+        // Replace harvest links atomically (one transaction) so an edit can
+        // never leave the container with no links if the re-insert fails.
+        const { error: linksError } = await supabase.rpc('replace_container_harvests', {
+          p_container_id: editingContainer.id,
+          p_harvest_ids: containerForm.harvest_ids,
+        })
+        if (linksError) throw linksError
       } else {
         const rows = Array.from({ length: bucketCount }, (_, i) => ({
           ...baseData,
@@ -945,20 +935,6 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
 
         if (error) throw error
         batchId = editingBatch.id
-
-        // Delete existing container links
-        const { error: delContainersError } = await supabase
-          .from('batch_containers')
-          .delete()
-          .eq('batch_id', batchId)
-        if (delContainersError) throw delContainersError
-
-        // Delete existing jar rows
-        const { error: delJarsError } = await supabase
-          .from('batch_jars')
-          .delete()
-          .eq('batch_id', batchId)
-        if (delJarsError) throw delJarsError
       } else {
         const { data, error } = await supabase
           .from('batch_runs')
@@ -970,29 +946,14 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         batchId = data.id
       }
 
-      // Add container links
-      if (batchForm.container_ids.length > 0) {
-        const links = batchForm.container_ids.map(container_id => ({
-          batch_id: batchId,
-          container_id
-        }))
-
-        const { error: linkError } = await supabase
-          .from('batch_containers')
-          .insert(links)
-
-        if (linkError) throw linkError
-      }
-
-      // Add jar rows
-      if (parsedJars.length > 0) {
-        const jarRows = parsedJars.map(jar => ({ ...jar, batch_id: batchId }))
-        const { error: jarError } = await supabase
-          .from('batch_jars')
-          .insert(jarRows)
-
-        if (jarError) throw jarError
-      }
+      // Replace container links + jar rows atomically (one transaction) so an
+      // edit can never leave the batch half-written if a step fails.
+      const { error: linksError } = await supabase.rpc('replace_batch_links', {
+        p_batch_id: batchId,
+        p_container_ids: batchForm.container_ids,
+        p_jars: parsedJars,
+      })
+      if (linksError) throw linksError
 
       toast.success(editingBatch ? 'Batch updated' : `Batch ${batchCode} created`)
       resetBatchForm()
