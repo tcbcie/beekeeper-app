@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
 import type { GraftDistribution, BulkDistributionData } from '@/hooks/useGraftDistributions'
 import { getQueenColorFromYear } from '@/types/queen'
-import { Graft, GRAFT_STATUSES, FRAME_STATUS_VALUES, BatchBreederQueen } from '@/components/batches/graftConstants'
+import { Graft, GRAFT_STATUSES, FRAME_STATUS_VALUES, NUC_HATCHED_STATUSES, NUC_MATED_STATUSES, BatchBreederQueen } from '@/components/batches/graftConstants'
 
 export interface BreederRange {
   queen_id: string
@@ -118,7 +118,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       // Fetch latest weights and nuc timestamps in parallel. Filtering mating_nucs by
       // batch_id (rather than graft_id IN …) keeps the URL bounded and picks up nucs
       // that were created without a graft link, harmlessly.
-      type NucRow = { graft_id: string | null; queen_emerged_at: string | null; mating_confirmed_at: string | null }
+      type NucRow = { graft_id: string | null; status: string | null; queen_emerged_at: string | null; mating_confirmed_at: string | null }
       const graftIds = (data as Graft[]).map(g => g.id)
       const weightMap = new Map<string, number>()
       const nextHatched = new Set<string>()
@@ -132,7 +132,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
             .order('weighed_at', { ascending: false }),
           supabase
             .from('mating_nucs')
-            .select('graft_id, queen_emerged_at, mating_confirmed_at')
+            .select('graft_id, status, queen_emerged_at, mating_confirmed_at')
             .eq('batch_id', batchId),
         ])
         // Fail loud: persisting `queens_hatched` from a partial nuc result would write
@@ -152,8 +152,8 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
         }
         for (const n of (nucsRes.data || []) as NucRow[]) {
           if (!n.graft_id) continue
-          if (n.queen_emerged_at || n.mating_confirmed_at) nextHatched.add(n.graft_id)
-          if (n.mating_confirmed_at) nextMated.add(n.graft_id)
+          if (n.queen_emerged_at || n.mating_confirmed_at || (n.status && NUC_HATCHED_STATUSES.includes(n.status))) nextHatched.add(n.graft_id)
+          if (n.mating_confirmed_at || (n.status && NUC_MATED_STATUSES.includes(n.status))) nextMated.add(n.graft_id)
         }
       }
       const graftsWithWeights = (data as Graft[]).map(g => ({

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { NUC_HATCHED_STATUSES, NUC_MATED_STATUSES } from '@/components/batches/graftConstants'
 
 export interface RearingGroupMemberReport {
   user_id: string
@@ -106,12 +107,12 @@ export function useRearingGroupReport() {
       if (batchIds.length > 0) {
         type GraftRow = { id: string; batch_id: string; status: string }
         type DistRow = { graft_id: string; batch_id: string; distribution_type: string }
-        type NucRow = { graft_id: string | null; queen_emerged_at: string | null; mating_confirmed_at: string | null }
+        type NucRow = { graft_id: string | null; status: string | null; queen_emerged_at: string | null; mating_confirmed_at: string | null }
 
         const [graftsRes, distsRes, nucsRes] = await Promise.all([
           supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIds),
           supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type').in('batch_id', batchIds),
-          supabase.from('mating_nucs').select('graft_id, queen_emerged_at, mating_confirmed_at').in('batch_id', batchIds),
+          supabase.from('mating_nucs').select('graft_id, status, queen_emerged_at, mating_confirmed_at').in('batch_id', batchIds),
         ])
 
         if (graftsRes.error) throw graftsRes.error
@@ -129,8 +130,8 @@ export function useRearingGroupReport() {
         const matedViaNuc = new Set<string>()
         for (const n of (nucsRes.data || []) as NucRow[]) {
           if (!n.graft_id) continue
-          if (n.queen_emerged_at || n.mating_confirmed_at) hatchedViaNuc.add(n.graft_id)
-          if (n.mating_confirmed_at) matedViaNuc.add(n.graft_id)
+          if (n.queen_emerged_at || n.mating_confirmed_at || (n.status && NUC_HATCHED_STATUSES.includes(n.status))) hatchedViaNuc.add(n.graft_id)
+          if (n.mating_confirmed_at || (n.status && NUC_MATED_STATUSES.includes(n.status))) matedViaNuc.add(n.graft_id)
         }
 
         for (const g of (graftsRes.data || []) as GraftRow[]) {

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Fix: Virgin nucs not counted as hatched</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; line-height: 1.5; color: #1f2937; }
+  code { background: #f3f4f6; padding: 0.1rem 0.3rem; border-radius: 4px; }
+  table { border-collapse: collapse; margin: 1rem 0; }
+  th, td { border: 1px solid #d1d5db; padding: 0.4rem 0.7rem; text-align: left; }
+  h2 { border-bottom: 2px solid #e5e7eb; padding-bottom: 0.3rem; }
+  .done::before { content: "\2705 "; }
+</style>
+</head>
+<body>
+<h1>Virgin Queen nucs not counted as &ldquo;hatched&rdquo;</h1>
+
+<h2>Symptom</h2>
+<p>Batch <strong>TQRQB_RZ02</strong> has 5 confirmed Virgin Queen nucs, but the Grafting Batch
+table shows Hatched = &ldquo;-&rdquo;, and the NIHBS report omits them too. Batch
+<strong>TQRQB_RZ01</strong> (4 virgins) reports Hatched = 4 correctly.</p>
+
+<h2>Root cause</h2>
+<p>The hatched/mated counters detect emergence only from the <strong>timestamp</strong>
+<code>queen_emerged_at</code> / <code>mating_confirmed_at</code> on the linked
+<code>mating_nucs</code> row (or graft status <code>emerged</code>/<code>mated</code>). They never
+look at the nuc&rsquo;s own <code>status</code> field.</p>
+<table>
+  <tr><th>Batch</th><th>Nuc status</th><th>queen_emerged_at</th><th>Counted?</th></tr>
+  <tr><td>RZ01</td><td>virgin (set via inspection)</td><td>set</td><td>Yes</td></tr>
+  <tr><td>RZ02</td><td>virgin (set directly on form/bulk)</td><td>NULL</td><td><strong>No</strong></td></tr>
+</table>
+<p>RZ02&rsquo;s nucs were promoted straight to <code>virgin</code> without an inspection that stamps
+<code>queen_emerged_at</code>, so they are invisible to the counters even though &ldquo;virgin&rdquo;
+means the queen has emerged.</p>
+
+<h2>Fix</h2>
+<p>In all three hooks, add <code>status</code> to the <code>mating_nucs</code> select and treat
+nuc status as an additional signal:</p>
+<ul>
+  <li><code>virgin</code>, <code>mating</code>, <code>laying</code> &rarr; <strong>hatched</strong></li>
+  <li><code>mating</code>, <code>laying</code> &rarr; <strong>mated</strong></li>
+</ul>
+
+<h2>Tasks</h2>
+<ul>
+  <li class="done">Diagnose root cause via direct DB query (RZ01 vs RZ02)</li>
+  <li class="done">Confirm all three count hooks share the flaw</li>
+  <li>Patch <code>useBatchGrafts.ts</code></li>
+  <li>Patch <code>useNIHBSReport.ts</code></li>
+  <li>Patch <code>useRearingGroupReport.ts</code></li>
+  <li>Re-persist / backfill stored <code>queens_hatched</code> for affected batches (decision pending)</li>
+  <li>Update docs (<code>nihbs-monthly-returns.md</code>, <code>reports.md</code>, <code>queen-rearing.md</code>)</li>
+</ul>
+
+<h2>Review</h2>
+<p>Root-cause fix applied in three count hooks plus a shared constant; one-off data backfill for the affected batch.</p>
+<ul>
+  <li><strong>graftConstants.ts</strong>: added shared <code>NUC_HATCHED_STATUSES</code> (<code>virgin</code>/<code>mating</code>/<code>laying</code>) and <code>NUC_MATED_STATUSES</code> (<code>mating</code>/<code>laying</code>) to avoid duplicating the lists.</li>
+  <li><strong>useBatchGrafts.ts</strong>, <strong>useNIHBSReport.ts</strong>, <strong>useRearingGroupReport.ts</strong>: each now selects <code>status</code> from <code>mating_nucs</code> and treats those statuses as hatched/mated signals, in addition to the existing timestamp / graft-status signals.</li>
+  <li><strong>Backfill</strong>: recomputed RZ02 from live data with the exact new definition (accepted 9, hatched 5, mated 0) and updated the stored <code>queens_hatched</code> = 5. The same formula reproduces RZ01 = 4 unchanged, confirming no regression.</li>
+  <li><strong>Docs</strong>: updated the count definition in <code>nihbs-monthly-returns.md</code>.</li>
+</ul>
+<h3>Quality audit (no test code added)</h3>
+<ul>
+  <li><strong>Null safety:</strong> status checks are guarded (<code>n.status &amp;&amp; …includes(n.status)</code>) so a null status can&rsquo;t throw.</li>
+  <li><strong>Backfill matches the writer:</strong> the SQL mirrors <code>useBatchGrafts</code> semantics (sold grafts use distribution data only, early-return) &mdash; consistent with the hook that persists the column, and scoped with <code>IS DISTINCT FROM</code> so it is idempotent.</li>
+  <li><strong>No double counting:</strong> signals are aggregated into <code>Set&lt;graft_id&gt;</code>, so multiple nuc rows per graft collapse to one.</li>
+  <li><strong>Grafting Batch table:</strong> reads the stored column; RZ02 is now correct via backfill, and any future batch re-persists on next open.</li>
+</ul>
+</body>
+</html>
