@@ -10,7 +10,7 @@ import { generateBatchCode } from '@/lib/batch-code'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import { calculateOriginPercentages, formatOrigins, calculateBestBeforeDate, formatDateForInput } from '@/lib/traceability-utils'
 import { storyTemplates, replacePlaceholders, hasUnfilledPlaceholders, getUnfilledPlaceholders, stripMarkers } from '@/lib/story-templates'
-import type { BulkContainer, BatchRun, HarvestWithApiary, ContainerFormData, BatchFormData, OriginPercentage } from '@/types/traceability'
+import type { BulkContainer, BatchRun, HarvestWithApiary, ContainerFormData, BatchFormData, JarConfig, OriginPercentage } from '@/types/traceability'
 import Button from '@/components/ui/Button'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import type { LabelDatum } from '@/components/labels/types'
@@ -207,9 +207,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
   const [batchForm, setBatchForm] = useState<BatchFormData>({
     batch_date: formatDateForInput(new Date()),
     total_weight_kg: '',
-    jar_size_ml: '500ml',
-    jar_weight_g: '',
-    jar_count: '',
+    jars: [{ jar_size_ml: '500ml', jar_weight_g: '', jar_count: '' }],
     best_before_date: formatDateForInput(calculateBestBeforeDate(new Date())),
     notes: '',
     is_public: true,
@@ -269,16 +267,22 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     fetchJarSizes()
   }, [fetchJarSizes])
 
-  // Auto-calculate total weight when jar_weight_g and jar_count change
+  // Auto-calculate total weight as the sum of (net weight × count) across all jar sizes
   useEffect(() => {
-    const jarWeight = parseInt(batchForm.jar_weight_g)
-    const jarCount = parseInt(batchForm.jar_count)
+    const totalGrams = batchForm.jars.reduce((sum, jar) => {
+      const weight = parseInt(jar.jar_weight_g)
+      const count = parseInt(jar.jar_count)
+      if (Number.isFinite(weight) && Number.isFinite(count) && weight > 0 && count > 0) {
+        return sum + weight * count
+      }
+      return sum
+    }, 0)
 
-    if (jarWeight > 0 && jarCount > 0) {
-      const calculatedKg = ((jarWeight * jarCount) / 1000).toFixed(2)
+    if (totalGrams > 0) {
+      const calculatedKg = (totalGrams / 1000).toFixed(2)
       setBatchForm(prev => ({ ...prev, total_weight_kg: calculatedKg }))
     }
-  }, [batchForm.jar_weight_g, batchForm.jar_count])
+  }, [batchForm.jars])
 
   // Public preview state
   interface PublicPreviewData {
@@ -518,6 +522,14 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           container_id,
           weight_used_kg,
           container:bulk_containers(*)
+        ),
+        jars:batch_jars(
+          id,
+          batch_id,
+          jar_size_ml,
+          jar_weight_g,
+          jar_count,
+          created_at
         )
       `)
       .eq('user_id', userId)
@@ -795,9 +807,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     setBatchForm({
       batch_date: formatDateForInput(new Date()),
       total_weight_kg: '',
-      jar_size_ml: '500ml',
-      jar_weight_g: '',
-      jar_count: '',
+      jars: [{ jar_size_ml: '500ml', jar_weight_g: '', jar_count: '' }],
       best_before_date: formatDateForInput(calculateBestBeforeDate(new Date())),
       notes: '',
       is_public: true,
@@ -814,17 +824,30 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     setShowBatchForm(false)
   }
 
+  // Map a stored numeric jar size (e.g. 340) to its dropdown option (e.g. "340ml (12oz)")
+  const matchJarSizeOption = (sizeMl: number | null): string =>
+    jarSizeOptions.find(opt => opt.startsWith(`${sizeMl}ml`)) || '500ml'
+
   const handleEditBatch = (batch: BatchRun) => {
     setSelectedTemplate('custom')
     setEditingBatch(batch)
-    // Find matching jar size option (e.g., 340 -> "340ml (12oz)")
-    const matchingJarSize = jarSizeOptions.find(opt => opt.startsWith(`${batch.jar_size_ml}ml`)) || '500ml'
+    // Build jar rows from the joined batch_jars; fall back to legacy columns
+    // if a batch somehow has no jar rows, so editing never starts empty.
+    const jarRows: JarConfig[] = (batch.jars && batch.jars.length > 0)
+      ? batch.jars.map(j => ({
+          jar_size_ml: matchJarSizeOption(j.jar_size_ml),
+          jar_weight_g: j.jar_weight_g?.toString() || '',
+          jar_count: j.jar_count?.toString() || '',
+        }))
+      : [{
+          jar_size_ml: matchJarSizeOption(batch.jar_size_ml),
+          jar_weight_g: batch.jar_weight_g?.toString() || '',
+          jar_count: batch.jar_count?.toString() || '',
+        }]
     setBatchForm({
       batch_date: batch.batch_date,
       total_weight_kg: batch.total_weight_kg?.toString() || '',
-      jar_size_ml: matchingJarSize,
-      jar_weight_g: batch.jar_weight_g?.toString() || '',
-      jar_count: batch.jar_count?.toString() || '',
+      jars: jarRows,
       best_before_date: batch.best_before_date || '',
       notes: batch.notes || '',
       is_public: batch.is_public,
@@ -868,14 +891,33 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         traceCode = newTraceCode as string
       }
 
+      // Parse jar rows into clean numeric configs, skipping rows without a valid size.
+      const parsedJars = batchForm.jars
+        .map(jar => {
+          const size = parseInt(jar.jar_size_ml.match(/^\d+/)?.[0] || '')
+          const weight = parseInt(jar.jar_weight_g)
+          const count = parseInt(jar.jar_count)
+          return {
+            jar_size_ml: Number.isFinite(size) && size > 0 ? size : null,
+            jar_weight_g: Number.isFinite(weight) ? weight : null,
+            jar_count: Number.isFinite(count) ? count : null,
+          }
+        })
+        .filter(jar => jar.jar_size_ml !== null)
+
+      // Legacy scalar columns kept in sync for backward-compatible readers:
+      // size + weight from the first jar, total count summed across all jars.
+      const primaryJar = parsedJars[0]
+      const totalJarCount = parsedJars.reduce((sum, j) => sum + (j.jar_count || 0), 0)
+
       const batchData: Record<string, unknown> = {
         user_id: userId,
         batch_code: batchCode!,
         batch_date: batchForm.batch_date,
         total_weight_kg: batchForm.total_weight_kg ? parseFloat(batchForm.total_weight_kg) : null,
-        jar_size_ml: batchForm.jar_size_ml ? parseInt(batchForm.jar_size_ml.match(/^\d+/)?.[0] || '0') : null,
-        jar_weight_g: batchForm.jar_weight_g ? parseInt(batchForm.jar_weight_g) : null,
-        jar_count: batchForm.jar_count ? parseInt(batchForm.jar_count) : null,
+        jar_size_ml: primaryJar?.jar_size_ml ?? null,
+        jar_weight_g: primaryJar?.jar_weight_g ?? null,
+        jar_count: totalJarCount > 0 ? totalJarCount : null,
         best_before_date: batchForm.best_before_date || null,
         notes: batchForm.notes.trim() || null,
         is_public: batchForm.is_public,
@@ -905,10 +947,18 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         batchId = editingBatch.id
 
         // Delete existing container links
-        await supabase
+        const { error: delContainersError } = await supabase
           .from('batch_containers')
           .delete()
           .eq('batch_id', batchId)
+        if (delContainersError) throw delContainersError
+
+        // Delete existing jar rows
+        const { error: delJarsError } = await supabase
+          .from('batch_jars')
+          .delete()
+          .eq('batch_id', batchId)
+        if (delJarsError) throw delJarsError
       } else {
         const { data, error } = await supabase
           .from('batch_runs')
@@ -932,6 +982,16 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           .insert(links)
 
         if (linkError) throw linkError
+      }
+
+      // Add jar rows
+      if (parsedJars.length > 0) {
+        const jarRows = parsedJars.map(jar => ({ ...jar, batch_id: batchId }))
+        const { error: jarError } = await supabase
+          .from('batch_jars')
+          .insert(jarRows)
+
+        if (jarError) throw jarError
       }
 
       toast.success(editingBatch ? 'Batch updated' : `Batch ${batchCode} created`)
@@ -976,6 +1036,28 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       container_ids: prev.container_ids.includes(containerId)
         ? prev.container_ids.filter(id => id !== containerId)
         : [...prev.container_ids, containerId]
+    }))
+  }
+
+  const updateJar = (index: number, field: keyof JarConfig, value: string) => {
+    setBatchForm(prev => ({
+      ...prev,
+      jars: prev.jars.map((jar, i) => i === index ? { ...jar, [field]: value } : jar)
+    }))
+  }
+
+  const addJar = () => {
+    setBatchForm(prev => ({
+      ...prev,
+      jars: [...prev.jars, { jar_size_ml: jarSizeOptions[0] || '500ml', jar_weight_g: '', jar_count: '' }]
+    }))
+  }
+
+  const removeJar = (index: number) => {
+    setBatchForm(prev => ({
+      ...prev,
+      // Always keep at least one row so the form never goes empty.
+      jars: prev.jars.length > 1 ? prev.jars.filter((_, i) => i !== index) : prev.jars
     }))
   }
 
@@ -1351,44 +1433,6 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Jar Size (ml)
-                </label>
-                <select
-                  value={batchForm.jar_size_ml}
-                  onChange={(e) => setBatchForm(prev => ({ ...prev, jar_size_ml: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
-                >
-                  {(jarSizeOptions.length > 0 ? jarSizeOptions : ['500ml']).map(size => (
-                    <option key={size} value={size}>{size}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Net Weight (g)
-                </label>
-                <input
-                  type="number"
-                  value={batchForm.jar_weight_g}
-                  onChange={(e) => setBatchForm(prev => ({ ...prev, jar_weight_g: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
-                  placeholder="e.g., 454"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
-                  Jar Count
-                </label>
-                <input
-                  type="number"
-                  value={batchForm.jar_count}
-                  onChange={(e) => setBatchForm(prev => ({ ...prev, jar_count: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
-                  placeholder="e.g., 48"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-text-secondary mb-1">
                   Total Weight (kg)
                 </label>
                 <input
@@ -1399,7 +1443,77 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                   className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
                 />
               </div>
-              <div className="flex items-center gap-2 pt-6">
+            </div>
+
+            {/* Jar Sizes — one row per size, summed into Total Weight */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2">
+                Jar Sizes
+              </label>
+              <div className="space-y-2">
+                {batchForm.jars.map((jar, index) => (
+                  <div key={index} className="flex flex-wrap items-end gap-2">
+                    <div className="flex-1 min-w-[110px]">
+                      {index === 0 && (
+                        <span className="block text-xs text-text-secondary mb-1">Jar Size (ml)</span>
+                      )}
+                      <select
+                        value={jar.jar_size_ml}
+                        onChange={(e) => updateJar(index, 'jar_size_ml', e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
+                      >
+                        {(jarSizeOptions.length > 0 ? jarSizeOptions : ['500ml']).map(size => (
+                          <option key={size} value={size}>{size}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex-1 min-w-[90px]">
+                      {index === 0 && (
+                        <span className="block text-xs text-text-secondary mb-1">Net Weight (g)</span>
+                      )}
+                      <input
+                        type="number"
+                        value={jar.jar_weight_g}
+                        onChange={(e) => updateJar(index, 'jar_weight_g', e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
+                        placeholder="e.g., 454"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-[80px]">
+                      {index === 0 && (
+                        <span className="block text-xs text-text-secondary mb-1">Jar Count</span>
+                      )}
+                      <input
+                        type="number"
+                        value={jar.jar_count}
+                        onChange={(e) => updateJar(index, 'jar_count', e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
+                        placeholder="e.g., 48"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => removeJar(index)}
+                      disabled={batchForm.jars.length === 1}
+                      className="p-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                      aria-label="Remove jar size"
+                    >
+                      <Trash2 size={18} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                onClick={addJar}
+                className="mt-2 text-sm text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1"
+              >
+                <Plus size={16} /> Add jar size
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="is_creamed"
@@ -1411,7 +1525,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                   Creamed (stirred creamy)
                 </label>
               </div>
-              <div className="flex items-center gap-2 pt-6">
+              <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="is_public"
@@ -1687,7 +1801,14 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                       <div className="flex justify-between">
                         <span className="text-text-secondary">Net Weight</span>
                         <span className="font-medium">
-                          {batchForm.jar_weight_g ? `${batchForm.jar_weight_g}g` : <span className="text-amber-500">Not set</span>}
+                          {(() => {
+                            const weights = batchForm.jars
+                              .map(j => j.jar_weight_g.trim())
+                              .filter(w => w !== '')
+                            return weights.length > 0
+                              ? weights.map(w => `${w}g`).join(', ')
+                              : <span className="text-amber-500">Not set</span>
+                          })()}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -1980,22 +2101,24 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                         {new Date(batch.best_before_date).toLocaleDateString()}
                       </div>
                     )}
-                    {batch.jar_size_ml && (
-                      <div>
-                        <span className="font-medium">Jar Size:</span>{' '}
+                    {batch.jars && batch.jars.length > 0 ? (
+                      <div className="col-span-2">
+                        <span className="font-medium">Jars:</span>{' '}
+                        {batch.jars.map((jar, i) => (
+                          <span key={jar.id}>
+                            {i > 0 && ', '}
+                            {jar.jar_size_ml}ml
+                            {jar.jar_weight_g != null && ` · ${jar.jar_weight_g}g`}
+                            {jar.jar_count != null && ` × ${jar.jar_count}`}
+                          </span>
+                        ))}
+                      </div>
+                    ) : batch.jar_size_ml && (
+                      <div className="col-span-2">
+                        <span className="font-medium">Jars:</span>{' '}
                         {batch.jar_size_ml}ml
-                      </div>
-                    )}
-                    {batch.jar_weight_g && (
-                      <div>
-                        <span className="font-medium">Net Weight:</span>{' '}
-                        {batch.jar_weight_g}g
-                      </div>
-                    )}
-                    {batch.jar_count && (
-                      <div>
-                        <span className="font-medium">Jar Count:</span>{' '}
-                        {batch.jar_count}
+                        {batch.jar_weight_g != null && ` · ${batch.jar_weight_g}g`}
+                        {batch.jar_count != null && ` × ${batch.jar_count}`}
                       </div>
                     )}
                     {batch.total_weight_kg && (
