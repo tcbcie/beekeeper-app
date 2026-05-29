@@ -10,7 +10,7 @@ import { generateBatchCode } from '@/lib/batch-code'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import { calculateOriginPercentages, formatOrigins, calculateBestBeforeDate, formatDateForInput } from '@/lib/traceability-utils'
 import { storyTemplates, replacePlaceholders, hasUnfilledPlaceholders, getUnfilledPlaceholders, stripMarkers } from '@/lib/story-templates'
-import type { BulkContainer, BatchRun, HarvestWithApiary, ContainerFormData, BatchFormData, JarConfig, OriginPercentage } from '@/types/traceability'
+import type { BulkContainer, BatchRun, BatchJar, HarvestWithApiary, ContainerFormData, BatchFormData, JarConfig, OriginPercentage } from '@/types/traceability'
 import Button from '@/components/ui/Button'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import type { LabelDatum } from '@/components/labels/types'
@@ -1025,15 +1025,22 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
     return calculateOriginPercentages(container.harvests)
   }
 
-  // Get trace URL for a batch (uses trace_code for unique public URLs)
-  const getTraceUrl = (traceCode: string) => {
+  // Get trace URL for a batch (uses trace_code for unique public URLs).
+  // Pass a net weight (g) to deep-link the public page to a single jar size.
+  const getTraceUrl = (traceCode: string, jarWeightG?: number | null) => {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.hivecraic.com'
-    return `${baseUrl}/trace/${traceCode}`
+    const url = `${baseUrl}/trace/${traceCode}`
+    return jarWeightG != null ? `${url}?w=${jarWeightG}` : url
   }
 
-  // Download QR code as PNG
-  const downloadQrCode = (batchCode: string) => {
-    const svg = document.getElementById('qr-code-svg')
+  // Jar sizes on a batch that carry a net weight — each gets its own QR so a
+  // consumer scanning a specific jar sees that jar's net weight unambiguously.
+  const jarsWithWeight = (batch: BatchRun): BatchJar[] =>
+    (batch.jars || []).filter(j => j.jar_weight_g != null)
+
+  // Download a QR code SVG (by element id) as a PNG.
+  const downloadQrCode = (elementId: string, filename: string) => {
+    const svg = document.getElementById(elementId)
     if (!svg) return
 
     const svgData = new XMLSerializer().serializeToString(svg)
@@ -1048,7 +1055,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       const pngUrl = canvas.toDataURL('image/png')
       const downloadLink = document.createElement('a')
       downloadLink.href = pngUrl
-      downloadLink.download = `qr-${batchCode}.png`
+      downloadLink.download = filename
       document.body.appendChild(downloadLink)
       downloadLink.click()
       document.body.removeChild(downloadLink)
@@ -1338,31 +1345,64 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           </div>
 
           {/* QR Code Preview for existing public batches */}
-          {editingBatch && editingBatch.trace_code && editingBatch.is_public && (
-            <div className="flex items-center gap-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 mb-4">
-              <div className="bg-surface p-2 rounded-lg border border-border">
-                <QRCodeSVG
-                  value={getTraceUrl(editingBatch.trace_code)}
-                  size={64}
-                  level="L"
-                />
+          {editingBatch && editingBatch.trace_code && editingBatch.is_public && (() => {
+            const weightedJars = jarsWithWeight(editingBatch)
+            // 2+ jar sizes → one QR per size so each jar's sticker resolves to
+            // its own net weight on the public page.
+            if (weightedJars.length >= 2) {
+              const code = editingBatch.trace_code
+              return (
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 mb-4">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-2">
+                    Public Trace Links — one QR per jar size
+                  </p>
+                  <div className="flex flex-wrap gap-4">
+                    {weightedJars.map(jar => (
+                      <div key={jar.id} className="flex items-center gap-3">
+                        <div className="bg-surface p-2 rounded-lg border border-border">
+                          <QRCodeSVG value={getTraceUrl(code, jar.jar_weight_g)} size={64} level="L" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground">{jar.jar_weight_g}g jar</p>
+                          <a
+                            href={getTraceUrl(code, jar.jar_weight_g)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-amber-600 dark:text-amber-400 hover:underline break-all"
+                          >
+                            {getTraceUrl(code, jar.jar_weight_g)}
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            }
+            // Single (or no) jar size → keep the original single trace link.
+            const url = getTraceUrl(editingBatch.trace_code, weightedJars[0]?.jar_weight_g)
+            return (
+              <div className="flex items-center gap-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 mb-4">
+                <div className="bg-surface p-2 rounded-lg border border-border">
+                  <QRCodeSVG value={url} size={64} level="L" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-1">Public Trace Link</p>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-amber-600 dark:text-amber-400 hover:underline break-all flex items-center gap-1"
+                  >
+                    {url}
+                    <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </a>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-1">Public Trace Link</p>
-                <a
-                  href={getTraceUrl(editingBatch.trace_code)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-amber-600 dark:text-amber-400 hover:underline break-all flex items-center gap-1"
-                >
-                  {getTraceUrl(editingBatch.trace_code)}
-                  <svg className="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-          )}
+            )
+          })()}
 
           <form onSubmit={handleBatchSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2171,7 +2211,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
       {/* QR Code Modal */}
       {qrBatch && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface-elevated rounded-2xl p-6 max-w-sm w-full shadow-xl">
+          <div className="bg-surface-elevated rounded-2xl p-6 max-w-sm w-full shadow-xl max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">QR Code</h3>
               <Button
@@ -2187,27 +2227,53 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                 Scan to trace batch <span className="font-mono font-semibold">{qrBatch.batch_code}</span>
               </p>
 
-              <div className="bg-surface p-4 rounded-xl border border-border inline-block mb-4">
-                <QRCodeSVG
-                  id="qr-code-svg"
-                  value={getTraceUrl(qrBatch.trace_code)}
-                  size={200}
-                  level="H"
-                  includeMargin={true}
-                />
-              </div>
-
-              <p className="text-xs text-text-secondary mb-4 break-all">
-                {getTraceUrl(qrBatch.trace_code)}
-              </p>
-
-              <Button
-                onClick={() => downloadQrCode(qrBatch.trace_code)}
-                className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
-              >
-                <Download size={18} />
-                Download PNG
-              </Button>
+              {(() => {
+                const weightedJars = jarsWithWeight(qrBatch)
+                // 2+ jar sizes → one QR per size, each with its own download.
+                if (weightedJars.length >= 2) {
+                  return (
+                    <div className="space-y-6">
+                      {weightedJars.map(jar => {
+                        const svgId = `qr-code-svg-${jar.id}`
+                        const url = getTraceUrl(qrBatch.trace_code, jar.jar_weight_g)
+                        return (
+                          <div key={jar.id}>
+                            <p className="text-sm font-medium text-foreground mb-2">{jar.jar_weight_g}g jar</p>
+                            <div className="bg-surface p-4 rounded-xl border border-border inline-block mb-2">
+                              <QRCodeSVG id={svgId} value={url} size={180} level="H" includeMargin={true} />
+                            </div>
+                            <p className="text-xs text-text-secondary mb-2 break-all">{url}</p>
+                            <Button
+                              onClick={() => downloadQrCode(svgId, `qr-${qrBatch.batch_code}-${jar.jar_weight_g}g.png`)}
+                              className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                            >
+                              <Download size={18} />
+                              Download PNG
+                            </Button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                }
+                // Single (or no) jar size → one QR as before.
+                const url = getTraceUrl(qrBatch.trace_code, weightedJars[0]?.jar_weight_g)
+                return (
+                  <>
+                    <div className="bg-surface p-4 rounded-xl border border-border inline-block mb-4">
+                      <QRCodeSVG id="qr-code-svg" value={url} size={200} level="H" includeMargin={true} />
+                    </div>
+                    <p className="text-xs text-text-secondary mb-4 break-all">{url}</p>
+                    <Button
+                      onClick={() => downloadQrCode('qr-code-svg', `qr-${qrBatch.batch_code}.png`)}
+                      className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
+                    >
+                      <Download size={18} />
+                      Download PNG
+                    </Button>
+                  </>
+                )
+              })()}
             </div>
           </div>
         </div>

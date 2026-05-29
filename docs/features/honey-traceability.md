@@ -346,6 +346,12 @@ To use:
 
 **Note:** The QR code links to the unique `trace_code` URL, while your jar label can display the `batch_code` as the EU lot number.
 
+#### Per-Jar-Size QR Codes
+
+When a batch has **two or more jar sizes** (each with a net weight), the QR modal and the edit-form trace box render **one QR per jar size**. Each links to `/trace/{trace_code}?w={net_weight_g}` and the public page then shows **only that jar's net weight** as the hero figure, so a consumer scanning a 227 g jar isn't shown the 454 g figure too.
+
+The deep-link is keyed on the **net weight in grams**, not the jar row id — editing a batch re-creates its `batch_jars` rows (the transactional `replace_batch_links` does delete+insert), so jar ids are not stable across edits, whereas net weight is the durable, consumer-meaningful key. Scanning with no `w` (or a non-matching value) shows all sizes as before.
+
 ### QR Code Preview (Edit Form)
 
 When editing an existing public batch, a QR code preview is shown at the top of the form:

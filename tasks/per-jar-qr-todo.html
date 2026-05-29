@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Per-Jar-Size QR Codes — Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #1f2937; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 1.8rem; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .task { padding: 0.35rem 0; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>Per-Jar-Size QR Codes</h1>
+
+<h2>Problem</h2>
+<p>
+  A batch can now hold multiple jar sizes (e.g. 227 g and 454 g). There is a single QR /
+  trace link per batch, and the scanned public page lists <em>all</em> net weights — so a
+  consumer holding a 227 g jar can't tell which figure applies to them.
+</p>
+
+<h2>Design — deep-link by net weight (no schema change)</h2>
+<p>
+  Keep the one <code>trace_code</code> per batch. Generate <strong>one QR per jar size</strong>,
+  each pointing to <code>/trace/{code}?w={net_weight_g}</code>. The public page reads the
+  <code>w</code> query param and, when it matches a jar, shows <strong>only that jar's net
+  weight</strong> as the hero figure.
+</p>
+
+<div class="note">
+  <strong>Why key on net weight, not the jar row id:</strong> editing a batch re-creates its
+  <code>batch_jars</code> rows (the transactional <code>replace_batch_links</code> does
+  delete+insert), so jar UUIDs change on every edit. A printed QR encoding a UUID would break
+  after the next edit. Net weight (g) is stable and is exactly the consumer-facing figure, so it
+  is the correct, durable key. If the user changes a jar's net weight, the old sticker is stale
+  anyway (the jar's weight genuinely changed).
+</div>
+
+<h2>Behaviour</h2>
+<ul>
+  <li><strong>Scanned with <code>?w=227</code></strong> → hero "Net Weight: 227 g"; other sizes not shown (no ambiguity).</li>
+  <li><strong>Scanned with no param</strong> (or a non-matching weight) → current behaviour: list all sizes' net weights.</li>
+  <li>Everything else on the page (origin, story, dates, map, feedback) is identical regardless of <code>w</code>.</li>
+</ul>
+
+<h2>UI — edit form &amp; QR modal</h2>
+<ul>
+  <li>When a batch has <strong>2+ jar sizes with a net weight</strong>: render one labelled QR per size
+    (e.g. "227 g jar", "454 g jar"), each linking to its <code>?w=</code> URL.</li>
+  <li>When a batch has a <strong>single</strong> jar size: keep the current single QR (with its <code>?w=</code> so it's consistent), exactly as today.</li>
+  <li>QR modal (the <code>qrBatch</code> download view): same — list per-size QRs, each with its own
+    Download PNG button. The download handler is generalised to take the SVG element id + filename
+    (currently hard-codes a single <code>qr-code-svg</code> id).</li>
+</ul>
+
+<h2>Files</h2>
+<ul>
+  <li><code>get_public_batch_info</code> RPC — unchanged (already returns <code>jar_weight_g</code> per jar; we match client-side).</li>
+  <li><code>src/app/(trace)/trace/[batchCode]/page.tsx</code> — accept <code>searchParams.w</code>; scope the Net Weight hero when it matches.</li>
+  <li><code>src/components/tools/TraceabilityTool.tsx</code> — per-jar QR rendering in the edit-form box and the <code>qrBatch</code> modal; generalise <code>downloadQrCode</code>; add a <code>jarTraceUrl(code, grams)</code> helper.</li>
+  <li><code>docs/features/honey-traceability.md</code> — document per-jar QR deep-linking.</li>
+</ul>
+
+<h2>Tasks</h2>
+<div class="task"><input type="checkbox" checked> 1. Public page: read <code>?w=</code>, scope Net Weight hero to the matching jar</div>
+<div class="task"><input type="checkbox" checked> 2. <code>getTraceUrl(code, grams?)</code> + <code>jarsWithWeight()</code> helper + generalise <code>downloadQrCode(elementId, filename)</code></div>
+<div class="task"><input type="checkbox" checked> 3. Edit-form trace box: per-jar QRs when 2+ sizes (single otherwise)</div>
+<div class="task"><input type="checkbox" checked> 4. <code>qrBatch</code> modal: per-jar QRs + per-jar download</div>
+<div class="task"><input type="checkbox" checked> 5. Update documentation</div>
+<div class="task"><input type="checkbox"> 6. User verifies build &amp; tests</div>
+
+<h2>Review</h2>
+<ul>
+  <li><strong>Public page</strong> (<code>page.tsx</code>): now reads <code>searchParams.w</code> (validated as digits). When it matches a jar's <code>jar_weight_g</code>, the Net Weight hero shows only that figure; otherwise the full multi-size list (unchanged).</li>
+  <li><strong>Helpers</strong>: <code>getTraceUrl(code, grams?)</code> appends <code>?w=</code> when a weight is given; <code>jarsWithWeight(batch)</code> returns jar rows that carry a net weight; <code>downloadQrCode(elementId, filename)</code> now targets any SVG by id (was hard-coded to one).</li>
+  <li><strong>Edit-form box</strong>: 2+ weighted jars → one labelled QR + link per size; single/none → original single trace link (now carrying its <code>?w=</code>).</li>
+  <li><strong>QR modal</strong>: 2+ weighted jars → stacked per-size QRs each with its own Download PNG (unique SVG ids, scrollable); single/none → unchanged single QR.</li>
+  <li><strong>No DB/schema change</strong> — deep-link keyed on net weight (g), durable across the delete+insert jar churn on edit.</li>
+</ul>
+
+</body>
+</html>

@@ -41,6 +41,7 @@ interface BatchInfo {
 
 interface PageProps {
   params: Promise<{ batchCode: string }>
+  searchParams: Promise<{ w?: string }>
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -118,8 +119,13 @@ function getMapOrigin(origins: BatchInfo['origins']): { lat: number; lon: number
   }
 }
 
-export default async function TracePage({ params }: PageProps) {
+export default async function TracePage({ params, searchParams }: PageProps) {
   const { batchCode: traceCode } = await params
+  const { w } = await searchParams
+  // Optional deep-link to a single jar size by its net weight (grams). Keyed on
+  // net weight (not the jar row id) because batch_jars rows are re-created on
+  // every batch edit, so ids are not stable across edits.
+  const selectedWeight = w != null && /^\d+$/.test(w) ? parseInt(w) : null
   const batchInfo = await getBatchInfo(traceCode)
 
   if (!batchInfo) {
@@ -181,6 +187,21 @@ export default async function TracePage({ params }: PageProps) {
         <div className="p-6 space-y-4">
           {(() => {
             const jarsWithWeight = (batchInfo.jars || []).filter(j => j.jar_weight_g != null)
+
+            // Deep-linked to one jar size: show only that net weight as the hero,
+            // so a consumer holding that jar sees an unambiguous figure.
+            if (selectedWeight != null) {
+              const match = jarsWithWeight.find(j => j.jar_weight_g === selectedWeight)
+              if (match) {
+                return (
+                  <div className="flex items-center justify-between py-2 border-b border-border">
+                    <span className="text-text-secondary">Net Weight</span>
+                    <span className="text-lg font-semibold text-foreground">{match.jar_weight_g}g</span>
+                  </div>
+                )
+              }
+            }
+
             if (jarsWithWeight.length > 0) {
               return (
                 <div className="flex items-start justify-between py-2 border-b border-border">
