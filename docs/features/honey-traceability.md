@@ -45,7 +45,7 @@ Batches represent a production run of jarred honey from one or more bulk honey s
 - **Batch Date** - Date of bottling
 - **Best Before Date** - Defaults to 2 years from batch date
 - **Jar Sizes** - One or more jar sizes per batch. Each row has its own Jar Size (ml), Net Weight (g, for EU compliance) and Jar Count. Use **+ Add jar size** to fill a single batch into multiple jar sizes; remove a row with the bin icon (at least one row is always kept)
-- **Total Weight (kg)** - Auto-calculated as the sum of (net weight × count) across all jar sizes; can be overridden
+- **Total Weight (kg)** - Auto-tallied from the selected bulk honey sources (sum of the linked containers' weights); can be overridden. Recalculates whenever the source selection changes
 - **Creamed** - Whether the honey has been stirred creamy
 - **Public** - Whether consumers can look up this batch
 - **Notes** - Optional notes
