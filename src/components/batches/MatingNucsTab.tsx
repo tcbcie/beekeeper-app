@@ -12,7 +12,7 @@ import { COLOUR_DOTS } from './graftConstants'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
 import type { CreateDistributionData } from '@/hooks/useGraftDistributions'
 import { useMatingNucBulk } from '@/hooks/useMatingNucBulk'
-import type { AvailableSealedGraft, MatingNucBulkRun, MatingNucBulkMode } from '@/hooks/useMatingNucBulk'
+import type { AvailableSealedGraft, MatingNucBulkMode } from '@/hooks/useMatingNucBulk'
 import DistributeGraftModal from './DistributeGraftModal'
 
 interface Batch {
@@ -86,6 +86,19 @@ interface MatingNucsTabProps {
  userId: string
 }
 
+interface BatchSummary {
+ batch_id: string
+ batch_name: string
+ total: number
+ statusCounts: Record<string, number>
+}
+
+type SummaryRow = {
+ batch_id: string | null
+ status: string
+ rearing_batches: { batch_name: string }[] | { batch_name: string } | null
+}
+
 const NUC_STATUSES = [
  { value: 'setup', label: 'Setup', color: 'bg-surface-secondary text-text-secondary border border-border' },
  { value: 'graft_introduced', label: 'Graft Introduced', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900 dark:text-cyan-300' },
@@ -140,8 +153,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [distributeGroupMemberIds, setDistributeGroupMemberIds] = useState<string[]>([])
  const [showBulkForm, setShowBulkForm] = useState(false)
  const [bulkLoading, setBulkLoading] = useState(false)
- const [bulkRuns, setBulkRuns] = useState<MatingNucBulkRun[]>([])
- const [bulkRunsLoading, setBulkRunsLoading] = useState(false)
+ const [batchSummaries, setBatchSummaries] = useState<BatchSummary[]>([])
  const [activeBatchId, setActiveBatchId] = useState<string | null>(null)
  const [availableBulkGrafts, setAvailableBulkGrafts] = useState<AvailableSealedGraft[]>([])
  const [bulkCellSearch, setBulkCellSearch] = useState('')
@@ -160,7 +172,6 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  } = useGraftDistributions()
 
  const {
- fetchBulkRuns,
  fetchAvailableSealedGrafts,
  createBulkNucs,
  } = useMatingNucBulk()
@@ -277,6 +288,29 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
    }
  }
  }
+
+ // Per-batch summary (independent of the active filter): active nucs grouped by status
+ const { data: summaryRows } = await supabase
+   .from('mating_nucs')
+   .select('batch_id, status, rearing_batches(batch_name)')
+   .eq('user_id', userId)
+   .eq('is_inventory', false)
+   .is('retired_at', null)
+   .not('batch_id', 'is', null)
+ const summaryMap = new Map<string, BatchSummary>()
+ for (const row of (summaryRows || []) as SummaryRow[]) {
+   if (!row.batch_id) continue
+   const rb = Array.isArray(row.rearing_batches) ? row.rearing_batches[0] : row.rearing_batches
+   let entry = summaryMap.get(row.batch_id)
+   if (!entry) {
+     entry = { batch_id: row.batch_id, batch_name: rb?.batch_name || 'Unknown batch', total: 0, statusCounts: {} }
+     summaryMap.set(row.batch_id, entry)
+   }
+   entry.total++
+   entry.statusCounts[row.status] = (entry.statusCounts[row.status] || 0) + 1
+ }
+ setBatchSummaries(Array.from(summaryMap.values()))
+
  setLoading(false)
  }, [userId, showRetired, activeBatchId])
 
@@ -402,19 +436,6 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  setInventoryNucs(nucs.map(n => ({ ...n, qr_tag_code: tagMap[n.id] || null })))
  }, [userId])
 
- const loadBulkRuns = useCallback(async () => {
- try {
- setBulkRunsLoading(true)
- const data = await fetchBulkRuns(userId)
- setBulkRuns(data)
- } catch (error) {
- console.error('Error loading mating nuc bulk runs:', error)
- toast.error('Failed to load bulk nuc runs')
- } finally {
- setBulkRunsLoading(false)
- }
- }, [fetchBulkRuns, userId, toast])
-
  useEffect(() => {
  fetchNucs()
  fetchBatches()
@@ -422,8 +443,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  fetchQueens()
  fetchMatingLocationOptions()
  fetchInventoryNucs()
- loadBulkRuns()
- }, [fetchNucs, fetchBatches, fetchGrafts, fetchQueens, fetchMatingLocationOptions, fetchInventoryNucs, loadBulkRuns])
+ }, [fetchNucs, fetchBatches, fetchGrafts, fetchQueens, fetchMatingLocationOptions, fetchInventoryNucs])
 
  // Auto-expand highlighted nuc from URL params (by ID or by nuc_number) - once only
  useEffect(() => {
@@ -611,7 +631,6 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  setActiveBatchId(bulkFormData.source_batch_id)
  await fetchNucs()
  await fetchGrafts()
- await loadBulkRuns()
  resetBulkForm()
  } catch (error) {
  console.error('Error creating bulk mating nucs:', error)
@@ -1254,10 +1273,10 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </div>
  )}
 
- {/* Bulk Runs Table */}
+ {/* Nucs by Batch summary */}
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border space-y-3">
  <div className="flex items-center justify-between gap-2 flex-wrap">
- <h3 className="text-base font-semibold text-foreground">Bulk Nuc Runs</h3>
+ <h3 className="text-base font-semibold text-foreground">Nucs by Batch</h3>
  {activeBatchId && (
  <Button
  type="button"
@@ -1269,44 +1288,49 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  )}
  </div>
 
- {bulkRunsLoading ? (
- <p className="text-sm text-text-secondary">Loading bulk runs...</p>
- ) : bulkRuns.length === 0 ? (
- <p className="text-sm text-text-secondary">No bulk runs created yet.</p>
+ {batchSummaries.length === 0 ? (
+ <p className="text-sm text-text-secondary">No nucs assigned to a batch yet.</p>
  ) : (
- <div className="overflow-x-auto">
- <table className="w-full text-sm">
- <thead>
- <tr className="text-left border-b border-border">
- <th className="py-2 pr-3 text-text-secondary">Date</th>
- <th className="py-2 pr-3 text-text-secondary">Batch</th>
- <th className="py-2 pr-3 text-text-secondary">Mode</th>
- <th className="py-2 pr-3 text-text-secondary">Requested</th>
- <th className="py-2 pr-3 text-text-secondary">Created</th>
- <th className="py-2 text-text-secondary">Actions</th>
- </tr>
- </thead>
- <tbody>
- {bulkRuns.map((run) => (
- <tr key={run.id} className="border-b border-border last:border-b-0">
- <td className="py-2 pr-3 text-foreground">{formatDateIrish(run.created_at)}</td>
- <td className="py-2 pr-3 text-foreground">{run.rearing_batches?.batch_name || 'Unknown batch'}</td>
- <td className="py-2 pr-3 text-foreground">{run.mode === 'numbered' ? 'Numbered' : 'Unnumbered'}</td>
- <td className="py-2 pr-3 text-foreground">{run.requested_count}</td>
- <td className="py-2 pr-3 text-foreground">{run.created_count}</td>
- <td className="py-2">
- <Button
- type="button"
- onClick={() => setActiveBatchId(run.source_rearing_batch_id)}
- className="text-xs px-2 py-1 bg-surface-secondary text-foreground rounded hover:bg-surface-elevated"
- >
- View Nucs
- </Button>
- </td>
- </tr>
- ))}
- </tbody>
- </table>
+ <div className="space-y-2">
+ {[...batchSummaries]
+   .sort((a, b) => batches.findIndex((x) => x.id === a.batch_id) - batches.findIndex((x) => x.id === b.batch_id))
+   .map((summary) => {
+   const isActive = activeBatchId === summary.batch_id
+   return (
+   <div
+   key={summary.batch_id}
+   className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3 ${
+     isActive
+       ? 'border-forest-500 ring-2 ring-forest-500/20 bg-surface dark:bg-surface-elevated/95'
+       : 'border-border bg-surface dark:bg-surface-elevated/95'
+   }`}
+   >
+   <div className="min-w-0 flex-1">
+   <div className="font-semibold text-foreground">{summary.batch_name}</div>
+   <div className="mt-1 flex flex-wrap gap-1">
+   {NUC_STATUSES.filter((s) => summary.statusCounts[s.value]).map((s) => (
+   <span key={s.value} className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${s.color}`}>
+   {summary.statusCounts[s.value]} {s.label}
+   </span>
+   ))}
+   </div>
+   </div>
+   <div className="flex items-center gap-3">
+   <div className="text-right">
+   <div className="text-2xl font-bold leading-none text-foreground">{summary.total}</div>
+   <div className="text-[11px] text-text-tertiary">nucs</div>
+   </div>
+   <Button
+   type="button"
+   onClick={() => setActiveBatchId(summary.batch_id)}
+   className="text-xs px-3 py-1.5 bg-surface-secondary text-foreground rounded border border-border hover:bg-surface-elevated"
+   >
+   View Nucs
+   </Button>
+   </div>
+   </div>
+   )
+ })}
  </div>
  )}
  </div>
