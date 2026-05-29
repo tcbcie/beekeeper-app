@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Replace Bulk Nuc Runs table with Nucs by Batch summary</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; line-height: 1.5; color: #1f2937; }
+  code { background: #f3f4f6; padding: 0.1rem 0.3rem; border-radius: 4px; }
+  h2 { border-bottom: 2px solid #e5e7eb; padding-bottom: 0.3rem; }
+  .done::before { content: "\2705 "; }
+</style>
+</head>
+<body>
+<h1>Mating Nucs &mdash; &ldquo;Nucs by Batch&rdquo; summary</h1>
+
+<h2>Request</h2>
+<p>The per-run details (Requested/Created) added no value and no longer reconciled with the
+batch-level &ldquo;View Nucs&rdquo; filter. Replace the <em>Bulk Nuc Runs</em> table with a
+<strong>per-batch summary</strong>: each batch&rsquo;s total nuc count and a breakdown by status
+(Cell Introduced, Virgin Queen, etc.), keeping the batch filter.</p>
+
+<h2>Approach</h2>
+<p>The summary is computed <strong>inside <code>fetchNucs</code></strong> via one extra,
+filter-independent query (active non-inventory nucs grouped by <code>batch_id</code> + status).
+Because <code>fetchNucs</code> already runs after every create/edit/retire/delete/bulk action, the
+summary stays in sync with zero extra wiring.</p>
+
+<h2>Tasks</h2>
+<ul>
+  <li class="done">Confirm intent with user (drop run details, show per-batch counts)</li>
+  <li class="done">Add <code>BatchSummary</code> aggregation in <code>fetchNucs</code></li>
+  <li class="done">Replace Bulk Nuc Runs table JSX with a &ldquo;Nucs by Batch&rdquo; card list</li>
+  <li class="done">Remove now-unused bulk-run state, fetch, and effect wiring</li>
+  <li class="done">Keep the batch filter (View Nucs / Clear Batch Filter)</li>
+  <li class="done">Update <code>docs/features/mating-nucs.md</code></li>
+</ul>
+
+<h2>Review</h2>
+<ul>
+  <li>All changes confined to <code>src/components/batches/MatingNucsTab.tsx</code> + the doc.</li>
+  <li>Summary shows total nucs and only non-zero status chips per batch; rows sorted to match the
+      batch dropdown order (newest graft date first).</li>
+  <li>Counts are <strong>active</strong> nucs (non-retired, non-inventory), so the number on each row
+      equals what &ldquo;View Nucs&rdquo; displays &mdash; the reconciliation the user asked for.</li>
+  <li>Removed: <code>bulkRuns</code>/<code>bulkRunsLoading</code> state, <code>loadBulkRuns</code>,
+      the <code>fetchBulkRuns</code> destructure, and the <code>MatingNucBulkRun</code> import. Bulk
+      creation itself is unchanged.</li>
+</ul>
+<h3>Quality audit (no test code added)</h3>
+<ul>
+  <li><strong>Null safety:</strong> rows with null <code>batch_id</code> skipped; PostgREST array join
+      normalised before reading <code>batch_name</code>.</li>
+  <li><strong>Freshness:</strong> summary derives from its own query each <code>fetchNucs</code> call,
+      independent of the active filter, so toggling a batch never skews the totals.</li>
+  <li><strong>No dead code:</strong> verified no remaining references to the removed symbols.</li>
+</ul>
+</body>
+</html>
