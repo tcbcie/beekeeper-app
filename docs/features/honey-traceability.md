@@ -309,6 +309,8 @@ Click the feedback icon (speech bubble) on a batch card to open a modal showing:
 ### Database Functions
 - `get_batch_feedback_summary(user_id)` - Returns count and average for all user's batches
 - `get_batch_feedback_details(batch_id, user_id)` - Returns detailed feedback for a specific batch
+- `replace_batch_links(batch_id, container_ids[], jars jsonb)` - Atomically replaces a batch's container links **and** jar rows in a single transaction, so an edit can never leave the batch half-written if a step fails. Used by both create and edit. `SECURITY DEFINER` with an explicit `auth.uid()` ownership check; EXECUTE granted to `authenticated` only.
+- `replace_container_harvests(container_id, harvest_ids[])` - Atomically replaces a bulk container's harvest links in a single transaction. Same ownership/grant model as above.
 
 ### Privacy & Security
 
