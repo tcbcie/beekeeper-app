@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Multiple Jar Sizes per Batch — Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #1f2937; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    h3 { color: #78350f; margin-bottom: 0.3rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.5rem 0; font-size: 0.92em; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.4rem 0.6rem; text-align: left; }
+    th { background: #fef3c7; }
+    pre { background: #1f2937; color: #f9fafb; padding: 0.8rem; border-radius: 6px; overflow-x: auto; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+
+<h1>Multiple Jar Sizes per Batch</h1>
+
+<h2>Problem</h2>
+<p>
+  When bottling a batch, the user is restricted to a <strong>single jar size</strong>
+  (<code>jar_size_ml</code>, <code>jar_weight_g</code>, <code>jar_count</code> are scalar columns on
+  <code>batch_runs</code>). A real bottling run often fills <strong>two or more</strong> different jar
+  sizes from the same blended bulk-honey sources. We need to capture each jar size with its own net
+  weight and count, and total the batch across all of them.
+</p>
+
+<h2>Design</h2>
+<h3>Source of truth: new <code>batch_jars</code> table</h3>
+<table>
+  <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+  <tr><td>id</td><td>uuid PK</td><td>default gen_random_uuid()</td></tr>
+  <tr><td>batch_id</td><td>uuid FK → batch_runs(id)</td><td>ON DELETE CASCADE</td></tr>
+  <tr><td>jar_size_ml</td><td>integer</td><td>e.g. 227, 340, 454</td></tr>
+  <tr><td>jar_weight_g</td><td>integer</td><td>net weight per jar (EU compliance)</td></tr>
+  <tr><td>jar_count</td><td>integer</td><td>number of jars of this size</td></tr>
+  <tr><td>created_at</td><td>timestamptz</td><td>default now()</td></tr>
+</table>
+<p>RLS mirrors <code>batch_runs</code> (owner via the parent batch's <code>user_id</code>). Same pattern as
+  <code>batch_containers</code>.</p>
+
+<h3>Backward compatibility (legacy columns stay)</h3>
+<p>
+  The existing scalar columns on <code>batch_runs</code> remain and are kept populated from the
+  <strong>first</strong> jar config (size + weight), with <code>jar_count</code> = the
+  <strong>sum of all configs</strong>. This keeps the AI traceability tools and any other legacy reader
+  working with an accurate total jar count without rewriting them in this change.
+</p>
+
+<h2>Approach (minimal, isolated)</h2>
+<ul>
+  <li><strong>Form state</strong>: replace the three scalar fields in <code>BatchFormData</code> with a
+    <code>jars: JarConfig[]</code> array (<code>{ jar_size_ml, jar_weight_g, jar_count }</code> as strings).
+    Always at least one row.</li>
+  <li><strong>Form UI</strong>: the current Jar Size / Net Weight / Jar Count trio becomes one repeatable
+    row with a remove (✕) button; an <em>"+ Add jar size"</em> button appends a row. Existing dropdown
+    options (<code>jarSizeOptions</code>) reused per row.</li>
+  <li><strong>Total weight auto-calc</strong>: sum of <code>(jar_weight_g × jar_count) / 1000</code> across
+    all rows (replaces the single-row effect).</li>
+  <li><strong>Submit</strong>: write the batch, then replace its <code>batch_jars</code> rows (delete-then-insert,
+    same as the harvest-link pattern). Populate legacy columns from first row + summed count.</li>
+  <li><strong>Edit</strong>: load <code>batch_jars</code> into the form array (fallback to a single row from
+    legacy columns if a batch somehow has none).</li>
+  <li><strong>Batch list</strong>: show each jar size as a line (e.g. <code>454 g × 24</code>); total stays.</li>
+  <li><strong>Public trace page</strong>: list each size's net weight + count (per your choice).</li>
+  <li><strong>Backfill migration</strong>: one row into <code>batch_jars</code> for every existing
+    <code>batch_runs</code> row that has a <code>jar_size_ml</code>.</li>
+</ul>
+
+<div class="note">
+  <strong>JarConfig validation:</strong> rows with a blank/zero jar size are skipped on save. A batch with
+  no valid jar rows saves with zero jars (same as today's empty fields). Net weight and count parse through
+  the existing <code>NaN</code>-safe guards.
+</div>
+
+<h2>Files Touched</h2>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td>Supabase migration</td><td>create <code>batch_jars</code> + RLS; backfill from <code>batch_runs</code></td></tr>
+  <tr><td><code>src/types/traceability.ts</code></td><td><code>JarConfig</code> type; <code>jars[]</code> on <code>BatchFormData</code>; <code>jars?: BatchJar[]</code> on <code>BatchRun</code></td></tr>
+  <tr><td><code>src/components/tools/TraceabilityTool.tsx</code></td><td>form state, reset, edit, submit, total-weight effect, repeatable jar UI, list display, fetch join</td></tr>
+  <tr><td><code>src/app/(trace)/trace/[batchCode]/page.tsx</code></td><td>fetch + list each jar size's net weight</td></tr>
+  <tr><td><code>docs/features/honey-traceability.md</code></td><td>document multi-jar batches</td></tr>
+</table>
+
+<h2>Tasks</h2>
+<div class="task"><input type="checkbox" checked> 1. Migration: create <code>batch_jars</code> table + RLS policies</div>
+<div class="task"><input type="checkbox" checked> 2. Migration: backfill existing batches into <code>batch_jars</code> (4 rows)</div>
+<div class="task"><input type="checkbox" checked> 3. Types: <code>JarConfig</code>, <code>BatchJar</code>, update <code>BatchFormData</code> + <code>BatchRun</code></div>
+<div class="task"><input type="checkbox" checked> 4. Form state + reset + edit handler (jars array)</div>
+<div class="task"><input type="checkbox" checked> 5. Total-weight auto-calc across all jar rows</div>
+<div class="task"><input type="checkbox" checked> 6. Repeatable jar-row UI (add / remove)</div>
+<div class="task"><input type="checkbox" checked> 7. Submit: write batch_jars (delete-then-insert) + legacy column sync</div>
+<div class="task"><input type="checkbox" checked> 8. Batch fetch join + list display (one line per size)</div>
+<div class="task"><input type="checkbox" checked> 9. Public trace page: list each size's net weight + count (RPC + page)</div>
+<div class="task"><input type="checkbox" checked> 10. Update feature documentation</div>
+<div class="task"><input type="checkbox"> 11. User verifies build &amp; tests</div>
+
+<h2>Review</h2>
+<h3>What changed</h3>
+<ul>
+  <li><strong>DB</strong>: new <code>batch_jars</code> table (FK → batch_runs, ON DELETE CASCADE, RLS via parent batch). Backfilled 4 existing batches. Updated <code>get_public_batch_info</code> RPC to return a <code>jars</code> array.</li>
+  <li><strong>Types</strong>: added <code>JarConfig</code> and <code>BatchJar</code>; <code>BatchFormData.jars: JarConfig[]</code> replaces the three scalar fields; <code>BatchRun.jars?: BatchJar[]</code>.</li>
+  <li><strong>Form</strong>: repeatable jar rows (size / net weight / count) with add + remove; at least one row always kept. Labels show only on the first row to keep it compact.</li>
+  <li><strong>Total weight</strong>: auto-sums <code>(net weight × count)</code> across all rows, NaN-guarded.</li>
+  <li><strong>Submit</strong>: parses + filters jar rows (skips rows with no valid size), delete-then-insert into <code>batch_jars</code> with checked errors, and keeps legacy columns in sync (first size/weight, total count).</li>
+  <li><strong>Display</strong>: batch card shows one "Jars" line listing each size (<code>454ml · 340g × 24</code>); public trace page lists each size's net weight with count, falling back to the legacy column.</li>
+</ul>
+<h3>Known simplification</h3>
+<p>The AI traceability tools still read the legacy <code>batch_runs</code> columns. Because those stay populated (primary size + total count), the AI summary's total-jar count remains accurate; only the per-batch jar <em>size</em> reflects the first size. Acceptable for the secondary AI surface; can be revisited if needed.</p>
+
+</body>
+</html>

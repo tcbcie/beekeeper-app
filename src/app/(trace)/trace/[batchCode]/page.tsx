@@ -17,6 +17,11 @@ interface BatchInfo {
   best_before_date: string | null
   jar_size_ml: number | null
   jar_weight_g: number | null
+  jars: {
+    jar_size_ml: number | null
+    jar_weight_g: number | null
+    jar_count: number | null
+  }[]
   beekeeper_name: string
   floral_sources: string[]
   origins: {
@@ -174,12 +179,35 @@ export default async function TracePage({ params }: PageProps) {
         </div>
 
         <div className="p-6 space-y-4">
-          {batchInfo.jar_weight_g && (
-            <div className="flex items-center justify-between py-2 border-b border-border">
-              <span className="text-text-secondary">Net Weight</span>
-              <span className="text-lg font-semibold text-foreground">{batchInfo.jar_weight_g}g</span>
-            </div>
-          )}
+          {(() => {
+            const jarsWithWeight = (batchInfo.jars || []).filter(j => j.jar_weight_g != null)
+            if (jarsWithWeight.length > 0) {
+              return (
+                <div className="flex items-start justify-between py-2 border-b border-border">
+                  <span className="text-text-secondary">Net Weight</span>
+                  <div className="text-right">
+                    {jarsWithWeight.map((jar, i) => (
+                      <div key={i} className="text-lg font-semibold text-foreground">
+                        {jar.jar_weight_g}g
+                        {jar.jar_count != null && (
+                          <span className="text-sm font-normal text-text-secondary"> (×{jar.jar_count})</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            }
+            if (batchInfo.jar_weight_g) {
+              return (
+                <div className="flex items-center justify-between py-2 border-b border-border">
+                  <span className="text-text-secondary">Net Weight</span>
+                  <span className="text-lg font-semibold text-foreground">{batchInfo.jar_weight_g}g</span>
+                </div>
+              )
+            }
+            return null
+          })()}
 
           <div className="flex items-center justify-between py-2 border-b border-border">
             <span className="text-text-secondary">Bottled</span>

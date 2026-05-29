@@ -44,14 +44,15 @@ Batches represent a production run of jarred honey from one or more bulk honey s
 - **Batch Code** - Auto-generated EU lot number (format: L-YYYY-MM-NNN)
 - **Batch Date** - Date of bottling
 - **Best Before Date** - Defaults to 2 years from batch date
-- **Jar Size (ml)** - Common sizes: 125, 250, 340, 454, 500, 750, 1000ml
-- **Net Weight (g)** - Jar net weight in grams (for EU compliance)
-- **Jar Count** - Number of jars produced
-- **Total Weight (kg)** - Optional total batch weight
+- **Jar Sizes** - One or more jar sizes per batch. Each row has its own Jar Size (ml), Net Weight (g, for EU compliance) and Jar Count. Use **+ Add jar size** to fill a single batch into multiple jar sizes; remove a row with the bin icon (at least one row is always kept)
+- **Total Weight (kg)** - Auto-calculated as the sum of (net weight × count) across all jar sizes; can be overridden
 - **Creamed** - Whether the honey has been stirred creamy
 - **Public** - Whether consumers can look up this batch
 - **Notes** - Optional notes
 - **Bulk Honey Source** - Select which bulk honey was used
+
+**Multiple Jar Sizes:**
+Jar sizes are stored in the `batch_jars` table (one row per size). The public trace page lists each size's net weight and count. For backward compatibility the `batch_runs` table keeps its legacy `jar_size_ml`, `jar_weight_g` and `jar_count` columns populated from the first jar size, with `jar_count` holding the total across all sizes.
 
 ## Batch Code vs Trace Code
 
@@ -142,6 +143,15 @@ A1B2C3D4
 | batch_id | UUID | FK → batch_runs |
 | container_id | UUID | FK → bulk_containers |
 | weight_used_kg | NUMERIC | Optional weight used |
+
+**batch_jars** (one row per jar size in a batch)
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| batch_id | UUID | FK → batch_runs (ON DELETE CASCADE) |
+| jar_size_ml | INTEGER | Jar size in ml |
+| jar_weight_g | INTEGER | Net weight per jar in grams |
+| jar_count | INTEGER | Number of jars of this size |
 
 **batch_feedback**
 | Column | Type | Description |

@@ -66,6 +66,16 @@ export interface BatchRun {
   updated_at: string
   // Joined data
   containers?: BatchContainer[]
+  jars?: BatchJar[]
+}
+
+export interface BatchJar {
+  id: string
+  batch_id: string
+  jar_size_ml: number | null
+  jar_weight_g: number | null
+  jar_count: number | null
+  created_at: string
 }
 
 export interface BatchContainer {
@@ -92,12 +102,16 @@ export interface ContainerFormData {
   bucket_count: string
 }
 
-export interface BatchFormData {
-  batch_date: string
-  total_weight_kg: string
+export interface JarConfig {
   jar_size_ml: string
   jar_weight_g: string
   jar_count: string
+}
+
+export interface BatchFormData {
+  batch_date: string
+  total_weight_kg: string
+  jars: JarConfig[]
   best_before_date: string
   notes: string
   is_public: boolean
