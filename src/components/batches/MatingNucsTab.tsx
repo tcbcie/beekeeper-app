@@ -142,7 +142,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [bulkLoading, setBulkLoading] = useState(false)
  const [bulkRuns, setBulkRuns] = useState<MatingNucBulkRun[]>([])
  const [bulkRunsLoading, setBulkRunsLoading] = useState(false)
- const [activeBulkBatchId, setActiveBulkBatchId] = useState<string | null>(null)
+ const [activeBatchId, setActiveBatchId] = useState<string | null>(null)
  const [availableBulkGrafts, setAvailableBulkGrafts] = useState<AvailableSealedGraft[]>([])
  const [bulkCellSearch, setBulkCellSearch] = useState('')
  const [matingLocationOptions, setMatingLocationOptions] = useState<MatingLocationOption[]>([])
@@ -203,8 +203,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  query = query.is('retired_at', null)
  }
 
- if (activeBulkBatchId) {
- query = query.eq('creation_batch_id', activeBulkBatchId)
+ if (activeBatchId) {
+ query = query.eq('batch_id', activeBatchId)
  }
 
  const { data, error } = await query.order('created_at', { ascending: false })
@@ -259,7 +259,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }
 
  // Sync graft statuses: only when viewing active nucs without bulk filter
- if (!showRetired && !activeBulkBatchId) {
+ if (!showRetired && !activeBatchId) {
    const activeGraftIds = data
      .filter(n => !n.retired_at && n.graft_id && n.status !== 'failed')
      .map(n => n.graft_id)
@@ -278,7 +278,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }
  }
  setLoading(false)
- }, [userId, showRetired, activeBulkBatchId])
+ }, [userId, showRetired, activeBatchId])
 
  const fetchBatches = useCallback(async () => {
  const { data } = await supabase
@@ -608,7 +608,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  })
 
  toast.success(`Created ${result.createdCount} of ${result.requestedCount} nuc entries`)
- setActiveBulkBatchId(result.batchId)
+ setActiveBatchId(bulkFormData.source_batch_id)
  await fetchNucs()
  await fetchGrafts()
  await loadBulkRuns()
@@ -1258,10 +1258,10 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border space-y-3">
  <div className="flex items-center justify-between gap-2 flex-wrap">
  <h3 className="text-base font-semibold text-foreground">Bulk Nuc Runs</h3>
- {activeBulkBatchId && (
+ {activeBatchId && (
  <Button
  type="button"
- onClick={() => setActiveBulkBatchId(null)}
+ onClick={() => setActiveBatchId(null)}
  className="text-xs px-3 py-1 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 rounded"
  >
  Clear Batch Filter
@@ -1297,7 +1297,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <td className="py-2">
  <Button
  type="button"
- onClick={() => setActiveBulkBatchId(run.id)}
+ onClick={() => setActiveBatchId(run.source_rearing_batch_id)}
  className="text-xs px-2 py-1 bg-surface-secondary text-foreground rounded hover:bg-surface-elevated"
  >
  View Nucs
@@ -1315,7 +1315,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  {nucs.length === 0 ? (
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-8 text-center border border-border">
  <p className="text-text-secondary">
- {activeBulkBatchId ? 'No nucs found for the selected bulk run.' : 'No mating nucs yet. Create your first nuc above.'}
+ {activeBatchId ? 'No nucs found for the selected batch.' : 'No mating nucs yet. Create your first nuc above.'}
  </p>
  </div>
  ) : (
