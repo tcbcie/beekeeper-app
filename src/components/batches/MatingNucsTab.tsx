@@ -163,6 +163,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [nucTagCodes, setNucTagCodes] = useState<Record<string, string>>({})
  const [nucWeights, setNucWeights] = useState<Record<string, number>>({})
  const autoExpandApplied = useRef(false)
+ // Sequencing guard: rapid filter changes launch overlapping fetchNucs runs; only the
+ // latest run is allowed to commit state, so a slow earlier run can't overwrite it.
+ const fetchNucsGenRef = useRef(0)
 
  const {
  createDistribution,
@@ -201,6 +204,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  })
 
  const fetchNucs = useCallback(async () => {
+ const gen = ++fetchNucsGenRef.current
  let query = supabase
  .from('mating_nucs')
  .select('*, batch_grafts(cell_number, status, queen_marked, queen_number), rearing_batches(batch_name, emergence_date), queens(queen_number), mating_nuc_inspections(count)')
@@ -219,6 +223,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }
 
  const { data, error } = await query.order('created_at', { ascending: false })
+ if (gen !== fetchNucsGenRef.current) return
 
  if (error) {
  console.error('Error fetching nucs:', error)
@@ -238,6 +243,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
        if (t.mating_nuc_id) tagMap[t.mating_nuc_id] = t.code
      }
    }
+   if (gen !== fetchNucsGenRef.current) return
    setNucTagCodes(tagMap)
  } else {
    setNucTagCodes({})
@@ -264,6 +270,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
        }
      }
    }
+   if (gen !== fetchNucsGenRef.current) return
    setNucWeights(wMap)
  } else {
    setNucWeights({})
@@ -289,29 +296,36 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }
  }
 
- // Per-batch summary (independent of the active filter): active nucs grouped by status
- const { data: summaryRows } = await supabase
+ // Per-batch summary (independent of the active filter): active nucs grouped by status.
+ // On failure, log and leave the previous summary intact rather than blanking it to
+ // a misleading "no nucs" state.
+ const { data: summaryRows, error: summaryError } = await supabase
    .from('mating_nucs')
    .select('batch_id, status, rearing_batches(batch_name)')
    .eq('user_id', userId)
    .eq('is_inventory', false)
    .is('retired_at', null)
    .not('batch_id', 'is', null)
- const summaryMap = new Map<string, BatchSummary>()
- for (const row of (summaryRows || []) as SummaryRow[]) {
-   if (!row.batch_id) continue
-   const rb = Array.isArray(row.rearing_batches) ? row.rearing_batches[0] : row.rearing_batches
-   let entry = summaryMap.get(row.batch_id)
-   if (!entry) {
-     entry = { batch_id: row.batch_id, batch_name: rb?.batch_name || 'Unknown batch', total: 0, statusCounts: {} }
-     summaryMap.set(row.batch_id, entry)
+ if (gen !== fetchNucsGenRef.current) return
+ if (summaryError) {
+   console.error('Error loading batch summary:', summaryError)
+ } else {
+   const summaryMap = new Map<string, BatchSummary>()
+   for (const row of (summaryRows || []) as SummaryRow[]) {
+     if (!row.batch_id) continue
+     const rb = Array.isArray(row.rearing_batches) ? row.rearing_batches[0] : row.rearing_batches
+     let entry = summaryMap.get(row.batch_id)
+     if (!entry) {
+       entry = { batch_id: row.batch_id, batch_name: rb?.batch_name || 'Unknown batch', total: 0, statusCounts: {} }
+       summaryMap.set(row.batch_id, entry)
+     }
+     entry.total++
+     entry.statusCounts[row.status] = (entry.statusCounts[row.status] || 0) + 1
    }
-   entry.total++
-   entry.statusCounts[row.status] = (entry.statusCounts[row.status] || 0) + 1
+   setBatchSummaries(Array.from(summaryMap.values()))
  }
- setBatchSummaries(Array.from(summaryMap.values()))
 
- setLoading(false)
+ if (gen === fetchNucsGenRef.current) setLoading(false)
  }, [userId, showRetired, activeBatchId])
 
  const fetchBatches = useCallback(async () => {

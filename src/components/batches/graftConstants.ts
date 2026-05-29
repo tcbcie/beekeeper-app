@@ -80,6 +80,29 @@ export const FRAME_STATUS_VALUES = ['grafted', 'accepted']
 export const NUC_HATCHED_STATUSES = ['virgin', 'mating', 'laying']
 export const NUC_MATED_STATUSES = ['mating', 'laying']
 
+export type NucSignalRow = {
+  graft_id: string | null
+  status: string | null
+  queen_emerged_at: string | null
+  mating_confirmed_at: string | null
+}
+
+// Single source of truth for deriving which grafts have an emerged (hatched) or
+// mated queen from their linked mating_nucs rows. A nuc signals via an inspection
+// timestamp (queen_emerged_at / mating_confirmed_at) or via its own status
+// (virgin/mating/laying). Returns sets keyed by graft_id, so multiple nuc rows per
+// graft (no UNIQUE constraint on graft_id) collapse to one — any signal wins.
+export function buildNucSignalSets(rows: NucSignalRow[]): { hatched: Set<string>; mated: Set<string> } {
+  const hatched = new Set<string>()
+  const mated = new Set<string>()
+  for (const n of rows) {
+    if (!n.graft_id) continue
+    if (n.queen_emerged_at || n.mating_confirmed_at || (n.status && NUC_HATCHED_STATUSES.includes(n.status))) hatched.add(n.graft_id)
+    if (n.mating_confirmed_at || (n.status && NUC_MATED_STATUSES.includes(n.status))) mated.add(n.graft_id)
+  }
+  return { hatched, mated }
+}
+
 export const MARKABLE_STATUSES = ['emerged', 'in_nuc', 'mated']
 
 export const DISTRIBUTABLE_STATUSES = ['sealed', 'caged', 'emerged', 'in_nuc', 'mated']
