@@ -1357,24 +1357,35 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                     Public Trace Links — one QR per jar size
                   </p>
                   <div className="flex flex-wrap gap-4">
-                    {weightedJars.map(jar => (
-                      <div key={jar.id} className="flex items-center gap-3">
-                        <div className="bg-surface p-2 rounded-lg border border-border">
-                          <QRCodeSVG value={getTraceUrl(code, jar.jar_weight_g)} size={64} level="L" />
+                    {weightedJars.map(jar => {
+                      const svgId = `qr-edit-svg-${jar.id}`
+                      const url = getTraceUrl(code, jar.jar_weight_g)
+                      return (
+                        <div key={jar.id} className="flex items-center gap-3">
+                          <div className="bg-surface p-2 rounded-lg border border-border">
+                            <QRCodeSVG id={svgId} value={url} size={64} level="L" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-foreground">{jar.jar_weight_g}g jar</p>
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-amber-600 dark:text-amber-400 hover:underline break-all"
+                            >
+                              {url}
+                            </a>
+                            <Button
+                              type="button"
+                              onClick={() => downloadQrCode(svgId, `qr-${editingBatch.batch_code}-${jar.jar_weight_g}g.png`)}
+                              className="mt-1 flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline"
+                            >
+                              <Download size={14} /> Download PNG
+                            </Button>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground">{jar.jar_weight_g}g jar</p>
-                          <a
-                            href={getTraceUrl(code, jar.jar_weight_g)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-amber-600 dark:text-amber-400 hover:underline break-all"
-                          >
-                            {getTraceUrl(code, jar.jar_weight_g)}
-                          </a>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )
@@ -1384,7 +1395,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
             return (
               <div className="flex items-center gap-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800 mb-4">
                 <div className="bg-surface p-2 rounded-lg border border-border">
-                  <QRCodeSVG value={url} size={64} level="L" />
+                  <QRCodeSVG id="qr-edit-svg-single" value={url} size={64} level="L" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-amber-800 dark:text-amber-300 mb-1">Public Trace Link</p>
@@ -1399,6 +1410,13 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </a>
+                  <Button
+                    type="button"
+                    onClick={() => downloadQrCode('qr-edit-svg-single', `qr-${editingBatch.batch_code}.png`)}
+                    className="mt-1 flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 hover:underline"
+                  >
+                    <Download size={14} /> Download PNG
+                  </Button>
                 </div>
               </div>
             )
