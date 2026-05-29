@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { NUC_HATCHED_STATUSES, NUC_MATED_STATUSES } from '@/components/batches/graftConstants'
 
 export interface MatingApiaryInfo {
   id: string
@@ -106,12 +107,12 @@ export function useNIHBSReport() {
         let allDists: { graft_id: string; batch_id: string; distribution_type: string; recipient_user_id: string | null; mating_confirmed: boolean | null; distribution_date: string | null; offspring_hybridised: boolean | null; hybridisation_date: string | null }[] = []
         if (batchIdList.length > 0) {
           type GraftRow = { id: string; batch_id: string; status: string }
-          type NucRow = { graft_id: string | null; queen_emerged_at: string | null; mating_confirmed_at: string | null }
+          type NucRow = { graft_id: string | null; status: string | null; queen_emerged_at: string | null; mating_confirmed_at: string | null }
 
           const [graftsRes, distsRes, nucsRes] = await Promise.all([
             supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIdList),
             supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type, recipient_user_id, mating_confirmed, distribution_date, offspring_hybridised, hybridisation_date').in('batch_id', batchIdList),
-            supabase.from('mating_nucs').select('graft_id, queen_emerged_at, mating_confirmed_at').in('batch_id', batchIdList),
+            supabase.from('mating_nucs').select('graft_id, status, queen_emerged_at, mating_confirmed_at').in('batch_id', batchIdList),
           ])
 
           if (graftsRes.error) throw graftsRes.error
@@ -126,17 +127,18 @@ export function useNIHBSReport() {
           }
 
           // Fallback: a graft is "hatched" / "mated" if its linked mating_nuc has the
-          // corresponding inspection timestamp set. This catches cases where a sealed
-          // cell was placed in a nuc (graft.status = 'in_nuc') and later confirmed via
-          // a nuc inspection, without the graft status itself moving to 'emerged'/'mated'.
-          // Aggregated as sets so multiple nuc rows per graft (no UNIQUE constraint on
-          // graft_id) OR together — any signal wins.
+          // corresponding inspection timestamp set, OR has been promoted to a status
+          // that implies emergence/mating (virgin/mating/laying). This catches cases
+          // where a sealed cell was placed in a nuc (graft.status = 'in_nuc') and later
+          // confirmed via a nuc inspection, AND cases where the nuc was set straight to
+          // 'virgin' without an inspection stamping queen_emerged_at. Aggregated as sets
+          // so multiple nuc rows per graft (no UNIQUE constraint on graft_id) OR together.
           const hatchedViaNuc = new Set<string>()
           const matedViaNuc = new Set<string>()
           for (const n of (nucsRes.data || []) as NucRow[]) {
             if (!n.graft_id) continue
-            if (n.queen_emerged_at || n.mating_confirmed_at) hatchedViaNuc.add(n.graft_id)
-            if (n.mating_confirmed_at) matedViaNuc.add(n.graft_id)
+            if (n.queen_emerged_at || n.mating_confirmed_at || (n.status && NUC_HATCHED_STATUSES.includes(n.status))) hatchedViaNuc.add(n.graft_id)
+            if (n.mating_confirmed_at || (n.status && NUC_MATED_STATUSES.includes(n.status))) matedViaNuc.add(n.graft_id)
           }
           const graftRows = (graftsRes.data || []) as GraftRow[]
 

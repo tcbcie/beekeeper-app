@@ -127,10 +127,13 @@ Both `useNIHBSReport` and `useRearingGroupReport` derive counters from individua
   - graft status is `emerged` or `mated`
   - graft status is `sold` and the linked `graft_distributions.distribution_type` is `virgin_queen` or `mated_queen`
   - the linked `mating_nucs` row has a non-null `queen_emerged_at` **or** `mating_confirmed_at`
+  - the linked `mating_nucs` row has a status of `virgin`, `mating`, or `laying` (the queen has emerged even when no inspection stamped `queen_emerged_at`)
 - **queens_mated** = a graft is counted if **any** of the following is true:
   - graft status is `mated`
   - graft status is `sold` and the linked `graft_distributions.distribution_type` is `mated_queen` (or `mating_confirmed = true`)
   - the linked `mating_nucs` row has a non-null `mating_confirmed_at`
+  - the linked `mating_nucs` row has a status of `mating` or `laying`
+- The nuc-status signal lists live in `src/components/batches/graftConstants.ts` as `NUC_HATCHED_STATUSES` / `NUC_MATED_STATUSES`, shared by all three count hooks (`useBatchGrafts`, `useNIHBSReport`, `useRearingGroupReport`).
 - **sold grafts** with `distribution_type = queen_cell` count as accepted only (not hatched or mated).
 
 **Why `in_nuc` is not a hatched signal.** When a sealed cell is transferred into a mating nuc via the bulk-setup flow, its graft status is set to `in_nuc` immediately — regardless of whether the queen has actually emerged. Counting `in_nuc` as hatched produced inflated B13 figures in NIHBS reports. Hatching is recognised once an inspection records the queen (`NucInspectionPanel` auto-promotes the graft to `emerged`/`mated` **and** stamps `mating_nucs.queen_emerged_at` / `mating_confirmed_at`, which the nuc-timestamp fallback also picks up).

@@ -73,6 +73,13 @@ export const TABLE_STATUSES = [
 
 export const FRAME_STATUS_VALUES = ['grafted', 'accepted']
 
+// mating_nuc status values that imply the queen has emerged (hatched) / mated.
+// Used by the batch + report count hooks so a nuc promoted straight to one of
+// these statuses (without an inspection that stamps queen_emerged_at /
+// mating_confirmed_at) is still counted.
+export const NUC_HATCHED_STATUSES = ['virgin', 'mating', 'laying']
+export const NUC_MATED_STATUSES = ['mating', 'laying']
+
 export const MARKABLE_STATUSES = ['emerged', 'in_nuc', 'mated']
 
 export const DISTRIBUTABLE_STATUSES = ['sealed', 'caged', 'emerged', 'in_nuc', 'mated']
