@@ -1271,10 +1271,10 @@ export default function TasksEventsPage() {
 
       {/* Visit Checklist Modal */}
       {showChecklist && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 print:bg-background print:p-0">
+        <div className="checklist-print-overlay fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 print:static print:block print:bg-background print:p-0">
           <Card
             padding="none"
-            className="max-w-4xl w-full max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:shadow-none print:border-none"
+            className="max-w-4xl w-full max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:overflow-visible print:shadow-none print:border-none"
           >
             {/* Header */}
             <div className="sticky top-0 bg-surface-elevated dark:bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between print:static print:bg-background print:border-b-2 print:border-black">

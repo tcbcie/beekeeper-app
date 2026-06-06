@@ -1263,6 +1263,14 @@ textarea::placeholder {
 
 /* Print styles for reports */
 @media print {
+  /* Visit Checklist: when the modal is open, print only the checklist.
+     Hide every sibling of the open overlay so the dashboard list behind it
+     does not print. The overlay itself is position:fixed on screen (which
+     Chrome repeats on every page); the modal markup resets it to static. */
+  *:has(> .checklist-print-overlay) > *:not(.checklist-print-overlay) {
+    display: none !important;
+  }
+
   /* Hide navigation and non-printable elements */
   .no-print,
   nav,
