@@ -101,3 +101,14 @@ No DB migration. No new components. The existing `Surface`, `CheckboxInput`, `Ba
 - No reordering UI for hives within an apiary (always alphanumeric).
 - No multi-select of apiaries. The picker is single-value: one apiary or "All apiaries".
 - No grouping by date. Within a hive, tasks are still listed chronologically rather than grouped into "today / this week / later".
+
+## Print fix (06 Jun 2026)
+
+**Issue reported:** Printing the checklist produced a first page cut in half, then the same list repeated across ~15 pages.
+
+**Root cause:** The modal overlay is `position: fixed` (`fixed inset-0`). The previous `print:` utilities only changed background/padding, leaving the element fixed. Chrome anchors a fixed element to every printed page and clips it to viewport height — producing the repeated, half-cut output.
+
+**Fix (minimal, 3 changes):**
+- `src/app/dashboard/tasks/page.tsx` — overlay gains `checklist-print-overlay` marker class plus `print:static print:block`, so it leaves fixed positioning and flows normally when printing.
+- `src/app/dashboard/tasks/page.tsx` — modal `Card` gains `print:overflow-visible` so content paginates instead of being clipped by `overflow-y-auto`.
+- `src/app/globals.css` (`@media print`) — `*:has(> .checklist-print-overlay) > *:not(.checklist-print-overlay) { display: none }` hides the dashboard list behind the modal so only the checklist prints.
