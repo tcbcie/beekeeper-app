@@ -12,7 +12,8 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import QueenLineageTree from '@/components/QueenLineageTree'
-import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge, QUEEN_ROLE_OPTIONS, queenRoleLabel, isProductionQueen } from '@/types/queen'
+import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge, QUEEN_ROLE_OPTIONS, isProductionQueen } from '@/types/queen'
+import QueenRoleBadge from '@/components/queens/QueenRoleBadge'
 import Button from '@/components/ui/Button'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import { queenToLabelDatum } from '@/components/labels/queenMapping'
@@ -1482,11 +1483,7 @@ export default function QueensPage() {
  >
  {queen.queen_number}
  </Link>
- {!isProductionQueen(queen.queen_role) && (
- <span className="px-1.5 py-0.5 text-xs font-medium rounded border border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
- {queenRoleLabel(queen.queen_role)}
- </span>
- )}
+ <QueenRoleBadge role={queen.queen_role} />
  </span>
  {(() => {
  // Only stamp the viewer's breeder context on queens they own; shared queens from

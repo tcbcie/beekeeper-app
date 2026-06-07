@@ -14,6 +14,7 @@ import { useQueenDetail } from '@/hooks'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getQueenColorFromYear, calculateQueenAge, queenRoleLabel, isProductionQueen } from '@/types/queen'
+import QueenRoleBadge from '@/components/queens/QueenRoleBadge'
 import { DRONE_SOURCE_OPTIONS } from '@/lib/lineage'
 import { queenCodeFor, type BreederContext } from '@/lib/queen-code'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
@@ -213,11 +214,7 @@ export default function QueenDetailPage() {
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-bold text-foreground">{queen.queen_number}</h1>
-            {!isProductionQueen(queen.queen_role) && (
-              <span className="px-2 py-0.5 text-xs font-medium rounded border border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                {queenRoleLabel(queen.queen_role)}
-              </span>
-            )}
+            <QueenRoleBadge role={queen.queen_role} />
             {queenCode && (
               <span className="px-2 py-0.5 text-xs font-mono font-medium rounded border border-border bg-surface-secondary text-text-secondary" title="Composite queen code (country · breeder · number · year)">
                 {queenCode}
