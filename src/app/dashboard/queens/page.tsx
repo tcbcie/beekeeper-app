@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { isValidEircode } from '@/lib/eircode'
 import { buildLineageString, damLabelFromQueen, damLabelFromSnapshot, lineageYear, DRONE_SOURCE_OPTIONS, type DroneSourceType } from '@/lib/lineage'
+import { queenCodeFor, type BreederContext } from '@/lib/queen-code'
 import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown, GitBranch, GitCompareArrows, ArrowUp, ArrowDown, ArrowUpDown, Printer } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -147,6 +148,7 @@ export default function QueensPage() {
  const [sourceOptions, setSourceOptions] = useState<string[]>([])
  const [batches, setBatches] = useState<Batch[]>([])
  const [matingStationOptions, setMatingStationOptions] = useState<string[]>([])
+ const [breederContext, setBreederContext] = useState<BreederContext | null>(null)
  const [showLineage, setShowLineage] = useState(false)
  const [deleting, setDeleting] = useState(false)
  const { enabled: labelPrintingEnabled } = useLabelPrinting()
@@ -501,6 +503,17 @@ export default function QueensPage() {
  fetchSourceOptions()
  fetchBatches(id)
  fetchMatingStations(id)
+ // Breeder context for the composite queen code (list + labels).
+ supabase
+ .from('profiles')
+ .select('full_name, first_name, last_name, is_uk_ni_resident, breeder_code')
+ .eq('id', id)
+ .maybeSingle()
+ .then(({ data }) => {
+ if (!data) return
+ const name = data.full_name || [data.first_name, data.last_name].filter(Boolean).join(' ')
+ setBreederContext({ name, isUkNi: !!data.is_uk_ni_resident, breederCode: data.breeder_code })
+ })
  }
  initUser()
  }, [router, fetchQueens, fetchSubspeciesOptions, fetchSourceOptions, fetchBatches, fetchMatingStations])
@@ -1406,6 +1419,10 @@ export default function QueensPage() {
  >
  {queen.queen_number}
  </Link>
+ {(() => {
+ const code = queenCodeFor(queen, breederContext)
+ return code ? <div className="text-xs font-mono text-text-tertiary mt-0.5">{code}</div> : null
+ })()}
  </td>
  <td className="px-6 py-4 whitespace-nowrap text-text-secondary">
  {queen.mother ? (
@@ -1508,7 +1525,7 @@ export default function QueensPage() {
  <PrintLabelsModal
  open={printQueens !== null}
  onClose={() => setPrintQueens(null)}
- data={(printQueens ?? []).map(queenToLabelDatum)}
+ data={(printQueens ?? []).map((q) => queenToLabelDatum(q, breederContext))}
  presetId="queen_label"
  title={printQueens && printQueens.length === 1
  ? `Print label — ${printQueens[0].queen_number}`

@@ -2,6 +2,7 @@ import { getQueenColorFromYear } from '@/types/queen'
 import type { Queen } from '@/types/queen'
 import type { LabelDatum, QueenYearColour } from './types'
 import { formatDateGB } from './dateFormat'
+import { queenCodeFor, type BreederContext } from '@/lib/queen-code'
 
 const QUEEN_COLOUR_SET: ReadonlySet<string> = new Set(['White', 'Yellow', 'Red', 'Green', 'Blue'])
 
@@ -15,7 +16,7 @@ function twoDigitYear(birthDate: string | null | undefined): string | undefined 
   return String(year % 100).padStart(2, '0')
 }
 
-export function queenToLabelDatum(queen: Queen): LabelDatum {
+export function queenToLabelDatum(queen: Queen, breeder?: BreederContext | null): LabelDatum {
   const colourName = queen.birth_date ? getQueenColorFromYear(queen.birth_date) : ''
   const yearColour: QueenYearColour | null = QUEEN_COLOUR_SET.has(colourName)
     ? (colourName as QueenYearColour)
@@ -30,6 +31,7 @@ export function queenToLabelDatum(queen: Queen): LabelDatum {
       fatherNumber: queen.father?.queen_number || undefined,
       matedDate: formatDateGB(queen.mated_date) ?? undefined,
       eircode: queen.mated_at_eircode || undefined,
+      code: queenCodeFor(queen, breeder ?? null) || undefined,
       birthYear: twoDigitYear(queen.birth_date),
     },
   }
