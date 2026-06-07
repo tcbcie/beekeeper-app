@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
+import { isValidEircode } from '@/lib/eircode'
 import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown, GitBranch, GitCompareArrows, ArrowUp, ArrowDown, ArrowUpDown, Printer } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -502,6 +503,12 @@ export default function QueensPage() {
 
  if (selectedParentIds.some((parentId) => invalidParentIds.has(parentId))) {
  toast.error('A queen cannot use herself or one of her descendants as a parent.')
+ return
+ }
+
+ // Eircode is optional, but reject malformed values rather than storing junk.
+ if (formData.mated_at_eircode.trim() && !isValidEircode(formData.mated_at_eircode)) {
+ toast.error('Enter a valid Eircode (e.g. H91 E6K2) or leave it blank.')
  return
  }
 
