@@ -38,6 +38,8 @@ interface QueenLineageTreeProps {
   queenId: string
   expanded: boolean
   onToggle: () => void
+  // Distributed queens have no local mother FK; show this snapshot label in the Mother slot.
+  motherFallback?: string
 }
 
 const getColorClass = (color: string): string => {
@@ -81,13 +83,13 @@ const extractQueenRecord = (raw: any): QueenRecord => ({
   father_id: raw.father_id || null,
 })
 
-const QueenCard = ({ queen, label, isMain = false }: { queen: QueenNode | null; label: string; isMain?: boolean }) => {
+const QueenCard = ({ queen, label, isMain = false, fallbackLabel }: { queen: QueenNode | null; label: string; isMain?: boolean; fallbackLabel?: string }) => {
   if (!queen) {
     return (
       <div className="flex flex-col items-center">
         <span className="text-xs text-text-tertiary mb-1">{label}</span>
-        <div className="px-3 py-2 rounded-lg border border-dashed border-border bg-surface-elevated/50 text-text-tertiary text-sm">
-          Unknown
+        <div className="px-3 py-2 rounded-lg border border-dashed border-border bg-surface-elevated/50 text-text-tertiary text-sm" title={fallbackLabel || undefined}>
+          {fallbackLabel ? fallbackLabel.split(' (')[0] : 'Unknown'}
         </div>
       </div>
     )
@@ -128,7 +130,7 @@ const QueenCard = ({ queen, label, isMain = false }: { queen: QueenNode | null; 
   )
 }
 
-export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenLineageTreeProps) {
+export default function QueenLineageTree({ queenId, expanded, onToggle, motherFallback }: QueenLineageTreeProps) {
   const [lineage, setLineage] = useState<LineageData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -367,7 +369,7 @@ export default function QueenLineageTree({ queenId, expanded, onToggle }: QueenL
 
               {/* Parents row */}
               <div className="flex justify-center gap-8">
-                <QueenCard queen={lineage.mother} label="Mother" />
+                <QueenCard queen={lineage.mother} label="Mother" fallbackLabel={motherFallback} />
                 <QueenCard queen={lineage.father} label="Father" />
               </div>
 
