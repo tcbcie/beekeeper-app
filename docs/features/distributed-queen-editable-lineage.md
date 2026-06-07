@@ -55,6 +55,14 @@ queen, the snapshot can go stale (one batch's queens had a mother numbered `n/a`
 distribution that was later corrected to `76-DA`; those snapshots were back-filled from the
 batch's live mother).
 
+## Lineage tree on the edit form
+
+Previously the "Queen Lineage" tree was hidden entirely for distributed queens. It now shows
+for them too: `QueenLineageTree` accepts an optional `motherFallback` prop, and the edit form
+passes `distributed_mother_queen` so the Mother slot reads e.g. `76-DA` (full snapshot on
+hover) rather than "Unknown". This keeps the tree consistent with the provenance banner and,
+crucially, still surfaces any **daughters** bred locally from the distributed queen.
+
 ## Future distributions
 
 The creation path (`useGraftDistributions.ts → createQueenForRecipient`) stores the

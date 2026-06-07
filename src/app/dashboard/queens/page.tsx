@@ -1138,12 +1138,14 @@ export default function QueensPage() {
  </div>
  </form>
 
- {/* Lineage Tree - only show when editing a non-distributed queen (distributed queens show provenance in the banner) */}
- {editingQueen && !editingQueen.distributed_by_name && (
+ {/* Lineage tree. Distributed queens have no local mother FK, so we feed the
+ mother snapshot as a fallback; the tree still shows any daughters bred locally. */}
+ {editingQueen && (
  <QueenLineageTree
  queenId={editingQueen.id}
  expanded={showLineage}
  onToggle={() => setShowLineage(!showLineage)}
+ motherFallback={editingQueen.distributed_mother_queen ?? undefined}
  />
  )}
  </div>
