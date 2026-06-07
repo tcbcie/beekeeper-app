@@ -600,10 +600,11 @@ export default function QueensPage() {
  status: dataToSubmit.status,
  performance_notes: dataToSubmit.performance_notes,
  mated_date: dataToSubmit.mated_date,
- // Editable for distributed queens: the recipient may mate elsewhere, and the
- // mother link can be recovered from the source batch.
+ // Editable for distributed queens: the recipient may mate elsewhere, the mother
+ // link can be recovered from the source batch, and subspecies follows the dam.
  mated_at_eircode: dataToSubmit.mated_at_eircode || null,
  mother_id: dataToSubmit.mother_id,
+ subspecies: dataToSubmit.subspecies || null,
  drone_source_type: dataToSubmit.drone_source_type,
  mating_station: dataToSubmit.mating_station,
  lineage_overridden: dataToSubmit.lineage_overridden,
@@ -644,12 +645,19 @@ export default function QueensPage() {
  if (batchMotherId && queens.some((q) => q.id === batchMotherId)) motherId = batchMotherId
  }
 
+ // Subspecies follows the maternal line: when it wasn't captured at distribution,
+ // inherit it from the (now-linked) mother queen so it comes true to the record.
+ let subspecies = queen.subspecies || ''
+ if (!subspecies && motherId) {
+ subspecies = queens.find((q) => q.id === motherId)?.subspecies || ''
+ }
+
  setFormData({
  queen_number: queen.queen_number,
  birth_date: queen.birth_date,
  marking_color: queen.marking_color,
  source: queen.source,
- subspecies: queen.subspecies,
+ subspecies,
  lineage: queen.lineage || '',
  queen_clipped: queen.queen_clipped || false,
  status: queen.status,
@@ -971,7 +979,7 @@ export default function QueensPage() {
  <p>Drone Source: {editingQueen.distributed_drone_source}</p>
  )}
  <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">
- Birth date, marking colour, source, subspecies, father queen, and source batch are locked for distributed queens. Mother queen, mated at, and lineage stay editable so you can record where the queen was actually mated.
+ Birth date, marking colour, source, father queen, and source batch are locked for distributed queens. Mother queen, subspecies, mated at, and lineage stay editable so you can record the queen&apos;s true line and where she was actually mated.
  </p>
  </div>
  )}
@@ -1048,8 +1056,7 @@ export default function QueensPage() {
  <select
  value={formData.subspecies}
  onChange={(e) => setFormData({ ...formData, subspecies: e.target.value })}
- disabled={!!editingQueen?.distributed_by_name}
- className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  >
  <option value="">Select subspecies</option>
  {subspeciesOptions.map((subspecies) => (
