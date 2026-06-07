@@ -181,8 +181,11 @@ export default function QueenDetailPage() {
   const markingColor = getQueenColorFromYear(queen.birth_date)
   const age = calculateQueenAge(queen.birth_date)
 
-  // Composite (BeeBreed-style) queen code, derived from the holding account's breeder context.
-  const queenCode = queenCodeFor(queen, breederProfile)
+  // Composite (BeeBreed-style) queen code. Only apply the viewer's breeder context to queens
+  // they own (the profile fetched here is the viewer's); shared queens from other beekeepers
+  // keep their own provenance (distributed) or show no code.
+  const ownerContext = isOwner ? breederProfile : null
+  const queenCode = queenCodeFor(queen, ownerContext)
   const isOld = queen.birth_date && (Date.now() - new Date(queen.birth_date).getTime()) > 2 * 365 * 24 * 60 * 60 * 1000
 
   const colorBadgeClass = (color: string) => {
@@ -579,7 +582,7 @@ export default function QueenDetailPage() {
       <PrintLabelsModal
         open={printOpen}
         onClose={() => setPrintOpen(false)}
-        data={[queenToLabelDatum(queen, breederProfile)]}
+        data={[queenToLabelDatum(queen, ownerContext)]}
         presetId="queen_label"
         title={`Print label — ${queen.queen_number}`}
       />

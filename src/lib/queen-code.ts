@@ -6,6 +6,8 @@
 // reflects the holding account and is omitted for distributed queens (breeder country
 // unknown to the recipient).
 
+import { fullYearFromDate } from './lineage'
+
 export function initialsFromName(name?: string | null): string {
   if (!name) return ''
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -46,16 +48,26 @@ interface QueenCodeInput {
   birth_date?: string | null
 }
 
-// Build the composite code for a queen given the holding account's breeder context.
-// For distributed queens the original breeder's name drives the (initials) segment and the
+// Build the composite code for a queen given the queen owner's breeder context. For
+// distributed queens the original breeder's name drives the (initials) segment and the
 // country is omitted, since the breeder's registered code/country are not known locally.
+//
+// `ctx` MUST belong to the queen's owner. Callers viewing a home-bred queen they do not own
+// should pass `null`: rather than stamp the viewer's identity onto someone else's queen, we
+// return an empty string (no code) when the breeder is unknown.
 export function queenCodeFor(queen: QueenCodeInput, ctx: BreederContext | null): string {
   const distributed = !!queen.distributed_by_name
+  const breederName = distributed ? queen.distributed_by_name : ctx?.name
+  const breederCode = distributed ? '' : (ctx?.breederCode ?? '')
+
+  // No breeder identity available — don't fabricate a code from defaults.
+  if (!distributed && !breederCode && !breederName) return ''
+
   return buildQueenCode({
     country: distributed ? '' : (ctx?.isUkNi ? 'GB' : 'IE'),
-    breederCode: distributed ? '' : (ctx?.breederCode ?? ''),
-    breederName: queen.distributed_by_name || ctx?.name,
+    breederCode,
+    breederName,
     queenNumber: queen.queen_number,
-    year: queen.birth_date ? new Date(queen.birth_date).getFullYear() : null,
+    year: fullYearFromDate(queen.birth_date),
   })
 }
