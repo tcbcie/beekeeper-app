@@ -175,6 +175,19 @@ export default function ProfilePage() {
 
  setSavingProfile(true)
  try {
+ const breederCode = profileFormData.breeder_code ? profileFormData.breeder_code.trim().toUpperCase() : null
+
+ // Breeder codes are app-wide unique. Pre-check for a friendly message; the DB unique
+ // index is the hard guarantee against races.
+ if (breederCode) {
+ const { data: available, error: checkError } = await supabase.rpc('is_breeder_code_available', { p_code: breederCode })
+ if (!checkError && available === false) {
+ toast.error(`Breeder code "${breederCode}" is already taken. Please choose another.`)
+ setSavingProfile(false)
+ return
+ }
+ }
+
  // Update existing profile (profiles are created automatically via trigger on signup)
  const { error } = await supabase
  .from('profiles')
@@ -183,7 +196,7 @@ export default function ProfilePage() {
  last_name: profileFormData.last_name || null,
  mobile_number: profileFormData.mobile_number || null,
  producer_address: profileFormData.producer_address || null,
- breeder_code: profileFormData.breeder_code ? profileFormData.breeder_code.trim().toUpperCase() : null,
+ breeder_code: breederCode,
  association_id: profileFormData.association_id || null,
  member_fibka: profileFormData.member_fibka,
  member_iba: profileFormData.member_iba,
@@ -197,6 +210,11 @@ export default function ProfilePage() {
  .eq('id', userId)
 
  if (error) {
+ // 23505 = unique violation (breeder code taken between pre-check and write).
+ if ((error as { code?: string }).code === '23505') {
+ toast.error(`Breeder code "${breederCode}" is already taken. Please choose another.`)
+ return
+ }
  console.error('Error updating profile:', error)
  throw error
  }
@@ -786,7 +804,7 @@ export default function ProfilePage() {
  className="uppercase"
  />
  <p className="mt-1 text-xs text-text-tertiary">
- Used in the composite queen code (e.g. IE-RZ-7W-2026). If blank, your initials are used.
+ Used in the composite queen code (e.g. IE-RZ-7W-2026). Unique across HiveCraic. If blank, your initials are used.
  </p>
  </div>
 

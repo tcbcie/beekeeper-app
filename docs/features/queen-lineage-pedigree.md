@@ -82,8 +82,15 @@ the queen number), and printed **queen labels** (`queenToLabelDatum(queen, breed
 page. Optional; when set it replaces name initials so two breeders with the same initials do
 not collide.
 
+**App-wide uniqueness**: a case-insensitive partial unique index
+(`profiles_breeder_code_unique_idx` on `upper(breeder_code) WHERE breeder_code IS NOT NULL`)
+guarantees no two accounts share a code (NULLs allowed). The profile save pre-checks via the
+`is_breeder_code_available(p_code)` `SECURITY DEFINER` RPC (so it can see across accounts
+despite profiles RLS) for a friendly message, and also handles the `23505` unique violation
+as a race fallback.
+
 ## Out of scope (future)
 
-- App-wide uniqueness enforcement / association-assigned breeder registry numbers.
+- Association-assigned breeder registry numbers (the code is currently user-chosen).
 - Multi-generation lineage in the string (the genealogy tree already covers ancestry/descendants).
 - Mating-station registry beyond free text / apiary names.
