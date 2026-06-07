@@ -43,6 +43,8 @@ Reused: `mother_id` / `distributed_mother_queen` (dam), `father_id` (drone line,
 - **Drone Source** select (default Open-mated).
 - **Mating Station** = datalist picker (apiaries / mating sites + previously-used stations) with free-text fallback.
 - **Father Queen** shown only when drone source = Instrumental insemination.
+- **Subspecies** is editable (also for distributed queens) and auto-fills from the linked
+  mother when blank, so it follows the maternal line.
 - **Lineage** is a live, read-only preview of `buildLineageString(...)`. Tick **Edit manually** to override (sets `lineage_overridden`); the typed text is then kept verbatim.
 
 **Creation (distribution)**: `createQueenForRecipient` sets `drone_source_type='open'`,

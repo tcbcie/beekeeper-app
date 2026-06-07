@@ -35,8 +35,12 @@ On the Edit Queen form for a distributed queen:
 - The self/descendant **cycle guard** now also applies to distributed queens, since the
   mother dropdown is editable for them.
 
+**Subspecies** is also editable for distributed queens and follows the maternal line: when it
+was not captured at distribution, opening the queen auto-fills it from the linked mother
+(`mother_id`), so it comes true to the record (e.g. a daughter of an AMM queen shows AMM).
+
 Still locked for distributed queens (to preserve breeder provenance): birth date,
-marking colour, source, subspecies, father queen, source batch.
+marking colour, source, father queen, source batch.
 
 ## Mother display fallback
 
