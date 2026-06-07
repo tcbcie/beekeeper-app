@@ -1,5 +1,20 @@
 // Queen-related type definitions
 
+export type QueenRole = 'production' | 'breeder' | 'reference' | 'drone_source'
+
+export const QUEEN_ROLE_OPTIONS: { value: QueenRole; label: string }[] = [
+  { value: 'production', label: 'Production' },
+  { value: 'breeder', label: 'Breeder' },
+  { value: 'reference', label: 'Reference' },
+  { value: 'drone_source', label: 'Drone source' },
+]
+
+export const queenRoleLabel = (role?: string | null): string =>
+  QUEEN_ROLE_OPTIONS.find((r) => r.value === role)?.label ?? 'Production'
+
+export const isProductionQueen = (role?: string | null): boolean =>
+  (role ?? 'production') === 'production'
+
 export interface Queen {
   id: string
   user_id: string
@@ -17,6 +32,8 @@ export interface Queen {
   drone_source_type?: string | null
   mating_station?: string | null
   lineage_overridden?: boolean | null
+  queen_role?: string | null
+  origin_breeder_code?: string | null
   distributed_by_name?: string | null
   distributed_batch_name?: string | null
   distributed_mother_queen?: string | null
@@ -66,6 +83,8 @@ export interface QueenFormData {
   drone_source_type: string
   mating_station: string
   lineage_overridden: boolean
+  queen_role: string
+  origin_breeder_code: string
 }
 
 export interface Batch {
