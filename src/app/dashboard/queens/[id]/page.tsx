@@ -14,6 +14,7 @@ import { useQueenDetail } from '@/hooks'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
+import { DRONE_SOURCE_OPTIONS } from '@/lib/lineage'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import { queenToLabelDatum } from '@/components/labels/queenMapping'
 import { useLabelPrinting } from '@/hooks/useLabelPrinting'
@@ -381,14 +382,25 @@ export default function QueenDetailPage() {
                   <span className="text-text-primary" title={queen.distributed_mother_queen}>{queen.distributed_mother_queen.split(' (')[0]}</span>
                 ) : 'Unknown'}
               </p>
+              {/* Father (single drone line) is only meaningful for instrumental insemination;
+                  open/station matings record a drone source + station instead. */}
+              {(queen.drone_source_type === 'ii' || queen.father) && (
+                <p>
+                  <span className="text-text-tertiary">Father:</span>{' '}
+                  {queen.father ? (
+                    <Link href={`/dashboard/queens/${queen.father.id}`} className="text-forest-600 dark:text-forest-400 hover:underline">
+                      {queen.father.queen_number}
+                    </Link>
+                  ) : 'Unknown'}
+                </p>
+              )}
               <p>
-                <span className="text-text-tertiary">Father:</span>{' '}
-                {queen.father ? (
-                  <Link href={`/dashboard/queens/${queen.father.id}`} className="text-forest-600 dark:text-forest-400 hover:underline">
-                    {queen.father.queen_number}
-                  </Link>
-                ) : 'Unknown'}
+                <span className="text-text-tertiary">Drone source:</span>{' '}
+                <span className="text-text-primary">{DRONE_SOURCE_OPTIONS.find((o) => o.value === queen.drone_source_type)?.label || 'Open-mated'}</span>
               </p>
+              {queen.mating_station && (
+                <p><span className="text-text-tertiary">Mating station:</span> <span className="text-text-primary">{queen.mating_station}</span></p>
+              )}
               <p><span className="text-text-tertiary">Subspecies:</span> <span className="text-text-primary">{queen.subspecies || 'N/A'}</span></p>
               <p><span className="text-text-tertiary">Lineage:</span> <span className="text-text-primary">{queen.lineage || 'N/A'}</span></p>
               {queen.batch && (
