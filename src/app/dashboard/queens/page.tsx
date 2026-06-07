@@ -9,7 +9,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import QueenLineageTree from '@/components/QueenLineageTree'
-import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
+import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge, formatQueenSnapshot } from '@/types/queen'
 import Button from '@/components/ui/Button'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import { queenToLabelDatum } from '@/components/labels/queenMapping'
@@ -422,7 +422,7 @@ export default function QueensPage() {
 
  const { data, error } = await supabase
  .from('rearing_batches')
- .select('id, batch_name')
+ .select('id, batch_name, mother_queen_id')
  .eq('user_id', currentUserId)
  .order('created_at', { ascending: false })
 
@@ -493,7 +493,7 @@ export default function QueensPage() {
  mated_date: formData.mated_date || null,
  }
 
- const invalidParentIds = editingQueen && !editingQueen.distributed_by_name
+ const invalidParentIds = editingQueen
  ? getInvalidLineageParentIds(queens, editingQueen.id)
  : new Set<string>()
  const selectedParentIds = [dataToSubmit.mother_id, dataToSubmit.father_id].filter(
@@ -516,6 +516,10 @@ export default function QueensPage() {
  status: dataToSubmit.status,
  performance_notes: dataToSubmit.performance_notes,
  mated_date: dataToSubmit.mated_date,
+ // Editable for distributed queens: the recipient may mate elsewhere, and the
+ // mother link can be recovered from the source batch.
+ mated_at_eircode: dataToSubmit.mated_at_eircode || null,
+ mother_id: dataToSubmit.mother_id,
  }
  : dataToSubmit
 
@@ -542,19 +546,39 @@ export default function QueensPage() {
 
  const handleEdit = (queen: Queen) => {
  setEditingQueen(queen)
+
+ // For distributed queens the mother link is not stored, but the source batch is.
+ // Auto-fill the mother queen from the batch (only if it is one of the user's own
+ // queens so we never write a dangling reference), and surface it in the lineage.
+ let motherId = queen.mother_id || ''
+ let lineage = queen.lineage
+ if (queen.distributed_by_name && !motherId && queen.batch_id) {
+ const batchMotherId = batches.find((b) => b.id === queen.batch_id)?.mother_queen_id
+ const mother = batchMotherId ? queens.find((q) => q.id === batchMotherId) : undefined
+ if (mother) {
+ motherId = mother.id
+ const snapshot = `Mother: ${formatQueenSnapshot(mother.queen_number, mother.marking_color, mother.birth_date, mother.subspecies)}`
+ if (!lineage) {
+ lineage = `${snapshot}.`
+ } else if (!/(^|\W)mother:/i.test(lineage)) {
+ lineage = `${snapshot}. ${lineage}`
+ }
+ }
+ }
+
  setFormData({
  queen_number: queen.queen_number,
  birth_date: queen.birth_date,
  marking_color: queen.marking_color,
  source: queen.source,
  subspecies: queen.subspecies,
- lineage: queen.lineage,
+ lineage,
  queen_clipped: queen.queen_clipped || false,
  status: queen.status,
  performance_notes: queen.performance_notes,
  mated_at_eircode: queen.mated_at_eircode || '',
  mated_date: queen.mated_date || '',
- mother_id: queen.mother_id || '',
+ mother_id: motherId,
  father_id: queen.father_id || '',
  batch_id: queen.batch_id || '',
  })
@@ -782,7 +806,7 @@ export default function QueensPage() {
  return Math.round(totalDays / activeWithDates.length / 30)
  })()
 
- const invalidParentIds = editingQueen && !editingQueen.distributed_by_name
+ const invalidParentIds = editingQueen
  ? getInvalidLineageParentIds(queens, editingQueen.id)
  : new Set<string>()
  const availableParentQueens = queens.filter((q) => !invalidParentIds.has(q.id))
@@ -860,7 +884,7 @@ export default function QueensPage() {
  <p>Drone Source: {editingQueen.distributed_drone_source}</p>
  )}
  <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">
- Birth date, marking colour, source, subspecies, mother/father queen, mated at, and source batch are locked for distributed queens.
+ Birth date, marking colour, source, subspecies, father queen, and source batch are locked for distributed queens. Mother queen, mated at, and lineage stay editable so you can record where the queen was actually mated.
  </p>
  </div>
  )}
@@ -965,8 +989,7 @@ export default function QueensPage() {
  <select
  value={formData.mother_id}
  onChange={(e) => setFormData({ ...formData, mother_id: e.target.value })}
- disabled={!!editingQueen?.distributed_by_name}
- className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  >
  <option value="">Select mother queen (optional)</option>
  {availableParentQueens
@@ -1031,8 +1054,7 @@ export default function QueensPage() {
  onChange={(e) => setFormData({ ...formData, mated_at_eircode: e.target.value.toUpperCase() })}
  placeholder="e.g., H91 E6K2"
  maxLength={8}
- disabled={!!editingQueen?.distributed_by_name}
- className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  />
  <p className="text-xs text-text-tertiary mt-1">
  Irish postcode where the queen was mated
