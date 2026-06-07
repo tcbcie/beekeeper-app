@@ -1287,6 +1287,11 @@ export default function QueensPage() {
  <span className="text-forest-600 dark:text-forest-400 font-medium">
  {queen.mother.queen_number}
  </span>
+ ) : queen.distributed_mother_queen ? (
+ // Distributed queens carry the breeder's mother as a text snapshot (no local FK).
+ <span className="font-medium" title={queen.distributed_mother_queen}>
+ {queen.distributed_mother_queen.split(' (')[0]}
+ </span>
  ) : (
  'N/A'
  )}

@@ -38,6 +38,20 @@ On the Edit Queen form for a distributed queen:
 Still locked for distributed queens (to preserve breeder provenance): birth date,
 marking colour, source, subspecies, father queen, source batch.
 
+## Mother display fallback
+
+Distributed queens received from another breeder have a null `mother_id` (the breeder's
+queen is not in the recipient's records, so no cross-user FK is written). The queens **list**
+and **detail** pages now fall back to the `distributed_mother_queen` text snapshot when the
+FK is absent — showing the mother's number (e.g. `76-DA`, full snapshot on hover) instead of
+`N/A`/`Unknown`. The genealogy *tree* still cannot show a cross-user ancestor; the textual
+`Lineage` field carries the full `Mother: … Open-mated … Breeder: …` line.
+
+Note: the snapshot is captured at distribution time. If the breeder later renames the mother
+queen, the snapshot can go stale (one batch's queens had a mother numbered `n/a` at
+distribution that was later corrected to `76-DA`; those snapshots were back-filled from the
+batch's live mother).
+
 ## Future distributions
 
 The creation path (`useGraftDistributions.ts → createQueenForRecipient`) stores the
