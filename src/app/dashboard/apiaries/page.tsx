@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
+import { isValidEircode } from '@/lib/eircode'
 import { Plus, X, MapPin, Loader2, Map, UserPlus, Camera, MapPinOff } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -389,6 +390,10 @@ export default function ApiariesPage() {
       if (!confirmed) {
         return // User chose to go back and add postcode
       }
+    } else if (!formData.is_uk_ni && !isValidEircode(formData.eircode)) {
+      // Only validate Irish Eircodes; UK/NI postcodes use a different format.
+      toast.error('Enter a valid Eircode (e.g. D02 XY45), tick "UK/NI Postcode", or leave it blank.')
+      return
     }
 
     try {
