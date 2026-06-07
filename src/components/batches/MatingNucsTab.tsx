@@ -1365,6 +1365,11 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const statusInfo = NUC_STATUSES.find(s => s.value === nuc.status)
  const inspectionCount = nuc.mating_nuc_inspections?.[0]?.count || 0
  const markingColour = nuc.rearing_batches?.emergence_date ? getQueenColorFromYear(nuc.rearing_batches.emergence_date) : ''
+ // Once a queen is marked, show its marking (colour + number) instead of the cell it came from.
+ const queenMarked = !!(nuc.queen_marked_at || nuc.batch_grafts?.queen_marked)
+ const cellOrMarking = queenMarked
+ ? ` · Marked${markingColour ? ` ${markingColour}` : ''}${nuc.batch_grafts?.queen_number ? ` #${nuc.batch_grafts.queen_number}` : ''}`
+ : (nuc.batch_grafts ? ` · Cell #${nuc.batch_grafts.cell_number}` : '')
 
  return (
  <div
@@ -1437,7 +1442,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  {/* Line 3: context */}
  <p className="mt-0.5 pl-5 text-xs text-text-secondary">
  {[
- nuc.rearing_batches && `${nuc.rearing_batches.batch_name}${nuc.batch_grafts ? ` · Cell #${nuc.batch_grafts.cell_number}` : ''}`,
+ nuc.rearing_batches && `${nuc.rearing_batches.batch_name}${cellOrMarking}`,
  nuc.queens && `Breeder Queen: ${nuc.queens.queen_number}`,
  nuc.mating_location && `Mating Site: ${nuc.mating_location}`,
  ].filter(Boolean).join(' · ') || 'No batch assigned'}
