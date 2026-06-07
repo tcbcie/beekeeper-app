@@ -60,8 +60,21 @@ server-side; replaces the prior 15-arg overload).
 - Existing home-bred queens with a hand-typed lineage: `lineage_overridden = true` so a future
   save does not clobber the manual text.
 
+## Composite queen code
+
+A BeeBreed-style composite identifier is shown on the queen **detail page** beside the queen
+number: `Country-BreederInitials-QueenNumber-Year`, e.g. `IE-RZ-7W-2026`.
+
+- `src/lib/queen-code.ts → buildQueenCode()` (+ `initialsFromName`). Derived, not stored.
+- **Country**: `IE` / `GB` from the owner profile's `is_uk_ni_resident`; **omitted** for
+  distributed queens (the breeder's country is unknown to the recipient).
+- **Breeder initials**: from `distributed_by_name` for distributed queens, else the owner's
+  profile name — matching the `RZ` convention in batch names like `TQRQB_RZ01`.
+- **Queen number** and **year** (birth year) complete the code.
+
 ## Out of scope (future)
 
-- Full international composite queen code (e.g. `IE-RZ-07-2026`) as a unique identifier.
+- A registered/unique breeder number (current code uses name initials, which can collide).
+- Showing the composite code in the queens list / on printed labels.
 - Multi-generation lineage in the string (the genealogy tree already covers ancestry/descendants).
 - Mating-station registry beyond free text / apiary names.
