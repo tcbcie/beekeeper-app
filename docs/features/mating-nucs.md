@@ -177,3 +177,20 @@ Used for cell eligibility:
 - [x] Inspection with `mated` sets nuc to `mating`, graft to `mated`, and `mating_confirmed_at`
 - [x] Inspection with `laying` sets nuc to `laying`, graft to `mated`
 - [x] Nuc without linked graft still saves inspection without graft update error
+
+## Nuc card context line: marking replaces cell number (07 Jun 2026)
+
+On the collapsed nuc card, the context line (line 3) previously always showed the
+graft origin as `Cell #N`. Once a queen has actually been marked, the cell it came
+from is no longer of interest, so that segment is replaced with the queen marking:
+
+- **Not yet marked:** `Batch · Cell #30 · Breeder Queen: … · Mating Site: …`
+- **Marked:** `Batch · Marked Green #135 · Breeder Queen: … · Mating Site: …`
+
+Logic (`src/components/batches/MatingNucsTab.tsx`):
+- `queenMarked` = `nuc.queen_marked_at || nuc.batch_grafts.queen_marked`.
+- Colour comes from the existing `getQueenColorFromYear(emergence_date)` (international
+  marking colour for the batch year) — the same value already shown in the expanded panel.
+- The queen number (`nuc.batch_grafts.queen_number`) is appended as `#N` only when present.
+
+No DB change; reuses existing fields.
