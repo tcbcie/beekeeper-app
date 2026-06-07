@@ -74,6 +74,11 @@ A BeeBreed-style composite identifier: `Country-Breeder-QueenNumber-Year`, e.g. 
   distributed queens the original `distributed_by_name` drives the initials.
 - **Queen number** and **year** (birth year) complete the code.
 
+**Breeder/reference queens** (`queen_role !== 'production'`) are breeding stock, often an
+external line, so their code is built from `origin_breeder_code` with the country omitted
+(`UG-UGMul1.8-2025`), or number-only when no origin is set — never the owner's `IE-RZ`. See
+[breeder-reference-queens-plan.md](../feature/breeder-reference-queens-plan.md).
+
 Surfaced on: the queen **detail page** (chip beside the number), the queens **list** (under
 the queen number), and printed **queen labels** (`queenToLabelDatum(queen, breederContext)` →
 `QueenLabelExtras.code`, rendered in `Label.tsx` and `printHtml.ts`).

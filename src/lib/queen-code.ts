@@ -46,16 +46,33 @@ interface QueenCodeInput {
   distributed_by_name?: string | null
   queen_number?: string | null
   birth_date?: string | null
+  queen_role?: string | null
+  origin_breeder_code?: string | null
 }
 
 // Build the composite code for a queen given the queen owner's breeder context. For
 // distributed queens the original breeder's name drives the (initials) segment and the
 // country is omitted, since the breeder's registered code/country are not known locally.
 //
-// `ctx` MUST belong to the queen's owner. Callers viewing a home-bred queen they do not own
-// should pass `null`: rather than stamp the viewer's identity onto someone else's queen, we
-// return an empty string (no code) when the breeder is unknown.
+// Breeder/reference queens (queen_role !== 'production') are breeding stock, often an external
+// line — their identity is the origin, not the holder: build from origin_breeder_code with the
+// country omitted (falling back to number-only), never the owner's IE-RZ.
+//
+// `ctx` MUST belong to the queen's owner. Callers viewing a home-bred production queen they do
+// not own should pass `null`: rather than stamp the viewer's identity onto someone else's
+// queen, we return an empty string (no code) when the breeder is unknown.
 export function queenCodeFor(queen: QueenCodeInput, ctx: BreederContext | null): string {
+  const role = queen.queen_role ?? 'production'
+  if (role !== 'production') {
+    return buildQueenCode({
+      country: '',
+      breederCode: queen.origin_breeder_code ?? '',
+      breederName: null,
+      queenNumber: queen.queen_number,
+      year: fullYearFromDate(queen.birth_date),
+    })
+  }
+
   const distributed = !!queen.distributed_by_name
   const breederName = distributed ? queen.distributed_by_name : ctx?.name
   const breederCode = distributed ? '' : (ctx?.breederCode ?? '')

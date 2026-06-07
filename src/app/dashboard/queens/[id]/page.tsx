@@ -13,7 +13,7 @@ import QueenReportTab from '@/components/queens/QueenReportTab'
 import { useQueenDetail } from '@/hooks'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
-import { getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
+import { getQueenColorFromYear, calculateQueenAge, queenRoleLabel, isProductionQueen } from '@/types/queen'
 import { DRONE_SOURCE_OPTIONS } from '@/lib/lineage'
 import { queenCodeFor, type BreederContext } from '@/lib/queen-code'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
@@ -213,6 +213,11 @@ export default function QueenDetailPage() {
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-bold text-foreground">{queen.queen_number}</h1>
+            {!isProductionQueen(queen.queen_role) && (
+              <span className="px-2 py-0.5 text-xs font-medium rounded border border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                {queenRoleLabel(queen.queen_role)}
+              </span>
+            )}
             {queenCode && (
               <span className="px-2 py-0.5 text-xs font-mono font-medium rounded border border-border bg-surface-secondary text-text-secondary" title="Composite queen code (country · breeder · number · year)">
                 {queenCode}
@@ -425,6 +430,9 @@ export default function QueenDetailPage() {
                 <p><span className="text-text-tertiary">Mating station:</span> <span className="text-text-primary">{queen.mating_station}</span></p>
               )}
               <p><span className="text-text-tertiary">Subspecies:</span> <span className="text-text-primary">{queen.subspecies || 'N/A'}</span></p>
+              {!isProductionQueen(queen.queen_role) && (
+                <p><span className="text-text-tertiary">Role:</span> <span className="text-text-primary">{queenRoleLabel(queen.queen_role)}{queen.origin_breeder_code ? ` · origin ${queen.origin_breeder_code}` : ''}</span></p>
+              )}
               <p><span className="text-text-tertiary">Lineage:</span> <span className="text-text-primary">{queen.lineage || 'N/A'}</span></p>
               {queen.batch && (
                 <p>

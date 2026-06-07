@@ -12,7 +12,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import QueenLineageTree from '@/components/QueenLineageTree'
-import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
+import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge, QUEEN_ROLE_OPTIONS, queenRoleLabel, isProductionQueen } from '@/types/queen'
 import Button from '@/components/ui/Button'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import { queenToLabelDatum } from '@/components/labels/queenMapping'
@@ -141,6 +141,7 @@ export default function QueensPage() {
  const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
  const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all')
  const [statusFilter, setStatusFilter] = useState<'active' | 'cell' | 'retired' | 'dead' | 'swarmed' | 'superseded' | 'all'>('active')
+ const [roleFilter, setRoleFilter] = useState<'all' | 'production' | 'breeder'>('all')
  const [loading, setLoading] = useState(true)
  const [userId, setUserId] = useState<string | null>(null)
  const [isTeamMember, setIsTeamMember] = useState(false)
@@ -187,6 +188,8 @@ export default function QueensPage() {
  drone_source_type: 'open',
  mating_station: '',
  lineage_overridden: false,
+ queen_role: 'production',
+ origin_breeder_code: '',
  })
 
  // Persist selection so back-navigation from /compare restores the same ticks.
@@ -568,6 +571,7 @@ export default function QueensPage() {
  batch_id: formData.batch_id || null,
  mated_date: formData.mated_date || null,
  mating_station: formData.mating_station || null,
+ origin_breeder_code: formData.origin_breeder_code ? formData.origin_breeder_code.trim().toUpperCase() : null,
  lineage: lineageToSave,
  }
 
@@ -608,6 +612,8 @@ export default function QueensPage() {
  drone_source_type: dataToSubmit.drone_source_type,
  mating_station: dataToSubmit.mating_station,
  lineage_overridden: dataToSubmit.lineage_overridden,
+ queen_role: dataToSubmit.queen_role,
+ origin_breeder_code: dataToSubmit.origin_breeder_code,
  }
  : dataToSubmit
 
@@ -670,6 +676,8 @@ export default function QueensPage() {
  drone_source_type: (queen.drone_source_type as DroneSourceType) || 'open',
  mating_station: queen.mating_station || '',
  lineage_overridden: queen.lineage_overridden ?? false,
+ queen_role: queen.queen_role || 'production',
+ origin_breeder_code: queen.origin_breeder_code || '',
  })
  setShowForm(true)
  }
@@ -747,6 +755,8 @@ export default function QueensPage() {
  drone_source_type: 'open',
  mating_station: '',
  lineage_overridden: false,
+ queen_role: 'production',
+ origin_breeder_code: '',
  })
  }
 
@@ -824,6 +834,10 @@ export default function QueensPage() {
  // Apply status filter
  if (statusFilter !== 'all' && q.status !== statusFilter) return false
 
+ // Apply role filter (production vs breeder/reference)
+ if (roleFilter === 'production' && !isProductionQueen(q.queen_role)) return false
+ if (roleFilter === 'breeder' && isProductionQueen(q.queen_role)) return false
+
  // Apply assignment filter
  if (assignmentFilter === 'assigned' && !q.hives?.id) return false
  if (assignmentFilter === 'unassigned' && q.hives?.id) return false
@@ -882,15 +896,18 @@ export default function QueensPage() {
  })
  : filteredQueens
 
- // Summary stats (computed from ALL queens so user can see what's hidden by filters)
- const activeQueens = queens.filter(q => q.status === 'active').length
+ // Summary stats (computed from ALL queens so user can see what's hidden by filters).
+ // Breeder/reference queens are breeding stock, not production colonies, so the Active
+ // count and average age cover production queens only; they get their own tally.
+ const activeQueens = queens.filter(q => q.status === 'active' && isProductionQueen(q.queen_role)).length
  const cellQueens = queens.filter(q => q.status === 'cell').length
  const retiredQueens = queens.filter(q => q.status === 'retired').length
  const deadQueens = queens.filter(q => q.status === 'dead').length
  const swarmedQueens = queens.filter(q => q.status === 'swarmed').length
  const supersededQueens = queens.filter(q => q.status === 'superseded').length
+ const breederQueens = queens.filter(q => !isProductionQueen(q.queen_role)).length
  const avgAgeMonths = (() => {
- const activeWithDates = queens.filter(q => q.status === 'active' && q.birth_date)
+ const activeWithDates = queens.filter(q => q.status === 'active' && isProductionQueen(q.queen_role) && q.birth_date)
  if (activeWithDates.length === 0) return 0
  const totalDays = activeWithDates.reduce((sum, q) => {
  return sum + Math.floor((Date.now() - new Date(q.birth_date).getTime()) / (1000 * 60 * 60 * 24))
@@ -1050,6 +1067,35 @@ export default function QueensPage() {
  ))}
  </select>
  </div>
+
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Queen Role</label>
+ <select
+ value={formData.queen_role}
+ onChange={(e) => setFormData({ ...formData, queen_role: e.target.value })}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ >
+ {QUEEN_ROLE_OPTIONS.map((opt) => (
+ <option key={opt.value} value={opt.value}>{opt.label}</option>
+ ))}
+ </select>
+ <p className="text-xs text-text-tertiary mt-1">Breeder/reference queens are breeding stock, not production colonies; they&apos;re excluded from the active count.</p>
+ </div>
+
+ {formData.queen_role !== 'production' && (
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Origin Breeder Code</label>
+ <input
+ type="text"
+ value={formData.origin_breeder_code}
+ onChange={(e) => setFormData({ ...formData, origin_breeder_code: e.target.value.toUpperCase() })}
+ placeholder="e.g. UG"
+ maxLength={10}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ />
+ <p className="text-xs text-text-tertiary mt-1">Originating line/breeder. Used in this queen&apos;s code (e.g. UG-{formData.queen_number || 'number'}-year) instead of your own.</p>
+ </div>
+ )}
 
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-1">Subspecies</label>
@@ -1297,7 +1343,7 @@ export default function QueensPage() {
  {/* Summary stats */}
  {queens.length > 0 && (
  <p className="text-sm text-text-secondary">
- {activeQueens} Active{cellQueens > 0 ? ` | ${cellQueens} Cell${cellQueens !== 1 ? 's' : ''}` : ''} | {retiredQueens} Retired | {deadQueens} Dead{swarmedQueens > 0 ? ` | ${swarmedQueens} Swarmed` : ''}{supersededQueens > 0 ? ` | ${supersededQueens} Superseded` : ''} | Avg Age: {avgAgeMonths} months
+ {activeQueens} Active{cellQueens > 0 ? ` | ${cellQueens} Cell${cellQueens !== 1 ? 's' : ''}` : ''} | {retiredQueens} Retired | {deadQueens} Dead{swarmedQueens > 0 ? ` | ${swarmedQueens} Swarmed` : ''}{supersededQueens > 0 ? ` | ${supersededQueens} Superseded` : ''}{breederQueens > 0 ? ` | ${breederQueens} Breeder` : ''} | Avg Age: {avgAgeMonths} months
  </p>
  )}
 
@@ -1348,6 +1394,15 @@ export default function QueensPage() {
  <option value="all">All Queens</option>
  <option value="assigned">Assigned</option>
  <option value="unassigned">Unassigned</option>
+ </select>
+ <select
+ value={roleFilter}
+ onChange={(e) => setRoleFilter(e.target.value as 'all' | 'production' | 'breeder')}
+ className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500 transition-all"
+ >
+ <option value="all">All Roles</option>
+ <option value="production">Production</option>
+ <option value="breeder">Breeder/Reference</option>
  </select>
  </div>
 
@@ -1420,12 +1475,19 @@ export default function QueensPage() {
  </Button>
  </td>
  <td className="px-6 py-4 whitespace-nowrap font-medium text-foreground">
+ <span className="inline-flex items-center gap-1.5 flex-wrap">
  <Link
  href={`/dashboard/queens/${queen.id}`}
  className="text-forest-600 dark:text-forest-400 hover:text-forest-700 dark:hover:text-forest-300 hover:underline"
  >
  {queen.queen_number}
  </Link>
+ {!isProductionQueen(queen.queen_role) && (
+ <span className="px-1.5 py-0.5 text-xs font-medium rounded border border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+ {queenRoleLabel(queen.queen_role)}
+ </span>
+ )}
+ </span>
  {(() => {
  // Only stamp the viewer's breeder context on queens they own; shared queens from
  // other beekeepers keep their own provenance (distributed) or show no code.
