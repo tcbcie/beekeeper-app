@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
-import { getQueenColorFromYear } from '@/types/queen'
+import { getQueenColorFromYear, formatQueenSnapshot } from '@/types/queen'
 import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
 
 export interface GraftDistribution {
@@ -100,6 +100,7 @@ interface BatchDetails {
   mating_apiary_name: string | null
   batchId: string | null
   distributedByName: string | null
+  motherQueenId: string | null
   motherQueenSnapshot: string | null
   motherQueenSubspecies: string | null
 }
@@ -259,7 +260,8 @@ async function createQueenForRecipient(
   recipientUserId: string,
   graftId: string,
   batch: BatchDetails,
-  distributionType: 'queen_cell' | 'virgin_queen' | 'mated_queen'
+  distributionType: 'queen_cell' | 'virgin_queen' | 'mated_queen',
+  isSelfDistribution: boolean
 ): Promise<void> {
   try {
     const { data: graft, error: graftError } = await supabase
@@ -306,6 +308,8 @@ async function createQueenForRecipient(
       p_distributed_drone_source: droneSource ?? null,
       p_subspecies: batch.motherQueenSubspecies ?? null,
       p_lineage: lineage,
+      // Link the real mother only for self-distributions; the RPC re-checks ownership.
+      p_mother_id: isSelfDistribution ? batch.motherQueenId : null,
     })
   } catch (err) {
     console.error('Non-blocking: failed to create queen for recipient:', err)
@@ -326,7 +330,7 @@ async function createQueensForRecipient(
 
     // Fetch batch details (with mother queen + mating apiary) and current user's profile in parallel
     const [batchRes, profileRes] = await Promise.all([
-      supabase.from('rearing_batches').select('id, emergence_date, batch_name, graft_date, apiaries!mating_apiary_id(name, eircode), queens!mother_queen_id(queen_number, marking_color, birth_date, subspecies)').eq('id', batchId).single(),
+      supabase.from('rearing_batches').select('id, emergence_date, batch_name, graft_date, mother_queen_id, apiaries!mating_apiary_id(name, eircode), queens!mother_queen_id(queen_number, marking_color, birth_date, subspecies)').eq('id', batchId).single(),
       supabase.from('profiles').select('full_name, first_name, last_name, email').eq('id', callerId).single(),
     ])
 
@@ -336,7 +340,7 @@ async function createQueensForRecipient(
     }
 
     const raw = batchRes.data as {
-      id: string; emergence_date: string | null; batch_name: string; graft_date: string | null;
+      id: string; emergence_date: string | null; batch_name: string; graft_date: string | null; mother_queen_id: string | null;
       apiaries: { name: string | null; eircode: string | null }[] | { name: string | null; eircode: string | null } | null;
       queens: { queen_number: string; marking_color: string | null; birth_date: string | null; subspecies: string | null }[] | { queen_number: string; marking_color: string | null; birth_date: string | null; subspecies: string | null } | null;
     }
@@ -348,20 +352,10 @@ async function createQueensForRecipient(
     const profile = profileRes.data as { full_name: string | null; first_name: string | null; last_name: string | null; email: string | null } | null
     const displayName = profile?.full_name || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || profile?.email || 'Unknown breeder'
 
-    // Build mother queen snapshot: "Queen #5 (Blue 2025, AMM)"
-    let motherQueenSnapshot: string | null = null
-    if (motherQueen) {
-      const parts = [motherQueen.queen_number]
-      const details: string[] = []
-      if (motherQueen.marking_color) details.push(motherQueen.marking_color)
-      if (motherQueen.birth_date) {
-        const year = new Date(motherQueen.birth_date).getFullYear()
-        if (!isNaN(year)) details.push(year.toString())
-      }
-      if (motherQueen.subspecies) details.push(motherQueen.subspecies)
-      if (details.length > 0) parts.push(`(${details.join(' ')})`)
-      motherQueenSnapshot = parts.join(' ')
-    }
+    // Build mother queen snapshot, e.g. "5 (Blue 2025 AMM)" — shared with the queen edit form.
+    const motherQueenSnapshot = motherQueen
+      ? formatQueenSnapshot(motherQueen.queen_number, motherQueen.marking_color, motherQueen.birth_date, motherQueen.subspecies)
+      : null
 
     const batchDetails: BatchDetails = {
       emergence_date: raw.emergence_date,
@@ -371,11 +365,15 @@ async function createQueensForRecipient(
       mating_apiary_name: apiary?.name ?? null,
       batchId: raw.id,
       distributedByName: displayName,
+      motherQueenId: raw.mother_queen_id,
       motherQueenSnapshot,
       motherQueenSubspecies: motherQueen?.subspecies ?? null,
     }
+    // Only link the actual mother FK when distributing to your own apiary, so a recipient
+    // never ends up referencing a breeder's queen they cannot see.
+    const isSelfDistribution = !!callerId && recipientUserId === callerId
     await Promise.allSettled(
-      graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails, distributionType))
+      graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails, distributionType, isSelfDistribution))
     )
   } catch (err) {
     console.error('Non-blocking: failed to create queens for recipient:', err)

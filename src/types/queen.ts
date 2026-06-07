@@ -65,6 +65,7 @@ export interface QueenFormData {
 export interface Batch {
   id: string
   batch_name: string
+  mother_queen_id?: string | null
 }
 
 // Report tab types
@@ -103,6 +104,25 @@ export interface QueenReport {
   traitAverages: TraitAverages
   sisterAverages: TraitAverages
   latestSnapshot: LatestInspectionSnapshot | null
+}
+
+// Single source of truth for a human-readable queen snapshot, e.g. "6W (White 2026 AMM)".
+// Used both when a queen is created at distribution time and when an edited queen's
+// lineage is back-filled, so the two never drift apart.
+export const formatQueenSnapshot = (
+  queenNumber: string,
+  markingColor?: string | null,
+  birthDate?: string | null,
+  subspecies?: string | null,
+): string => {
+  const details: string[] = []
+  if (markingColor) details.push(markingColor)
+  if (birthDate) {
+    const year = new Date(birthDate).getFullYear()
+    if (!Number.isNaN(year)) details.push(String(year))
+  }
+  if (subspecies) details.push(subspecies)
+  return details.length > 0 ? `${queenNumber} (${details.join(' ')})` : queenNumber
 }
 
 // Calculate queen marking colour based on birth year
