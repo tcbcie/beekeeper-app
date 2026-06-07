@@ -22,7 +22,10 @@ On the Edit Queen form for a distributed queen:
   `mother_queen_id` when it is empty — but only if that mother is one of the user's own
   queens, so we never write a dangling cross-user reference. (For queens received from
   another breeder, the batch is not in the recipient's list, so it safely stays blank.)
-- **Mated at (Eircode)** is unlocked and editable.
+- **Mated at (Eircode)** is unlocked and editable. On save it is validated against the
+  Eircode format (`src/lib/eircode.ts`); a malformed value is rejected with a toast, while
+  an empty value is allowed (the field is optional). This applies to all queens, not just
+  distributed ones.
 - **Lineage** retains the **Mother + Drone + Breeder** shape. When auto-filling the
   mother, a `Mother: <number> (<colour> <year> <subspecies>)` prefix is added to the
   lineage if one isn't already present, so the field reflects the queen mother. It is
