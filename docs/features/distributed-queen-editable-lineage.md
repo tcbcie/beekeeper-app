@@ -44,8 +44,11 @@ Distributed queens received from another breeder have a null `mother_id` (the br
 queen is not in the recipient's records, so no cross-user FK is written). The queens **list**
 and **detail** pages now fall back to the `distributed_mother_queen` text snapshot when the
 FK is absent — showing the mother's number (e.g. `76-DA`, full snapshot on hover) instead of
-`N/A`/`Unknown`. The genealogy *tree* still cannot show a cross-user ancestor; the textual
-`Lineage` field carries the full `Mother: … Open-mated … Breeder: …` line.
+`N/A`/`Unknown`. The genealogy *tree* cannot show a cross-user ancestor, so on the **detail
+page** a distributed queen now renders a **provenance panel** (Breeder / Batch / Mother
+Queen / Drone Source) in place of the empty tree, mirroring the amber banner on the edit
+form. Home-bred queens still show the genealogy tree. The textual `Lineage` field carries the
+full `Mother: … Open-mated … Breeder: …` line in all cases.
 
 Note: the snapshot is captured at distribution time. If the breeder later renames the mother
 queen, the snapshot can go stale (one batch's queens had a mother numbered `n/a` at
