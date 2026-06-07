@@ -453,8 +453,19 @@ export default function QueenDetailPage() {
         )}
       </div>
 
-      {/* Lineage Tree */}
-      <QueenLineageTree queenId={queenId} expanded={lineageExpanded} onToggle={() => setLineageExpanded(!lineageExpanded)} />
+      {/* Lineage: distributed queens show breeder provenance (the genealogy tree cannot
+          render a cross-user ancestor); home-bred queens show the genealogy tree. */}
+      {queen.distributed_by_name ? (
+        <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg text-sm text-amber-800 dark:text-amber-200">
+          <p className="font-medium mb-1">Distributed Queen — Provenance</p>
+          <p>Breeder: {queen.distributed_by_name}</p>
+          {queen.distributed_batch_name && <p>Batch: {queen.distributed_batch_name}</p>}
+          {queen.distributed_mother_queen && <p>Mother Queen: {queen.distributed_mother_queen}</p>}
+          {queen.distributed_drone_source && <p>Drone Source: {queen.distributed_drone_source}</p>}
+        </div>
+      ) : (
+        <QueenLineageTree queenId={queenId} expanded={lineageExpanded} onToggle={() => setLineageExpanded(!lineageExpanded)} />
+      )}
 
       {/* Offspring */}
       {offspring.length > 0 && (
