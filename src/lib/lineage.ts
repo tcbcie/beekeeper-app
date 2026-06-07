@@ -37,12 +37,18 @@ export function shortenSubspeciesInText(text: string): string {
   return text.replace(/Apis mellifera\s+[A-Za-z.]+\s*\(([A-Za-z]+)\)/g, '$1')
 }
 
+// Parse a 4-digit year from a DB date string ('YYYY-MM-DD' or ISO) without going through
+// Date(), which interprets a bare date as UTC midnight and can roll the year back a day in
+// sub-UTC timezones.
+export function fullYearFromDate(date?: string | null): number | null {
+  if (!date) return null
+  const year = Number.parseInt(String(date).slice(0, 4), 10)
+  return Number.isFinite(year) && year >= 1000 ? year : null
+}
+
 // Best mating/birth year for the lineage string.
 export function lineageYear(matedDate?: string | null, birthDate?: string | null): number | null {
-  const raw = matedDate || birthDate
-  if (!raw) return null
-  const year = new Date(raw).getFullYear()
-  return Number.isNaN(year) ? null : year
+  return fullYearFromDate(matedDate) ?? fullYearFromDate(birthDate)
 }
 
 // Dam label with the short subspecies form, from a stored snapshot or live components.

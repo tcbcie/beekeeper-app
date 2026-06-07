@@ -76,6 +76,13 @@ Surfaced on: the queen **detail page** (chip beside the number), the queens **li
 the queen number), and printed **queen labels** (`queenToLabelDatum(queen, breederContext)` →
 `QueenLabelExtras.code`, rendered in `Label.tsx` and `printHtml.ts`).
 
+**Ownership rule**: the breeder context passed to `queenCodeFor` must belong to the queen's
+owner. Callers pass it only for queens the viewer owns (`queen.user_id === viewer` /
+`isOwner`); for shared home-bred queens owned by another beekeeper the context is `null` and
+no code is shown, so the viewer's identity is never stamped onto someone else's queen.
+Distributed queens always show a code (breeder comes from `distributed_by_name`). The year is
+parsed from the date string (`fullYearFromDate`), not `Date()`, to avoid a timezone off-by-one.
+
 ### Breeder code setting
 
 `profiles.breeder_code` (migration `profiles_add_breeder_code`) is editable on the **profile**

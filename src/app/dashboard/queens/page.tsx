@@ -1420,7 +1420,9 @@ export default function QueensPage() {
  {queen.queen_number}
  </Link>
  {(() => {
- const code = queenCodeFor(queen, breederContext)
+ // Only stamp the viewer's breeder context on queens they own; shared queens from
+ // other beekeepers keep their own provenance (distributed) or show no code.
+ const code = queenCodeFor(queen, queen.user_id === userId ? breederContext : null)
  return code ? <div className="text-xs font-mono text-text-tertiary mt-0.5">{code}</div> : null
  })()}
  </td>
@@ -1525,7 +1527,7 @@ export default function QueensPage() {
  <PrintLabelsModal
  open={printQueens !== null}
  onClose={() => setPrintQueens(null)}
- data={(printQueens ?? []).map((q) => queenToLabelDatum(q, breederContext))}
+ data={(printQueens ?? []).map((q) => queenToLabelDatum(q, q.user_id === userId ? breederContext : null))}
  presetId="queen_label"
  title={printQueens && printQueens.length === 1
  ? `Print label — ${printQueens[0].queen_number}`
