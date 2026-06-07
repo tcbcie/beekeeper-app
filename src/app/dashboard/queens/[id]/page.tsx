@@ -376,6 +376,9 @@ export default function QueenDetailPage() {
                   <Link href={`/dashboard/queens/${queen.mother.id}`} className="text-forest-600 dark:text-forest-400 hover:underline">
                     {queen.mother.queen_number}
                   </Link>
+                ) : queen.distributed_mother_queen ? (
+                  // Distributed queens carry the breeder's mother as a text snapshot (no local FK).
+                  <span className="text-text-primary" title={queen.distributed_mother_queen}>{queen.distributed_mother_queen.split(' (')[0]}</span>
                 ) : 'Unknown'}
               </p>
               <p>
