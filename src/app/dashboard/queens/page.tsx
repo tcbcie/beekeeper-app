@@ -5,12 +5,13 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { isValidEircode } from '@/lib/eircode'
+import { buildLineageString, damLabelFromQueen, damLabelFromSnapshot, lineageYear, DRONE_SOURCE_OPTIONS, type DroneSourceType } from '@/lib/lineage'
 import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown, GitBranch, GitCompareArrows, ArrowUp, ArrowDown, ArrowUpDown, Printer } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import QueenLineageTree from '@/components/QueenLineageTree'
-import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge, formatQueenSnapshot } from '@/types/queen'
+import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
 import Button from '@/components/ui/Button'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import { queenToLabelDatum } from '@/components/labels/queenMapping'
@@ -94,6 +95,36 @@ const getInvalidLineageParentIds = (queens: Queen[], queenId: string): Set<strin
  return invalidIds
 }
 
+// Derive the canonical lineage string from the form's structured fields. The dam comes from
+// the local mother queen when linked, else the distributed snapshot; the breeder is the
+// distributing breeder for distributed queens (implicit owner otherwise).
+const deriveLineage = (fd: QueenFormData, editingQueen: Queen | null, queens: Queen[]): string => {
+ let damLabel = ''
+ if (fd.mother_id) {
+ const mother = queens.find((q) => q.id === fd.mother_id)
+ if (mother) damLabel = damLabelFromQueen(mother.queen_number, mother.marking_color, mother.birth_date, mother.subspecies)
+ }
+ if (!damLabel && editingQueen?.distributed_mother_queen) {
+ damLabel = damLabelFromSnapshot(editingQueen.distributed_mother_queen)
+ }
+
+ const droneSourceType = (fd.drone_source_type as DroneSourceType) || 'open'
+ const droneLine = droneSourceType === 'ii' && fd.father_id
+ ? queens.find((q) => q.id === fd.father_id)?.queen_number ?? null
+ : null
+
+ return buildLineageString({
+ damLabel,
+ droneSourceType,
+ droneLine,
+ matingStation: fd.mating_station,
+ eircode: fd.mated_at_eircode,
+ year: lineageYear(fd.mated_date, fd.birth_date),
+ subspecies: fd.subspecies,
+ breeder: editingQueen?.distributed_by_name ?? null,
+ })
+}
+
 export default function QueensPage() {
  const searchParams = useSearchParams()
  const router = useRouter()
@@ -115,6 +146,7 @@ export default function QueensPage() {
  const [subspeciesOptions, setSubspeciesOptions] = useState<string[]>([])
  const [sourceOptions, setSourceOptions] = useState<string[]>([])
  const [batches, setBatches] = useState<Batch[]>([])
+ const [matingStationOptions, setMatingStationOptions] = useState<string[]>([])
  const [showLineage, setShowLineage] = useState(false)
  const [deleting, setDeleting] = useState(false)
  const { enabled: labelPrintingEnabled } = useLabelPrinting()
@@ -150,6 +182,9 @@ export default function QueensPage() {
  mother_id: '',
  father_id: '',
  batch_id: '',
+ drone_source_type: 'open',
+ mating_station: '',
+ lineage_overridden: false,
  })
 
  // Persist selection so back-navigation from /compare restores the same ticks.
@@ -432,6 +467,27 @@ export default function QueensPage() {
  }
  }, [userId])
 
+ // Mating-station suggestions for the lineage station picker: the user's apiaries,
+ // preferring mating apiaries, plus any stations already recorded on queens.
+ const fetchMatingStations = useCallback(async (userIdParam?: string) => {
+ const currentUserId = userIdParam || userId
+ if (!currentUserId) return
+
+ const [apiaryRes, queenRes] = await Promise.all([
+ supabase.from('apiaries').select('name, is_mating_apiary').eq('user_id', currentUserId),
+ supabase.from('queens').select('mating_station').eq('user_id', currentUserId).not('mating_station', 'is', null),
+ ])
+
+ const names = new Set<string>()
+ ;(apiaryRes.data as { name: string | null; is_mating_apiary: boolean | null }[] | null)
+ ?.sort((a, b) => Number(b.is_mating_apiary) - Number(a.is_mating_apiary))
+ .forEach((a) => { if (a.name) names.add(a.name) })
+ ;(queenRes.data as { mating_station: string | null }[] | null)
+ ?.forEach((q) => { if (q.mating_station) names.add(q.mating_station) })
+
+ setMatingStationOptions(Array.from(names))
+ }, [userId])
+
  useEffect(() => {
  const initUser = async () => {
  const id = await getCurrentUserId()
@@ -444,9 +500,10 @@ export default function QueensPage() {
  fetchSubspeciesOptions()
  fetchSourceOptions()
  fetchBatches(id)
+ fetchMatingStations(id)
  }
  initUser()
- }, [router, fetchQueens, fetchSubspeciesOptions, fetchSourceOptions, fetchBatches])
+ }, [router, fetchQueens, fetchSubspeciesOptions, fetchSourceOptions, fetchBatches, fetchMatingStations])
 
  // Scroll to highlighted queen when data loads
  useEffect(() => {
@@ -485,6 +542,11 @@ export default function QueensPage() {
  e.preventDefault()
  if (!userId) return
 
+ // Lineage is derived from the structured fields unless the user has overridden it.
+ const lineageToSave = formData.lineage_overridden
+ ? formData.lineage
+ : deriveLineage(formData, editingQueen, queens)
+
  // Convert empty strings to null for optional UUID fields
  const dataToSubmit = {
  ...formData,
@@ -492,6 +554,8 @@ export default function QueensPage() {
  father_id: formData.father_id || null,
  batch_id: formData.batch_id || null,
  mated_date: formData.mated_date || null,
+ mating_station: formData.mating_station || null,
+ lineage: lineageToSave,
  }
 
  const invalidParentIds = editingQueen
@@ -527,6 +591,9 @@ export default function QueensPage() {
  // mother link can be recovered from the source batch.
  mated_at_eircode: dataToSubmit.mated_at_eircode || null,
  mother_id: dataToSubmit.mother_id,
+ drone_source_type: dataToSubmit.drone_source_type,
+ mating_station: dataToSubmit.mating_station,
+ lineage_overridden: dataToSubmit.lineage_overridden,
  }
  : dataToSubmit
 
@@ -555,22 +622,13 @@ export default function QueensPage() {
  setEditingQueen(queen)
 
  // For distributed queens the mother link is not stored, but the source batch is.
- // Auto-fill the mother queen from the batch (only if it is one of the user's own
- // queens so we never write a dangling reference), and surface it in the lineage.
+ // Auto-fill the mother queen FK from the batch when it is one of the user's own queens,
+ // so it links to a real dam without writing a cross-user reference. The lineage string
+ // itself is derived (see derivedLineage) rather than hand-assembled here.
  let motherId = queen.mother_id || ''
- let lineage = queen.lineage
  if (queen.distributed_by_name && !motherId && queen.batch_id) {
  const batchMotherId = batches.find((b) => b.id === queen.batch_id)?.mother_queen_id
- const mother = batchMotherId ? queens.find((q) => q.id === batchMotherId) : undefined
- if (mother) {
- motherId = mother.id
- const snapshot = `Mother: ${formatQueenSnapshot(mother.queen_number, mother.marking_color, mother.birth_date, mother.subspecies)}`
- if (!lineage) {
- lineage = `${snapshot}.`
- } else if (!/(^|\W)mother:/i.test(lineage)) {
- lineage = `${snapshot}. ${lineage}`
- }
- }
+ if (batchMotherId && queens.some((q) => q.id === batchMotherId)) motherId = batchMotherId
  }
 
  setFormData({
@@ -579,7 +637,7 @@ export default function QueensPage() {
  marking_color: queen.marking_color,
  source: queen.source,
  subspecies: queen.subspecies,
- lineage,
+ lineage: queen.lineage || '',
  queen_clipped: queen.queen_clipped || false,
  status: queen.status,
  performance_notes: queen.performance_notes,
@@ -588,6 +646,9 @@ export default function QueensPage() {
  mother_id: motherId,
  father_id: queen.father_id || '',
  batch_id: queen.batch_id || '',
+ drone_source_type: (queen.drone_source_type as DroneSourceType) || 'open',
+ mating_station: queen.mating_station || '',
+ lineage_overridden: queen.lineage_overridden ?? false,
  })
  setShowForm(true)
  }
@@ -662,6 +723,9 @@ export default function QueensPage() {
  mother_id: '',
  father_id: '',
  batch_id: '',
+ drone_source_type: 'open',
+ mating_station: '',
+ lineage_overridden: false,
  })
  }
 
@@ -817,6 +881,9 @@ export default function QueensPage() {
  ? getInvalidLineageParentIds(queens, editingQueen.id)
  : new Set<string>()
  const availableParentQueens = queens.filter((q) => !invalidParentIds.has(q.id))
+
+ // Live preview of the auto-generated lineage from the current form values.
+ const derivedLineage = deriveLineage(formData, editingQueen, queens)
 
  const colorOptions = ['White', 'Yellow', 'Red', 'Green', 'Blue', 'None']
 
@@ -980,15 +1047,36 @@ export default function QueensPage() {
  </select>
  </div>
 
- <div>
+ <div className="md:col-span-2">
  <label className="block text-sm font-medium text-text-secondary mb-1">Lineage</label>
  <input
  type="text"
- value={formData.lineage}
+ value={formData.lineage_overridden ? formData.lineage : derivedLineage}
  onChange={(e) => setFormData({ ...formData, lineage: e.target.value })}
- placeholder="e.g., Queen's mother/breeder line"
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ readOnly={!formData.lineage_overridden}
+ placeholder="Auto-generated from dam, drone source, mating site and year"
+ className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${formData.lineage_overridden ? '' : 'opacity-70'}`}
  />
+ <label className="flex items-center gap-2 mt-2 text-sm text-text-secondary cursor-pointer">
+ <input
+ type="checkbox"
+ checked={formData.lineage_overridden}
+ onChange={(e) => {
+ const overridden = e.target.checked
+ setFormData((prev) => ({
+ ...prev,
+ lineage_overridden: overridden,
+ // Seed the editable text with the current derived value when switching to manual.
+ lineage: overridden ? (prev.lineage || derivedLineage) : prev.lineage,
+ }))
+ }}
+ className="w-4 h-4 text-forest-600 border-border rounded focus:ring-forest-500"
+ />
+ Edit manually
+ </label>
+ <p className="text-xs text-text-tertiary mt-1">
+ Auto-generated as <span className="italic">Dam × drone-source @ station (year)</span>. Tick &quot;Edit manually&quot; to override.
+ </p>
  </div>
 
  <div>
@@ -1008,15 +1096,17 @@ export default function QueensPage() {
  </select>
  </div>
 
+ {/* Father (drone-source) queen only applies to instrumental insemination; for open or
+ station mating the sire is a drone population, not a single queen. */}
+ {formData.drone_source_type === 'ii' && (
  <div>
- <label className="block text-sm font-medium text-text-secondary mb-1">Father Queen</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Father (drone-line) Queen</label>
  <select
  value={formData.father_id}
  onChange={(e) => setFormData({ ...formData, father_id: e.target.value })}
- disabled={!!editingQueen?.distributed_by_name}
- className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  >
- <option value="">Select father queen (optional)</option>
+ <option value="">Select drone-line queen (optional)</option>
  {availableParentQueens
  .map((q) => (
  <option key={q.id} value={q.id}>
@@ -1025,6 +1115,7 @@ export default function QueensPage() {
  ))}
  </select>
  </div>
+ )}
 
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-1">Source Batch</label>
@@ -1049,6 +1140,38 @@ export default function QueensPage() {
  ))}
  </select>
  )}
+ </div>
+
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Drone Source</label>
+ <select
+ value={formData.drone_source_type}
+ onChange={(e) => setFormData({ ...formData, drone_source_type: e.target.value })}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ >
+ {DRONE_SOURCE_OPTIONS.map((opt) => (
+ <option key={opt.value} value={opt.value}>{opt.label}</option>
+ ))}
+ </select>
+ <p className="text-xs text-text-tertiary mt-1">How she was mated — the sire side of the pedigree.</p>
+ </div>
+
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Mating Station</label>
+ <input
+ type="text"
+ list="mating-station-options"
+ value={formData.mating_station}
+ onChange={(e) => setFormData({ ...formData, mating_station: e.target.value })}
+ placeholder="e.g., TBKA Kilcornan"
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ />
+ <datalist id="mating-station-options">
+ {matingStationOptions.map((name) => (
+ <option key={name} value={name} />
+ ))}
+ </datalist>
+ <p className="text-xs text-text-tertiary mt-1">Pick a site or type a new one.</p>
  </div>
 
  <div>

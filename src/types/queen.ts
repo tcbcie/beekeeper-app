@@ -14,6 +14,9 @@ export interface Queen {
   performance_notes: string
   mated_at_eircode: string
   mated_date?: string | null
+  drone_source_type?: string | null
+  mating_station?: string | null
+  lineage_overridden?: boolean | null
   distributed_by_name?: string | null
   distributed_batch_name?: string | null
   distributed_mother_queen?: string | null
@@ -60,6 +63,9 @@ export interface QueenFormData {
   mother_id: string
   father_id: string
   batch_id: string
+  drone_source_type: string
+  mating_station: string
+  lineage_overridden: boolean
 }
 
 export interface Batch {

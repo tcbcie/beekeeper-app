@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getQueenColorFromYear, formatQueenSnapshot } from '@/types/queen'
+import { buildLineageString, damLabelFromSnapshot, lineageYear } from '@/lib/lineage'
 import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
 
 export interface GraftDistribution {
@@ -281,17 +282,24 @@ async function createQueenForRecipient(
     const markingColor = birthDate ? getQueenColorFromYear(birthDate) : null
     const eircode = batch.mating_apiary_eircode || null
 
-    // Build drone source description
-    const droneSource = batch.mating_apiary_name
-      ? `Open-mated at ${batch.mating_apiary_name}${eircode ? ` (${eircode})` : ''}`
+    // Distributions are open-mated at the batch's mating apiary.
+    const matingStation = batch.mating_apiary_name || null
+
+    // Human-readable drone-source description (kept for the provenance panel).
+    const droneSource = matingStation
+      ? `Open-mated at ${matingStation}${eircode ? ` (${eircode})` : ''}`
       : eircode ? `Open-mated at ${eircode}` : null
 
-    // Build human-readable lineage summary
-    const lineageParts: string[] = []
-    if (batch.motherQueenSnapshot) lineageParts.push(`Mother: ${batch.motherQueenSnapshot}`)
-    if (droneSource) lineageParts.push(droneSource)
-    if (batch.distributedByName) lineageParts.push(`Breeder: ${batch.distributedByName}`)
-    const lineage = lineageParts.length > 0 ? lineageParts.join('. ') + '.' : null
+    // Canonical lineage string, derived via the shared builder so it matches the edit form.
+    const lineage = buildLineageString({
+      damLabel: damLabelFromSnapshot(batch.motherQueenSnapshot),
+      droneSourceType: 'open',
+      matingStation,
+      eircode,
+      year: lineageYear(null, birthDate),
+      subspecies: batch.motherQueenSubspecies,
+      breeder: batch.distributedByName,
+    }) || null
 
     await supabase.rpc('create_queen_for_distribution', {
       p_recipient_user_id: recipientUserId,
@@ -308,6 +316,8 @@ async function createQueenForRecipient(
       p_distributed_drone_source: droneSource ?? null,
       p_subspecies: batch.motherQueenSubspecies ?? null,
       p_lineage: lineage,
+      p_drone_source_type: 'open',
+      p_mating_station: matingStation,
       // Link the real mother only for self-distributions; the RPC re-checks ownership.
       p_mother_id: isSelfDistribution ? batch.motherQueenId : null,
     })
