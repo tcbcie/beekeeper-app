@@ -62,19 +62,28 @@ server-side; replaces the prior 15-arg overload).
 
 ## Composite queen code
 
-A BeeBreed-style composite identifier is shown on the queen **detail page** beside the queen
-number: `Country-BreederInitials-QueenNumber-Year`, e.g. `IE-RZ-7W-2026`.
+A BeeBreed-style composite identifier: `Country-Breeder-QueenNumber-Year`, e.g. `IE-RZ-7W-2026`.
 
-- `src/lib/queen-code.ts → buildQueenCode()` (+ `initialsFromName`). Derived, not stored.
+- `src/lib/queen-code.ts` — `buildQueenCode()`, `queenCodeFor(queen, breederContext)`, `initialsFromName()`. Derived, not stored.
 - **Country**: `IE` / `GB` from the owner profile's `is_uk_ni_resident`; **omitted** for
   distributed queens (the breeder's country is unknown to the recipient).
-- **Breeder initials**: from `distributed_by_name` for distributed queens, else the owner's
-  profile name — matching the `RZ` convention in batch names like `TQRQB_RZ01`.
+- **Breeder**: the breeder's **registered code** when set (`profiles.breeder_code`), else
+  initials of the name — matching the `RZ` convention in batch names like `TQRQB_RZ01`. For
+  distributed queens the original `distributed_by_name` drives the initials.
 - **Queen number** and **year** (birth year) complete the code.
+
+Surfaced on: the queen **detail page** (chip beside the number), the queens **list** (under
+the queen number), and printed **queen labels** (`queenToLabelDatum(queen, breederContext)` →
+`QueenLabelExtras.code`, rendered in `Label.tsx` and `printHtml.ts`).
+
+### Breeder code setting
+
+`profiles.breeder_code` (migration `profiles_add_breeder_code`) is editable on the **profile**
+page. Optional; when set it replaces name initials so two breeders with the same initials do
+not collide.
 
 ## Out of scope (future)
 
-- A registered/unique breeder number (current code uses name initials, which can collide).
-- Showing the composite code in the queens list / on printed labels.
+- App-wide uniqueness enforcement / association-assigned breeder registry numbers.
 - Multi-generation lineage in the string (the genealogy tree already covers ancestry/descendants).
 - Mating-station registry beyond free text / apiary names.

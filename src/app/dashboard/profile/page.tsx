@@ -30,6 +30,7 @@ interface UserProfile {
  last_name?: string
  mobile_number?: string
  producer_address?: string
+ breeder_code?: string
  user_id?: string
  association_id?: string | null
  member_fibka?: boolean
@@ -68,6 +69,7 @@ export default function ProfilePage() {
  last_name: '',
  mobile_number: '',
  producer_address: '',
+ breeder_code: '',
  association_id: null as string | null,
  member_fibka: false,
  member_iba: false,
@@ -151,6 +153,7 @@ export default function ProfilePage() {
  last_name: data.last_name || '',
  mobile_number: data.mobile_number || '',
  producer_address: data.producer_address || '',
+ breeder_code: data.breeder_code || '',
  association_id: data.association_id || null,
  member_fibka: data.member_fibka || false,
  member_iba: data.member_iba || false,
@@ -180,6 +183,7 @@ export default function ProfilePage() {
  last_name: profileFormData.last_name || null,
  mobile_number: profileFormData.mobile_number || null,
  producer_address: profileFormData.producer_address || null,
+ breeder_code: profileFormData.breeder_code ? profileFormData.breeder_code.trim().toUpperCase() : null,
  association_id: profileFormData.association_id || null,
  member_fibka: profileFormData.member_fibka,
  member_iba: profileFormData.member_iba,
@@ -218,6 +222,7 @@ export default function ProfilePage() {
  last_name: userProfile.last_name || '',
  mobile_number: userProfile.mobile_number || '',
  producer_address: userProfile.producer_address || '',
+ breeder_code: userProfile.breeder_code || '',
  association_id: userProfile.association_id || null,
  member_fibka: userProfile.member_fibka || false,
  member_iba: userProfile.member_iba || false,
@@ -768,6 +773,23 @@ export default function ProfilePage() {
  </p>
  </div>
 
+ <div>
+ <FieldLabel>Breeder Code</FieldLabel>
+ <TextInput
+ type="text"
+ value={profileFormData.breeder_code}
+ onChange={(e) =>
+ setProfileFormData({ ...profileFormData, breeder_code: e.target.value.toUpperCase() })
+ }
+ placeholder="e.g. RZ"
+ maxLength={10}
+ className="uppercase"
+ />
+ <p className="mt-1 text-xs text-text-tertiary">
+ Used in the composite queen code (e.g. IE-RZ-7W-2026). If blank, your initials are used.
+ </p>
+ </div>
+
  {/* Location */}
  <div className="md:col-span-2 pt-4 border-t">
  <h3 className="text-md font-medium text-foreground mb-3">Location</h3>
@@ -932,6 +954,13 @@ export default function ProfilePage() {
  <div className="text-sm font-medium text-text-secondary mb-1">Producer Address</div>
  <div className="text-foreground">
  {userProfile?.producer_address || <span className="text-text-tertiary italic">Not set</span>}
+ </div>
+ </div>
+
+ <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+ <div className="text-sm font-medium text-text-secondary mb-1">Breeder Code</div>
+ <div className="text-foreground font-mono">
+ {userProfile?.breeder_code || <span className="font-sans text-text-tertiary italic">Not set</span>}
  </div>
  </div>
 

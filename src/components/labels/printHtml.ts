@@ -115,6 +115,10 @@ function renderQueenHtml(datum: LabelDatum, preset: LabelPreset): string {
       ].join('')}</div>`
     : ''
 
+  const codeHtml = extras?.code
+    ? `<div style="font-family:monospace;font-size:7pt;color:#374151;letter-spacing:0.3pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(extras.code)}</div>`
+    : ''
+
   const matedHtml = extras?.matedDate
     ? `<div style="font-size:7pt;color:#374151;letter-spacing:0.5pt;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0">Mated ${escapeHtml(extras.matedDate)}</div>`
     : ''
@@ -144,6 +148,7 @@ function renderQueenHtml(datum: LabelDatum, preset: LabelPreset): string {
           ${yearHtml}
           ${lineageHtml}
         </div>
+        ${codeHtml}
         <div style="border-top:0.2mm solid #d1d5db"></div>
         <div style="display:flex;align-items:baseline;justify-content:space-between;gap:3mm">
           ${matedHtml}

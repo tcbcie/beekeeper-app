@@ -313,6 +313,22 @@ function QueenCell({ datum, preset }: LabelProps) {
           )}
         </div>
 
+        {extras?.code && (
+          <div
+            style={{
+              fontFamily: 'monospace',
+              fontSize: '7pt',
+              color: '#374151',
+              letterSpacing: '0.3pt',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {extras.code}
+          </div>
+        )}
+
         <div style={{ borderTop: '0.2mm solid #d1d5db' }} />
 
         <div

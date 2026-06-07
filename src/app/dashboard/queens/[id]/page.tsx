@@ -15,7 +15,7 @@ import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getQueenColorFromYear, calculateQueenAge } from '@/types/queen'
 import { DRONE_SOURCE_OPTIONS } from '@/lib/lineage'
-import { buildQueenCode } from '@/lib/queen-code'
+import { queenCodeFor, type BreederContext } from '@/lib/queen-code'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import { queenToLabelDatum } from '@/components/labels/queenMapping'
 import { useLabelPrinting } from '@/hooks/useLabelPrinting'
@@ -32,7 +32,7 @@ export default function QueenDetailPage() {
   const [matedEircode, setMatedEircode] = useState('')
   const [cellActionLoading, setCellActionLoading] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [breederProfile, setBreederProfile] = useState<{ name: string; isUkNi: boolean } | null>(null)
+  const [breederProfile, setBreederProfile] = useState<BreederContext | null>(null)
   const [printOpen, setPrintOpen] = useState(false)
   const { enabled: labelPrintingEnabled } = useLabelPrinting()
 
@@ -59,12 +59,12 @@ export default function QueenDetailPage() {
       // Owner profile drives the composite queen code's country + breeder initials.
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, first_name, last_name, is_uk_ni_resident')
+        .select('full_name, first_name, last_name, is_uk_ni_resident, breeder_code')
         .eq('id', id)
         .maybeSingle()
       if (profile) {
         const name = profile.full_name || [profile.first_name, profile.last_name].filter(Boolean).join(' ')
-        setBreederProfile({ name, isUkNi: !!profile.is_uk_ni_resident })
+        setBreederProfile({ name, isUkNi: !!profile.is_uk_ni_resident, breederCode: profile.breeder_code })
       }
     }
     init()
@@ -181,15 +181,8 @@ export default function QueenDetailPage() {
   const markingColor = getQueenColorFromYear(queen.birth_date)
   const age = calculateQueenAge(queen.birth_date)
 
-  // Composite (BeeBreed-style) queen code. Breeder = original breeder for distributed
-  // queens, else the account owner; country is omitted for distributed queens (breeder
-  // country unknown) and taken from the owner's profile otherwise.
-  const queenCode = buildQueenCode({
-    country: queen.distributed_by_name ? '' : (breederProfile?.isUkNi ? 'GB' : 'IE'),
-    breederName: queen.distributed_by_name || breederProfile?.name,
-    queenNumber: queen.queen_number,
-    year: queen.birth_date ? new Date(queen.birth_date).getFullYear() : null,
-  })
+  // Composite (BeeBreed-style) queen code, derived from the holding account's breeder context.
+  const queenCode = queenCodeFor(queen, breederProfile)
   const isOld = queen.birth_date && (Date.now() - new Date(queen.birth_date).getTime()) > 2 * 365 * 24 * 60 * 60 * 1000
 
   const colorBadgeClass = (color: string) => {
@@ -586,7 +579,7 @@ export default function QueenDetailPage() {
       <PrintLabelsModal
         open={printOpen}
         onClose={() => setPrintOpen(false)}
-        data={[queenToLabelDatum(queen)]}
+        data={[queenToLabelDatum(queen, breederProfile)]}
         presetId="queen_label"
         title={`Print label — ${queen.queen_number}`}
       />
