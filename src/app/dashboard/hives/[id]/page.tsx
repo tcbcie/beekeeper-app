@@ -672,7 +672,10 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                     <span className="font-medium text-xs text-text-primary">{new Date(hive.queens.birth_date).toLocaleDateString()}</span>
                   </div>
                 )}
-                {hive.queen_installed_date && (
+                {/* Only show an install date that is plausible: a queen cannot be installed
+                    before she was born, so a date earlier than birth is stale and hidden.
+                    ISO YYYY-MM-DD strings compare correctly (and timezone-safely). */}
+                {hive.queen_installed_date && (!hive.queens.birth_date || hive.queen_installed_date >= hive.queens.birth_date) && (
                   <div className="flex justify-between">
                     <span className="text-text-tertiary">Installed:</span>
                     <span className="font-medium text-xs text-text-primary">{new Date(hive.queen_installed_date).toLocaleDateString()}</span>

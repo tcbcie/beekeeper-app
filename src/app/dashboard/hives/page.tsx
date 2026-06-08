@@ -1307,7 +1307,17 @@ export default function HivesPage() {
  <label className="block text-sm font-medium text-text-secondary mb-1">Queen</label>
  <select
  value={formData.queen_id}
- onChange={(e) => setFormData({...formData, queen_id: e.target.value})}
+ onChange={(e) => {
+ const newQueenId = e.target.value
+ // Installing a different queen resets the install date to today so it can never
+ // carry over (and predate) from a previously housed queen.
+ const changedQueen = !!newQueenId && newQueenId !== (editingHive?.queen_id || '')
+ setFormData({
+ ...formData,
+ queen_id: newQueenId,
+ ...(changedQueen ? { queen_installed_date: new Date().toISOString().split('T')[0] } : {}),
+ })
+ }}
  className="w-full fj-control"
  >
  <option value="">Record manual</option>
