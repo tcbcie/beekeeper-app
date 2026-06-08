@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore, Scale, QrCode, X } from 'lucide-react'
+import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore, Scale, QrCode, X, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import HiveConfigurationHistory from '@/components/HiveConfigurationHistory'
@@ -39,6 +39,9 @@ export default function HiveDetailPage() {
     handleCompleteTask,
     handleUnarchive,
   } = useHiveDetail(hiveId)
+
+  // Hive Information collapsed by default to keep actions/records above the fold (esp. mobile)
+  const [infoExpanded, setInfoExpanded] = useState(false)
 
   // QR code modal state
   const [showQrModal, setShowQrModal] = useState(false)
@@ -217,7 +220,10 @@ export default function HiveDetailPage() {
         </div>
       </div>
 
-      {/* Hive Details Card */}
+      {/* Quick Actions - kept at the top so a new action is one tap away */}
+      <QuickActionsGrid hiveId={hiveId} isOwner={isOwner} isArchived={!!hive.archived_at} onUnarchive={handleUnarchive} />
+
+      {/* Hive Details Card - collapsed by default */}
       <HiveInfoCard
         hive={hive}
         inspections={inspections}
@@ -225,6 +231,8 @@ export default function HiveDetailPage() {
         tasks={tasks}
         hiveId={hiveId}
         onCompleteTask={handleCompleteTask}
+        expanded={infoExpanded}
+        onToggle={() => setInfoExpanded((v) => !v)}
       />
 
       {/* Hive Scale Card - Show if hive has any scale OR owner can connect one */}
@@ -330,9 +338,6 @@ export default function HiveDetailPage() {
       <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
         <HiveConfigurationHistory hiveId={hiveId} />
       </div>
-
-      {/* Quick Actions */}
-      <QuickActionsGrid hiveId={hiveId} isOwner={isOwner} isArchived={!!hive.archived_at} onUnarchive={handleUnarchive} />
 
       {/* Records Sections */}
       <div className="space-y-6">
@@ -536,14 +541,34 @@ interface HiveInfoCardProps {
   tasks: HiveTask[]
   hiveId: string
   onCompleteTask: (taskId: string) => void
+  expanded: boolean
+  onToggle: () => void
 }
 
-function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTask }: HiveInfoCardProps) {
+function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTask, expanded, onToggle }: HiveInfoCardProps) {
   return (
     <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
-      <h2 className="text-xl font-semibold mb-4 text-foreground">Hive Information</h2>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={expanded}
+        className="w-full flex items-center justify-between text-left"
+      >
+        <h2 className="text-xl font-semibold text-foreground">Hive Information</h2>
+        <ChevronDown size={20} className={`text-text-tertiary transition-transform ${expanded ? 'rotate-180' : ''}`} />
+      </button>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {!expanded && (
+        <p className="mt-1 text-sm text-text-tertiary">
+          {hive.status}{hive.is_queenless && !hive.archived_at ? ` · ${formatQueenlessLabel(hive.queenless_reason)}` : ''}
+          {averages && averages.inspection_count > 0 ? ` · ${averages.inspection_count} inspection${averages.inspection_count !== 1 ? 's' : ''}` : ''}
+          {' · Tap to view details'}
+        </p>
+      )}
+
+      {expanded && (
+      <>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
         {/* Basic Details */}
         <div>
           <h3 className="font-semibold text-text-tertiary mb-3 text-sm uppercase tracking-wide">Hive Details</h3>
@@ -848,6 +873,8 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
           <h3 className="font-semibold text-text-tertiary mb-2 text-sm uppercase tracking-wide">Notes</h3>
           <p className="text-sm text-text-secondary bg-surface-secondary p-3 rounded">{hive.notes}</p>
         </div>
+      )}
+      </>
       )}
     </div>
   )
