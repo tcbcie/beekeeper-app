@@ -1411,9 +1411,6 @@ export default function QueensPage() {
  <table className="min-w-full divide-y divide-border">
  <thead className="bg-surface-secondary">
  <tr>
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase w-12">
- <span className="sr-only">Select for comparison</span>
- </th>
  <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
  Actions
  </th>
@@ -1443,7 +1440,8 @@ export default function QueensPage() {
  : 'hover:bg-surface-secondary'
  }`}
  >
- <td className="px-4 py-4 whitespace-nowrap w-12">
+ <td className="px-3 py-4 whitespace-nowrap text-sm">
+ <div className="flex items-center gap-1">
  <input
  type="checkbox"
  checked={selectedIds.has(queen.id)}
@@ -1451,29 +1449,33 @@ export default function QueensPage() {
  aria-label={`Select queen ${queen.queen_number} for comparison`}
  className="w-5 h-5 rounded border-border text-forest-600 focus:ring-2 focus:ring-forest-500 cursor-pointer"
  />
- </td>
- <td className="px-3 py-4 whitespace-nowrap text-sm flex gap-2">
  {labelPrintingEnabled && (
  <Button
+ unstyled
  onClick={() => setPrintQueens([queen])}
- className="text-text-secondary hover:text-foreground"
+ className="p-2 rounded-lg text-text-secondary hover:text-foreground hover:bg-surface-secondary"
  title="Print label"
  >
- <Printer size={16} />
+ <Printer size={18} />
  </Button>
  )}
  <Button
+ unstyled
  onClick={() => handleEdit(queen)}
- className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+ className="p-2 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+ title="Edit queen"
  >
- <Edit2 size={16} />
+ <Edit2 size={18} />
  </Button>
  <Button
+ unstyled
  onClick={() => handleDelete(queen.id)}
- className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
+ className="p-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+ title="Delete queen"
  >
- <Trash2 size={16} />
+ <Trash2 size={18} />
  </Button>
+ </div>
  </td>
  <td className="px-6 py-4 whitespace-nowrap font-medium text-foreground">
  <span className="inline-flex items-center gap-1.5 flex-wrap">
