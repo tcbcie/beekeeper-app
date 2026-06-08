@@ -146,6 +146,12 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [editingNuc, setEditingNuc] = useState<MatingNuc | null>(null)
  const [expandedNucId, setExpandedNucId] = useState<string | null>(null)
  const [selectedNucId, setSelectedNucId] = useState<string | null>(null)
+ // Multi-select for bulk actions (independent of the single-row highlight above)
+ const [selectedNucIds, setSelectedNucIds] = useState<Set<string>>(new Set())
+ const [showBulkSiteModal, setShowBulkSiteModal] = useState(false)
+ const [bulkSiteLocation, setBulkSiteLocation] = useState('')
+ const [bulkSiteSaving, setBulkSiteSaving] = useState(false)
+ const selectAllRef = useRef<HTMLInputElement>(null)
  const [showRetired, setShowRetired] = useState(false)
  const [historyNucNumber, setHistoryNucNumber] = useState<string | null>(null)
  const [historyData, setHistoryData] = useState<MatingNuc[]>([])
@@ -484,6 +490,20 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (selectedNucId && !visibleIds.has(selectedNucId)) setSelectedNucId(null)
  if (expandedNucId && !visibleIds.has(expandedNucId)) setExpandedNucId(null)
  }, [selectedNucId, expandedNucId, nucs])
+
+ // Prune bulk selection of any nuc no longer visible (filter/refresh changes the list)
+ useEffect(() => {
+ const visibleIds = new Set(nucs.map((n) => n.id))
+ setSelectedNucIds((prev) => {
+ let changed = false
+ const next = new Set<string>()
+ for (const id of prev) {
+ if (visibleIds.has(id)) next.add(id)
+ else changed = true
+ }
+ return changed ? next : prev
+ })
+ }, [nucs])
 
  // Filter grafts by selected batch (include the nuc's current graft when editing)
  useEffect(() => {
@@ -893,6 +913,75 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const toggleExpand = (nucId: string) => {
  setExpandedNucId(expandedNucId === nucId ? null : nucId)
  }
+
+ // A nuc can be bulk-selected unless it has left active management (sold or retired).
+ const isNucSelectable = (nuc: MatingNuc) => !nuc.retired_at && nuc.status !== 'sold'
+ const selectableNucs = nucs.filter(isNucSelectable)
+ const allSelectableSelected = selectableNucs.length > 0 && selectableNucs.every((n) => selectedNucIds.has(n.id))
+
+ const toggleNucSelection = (id: string) => {
+ setSelectedNucIds((prev) => {
+ const next = new Set(prev)
+ if (next.has(id)) next.delete(id)
+ else next.add(id)
+ return next
+ })
+ }
+
+ const toggleSelectAll = () => {
+ setSelectedNucIds((prev) =>
+ selectableNucs.every((n) => prev.has(n.id)) ? new Set() : new Set(selectableNucs.map((n) => n.id))
+ )
+ }
+
+ const clearSelection = () => setSelectedNucIds(new Set())
+
+ const handleBulkChangeMatingSite = async () => {
+ if (bulkSiteSaving) return // in-flight guard: ignore double-clicks
+ const location = bulkSiteLocation.trim()
+ if (!location) {
+ toast.error('Select an apiary or enter a location')
+ return
+ }
+ const ids = Array.from(selectedNucIds)
+ if (ids.length === 0) {
+ toast.error('No nucs selected')
+ return
+ }
+ setBulkSiteSaving(true)
+ try {
+ // Chunk the ids so the PATCH filter (?id=in.(...)) can never exceed URL length
+ // limits when "Select all" spans a large, unfiltered nuc list.
+ const CHUNK_SIZE = 100
+ for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+ const chunk = ids.slice(i, i + CHUNK_SIZE)
+ const { error } = await supabase
+ .from('mating_nucs')
+ .update({ mating_location: location })
+ .in('id', chunk)
+ .eq('user_id', userId)
+ if (error) throw error
+ }
+ toast.success(`Updated mating site for ${ids.length} nuc${ids.length === 1 ? '' : 's'}`)
+ setShowBulkSiteModal(false)
+ setBulkSiteLocation('')
+ setSelectedNucIds(new Set())
+ fetchNucs()
+ } catch (error) {
+ console.error('Error updating mating site:', error)
+ toast.error('Failed to update mating site')
+ fetchNucs() // re-sync UI with whatever actually persisted on partial failure
+ } finally {
+ setBulkSiteSaving(false)
+ }
+ }
+
+ // Drive the tri-state "Select all" checkbox (checked / indeterminate / empty)
+ useEffect(() => {
+ if (selectAllRef.current) {
+ selectAllRef.current.indeterminate = selectedNucIds.size > 0 && !allSelectableSelected
+ }
+ }, [selectedNucIds, allSelectableSelected])
 
  const getStatusBadge = (status: string) => {
  const statusConfig = NUC_STATUSES.find(s => s.value === status)
@@ -1349,6 +1438,42 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  )}
  </div>
 
+ {/* Bulk action bar */}
+ {selectableNucs.length > 0 && (
+ <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 dark:bg-surface-elevated/95">
+ <label className="inline-flex items-center gap-2 text-sm text-foreground">
+ <input
+ ref={selectAllRef}
+ type="checkbox"
+ checked={allSelectableSelected}
+ onChange={toggleSelectAll}
+ className="h-4 w-4 cursor-pointer rounded border-border text-forest-600 focus:ring-2 focus:ring-forest-500"
+ />
+ Select all
+ </label>
+ <span className="text-sm text-text-secondary">{selectedNucIds.size} selected</span>
+ <div className="ml-auto flex items-center gap-2">
+ <Button
+ type="button"
+ onClick={() => { setBulkSiteLocation(''); setShowBulkSiteModal(true) }}
+ disabled={selectedNucIds.size === 0}
+ className="px-3 py-1.5 text-sm bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed"
+ >
+ Change Mating Site
+ </Button>
+ {selectedNucIds.size > 0 && (
+ <Button
+ type="button"
+ onClick={clearSelection}
+ className="px-3 py-1.5 text-sm bg-surface-secondary text-foreground rounded-lg hover:bg-surface-elevated"
+ >
+ Clear
+ </Button>
+ )}
+ </div>
+ </div>
+ )}
+
  {/* Nucs List */}
  {nucs.length === 0 ? (
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-8 text-center border border-border">
@@ -1386,6 +1511,17 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  >
  {/* Collapsed row */}
  <div className="flex items-center gap-2 px-3 py-2">
+ {/* Bulk-select checkbox (hidden for sold/retired nucs) */}
+ {isNucSelectable(nuc) && (
+ <input
+ type="checkbox"
+ checked={selectedNucIds.has(nuc.id)}
+ onChange={() => toggleNucSelection(nuc.id)}
+ onClick={(e) => e.stopPropagation()}
+ aria-label={`Select nuc ${nuc.nuc_number || nuc.reference_code || ''} for bulk action`}
+ className="h-4 w-4 shrink-0 cursor-pointer rounded border-border text-forest-600 focus:ring-2 focus:ring-forest-500"
+ />
+ )}
  {/* Name + badges */}
  <div className="min-w-0 flex-1">
  {/* Line 1: nuc name + tag */}
@@ -1579,6 +1715,66 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  onClose={() => setDistributeNuc(null)}
  defaultMatingLocation={distributeNuc.mating_location || undefined}
  />
+ )}
+
+ {/* Bulk Change Mating Site Modal */}
+ {showBulkSiteModal && (
+ <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+ <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full">
+ <div className="p-4 border-b border-border flex justify-between items-center">
+ <h3 className="text-lg font-semibold text-foreground">
+ Change Mating Site ({selectedNucIds.size} nuc{selectedNucIds.size === 1 ? '' : 's'})
+ </h3>
+ <Button onClick={() => setShowBulkSiteModal(false)} className="p-2 text-text-secondary hover:text-foreground rounded">
+ <X size={20} />
+ </Button>
+ </div>
+ <div className="p-4 space-y-2">
+ <label className="block text-sm font-medium text-text-secondary mb-1">Mating Site</label>
+ <select
+ value={matingLocationOptions.find((a) => a.name === bulkSiteLocation)?.id || ''}
+ onChange={(e) => {
+ const apiary = matingLocationOptions.find((a) => a.id === e.target.value)
+ setBulkSiteLocation(apiary?.name || '')
+ }}
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+ >
+ <option value="">Select apiary</option>
+ {matingLocationOptions.map((apiary) => (
+ <option key={apiary.id} value={apiary.id}>
+ {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
+ </option>
+ ))}
+ </select>
+ <input
+ type="text"
+ value={bulkSiteLocation}
+ onChange={(e) => setBulkSiteLocation(e.target.value)}
+ placeholder="Or enter a custom location"
+ className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+ />
+ <p className="text-xs text-text-tertiary">This site will be applied to all selected nucs.</p>
+ </div>
+ <div className="p-4 border-t border-border flex gap-3 justify-end">
+ <Button
+ type="button"
+ onClick={() => setShowBulkSiteModal(false)}
+ disabled={bulkSiteSaving}
+ className="px-4 py-2 bg-surface-secondary text-foreground rounded-lg hover:bg-surface-elevated disabled:opacity-50 disabled:cursor-not-allowed"
+ >
+ Cancel
+ </Button>
+ <Button
+ type="button"
+ onClick={handleBulkChangeMatingSite}
+ disabled={!bulkSiteLocation.trim() || bulkSiteSaving}
+ className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed"
+ >
+ {bulkSiteSaving ? 'Applying…' : 'Apply'}
+ </Button>
+ </div>
+ </div>
+ </div>
  )}
  </div>
  )
