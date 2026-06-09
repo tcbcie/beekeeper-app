@@ -75,6 +75,21 @@ used by orders, cards, `.order('name')` sorting and revenue descriptions. Also
 A nullable `crm_order_id uuid REFERENCES crm_orders(id) ON DELETE SET NULL`
 column links auto-generated income rows back to their order.
 
+### `crm_customer_summary` (view)
+A `security_invoker = on` view that rolls each customer up with `order_count`,
+`orders_total` and `last_order_date` (computed in Postgres, **excluding
+cancelled orders**). Backs the customers list so the page never pulls every
+order to the client. RLS is enforced via the invoker's policies on the
+underlying tables.
+
+## Customers list
+
+Desktop table + mobile cards (mobile-first). A search box (name/company/email/
+phone) and a sort dropdown (name, most recent order, most orders, highest total)
+filter/sort the rolled-up rows client-side. Reads come from
+`crm_customer_summary`; writes still target `crm_customers`. Money uses the
+shared EUR/GBP rule (`is_uk_ni_resident`).
+
 ## Order Lifecycle
 
 `status` (fulfilment) and `payment_status` are **independent**:
