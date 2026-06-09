@@ -356,7 +356,7 @@ export default function CustomersPage() {
             <SelectField
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortKey)}
-              className="rounded-md sm:w-56"
+              className="fj-control-inline rounded-md text-sm w-full sm:w-auto"
             >
               <option value="name">Sort: Name (A–Z)</option>
               <option value="recent">Sort: Most recent order</option>
