@@ -16,6 +16,8 @@ export interface Customer {
   id: string
   user_id: string
   name: string
+  first_name: string
+  surname: string | null
   company: string | null
   email: string | null
   phone: string | null
@@ -31,7 +33,8 @@ export interface Customer {
 }
 
 export interface CustomerFormData {
-  name: string
+  first_name: string
+  surname: string
   company: string
   email: string
   phone: string

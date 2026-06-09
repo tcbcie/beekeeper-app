@@ -15,7 +15,7 @@ import { useToast } from '@/components/ui/Toast'
 import type { Customer, CustomerFormData } from '@/types/crm'
 
 const EMPTY_FORM: CustomerFormData = {
-  name: '', company: '', email: '', phone: '',
+  first_name: '', surname: '', company: '', email: '', phone: '',
   address_line1: '', address_line2: '', city: '', county: '',
   postcode: '', country: '', notes: '',
 }
@@ -63,8 +63,11 @@ export default function CustomersPage() {
 
   const handleEdit = (c: Customer) => {
     setEditing(c)
+    // Fall back to splitting the combined name for any legacy record.
+    const parts = (c.name || '').trim().split(/\s+/)
     setFormData({
-      name: c.name,
+      first_name: c.first_name || parts[0] || '',
+      surname: c.surname || parts.slice(1).join(' '),
       company: c.company || '',
       email: c.email || '',
       phone: c.phone || '',
@@ -82,13 +85,17 @@ export default function CustomersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!userId) return
-    if (!formData.name.trim()) {
-      toast.warning('Customer name is required')
+    const firstName = formData.first_name.trim()
+    const surname = formData.surname.trim()
+    if (!firstName) {
+      toast.warning('First name is required')
       return
     }
 
     const payload = {
-      name: formData.name.trim(),
+      // `name` is a generated column derived from these — never written directly.
+      first_name: firstName,
+      surname: surname || null,
       company: formData.company.trim() || null,
       email: formData.email.trim() || null,
       phone: formData.phone.trim() || null,
@@ -167,13 +174,22 @@ export default function CustomersPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <FieldLabel>Name *</FieldLabel>
+                <FieldLabel>First Name *</FieldLabel>
                 <TextInput
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., John Murphy"
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  placeholder="e.g., John"
                   className="rounded-md"
                   required
+                />
+              </div>
+              <div>
+                <FieldLabel>Surname</FieldLabel>
+                <TextInput
+                  value={formData.surname}
+                  onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
+                  placeholder="e.g., Murphy"
+                  className="rounded-md"
                 />
               </div>
               <div>
