@@ -3,180 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CRM Module — Implementation Plan</title>
+  <title>Profile Page — Layout &amp; UX Reorg</title>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 920px; margin: 2rem auto; padding: 0 1.25rem; color: #1f2937; line-height: 1.55; }
     h1 { color: #166534; border-bottom: 3px solid #16a34a; padding-bottom: .4rem; }
     h2 { color: #15803d; margin-top: 2rem; }
-    h3 { color: #166534; margin-bottom: .3rem; }
     code { background: #f1f5f9; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
-    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: .82rem; }
-    .phase { background: #f8faf9; border: 1px solid #d1fae5; border-radius: 10px; padding: 1rem 1.25rem; margin: 1rem 0; }
-    .pill { display: inline-block; background: #dcfce7; color: #166534; font-size: .72rem; font-weight: 600; padding: .15rem .55rem; border-radius: 999px; vertical-align: middle; }
+    .cols { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .col { flex: 1; min-width: 280px; border: 1px solid #d1d5db; border-radius: 10px; padding: 1rem 1.25rem; }
+    .col.before { background: #fef2f2; border-color: #fecaca; }
+    .col.after { background: #ecfdf5; border-color: #bbf7d0; }
+    ol { padding-left: 1.3rem; }
+    ol li { padding: .2rem 0; }
     ul.todo { list-style: none; padding-left: 0; }
     ul.todo li { padding: .25rem 0; }
     ul.todo li::before { content: "\2610 "; color: #16a34a; font-weight: bold; }
-    .decided { background: #ecfdf5; border-left: 4px solid #16a34a; padding: .6rem 1rem; margin: .5rem 0; border-radius: 0 6px 6px 0; }
-    table { border-collapse: collapse; width: 100%; margin: .75rem 0; }
-    th, td { border: 1px solid #d1d5db; padding: .45rem .6rem; text-align: left; font-size: .9rem; }
-    th { background: #f0fdf4; }
+    .sub { color: #6b7280; font-size: .85rem; }
     .note { background: #fffbeb; border-left: 4px solid #f59e0b; padding: .6rem 1rem; border-radius: 0 6px 6px 0; }
   </style>
 </head>
 <body>
-  <h1>&#128029; CRM Module &mdash; Implementation Plan</h1>
-  <p><strong>Goal:</strong> A subscription-gated CRM module to capture customers, take &amp; fulfil orders, and recognise sales revenue inside the existing income/expense ledger. No inventory tracking. British English throughout.</p>
+  <h1>Profile Page &mdash; Layout &amp; UX Reorg</h1>
+  <p><strong>Goal:</strong> Regroup the profile page into a clear, purpose-driven structure. <strong>No behaviour change, no component extraction</strong> — every handler, toggle and state stays exactly as-is; only the order and grouping of the existing blocks change.</p>
 
-  <h2>Decisions confirmed</h2>
-  <div class="decided"><strong>Order structure:</strong> Itemised line items (product type, qty, unit price).</div>
-  <div class="decided"><strong>Revenue trigger:</strong> Income posts to the ledger when an order is marked <em>Paid</em>.</div>
-  <div class="decided"><strong>Category mapping:</strong> Auto per product type &mdash; Queens &rarr; Queen Sales, Honey &rarr; Honey Sales, Nuc &rarr; Nucleus Sales, etc.</div>
-  <div class="decided"><strong>Menu &amp; gating:</strong> New <em>Sales</em> nav group (Customers, Orders), completely hidden unless the subscription is active.</div>
+  <h2>Before &rarr; After</h2>
+  <div class="cols">
+    <div class="col before">
+      <strong>Current (scattered)</strong>
+      <ol>
+        <li>Profile Information</li>
+        <li>Manage <span class="sub">(Scales, Apiary Team, Rearing Team)</span></li>
+        <li>Theme Preferences</li>
+        <li>Subscription <span class="sub">(status + history)</span></li>
+        <li>Data Export <span class="sub">(gated)</span></li>
+        <li>Additional Settings <span class="sub">(Change Password · Email reminders · Printing · CRM)</span></li>
+        <li>Danger Zone</li>
+      </ol>
+    </div>
+    <div class="col after">
+      <strong>Proposed (grouped by purpose)</strong>
+      <ol>
+        <li><strong>Profile Information</strong> <span class="sub">— who you are</span></li>
+        <li><strong>Subscription</strong> <span class="sub">— status + history, with <em>Data Export</em> folded in beneath (both subscription-related)</span></li>
+        <li><strong>Preferences</strong> <span class="sub">— Appearance (Theme) · Email Notifications (task/event/frequency) · Features (Label printing, CRM)</span></li>
+        <li><strong>Tools &amp; Teams</strong> <span class="sub">— the current "Manage" links</span></li>
+        <li><strong>Account</strong> <span class="sub">— Change Password, then Danger Zone (Delete Account)</span></li>
+      </ol>
+    </div>
+  </div>
 
-  <h2>What we reuse (no new infrastructure)</h2>
+  <h2>Why this is better</h2>
   <ul>
-    <li><strong>Subscription gate:</strong> existing <code>profiles.subscription_expires_at</code> / <code>is_active</code> via the <code>get_subscription_status</code> RPC &mdash; same check already gating Data Export.</li>
-    <li><strong>Finance integration:</strong> existing <code>financial_records</code> table + income categories in <code>dropdown_values</code> (Honey Sales, Queen Sales, Nucleus Sales already exist).</li>
-    <li><strong>Currency:</strong> EUR/GBP auto-switch via <code>profiles.is_uk_ni_resident</code> &mdash; reused, no new logic.</li>
-    <li><strong>Conventions:</strong> UUID PK, <code>user_id</code> scoping, RLS <code>auth.uid() = user_id</code>, detail-hook race guards, mobile-card + desktop-table list pages.</li>
+    <li><strong>One home for preferences:</strong> Theme + notification toggles + feature toggles (Printing, CRM) all sit together, instead of Theme being orphaned at the top and the toggles buried in a catch-all.</li>
+    <li><strong>Data Export rejoins Subscription:</strong> it's subscription-gated, so it belongs with the subscription block, not floating between unrelated panels.</li>
+    <li><strong>No more "Additional Settings" grab-bag:</strong> account security (password) moves to a dedicated <em>Account</em> group with the delete action; feature toggles move to <em>Preferences</em>.</li>
+    <li><strong>Destructive actions last:</strong> Change Password + Delete Account grouped at the bottom, matching the existing field-journal convention.</li>
+    <li><strong>Audience fit:</strong> fewer, clearly-labelled sections reduce hunting — important for the 50+ / reduced-eyesight users. Existing font sizes and touch targets are preserved (this is reorg, not restyle).</li>
   </ul>
 
-  <h2>Data model &mdash; 3 new tables + 1 additive column</h2>
-  <h3>crm_customers</h3>
-  <pre>id uuid PK &middot; user_id uuid (FK auth.users, cascade)
-name text NOT NULL &middot; company text NULL &middot; email text NULL &middot; phone text NULL
-address_line1/2, city, county, postcode, country  (all NULL &mdash; only for shipping)
-notes text NULL &middot; created_at &middot; updated_at</pre>
-
-  <h3>crm_orders</h3>
-  <pre>id uuid PK &middot; user_id uuid &middot; customer_id uuid (FK crm_customers, cascade)
-order_number text NOT NULL          (per-account, app-generated e.g. ORD-2026-001)
-status text  CHECK in (pending, fulfilled, cancelled)   DEFAULT 'pending'
-payment_status text CHECK in (unpaid, paid)             DEFAULT 'unpaid'
-order_date date NOT NULL &middot; fulfilled_date date NULL &middot; paid_date date NULL
-total_amount numeric(10,2) NOT NULL DEFAULT 0   (derived from line items)
-notes text NULL &middot; created_at &middot; updated_at</pre>
-
-  <h3>crm_order_items</h3>
-  <pre>id uuid PK &middot; order_id uuid (FK crm_orders, cascade) &middot; user_id uuid
-product_type text CHECK in (queens, honey, nuc, wax, propolis, pollination, other)
-description text NULL &middot; quantity numeric(10,2) NOT NULL DEFAULT 1
-unit_price numeric(10,2) NOT NULL DEFAULT 0
-line_total numeric(10,2)  (quantity &times; unit_price, kept in app)</pre>
-
-  <h3>financial_records &mdash; additive column only</h3>
-  <pre>+ crm_order_id uuid NULL REFERENCES crm_orders(id) ON DELETE SET NULL</pre>
-  <div class="note"><strong>Why a column, not a link on the order:</strong> marking an order Paid can create <em>several</em> income rows (one per category). Tagging each row with <code>crm_order_id</code> lets us cleanly reverse them if the order is un-paid or cancelled, and never touches manually-entered records.</div>
-
-  <h3>Product type &rarr; income category map</h3>
-  <table>
-    <tr><th>product_type</th><th>Income category (existing dropdown_values)</th></tr>
-    <tr><td>queens</td><td>Queen Sales</td></tr>
-    <tr><td>honey</td><td>Honey Sales</td></tr>
-    <tr><td>nuc</td><td>Nucleus Sales</td></tr>
-    <tr><td>wax</td><td>Wax Sales</td></tr>
-    <tr><td>propolis</td><td>Propolis Sales</td></tr>
-    <tr><td>pollination</td><td>Pollination Services</td></tr>
-    <tr><td>other</td><td>Other Income</td></tr>
-  </table>
-
-  <h2>Revenue recognition flow</h2>
-  <p>When an order is marked <strong>Paid</strong>: group its line items by <code>product_type</code> &rarr; category, sum each group, and insert one <code>financial_records</code> income row per category (date = <code>paid_date</code>, description = <code>Order #ORD-&hellip; &mdash; {customer name}</code>, <code>crm_order_id</code> set). Marking it back to <strong>Unpaid</strong> or <strong>Cancelled</strong> deletes the rows tagged with that <code>crm_order_id</code>. This keeps the existing P&amp;L reports accurate by category with zero double-entry.</p>
-
-  <h2>Implementation phases</h2>
-
-  <div class="phase">
-    <h3>Phase 1 &mdash; Database <span class="pill">via Supabase MCP, not SQL files</span></h3>
-    <ul class="todo">
-      <li>Create <code>crm_customers</code>, <code>crm_orders</code>, <code>crm_order_items</code> with indexes on <code>user_id</code> + FKs and <code>updated_at</code> triggers.</li>
-      <li>Add full RLS (<code>auth.uid() = user_id</code> for select/insert/update/delete) to all three.</li>
-      <li>Add <code>crm_order_id</code> column to <code>financial_records</code>.</li>
-      <li>Confirm the income category <code>dropdown_values</code> IDs to map against.</li>
-    </ul>
-  </div>
-
-  <div class="phase">
-    <h3>Phase 2 &mdash; Types &amp; subscription hook</h3>
-    <ul class="todo">
-      <li>Add <code>src/types/crm.ts</code> (Customer, Order, OrderItem + FormData interfaces).</li>
-      <li>Add a small <code>useHasActiveSubscription()</code> hook wrapping the existing <code>get_subscription_status</code> RPC (single source of truth for gating).</li>
-    </ul>
-  </div>
-
-  <div class="phase">
-    <h3>Phase 3 &mdash; Navigation (hidden when unsubscribed)</h3>
-    <ul class="todo">
-      <li>Add a <code>crmNavItems</code> array + <code>'sales'</code> group to <code>src/lib/navigation.ts</code> (mirrors existing <code>adminNavItems</code> pattern): Customers, Orders.</li>
-      <li>Render <code>crmNavItems</code> only when subscription active in <code>Sidebar.tsx</code>, <code>MobileDrawer.tsx</code>, <code>BottomNavBar.tsx</code> &mdash; same shape as the existing <code>userRole === 'Admin'</code> gate.</li>
-    </ul>
-  </div>
-
-  <div class="phase">
-    <h3>Phase 4 &mdash; Customers</h3>
-    <ul class="todo">
-      <li><code>src/app/dashboard/crm/customers/page.tsx</code> &mdash; list (mobile cards / desktop table) + create/edit modal.</li>
-      <li>Route guard: redirect to dashboard if not subscribed (defence in depth beyond hidden nav).</li>
-    </ul>
-  </div>
-
-  <div class="phase">
-    <h3>Phase 5 &mdash; Orders &amp; fulfilment</h3>
-    <ul class="todo">
-      <li><code>src/app/dashboard/crm/orders/page.tsx</code> &mdash; list with status/payment badges + filters.</li>
-      <li><code>src/app/dashboard/crm/orders/[id]/page.tsx</code> &mdash; detail: customer, line items editor, status (pending&rarr;fulfilled&rarr;cancelled), payment (unpaid&harr;paid).</li>
-      <li>Order-number generator (per-account sequence) and total recompute from line items.</li>
-      <li>Reusable <code>src/components/crm/*</code> (CustomerForm, OrderForm, OrderItemsEditor, status badges).</li>
-    </ul>
-  </div>
-
-  <div class="phase">
-    <h3>Phase 6 &mdash; Finance integration</h3>
-    <ul class="todo">
-      <li>On Paid: insert income <code>financial_records</code> (one per category) tagged with <code>crm_order_id</code>.</li>
-      <li>On Unpaid/Cancelled: delete the order's tagged income rows.</li>
-      <li>Verify the rows appear correctly in the existing P&amp;L tool by category.</li>
-    </ul>
-  </div>
-
-  <div class="phase">
-    <h3>Phase 7 &mdash; Docs</h3>
-    <ul class="todo">
-      <li>Create <code>docs/features/crm-module.md</code> (schema, flow, gating).</li>
-      <li>Update this file's Review section.</li>
-    </ul>
-  </div>
-
-  <h2>Scope guardrails</h2>
-  <ul>
-    <li>No inventory tracking. No changes to existing finance UI beyond the new income rows flowing in.</li>
-    <li>CRM orders are standalone in v1 &mdash; not wired to specific queen/hive records.</li>
-    <li>Smallest possible footprint: additive column on <code>financial_records</code>, separate nav array, isolated <code>crm/</code> route tree.</li>
+  <h2>Implementation (low-risk, in-place)</h2>
+  <ul class="todo">
+    <li>Reorder the existing top-level section blocks into the 5-group order above (cut/paste of intact JSX blocks — no logic touched).</li>
+    <li>Move the gated <code>Data Export</code> panel to sit immediately under the <code>Subscription</code> block.</li>
+    <li>Group <code>ThemeSwitcher</code>, the Email Notification toggles, and the Printing/CRM toggles under a single <strong>Preferences</strong> heading (keep each existing sub-card; just relocate Theme up and drop the "Additional Settings" wrapper title).</li>
+    <li>Pull <code>Change Password</code> out of the old "Additional Settings" into an <strong>Account</strong> group directly above Danger Zone.</li>
+    <li>Rename the "Manage" heading to <strong>Tools &amp; Teams</strong> and place it after Preferences.</li>
+    <li>Minor consistency: switch the Profile Information wrapper from a raw <code>&lt;div className="bg-surface…"&gt;</code> to <code>&lt;Panel&gt;</code> so all sections share one surface style.</li>
   </ul>
+
+  <div class="note"><strong>Explicitly out of scope</strong> (not selected): extracting the 4 near-duplicate toggle blocks into a shared component, and any font/contrast restyle. Flagged for later if wanted — kept out to keep this change purely structural and safe.</div>
 
   <h2>Review</h2>
-  <p>All seven phases implemented. Summary of changes:</p>
+  <p>Reorg complete via five small, anchored edits — no logic touched. Final section order verified in document order:</p>
+  <ol>
+    <li>Profile Information <span class="sub">(raw &lt;div&gt; → &lt;Panel&gt; for consistency)</span></li>
+    <li>Subscription</li>
+    <li>My Data Export <span class="sub">(now directly under Subscription)</span></li>
+    <li>Preferences <span class="sub">(Appearance/Theme · Email Notifications · Printing · CRM — all toggles in one panel)</span></li>
+    <li>Tools &amp; Teams <span class="sub">(was "Manage")</span></li>
+    <li>Account <span class="sub">(Change Password, moved out of the old grab-bag)</span></li>
+    <li>Danger Zone</li>
+  </ol>
   <ul>
-    <li><strong>Database (Supabase MCP):</strong> migration <code>create_crm_module</code> created <code>crm_customers</code>, <code>crm_orders</code>, <code>crm_order_items</code> (UUID PK, <code>user_id</code>-scoped, full RLS, indexes, <code>updated_at</code> triggers) and added the nullable <code>crm_order_id</code> column to <code>financial_records</code>. Security advisor reports no RLS issues on the new tables.</li>
-    <li><strong>Types &amp; gating:</strong> <code>src/types/crm.ts</code>; <code>useHasActiveSubscription</code> hook (wraps <code>get_subscription_status</code>, fails closed).</li>
-    <li><strong>Navigation:</strong> <code>crmNavItems</code> + Sales group in <code>navigation.ts</code>; rendered only for active subscribers in <code>Sidebar</code> and <code>MobileDrawer</code>. Bottom nav unaffected (CRM not flagged <code>bottomNav</code>).</li>
-    <li><strong>Route guard:</strong> <code>crm/layout.tsx</code> redirects non-subscribers.</li>
-    <li><strong>Customers:</strong> list + inline create/edit form with optional collapsible shipping address.</li>
-    <li><strong>Orders:</strong> list with status/payment badges + filter; inline New Order form; detail page with line-item editor, fulfil/reopen, mark paid/unpaid, cancel, delete.</li>
-    <li><strong>Finance integration:</strong> <code>crm-finance.ts</code> posts one income row per product category on Paid (tagged <code>crm_order_id</code>), reverses on Unpaid/Cancel/Delete, re-posts idempotently on edit. Category IDs resolved at runtime by value.</li>
-    <li><strong>Docs:</strong> <code>docs/features/crm-module.md</code>.</li>
+    <li><strong>Behaviour preserved:</strong> every toggle handler, state binding and modal trigger is byte-for-byte unchanged — only relocated. JSX balance confirmed at all three seams; exactly one Change Password card; no orphaned imports (<code>Palette</code>, <code>ThemeSwitcher</code> still used).</li>
+    <li><strong>Copy changes only:</strong> headings renamed ("Manage"→"Tools &amp; Teams", "Additional Settings"→"Preferences", Theme→"Appearance" subsection) and the theme blurb lightly reworded to British English.</li>
+    <li><strong>Out of scope (as agreed):</strong> no toggle-component extraction, no font/contrast restyle.</li>
   </ul>
-  <div class="note"><strong>Not build-tested locally</strong> (per project workflow). Please run the app and verify: nav visibility with/without subscription, customer + order CRUD, and that marking an order Paid creates matching income rows in the Profit &amp; Loss tool by category.</div>
+  <div class="note"><strong>Not build-tested locally</strong> (per project workflow). Please open Profile and confirm the new section order reads well and every toggle/button still works.</div>
 
   <h2>Quality Audit — Hardening Pass</h2>
-  <p>A senior code review followed implementation. Findings and fixes:</p>
+  <p>A senior review followed the reorg. The reorg itself added no runtime risk (pure block moves), but it put the five preference handlers side-by-side and exposed pre-existing debt, now fixed:</p>
   <ul>
-    <li><strong>Critical — non-atomic money mutations:</strong> all multi-step client write sequences (create, save items, pay/unpay, cancel) replaced with single-transaction Postgres functions (<code>crm_create_order</code>, <code>crm_save_order_items</code>, <code>crm_set_order_payment</code>, <code>crm_cancel_order</code>, <code>_crm_recognise_revenue</code>), <code>SECURITY INVOKER</code> so RLS still applies. No more half-failed states.</li>
-    <li><strong>Critical — silent revenue loss:</strong> posting now <em>raises</em> if any product type can't map to an income category, instead of dropping the line.</li>
-    <li><strong>High — order-number race &amp; 1000+ lexical bug:</strong> numbering moved inside the create transaction using a numeric max; <code>UNIQUE(user_id, order_number)</code> is the final guard.</li>
-    <li><strong>Medium — inconsistent delete semantics:</strong> standardised — Unpaid/Cancel un-recognise income; Delete keeps it (historical fact) consistently for direct and cascade deletes.</li>
-    <li><strong>Medium — redundant RPCs:</strong> <code>useHasActiveSubscription</code> now shares a cached, deduped result across nav surfaces.</li>
-    <li><strong>Security:</strong> all CRM functions pinned to <code>search_path = ''</code> with fully-qualified identifiers.</li>
-    <li><strong>DRY:</strong> deleted <code>crm-finance.ts</code>, <code>crm-orders.ts</code>, and the duplicated TS category map; SQL is now the single source of truth. Client handlers are thin RPC calls.</li>
+    <li><strong>Medium — DRY:</strong> five near-identical inline optimistic-update handlers (~120 lines) collapsed into one <code>updatePreference(key, value, onSuccess?)</code> helper; each call-site is now a single line.</li>
+    <li><strong>Medium — fragile revert:</strong> handlers reverted to <code>!newValue</code> (only coincidentally correct for booleans). The helper captures and restores the <em>actual</em> previous value, so it's safe for any field type (incl. the frequency string).</li>
+    <li><strong>Medium — guard ordering:</strong> handlers wrote optimistically <em>then</em> checked <code>userId</code>, leaving a silent desync if absent. The helper reverts on both the no-user and error paths.</li>
+    <li><strong>Behaviour preserved:</strong> the CRM toggle's <code>notifyCrmPrefChanged</code> side-effect is retained via the <code>onSuccess</code> callback; all column names and toasts unchanged.</li>
   </ul>
 </body>
 </html>

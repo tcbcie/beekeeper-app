@@ -260,6 +260,41 @@ export default function ProfilePage() {
  }
  }
 
+ // Centralised optimistic update for a single profile preference. Writes the new
+ // value, then reverts to the ACTUAL previous value if there is no signed-in user
+ // or the save fails. Replaces five near-identical inline handlers.
+ const updatePreference = useCallback(
+ async (
+ key: keyof typeof profileFormData,
+ value: string | boolean,
+ onSuccess?: () => void,
+ ) => {
+ const previous = profileFormData[key]
+ setProfileFormData(prev => ({ ...prev, [key]: value }))
+
+ if (!userId) {
+ setProfileFormData(prev => ({ ...prev, [key]: previous }))
+ toast.error('Please sign in again to change settings.')
+ return
+ }
+
+ const { error } = await supabase
+ .from('profiles')
+ .update({ [key]: value })
+ .eq('id', userId)
+
+ if (error) {
+ console.error(`Error updating ${String(key)}:`, error)
+ toast.error('Could not save your setting. Please try again.')
+ setProfileFormData(prev => ({ ...prev, [key]: previous }))
+ return
+ }
+
+ onSuccess?.()
+ },
+ [profileFormData, userId, toast],
+ )
+
  const exportMyDataAsJSON = async () => {
  if (!userId) return
 
@@ -723,7 +758,7 @@ export default function ProfilePage() {
  </div>
 
  {/* Profile Information */}
- <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+ <Panel padding="lg">
  <div className="flex items-center justify-between mb-6">
  <h2 className="text-xl font-semibold text-foreground">Profile Information</h2>
  {!editingProfile && (
@@ -1022,45 +1057,6 @@ export default function ProfilePage() {
  </div>
  </div>
  )}
- </div>
-
- {/* Manage Section */}
- <Panel>
- <div className="flex items-center gap-3 mb-4">
- <h2 className="text-xl font-semibold text-foreground">Manage</h2>
- </div>
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
- {[
- { href: '/dashboard/scales', label: 'Scales', description: 'BEEP & Wolf Waagen integrations', icon: Scale, colour: 'text-blue-600 dark:text-blue-400' },
- { href: '/dashboard/apiary-team', label: 'Apiary Team', description: 'Team-based apiary sharing', icon: Users, colour: 'text-green-600 dark:text-green-400' },
- { href: '/dashboard/rearing-team', label: 'Rearing Team', description: 'Queen rearing groups', icon: Crown, colour: 'text-amber-600 dark:text-amber-400' },
- ].map((item) => (
- <Link
- key={item.href}
- href={item.href}
- className="flex items-center gap-3 p-4 border border-border rounded-lg hover:border-forest-500 dark:hover:border-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 transition-colors"
- >
- <item.icon size={20} className={item.colour} />
- <div className="flex-1 min-w-0">
- <h3 className="font-medium text-foreground text-sm">{item.label}</h3>
- <p className="text-xs text-text-secondary truncate">{item.description}</p>
- </div>
- <ChevronRight size={16} className="text-text-tertiary flex-shrink-0" />
- </Link>
- ))}
- </div>
- </Panel>
-
- {/* Theme Preferences */}
- <Panel>
- <div className="flex items-center gap-3 mb-6">
- <Palette size={24} className="text-forest-600 dark:text-forest-400" />
- <h2 className="text-xl font-semibold text-foreground">Theme Preferences</h2>
- </div>
- <p className="text-sm text-text-secondary mb-4">
- Choose your preferred theme. Light mode is optimized for outdoor field work, while dark mode is ideal for evening planning.
- </p>
- <ThemeSwitcher />
  </Panel>
 
  {/* Subscription Management */}
@@ -1131,22 +1127,17 @@ export default function ProfilePage() {
  </div>
  </Panel>
  )}
- {/* Additional Settings */}
+ {/* Preferences */}
  <Panel>
- <h2 className="text-xl font-semibold text-foreground mb-4">Additional Settings</h2>
+ <h2 className="text-xl font-semibold text-foreground mb-4">Preferences</h2>
  <div className="space-y-3">
- <div className="flex items-center justify-between p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div>
- <div className="font-medium text-foreground">Change Password</div>
- <div className="text-sm text-text-tertiary">Update your account password</div>
+ <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+ <div className="flex items-center gap-3 mb-3">
+ <Palette size={20} className="text-forest-600 dark:text-forest-400" />
+ <div className="font-medium text-foreground">Appearance</div>
  </div>
- <Button
- onClick={() => setShowChangePasswordModal(true)}
- tone="success"
- size="sm"
- >
- Change Password
- </Button>
+ <p className="text-sm text-text-tertiary mb-4">Light mode is optimised for outdoor field work; dark mode suits evening planning.</p>
+ <ThemeSwitcher />
  </div>
 
  <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
@@ -1167,32 +1158,7 @@ export default function ProfilePage() {
  type="checkbox"
  id="task-reminders"
  checked={profileFormData.enable_task_email_reminders}
- onChange={async (e) => {
- const newValue = e.target.checked
- setProfileFormData(prev => ({
- ...prev,
- enable_task_email_reminders: newValue
- }))
-
- // Update database immediately with new value
- if (!userId) return
- try {
- const { error } = await supabase
- .from('profiles')
- .update({ enable_task_email_reminders: newValue })
- .eq('id', userId)
-
- if (error) throw error
- } catch (error) {
- console.error('Error updating task reminders:', error)
- toast.error('Could not save task-reminders setting. Please try again.')
- // Revert on error
- setProfileFormData(prev => ({
- ...prev,
- enable_task_email_reminders: !newValue
- }))
- }
- }}
+ onChange={(e) => updatePreference('enable_task_email_reminders', e.target.checked)}
  className="sr-only peer"
  />
  <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
@@ -1210,32 +1176,7 @@ export default function ProfilePage() {
  type="checkbox"
  id="event-reminders"
  checked={profileFormData.enable_event_email_reminders}
- onChange={async (e) => {
- const newValue = e.target.checked
- setProfileFormData(prev => ({
- ...prev,
- enable_event_email_reminders: newValue
- }))
-
- // Update database immediately with new value
- if (!userId) return
- try {
- const { error } = await supabase
- .from('profiles')
- .update({ enable_event_email_reminders: newValue })
- .eq('id', userId)
-
- if (error) throw error
- } catch (error) {
- console.error('Error updating event reminders:', error)
- toast.error('Could not save event-reminders setting. Please try again.')
- // Revert on error
- setProfileFormData(prev => ({
- ...prev,
- enable_event_email_reminders: !newValue
- }))
- }
- }}
+ onChange={(e) => updatePreference('enable_event_email_reminders', e.target.checked)}
  className="sr-only peer"
  />
  <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
@@ -1250,33 +1191,7 @@ export default function ProfilePage() {
  <select
  id="reminder-frequency"
  value={profileFormData.task_reminder_frequency}
- onChange={async (e) => {
- const newValue = e.target.value as 'realtime' | 'daily' | 'weekly' | 'disabled'
- const oldValue = profileFormData.task_reminder_frequency
- setProfileFormData(prev => ({
- ...prev,
- task_reminder_frequency: newValue
- }))
-
- // Update database immediately with new value
- if (!userId) return
- try {
- const { error } = await supabase
- .from('profiles')
- .update({ task_reminder_frequency: newValue })
- .eq('id', userId)
-
- if (error) throw error
- } catch (error) {
- console.error('Error updating reminder frequency:', error)
- toast.error('Could not save reminder frequency. Please try again.')
- // Revert on error
- setProfileFormData(prev => ({
- ...prev,
- task_reminder_frequency: oldValue
- }))
- }
- }}
+ onChange={(e) => updatePreference('task_reminder_frequency', e.target.value)}
  disabled={!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders}
  className="w-full px-3 py-2 bg-surface dark:bg-surface-elevated border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
  >
@@ -1317,30 +1232,7 @@ export default function ProfilePage() {
  type="checkbox"
  id="label-printing"
  checked={profileFormData.enable_label_printing}
- onChange={async (e) => {
- const newValue = e.target.checked
- setProfileFormData(prev => ({
- ...prev,
- enable_label_printing: newValue
- }))
-
- if (!userId) return
- try {
- const { error } = await supabase
- .from('profiles')
- .update({ enable_label_printing: newValue })
- .eq('id', userId)
-
- if (error) throw error
- } catch (error) {
- console.error('Error updating label printing flag:', error)
- toast.error('Could not save the label-printing setting. Please try again.')
- setProfileFormData(prev => ({
- ...prev,
- enable_label_printing: !newValue
- }))
- }
- }}
+ onChange={(e) => updatePreference('enable_label_printing', e.target.checked)}
  className="sr-only peer"
  />
  <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
@@ -1365,31 +1257,7 @@ export default function ProfilePage() {
  type="checkbox"
  id="enable-crm"
  checked={profileFormData.enable_crm}
- onChange={async (e) => {
- const newValue = e.target.checked
- setProfileFormData(prev => ({
- ...prev,
- enable_crm: newValue
- }))
-
- if (!userId) return
- try {
- const { error } = await supabase
- .from('profiles')
- .update({ enable_crm: newValue })
- .eq('id', userId)
-
- if (error) throw error
- notifyCrmPrefChanged(newValue)
- } catch (error) {
- console.error('Error updating CRM flag:', error)
- toast.error('Could not save the CRM setting. Please try again.')
- setProfileFormData(prev => ({
- ...prev,
- enable_crm: !newValue
- }))
- }
- }}
+ onChange={(e) => updatePreference('enable_crm', e.target.checked, () => notifyCrmPrefChanged(e.target.checked))}
  className="sr-only peer"
  />
  <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
@@ -1397,6 +1265,51 @@ export default function ProfilePage() {
  </div>
  </div>
  )}
+ </div>
+ </Panel>
+
+ {/* Tools & Teams */}
+ <Panel>
+ <div className="flex items-center gap-3 mb-4">
+ <h2 className="text-xl font-semibold text-foreground">Tools &amp; Teams</h2>
+ </div>
+ <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+ {[
+ { href: '/dashboard/scales', label: 'Scales', description: 'BEEP & Wolf Waagen integrations', icon: Scale, colour: 'text-blue-600 dark:text-blue-400' },
+ { href: '/dashboard/apiary-team', label: 'Apiary Team', description: 'Team-based apiary sharing', icon: Users, colour: 'text-green-600 dark:text-green-400' },
+ { href: '/dashboard/rearing-team', label: 'Rearing Team', description: 'Queen rearing groups', icon: Crown, colour: 'text-amber-600 dark:text-amber-400' },
+ ].map((item) => (
+ <Link
+ key={item.href}
+ href={item.href}
+ className="flex items-center gap-3 p-4 border border-border rounded-lg hover:border-forest-500 dark:hover:border-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 transition-colors"
+ >
+ <item.icon size={20} className={item.colour} />
+ <div className="flex-1 min-w-0">
+ <h3 className="font-medium text-foreground text-sm">{item.label}</h3>
+ <p className="text-xs text-text-secondary truncate">{item.description}</p>
+ </div>
+ <ChevronRight size={16} className="text-text-tertiary flex-shrink-0" />
+ </Link>
+ ))}
+ </div>
+ </Panel>
+
+ {/* Account */}
+ <Panel>
+ <h2 className="text-xl font-semibold text-foreground mb-4">Account</h2>
+ <div className="flex items-center justify-between p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+ <div>
+ <div className="font-medium text-foreground">Change Password</div>
+ <div className="text-sm text-text-tertiary">Update your account password</div>
+ </div>
+ <Button
+ onClick={() => setShowChangePasswordModal(true)}
+ tone="success"
+ size="sm"
+ >
+ Change Password
+ </Button>
  </div>
  </Panel>
 
