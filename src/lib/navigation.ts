@@ -1,7 +1,7 @@
 import {
   Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings,
   Wrench, User, Info, Calendar, Users, FlaskConical, FileText,
-  BookOpen,
+  BookOpen, Contact, ShoppingCart,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -48,6 +48,17 @@ export const baseNavItems: NavItem[] = [
 
 export const adminNavItems: NavItem[] = [
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+]
+
+/**
+ * CRM ("Sales") items. Rendered as a labelled section only for users with an
+ * active subscription — gated the same way `adminNavItems` is gated by role.
+ */
+export const crmNavGroupLabel = 'Sales'
+
+export const crmNavItems: NavItem[] = [
+  { href: '/dashboard/crm/customers', label: 'Customers', icon: Contact },
+  { href: '/dashboard/crm/orders', label: 'Orders', icon: ShoppingCart },
 ]
 
 /** Items with no group and not pinned to bottom (e.g. Overview) */
