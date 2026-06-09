@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getUserRole, type UserRole } from '@/lib/auth'
+import { useHasActiveSubscription } from '@/hooks/useHasActiveSubscription'
 import IconButton from '@/components/ui/IconButton'
 import {
   getTopItems,
@@ -11,6 +12,8 @@ import {
   getAfterGroupItems,
   getBottomItems,
   adminNavItems,
+  crmNavItems,
+  crmNavGroupLabel,
 } from '@/lib/navigation'
 
 interface MobileDrawerProps {
@@ -20,6 +23,7 @@ interface MobileDrawerProps {
 
 export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const pathname = usePathname()
+  const { hasActiveSubscription } = useHasActiveSubscription()
   const [userRole, setUserRole] = useState<UserRole>('User')
 
   useEffect(() => {
@@ -122,6 +126,23 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                 </div>
               </div>
             ))}
+
+            {/* Sales (CRM) — only for active subscribers */}
+            {hasActiveSubscription && (
+              <div className="mt-4">
+                <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+                  {crmNavGroupLabel}
+                </p>
+                <div className="space-y-2 mt-1">
+                  {crmNavItems.map(item => (
+                    <Link key={item.href} href={item.href} className={linkClasses(item.href)}>
+                      <item.icon size={24} />
+                      <span className="text-base">{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* After-group items (Tools) */}
             <div className="space-y-2 mt-4">
