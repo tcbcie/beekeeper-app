@@ -1,7 +1,7 @@
 // Service Worker for Browser Push Notifications and Offline Support
 // Handles notification display, click events, and offline caching
 
-const CACHE_NAME = 'hivecraic-v1.9.0'
+const CACHE_NAME = 'hivecraic-v1.9.1'
 const MAPBOX_CACHE_NAME = 'hivecraic-mapbox-tiles'
 const OFFLINE_URLS = [
   '/',
@@ -80,13 +80,16 @@ self.addEventListener('message', (event) => {
 
 // Fetch handler for offline support
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
+  // Only ever handle same-method GETs. Anything else (POST/PUT/PATCH/DELETE,
+  // including all Supabase REST/RPC writes) must pass straight through to the
+  // network untouched — never let the worker fabricate a response for them.
   if (event.request.method !== 'GET') {
     return
   }
 
-  // Skip API calls to Supabase - these need internet connection
-  if (event.request.url.includes('supabase.co')) {
+  // Skip ALL API calls (Supabase REST/RPC/Auth/Storage) — they need the network
+  // and must not be served from cache.
+  if (event.request.url.includes('supabase.co') || event.request.url.includes('/rest/v1/')) {
     return
   }
 
@@ -129,10 +132,14 @@ self.addEventListener('fetch', (event) => {
             return cachedResponse
           }
 
-          // If not in cache and offline, show offline page
+          // If not in cache and offline, show the offline page for navigations.
           if (event.request.mode === 'navigate') {
-            return caches.match('/offline.html')
+            return caches.match('/offline.html').then((offline) => offline || Response.error())
           }
+
+          // Never resolve respondWith() with undefined — that throws
+          // "Failed to convert value to 'Response'". Surface a network error.
+          return Response.error()
         })
       })
   )
