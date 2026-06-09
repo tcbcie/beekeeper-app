@@ -13,19 +13,38 @@ subscription**.
 
 ## Access Gating
 
-Gating reuses the existing subscription system (`profiles.subscription_expires_at`
-/ `is_active`) via the `get_subscription_status` RPC — the same check that gates
-Data Export.
+The CRM is shown only when **both** conditions hold:
 
-- **Hook:** `src/hooks/useHasActiveSubscription.ts` — single source of truth.
-  Returns `{ hasActiveSubscription, loading }` and **defaults to `false` (locked)
-  on any error** so a failed check never leaks access.
+1. **Active subscription** — `profiles.subscription_expires_at` / `is_active` via
+   the `get_subscription_status` RPC (the same check that gates Data Export).
+2. **Opt-in preference** — `profiles.enable_crm` (boolean, **default `false`**).
+   Active subscribers turn it on under Profile → Preferences → *Sales / CRM*. The
+   toggle row only appears to active subscribers.
+
+- **Composed gate:** `src/hooks/useCrmEnabled.ts` returns
+  `{ crmEnabled, loading }` where `crmEnabled = activeSubscription && enable_crm`.
+  Both inputs are cached at module scope (deduped across nav surfaces) and the
+  gate **defaults to `false` (locked)** on any error. It refreshes live via the
+  `crm-pref-changed` window event (fired by `notifyCrmPrefChanged`) so the
+  persistent sidebar updates the instant the toggle is flipped — no reload.
+  - `src/hooks/useHasActiveSubscription.ts` provides the cached
+    `resolveActiveSubscription()` primitive reused here.
 - **Navigation:** `crmNavItems` + `crmNavGroupLabel` in `src/lib/navigation.ts`,
-  rendered only when `hasActiveSubscription` is true in `Sidebar`, `MobileDrawer`
-  (the bottom nav bar never shows CRM — it isn't flagged `bottomNav`). Mirrors the
-  existing `userRole === 'Admin'` gate for the Settings item.
-- **Route guard:** `src/app/dashboard/crm/layout.tsx` redirects non-subscribers to
-  `/dashboard` — defence in depth for direct URL access.
+  rendered only when `crmEnabled` is true in `Sidebar`, `MobileDrawer` (the bottom
+  nav bar never shows CRM — it isn't flagged `bottomNav`). Mirrors the existing
+  `userRole === 'Admin'` gate for the Settings item.
+- **Route guard:** `src/app/dashboard/crm/layout.tsx` redirects to `/dashboard`
+  unless `crmEnabled` — defence in depth for direct URL access.
+- **Server-side enforcement:** the subscription is the actual entitlement, so the
+  value-creating RPCs (`crm_create_order`, `crm_save_order_items`, and the
+  mark-paid branch of `crm_set_order_payment`) call `_crm_require_subscription()`
+  and raise `insufficient_privilege` if it has lapsed — the client gate alone is
+  never trusted. Reversal/cleanup paths (cancel, mark-unpaid) stay open so a
+  lapsed user can always wind orders down. `enable_crm` is a UI preference only
+  and is deliberately **not** enforced server-side.
+- **Cache safety:** the module-level subscription/preference caches are cleared on
+  `supabase.auth.onAuthStateChange` so gated state can't leak across account
+  switches within the same tab.
 
 ## Database
 
