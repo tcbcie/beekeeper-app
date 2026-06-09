@@ -32,6 +32,13 @@ export interface Customer {
   updated_at?: string
 }
 
+/** Customer row plus order rollups from the `crm_customer_summary` view. */
+export interface CustomerSummary extends Customer {
+  order_count: number
+  orders_total: number
+  last_order_date: string | null
+}
+
 export interface CustomerFormData {
   first_name: string
   surname: string

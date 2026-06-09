@@ -1,18 +1,28 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, X, Contact, Mail, Phone, MapPin, Pencil, Trash2 } from 'lucide-react'
+import { Plus, X, Contact, Mail, Phone, Pencil, Trash2, Search } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import FieldLabel from '@/components/ui/FieldLabel'
 import TextInput from '@/components/ui/TextInput'
 import TextAreaField from '@/components/ui/TextAreaField'
+import SelectField from '@/components/ui/SelectField'
 import Button from '@/components/ui/Button'
 import Panel from '@/components/ui/Panel'
 import { useToast } from '@/components/ui/Toast'
-import type { Customer, CustomerFormData } from '@/types/crm'
+import { formatMoney } from '@/lib/crm-currency'
+import type { Customer, CustomerFormData, CustomerSummary } from '@/types/crm'
+
+type SortKey = 'name' | 'orders' | 'total' | 'recent'
+
+function formatDate(d: string | null): string {
+  if (!d) return '—'
+  const parsed = new Date(d)
+  return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString('en-GB')
+}
 
 const EMPTY_FORM: CustomerFormData = {
   first_name: '', surname: '', company: '', email: '', phone: '',
@@ -23,24 +33,32 @@ const EMPTY_FORM: CustomerFormData = {
 export default function CustomersPage() {
   const toast = useToast()
   const router = useRouter()
-  const [customers, setCustomers] = useState<Customer[]>([])
+  const [customers, setCustomers] = useState<CustomerSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  const [isUkNi, setIsUkNi] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Customer | null>(null)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<CustomerFormData>(EMPTY_FORM)
+  const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState<SortKey>('name')
 
   const fetchCustomers = useCallback(async (uid: string) => {
     const { data, error } = await supabase
-      .from('crm_customers')
+      .from('crm_customer_summary')
       .select('*')
       .eq('user_id', uid)
       .order('name')
     if (error) {
       toast.error('Failed to load customers')
     } else {
-      setCustomers((data || []) as Customer[])
+      // Numeric/bigint columns arrive as strings from PostgREST — coerce them.
+      setCustomers((data || []).map((r) => ({
+        ...r,
+        order_count: Number(r.order_count) || 0,
+        orders_total: Number(r.orders_total) || 0,
+      })) as CustomerSummary[])
     }
     setLoading(false)
   }, [toast])
@@ -50,6 +68,9 @@ export default function CustomersPage() {
       const id = await getCurrentUserId()
       if (!id) { router.push('/login'); return }
       setUserId(id)
+      const { data: profile } = await supabase
+        .from('profiles').select('is_uk_ni_resident').eq('id', id).maybeSingle()
+      setIsUkNi(profile?.is_uk_ni_resident || false)
       fetchCustomers(id)
     }
     init()
@@ -149,6 +170,23 @@ export default function CustomersPage() {
       fetchCustomers(userId)
     }
   }
+
+  const filteredCustomers = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    const matched = q
+      ? customers.filter((c) =>
+          [c.name, c.company, c.email, c.phone].some((f) => f?.toLowerCase().includes(q)),
+        )
+      : customers
+    const sorted = [...matched]
+    switch (sortBy) {
+      case 'orders': sorted.sort((a, b) => b.order_count - a.order_count); break
+      case 'total': sorted.sort((a, b) => b.orders_total - a.orders_total); break
+      case 'recent': sorted.sort((a, b) => (b.last_order_date || '').localeCompare(a.last_order_date || '')); break
+      default: sorted.sort((a, b) => a.name.localeCompare(b.name))
+    }
+    return sorted
+  }, [customers, search, sortBy])
 
   if (loading) return <LoadingSpinner text="Loading customers..." />
 
@@ -303,44 +341,117 @@ export default function CustomersPage() {
       )}
 
       {customers.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {customers.map((c) => (
-            <Panel key={c.id} padding="md" className="flex flex-col gap-2">
-              <div className="flex justify-between items-start gap-2">
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground">{c.name}</h3>
-                  {c.company && <p className="text-sm text-text-tertiary">{c.company}</p>}
+        <>
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
+              <TextInput
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name, company, email or phone…"
+                className="rounded-md pl-9"
+              />
+            </div>
+            <SelectField
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortKey)}
+              className="rounded-md sm:w-56"
+            >
+              <option value="name">Sort: Name (A–Z)</option>
+              <option value="recent">Sort: Most recent order</option>
+              <option value="orders">Sort: Most orders</option>
+              <option value="total">Sort: Highest total</option>
+            </SelectField>
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-text-tertiary border-b border-border">
+                  <th className="py-2 pr-4 font-medium">Customer</th>
+                  <th className="py-2 px-4 font-medium">Contact</th>
+                  <th className="py-2 px-4 font-medium text-right">Orders</th>
+                  <th className="py-2 px-4 font-medium text-right">Total</th>
+                  <th className="py-2 px-4 font-medium">Last order</th>
+                  <th className="py-2 pl-4 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCustomers.map((c) => (
+                  <tr key={c.id} className="border-b border-border/60 hover:bg-surface-elevated/50">
+                    <td className="py-3 pr-4">
+                      <div className="font-medium text-foreground">{c.name}</div>
+                      {c.company && <div className="text-xs text-text-tertiary">{c.company}</div>}
+                    </td>
+                    <td className="py-3 px-4 text-text-secondary">
+                      {c.email && <div className="truncate max-w-[220px]">{c.email}</div>}
+                      {c.phone && <div>{c.phone}</div>}
+                      {!c.email && !c.phone && <span className="text-text-tertiary">—</span>}
+                    </td>
+                    <td className="py-3 px-4 text-right tabular-nums">{c.order_count}</td>
+                    <td className="py-3 px-4 text-right tabular-nums">{formatMoney(c.orders_total, isUkNi)}</td>
+                    <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{formatDate(c.last_order_date)}</td>
+                    <td className="py-3 pl-4">
+                      <div className="flex gap-1 justify-end">
+                        <Button onClick={() => handleEdit(c)} tone="neutral" size="sm" aria-label="Edit customer">
+                          <Pencil size={16} />
+                        </Button>
+                        <Button onClick={() => handleDelete(c)} tone="danger" size="sm" aria-label="Delete customer">
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="md:hidden space-y-3">
+            {filteredCustomers.map((c) => (
+              <Panel key={c.id} padding="md" className="flex flex-col gap-2">
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">{c.name}</h3>
+                    {c.company && <p className="text-sm text-text-tertiary">{c.company}</p>}
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button onClick={() => handleEdit(c)} tone="neutral" size="sm" aria-label="Edit customer">
+                      <Pencil size={16} />
+                    </Button>
+                    <Button onClick={() => handleDelete(c)} tone="danger" size="sm" aria-label="Delete customer">
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-1 shrink-0">
-                  <Button onClick={() => handleEdit(c)} tone="neutral" size="sm" aria-label="Edit customer">
-                    <Pencil size={16} />
-                  </Button>
-                  <Button onClick={() => handleDelete(c)} tone="danger" size="sm" aria-label="Delete customer">
-                    <Trash2 size={16} />
-                  </Button>
+                <div className="text-sm text-text-secondary space-y-1">
+                  {c.email && (
+                    <p className="flex items-center gap-2">
+                      <Mail size={14} className="text-text-tertiary" /> {c.email}
+                    </p>
+                  )}
+                  {c.phone && (
+                    <p className="flex items-center gap-2">
+                      <Phone size={14} className="text-text-tertiary" /> {c.phone}
+                    </p>
+                  )}
                 </div>
-              </div>
-              <div className="text-sm text-text-secondary space-y-1">
-                {c.email && (
-                  <p className="flex items-center gap-2">
-                    <Mail size={14} className="text-text-tertiary" /> {c.email}
-                  </p>
-                )}
-                {c.phone && (
-                  <p className="flex items-center gap-2">
-                    <Phone size={14} className="text-text-tertiary" /> {c.phone}
-                  </p>
-                )}
-                {(c.city || c.postcode) && (
-                  <p className="flex items-center gap-2">
-                    <MapPin size={14} className="text-text-tertiary" />
-                    {[c.city, c.postcode].filter(Boolean).join(', ')}
-                  </p>
-                )}
-              </div>
-            </Panel>
-          ))}
-        </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm border-t border-border pt-2">
+                  <span className="text-text-secondary">Orders: <span className="font-medium text-foreground tabular-nums">{c.order_count}</span></span>
+                  <span className="text-text-secondary">Total: <span className="font-medium text-foreground tabular-nums">{formatMoney(c.orders_total, isUkNi)}</span></span>
+                  <span className="text-text-secondary">Last: <span className="font-medium text-foreground">{formatDate(c.last_order_date)}</span></span>
+                </div>
+              </Panel>
+            ))}
+          </div>
+
+          {filteredCustomers.length === 0 && (
+            <p className="text-center text-text-tertiary py-8">No customers match your search.</p>
+          )}
+        </>
       )}
 
       {customers.length === 0 && !showForm && (
