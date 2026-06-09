@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getUserRole, type UserRole } from '@/lib/auth'
-import { useHasActiveSubscription } from '@/hooks/useHasActiveSubscription'
+import { useCrmEnabled } from '@/hooks/useCrmEnabled'
 import IconButton from '@/components/ui/IconButton'
 import {
   getTopItems,
@@ -23,7 +23,7 @@ interface MobileDrawerProps {
 
 export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const pathname = usePathname()
-  const { hasActiveSubscription } = useHasActiveSubscription()
+  const { crmEnabled } = useCrmEnabled()
   const [userRole, setUserRole] = useState<UserRole>('User')
 
   useEffect(() => {
@@ -127,8 +127,8 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
               </div>
             ))}
 
-            {/* Sales (CRM) — only for active subscribers */}
-            {hasActiveSubscription && (
+            {/* Sales (CRM) — active subscribers who have opted in */}
+            {crmEnabled && (
               <div className="mt-4">
                 <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
                   {crmNavGroupLabel}

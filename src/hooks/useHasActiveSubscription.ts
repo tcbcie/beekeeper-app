@@ -16,7 +16,17 @@ const TTL_MS = 5 * 60 * 1000
 let cache: { value: boolean; at: number } | null = null
 let inFlight: Promise<boolean> | null = null
 
-async function resolveActiveSubscription(): Promise<boolean> {
+// Never let one account's cached entitlement bleed into another in the same tab.
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+      cache = null
+      inFlight = null
+    }
+  })
+}
+
+export async function resolveActiveSubscription(): Promise<boolean> {
   if (cache && Date.now() - cache.at < TTL_MS) return cache.value
   if (inFlight) return inFlight
 

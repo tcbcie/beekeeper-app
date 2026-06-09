@@ -11,6 +11,7 @@ import SubscriptionHistoryTable from '@/components/SubscriptionHistoryTable'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import type { SubscriptionStatusResponse } from '@/types/subscription'
 import { useToast } from '@/components/ui/Toast'
+import { notifyCrmPrefChanged } from '@/hooks/useCrmEnabled'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Panel from '@/components/ui/Panel'
 import ModalShell from '@/components/ui/ModalShell'
@@ -41,6 +42,7 @@ interface UserProfile {
  enable_event_email_reminders?: boolean
  task_reminder_frequency?: 'realtime' | 'daily' | 'weekly' | 'disabled'
  enable_label_printing?: boolean
+ enable_crm?: boolean
 }
 
 interface Association {
@@ -79,6 +81,7 @@ export default function ProfilePage() {
  enable_event_email_reminders: true,
  task_reminder_frequency: 'daily' as 'realtime' | 'daily' | 'weekly' | 'disabled',
  enable_label_printing: false,
+ enable_crm: false,
  })
  const [savingProfile, setSavingProfile] = useState(false)
  const [associations, setAssociations] = useState<Association[]>([])
@@ -163,6 +166,7 @@ export default function ProfilePage() {
  enable_event_email_reminders: data.enable_event_email_reminders !== undefined ? data.enable_event_email_reminders : true,
  task_reminder_frequency: data.task_reminder_frequency || 'daily',
  enable_label_printing: data.enable_label_printing === true,
+ enable_crm: data.enable_crm === true,
  })
  }
  } catch (error) {
@@ -206,6 +210,7 @@ export default function ProfilePage() {
  enable_event_email_reminders: profileFormData.enable_event_email_reminders,
  task_reminder_frequency: profileFormData.task_reminder_frequency,
  enable_label_printing: profileFormData.enable_label_printing,
+ enable_crm: profileFormData.enable_crm,
  })
  .eq('id', userId)
 
@@ -250,6 +255,7 @@ export default function ProfilePage() {
  enable_event_email_reminders: userProfile.enable_event_email_reminders !== undefined ? userProfile.enable_event_email_reminders : true,
  task_reminder_frequency: userProfile.task_reminder_frequency || 'daily',
  enable_label_printing: userProfile.enable_label_printing === true,
+ enable_crm: userProfile.enable_crm === true,
  })
  }
  }
@@ -1341,6 +1347,56 @@ export default function ProfilePage() {
  </label>
  </div>
  </div>
+
+ {subscriptionStatus?.is_active && (
+ <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+ <div className="mb-4">
+ <div className="font-medium text-foreground mb-1">Sales / CRM</div>
+ <div className="text-sm text-text-tertiary">Manage customers and orders. Sales you mark as paid are recognised in your income records automatically.</div>
+ </div>
+
+ <div className="flex items-center justify-between">
+ <div>
+ <label htmlFor="enable-crm" className="text-sm font-medium text-foreground">Enable CRM</label>
+ <div className="text-xs text-text-tertiary">Adds a Sales section (Customers, Orders) to your menu</div>
+ </div>
+ <label className="relative inline-flex items-center cursor-pointer">
+ <input
+ type="checkbox"
+ id="enable-crm"
+ checked={profileFormData.enable_crm}
+ onChange={async (e) => {
+ const newValue = e.target.checked
+ setProfileFormData(prev => ({
+ ...prev,
+ enable_crm: newValue
+ }))
+
+ if (!userId) return
+ try {
+ const { error } = await supabase
+ .from('profiles')
+ .update({ enable_crm: newValue })
+ .eq('id', userId)
+
+ if (error) throw error
+ notifyCrmPrefChanged(newValue)
+ } catch (error) {
+ console.error('Error updating CRM flag:', error)
+ toast.error('Could not save the CRM setting. Please try again.')
+ setProfileFormData(prev => ({
+ ...prev,
+ enable_crm: !newValue
+ }))
+ }
+ }}
+ className="sr-only peer"
+ />
+ <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+ </label>
+ </div>
+ </div>
+ )}
  </div>
  </Panel>
 

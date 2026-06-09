@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import { getUserRole, type UserRole } from '@/lib/auth'
-import { useHasActiveSubscription } from '@/hooks/useHasActiveSubscription'
+import { useCrmEnabled } from '@/hooks/useCrmEnabled'
 import VersionDisplay from './VersionDisplay'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
@@ -32,7 +32,7 @@ function safeSetItem(key: string, value: string): void {
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const { hasActiveSubscription } = useHasActiveSubscription()
+  const { crmEnabled } = useCrmEnabled()
   const [userRole, setUserRole] = useState<UserRole>('User')
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<NavGroupId[]>([])
@@ -183,8 +183,8 @@ export default function Sidebar() {
           )
         )}
 
-        {/* Sales (CRM) — only for active subscribers */}
-        {hasActiveSubscription && (
+        {/* Sales (CRM) — active subscribers who have opted in */}
+        {crmEnabled && (
           isCollapsed ? (
             crmNavItems.map(item => (
               <Link
