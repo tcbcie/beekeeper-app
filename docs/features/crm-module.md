@@ -52,8 +52,13 @@ Three new tables (all UUID PK, `user_id`-scoped, RLS `auth.uid() = user_id` for
 all four operations, `updated_at` triggers via `update_updated_at_column()`):
 
 ### `crm_customers`
-`name` (required), `company`, `email`, `phone`, optional shipping address
-(`address_line1/2`, `city`, `county`, `postcode`, `country`), `notes`.
+`first_name` (NOT NULL) + `surname` are the single source of truth for a
+customer's name. `name` is a **Postgres generated column**
+(`GENERATED ALWAYS AS (btrim(coalesce(first_name,'') || ' ' || coalesce(surname,''))) STORED`)
+— it cannot drift or be written directly, and remains the canonical display value
+used by orders, cards, `.order('name')` sorting and revenue descriptions. Also
+`company`, `email`, `phone`, optional shipping address (`address_line1/2`, `city`,
+`county`, `postcode`, `country`), `notes`.
 
 ### `crm_orders`
 `customer_id` (FK, cascade), `order_number` (unique per `user_id`),
