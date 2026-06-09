@@ -103,7 +103,7 @@ self.addEventListener('fetch', (event) => {
           }
           return fetch(event.request).then((response) => {
             if (response && response.status === 200) {
-              cache.put(event.request, response.clone())
+              cache.put(event.request, response.clone()).catch(() => { /* best-effort */ })
             }
             return response
           })
@@ -116,12 +116,14 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // If online, update cache with fresh content
+        // If online, update cache with fresh content. cache.put can reject for
+        // unsupported schemes/responses — never let that become an unhandled
+        // rejection in the worker.
         if (response && response.status === 200) {
           const responseToCache = response.clone()
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache)
-          })
+          caches.open(CACHE_NAME)
+            .then((cache) => cache.put(event.request, responseToCache))
+            .catch(() => { /* caching is best-effort */ })
         }
         return response
       })

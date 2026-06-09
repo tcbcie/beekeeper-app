@@ -118,8 +118,12 @@ Revenue is recognised **when an order is marked Paid** (`src/lib/crm-finance.ts`
    historical fact — use Unpaid/Cancel to un-recognise.
 
 All money mutations run inside **atomic Postgres functions** (single
-transaction, `SECURITY INVOKER` so RLS applies) — there is no multi-step
-client orchestration that could half-fail:
+transaction, `SECURITY INVOKER` so RLS applies, `search_path = public` — never
+`''`, which breaks RLS policies referencing unqualified tables). EXECUTE is
+granted to `authenticated`/`service_role` only (revoked from `PUBLIC`/`anon`),
+and order creation takes a per-user advisory lock so concurrent calls can't
+collide on the same order number. There is no multi-step client orchestration
+that could half-fail:
 
 | Function | Action |
 |----------|--------|
@@ -127,7 +131,7 @@ client orchestration that could half-fail:
 | `crm_save_order_items` | Replaces items, recomputes total, re-posts revenue if paid |
 | `crm_set_order_payment` | Sets paid/unpaid + recognises/reverses revenue |
 | `crm_cancel_order` | Cancels + reverses revenue |
-| `_crm_recognise_revenue` | Internal: posts income rows; **raises** if any product type can't map to a category (no silent under-posting) |
+| `_crm_recognise_revenue` | Internal: posts income rows; **raises** if the order isn't `paid` (invariant holds even if called directly) or if any product type can't map to a category (no silent under-posting) |
 | `crm_product_income_category` | Single source of truth for the product→category map |
 
 Manually-entered finance records are never touched. The rows flow straight into
