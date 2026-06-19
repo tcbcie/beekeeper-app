@@ -10,6 +10,7 @@ export interface AvailableSealedGraft {
   batch_id: string
   cell_number: number
   status: string
+  breeder_queen_id: string | null
 }
 
 export interface MatingNucBulkRun {
@@ -101,7 +102,7 @@ export function useMatingNucBulk() {
 
     const { data: sealed, error: sealedError } = await supabase
       .from('batch_grafts')
-      .select('id, batch_id, cell_number, status')
+      .select('id, batch_id, cell_number, status, breeder_queen_id')
       .eq('user_id', userId)
       .eq('batch_id', sourceBatchId)
       .in('status', ['sealed', 'caged', 'emerged'])
@@ -205,17 +206,24 @@ export function useMatingNucBulk() {
 
     if (createdBatchError) throw createdBatchError
 
+    // The mother for each nuc is the breeder of its specific cell (multi-breeder batches);
+    // fall back to the batch-level mother queen for single-breeder/legacy batches or
+    // nucs created without a cell.
+    const breederByGraftId = new Map(availableGrafts.map((g) => [g.id, g.breeder_queen_id]))
+
     const rowsToInsert = Array.from({ length: requestedCount }, (_, index) => {
       const referenceCode = buildReferenceCode(createdBatch.id, index)
       const nucNumber = mode === 'numbered' ? finalNucNumbers[index] : referenceCode
+      const graftId = finalGraftIds[index] || null
+      const cellBreederId = graftId ? breederByGraftId.get(graftId) ?? null : null
       return {
         user_id: userId,
         nuc_number: nucNumber,
         reference_code: referenceCode,
         creation_batch_id: createdBatch.id,
         batch_id: sourceBatchId,
-        graft_id: finalGraftIds[index] || null,
-        queen_id: sourceBatch.mother_queen_id || null,
+        graft_id: graftId,
+        queen_id: cellBreederId || sourceBatch.mother_queen_id || null,
         mating_location: matingLocation || null,
         status,
         notes: notes || null,

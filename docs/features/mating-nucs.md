@@ -30,6 +30,7 @@ Batch (graft date, breeder queen)
 ### "Grafted from" Queen Selection
 - Optional dropdown to select which queen the cells were grafted from
 - When a batch is selected in the create/edit form, this field auto-populates with that batch's breeder queen (`mother_queen_id`)
+- For **multi-breeder batches** (`mother_queen_id` is `NULL`; each cell carries its own `batch_grafts.breeder_queen_id`), selecting a cell auto-fills "Grafted from" with that cell's breeder queen. The bulk workflow likewise sets each nuc's `queen_id` from its cell's breeder, falling back to the batch mother queen for single-breeder/legacy cells.
 - Displays queen number in nuc list
 
 ### Bulk Mating Nuc Creation

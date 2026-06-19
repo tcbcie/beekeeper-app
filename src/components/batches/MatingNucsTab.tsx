@@ -32,6 +32,7 @@ interface Graft {
  notes: string | null
  queen_marked?: boolean
  queen_number?: string | null
+ breeder_queen_id?: string | null
 }
 
 interface Queen {
@@ -1117,6 +1118,11 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const updates: Partial<typeof formData> & { graft_id: string; status: string } = {
    graft_id: e.target.value,
    status: e.target.value ? autoStatus : formData.status,
+ }
+ // Multi-breeder batches store the mother per cell; auto-fill the "Grafted from" queen
+ // from the selected cell's breeder (falls back to the batch mother for single-breeder cells).
+ if (selectedGraft?.breeder_queen_id) {
+   updates.queen_id = selectedGraft.breeder_queen_id
  }
  if (selectedGraft?.status === 'emerged' && selectedGraft.queen_marked) {
    updates.queen_marked_at = formData.setup_date || new Date().toISOString().split('T')[0]
