@@ -519,8 +519,9 @@ export default function DistributeGraftModal({
             </div>
           )}
 
-          {/* Recipient Hive — shown only for mated_queen with selected apiary, app user only */}
-          {!isExternal && selectedUser && distributionType === 'mated_queen' && selectedApiaryId && (
+          {/* Recipient Hive — optional, app user only, single distribution with a selected apiary.
+              Shown for all distribution types (cell, virgin, mated); the hive may not exist yet. */}
+          {!isExternal && selectedUser && !isBulk && selectedApiaryId && (
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-1">
                 Recipient&apos;s Hive
@@ -535,6 +536,9 @@ export default function DistributeGraftModal({
                   <option key={h.id} value={h.id}>{h.hive_number}</option>
                 ))}
               </select>
+              {hives.length === 0 && (
+                <p className="text-xs text-text-tertiary mt-1">No hives recorded at this apiary yet &mdash; this is optional.</p>
+              )}
             </div>
           )}
 
