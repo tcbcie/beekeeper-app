@@ -276,7 +276,7 @@ async function createQueenForRecipient(
       return
     }
 
-    type BreederQueen = { queen_number: string | null; marking_color: string | null; birth_date: string | null; subspecies: string | null }
+    type BreederQueen = { queen_number: string; marking_color: string | null; birth_date: string | null; subspecies: string | null }
     const graftRow = graft as {
       queen_number: string | null
       cell_number: number
