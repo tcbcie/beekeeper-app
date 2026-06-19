@@ -267,7 +267,7 @@ async function createQueenForRecipient(
   try {
     const { data: graft, error: graftError } = await supabase
       .from('batch_grafts')
-      .select('queen_number, cell_number')
+      .select('queen_number, cell_number, breeder_queen_id, queens!batch_grafts_breeder_queen_id_fkey(queen_number, marking_color, birth_date, subspecies)')
       .eq('id', graftId)
       .single()
 
@@ -276,8 +276,24 @@ async function createQueenForRecipient(
       return
     }
 
-    const queenNumber = (graft as { queen_number: string | null; cell_number: number }).queen_number
-      || `Cell #${(graft as { cell_number: number }).cell_number}`
+    type BreederQueen = { queen_number: string | null; marking_color: string | null; birth_date: string | null; subspecies: string | null }
+    const graftRow = graft as {
+      queen_number: string | null
+      cell_number: number
+      breeder_queen_id: string | null
+      queens: BreederQueen[] | BreederQueen | null
+    }
+    const queenNumber = graftRow.queen_number || `Cell #${graftRow.cell_number}`
+
+    // Per-cell breeder queen (multi-breeder batches) takes precedence over the batch-level
+    // mother queen; single-breeder and legacy cells fall back to the batch mother queen.
+    const cellBreeder = Array.isArray(graftRow.queens) ? graftRow.queens[0] ?? null : graftRow.queens
+    const motherQueenId = cellBreeder ? graftRow.breeder_queen_id : batch.motherQueenId
+    const motherQueenSnapshot = cellBreeder
+      ? formatQueenSnapshot(cellBreeder.queen_number, cellBreeder.marking_color, cellBreeder.birth_date, cellBreeder.subspecies)
+      : batch.motherQueenSnapshot
+    const motherQueenSubspecies = cellBreeder ? cellBreeder.subspecies : batch.motherQueenSubspecies
+
     const birthDate = deriveBirthDate(batch)
     const markingColor = birthDate ? getQueenColorFromYear(birthDate) : null
     const eircode = batch.mating_apiary_eircode || null
@@ -292,12 +308,12 @@ async function createQueenForRecipient(
 
     // Canonical lineage string, derived via the shared builder so it matches the edit form.
     const lineage = buildLineageString({
-      damLabel: damLabelFromSnapshot(batch.motherQueenSnapshot),
+      damLabel: damLabelFromSnapshot(motherQueenSnapshot),
       droneSourceType: 'open',
       matingStation,
       eircode,
       year: lineageYear(null, birthDate),
-      subspecies: batch.motherQueenSubspecies,
+      subspecies: motherQueenSubspecies,
       breeder: batch.distributedByName,
     }) || null
 
@@ -312,14 +328,14 @@ async function createQueenForRecipient(
       p_batch_id: batch.batchId ?? null,
       p_distributed_by_name: batch.distributedByName ?? null,
       p_distributed_batch_name: batch.batch_name ?? null,
-      p_distributed_mother_queen: batch.motherQueenSnapshot ?? null,
+      p_distributed_mother_queen: motherQueenSnapshot ?? null,
       p_distributed_drone_source: droneSource ?? null,
-      p_subspecies: batch.motherQueenSubspecies ?? null,
+      p_subspecies: motherQueenSubspecies ?? null,
       p_lineage: lineage,
       p_drone_source_type: 'open',
       p_mating_station: matingStation,
       // Link the real mother only for self-distributions; the RPC re-checks ownership.
-      p_mother_id: isSelfDistribution ? batch.motherQueenId : null,
+      p_mother_id: isSelfDistribution ? motherQueenId : null,
     })
   } catch (err) {
     console.error('Non-blocking: failed to create queen for recipient:', err)
