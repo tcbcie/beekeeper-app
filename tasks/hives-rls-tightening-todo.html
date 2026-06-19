@@ -24,10 +24,17 @@
 <body>
   <h1>Follow-up: Tighten <code>hives</code> Row Level Security</h1>
 
+  <div class="note">
+    <strong>STATUS: DONE.</strong> Applied to production via migration
+    <code>tighten_hives_rls_owner_and_team_scope</code>. Security advisors re-run: <code>hives</code> no longer appears in
+    <code>rls_policy_always_true</code> and no new hive-related findings were introduced. Decisions taken:
+    <strong>edit/delete = hive owner only</strong>; SELECT/INSERT scoped via <code>can_access_apiary</code>.
+  </div>
+
   <div class="crit">
-    <strong>Severity: Critical.</strong> The <code>hives</code> table currently has fully permissive RLS. Every authenticated
-    user can read, modify, and delete <em>every</em> hive in the database. Data is scoped only by application-layer query
-    filters, which any client can bypass. This task replaces the open policies with owner/team-scoped ones.
+    <strong>Original severity: Critical.</strong> The <code>hives</code> table had fully permissive RLS. Every authenticated
+    user could read, modify, and delete <em>every</em> hive in the database. Data was scoped only by application-layer query
+    filters, which any client could bypass. This task replaced the open policies with owner/team-scoped ones.
   </div>
 
   <h2>Current State (live DB)</h2>
@@ -89,13 +96,25 @@ USING (user_id = (select auth.uid()))</code></pre>
 
   <h2>Todo</h2>
   <ul>
-    <li class="todo">Confirm the two policy decisions above (team-member edit; move-out behaviour).</li>
-    <li class="todo">Audit AI tools and any client-side hive writes for session vs service-role usage.</li>
-    <li class="todo">Write migration via the Supabase MCP connection (drop the four <code>*_policy</code> policies, create the scoped ones). Do not parse saved SQL files.</li>
-    <li class="todo">Run <code>get_advisors</code> (security) after applying to confirm no new findings.</li>
-    <li class="todo">Manually verify each item in the Regression Surface as a member, an owner, and a non-team user.</li>
-    <li class="todo">Update <code>docs/features</code> with the final policy and remove the &ldquo;known limitation&rdquo; note from <code>team-member-hive-placement.md</code>.</li>
+    <li class="done">Confirm the two policy decisions (edit/delete = hive owner only; UPDATE may move to any accessible apiary).</li>
+    <li class="done">Audit AI tools and client-side hive writes &mdash; AI tools + admin/beep/wolf-waagen routes use the service-role key (bypass RLS); only client dashboard queries are governed by these policies.</li>
+    <li class="done">Apply migration <code>tighten_hives_rls_owner_and_team_scope</code> via Supabase MCP.</li>
+    <li class="done">Re-run <code>get_advisors</code> (security): <code>hives</code> cleared from <code>rls_policy_always_true</code>; no new hive findings.</li>
+    <li class="done">Confirm the <code>set_hives_user_id</code> BEFORE INSERT trigger is compatible (only sets <code>user_id</code> when NULL).</li>
+    <li class="done">Update <code>docs/features/team-member-hive-placement.md</code> with the final policy.</li>
+    <li class="todo"><strong>User to verify in app</strong> the Regression Surface items below (member, owner, non-team user).</li>
   </ul>
+
+  <div class="note">
+    <strong>Behaviour changes to watch (edit/delete now owner-only):</strong>
+    <ul>
+      <li>A team apiary <em>owner</em> can no longer edit/delete a member's hive that the member placed in the shared apiary.</li>
+      <li>Any flow that wrote to <em>another</em> user's hive now fails by design &mdash; e.g. marking a queen mated
+        (<code>queens/[id]</code>) or distribution/rearing assignments that touch a recipient's hive. Verify these in normal use.</li>
+      <li>The Hives list may still show an Edit affordance on others' shared hives; saving will now be rejected. Consider gating
+        the Edit button by ownership in a small follow-up (UX only, not security).</li>
+    </ul>
+  </div>
 
   <h2>Rollback</h2>
   <p>Keep the original permissive definitions recorded here so the change can be reverted instantly if a legitimate read path

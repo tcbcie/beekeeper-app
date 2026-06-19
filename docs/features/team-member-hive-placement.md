@@ -41,9 +41,20 @@ if (dataToSubmit.apiary_id && !apiaries.some(a => a.id === dataToSubmit.apiary_i
 
 No schema or RLS changes were required.
 
-## Known limitation / follow-up
+## Row Level Security
 
-The `hives` table RLS policies are fully permissive (`USING (true)`), so data
-scoping relies on application logic. Tightening this (e.g. scope by
-`user_id = auth.uid() OR can_access_apiary(apiary_id, auth.uid())`) is tracked as a
-separate task because of its wider regression surface.
+The `hives` table RLS was tightened (migration
+`tighten_hives_rls_owner_and_team_scope`) so access is no longer scoped by
+application logic alone:
+
+- **SELECT** — own hives, plus hives in any apiary the user can access
+  (`can_access_apiary`, i.e. own or team-shared).
+- **INSERT** — the row must record the user as owner
+  (`user_id = auth.uid()`) and target an apiary the user can access (or none).
+  This enforces the placement rule above at the database level.
+- **UPDATE / DELETE** — **hive owner only** (`user_id = auth.uid()`). Team members
+  can view each other's hives in a shared apiary but only edit/delete their own.
+  UPDATE may still move a hive to any apiary the user can access (or none).
+
+Policies are scoped to the `authenticated` role; service-role server routes
+(admin, beep, wolf-waagen, AI tools) bypass RLS and scope in code.
