@@ -107,6 +107,10 @@ client-side filtering and summary:
   dropdown (Queens, Honey, Nuc, Wax, Propolis, Pollination, Other). An order
   matches a product filter if any of its line items is that type. The result
   footer shows the count **and the summed total** of the filtered set.
+- **Outstanding balance:** a stat panel showing total money owed across all
+  unpaid, non-cancelled orders, with the unpaid count and a hint of how many are
+  over 30 days old (by `order_date`). Cancelled orders are excluded — they are
+  forced unpaid but carry no recognised revenue, so nothing is owed.
 - **Open orders to fulfil:** a summary panel above the filters showing, per
   product type, how many *pending* orders contain it and the total units to
   produce. An order is counted once per distinct type it contains; units sum the
