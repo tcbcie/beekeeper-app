@@ -122,20 +122,27 @@ export default function QueenDetailPage() {
           .eq('user_id', currentUserId)
         if (hiveError) console.error('Non-blocking: failed to flag hive queen as mated:', hiveError)
       }
-      // Feed back mating confirmation to graft_distributions for Queen Tracker / NIHBS report
-      if (queen.batch_id) {
+      // Feed back mating confirmation to graft_distributions for Queen Tracker / NIHBS report.
+      // Prefer the exact source graft (1:1) so we never confirm the wrong distribution when the
+      // recipient has several unconfirmed distributions from the same batch; fall back to the
+      // batch heuristic only for queens created before the source_graft_id link existed.
+      if (queen.source_graft_id || queen.batch_id) {
         (async () => {
           try {
-            const { data: match } = await supabase
+            let distQuery = supabase
               .from('graft_distributions')
               .select('id')
-              .eq('batch_id', queen.batch_id)
               .eq('recipient_user_id', currentUserId)
-              .in('distribution_type', ['queen_cell', 'virgin_queen'])
               .eq('mating_confirmed', false)
-              .order('distribution_date', { ascending: true })
-              .limit(1)
-              .maybeSingle()
+            if (queen.source_graft_id) {
+              distQuery = distQuery.eq('graft_id', queen.source_graft_id)
+            } else {
+              distQuery = distQuery
+                .eq('batch_id', queen.batch_id as string)
+                .in('distribution_type', ['queen_cell', 'virgin_queen'])
+                .order('distribution_date', { ascending: true })
+            }
+            const { data: match } = await distQuery.limit(1).maybeSingle()
             if (match) {
               const { error: distError } = await supabase
                 .from('graft_distributions')

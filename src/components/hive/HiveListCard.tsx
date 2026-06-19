@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ExternalLink, MoreVertical, ArchiveRestore, Scale, Clock, QrCode } from 'lucide-react'
 import type { Hive } from '@/types/hive'
+import { queenStatusBadgeClass } from '@/types/queen'
 import Button from '@/components/ui/Button'
 import { formatQueenlessLabel } from '@/lib/queenless'
 
@@ -189,11 +190,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  <ExternalLink size={12} />
  </Link>
  {(hive.queens.status === 'cell' || hive.queens.status === 'virgin') && (
- <span className={`px-1.5 py-0.5 rounded text-xs font-medium border ${
- hive.queens.status === 'virgin'
- ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700'
- : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700'
- }`}>
+ <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${queenStatusBadgeClass(hive.queens.status)}`}>
  {hive.queens.status === 'virgin' ? 'Virgin' : 'Cell'}
  </span>
  )}

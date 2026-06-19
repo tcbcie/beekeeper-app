@@ -15,6 +15,20 @@ export const queenRoleLabel = (role?: string | null): string =>
 export const isProductionQueen = (role?: string | null): boolean =>
   (role ?? 'production') === 'production'
 
+// Life-stage statuses progress cell -> virgin -> active(mated). Centralised badge colour so the
+// queen registry, queen detail and hive views render a queen's stage consistently (avoids the
+// colour map drifting between call sites).
+export const queenStatusBadgeClass = (status?: string | null): string => {
+  switch (status) {
+    case 'active': return 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700'
+    case 'virgin': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700'
+    case 'cell': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
+    case 'swarmed': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border border-orange-300 dark:border-orange-700'
+    case 'superseded': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700'
+    default: return 'bg-surface-secondary text-text-secondary border border-border'
+  }
+}
+
 export interface Queen {
   id: string
   user_id: string
@@ -42,6 +56,7 @@ export interface Queen {
   mother_id?: string | null
   father_id?: string | null
   batch_id?: string | null
+  source_graft_id?: string | null
   mother?: {
     id: string
     queen_number: string
