@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, X, ShoppingCart, ChevronRight } from 'lucide-react'
+import { Plus, X, ShoppingCart, ChevronRight, Search } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import FieldLabel from '@/components/ui/FieldLabel'
@@ -38,6 +38,7 @@ export default function OrdersPage() {
   const [isUkNi, setIsUkNi] = useState(false)
   const [statusFilter, setStatusFilter] = useState<'all' | OrderStatus>('all')
   const [productFilter, setProductFilter] = useState<'all' | ProductType>('all')
+  const [search, setSearch] = useState('')
 
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -115,13 +116,19 @@ export default function OrdersPage() {
     }
   }
 
-  const filteredOrders = useMemo(
-    () => orders.filter((o) => {
+  const filteredOrders = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return orders.filter((o) => {
       if (statusFilter !== 'all' && o.status !== statusFilter) return false
       if (productFilter !== 'all' && !(o.items || []).some((i) => i.product_type === productFilter)) return false
+      if (q && ![o.order_number, o.customer?.name, o.customer?.company].some((f) => f?.toLowerCase().includes(q))) return false
       return true
-    }),
-    [orders, statusFilter, productFilter],
+    })
+  }, [orders, statusFilter, productFilter, search])
+
+  const filteredTotal = useMemo(
+    () => filteredOrders.reduce((sum, o) => sum + (Number(o.total_amount) || 0), 0),
+    [filteredOrders],
   )
 
   // Open (pending) orders broken down by product type, for fulfilment planning.
@@ -259,7 +266,16 @@ export default function OrdersPage() {
       )}
 
       {orders.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
+            <TextInput
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search order number or customer…"
+              className="rounded-md pl-9"
+            />
+          </div>
           <SelectField
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
@@ -280,7 +296,9 @@ export default function OrdersPage() {
               <option key={t} value={t}>{PRODUCT_TYPE_LABELS[t]}</option>
             ))}
           </SelectField>
-          <p className="text-sm text-text-secondary">{filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''}</p>
+          <p className="text-sm text-text-secondary">
+            {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''} · {formatMoney(filteredTotal, isUkNi)}
+          </p>
         </div>
       )}
 
@@ -306,7 +324,15 @@ export default function OrdersPage() {
                     onClick={() => router.push(`/dashboard/crm/orders/${o.id}`)}
                     className="border-b border-border/60 hover:bg-surface-elevated/50 cursor-pointer"
                   >
-                    <td className="py-3 pr-4 font-medium text-foreground whitespace-nowrap">{o.order_number}</td>
+                    <td className="py-3 pr-4 whitespace-nowrap">
+                      <Link
+                        href={`/dashboard/crm/orders/${o.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-medium text-foreground hover:underline focus:underline focus:outline-none"
+                      >
+                        {o.order_number}
+                      </Link>
+                    </td>
                     <td className="py-3 px-4 text-text-secondary">{o.customer?.name || 'Unknown customer'}</td>
                     <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{formatDate(o.order_date)}</td>
                     <td className="py-3 px-4 text-right tabular-nums">{formatMoney(Number(o.total_amount), isUkNi)}</td>
@@ -345,7 +371,7 @@ export default function OrdersPage() {
       )}
 
       {orders.length > 0 && filteredOrders.length === 0 && (
-        <p className="text-center text-text-tertiary py-8">No orders match the selected filters.</p>
+        <p className="text-center text-text-tertiary py-8">No orders match your search or filters.</p>
       )}
 
       {orders.length === 0 && customers.length > 0 && !showForm && (

@@ -93,17 +93,20 @@ shared EUR/GBP rule (`is_uk_ni_resident`).
 ## Orders list
 
 Desktop table + mobile cards (mobile-first), mirroring the customers list. The
-table columns are Order, Customer, Date, Total, Status, Payment; rows are
-clickable and navigate to the order detail page. Mobile keeps the linked summary
-cards.
+table columns are Order, Customer, Date, Total, Status, Payment. Each row is
+clickable for mouse users, and the order number is a real `<Link>` so the row is
+keyboard-focusable/activatable (the link `stopPropagation`s to avoid a double
+navigation). Mobile keeps the linked summary cards.
 
 Orders carry their item `product_type`s (fetched via
-`crm_orders → items:crm_order_items(product_type, quantity)`), which power two
-client-side features:
+`crm_orders → items:crm_order_items(product_type, quantity)`), which power the
+client-side filtering and summary:
 
-- **Filters:** a status dropdown (all/pending/fulfilled/cancelled) and a product
+- **Search + filters:** a free-text search (order number, customer name or
+  company), a status dropdown (all/pending/fulfilled/cancelled) and a product
   dropdown (Queens, Honey, Nuc, Wax, Propolis, Pollination, Other). An order
-  matches a product filter if any of its line items is that type.
+  matches a product filter if any of its line items is that type. The result
+  footer shows the count **and the summed total** of the filtered set.
 - **Open orders to fulfil:** a summary panel above the filters showing, per
   product type, how many *pending* orders contain it and the total units to
   produce. An order is counted once per distinct type it contains; units sum the
