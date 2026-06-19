@@ -767,21 +767,11 @@ export default function HivesPage() {
 
  // History tracking is handled by database trigger - no manual insert needed
  } else {
- // Verify apiary ownership before inserting
- if (dataToSubmit.apiary_id) {
- const { data: apiaryCheck, error: apiaryError } = await supabase
- .from('apiaries')
- .select('id, user_id, name')
- .eq('id', dataToSubmit.apiary_id)
- .single()
-
- if (apiaryError) {
- throw new Error('Failed to verify apiary ownership')
- }
-
- if (!apiaryCheck || apiaryCheck.user_id !== userId) {
- throw new Error(`Cannot create hive: The selected apiary "${apiaryCheck?.name || 'Unknown'}" does not belong to you. Hives can only be added to your own apiaries.`)
- }
+ // Verify the user can place a hive in the selected apiary.
+ // Allowed: an apiary they own, or one shared with a team they belong to.
+ // `apiaries` already holds exactly that set (own + team-shared), matching the dropdown options.
+ if (dataToSubmit.apiary_id && !apiaries.some(a => a.id === dataToSubmit.apiary_id)) {
+ throw new Error('Cannot create hive: you do not have access to the selected apiary.')
  }
 
  // Insert with user_id for RLS policy compliance
