@@ -756,7 +756,8 @@ export default function HivesPage() {
  }
 
  if (editingHive) {
- // Update hive - RLS policies will handle permissions for both owned and shared hives
+ // Update hive. Hives RLS permits UPDATE for the hive owner only, so this path
+ // is reached only for the user's own hives (Edit is hidden for others' hives).
  // Note: The database trigger will automatically create a history entry if configuration changes
  const { error } = await supabase
  .from('hives')
@@ -786,19 +787,6 @@ export default function HivesPage() {
 
  if (!session) {
  throw new Error('No active session found. Please refresh the page and try again.')
- }
-
- // Test if we can call the ownership function directly
- if (insertData.apiary_id) {
- const { error: ownershipError } = await supabase
- .rpc('check_user_owns_apiary', {
- apiary_uuid: insertData.apiary_id,
- user_uuid: userId
- })
-
- if (ownershipError) {
- console.error('Direct ownership check error:', ownershipError)
- }
  }
 
  const { data: newHive, error } = await supabase
@@ -863,9 +851,16 @@ export default function HivesPage() {
  if (userId) fetchHives(userId)
  resetForm()
  } catch (error) {
- if (error instanceof Error) {
- toast.error(`Failed to save hive: ${error.message}`)
- }
+ // Supabase rejections (e.g. RLS denials) throw PostgrestError objects, which are
+ // NOT Error instances. Extract a message defensively so a failed save can never
+ // be swallowed silently, leaving the form looking stuck.
+ const message =
+ error instanceof Error
+ ? error.message
+ : error && typeof error === 'object' && 'message' in error
+ ? String((error as { message: unknown }).message)
+ : 'An unexpected error occurred.'
+ toast.error(`Failed to save hive: ${message}`)
  }
  }
 
