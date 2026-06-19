@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fix: Mother queen blank in queen detail/lineage for multi-breeder batches</title>
+  <title>Fix: per-cell breeder as mother in the mating-nucs path</title>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 880px; margin: 2rem auto; padding: 0 1.25rem; color: #1f2937; line-height: 1.55; }
     h1 { color: #166534; border-bottom: 3px solid #16a34a; padding-bottom: .4rem; font-size: 1.4rem; }
@@ -11,70 +11,52 @@
     code { background: #f1f5f9; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
     .box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: .8rem 1.1rem; }
     .sub { color: #6b7280; font-size: .85rem; }
-    table { border-collapse: collapse; width: 100%; font-size: .85rem; margin-top: .6rem; }
-    th, td { border: 1px solid #e5e7eb; padding: .35rem .5rem; text-align: left; }
-    th { background: #ecfdf5; }
   </style>
 </head>
 <body>
-  <h1>Mother queen blank in queen detail / lineage views (multi-breeder batches)</h1>
+  <h1>Per-cell breeder as mother in the mating-nucs path</h1>
 
   <h2>Context</h2>
-  <p>Follow-up to the Queen Tracker fix. The same root cause &mdash; multi-breeder batches store
-     the mother per cell in <code>batch_grafts.breeder_queen_id</code> while
-     <code>rearing_batches.mother_queen_id</code> is <code>NULL</code> &mdash; meant distributed
-     queen records were created with a blank mother, so the queen detail page, provenance panel,
-     and lineage tree showed no mother.</p>
+  <p>Third application of the multi-breeder fix. Mating nucs record their mother/breeder queen
+     in <code>mating_nucs.queen_id</code>, which both creation paths seeded from the batch-level
+     <code>rearing_batches.mother_queen_id</code>. For multi-breeder batches that is <code>NULL</code>,
+     so nucs were created with no mother queen.</p>
 
-  <h2>Fix 1 &mdash; forward (code): <code>src/hooks/useGraftDistributions.ts</code></h2>
+  <h2>Fix (code only — no backfill needed)</h2>
   <div class="box">
-    <p><code>createQueenForRecipient</code> now resolves the mother <strong>per cell</strong>:</p>
+    <p><strong>Bulk creation</strong> &mdash; <code>src/hooks/useMatingNucBulk.ts</code>:</p>
     <ul>
-      <li>The graft fetch also pulls
-          <code>breeder_queen_id</code> + <code>queens!batch_grafts_breeder_queen_id_fkey(...)</code>.</li>
-      <li>The cell&rsquo;s breeder queen takes precedence; the batch-level
-          <code>mother_queen_id</code> queen is the fallback (single-breeder / legacy).</li>
-      <li>The resolved values feed the snapshot (<code>distributed_mother_queen</code>),
-          <code>subspecies</code>, the lineage dam label, and the self-distribution
-          <code>mother_id</code> FK &mdash; all consistently.</li>
+      <li><code>AvailableSealedGraft</code> + the sealed-cell query now include
+          <code>breeder_queen_id</code>.</li>
+      <li>Each nuc row&rsquo;s <code>queen_id</code> is the breeder of its specific cell, falling
+          back to the batch mother queen for single-breeder/legacy cells or cell-less nucs.</li>
     </ul>
-    <p class="sub">The edit-form auto-fill in <code>queens/page.tsx</code> only runs when
-       <code>mother_id</code> is empty; since the FK is now linked at creation for
-       self-distributions, no change was needed there.</p>
+    <p><strong>Single-nuc form</strong> &mdash; <code>src/components/batches/MatingNucsTab.tsx</code>:</p>
+    <ul>
+      <li><code>Graft</code> type gains <code>breeder_queen_id</code> (the fetch already uses
+          <code>select('*')</code>).</li>
+      <li>Selecting a cell auto-fills the &ldquo;Grafted from&rdquo; queen from that cell&rsquo;s
+          breeder (was only set from the batch mother on batch change).</li>
+    </ul>
   </div>
 
-  <h2>Fix 2 &mdash; backfill (data): 5 existing distributed queens</h2>
-  <p>Forward fix only helps new distributions, so the 5 already-distributed queens from batch
-     <code>TQRQB_RZ03</code> were corrected to the values the fixed code would now produce
-     (all self-owned, so <code>mother_id</code> linking is safe):</p>
-  <table>
-    <tr><th>Queen</th><th>Mother (mother_id)</th><th>Snapshot + subspecies</th><th>Lineage</th></tr>
-    <tr><td>Cell #1, #6, #7</td><td>UGMul1.8</td><td>set (AMM)</td><td>rebuilt with dam</td></tr>
-    <tr><td>Cell #32</td><td>UGX1.4</td><td>set (AMM)</td><td>rebuilt with dam</td></tr>
-    <tr><td>6W</td><td>UGMul1.8 <span class="sub">(already linked)</span></td><td>snapshot added</td><td>left as curated</td></tr>
-  </table>
-  <p class="sub">Applied via a single transaction over the Supabase MCP; <code>6W</code>&rsquo;s
-     hand-curated lineage and custom mated-at Eircode were preserved.</p>
-
-  <h2>Out of scope</h2>
-  <p class="sub">The mating-nuc creation path (<code>useMatingNucBulk</code> /
-     <code>MatingNucsTab</code>) also seeds <code>mating_nucs.queen_id</code> from the batch
-     <code>mother_queen_id</code> and would behave similarly for multi-breeder batches &mdash;
-     a separate feature, not part of the queen detail/lineage view.</p>
+  <h2>No backfill required</h2>
+  <p>A check for existing mating nucs from multi-breeder batches whose <code>queen_id</code>
+     differs from their cell&rsquo;s breeder returned <strong>zero rows</strong>, so no data
+     correction was needed (unlike the distributed-queen fix).</p>
 
   <h2>Review</h2>
   <ul>
-    <li><strong>Root cause fixed, not patched:</strong> mother is resolved per cell at the
-        single point of creation, mirroring the Queen Tracker fix.</li>
-    <li><strong>Backward compatible:</strong> single-breeder / legacy cells fall back to the
-        batch mother queen; behaviour identical to before.</li>
-    <li><strong>Defensive:</strong> null-safe breeder resolution; <code>mother_id</code> still
-        only written for self-distributions (RPC re-checks recipient ownership).</li>
-    <li><strong>Data integrity:</strong> backfill scoped by id, ownership-verified, with the
-        <code>6W</code> update guarded so it could not clobber an already-set value.</li>
+    <li><strong>Consistent root-cause fix:</strong> per-cell breeder preferred, batch mother as
+        fallback &mdash; same pattern as the Queen Tracker and distributed-queen fixes.</li>
+    <li><strong>Backward compatible:</strong> single-breeder cells carry
+        <code>breeder_queen_id == mother_queen_id</code>; legacy/cell-less nucs use the batch
+        mother. No behaviour change for them.</li>
+    <li><strong>Ownership safe:</strong> mating nucs are created by the batch owner from their
+        own batch, so linking the owner&rsquo;s breeder queen raises no cross-user concern.</li>
   </ul>
-  <p class="sub"><strong>Not build-tested locally</strong> (per project workflow). Please open a
-     few of the queens above and confirm the Mother Queen, provenance panel, and lineage tree
-     now show <em>UGMul1.8 / UGX1.4</em>.</p>
+  <p class="sub"><strong>Not build-tested locally</strong> (per project workflow). Please create
+     a mating nuc (single + bulk) from a multi-breeder batch and confirm the nuc shows the
+     correct breeder/mother queen.</p>
 </body>
 </html>
