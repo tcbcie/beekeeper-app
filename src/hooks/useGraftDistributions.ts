@@ -196,14 +196,17 @@ export async function setDistributionMatingConfirmation(
     // cell/virgin queen to mated (and flips its hive). Best-effort; no-op for external
     // recipients or distributions predating the source_graft_id link.
     if (confirmed) {
-      supabase
+      void supabase
         .rpc('promote_distributed_queen_on_mating', {
           p_distribution_id: id,
           p_mated_date: resolvedDate,
         })
-        .then(({ error: promoteError }) => {
-          if (promoteError) console.error('Non-blocking: failed to promote recipient queen on mating:', promoteError)
-        })
+        .then(
+          ({ error: promoteError }) => {
+            if (promoteError) console.error('Non-blocking: failed to promote recipient queen on mating:', promoteError)
+          },
+          (err) => console.error('Non-blocking: promote recipient queen request failed:', err),
+        )
     }
 
     return {
