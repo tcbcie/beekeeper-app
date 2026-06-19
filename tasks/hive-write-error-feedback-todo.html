@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Defensive error feedback for hive writes &mdash; Small Task</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.55; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; }
+    h1 { border-bottom: 3px solid #d97706; padding-bottom: .4rem; }
+    h2 { margin-top: 1.6rem; color: #92400e; }
+    code { background: #f3f4f6; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: .85em; }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    .todo::before { content: "\2B1C "; }
+    .note { background:#eff6ff; border-left:4px solid #2563eb; padding:.6rem .9rem; border-radius:6px; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #e5e7eb; padding: .5rem .7rem; text-align: left; font-size: .9em; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+  <h1>Defensive error feedback for hive write handlers</h1>
+
+  <div class="note">
+    <strong>Priority: Low.</strong> Currently harmless &mdash; the affected controls are owner-gated in the UI and the
+    <code>hives</code> RLS enforces owner-only writes, so these handlers do not silently fail in practice today. This task is
+    a hardening follow-up so they degrade gracefully if those controls are ever surfaced more broadly (e.g. reused in a new
+    view, or RLS/ownership rules change).
+  </div>
+
+  <h2>Background</h2>
+  <p>The hive create/edit handler (<code>handleSubmit</code> in <code>src/app/dashboard/hives/page.tsx</code>) was hardened
+  to extract a message from non-<code>Error</code> throwables (Supabase returns <code>PostgrestError</code> plain objects),
+  so a failed save always surfaces a toast. Several sibling hive-write handlers still either swallow errors with no user
+  feedback or only <code>console.error</code>.</p>
+
+  <h2>Sites to harden</h2>
+  <table>
+    <tr><th>File &amp; handler</th><th>Current behaviour</th></tr>
+    <tr>
+      <td><code>hives/page.tsx</code> &mdash; <code>handleDelete</code></td>
+      <td>On <code>error</code> it does nothing (no toast); on a 0-row no-op it still calls <code>fetchHives</code>, so a failed/blocked delete looks like success.</td>
+    </tr>
+    <tr>
+      <td><code>hives/[id]/page.tsx</code> &mdash; <code>handleDeviceSelect</code>, <code>handleWolfScaleSelect</code></td>
+      <td>An RLS-filtered UPDATE returns 0 rows with no error, so a blocked scale assignment silently no-ops; a real error path lacks a user-facing toast.</td>
+    </tr>
+  </table>
+
+  <h2>Suggested pattern</h2>
+  <p>Reuse the same defensive extraction added to <code>handleSubmit</code>, and give the user feedback on failure:</p>
+  <pre><code>const message =
+  error instanceof Error
+    ? error.message
+    : error &amp;&amp; typeof error === 'object' &amp;&amp; 'message' in error
+      ? String((error as { message: unknown }).message)
+      : 'An unexpected error occurred.'
+toast.error(`&lt;action&gt; failed: ${message}`)</code></pre>
+  <p>For <code>handleDelete</code>, also confirm a row was actually removed (request <code>{ count: 'exact' }</code> or a
+  <code>.select()</code>) before showing success / refreshing, so a no-op blocked delete is not reported as success.</p>
+
+  <h2>Todo</h2>
+  <ul>
+    <li class="todo">Harden <code>handleDelete</code> error + zero-row feedback in <code>hives/page.tsx</code>.</li>
+    <li class="todo">Add failure toasts to <code>handleDeviceSelect</code> / <code>handleWolfScaleSelect</code> in <code>hives/[id]/page.tsx</code>.</li>
+    <li class="todo">Consider extracting the message-extraction helper to a small shared util to avoid duplication (DRY).</li>
+  </ul>
+
+  <h2>Out of scope</h2>
+  <p>No RLS or ownership-model changes &mdash; this is purely user-facing error robustness.</p>
+</body>
+</html>
