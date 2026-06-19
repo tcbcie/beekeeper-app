@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tighten hives RLS &mdash; Follow-up Task</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.55; max-width: 940px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; }
+    h1 { border-bottom: 3px solid #dc2626; padding-bottom: .4rem; }
+    h2 { margin-top: 2rem; color: #991b1b; }
+    code { background: #f3f4f6; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: .85em; }
+    pre code { background: transparent; color: inherit; padding: 0; }
+    .done::before { content: "\2705 "; }
+    .todo::before { content: "\2B1C "; }
+    .crit { background:#fee2e2; border-left:4px solid #dc2626; padding:.6rem .9rem; border-radius:6px; }
+    .note { background:#eff6ff; border-left:4px solid #2563eb; padding:.6rem .9rem; border-radius:6px; }
+    ul { padding-left: 1.2rem; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #e5e7eb; padding: .5rem .7rem; text-align: left; font-size: .9em; vertical-align: top; }
+    th { background: #fef2f2; }
+  </style>
+</head>
+<body>
+  <h1>Follow-up: Tighten <code>hives</code> Row Level Security</h1>
+
+  <div class="crit">
+    <strong>Severity: Critical.</strong> The <code>hives</code> table currently has fully permissive RLS. Every authenticated
+    user can read, modify, and delete <em>every</em> hive in the database. Data is scoped only by application-layer query
+    filters, which any client can bypass. This task replaces the open policies with owner/team-scoped ones.
+  </div>
+
+  <h2>Current State (live DB)</h2>
+  <table>
+    <tr><th>Command</th><th>USING</th><th>WITH CHECK</th></tr>
+    <tr><td>SELECT</td><td><code>true</code></td><td>&mdash;</td></tr>
+    <tr><td>INSERT</td><td>&mdash;</td><td><code>true</code></td></tr>
+    <tr><td>UPDATE</td><td><code>true</code></td><td><code>true</code></td></tr>
+    <tr><td>DELETE</td><td><code>true</code></td><td>&mdash;</td></tr>
+  </table>
+  <p>Existing helper (already <code>SECURITY DEFINER</code>, covers own apiary + team membership + team owner + rearing
+  groups): <code>can_access_apiary(apiary_uuid, user_uuid)</code>.</p>
+
+  <h2>Proposed Policies</h2>
+  <p>Scope by hive owner OR an apiary the user can access. Reads/edits follow the same accessibility as the apiary;
+  <strong>delete is intentionally stricter</strong> (owner only) so a team member cannot destroy another member&rsquo;s hive.</p>
+  <pre><code>-- SELECT: own hives + hives in any apiary I can access
+USING (user_id = (select auth.uid())
+       OR (apiary_id IS NOT NULL AND can_access_apiary(apiary_id, (select auth.uid()))))
+
+-- INSERT: I must be recorded as owner, and the target apiary (if any) must be one I can access
+WITH CHECK (user_id = (select auth.uid())
+            AND (apiary_id IS NULL OR can_access_apiary(apiary_id, (select auth.uid()))))
+
+-- UPDATE: same accessibility for the existing row and the resulting row
+USING (user_id = (select auth.uid())
+       OR (apiary_id IS NOT NULL AND can_access_apiary(apiary_id, (select auth.uid()))))
+WITH CHECK (apiary_id IS NULL OR can_access_apiary(apiary_id, (select auth.uid())))
+
+-- DELETE: owner only (stricter than view/edit)
+USING (user_id = (select auth.uid()))</code></pre>
+  <div class="note">
+    Decisions to confirm before implementing:
+    <ul>
+      <li><strong>Edit by team members:</strong> should a member be able to edit another member&rsquo;s hive in a shared
+        apiary (proposed: yes, matching current visibility), or read-only (the Share modal copy says &ldquo;read-only&rdquo;)?
+        If read-only, UPDATE USING should be <code>user_id = auth.uid()</code>.</li>
+      <li><strong>Moving a hive out:</strong> the UPDATE <code>WITH CHECK</code> above lets a hive be set to <code>apiary_id NULL</code>
+        or to any apiary the user accesses. Confirm that is desired.</li>
+    </ul>
+  </div>
+
+  <h2>Regression Surface to Verify</h2>
+  <ul>
+    <li><strong>Hives list</strong> (<code>src/app/dashboard/hives/page.tsx</code>) &mdash; own + team-shared hives still load.</li>
+    <li><strong>Apiary / hive / queen detail hooks</strong> (<code>useApiaryDetail</code>, <code>useHiveDetail</code>,
+      <code>useQueenDetail</code>) &mdash; joined hive reads.</li>
+    <li><strong>Dashboard &amp; team stats</strong> (<code>useTeams</code>, <code>useDashboardStats</code>) &mdash; cross-member hive counts.</li>
+    <li><strong>Records / reports</strong> (<code>useRecordsData</code>, <code>useReportsData</code>, archived-hives report).</li>
+    <li><strong>Rearing / mating nucs &amp; distributions</strong> &mdash; hives reached via <code>can_access_apiary</code>&rsquo;s
+      rearing-group and distribution branches.</li>
+    <li><strong>QR scan &amp; tags</strong> (<code>hive-scan</code>, <code>qr-tags</code>).</li>
+    <li><strong>AI tools</strong> (<code>src/lib/ai/tools/hives.ts</code> etc.) &mdash; confirm whether they run with the user
+      session (RLS applies) or service role (bypassed).</li>
+    <li><strong>Service-role / admin routes</strong> (<code>api/admin/*</code>, <code>api/beep/*</code>, <code>api/wolf-waagen/*</code>,
+      impersonation) &mdash; these use the service-role key and <em>bypass RLS</em>, so they are unaffected; confirm none rely on
+      the anon client for hive writes.</li>
+  </ul>
+
+  <h2>Todo</h2>
+  <ul>
+    <li class="todo">Confirm the two policy decisions above (team-member edit; move-out behaviour).</li>
+    <li class="todo">Audit AI tools and any client-side hive writes for session vs service-role usage.</li>
+    <li class="todo">Write migration via the Supabase MCP connection (drop the four <code>*_policy</code> policies, create the scoped ones). Do not parse saved SQL files.</li>
+    <li class="todo">Run <code>get_advisors</code> (security) after applying to confirm no new findings.</li>
+    <li class="todo">Manually verify each item in the Regression Surface as a member, an owner, and a non-team user.</li>
+    <li class="todo">Update <code>docs/features</code> with the final policy and remove the &ldquo;known limitation&rdquo; note from <code>team-member-hive-placement.md</code>.</li>
+  </ul>
+
+  <h2>Rollback</h2>
+  <p>Keep the original permissive definitions recorded here so the change can be reverted instantly if a legitimate read path
+  breaks: recreate each policy with <code>USING (true)</code> / <code>WITH CHECK (true)</code> as listed under
+  &ldquo;Current State&rdquo;.</p>
+</body>
+</html>
