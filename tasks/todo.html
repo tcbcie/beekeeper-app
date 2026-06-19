@@ -1,103 +1,85 @@
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Profile Page — Layout &amp; UX Reorg</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fix: Mother queen blank in Queen Tracker for multi-breeder batches</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 920px; margin: 2rem auto; padding: 0 1.25rem; color: #1f2937; line-height: 1.55; }
-    h1 { color: #166534; border-bottom: 3px solid #16a34a; padding-bottom: .4rem; }
-    h2 { color: #15803d; margin-top: 2rem; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1.25rem; color: #1f2937; line-height: 1.55; }
+    h1 { color: #166534; border-bottom: 3px solid #16a34a; padding-bottom: .4rem; font-size: 1.4rem; }
+    h2 { color: #15803d; margin-top: 1.8rem; font-size: 1.1rem; }
     code { background: #f1f5f9; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
-    .cols { display: flex; gap: 1rem; flex-wrap: wrap; }
-    .col { flex: 1; min-width: 280px; border: 1px solid #d1d5db; border-radius: 10px; padding: 1rem 1.25rem; }
-    .col.before { background: #fef2f2; border-color: #fecaca; }
-    .col.after { background: #ecfdf5; border-color: #bbf7d0; }
-    ol { padding-left: 1.3rem; }
-    ol li { padding: .2rem 0; }
+    .box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: .8rem 1.1rem; }
     ul.todo { list-style: none; padding-left: 0; }
     ul.todo li { padding: .25rem 0; }
     ul.todo li::before { content: "\2610 "; color: #16a34a; font-weight: bold; }
     .sub { color: #6b7280; font-size: .85rem; }
-    .note { background: #fffbeb; border-left: 4px solid #f59e0b; padding: .6rem 1rem; border-radius: 0 6px 6px 0; }
   </style>
 </head>
 <body>
-  <h1>Profile Page &mdash; Layout &amp; UX Reorg</h1>
-  <p><strong>Goal:</strong> Regroup the profile page into a clear, purpose-driven structure. <strong>No behaviour change, no component extraction</strong> — every handler, toggle and state stays exactly as-is; only the order and grouping of the existing blocks change.</p>
+  <h1>Mother queen shows &ldquo;-&rdquo; in Queen Tracker for multi-breeder batches</h1>
 
-  <h2>Before &rarr; After</h2>
-  <div class="cols">
-    <div class="col before">
-      <strong>Current (scattered)</strong>
-      <ol>
-        <li>Profile Information</li>
-        <li>Manage <span class="sub">(Scales, Apiary Team, Rearing Team)</span></li>
-        <li>Theme Preferences</li>
-        <li>Subscription <span class="sub">(status + history)</span></li>
-        <li>Data Export <span class="sub">(gated)</span></li>
-        <li>Additional Settings <span class="sub">(Change Password · Email reminders · Printing · CRM)</span></li>
-        <li>Danger Zone</li>
-      </ol>
-    </div>
-    <div class="col after">
-      <strong>Proposed (grouped by purpose)</strong>
-      <ol>
-        <li><strong>Profile Information</strong> <span class="sub">— who you are</span></li>
-        <li><strong>Subscription</strong> <span class="sub">— status + history, with <em>Data Export</em> folded in beneath (both subscription-related)</span></li>
-        <li><strong>Preferences</strong> <span class="sub">— Appearance (Theme) · Email Notifications (task/event/frequency) · Features (Label printing, CRM)</span></li>
-        <li><strong>Tools &amp; Teams</strong> <span class="sub">— the current "Manage" links</span></li>
-        <li><strong>Account</strong> <span class="sub">— Change Password, then Danger Zone (Delete Account)</span></li>
-      </ol>
-    </div>
+  <h2>Problem</h2>
+  <p>In the Queen Tracker cell detail card, <strong>Mother queen</strong> (and Mother age)
+     display <code>-</code> / <code>N/A</code> even though the data exists. Observed on
+     Cell&nbsp;#6 of batch <code>TQRQB_RZ03</code>.</p>
+
+  <h2>Root cause (verified against the live database)</h2>
+  <div class="box">
+    <p><code>TQRQB_RZ03</code> is a <strong>multi-breeder batch</strong>:</p>
+    <ul>
+      <li><code>rearing_batches.mother_queen_id</code> is <strong>NULL</strong>.</li>
+      <li>It has 2 breeder queens; each cell carries its own
+          <code>batch_grafts.breeder_queen_id</code> (32 cells populated).</li>
+      <li>Cell&nbsp;#6 &rarr; breeder queen <strong>UGMul1.8</strong> (AMM, Blue, born 2025-05-25).</li>
+    </ul>
+    <p><code>useQueenTracker</code> resolves the mother queen <em>only</em> from
+       <code>rearing_batches.queens!mother_queen_id</code>, so multi-breeder batches come back
+       null and the card renders <code>-</code>.</p>
   </div>
 
-  <h2>Why this is better</h2>
-  <ul>
-    <li><strong>One home for preferences:</strong> Theme + notification toggles + feature toggles (Printing, CRM) all sit together, instead of Theme being orphaned at the top and the toggles buried in a catch-all.</li>
-    <li><strong>Data Export rejoins Subscription:</strong> it's subscription-gated, so it belongs with the subscription block, not floating between unrelated panels.</li>
-    <li><strong>No more "Additional Settings" grab-bag:</strong> account security (password) moves to a dedicated <em>Account</em> group with the delete action; feature toggles move to <em>Preferences</em>.</li>
-    <li><strong>Destructive actions last:</strong> Change Password + Delete Account grouped at the bottom, matching the existing field-journal convention.</li>
-    <li><strong>Audience fit:</strong> fewer, clearly-labelled sections reduce hunting — important for the 50+ / reduced-eyesight users. Existing font sizes and touch targets are preserved (this is reorg, not restyle).</li>
-  </ul>
-
-  <h2>Implementation (low-risk, in-place)</h2>
+  <h2>Fix &mdash; single file: <code>src/hooks/useQueenTracker.ts</code></h2>
   <ul class="todo">
-    <li>Reorder the existing top-level section blocks into the 5-group order above (cut/paste of intact JSX blocks — no logic touched).</li>
-    <li>Move the gated <code>Data Export</code> panel to sit immediately under the <code>Subscription</code> block.</li>
-    <li>Group <code>ThemeSwitcher</code>, the Email Notification toggles, and the Printing/CRM toggles under a single <strong>Preferences</strong> heading (keep each existing sub-card; just relocate Theme up and drop the "Additional Settings" wrapper title).</li>
-    <li>Pull <code>Change Password</code> out of the old "Additional Settings" into an <strong>Account</strong> group directly above Danger Zone.</li>
-    <li>Rename the "Manage" heading to <strong>Tools &amp; Teams</strong> and place it after Preferences.</li>
-    <li>Minor consistency: switch the Profile Information wrapper from a raw <code>&lt;div className="bg-surface…"&gt;</code> to <code>&lt;Panel&gt;</code> so all sections share one surface style.</li>
+    <li>Add a per-cell breeder-queen join to the existing <code>batch_grafts(...)</code> select:
+        <code>queens!batch_grafts_breeder_queen_id_fkey(queen_number, subspecies, marking_color, birth_date)</code>.</li>
+    <li>In the row mapping, prefer the per-cell breeder queen and fall back to the batch&rsquo;s
+        <code>mother_queen_id</code> queen when the cell has none.</li>
+    <li>Extend the local TypeScript types for the <code>batch_grafts</code> join (no <code>any</code>).</li>
   </ul>
+  <p>No display-layer changes (<code>getMotherQueenLabel</code> and the age logic already read the
+     <code>mother_queen_*</code> fields). No schema change, no migration.</p>
 
-  <div class="note"><strong>Explicitly out of scope</strong> (not selected): extracting the 4 near-duplicate toggle blocks into a shared component, and any font/contrast restyle. Flagged for later if wanted — kept out to keep this change purely structural and safe.</div>
+  <h2>Why this is safe / minimal</h2>
+  <ul>
+    <li><strong>Backward compatible:</strong> single-breeder batches set
+        <code>breeder_queen_id = mother_queen_id</code> per cell, and legacy cells are
+        <code>NULL</code> &rarr; the fallback yields the batch mother queen, identical to today.</li>
+    <li>One query select + one mapping branch changed; everything else untouched.</li>
+  </ul>
 
   <h2>Review</h2>
-  <p>Reorg complete via five small, anchored edits — no logic touched. Final section order verified in document order:</p>
-  <ol>
-    <li>Profile Information <span class="sub">(raw &lt;div&gt; → &lt;Panel&gt; for consistency)</span></li>
-    <li>Subscription</li>
-    <li>My Data Export <span class="sub">(now directly under Subscription)</span></li>
-    <li>Preferences <span class="sub">(Appearance/Theme · Email Notifications · Printing · CRM — all toggles in one panel)</span></li>
-    <li>Tools &amp; Teams <span class="sub">(was "Manage")</span></li>
-    <li>Account <span class="sub">(Change Password, moved out of the old grab-bag)</span></li>
-    <li>Danger Zone</li>
-  </ol>
+  <p>Implemented in <code>src/hooks/useQueenTracker.ts</code> with three small, anchored edits:</p>
   <ul>
-    <li><strong>Behaviour preserved:</strong> every toggle handler, state binding and modal trigger is byte-for-byte unchanged — only relocated. JSX balance confirmed at all three seams; exactly one Change Password card; no orphaned imports (<code>Palette</code>, <code>ThemeSwitcher</code> still used).</li>
-    <li><strong>Copy changes only:</strong> headings renamed ("Manage"→"Tools &amp; Teams", "Additional Settings"→"Preferences", Theme→"Appearance" subsection) and the theme blurb lightly reworded to British English.</li>
-    <li><strong>Out of scope (as agreed):</strong> no toggle-component extraction, no font/contrast restyle.</li>
+    <li><strong>Query:</strong> the existing <code>batch_grafts(...)</code> embed now also pulls the
+        per-cell breeder queen via
+        <code>queens!batch_grafts_breeder_queen_id_fkey(queen_number, subspecies, marking_color, birth_date)</code>.
+        Verified there is exactly one FK from <code>batch_grafts</code> to <code>queens</code>, so the embed is unambiguous.</li>
+    <li><strong>Types:</strong> the <code>graft</code> destructuring type gained a typed
+        <code>queens</code> join &mdash; no <code>any</code> introduced.</li>
+    <li><strong>Mapping:</strong> <code>motherQueen = cellBreederQueen ?? batchMotherQueen</code>.
+        The per-cell breeder wins; the batch-level <code>mother_queen_id</code> queen is the fallback.
+        All four <code>mother_queen_*</code> fields flow from this single resolved source, so the
+        display layer (label, age, marking) needed no change.</li>
   </ul>
-  <div class="note"><strong>Not build-tested locally</strong> (per project workflow). Please open Profile and confirm the new section order reads well and every toggle/button still works.</div>
-
-  <h2>Quality Audit — Hardening Pass</h2>
-  <p>A senior review followed the reorg. The reorg itself added no runtime risk (pure block moves), but it put the five preference handlers side-by-side and exposed pre-existing debt, now fixed:</p>
-  <ul>
-    <li><strong>Medium — DRY:</strong> five near-identical inline optimistic-update handlers (~120 lines) collapsed into one <code>updatePreference(key, value, onSuccess?)</code> helper; each call-site is now a single line.</li>
-    <li><strong>Medium — fragile revert:</strong> handlers reverted to <code>!newValue</code> (only coincidentally correct for booleans). The helper captures and restores the <em>actual</em> previous value, so it's safe for any field type (incl. the frequency string).</li>
-    <li><strong>Medium — guard ordering:</strong> handlers wrote optimistically <em>then</em> checked <code>userId</code>, leaving a silent desync if absent. The helper reverts on both the no-user and error paths.</li>
-    <li><strong>Behaviour preserved:</strong> the CRM toggle's <code>notifyCrmPrefChanged</code> side-effect is retained via the <code>onSuccess</code> callback; all column names and toasts unchanged.</li>
-  </ul>
+  <p><strong>Safety:</strong> null-safe throughout (<code>graft?.queens ?? null</code> &rarr;
+     <code>firstJoinedRecord</code> &rarr; nullable). Single-breeder batches (cell breeder ==
+     mother) and legacy cells (breeder NULL &rarr; fallback) render exactly as before.
+     No schema change, no migration, one file touched.</p>
+  <p class="sub">Note: this fix covers the Queen Tracker card only. Other surfaces that show a
+     batch&rsquo;s mother queen via <code>mother_queen_id</code> (e.g. queen detail/lineage views)
+     were out of scope for this report and unchanged.</p>
+  <p class="sub"><strong>Not build-tested locally</strong> (per project workflow). Please open the
+     Queen Tracker and confirm Cell&nbsp;#6 of <code>TQRQB_RZ03</code> now shows
+     <em>Mother queen: UGMul1.8 / Apis mellifera mellifera (AMM)</em> with a real Mother age.</p>
 </body>
 </html>
