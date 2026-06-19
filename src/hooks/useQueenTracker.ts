@@ -196,7 +196,10 @@ export function useQueenTracker() {
           external_recipient_email,
           external_recipient_phone,
           external_recipient_location,
-          batch_grafts(cell_number, queen_marked, queen_number),
+          batch_grafts(
+            cell_number, queen_marked, queen_number,
+            queens!batch_grafts_breeder_queen_id_fkey(queen_number, subspecies, marking_color, birth_date)
+          ),
           profiles!graft_distributions_recipient_profile_id_fkey(full_name, first_name, last_name, email),
           apiaries!graft_distributions_recipient_apiary_id_fkey(name, eircode),
           hives!graft_distributions_recipient_hive_id_fkey(hive_number),
@@ -331,6 +334,12 @@ export function useQueenTracker() {
           cell_number: number
           queen_marked: boolean
           queen_number: string | null
+          queens: JoinedRecord<{
+            queen_number: string | null
+            subspecies: string | null
+            marking_color: string | null
+            birth_date: string | null
+          }>
         }>)
         const recipientProfile = firstJoinedRecord(d.profiles as JoinedRecord<{
           full_name: string | null
@@ -345,12 +354,16 @@ export function useQueenTracker() {
           last_name: string | null
         }>)
         const batchMatingApiary = firstJoinedRecord(batch.apiaries as JoinedRecord<{ name: string | null; eircode: string | null }>)
-        const motherQueen = firstJoinedRecord(batch.queens as JoinedRecord<{
+        // Per-cell breeder queen (multi-breeder batches) takes precedence; fall back to the
+        // batch-level mother queen for single-breeder/legacy batches.
+        const cellBreederQueen = firstJoinedRecord(graft?.queens ?? null)
+        const batchMotherQueen = firstJoinedRecord(batch.queens as JoinedRecord<{
           queen_number: string | null
           subspecies: string | null
           marking_color: string | null
           birth_date: string | null
         }>)
+        const motherQueen = cellBreederQueen ?? batchMotherQueen
         const latestWeight = latestWeights.get(graftId)
         const cellNumber = typeof graft?.cell_number === 'number'
           && Number.isFinite(graft.cell_number)

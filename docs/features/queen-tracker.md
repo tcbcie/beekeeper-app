@@ -42,12 +42,14 @@ The live schema was checked through the MCP server before implementation. An add
 
 The tracker now uses broader joins and mapping over existing tables:
 - `graft_distributions` for distribution and outcome fields
-- `batch_grafts` for cell number, queen marking, and queen number
+- `batch_grafts` for cell number, queen marking, queen number, and the per-cell breeder queen (`batch_grafts -> queens!batch_grafts_breeder_queen_id_fkey`)
 - `queen_weights` for the latest recorded queen weight per graft
 - `rearing_batches` for batch dates, optional group linkage, and batch ownership
 - `rearing_group_members` to distinguish distributions to same-group members from other app users
 - `rearing_batches -> apiaries!mating_apiary_id` for source mating apiary context
 - `rearing_batches -> queens!mother_queen_id` for mother queen context
+
+The mother queen shown on each row is resolved per cell: the cell's own breeder queen (`batch_grafts.breeder_queen_id`) takes precedence so multi-breeder batches display the correct mother for each cell, falling back to the batch-level `rearing_batches.mother_queen_id` for single-breeder and legacy batches.
 - `graft_distributions -> profiles / apiaries / hives` for recipient and destination details
 
 The tracker now resolves group ownership from `rearing_groups.owner_id`, matching the rest of the rearing-group feature instead of inferring ownership from membership-role rows alone.
