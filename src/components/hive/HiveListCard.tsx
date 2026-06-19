@@ -351,6 +351,8 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </div>
  )}
 
+ {/* Edit/Delete are owner-only; team members can view shared hives but not modify them (matches hives RLS). */}
+ {hive.user_id === userId && (
  <div className="flex gap-2">
  <Button
  onClick={() => onEdit(hive)}
@@ -365,6 +367,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  Delete
  </Button>
  </div>
+ )}
  </div>
  )
 }
