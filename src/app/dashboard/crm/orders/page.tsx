@@ -23,10 +23,24 @@ import type { Customer, Order, OrderItemFormData, OrderStatus, ProductType } fro
 
 const today = () => new Date().toISOString().slice(0, 10)
 
+// Local calendar date as YYYY-MM-DD — avoids the UTC shift of toISOString(),
+// which can misclassify dates by a day for users behind UTC late in the day.
+const localDate = (d: Date) => {
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
+
+// The orders list query selects only these item fields, so the rows are NOT
+// full `Order`s — typing them honestly prevents reads of absent fields.
+type OrderListRow = Omit<Order, 'items'> & {
+  items: { product_type: ProductType; quantity: number }[]
+}
+
 export default function OrdersPage() {
   const toast = useToast()
   const router = useRouter()
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState<OrderListRow[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
@@ -61,7 +75,7 @@ export default function OrdersPage() {
     setIsUkNi(profileRes.data?.is_uk_ni_resident || false)
 
     const nameById = new Map(customerList.map((c) => [c.id, c]))
-    const enriched = ((ordersRes.data || []) as Order[]).map((o) => ({
+    const enriched = ((ordersRes.data || []) as OrderListRow[]).map((o) => ({
       ...o,
       customer: nameById.get(o.customer_id) || null,
     }))
@@ -129,7 +143,9 @@ export default function OrdersPage() {
         .eq('id', orderId).eq('user_id', userId)
       if (error) throw error
       toast.success('Order marked fulfilled')
-      await fetchData(userId)
+      // Patch the single row locally instead of refetching the whole list.
+      setOrders((prev) => prev.map((o) =>
+        o.id === orderId ? { ...o, status: 'fulfilled', fulfilled_date: today() } : o))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update order')
     } finally {
@@ -146,7 +162,9 @@ export default function OrdersPage() {
       const { error } = await supabase.rpc('crm_set_order_payment', { p_order_id: orderId, p_paid: true })
       if (error) throw error
       toast.success('Marked paid — income added to your ledger')
-      await fetchData(userId)
+      // Patch the single row locally instead of refetching the whole list.
+      setOrders((prev) => prev.map((o) =>
+        o.id === orderId ? { ...o, payment_status: 'paid', paid_date: today() } : o))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update payment')
     } finally {
@@ -176,7 +194,7 @@ export default function OrdersPage() {
   const outstanding = useMemo(() => {
     const cutoff = new Date()
     cutoff.setDate(cutoff.getDate() - 30)
-    const cutoffStr = cutoff.toISOString().slice(0, 10)
+    const cutoffStr = localDate(cutoff)
     let total = 0, count = 0, overdue = 0
     for (const o of orders) {
       if (o.status === 'cancelled' || o.payment_status !== 'unpaid') continue
