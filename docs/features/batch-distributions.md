@@ -67,7 +67,7 @@ Modal form with:
 3. **Distribution date** — defaults to today
 4. **Recipient's apiary** — shown for queen cell, virgin queen, and mated queen types (app user mode only)
 5. **Apiary / Mating Location (closest Eircode)** — free-text field shown for all distribution types to app users; at least one of apiary or mating location must be filled before submission
-6. **Recipient's hive** — shown for mated queen type when apiary selected (app user mode only)
+6. **Recipient's hive** — optional; shown for all distribution types (queen cell, virgin queen, mated queen) on a single distribution once an apiary is selected (app user mode only). The hive may not exist yet, so it stays optional; if the chosen apiary has no hives a hint is shown. Hidden in the bulk flow (one hive cannot hold many grafts).
 7. **Notes** — optional
 
 ### Distribution List
