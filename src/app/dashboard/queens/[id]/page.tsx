@@ -31,6 +31,8 @@ export default function QueenDetailPage() {
   const [showMatedForm, setShowMatedForm] = useState(false)
   const [matedDate, setMatedDate] = useState('')
   const [matedEircode, setMatedEircode] = useState('')
+  const [showEmergedForm, setShowEmergedForm] = useState(false)
+  const [emergedDate, setEmergedDate] = useState('')
   const [cellActionLoading, setCellActionLoading] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [breederProfile, setBreederProfile] = useState<BreederContext | null>(null)
@@ -104,12 +106,21 @@ export default function QueenDetailPage() {
         )
         .eq('id', queen.id)
         .eq('user_id', currentUserId)
-        .eq('status', 'cell')
+        .in('status', ['cell', 'virgin'])
       if (error) throw error
       if (count === 0) {
         toast.error('Queen was already updated — please refresh')
         fetchQueenData(currentUserId)
         return
+      }
+      // If this queen is installed in a hive, the hive now holds a mated queen.
+      if (hive?.id) {
+        const { error: hiveError } = await supabase
+          .from('hives')
+          .update({ queen_mated: true })
+          .eq('id', hive.id)
+          .eq('user_id', currentUserId)
+        if (hiveError) console.error('Non-blocking: failed to flag hive queen as mated:', hiveError)
       }
       // Feed back mating confirmation to graft_distributions for Queen Tracker / NIHBS report
       if (queen.batch_id) {
@@ -120,7 +131,7 @@ export default function QueenDetailPage() {
               .select('id')
               .eq('batch_id', queen.batch_id)
               .eq('recipient_user_id', currentUserId)
-              .eq('distribution_type', 'queen_cell')
+              .in('distribution_type', ['queen_cell', 'virgin_queen'])
               .eq('mating_confirmed', false)
               .order('distribution_date', { ascending: true })
               .limit(1)
@@ -153,14 +164,18 @@ export default function QueenDetailPage() {
     }
   }
 
-  const handleMarkFailed = async () => {
+  // Cell → Virgin: record the actual emergence (hatch) day.
+  const handleMarkEmerged = async () => {
     if (!currentUserId) return
-    if (!confirm('Mark this cell as failed? This will set the status to dead.')) return
+    if (!emergedDate) {
+      toast.error('Please enter the emergence (hatch) date')
+      return
+    }
     setCellActionLoading(true)
     try {
       const { error, count } = await supabase
         .from('queens')
-        .update({ status: 'dead' }, { count: 'exact' })
+        .update({ status: 'virgin', birth_date: emergedDate }, { count: 'exact' })
         .eq('id', queen.id)
         .eq('user_id', currentUserId)
         .eq('status', 'cell')
@@ -170,7 +185,35 @@ export default function QueenDetailPage() {
         fetchQueenData(currentUserId)
         return
       }
-      toast.success('Cell marked as failed')
+      toast.success('Queen marked as emerged')
+      setShowEmergedForm(false)
+      setEmergedDate('')
+      fetchQueenData(currentUserId)
+    } catch {
+      toast.error('Failed to update queen status')
+    } finally {
+      setCellActionLoading(false)
+    }
+  }
+
+  const handleMarkFailed = async () => {
+    if (!currentUserId) return
+    if (!confirm('Mark this queen as failed? This will set the status to dead.')) return
+    setCellActionLoading(true)
+    try {
+      const { error, count } = await supabase
+        .from('queens')
+        .update({ status: 'dead' }, { count: 'exact' })
+        .eq('id', queen.id)
+        .eq('user_id', currentUserId)
+        .in('status', ['cell', 'virgin'])
+      if (error) throw error
+      if (count === 0) {
+        toast.error('Queen was already updated — please refresh')
+        fetchQueenData(currentUserId)
+        return
+      }
+      toast.success('Queen marked as failed')
       fetchQueenData(currentUserId)
     } catch {
       toast.error('Failed to update queen status')
@@ -228,6 +271,8 @@ export default function QueenDetailPage() {
             <span className={`px-2 py-0.5 text-xs font-medium rounded border ${
               queen.status === 'active'
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
+                : queen.status === 'virgin'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700'
                 : queen.status === 'cell'
                 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700'
                 : queen.status === 'swarmed'
@@ -238,6 +283,8 @@ export default function QueenDetailPage() {
             }`}>
               {queen.status === 'cell'
                 ? 'Cell'
+                : queen.status === 'virgin'
+                ? 'Virgin'
                 : queen.status === 'swarmed'
                 ? 'Swarmed'
                 : queen.status === 'superseded'
@@ -268,17 +315,32 @@ export default function QueenDetailPage() {
         )}
       </div>
 
-      {/* Cell Banner */}
-      {queen.status === 'cell' && (
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 rounded-lg p-4">
+      {/* Lifecycle banner — queen cell or virgin queen */}
+      {(queen.status === 'cell' || queen.status === 'virgin') && (
+        <div className={`rounded-lg p-4 border ${
+          queen.status === 'cell'
+            ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700'
+            : 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700'
+        }`}>
           <div className="flex items-center gap-3 mb-3">
-            <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 flex-shrink-0" />
-            <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-              This is a queen cell — not yet emerged or mated
+            <AlertTriangle size={18} className={`flex-shrink-0 ${queen.status === 'cell' ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`} />
+            <p className={`text-sm font-medium ${queen.status === 'cell' ? 'text-amber-800 dark:text-amber-300' : 'text-blue-800 dark:text-blue-300'}`}>
+              {queen.status === 'cell'
+                ? 'This is a queen cell — not yet emerged or mated'
+                : 'This is a virgin queen — not yet mated'}
             </p>
           </div>
-          {isOwner && !showMatedForm && (
-            <div className="flex gap-2">
+          {isOwner && !showMatedForm && !showEmergedForm && (
+            <div className="flex gap-2 flex-wrap">
+              {queen.status === 'cell' && (
+                <Button
+                  onClick={() => { setEmergedDate(queen.birth_date || ''); setShowEmergedForm(true) }}
+                  disabled={cellActionLoading}
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 text-sm min-h-[44px]"
+                >
+                  Mark as Emerged
+                </Button>
+              )}
               <Button
                 onClick={() => setShowMatedForm(true)}
                 disabled={cellActionLoading}
@@ -295,8 +357,37 @@ export default function QueenDetailPage() {
               </Button>
             </div>
           )}
+          {showEmergedForm && (
+            <div className="mt-3 space-y-3 bg-white dark:bg-surface-elevated rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+              <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Emergence (hatch) date *</label>
+                <input
+                  type="date"
+                  value={emergedDate}
+                  onChange={(e) => setEmergedDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                />
+                <p className="text-xs text-text-tertiary mt-1">Pre-filled with the estimate — adjust to the actual hatch day.</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleMarkEmerged}
+                  disabled={cellActionLoading}
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 text-sm min-h-[44px]"
+                >
+                  {cellActionLoading ? 'Saving...' : 'Confirm Emerged'}
+                </Button>
+                <Button
+                  onClick={() => setShowEmergedForm(false)}
+                  className="px-4 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated text-sm min-h-[44px]"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
           {showMatedForm && (
-            <div className="mt-3 space-y-3 bg-white dark:bg-surface-elevated rounded-lg p-4 border border-amber-200 dark:border-amber-800">
+            <div className="mt-3 space-y-3 bg-white dark:bg-surface-elevated rounded-lg p-4 border border-border">
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">Mated Date *</label>
                 <input

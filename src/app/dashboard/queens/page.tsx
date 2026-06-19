@@ -34,9 +34,10 @@ type SortKey = 'queen_number' | 'mother' | 'age' | 'apiary' | 'status'
 // alphabetically. Lower index = "more alive".
 const STATUS_PRIORITY: Record<string, number> = {
   active: 0,
-  cell: 1,
-  retired: 2,
-  dead: 3,
+  virgin: 1,
+  cell: 2,
+  retired: 3,
+  dead: 4,
 }
 
 interface SortableThProps {
@@ -141,7 +142,7 @@ export default function QueensPage() {
  const [searchTerm, setSearchTerm] = useState('')
  const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
  const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all')
- const [statusFilter, setStatusFilter] = useState<'active' | 'cell' | 'retired' | 'dead' | 'swarmed' | 'superseded' | 'all'>('active')
+ const [statusFilter, setStatusFilter] = useState<'active' | 'virgin' | 'cell' | 'retired' | 'dead' | 'swarmed' | 'superseded' | 'all'>('active')
  const [roleFilter, setRoleFilter] = useState<'all' | 'production' | 'breeder'>('all')
  const [loading, setLoading] = useState(true)
  const [userId, setUserId] = useState<string | null>(null)
@@ -901,6 +902,7 @@ export default function QueensPage() {
  // Breeder/reference queens are breeding stock, not production colonies, so the Active
  // count and average age cover production queens only; they get their own tally.
  const activeQueens = queens.filter(q => q.status === 'active' && isProductionQueen(q.queen_role)).length
+ const virginQueens = queens.filter(q => q.status === 'virgin').length
  const cellQueens = queens.filter(q => q.status === 'cell').length
  const retiredQueens = queens.filter(q => q.status === 'retired').length
  const deadQueens = queens.filter(q => q.status === 'dead').length
@@ -1276,6 +1278,7 @@ export default function QueensPage() {
  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  >
  <option value="active">Active</option>
+ <option value="virgin">Virgin</option>
  <option value="cell">Cell</option>
  <option value="retired">Retired</option>
  <option value="dead">Dead</option>
@@ -1344,7 +1347,7 @@ export default function QueensPage() {
  {/* Summary stats */}
  {queens.length > 0 && (
  <p className="text-sm text-text-secondary">
- {activeQueens} Active{cellQueens > 0 ? ` | ${cellQueens} Cell${cellQueens !== 1 ? 's' : ''}` : ''} | {retiredQueens} Retired | {deadQueens} Dead{swarmedQueens > 0 ? ` | ${swarmedQueens} Swarmed` : ''}{supersededQueens > 0 ? ` | ${supersededQueens} Superseded` : ''}{breederQueens > 0 ? ` | ${breederQueens} Breeder` : ''} | Avg Age: {avgAgeMonths} months
+ {activeQueens} Active{virginQueens > 0 ? ` | ${virginQueens} Virgin${virginQueens !== 1 ? 's' : ''}` : ''}{cellQueens > 0 ? ` | ${cellQueens} Cell${cellQueens !== 1 ? 's' : ''}` : ''} | {retiredQueens} Retired | {deadQueens} Dead{swarmedQueens > 0 ? ` | ${swarmedQueens} Swarmed` : ''}{supersededQueens > 0 ? ` | ${supersededQueens} Superseded` : ''}{breederQueens > 0 ? ` | ${breederQueens} Breeder` : ''} | Avg Age: {avgAgeMonths} months
  </p>
  )}
 
@@ -1376,11 +1379,12 @@ export default function QueensPage() {
  )}
  <select
  value={statusFilter}
- onChange={(e) => setStatusFilter(e.target.value as 'active' | 'cell' | 'retired' | 'dead' | 'swarmed' | 'superseded' | 'all')}
+ onChange={(e) => setStatusFilter(e.target.value as 'active' | 'virgin' | 'cell' | 'retired' | 'dead' | 'swarmed' | 'superseded' | 'all')}
  className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500 transition-all"
  >
  <option value="all">All Statuses</option>
  <option value="active">Active</option>
+ <option value="virgin">Virgins</option>
  <option value="cell">Cells</option>
  <option value="retired">Retired</option>
  <option value="dead">Dead</option>
@@ -1556,6 +1560,8 @@ export default function QueensPage() {
  className={`px-2 py-1 rounded text-xs font-medium ${
  queen.status === 'active'
  ? 'bg-green-100 dark:bg-green-900/30 text-foreground dark:text-green-300 border border-green-300 dark:border-green-800'
+ : queen.status === 'virgin'
+ ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700'
  : queen.status === 'cell'
  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
  : queen.status === 'swarmed'
@@ -1567,6 +1573,8 @@ export default function QueensPage() {
  >
  {queen.status === 'cell'
  ? 'Cell'
+ : queen.status === 'virgin'
+ ? 'Virgin'
  : queen.status === 'swarmed'
  ? 'Swarmed'
  : queen.status === 'superseded'

@@ -214,11 +214,11 @@ export default function HivesPage() {
  .filter((id): id is string => id !== null)
  )]
 
- const queensMap = new Map<string, { id: string; queen_number: string; marking_color?: string }>()
+ const queensMap = new Map<string, { id: string; queen_number: string; marking_color?: string; status?: string }>()
  if (queenIds.length > 0) {
  const { data: queensData } = await supabase
  .from('queens')
- .select('id, queen_number, marking_color')
+ .select('id, queen_number, marking_color, status')
  .in('id', queenIds)
 
  queensData?.forEach(queen => {
@@ -508,7 +508,7 @@ export default function HivesPage() {
  let queensQuery = supabase
  .from('queens')
  .select('id, queen_number, status')
- .in('status', ['active', 'cell'])
+ .in('status', ['active', 'virgin', 'cell'])
 
  if (sharedUserIds.length > 0) {
  queensQuery = queensQuery.or(`user_id.eq.${currentUserId},user_id.in.(${sharedUserIds.join(',')})`)

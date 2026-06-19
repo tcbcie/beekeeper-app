@@ -651,6 +651,20 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                     {hive.queens.queen_number}
                   </Link>
                 </div>
+                {(hive.queens.status === 'cell' || hive.queens.status === 'virgin' || hive.queens.status === 'active') && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-text-tertiary">Stage:</span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium border ${
+                      hive.queens.status === 'active'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
+                        : hive.queens.status === 'virgin'
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700'
+                        : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                    }`}>
+                      {hive.queens.status === 'active' ? 'Mated' : hive.queens.status === 'virgin' ? 'Virgin' : 'Cell'}
+                    </span>
+                  </div>
+                )}
                 {hive.queens.marking_color && (
                   <div className="flex justify-between items-center">
                     <span className="text-text-tertiary">Marked Colour:</span>
