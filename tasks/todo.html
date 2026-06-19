@@ -1,119 +1,97 @@
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Distributed queens: hive placement, stage &amp; lifecycle</title>
+  <title>Team Member Hive Placement &mdash; Plan &amp; Review</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1.25rem; color: #1f2937; line-height: 1.55; }
-    h1 { color: #166534; border-bottom: 3px solid #16a34a; padding-bottom: .4rem; font-size: 1.4rem; }
-    h2 { color: #15803d; margin-top: 1.6rem; font-size: 1.05rem; }
-    code { background: #f1f5f9; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
-    .box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: .8rem 1.1rem; }
-    .flow { font-family: ui-monospace, monospace; background:#ecfdf5; border:1px solid #bbf7d0; padding:.5rem .8rem; border-radius:8px; display:inline-block; }
-    ul.todo { list-style: none; padding-left: 0; }
-    ul.todo li { padding: .22rem 0; }
-    ul.todo li::before { content: "\2610 "; color: #16a34a; font-weight: bold; }
-    table { border-collapse: collapse; width: 100%; font-size: .85rem; margin:.5rem 0; }
-    th, td { border: 1px solid #e5e7eb; padding: .35rem .5rem; text-align: left; }
-    th { background: #ecfdf5; }
-    .sub { color: #6b7280; font-size: .85rem; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.55; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; }
+    h1 { border-bottom: 3px solid #d97706; padding-bottom: .4rem; }
+    h2 { margin-top: 2rem; color: #92400e; }
+    code { background: #f3f4f6; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+    .done::before { content: "\2705 "; }
+    .todo::before { content: "\2B1C "; }
+    .crit { background:#fee2e2; border-left:4px solid #dc2626; padding:.6rem .9rem; border-radius:6px; }
+    .note { background:#eff6ff; border-left:4px solid #2563eb; padding:.6rem .9rem; border-radius:6px; }
+    ul { padding-left: 1.2rem; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    th, td { border: 1px solid #e5e7eb; padding: .5rem .7rem; text-align: left; font-size: .92em; }
+    th { background: #fef3c7; }
   </style>
 </head>
 <body>
-  <h1>Distributed queens — hive placement, stage &amp; lifecycle</h1>
-  <p>Full design: <code>docs/feature/distributed-queen-hive-placement-lifecycle-plan.md</code>.</p>
+  <h1>Team Member Hive Placement into a Team Apiary</h1>
 
-  <h2>What &amp; why</h2>
-  <p>When a cell/virgin/mated queen is distributed to an app user and assigned to a destination
-     hive, place it in that hive and show it in the recipient's registry clearly badged by stage,
-     with all provenance details, and support the lifecycle:</p>
-  <p class="flow">Cell &nbsp;&rarr;(hatch day)&rarr;&nbsp; Virgin &nbsp;&rarr;(mating)&rarr;&nbsp; Mated</p>
+  <h2>Problem</h2>
+  <p>A team <strong>member</strong> (not the team owner) has two hives in their own apiary and needs to move them
+  into the team&rsquo;s apiary. More generally, members should be able to <strong>place</strong> hives into an apiary
+  the team owner has shared with the team. Today only the apiary owner can add hives to it.</p>
 
-  <h2>Already true today</h2>
-  <div class="box">Distributing to an app user already creates the recipient's queen record with
-     the lineage snapshot (mother queen, lineage, hatch/birth estimate, marking, subspecies).
-     <strong>Gaps:</strong> not placed in a hive; virgin vs mated not distinguished (both
-     <code>active</code>); no lifecycle promotion.</div>
+  <h2>Root Cause (investigation)</h2>
+  <ul>
+    <li>Apiaries are never owned by a team &mdash; they stay owned by an individual (<code>apiaries.user_id</code>) and are
+      <em>shared</em> into a team via the <code>team_apiaries</code> join table. Members get read access via the
+      <code>can_access_apiary()</code> SQL function.</li>
+    <li>The blocker was <strong>not RLS</strong>. The <code>hives</code> table policies are all <code>USING (true)</code> &mdash;
+      gating is entirely in application code.</li>
+    <li>The actual block lived in the create-hive handler in <code>src/app/dashboard/hives/page.tsx</code>: before insert it
+      fetched the apiary and threw if <code>apiary.user_id !== userId</code> (&ldquo;does not belong to you&rdquo;).</li>
+    <li>The apiary dropdown <strong>already</strong> lists team-shared apiaries (labelled &ldquo;(Shared)&rdquo;), and the
+      <em>edit</em> path had no such check &mdash; so moving an existing hive via Edit already worked. Only direct create was blocked.</li>
+  </ul>
 
-  <h2>Confirmed decisions</h2>
+  <h2>Chosen Approach</h2>
+  <p>Relax the create-time check so the selected apiary may be one the user owns <em>or</em> one shared with a team they
+  belong to &mdash; exactly the set already shown in the dropdown (<code>apiaries</code> state = own + team-shared). The hive
+  record keeps <code>user_id = </code> the placing member; the team sees it via the apiary sharing. Minimal, single-spot change.</p>
+
+  <h2>Todo</h2>
+  <ul>
+    <li class="done">Investigate team data model, RLS policies, helper functions and triggers (via live DB).</li>
+    <li class="done">Identify the exact blocker (create-hive ownership check).</li>
+    <li class="done">Confirm decisions with the user (allow create + keep move; member owns hive; RLS as separate task).</li>
+    <li class="done">Replace the ownership check with an access check against the offered apiaries list.</li>
+    <li class="done">Confirm dropdown lists team apiaries and &ldquo;Add Hive&rdquo; is ungated for members.</li>
+    <li class="done">Document the feature in <code>docs/features</code>.</li>
+    <li class="todo">User to test the build (create a hive in a shared apiary as a member; move two hives via Edit).</li>
+    <li class="todo"><strong>Follow-up task:</strong> tighten wide-open <code>hives</code> RLS (see Critical note).</li>
+  </ul>
+
+  <h2>Change Made</h2>
+  <p>File: <code>src/app/dashboard/hives/page.tsx</code> (create branch of the submit handler). Replaced the
+  database ownership lookup + &ldquo;does not belong to you&rdquo; error with:</p>
+  <pre><code>if (dataToSubmit.apiary_id &amp;&amp; !apiaries.some(a =&gt; a.id === dataToSubmit.apiary_id)) {
+  throw new Error('Cannot create hive: you do not have access to the selected apiary.')
+}</code></pre>
+  <p>This also removes a redundant DB round-trip. No schema or RLS changes were needed.</p>
+
+  <h2>Senior Code Review &mdash; Risk Findings</h2>
   <table>
-    <tr><th>Topic</th><th>Decision</th></tr>
-    <tr><td>Stage model</td><td>New <code>virgin</code> status (Cell / Virgin / Mated=<code>active</code>)</td></tr>
-    <tr><td>Hive placement</td><td>Auto-place on distribution; cell shown as &ldquo;Cell&rdquo;, promoted on hatch</td></tr>
-    <tr><td>Occupied hive</td><td>Old queen &rarr; <code>superseded</code>, then place new</td></tr>
-    <tr><td>Lifecycle</td><td>Both promotions (Cell&rarr;Virgin hatch day; Virgin&rarr;Mated)</td></tr>
-    <tr><td>Hatch day</td><td>Manual &ldquo;Mark as emerged&rdquo;, pre-filled with estimate</td></tr>
+    <tr><th>Severity</th><th>Finding</th><th>Status</th></tr>
+    <tr>
+      <td><strong>Critical</strong></td>
+      <td>The <code>hives</code> table has fully permissive RLS (<code>SELECT/INSERT/UPDATE/DELETE = true</code>). Any
+        authenticated user can read or modify <em>every</em> hive in the database; only app code scopes data. This predates
+        this change.</td>
+      <td>Tracked as a separate follow-up task per user decision.</td>
+    </tr>
+    <tr>
+      <td>Low</td>
+      <td>A now-redundant <code>check_user_owns_apiary</code> RPC &ldquo;test&rdquo; remains just below the changed code. It only
+        logs and never blocks, so it is harmless; left untouched to keep the diff minimal.</td>
+      <td>Optional cleanup.</td>
+    </tr>
   </table>
 
-  <h2>Plan (phased — each change small)</h2>
-  <ul class="todo">
-    <li><strong>Phase 1 — stage in registry:</strong> add <code>virgin</code> to
-        <code>types/queen.ts</code> helpers and <code>queens/page.tsx</code> (filter, form, badge,
-        summary count, sort priority).</li>
-    <li><strong>Phase 2 — distribution stage + placement:</strong> in
-        <code>useGraftDistributions.ts</code> map types to <code>cell/virgin/active</code> and
-        thread <code>recipient_hive_id</code> to the RPC (single only). Extend RPC
-        <code>create_queen_for_distribution</code> (via Supabase MCP migration) to place the queen
-        in the recipient's hive &mdash; superseding any existing queen &mdash; guarded to the
-        recipient's own hive.</li>
-    <li><strong>Phase 3 — lifecycle on queen detail:</strong> in <code>queens/[id]/page.tsx</code>
-        add &ldquo;Mark as emerged&rdquo; (Cell&rarr;Virgin, records hatch day) and
-        &ldquo;Mark as mated&rdquo; for virgins (Virgin&rarr;Mated, records date/location + sets
-        hive <code>queen_mated</code>). Render the <code>virgin</code> badge.</li>
-    <li><strong>Phase 4 — hives show stage:</strong> hive detail/list (and any dashboard tile that
-        assumes mated) show a Cell/Virgin/Mated badge for the current queen. Files confirmed after
-        a focused look; includes a no-regression check for cell/virgin queens.</li>
-    <li><strong>Phase 6 — breeder mating-confirmation propagates:</strong> add
-        <code>queens.source_graft_id</code> (MCP migration) set at creation; new
-        <code>SECURITY DEFINER</code> RPC <code>promote_distributed_queen_on_mating</code> that,
-        when the breeder confirms mating in the tracker, promotes the linked recipient queen
-        <code>cell|virgin&rarr;active</code> with date/location and flips its hive
-        <code>queen_mated</code> &mdash; guarded to the recipient&rsquo;s rows. Wire into
-        <code>setDistributionMatingConfirmation</code>/<code>updateMating</code> (best-effort).</li>
-    <li><strong>Phase 7 — docs:</strong> update batch-distributions / queen-rearing / queen-tracker
-        docs and cross-reference the editable-lineage doc.</li>
-  </ul>
+  <div class="note">
+    <strong>Note &mdash; moving existing hives:</strong> the user&rsquo;s two hives can be moved today with no further change:
+    open each hive &rarr; Edit &rarr; change <em>Apiary</em> to the team apiary (labelled &ldquo;(Shared)&rdquo;) &rarr; Save.
+  </div>
 
-  <h2>Out of scope</h2>
-  <ul>
-    <li>Reverting a promotion when the breeder <em>un-confirms</em> mating (mated&rarr;virgin).</li>
-    <li>Bulk hive placement (one hive, many grafts); moving an already-placed queen between hives.</li>
-  </ul>
-
-  <h2>Review</h2>
-  <ul>
-    <li><strong>Phase 1</strong> — <code>virgin</code> status added to the registry: filter,
-        edit form, status badge (blue), summary count, sort priority
-        (<code>queens/page.tsx</code>). No DB constraint change needed.</li>
-    <li><strong>Phase 2</strong> — distribution now maps
-        <code>queen_cell&rarr;cell / virgin_queen&rarr;virgin / mated_queen&rarr;active</code> and
-        threads <code>recipient_hive_id</code> + installed date + <code>source_graft_id</code> to
-        the RPC. The <code>create_queen_for_distribution</code> RPC (Supabase MCP migration) now
-        places the queen into the recipient's hive, superseding any existing queen, guarded to the
-        recipient's own rows. Added column <code>queens.source_graft_id</code>.</li>
-    <li><strong>Phase 3</strong> — queen detail page: <em>Mark as emerged</em> (Cell&rarr;Virgin,
-        records hatch day, pre-filled estimate), <em>Mark as mated</em> for cells &amp; virgins
-        (sets <code>active</code> + flips the hive to mated), <em>Mark as failed</em> for both;
-        Virgin badge rendered.</li>
-    <li><strong>Phase 4</strong> — Stage badge (Cell / Virgin / Mated) on the hive detail page and
-        a compact Cell/Virgin chip on the hive list card; virgins are now assignable to hives.</li>
-    <li><strong>Phase 6</strong> — new <code>promote_distributed_queen_on_mating</code> RPC
-        (SECURITY DEFINER) wired into <code>setDistributionMatingConfirmation</code>: the breeder
-        confirming mating promotes the linked recipient queen <code>cell|virgin&rarr;active</code>
-        and flips its hive — best-effort, idempotent, guarded.</li>
-    <li><strong>Phase 7</strong> — new <code>docs/features/distributed-queen-hive-placement.md</code>;
-        cross-referenced from batch-distributions &amp; queen-tracker docs.</li>
-  </ul>
-  <p><strong>Defensive notes:</strong> all cross-account writes live in SECURITY DEFINER RPCs and
-     only ever touch the recipient's own queen/hive; placement &amp; propagation are guarded by
-     <code>user_id = recipient</code> and (for propagation) caller-owns-distribution; both promotion
-     routes converge on the same record with no conflict; bulk distribution never auto-places.</p>
-  <p class="sub"><strong>Tech debt noted:</strong> the Cell/Virgin/Mated badge classes are now
-     inlined in three places (registry, detail, hive) — candidate for a shared helper later.</p>
-  <p class="sub"><strong>Not build-tested locally</strong> (per project workflow). Suggested
-     manual test: distribute a cell to an app user + pick their hive &rarr; confirm it appears in
-     their registry as &ldquo;Cell&rdquo; and in the hive; Mark as emerged &rarr; Virgin; confirm
-     mating in the tracker &rarr; recipient queen becomes mated and the hive flips.</p>
+  <h2>Review Summary</h2>
+  <p>One small, contained edit removes the artificial restriction that stopped team members placing hives in a shared team
+  apiary, bringing the create flow in line with the already-working edit/move flow and the dropdown&rsquo;s contents. Hive
+  ownership semantics are unchanged (the placing member owns the record; the team sees it through apiary sharing). The
+  pre-existing wide-open <code>hives</code> RLS is flagged as Critical and tracked separately.</p>
 </body>
 </html>
