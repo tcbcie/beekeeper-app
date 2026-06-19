@@ -131,6 +131,23 @@ export default function OrdersPage() {
     [filteredOrders],
   )
 
+  // Accounts receivable: money owed across unpaid, non-cancelled orders.
+  // Cancelled orders are forced unpaid but carry no recognised revenue, so they
+  // are never "owed". Orders whose date is over 30 days ago are flagged overdue.
+  const outstanding = useMemo(() => {
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - 30)
+    const cutoffStr = cutoff.toISOString().slice(0, 10)
+    let total = 0, count = 0, overdue = 0
+    for (const o of orders) {
+      if (o.status === 'cancelled' || o.payment_status !== 'unpaid') continue
+      total += Number(o.total_amount) || 0
+      count += 1
+      if (o.order_date && o.order_date < cutoffStr) overdue += 1
+    }
+    return { total, count, overdue }
+  }, [orders])
+
   // Open (pending) orders broken down by product type, for fulfilment planning.
   // An order is counted once per distinct product type it contains; units sum
   // the quantities of that type across all open orders.
@@ -234,6 +251,23 @@ export default function OrdersPage() {
               </Button>
             </div>
           </form>
+        </Panel>
+      )}
+
+      {outstanding.count > 0 && (
+        <Panel padding="md">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm text-text-secondary">Outstanding (unpaid orders)</p>
+              <p className="text-2xl font-bold text-foreground tabular-nums">{formatMoney(outstanding.total, isUkNi)}</p>
+            </div>
+            <p className="text-sm text-text-tertiary">
+              {outstanding.count} unpaid order{outstanding.count !== 1 ? 's' : ''}
+              {outstanding.overdue > 0 && (
+                <> · <span className="text-amber-600 dark:text-amber-400">{outstanding.overdue} over 30 days</span></>
+              )}
+            </p>
+          </div>
         </Panel>
       )}
 
