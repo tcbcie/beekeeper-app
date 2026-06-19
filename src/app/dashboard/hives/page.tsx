@@ -865,6 +865,9 @@ export default function HivesPage() {
  }
 
  const handleEdit = (hive: Hive) => {
+ // Owner-only: hives RLS rejects UPDATE on others' hives and the card hides the
+ // Edit control, so guard here too in case this is ever called from elsewhere.
+ if (hive.user_id !== userId) return
  setEditingHive(hive)
  setFormData({
  hive_number: hive.hive_number,
