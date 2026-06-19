@@ -192,6 +192,20 @@ export async function setDistributionMatingConfirmation(
     if (error) throw error
     if (!data?.id) return null
 
+    // Propagate to the recipient's queen: confirming mating promotes a linked distributed
+    // cell/virgin queen to mated (and flips its hive). Best-effort; no-op for external
+    // recipients or distributions predating the source_graft_id link.
+    if (confirmed) {
+      supabase
+        .rpc('promote_distributed_queen_on_mating', {
+          p_distribution_id: id,
+          p_mated_date: resolvedDate,
+        })
+        .then(({ error: promoteError }) => {
+          if (promoteError) console.error('Non-blocking: failed to promote recipient queen on mating:', promoteError)
+        })
+    }
+
     return {
       id: data.id,
       mating_confirmed: data.mating_confirmed === true,
@@ -262,7 +276,9 @@ async function createQueenForRecipient(
   graftId: string,
   batch: BatchDetails,
   distributionType: 'queen_cell' | 'virgin_queen' | 'mated_queen',
-  isSelfDistribution: boolean
+  isSelfDistribution: boolean,
+  recipientHiveId: string | null = null,
+  installedDate: string | null = null
 ): Promise<void> {
   try {
     const { data: graft, error: graftError } = await supabase
@@ -323,7 +339,11 @@ async function createQueenForRecipient(
       p_birth_date: birthDate,
       p_marking_color: markingColor,
       p_source: 'Bred',
-      p_status: distributionType === 'queen_cell' ? 'cell' : 'active',
+      p_status: distributionType === 'queen_cell'
+        ? 'cell'
+        : distributionType === 'virgin_queen'
+          ? 'virgin'
+          : 'active',
       p_mated_at_eircode: eircode,
       p_batch_id: batch.batchId ?? null,
       p_distributed_by_name: batch.distributedByName ?? null,
@@ -336,6 +356,11 @@ async function createQueenForRecipient(
       p_mating_station: matingStation,
       // Link the real mother only for self-distributions; the RPC re-checks ownership.
       p_mother_id: isSelfDistribution ? motherQueenId : null,
+      // Place the queen into the recipient's chosen hive (optional). The RPC supersedes any
+      // existing queen in that hive and only ever writes the recipient's own hive/queens.
+      p_recipient_hive_id: recipientHiveId,
+      p_installed_date: installedDate,
+      p_source_graft_id: graftId,
     })
   } catch (err) {
     console.error('Non-blocking: failed to create queen for recipient:', err)
@@ -347,7 +372,9 @@ async function createQueensForRecipient(
   recipientUserId: string,
   batchId: string,
   graftIds: string[],
-  distributionType: 'queen_cell' | 'virgin_queen' | 'mated_queen'
+  distributionType: 'queen_cell' | 'virgin_queen' | 'mated_queen',
+  recipientHiveId: string | null = null,
+  installedDate: string | null = null
 ): Promise<void> {
   try {
     // Resolve auth user ID first so a failure doesn't abort the entire batch fetch
@@ -398,8 +425,10 @@ async function createQueensForRecipient(
     // Only link the actual mother FK when distributing to your own apiary, so a recipient
     // never ends up referencing a breeder's queen they cannot see.
     const isSelfDistribution = !!callerId && recipientUserId === callerId
+    // Hive placement only makes sense for a single queen; never place many grafts into one hive.
+    const hiveForPlacement = graftIds.length === 1 ? recipientHiveId : null
     await Promise.allSettled(
-      graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails, distributionType, isSelfDistribution))
+      graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails, distributionType, isSelfDistribution, hiveForPlacement, installedDate))
     )
   } catch (err) {
     console.error('Non-blocking: failed to create queens for recipient:', err)
@@ -516,9 +545,17 @@ export function useGraftDistributions() {
         throw graftError
       }
 
-      // Create queen record for recipient (non-blocking)
+      // Create queen record for recipient (non-blocking). When a destination hive was chosen,
+      // the queen is also placed into it (installed on the distribution date).
       if (data.recipient_user_id) {
-        createQueensForRecipient(data.recipient_user_id, data.batch_id, [data.graft_id], data.distribution_type)
+        createQueensForRecipient(
+          data.recipient_user_id,
+          data.batch_id,
+          [data.graft_id],
+          data.distribution_type,
+          data.recipient_hive_id,
+          data.distribution_date,
+        )
       }
 
       return true

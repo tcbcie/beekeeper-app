@@ -3,83 +3,117 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Optional recipient hive for all distribution types</title>
+  <title>Distributed queens: hive placement, stage &amp; lifecycle</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 880px; margin: 2rem auto; padding: 0 1.25rem; color: #1f2937; line-height: 1.55; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1.25rem; color: #1f2937; line-height: 1.55; }
     h1 { color: #166534; border-bottom: 3px solid #16a34a; padding-bottom: .4rem; font-size: 1.4rem; }
-    h2 { color: #15803d; margin-top: 1.8rem; font-size: 1.1rem; }
+    h2 { color: #15803d; margin-top: 1.6rem; font-size: 1.05rem; }
     code { background: #f1f5f9; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
     .box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: .8rem 1.1rem; }
-    .ok { background: #ecfdf5; border-color: #bbf7d0; }
-    .sub { color: #6b7280; font-size: .85rem; }
+    .flow { font-family: ui-monospace, monospace; background:#ecfdf5; border:1px solid #bbf7d0; padding:.5rem .8rem; border-radius:8px; display:inline-block; }
     ul.todo { list-style: none; padding-left: 0; }
-    ul.todo li { padding: .25rem 0; }
+    ul.todo li { padding: .22rem 0; }
     ul.todo li::before { content: "\2610 "; color: #16a34a; font-weight: bold; }
+    table { border-collapse: collapse; width: 100%; font-size: .85rem; margin:.5rem 0; }
+    th, td { border: 1px solid #e5e7eb; padding: .35rem .5rem; text-align: left; }
+    th { background: #ecfdf5; }
+    .sub { color: #6b7280; font-size: .85rem; }
   </style>
 </head>
 <body>
-  <h1>Optional recipient hive when distributing to an app user</h1>
+  <h1>Distributed queens — hive placement, stage &amp; lifecycle</h1>
+  <p>Full design: <code>docs/feature/distributed-queen-hive-placement-lifecycle-plan.md</code>.</p>
 
-  <h2>Request</h2>
-  <p>When distributing a <strong>queen cell, virgin queen, or mated queen</strong> to an app user
-     (or group member, who is also an app user), allow choosing an optional <strong>recipient
-     hive</strong> in addition to the apiary. Optional because the hive may not exist yet.</p>
+  <h2>What &amp; why</h2>
+  <p>When a cell/virgin/mated queen is distributed to an app user and assigned to a destination
+     hive, place it in that hive and show it in the recipient's registry clearly badged by stage,
+     with all provenance details, and support the lifecycle:</p>
+  <p class="flow">Cell &nbsp;&rarr;(hatch day)&rarr;&nbsp; Virgin &nbsp;&rarr;(mating)&rarr;&nbsp; Mated</p>
 
-  <h2>Key finding — most of this already exists</h2>
-  <div class="box ok">
-    <p>In <code>DistributeGraftModal.tsx</code> the hive picker, its state
-       (<code>selectedHiveId</code>, <code>hives</code>), the fetch effect, the
-       <code>get_recipient_hives</code> RPC, and saving <code>recipient_hive_id</code> are
-       <strong>already implemented</strong> &mdash; but the dropdown is gated to
-       <code>distributionType === 'mated_queen'</code> only (line ~523).</p>
-    <p>The data layer (<code>createDistribution</code> / <code>createBulkDistributions</code> in
-       <code>useGraftDistributions.ts</code>) already inserts <code>recipient_hive_id</code> for
-       <em>every</em> distribution type. The hive-fetch effect already runs for all types.</p>
-  </div>
+  <h2>Already true today</h2>
+  <div class="box">Distributing to an app user already creates the recipient's queen record with
+     the lineage snapshot (mother queen, lineage, hatch/birth estimate, marking, subspecies).
+     <strong>Gaps:</strong> not placed in a hive; virgin vs mated not distinguished (both
+     <code>active</code>); no lifecycle promotion.</div>
 
-  <h2>Plan (minimal, UI-only)</h2>
+  <h2>Confirmed decisions</h2>
+  <table>
+    <tr><th>Topic</th><th>Decision</th></tr>
+    <tr><td>Stage model</td><td>New <code>virgin</code> status (Cell / Virgin / Mated=<code>active</code>)</td></tr>
+    <tr><td>Hive placement</td><td>Auto-place on distribution; cell shown as &ldquo;Cell&rdquo;, promoted on hatch</td></tr>
+    <tr><td>Occupied hive</td><td>Old queen &rarr; <code>superseded</code>, then place new</td></tr>
+    <tr><td>Lifecycle</td><td>Both promotions (Cell&rarr;Virgin hatch day; Virgin&rarr;Mated)</td></tr>
+    <tr><td>Hatch day</td><td>Manual &ldquo;Mark as emerged&rdquo;, pre-filled with estimate</td></tr>
+  </table>
+
+  <h2>Plan (phased — each change small)</h2>
   <ul class="todo">
-    <li>In <code>DistributeGraftModal.tsx</code>, change the hive-picker render condition from
-        <code>distributionType === 'mated_queen' &amp;&amp; selectedApiaryId</code> to simply
-        <code>selectedApiaryId</code> (app user, non-external) &mdash; so it shows for cells,
-        virgin queens, and mated queens once an apiary is chosen.</li>
-    <li>Keep it <strong>optional</strong>: the &ldquo;Select hive (optional)&rdquo; placeholder
-        and the empty-list case (recipient has no hives yet) already handle the
-        &ldquo;hive does not exist yet&rdquo; situation. Add a small hint when the chosen apiary
-        has no hives.</li>
-    <li>No backend, schema, or RPC change. No bulk-path change (already passes
-        <code>recipient_hive_id</code>).</li>
+    <li><strong>Phase 1 — stage in registry:</strong> add <code>virgin</code> to
+        <code>types/queen.ts</code> helpers and <code>queens/page.tsx</code> (filter, form, badge,
+        summary count, sort priority).</li>
+    <li><strong>Phase 2 — distribution stage + placement:</strong> in
+        <code>useGraftDistributions.ts</code> map types to <code>cell/virgin/active</code> and
+        thread <code>recipient_hive_id</code> to the RPC (single only). Extend RPC
+        <code>create_queen_for_distribution</code> (via Supabase MCP migration) to place the queen
+        in the recipient's hive &mdash; superseding any existing queen &mdash; guarded to the
+        recipient's own hive.</li>
+    <li><strong>Phase 3 — lifecycle on queen detail:</strong> in <code>queens/[id]/page.tsx</code>
+        add &ldquo;Mark as emerged&rdquo; (Cell&rarr;Virgin, records hatch day) and
+        &ldquo;Mark as mated&rdquo; for virgins (Virgin&rarr;Mated, records date/location + sets
+        hive <code>queen_mated</code>). Render the <code>virgin</code> badge.</li>
+    <li><strong>Phase 4 — hives show stage:</strong> hive detail/list (and any dashboard tile that
+        assumes mated) show a Cell/Virgin/Mated badge for the current queen. Files confirmed after
+        a focused look; includes a no-regression check for cell/virgin queens.</li>
+    <li><strong>Phase 6 — breeder mating-confirmation propagates:</strong> add
+        <code>queens.source_graft_id</code> (MCP migration) set at creation; new
+        <code>SECURITY DEFINER</code> RPC <code>promote_distributed_queen_on_mating</code> that,
+        when the breeder confirms mating in the tracker, promotes the linked recipient queen
+        <code>cell|virgin&rarr;active</code> with date/location and flips its hive
+        <code>queen_mated</code> &mdash; guarded to the recipient&rsquo;s rows. Wire into
+        <code>setDistributionMatingConfirmation</code>/<code>updateMating</code> (best-effort).</li>
+    <li><strong>Phase 7 — docs:</strong> update batch-distributions / queen-rearing / queen-tracker
+        docs and cross-reference the editable-lineage doc.</li>
   </ul>
 
-  <h2>Out of scope / notes</h2>
+  <h2>Out of scope</h2>
   <ul>
-    <li><strong>External (&ldquo;Other Beekeeper&rdquo;) recipients</strong> &mdash; unchanged;
-        they have no app apiaries/hives, only a free-text location.</li>
-    <li>Selecting a hive only <em>records</em> the intended destination on the distribution
-        (as today for mated queens). It does not auto-assign the queen into the recipient&rsquo;s
-        hive; the recipient&rsquo;s own queen record is still created as before.</li>
-    <li>Decision to confirm: should the recipient-hive picker also appear in the
-        <strong>bulk</strong> distribution flow (same modal, many grafts to one recipient)? It
-        would apply the one chosen hive to all grafts &mdash; usually not desired for cells.
-        Default proposal: <strong>show it for single distributions, hide for bulk.</strong></li>
+    <li>Reverting a promotion when the breeder <em>un-confirms</em> mating (mated&rarr;virgin).</li>
+    <li>Bulk hive placement (one hive, many grafts); moving an already-placed queen between hives.</li>
   </ul>
 
   <h2>Review</h2>
   <ul>
-    <li><strong>One-line gate change</strong> in <code>DistributeGraftModal.tsx</code>: the
-        recipient-hive picker now renders for <em>all</em> distribution types when
-        <code>!isExternal &amp;&amp; selectedUser &amp;&amp; !isBulk &amp;&amp; selectedApiaryId</code>
-        (was <code>distributionType === 'mated_queen' &amp;&amp; selectedApiaryId</code>).</li>
-    <li><strong>Single only</strong> (your choice): added <code>!isBulk</code> so the picker is
-        hidden in the bulk flow.</li>
-    <li><strong>Stays optional:</strong> &ldquo;Select hive (optional)&rdquo; default kept; added a
-        hint when the apiary has no hives yet (&ldquo;the hive will not exist yet&rdquo;).</li>
-    <li><strong>No backend change:</strong> <code>recipient_hive_id</code> was already inserted for
-        every type; the fetch effect and <code>get_recipient_hives</code> RPC already ran for all
-        types. Doc updated (<code>docs/features/batch-distributions.md</code>).</li>
+    <li><strong>Phase 1</strong> — <code>virgin</code> status added to the registry: filter,
+        edit form, status badge (blue), summary count, sort priority
+        (<code>queens/page.tsx</code>). No DB constraint change needed.</li>
+    <li><strong>Phase 2</strong> — distribution now maps
+        <code>queen_cell&rarr;cell / virgin_queen&rarr;virgin / mated_queen&rarr;active</code> and
+        threads <code>recipient_hive_id</code> + installed date + <code>source_graft_id</code> to
+        the RPC. The <code>create_queen_for_distribution</code> RPC (Supabase MCP migration) now
+        places the queen into the recipient's hive, superseding any existing queen, guarded to the
+        recipient's own rows. Added column <code>queens.source_graft_id</code>.</li>
+    <li><strong>Phase 3</strong> — queen detail page: <em>Mark as emerged</em> (Cell&rarr;Virgin,
+        records hatch day, pre-filled estimate), <em>Mark as mated</em> for cells &amp; virgins
+        (sets <code>active</code> + flips the hive to mated), <em>Mark as failed</em> for both;
+        Virgin badge rendered.</li>
+    <li><strong>Phase 4</strong> — Stage badge (Cell / Virgin / Mated) on the hive detail page and
+        a compact Cell/Virgin chip on the hive list card; virgins are now assignable to hives.</li>
+    <li><strong>Phase 6</strong> — new <code>promote_distributed_queen_on_mating</code> RPC
+        (SECURITY DEFINER) wired into <code>setDistributionMatingConfirmation</code>: the breeder
+        confirming mating promotes the linked recipient queen <code>cell|virgin&rarr;active</code>
+        and flips its hive — best-effort, idempotent, guarded.</li>
+    <li><strong>Phase 7</strong> — new <code>docs/features/distributed-queen-hive-placement.md</code>;
+        cross-referenced from batch-distributions &amp; queen-tracker docs.</li>
   </ul>
-  <p class="sub"><strong>Not build-tested locally</strong> (per project workflow). Please
-     distribute a single queen cell / virgin queen to an app user, pick their apiary, and confirm
-     the optional hive dropdown now appears (and shows the hint when the apiary has no hives).</p>
+  <p><strong>Defensive notes:</strong> all cross-account writes live in SECURITY DEFINER RPCs and
+     only ever touch the recipient's own queen/hive; placement &amp; propagation are guarded by
+     <code>user_id = recipient</code> and (for propagation) caller-owns-distribution; both promotion
+     routes converge on the same record with no conflict; bulk distribution never auto-places.</p>
+  <p class="sub"><strong>Tech debt noted:</strong> the Cell/Virgin/Mated badge classes are now
+     inlined in three places (registry, detail, hive) — candidate for a shared helper later.</p>
+  <p class="sub"><strong>Not build-tested locally</strong> (per project workflow). Suggested
+     manual test: distribute a cell to an app user + pick their hive &rarr; confirm it appears in
+     their registry as &ldquo;Cell&rdquo; and in the hive; Mark as emerged &rarr; Virgin; confirm
+     mating in the tracker &rarr; recipient queen becomes mated and the hive flips.</p>
 </body>
 </html>

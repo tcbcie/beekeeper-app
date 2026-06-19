@@ -11,6 +11,8 @@ The tracker now combines:
 - Destination context such as recipient, contact details, recipient apiary or hive, and recorded mating location
 - Lifecycle outcomes such as direct mating confirmation, explicit queen failure, overwintering, and hybridisation status
 
+Confirming mating here also **propagates to the recipient's queen**: a linked distributed cell/virgin queen is promoted to mated and its hive flagged accordingly. See [distributed-queen-hive-placement.md](distributed-queen-hive-placement.md).
+
 ## 2. Scope & Simplicity
 * **In Scope:**
   - Track queen cell, virgin queen, and mated queen distributions from visible group-linked batches and from the current user's non-group batches
