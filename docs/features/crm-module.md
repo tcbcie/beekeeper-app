@@ -90,6 +90,26 @@ filter/sort the rolled-up rows client-side. Reads come from
 `crm_customer_summary`; writes still target `crm_customers`. Money uses the
 shared EUR/GBP rule (`is_uk_ni_resident`).
 
+## Orders list
+
+Desktop table + mobile cards (mobile-first), mirroring the customers list. The
+table columns are Order, Customer, Date, Total, Status, Payment; rows are
+clickable and navigate to the order detail page. Mobile keeps the linked summary
+cards.
+
+Orders carry their item `product_type`s (fetched via
+`crm_orders → items:crm_order_items(product_type, quantity)`), which power two
+client-side features:
+
+- **Filters:** a status dropdown (all/pending/fulfilled/cancelled) and a product
+  dropdown (Queens, Honey, Nuc, Wax, Propolis, Pollination, Other). An order
+  matches a product filter if any of its line items is that type.
+- **Open orders to fulfil:** a summary panel above the filters showing, per
+  product type, how many *pending* orders contain it and the total units to
+  produce. An order is counted once per distinct type it contains; units sum the
+  quantities. Each tile is clickable and pins the filters to that product +
+  pending (click again to clear).
+
 ## Order Lifecycle
 
 `status` (fulfilment) and `payment_status` are **independent**:
