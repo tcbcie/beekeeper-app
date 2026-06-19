@@ -90,6 +90,15 @@ This is enforced in two places (defence in depth):
 The edit-form auto-fill still backfills `mother_id` for any pre-existing distributed queen
 when the breeder opens it.
 
+### Multi-breeder batches
+
+For multi-breeder batches `rearing_batches.mother_queen_id` is `NULL` and each cell carries
+its own breeder via `batch_grafts.breeder_queen_id`. `createQueenForRecipient` therefore
+resolves the mother **per cell**: the graft's `breeder_queen_id` queen takes precedence (used
+for the snapshot, subspecies, lineage dam label, and the self-distribution `mother_id`),
+falling back to the batch-level `mother_queen_id` for single-breeder and legacy batches. This
+mirrors the per-cell resolution in the Queen Tracker (`useQueenTracker`).
+
 ## Files touched
 
 - `src/types/queen.ts` — `Batch` gains optional `mother_queen_id`; new shared

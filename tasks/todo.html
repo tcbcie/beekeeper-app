@@ -3,83 +3,78 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fix: Mother queen blank in Queen Tracker for multi-breeder batches</title>
+  <title>Fix: Mother queen blank in queen detail/lineage for multi-breeder batches</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1.25rem; color: #1f2937; line-height: 1.55; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 880px; margin: 2rem auto; padding: 0 1.25rem; color: #1f2937; line-height: 1.55; }
     h1 { color: #166534; border-bottom: 3px solid #16a34a; padding-bottom: .4rem; font-size: 1.4rem; }
     h2 { color: #15803d; margin-top: 1.8rem; font-size: 1.1rem; }
     code { background: #f1f5f9; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
     .box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: .8rem 1.1rem; }
-    ul.todo { list-style: none; padding-left: 0; }
-    ul.todo li { padding: .25rem 0; }
-    ul.todo li::before { content: "\2610 "; color: #16a34a; font-weight: bold; }
     .sub { color: #6b7280; font-size: .85rem; }
+    table { border-collapse: collapse; width: 100%; font-size: .85rem; margin-top: .6rem; }
+    th, td { border: 1px solid #e5e7eb; padding: .35rem .5rem; text-align: left; }
+    th { background: #ecfdf5; }
   </style>
 </head>
 <body>
-  <h1>Mother queen shows &ldquo;-&rdquo; in Queen Tracker for multi-breeder batches</h1>
+  <h1>Mother queen blank in queen detail / lineage views (multi-breeder batches)</h1>
 
-  <h2>Problem</h2>
-  <p>In the Queen Tracker cell detail card, <strong>Mother queen</strong> (and Mother age)
-     display <code>-</code> / <code>N/A</code> even though the data exists. Observed on
-     Cell&nbsp;#6 of batch <code>TQRQB_RZ03</code>.</p>
+  <h2>Context</h2>
+  <p>Follow-up to the Queen Tracker fix. The same root cause &mdash; multi-breeder batches store
+     the mother per cell in <code>batch_grafts.breeder_queen_id</code> while
+     <code>rearing_batches.mother_queen_id</code> is <code>NULL</code> &mdash; meant distributed
+     queen records were created with a blank mother, so the queen detail page, provenance panel,
+     and lineage tree showed no mother.</p>
 
-  <h2>Root cause (verified against the live database)</h2>
+  <h2>Fix 1 &mdash; forward (code): <code>src/hooks/useGraftDistributions.ts</code></h2>
   <div class="box">
-    <p><code>TQRQB_RZ03</code> is a <strong>multi-breeder batch</strong>:</p>
+    <p><code>createQueenForRecipient</code> now resolves the mother <strong>per cell</strong>:</p>
     <ul>
-      <li><code>rearing_batches.mother_queen_id</code> is <strong>NULL</strong>.</li>
-      <li>It has 2 breeder queens; each cell carries its own
-          <code>batch_grafts.breeder_queen_id</code> (32 cells populated).</li>
-      <li>Cell&nbsp;#6 &rarr; breeder queen <strong>UGMul1.8</strong> (AMM, Blue, born 2025-05-25).</li>
+      <li>The graft fetch also pulls
+          <code>breeder_queen_id</code> + <code>queens!batch_grafts_breeder_queen_id_fkey(...)</code>.</li>
+      <li>The cell&rsquo;s breeder queen takes precedence; the batch-level
+          <code>mother_queen_id</code> queen is the fallback (single-breeder / legacy).</li>
+      <li>The resolved values feed the snapshot (<code>distributed_mother_queen</code>),
+          <code>subspecies</code>, the lineage dam label, and the self-distribution
+          <code>mother_id</code> FK &mdash; all consistently.</li>
     </ul>
-    <p><code>useQueenTracker</code> resolves the mother queen <em>only</em> from
-       <code>rearing_batches.queens!mother_queen_id</code>, so multi-breeder batches come back
-       null and the card renders <code>-</code>.</p>
+    <p class="sub">The edit-form auto-fill in <code>queens/page.tsx</code> only runs when
+       <code>mother_id</code> is empty; since the FK is now linked at creation for
+       self-distributions, no change was needed there.</p>
   </div>
 
-  <h2>Fix &mdash; single file: <code>src/hooks/useQueenTracker.ts</code></h2>
-  <ul class="todo">
-    <li>Add a per-cell breeder-queen join to the existing <code>batch_grafts(...)</code> select:
-        <code>queens!batch_grafts_breeder_queen_id_fkey(queen_number, subspecies, marking_color, birth_date)</code>.</li>
-    <li>In the row mapping, prefer the per-cell breeder queen and fall back to the batch&rsquo;s
-        <code>mother_queen_id</code> queen when the cell has none.</li>
-    <li>Extend the local TypeScript types for the <code>batch_grafts</code> join (no <code>any</code>).</li>
-  </ul>
-  <p>No display-layer changes (<code>getMotherQueenLabel</code> and the age logic already read the
-     <code>mother_queen_*</code> fields). No schema change, no migration.</p>
+  <h2>Fix 2 &mdash; backfill (data): 5 existing distributed queens</h2>
+  <p>Forward fix only helps new distributions, so the 5 already-distributed queens from batch
+     <code>TQRQB_RZ03</code> were corrected to the values the fixed code would now produce
+     (all self-owned, so <code>mother_id</code> linking is safe):</p>
+  <table>
+    <tr><th>Queen</th><th>Mother (mother_id)</th><th>Snapshot + subspecies</th><th>Lineage</th></tr>
+    <tr><td>Cell #1, #6, #7</td><td>UGMul1.8</td><td>set (AMM)</td><td>rebuilt with dam</td></tr>
+    <tr><td>Cell #32</td><td>UGX1.4</td><td>set (AMM)</td><td>rebuilt with dam</td></tr>
+    <tr><td>6W</td><td>UGMul1.8 <span class="sub">(already linked)</span></td><td>snapshot added</td><td>left as curated</td></tr>
+  </table>
+  <p class="sub">Applied via a single transaction over the Supabase MCP; <code>6W</code>&rsquo;s
+     hand-curated lineage and custom mated-at Eircode were preserved.</p>
 
-  <h2>Why this is safe / minimal</h2>
-  <ul>
-    <li><strong>Backward compatible:</strong> single-breeder batches set
-        <code>breeder_queen_id = mother_queen_id</code> per cell, and legacy cells are
-        <code>NULL</code> &rarr; the fallback yields the batch mother queen, identical to today.</li>
-    <li>One query select + one mapping branch changed; everything else untouched.</li>
-  </ul>
+  <h2>Out of scope</h2>
+  <p class="sub">The mating-nuc creation path (<code>useMatingNucBulk</code> /
+     <code>MatingNucsTab</code>) also seeds <code>mating_nucs.queen_id</code> from the batch
+     <code>mother_queen_id</code> and would behave similarly for multi-breeder batches &mdash;
+     a separate feature, not part of the queen detail/lineage view.</p>
 
   <h2>Review</h2>
-  <p>Implemented in <code>src/hooks/useQueenTracker.ts</code> with three small, anchored edits:</p>
   <ul>
-    <li><strong>Query:</strong> the existing <code>batch_grafts(...)</code> embed now also pulls the
-        per-cell breeder queen via
-        <code>queens!batch_grafts_breeder_queen_id_fkey(queen_number, subspecies, marking_color, birth_date)</code>.
-        Verified there is exactly one FK from <code>batch_grafts</code> to <code>queens</code>, so the embed is unambiguous.</li>
-    <li><strong>Types:</strong> the <code>graft</code> destructuring type gained a typed
-        <code>queens</code> join &mdash; no <code>any</code> introduced.</li>
-    <li><strong>Mapping:</strong> <code>motherQueen = cellBreederQueen ?? batchMotherQueen</code>.
-        The per-cell breeder wins; the batch-level <code>mother_queen_id</code> queen is the fallback.
-        All four <code>mother_queen_*</code> fields flow from this single resolved source, so the
-        display layer (label, age, marking) needed no change.</li>
+    <li><strong>Root cause fixed, not patched:</strong> mother is resolved per cell at the
+        single point of creation, mirroring the Queen Tracker fix.</li>
+    <li><strong>Backward compatible:</strong> single-breeder / legacy cells fall back to the
+        batch mother queen; behaviour identical to before.</li>
+    <li><strong>Defensive:</strong> null-safe breeder resolution; <code>mother_id</code> still
+        only written for self-distributions (RPC re-checks recipient ownership).</li>
+    <li><strong>Data integrity:</strong> backfill scoped by id, ownership-verified, with the
+        <code>6W</code> update guarded so it could not clobber an already-set value.</li>
   </ul>
-  <p><strong>Safety:</strong> null-safe throughout (<code>graft?.queens ?? null</code> &rarr;
-     <code>firstJoinedRecord</code> &rarr; nullable). Single-breeder batches (cell breeder ==
-     mother) and legacy cells (breeder NULL &rarr; fallback) render exactly as before.
-     No schema change, no migration, one file touched.</p>
-  <p class="sub">Note: this fix covers the Queen Tracker card only. Other surfaces that show a
-     batch&rsquo;s mother queen via <code>mother_queen_id</code> (e.g. queen detail/lineage views)
-     were out of scope for this report and unchanged.</p>
-  <p class="sub"><strong>Not build-tested locally</strong> (per project workflow). Please open the
-     Queen Tracker and confirm Cell&nbsp;#6 of <code>TQRQB_RZ03</code> now shows
-     <em>Mother queen: UGMul1.8 / Apis mellifera mellifera (AMM)</em> with a real Mother age.</p>
+  <p class="sub"><strong>Not build-tested locally</strong> (per project workflow). Please open a
+     few of the queens above and confirm the Mother Queen, provenance panel, and lineage tree
+     now show <em>UGMul1.8 / UGX1.4</em>.</p>
 </body>
 </html>
