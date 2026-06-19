@@ -88,7 +88,16 @@ Desktop table + mobile cards (mobile-first). A search box (name/company/email/
 phone) and a sort dropdown (name, most recent order, most orders, highest total)
 filter/sort the rolled-up rows client-side. Reads come from
 `crm_customer_summary`; writes still target `crm_customers`. Money uses the
-shared EUR/GBP rule (`is_uk_ni_resident`).
+shared EUR/GBP rule (`is_uk_ni_resident`). The customer name links to the
+customer detail page.
+
+## Customer detail
+
+`customers/[id]` — a read-only overview of one customer: contact details, notes,
+lifetime stats (order count, lifetime total, outstanding), and their full order
+history as a clickable table/cards. Lifetime total excludes cancelled orders
+(mirroring `crm_customer_summary`); outstanding sums unpaid, non-cancelled
+orders. Editing/deleting still happens from the customers list.
 
 ## Orders list
 
@@ -116,6 +125,22 @@ client-side filtering and summary:
   produce. An order is counted once per distinct type it contains; units sum the
   quantities. Each tile is clickable and pins the filters to that product +
   pending (click again to clear).
+- **Inline quick actions:** each row/card offers *Mark Fulfilled* (pending
+  orders) and *Mark Paid* (unpaid, non-cancelled orders) without opening the
+  order. These reuse the same fulfilment update and `crm_set_order_payment` RPC
+  as the detail page, then refresh the list. Buttons `stopPropagation`/
+  `preventDefault` so they don't trigger row/card navigation.
+
+## Invoice
+
+`orders/[id]/invoice` — a print-friendly invoice for a single order, reached via
+the **Invoice** button on the order detail page. It renders a From block (seller
+details from the user's `profiles` row — name, `producer_address`, email,
+`mobile_number`, `breeder_code`), a Bill-to block (customer details), a line-item
+table, the total, and notes. The on-screen toolbar (back link + *Print / Save as
+PDF*, which calls `window.print()`) is marked `.no-print`; the invoice body uses
+the shared `.print-container` / `.print-table` print styles so the dashboard
+chrome is hidden when printing.
 
 ## Order Lifecycle
 
@@ -194,8 +219,10 @@ Amounts use the same EUR/GBP rule as the finance module
 | Navigation | `src/lib/navigation.ts` (`crmNavItems`) |
 | Route guard | `src/app/dashboard/crm/layout.tsx` |
 | Customers page | `src/app/dashboard/crm/customers/page.tsx` |
+| Customer detail | `src/app/dashboard/crm/customers/[id]/page.tsx` |
 | Orders list | `src/app/dashboard/crm/orders/page.tsx` |
 | Order detail | `src/app/dashboard/crm/orders/[id]/page.tsx` |
+| Order invoice | `src/app/dashboard/crm/orders/[id]/invoice/page.tsx` |
 | Components | `src/components/crm/OrderItemsEditor.tsx`, `OrderBadges.tsx` |
 
 ## Scope (v1)

@@ -1,10 +1,10 @@
 'use client'
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, X, ShoppingCart, ChevronRight, Search } from 'lucide-react'
+import { Plus, X, ShoppingCart, ChevronRight, Search, PackageCheck, Banknote } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import FieldLabel from '@/components/ui/FieldLabel'
@@ -17,16 +17,11 @@ import { useToast } from '@/components/ui/Toast'
 import OrderItemsEditor, { emptyOrderItem } from '@/components/crm/OrderItemsEditor'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadges'
 import { formatMoney } from '@/lib/crm-currency'
+import { formatCrmDate } from '@/lib/crm-format'
 import { PRODUCT_TYPE_LABELS } from '@/types/crm'
 import type { Customer, Order, OrderItemFormData, OrderStatus, ProductType } from '@/types/crm'
 
 const today = () => new Date().toISOString().slice(0, 10)
-
-function formatDate(d: string | null): string {
-  if (!d) return '—'
-  const parsed = new Date(d)
-  return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString('en-GB')
-}
 
 export default function OrdersPage() {
   const toast = useToast()
@@ -39,6 +34,11 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | OrderStatus>('all')
   const [productFilter, setProductFilter] = useState<'all' | ProductType>('all')
   const [search, setSearch] = useState('')
+
+  const [rowBusy, setRowBusy] = useState<string | null>(null)
+  // Synchronous latch: blocks a second mutation before React commits `rowBusy`
+  // (the disabled prop) — guards markPaid, which recognises ledger revenue.
+  const actionLock = useRef(false)
 
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -113,6 +113,45 @@ export default function OrdersPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to create order')
     } finally {
       setSaving(false)
+    }
+  }
+
+  // Inline list actions. Fulfilment is a direct update; payment goes through the
+  // atomic RPC that also recognises revenue in the ledger. Both refresh on done.
+  const markFulfilled = async (orderId: string) => {
+    if (!userId || actionLock.current) return
+    actionLock.current = true
+    setRowBusy(orderId)
+    try {
+      const { error } = await supabase
+        .from('crm_orders')
+        .update({ status: 'fulfilled', fulfilled_date: today() })
+        .eq('id', orderId).eq('user_id', userId)
+      if (error) throw error
+      toast.success('Order marked fulfilled')
+      await fetchData(userId)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update order')
+    } finally {
+      setRowBusy(null)
+      actionLock.current = false
+    }
+  }
+
+  const markPaid = async (orderId: string) => {
+    if (!userId || actionLock.current) return
+    actionLock.current = true
+    setRowBusy(orderId)
+    try {
+      const { error } = await supabase.rpc('crm_set_order_payment', { p_order_id: orderId, p_paid: true })
+      if (error) throw error
+      toast.success('Marked paid — income added to your ledger')
+      await fetchData(userId)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update payment')
+    } finally {
+      setRowBusy(null)
+      actionLock.current = false
     }
   }
 
@@ -348,7 +387,8 @@ export default function OrdersPage() {
                   <th className="py-2 px-4 font-medium">Date</th>
                   <th className="py-2 px-4 font-medium text-right">Total</th>
                   <th className="py-2 px-4 font-medium">Status</th>
-                  <th className="py-2 pl-4 font-medium">Payment</th>
+                  <th className="py-2 px-4 font-medium">Payment</th>
+                  <th className="py-2 pl-4 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -368,10 +408,30 @@ export default function OrdersPage() {
                       </Link>
                     </td>
                     <td className="py-3 px-4 text-text-secondary">{o.customer?.name || 'Unknown customer'}</td>
-                    <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{formatDate(o.order_date)}</td>
+                    <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{formatCrmDate(o.order_date)}</td>
                     <td className="py-3 px-4 text-right tabular-nums">{formatMoney(Number(o.total_amount), isUkNi)}</td>
                     <td className="py-3 px-4"><OrderStatusBadge status={o.status} /></td>
-                    <td className="py-3 pl-4"><PaymentStatusBadge status={o.payment_status} /></td>
+                    <td className="py-3 px-4"><PaymentStatusBadge status={o.payment_status} /></td>
+                    <td className="py-3 pl-4">
+                      <div className="flex gap-1 justify-end">
+                        {o.status === 'pending' && (
+                          <Button
+                            onClick={(e) => { e.stopPropagation(); markFulfilled(o.id) }}
+                            tone="success" size="sm" disabled={rowBusy === o.id} aria-label="Mark fulfilled"
+                          >
+                            <PackageCheck size={16} />
+                          </Button>
+                        )}
+                        {o.payment_status === 'unpaid' && o.status !== 'cancelled' && (
+                          <Button
+                            onClick={(e) => { e.stopPropagation(); markPaid(o.id) }}
+                            tone="blue" size="sm" disabled={rowBusy === o.id} aria-label="Mark paid"
+                          >
+                            <Banknote size={16} />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -388,7 +448,7 @@ export default function OrdersPage() {
                       <p className="font-semibold text-foreground truncate">
                         {o.order_number} — {o.customer?.name || 'Unknown customer'}
                       </p>
-                      <p className="text-sm text-text-tertiary">{formatDate(o.order_date)}</p>
+                      <p className="text-sm text-text-tertiary">{formatCrmDate(o.order_date)}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="font-semibold text-foreground">{formatMoney(Number(o.total_amount), isUkNi)}</span>
@@ -397,6 +457,26 @@ export default function OrdersPage() {
                       <ChevronRight size={18} className="text-text-tertiary" />
                     </div>
                   </div>
+                  {(o.status === 'pending' || (o.payment_status === 'unpaid' && o.status !== 'cancelled')) && (
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                      {o.status === 'pending' && (
+                        <Button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); markFulfilled(o.id) }}
+                          tone="success" size="sm" disabled={rowBusy === o.id}
+                        >
+                          <PackageCheck size={16} /> Fulfil
+                        </Button>
+                      )}
+                      {o.payment_status === 'unpaid' && o.status !== 'cancelled' && (
+                        <Button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); markPaid(o.id) }}
+                          tone="blue" size="sm" disabled={rowBusy === o.id}
+                        >
+                          <Banknote size={16} /> Mark paid
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </Panel>
               </Link>
             ))}

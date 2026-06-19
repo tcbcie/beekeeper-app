@@ -4,7 +4,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { ArrowLeft, Save, Trash2, CheckCircle, RotateCcw, Ban } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, CheckCircle, RotateCcw, Ban, FileText } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import FieldLabel from '@/components/ui/FieldLabel'
 import TextAreaField from '@/components/ui/TextAreaField'
@@ -217,6 +217,9 @@ export default function OrderDetailPage() {
       <Panel padding="md">
         <h3 className="font-semibold text-foreground mb-3">Actions</h3>
         <div className="flex flex-wrap gap-3">
+          <Button onClick={() => router.push(`/dashboard/crm/orders/${order.id}/invoice`)} tone="neutral">
+            <FileText size={16} /> Invoice
+          </Button>
           {order.status !== 'fulfilled' && !isCancelled && (
             <Button onClick={() => handleFulfil(true)} tone="success" disabled={busy}>
               <CheckCircle size={16} /> Mark Fulfilled
