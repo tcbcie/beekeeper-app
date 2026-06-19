@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, X, Contact, Mail, Phone, Pencil, Trash2, Search } from 'lucide-react'
@@ -14,15 +15,10 @@ import Button from '@/components/ui/Button'
 import Panel from '@/components/ui/Panel'
 import { useToast } from '@/components/ui/Toast'
 import { formatMoney } from '@/lib/crm-currency'
+import { formatCrmDate } from '@/lib/crm-format'
 import type { Customer, CustomerFormData, CustomerSummary } from '@/types/crm'
 
 type SortKey = 'name' | 'orders' | 'total' | 'recent'
-
-function formatDate(d: string | null): string {
-  if (!d) return '—'
-  const parsed = new Date(d)
-  return Number.isNaN(parsed.getTime()) ? '—' : parsed.toLocaleDateString('en-GB')
-}
 
 const EMPTY_FORM: CustomerFormData = {
   first_name: '', surname: '', company: '', email: '', phone: '',
@@ -382,7 +378,9 @@ export default function CustomersPage() {
                 {filteredCustomers.map((c) => (
                   <tr key={c.id} className="border-b border-border/60 hover:bg-surface-elevated/50">
                     <td className="py-3 pr-4">
-                      <div className="font-medium text-foreground">{c.name}</div>
+                      <Link href={`/dashboard/crm/customers/${c.id}`} className="font-medium text-foreground hover:underline focus:underline focus:outline-none">
+                        {c.name}
+                      </Link>
                       {c.company && <div className="text-xs text-text-tertiary">{c.company}</div>}
                     </td>
                     <td className="py-3 px-4 text-text-secondary">
@@ -392,7 +390,7 @@ export default function CustomersPage() {
                     </td>
                     <td className="py-3 px-4 text-right tabular-nums">{c.order_count}</td>
                     <td className="py-3 px-4 text-right tabular-nums">{formatMoney(c.orders_total, isUkNi)}</td>
-                    <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{formatDate(c.last_order_date)}</td>
+                    <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{formatCrmDate(c.last_order_date)}</td>
                     <td className="py-3 pl-4">
                       <div className="flex gap-1 justify-end">
                         <Button onClick={() => handleEdit(c)} tone="neutral" size="sm" aria-label="Edit customer">
@@ -415,7 +413,9 @@ export default function CustomersPage() {
               <Panel key={c.id} padding="md" className="flex flex-col gap-2">
                 <div className="flex justify-between items-start gap-2">
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground">{c.name}</h3>
+                    <Link href={`/dashboard/crm/customers/${c.id}`} className="text-lg font-semibold text-foreground hover:underline">
+                      {c.name}
+                    </Link>
                     {c.company && <p className="text-sm text-text-tertiary">{c.company}</p>}
                   </div>
                   <div className="flex gap-1 shrink-0">
@@ -442,7 +442,7 @@ export default function CustomersPage() {
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm border-t border-border pt-2">
                   <span className="text-text-secondary">Orders: <span className="font-medium text-foreground tabular-nums">{c.order_count}</span></span>
                   <span className="text-text-secondary">Total: <span className="font-medium text-foreground tabular-nums">{formatMoney(c.orders_total, isUkNi)}</span></span>
-                  <span className="text-text-secondary">Last: <span className="font-medium text-foreground">{formatDate(c.last_order_date)}</span></span>
+                  <span className="text-text-secondary">Last: <span className="font-medium text-foreground">{formatCrmDate(c.last_order_date)}</span></span>
                 </div>
               </Panel>
             ))}
