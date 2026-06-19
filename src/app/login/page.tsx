@@ -318,10 +318,10 @@ function LoginForm() {
 
             <div className="flex items-center justify-center gap-2 text-xs text-text-tertiary">
               <span className="rounded-full border border-forest-200 bg-forest-50 px-2 py-1 font-mono text-forest-700 dark:border-forest-900 dark:bg-forest-950/30 dark:text-forest-300">
-                v1.9.0
+                v1.9.1
               </span>
               <span aria-hidden="true">-</span>
-              <span>June 7, 2026</span>
+              <span>June 19, 2026</span>
             </div>
           </div>
         </Panel>
