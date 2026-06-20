@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
       order: {
         order_number: order.order_number,
         order_date: order.order_date,
+        due_date: order.due_date ?? null,
         status: order.status,
         payment_status: order.payment_status,
         total_amount: Number(order.total_amount) || 0,

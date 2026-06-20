@@ -16,7 +16,7 @@ import OrderItemsEditor from '@/components/crm/OrderItemsEditor'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadges'
 import { formatMoney } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
-import { orderBalance, isPartiallyPaid, summariseCustomerOrders } from '@/lib/crm-orders'
+import { orderBalance, isPartiallyPaid, isOverdue, summariseCustomerOrders } from '@/lib/crm-orders'
 import type { Customer, Order, OrderItem, OrderItemFormData } from '@/types/crm'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -44,6 +44,7 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [amountPaidInput, setAmountPaidInput] = useState('')
+  const [dueDateInput, setDueDateInput] = useState('')
 
   const load = useCallback(async (uid: string) => {
     const [orderRes, itemsRes, profileRes] = await Promise.all([
@@ -62,6 +63,7 @@ export default function OrderDetailPage() {
     setOrder(ord)
     setNotes(ord.notes || '')
     setAmountPaidInput(String(Number(ord.amount_paid) || 0))
+    setDueDateInput(ord.due_date || '')
     setItems(toFormItems((itemsRes.data || []) as OrderItem[]))
     setIsUkNi(profileRes.data?.is_uk_ni_resident || false)
 
@@ -169,6 +171,20 @@ export default function OrderDetailPage() {
       toast.error(error instanceof Error ? error.message : 'Failed to update payment')
     } finally {
       setBusy(false)
+    }
+  }
+
+  const handleSetDueDate = async (value: string) => {
+    if (!userId || !order) return
+    setDueDateInput(value)
+    const { error } = await supabase
+      .from('crm_orders')
+      .update({ due_date: value || null })
+      .eq('id', order.id).eq('user_id', userId)
+    if (error) {
+      toast.error('Failed to update due date')
+    } else {
+      setOrder({ ...order, due_date: value || null })
     }
   }
 
@@ -283,7 +299,22 @@ export default function OrderDetailPage() {
             <Button onClick={handleSetAmountPaid} tone="blue" disabled={busy} className="min-h-[48px]">
               Record payment
             </Button>
+            <div>
+              <FieldLabel>Due date</FieldLabel>
+              <TextInput
+                type="date"
+                value={dueDateInput}
+                min={order.order_date}
+                onChange={(e) => handleSetDueDate(e.target.value)}
+                className="rounded-md w-44"
+              />
+            </div>
           </div>
+          {isOverdue(order, today()) && (
+            <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+              Overdue — {formatMoney(orderBalance(order), isUkNi)} was due by {formatCrmDate(order.due_date)}.
+            </p>
+          )}
           <p className="text-xs text-text-tertiary mt-2">
             Record a deposit or part payment here. Income is recognised in your ledger only once the full amount is paid.
           </p>

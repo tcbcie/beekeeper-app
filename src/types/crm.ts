@@ -80,6 +80,7 @@ export interface Order {
   status: OrderStatus
   payment_status: PaymentStatus
   order_date: string
+  due_date: string | null
   fulfilled_date: string | null
   paid_date: string | null
   total_amount: number

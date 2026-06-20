@@ -12,6 +12,7 @@ export interface InvoicePdfData {
   order: {
     order_number: string
     order_date: string
+    due_date: string | null
     status: string
     payment_status: string
     total_amount: number
@@ -85,6 +86,7 @@ function InvoiceDocument({ data }: { data: InvoicePdfData }) {
           </View>
           <View>
             <Text><Text style={styles.metaLabel}>Date: </Text><Text style={styles.metaValue}>{formatCrmDate(order.order_date)}</Text></Text>
+            {order.due_date ? <Text><Text style={styles.metaLabel}>Due: </Text><Text style={styles.metaValue}>{formatCrmDate(order.due_date)}</Text></Text> : null}
             <Text><Text style={styles.metaLabel}>Status: </Text><Text style={styles.metaValue}>{order.status}</Text></Text>
             <Text><Text style={styles.metaLabel}>Payment: </Text><Text style={styles.metaValue}>{order.payment_status}</Text></Text>
           </View>

@@ -65,7 +65,8 @@ used by orders, cards, `.order('name')` sorting and revenue descriptions. Also
 ### `crm_orders`
 `customer_id` (FK, cascade), `order_number` (unique per `user_id`),
 `status` (`pending` / `fulfilled` / `cancelled`),
-`payment_status` (`unpaid` / `paid`), `order_date`, `fulfilled_date`,
+`payment_status` (`unpaid` / `paid`), `order_date`, `due_date` (optional payment
+due date — drives overdue flagging), `fulfilled_date`,
 `paid_date`, `total_amount` (derived), `amount_paid` (cumulative payment,
 `0 ≤ amount_paid ≤ total_amount`), `notes`. `payment_status` stays **binary**
 — it flips to `paid` only when `amount_paid >= total_amount`; a part-paid
@@ -151,6 +152,10 @@ client-side filtering and summary:
   `preventDefault` so they don't trigger row/card navigation.
 - **Outstanding balance** sums the **balance owed** (`total_amount − amount_paid`)
   across non-cancelled orders with a positive balance — so deposits reduce it.
+  The panel also flags how many are **overdue** (`isOverdue`: a balance owed past
+  `due_date`), and overdue orders show a red **Overdue** badge in the list. The
+  due date is set on the new-order form and editable in the order detail Payment
+  panel; the invoice (screen + PDF) shows it too.
 - **Production context (read-only):** the "Open orders to fulfil" panel has a
   footer showing the user's current production counts (active queens, mating
   nucs) next to open queen/nuc demand. These are head-counts from `queens`
