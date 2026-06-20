@@ -149,6 +149,8 @@ export default function OrderDetailPage() {
     if (!userId || !order) return
     const amount = parseFloat(amountPaidInput)
     if (!Number.isFinite(amount) || amount < 0) { toast.warning('Enter a valid amount'); return }
+    const total = Number(order.total_amount) || 0
+    const capped = amount > total
     setBusy(true)
     try {
       const { error } = await supabase.rpc('crm_set_order_amount_paid', {
@@ -156,7 +158,10 @@ export default function OrderDetailPage() {
         p_amount: amount,
       })
       if (error) throw error
-      toast.success('Payment updated')
+      // The server clamps to the order total — tell the user when that happens.
+      toast.success(capped
+        ? `Amount exceeded the total — recorded the full ${formatMoney(total, isUkNi)} as paid`
+        : 'Payment updated')
       load(userId)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update payment')
