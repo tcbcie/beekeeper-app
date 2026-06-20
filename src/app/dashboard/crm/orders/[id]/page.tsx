@@ -7,6 +7,7 @@ import { getCurrentUserId } from '@/lib/auth'
 import { ArrowLeft, Save, Trash2, CheckCircle, RotateCcw, Ban, FileText } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import FieldLabel from '@/components/ui/FieldLabel'
+import TextInput from '@/components/ui/TextInput'
 import TextAreaField from '@/components/ui/TextAreaField'
 import Button from '@/components/ui/Button'
 import Panel from '@/components/ui/Panel'
@@ -39,6 +40,7 @@ export default function OrderDetailPage() {
   const [isUkNi, setIsUkNi] = useState(false)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [amountPaidInput, setAmountPaidInput] = useState('')
 
   const load = useCallback(async (uid: string) => {
     const [orderRes, itemsRes, profileRes] = await Promise.all([
@@ -56,6 +58,7 @@ export default function OrderDetailPage() {
     const ord = orderRes.data as Order
     setOrder(ord)
     setNotes(ord.notes || '')
+    setAmountPaidInput(String(Number(ord.amount_paid) || 0))
     setItems(toFormItems((itemsRes.data || []) as OrderItem[]))
     setIsUkNi(profileRes.data?.is_uk_ni_resident || false)
 
@@ -139,6 +142,28 @@ export default function OrderDetailPage() {
     }
   }
 
+  // Records a specific amount paid (deposit / partial / full). The server
+  // clamps to [0, total] and recognises income only once fully paid.
+  const handleSetAmountPaid = async () => {
+    if (!userId || !order) return
+    const amount = parseFloat(amountPaidInput)
+    if (!Number.isFinite(amount) || amount < 0) { toast.warning('Enter a valid amount'); return }
+    setBusy(true)
+    try {
+      const { error } = await supabase.rpc('crm_set_order_amount_paid', {
+        p_order_id: order.id,
+        p_amount: amount,
+      })
+      if (error) throw error
+      toast.success('Payment updated')
+      load(userId)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update payment')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const handleCancel = async () => {
     if (!userId || !order) return
     if (!confirm('Cancel this order? Any income recognised for it will be removed from your ledger.')) return
@@ -192,7 +217,7 @@ export default function OrderDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           <OrderStatusBadge status={order.status} />
-          <PaymentStatusBadge status={order.payment_status} />
+          <PaymentStatusBadge status={order.payment_status} partial={Number(order.amount_paid) > 0} />
         </div>
       </div>
 
@@ -210,6 +235,37 @@ export default function OrderDetailPage() {
               </p>
             )}
           </div>
+        </Panel>
+      )}
+
+      {/* Payment */}
+      {!isCancelled && (
+        <Panel padding="md">
+          <h3 className="font-semibold text-foreground mb-3">Payment</h3>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm mb-3">
+            <span className="text-text-secondary">Total: <span className="font-medium text-foreground tabular-nums">{formatMoney(Number(order.total_amount), isUkNi)}</span></span>
+            <span className="text-text-secondary">Paid: <span className="font-medium text-foreground tabular-nums">{formatMoney(Number(order.amount_paid), isUkNi)}</span></span>
+            <span className="text-text-secondary">Balance: <span className="font-medium text-foreground tabular-nums">{formatMoney(Number(order.total_amount) - Number(order.amount_paid), isUkNi)}</span></span>
+          </div>
+          <div className="flex flex-wrap items-end gap-3">
+            <div>
+              <FieldLabel>Amount paid</FieldLabel>
+              <TextInput
+                type="number"
+                min="0"
+                step="0.01"
+                value={amountPaidInput}
+                onChange={(e) => setAmountPaidInput(e.target.value)}
+                className="rounded-md w-40"
+              />
+            </div>
+            <Button onClick={handleSetAmountPaid} tone="blue" disabled={busy} className="min-h-[48px]">
+              Record payment
+            </Button>
+          </div>
+          <p className="text-xs text-text-tertiary mt-2">
+            Record a deposit or part payment here. Income is recognised in your ledger only once the full amount is paid.
+          </p>
         </Panel>
       )}
 
