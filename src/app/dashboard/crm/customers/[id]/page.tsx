@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/Toast'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadges'
 import { formatMoney } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
-import { orderBalance, isPartiallyPaid } from '@/lib/crm-orders'
+import { isPartiallyPaid, summariseCustomerOrders } from '@/lib/crm-orders'
 import type { Customer, Order } from '@/types/crm'
 
 export default function CustomerDetailPage() {
@@ -52,18 +52,7 @@ export default function CustomerDetailPage() {
     init()
   }, [router, load])
 
-  // Lifetime total excludes cancelled orders (mirrors crm_customer_summary).
-  // Outstanding is the balance owed (total minus amount paid) across
-  // non-cancelled orders, so deposits reduce it.
-  const stats = useMemo(() => {
-    let lifetime = 0, outstanding = 0
-    for (const o of orders) {
-      if (o.status === 'cancelled') continue
-      lifetime += Number(o.total_amount) || 0
-      outstanding += orderBalance(o)
-    }
-    return { count: orders.length, lifetime, outstanding }
-  }, [orders])
+  const stats = useMemo(() => summariseCustomerOrders(orders), [orders])
 
   if (loading || !customer) return <LoadingSpinner text="Loading customer..." />
 

@@ -337,8 +337,8 @@ export default function OrdersPage() {
 
       {openSummary.length > 0 && (
         <Panel padding="md">
-          <h3 className="font-semibold text-foreground mb-3">Open orders to fulfil</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <h3 className="font-semibold text-foreground mb-2">Open orders to fulfil</h3>
+          <div className="flex flex-wrap gap-2">
             {openSummary.map((s) => {
               const active = productFilter === s.type
               return (
@@ -349,19 +349,18 @@ export default function OrdersPage() {
                     setStatusFilter('pending')
                     setProductFilter(active ? 'all' : s.type)
                   }}
-                  className={`text-left rounded-md border p-3 transition-colors ${
+                  className={`text-left rounded-md border px-3 py-1.5 transition-colors ${
                     active ? 'border-forest-500 bg-forest-50 dark:bg-forest-900/20' : 'border-border hover:border-forest-400'
                   }`}
                 >
-                  <p className="text-sm text-text-secondary">{PRODUCT_TYPE_LABELS[s.type]}</p>
-                  <p className="text-2xl font-bold text-foreground tabular-nums">{s.orders}</p>
-                  <p className="text-xs text-text-tertiary">order{s.orders !== 1 ? 's' : ''} · {s.units} unit{s.units !== 1 ? 's' : ''}</p>
+                  <span className="text-sm font-medium text-foreground">{PRODUCT_TYPE_LABELS[s.type]}</span>
+                  <span className="text-sm text-text-secondary"> · <span className="font-bold text-foreground tabular-nums">{s.orders}</span> order{s.orders !== 1 ? 's' : ''} · {s.units} unit{s.units !== 1 ? 's' : ''}</span>
                 </button>
               )
             })}
           </div>
           {(production.activeQueens > 0 || production.matingNucs > 0) && (
-            <p className="text-xs text-text-tertiary mt-3 pt-3 border-t border-border">
+            <p className="text-xs text-text-tertiary mt-2 pt-2 border-t border-border">
               Your production: <span className="font-medium text-foreground tabular-nums">{production.activeQueens}</span> active queen{production.activeQueens !== 1 ? 's' : ''}
               {' · '}
               <span className="font-medium text-foreground tabular-nums">{production.matingNucs}</span> mating nuc{production.matingNucs !== 1 ? 's' : ''}
@@ -378,7 +377,8 @@ export default function OrdersPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search order number or customer…"
-              className="rounded-md pl-9"
+              className="rounded-md"
+              style={{ paddingLeft: '2.25rem' }}
             />
           </div>
           <SelectField
@@ -414,13 +414,13 @@ export default function OrdersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-text-tertiary border-b border-border">
-                  <th className="py-2 pr-4 font-medium">Order</th>
+                  <th className="py-2 pr-4 font-medium">Actions</th>
+                  <th className="py-2 px-4 font-medium">Order</th>
                   <th className="py-2 px-4 font-medium">Customer</th>
                   <th className="py-2 px-4 font-medium">Date</th>
                   <th className="py-2 px-4 font-medium text-right">Total</th>
                   <th className="py-2 px-4 font-medium">Status</th>
-                  <th className="py-2 px-4 font-medium">Payment</th>
-                  <th className="py-2 pl-4 font-medium text-right">Actions</th>
+                  <th className="py-2 pl-4 font-medium">Payment</th>
                 </tr>
               </thead>
               <tbody>
@@ -430,7 +430,29 @@ export default function OrdersPage() {
                     onClick={() => router.push(`/dashboard/crm/orders/${o.id}`)}
                     className="border-b border-border/60 hover:bg-surface-elevated/50 cursor-pointer"
                   >
-                    <td className="py-3 pr-4 whitespace-nowrap">
+                    <td className="py-3 pr-4">
+                      <div className="flex gap-1">
+                        {o.status === 'pending' && (
+                          <Button
+                            onClick={(e) => { e.stopPropagation(); markFulfilled(o.id) }}
+                            tone="success" size="sm" disabled={rowBusy === o.id}
+                            aria-label="Mark fulfilled" title="Mark fulfilled"
+                          >
+                            <PackageCheck size={16} />
+                          </Button>
+                        )}
+                        {o.payment_status === 'unpaid' && o.status !== 'cancelled' && (
+                          <Button
+                            onClick={(e) => { e.stopPropagation(); markPaid(o.id) }}
+                            tone="blue" size="sm" disabled={rowBusy === o.id}
+                            aria-label="Mark paid" title="Mark paid"
+                          >
+                            <Banknote size={16} />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">
                       <Link
                         href={`/dashboard/crm/orders/${o.id}`}
                         onClick={(e) => e.stopPropagation()}
@@ -443,27 +465,7 @@ export default function OrdersPage() {
                     <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{formatCrmDate(o.order_date)}</td>
                     <td className="py-3 px-4 text-right tabular-nums">{formatMoney(Number(o.total_amount), isUkNi)}</td>
                     <td className="py-3 px-4"><OrderStatusBadge status={o.status} /></td>
-                    <td className="py-3 px-4"><PaymentStatusBadge status={o.payment_status} partial={isPartiallyPaid(o)} /></td>
-                    <td className="py-3 pl-4">
-                      <div className="flex gap-1 justify-end">
-                        {o.status === 'pending' && (
-                          <Button
-                            onClick={(e) => { e.stopPropagation(); markFulfilled(o.id) }}
-                            tone="success" size="sm" disabled={rowBusy === o.id} aria-label="Mark fulfilled"
-                          >
-                            <PackageCheck size={16} />
-                          </Button>
-                        )}
-                        {o.payment_status === 'unpaid' && o.status !== 'cancelled' && (
-                          <Button
-                            onClick={(e) => { e.stopPropagation(); markPaid(o.id) }}
-                            tone="blue" size="sm" disabled={rowBusy === o.id} aria-label="Mark paid"
-                          >
-                            <Banknote size={16} />
-                          </Button>
-                        )}
-                      </div>
-                    </td>
+                    <td className="py-3 pl-4"><PaymentStatusBadge status={o.payment_status} partial={isPartiallyPaid(o)} /></td>
                   </tr>
                 ))}
               </tbody>

@@ -346,7 +346,8 @@ export default function CustomersPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search name, company, email or phone…"
-                className="rounded-md pl-9"
+                className="rounded-md"
+                style={{ paddingLeft: '2.25rem' }}
               />
             </div>
             <SelectField

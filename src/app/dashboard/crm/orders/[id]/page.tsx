@@ -15,7 +15,8 @@ import { useToast } from '@/components/ui/Toast'
 import OrderItemsEditor from '@/components/crm/OrderItemsEditor'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadges'
 import { formatMoney } from '@/lib/crm-currency'
-import { orderBalance, isPartiallyPaid } from '@/lib/crm-orders'
+import { formatCrmDate } from '@/lib/crm-format'
+import { orderBalance, isPartiallyPaid, summariseCustomerOrders } from '@/lib/crm-orders'
 import type { Customer, Order, OrderItem, OrderItemFormData } from '@/types/crm'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -36,6 +37,7 @@ export default function OrderDetailPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [order, setOrder] = useState<Order | null>(null)
   const [customer, setCustomer] = useState<Customer | null>(null)
+  const [customerStats, setCustomerStats] = useState({ count: 0, lifetime: 0, outstanding: 0 })
   const [items, setItems] = useState<OrderItemFormData[]>([])
   const [notes, setNotes] = useState('')
   const [isUkNi, setIsUkNi] = useState(false)
@@ -63,12 +65,12 @@ export default function OrderDetailPage() {
     setItems(toFormItems((itemsRes.data || []) as OrderItem[]))
     setIsUkNi(profileRes.data?.is_uk_ni_resident || false)
 
-    const { data: cust } = await supabase
-      .from('crm_customers')
-      .select('*')
-      .eq('id', ord.customer_id)
-      .maybeSingle()
-    setCustomer((cust as Customer) || null)
+    const [custRes, custOrdersRes] = await Promise.all([
+      supabase.from('crm_customers').select('*').eq('id', ord.customer_id).eq('user_id', uid).maybeSingle(),
+      supabase.from('crm_orders').select('status, total_amount, amount_paid').eq('customer_id', ord.customer_id).eq('user_id', uid),
+    ])
+    setCustomer((custRes.data as Customer) || null)
+    setCustomerStats(summariseCustomerOrders((custOrdersRes.data || []) as Order[]))
     setLoading(false)
   }, [id, router, toast])
 
@@ -206,6 +208,10 @@ export default function OrderDetailPage() {
   if (loading || !order) return <LoadingSpinner text="Loading order..." />
 
   const isCancelled = order.status === 'cancelled'
+  const addressParts = customer ? [
+    customer.address_line1, customer.address_line2, customer.city,
+    customer.county, customer.postcode, customer.country,
+  ].filter(Boolean) : []
 
   return (
     <div className="space-y-6">
@@ -216,10 +222,7 @@ export default function OrderDetailPage() {
       <div className="flex flex-wrap justify-between items-start gap-3">
         <div>
           <h1 className="text-3xl font-bold text-foreground">{order.order_number}</h1>
-          <p className="text-text-secondary">
-            {customer ? customer.name : 'Unknown customer'}
-            {customer?.company ? ` · ${customer.company}` : ''}
-          </p>
+          <p className="text-sm text-text-tertiary">{formatCrmDate(order.order_date)}</p>
         </div>
         <div className="flex items-center gap-2">
           <OrderStatusBadge status={order.status} />
@@ -227,19 +230,31 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      {/* Customer contact */}
-      {customer && (customer.email || customer.phone || customer.address_line1) && (
+      {/* Customer */}
+      {customer && (
         <Panel padding="md">
-          <h3 className="font-semibold text-foreground mb-2">Customer</h3>
-          <div className="text-sm text-text-secondary space-y-1">
-            {customer.email && <p>{customer.email}</p>}
-            {customer.phone && <p>{customer.phone}</p>}
-            {customer.address_line1 && (
-              <p>
-                {[customer.address_line1, customer.address_line2, customer.city, customer.county, customer.postcode, customer.country]
-                  .filter(Boolean).join(', ')}
-              </p>
-            )}
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="min-w-0">
+              <Link href={`/dashboard/crm/customers/${customer.id}`} className="text-lg font-semibold text-foreground hover:underline">
+                {customer.name}
+              </Link>
+              {customer.company && <p className="text-sm text-text-tertiary">{customer.company}</p>}
+            </div>
+            <Link href={`/dashboard/crm/customers/${customer.id}`} className="text-sm text-forest-600 hover:underline whitespace-nowrap shrink-0">
+              View customer →
+            </Link>
+          </div>
+          {(customer.email || customer.phone || addressParts.length > 0) && (
+            <div className="text-sm text-text-secondary space-y-1">
+              {customer.email && <p>{customer.email}</p>}
+              {customer.phone && <p>{customer.phone}</p>}
+              {addressParts.length > 0 && <p>{addressParts.join(', ')}</p>}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm border-t border-border pt-2 mt-3">
+            <span className="text-text-secondary">Orders: <span className="font-medium text-foreground tabular-nums">{customerStats.count}</span></span>
+            <span className="text-text-secondary">Lifetime: <span className="font-medium text-foreground tabular-nums">{formatMoney(customerStats.lifetime, isUkNi)}</span></span>
+            <span className="text-text-secondary">Outstanding: <span className="font-medium text-foreground tabular-nums">{formatMoney(customerStats.outstanding, isUkNi)}</span></span>
           </div>
         </Panel>
       )}
