@@ -43,8 +43,8 @@ export interface InvoicePdfData {
 const styles = StyleSheet.create({
   page: { paddingVertical: 40, paddingHorizontal: 44, fontSize: 10, fontFamily: 'Helvetica', color: '#1a1a1a', lineHeight: 1.4 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 },
-  title: { fontSize: 22, fontFamily: 'Helvetica-Bold' },
-  orderNumber: { color: '#555', marginTop: 2 },
+  title: { fontSize: 22, fontFamily: 'Helvetica-Bold', lineHeight: 1 },
+  orderNumber: { color: '#555', fontSize: 11, marginTop: 6 },
   metaLabel: { color: '#777' },
   metaValue: { fontFamily: 'Helvetica-Bold' },
   partiesRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
