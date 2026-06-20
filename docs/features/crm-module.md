@@ -152,6 +152,16 @@ PDF*, which calls `window.print()`) is marked `.no-print`; the invoice body uses
 the shared `.print-container` / `.print-table` print styles so the dashboard
 chrome is hidden when printing.
 
+## Order detail
+
+The header is the order number + status/payment badges + order date — no
+customer name (that lived in two places before). All customer context sits in a
+single **Customer** panel: the name links to `customers/[id]`, with company,
+contact details, a "View customer →" link, and a stat row (**Orders · Lifetime ·
+Outstanding**) computed by the shared `summariseCustomerOrders` helper (same
+figures as the customer detail page). Full order history is reached via the
+link, not embedded here.
+
 ## Order Lifecycle
 
 `status` (fulfilment) and `payment_status` are **independent**:
