@@ -98,11 +98,20 @@ customer detail page.
 
 ## Customer detail
 
-`customers/[id]` — a read-only overview of one customer: contact details, notes,
-lifetime stats (order count, lifetime total, outstanding), and their full order
-history as a clickable table/cards. Lifetime total excludes cancelled orders
-(mirroring `crm_customer_summary`); outstanding sums unpaid, non-cancelled
-orders. Editing/deleting still happens from the customers list.
+`customers/[id]` — an overview of one customer: contact details, notes, lifetime
+stats (order count, lifetime total, outstanding), and their full order history as
+a clickable table/cards. Lifetime total excludes cancelled orders (mirroring
+`crm_customer_summary`); outstanding sums the balance owed across non-cancelled
+orders.
+
+Header **quick-actions**:
+
+- **New order** → `orders?customer=<id>`; the orders page reads the param after
+  load and opens the new-order form with that customer pre-selected.
+- **Edit** → `customers?edit=<id>`; the customers list reads the param once the
+  list has loaded and opens that customer's edit form (the form lives there).
+- **Delete** → inline (same confirm + cascade as the list), then redirects back
+  to the customers list.
 
 ## Orders list
 

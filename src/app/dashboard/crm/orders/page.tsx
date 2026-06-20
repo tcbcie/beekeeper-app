@@ -93,7 +93,13 @@ export default function OrdersPage() {
       const id = await getCurrentUserId()
       if (!id) { router.push('/login'); return }
       setUserId(id)
-      fetchData(id)
+      await fetchData(id)
+      // Deep link from a customer page: open the form with them pre-selected.
+      const preselect = new URLSearchParams(window.location.search).get('customer')
+      if (preselect) {
+        setCustomerId(preselect)
+        setShowForm(true)
+      }
     }
     init()
   }, [router, fetchData])
