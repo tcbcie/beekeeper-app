@@ -7,10 +7,10 @@ orders, and recognising sales revenue inside the existing income/expense ledger.
 There is **no inventory tracking** — the module is built around selling queens,
 honey, nucs and related products.
 
-The module lives under `/dashboard/crm`; the Customers and Orders nav links sit
-in the **Activity** group (after Tasks & Events), gated by `feature: 'crm'` on
-the nav items. They are **completely hidden for users without an active
-subscription** who haven't opted in.
+The module lives under `/dashboard/crm`; the Customers, Orders and Sales Insights
+nav links sit in the **Activity** group (after Tasks & Events), gated by
+`feature: 'crm'` on the nav items. They are **completely hidden for users
+without an active subscription** who haven't opted in.
 
 ## Access Gating
 
@@ -186,6 +186,20 @@ Outstanding**) computed by the shared `summariseCustomerOrders` helper (same
 figures as the customer detail page). Full order history is reached via the
 link, not embedded here.
 
+## Sales Insights
+
+`crm/insights` — a cash-basis sales overview, computed client-side from the
+user's orders (`+ items`) and `crm_customer_summary`:
+
+- **Headline stats:** paid this year, paid this month, outstanding balance, and
+  open (pending) order count. "Paid" counts only **fully-paid** orders, dated by
+  `paid_date` — matching the income ledger. Outstanding is the summed
+  `orderBalance` across live orders (so deposits sit here until cleared).
+- **Sales by product (year):** paid line items grouped by product type, shown as
+  a ranked bar list.
+- **Top customers:** the top five by lifetime total from `crm_customer_summary`,
+  each linking to the customer detail page.
+
 ## Order Lifecycle
 
 `status` (fulfilment) and `payment_status` are **independent**:
@@ -284,6 +298,7 @@ Amounts use the same EUR/GBP rule as the finance module
 | Orders list | `src/app/dashboard/crm/orders/page.tsx` |
 | Order detail | `src/app/dashboard/crm/orders/[id]/page.tsx` |
 | Order invoice | `src/app/dashboard/crm/orders/[id]/invoice/page.tsx` |
+| Sales insights | `src/app/dashboard/crm/insights/page.tsx` |
 | Components | `src/components/crm/OrderItemsEditor.tsx`, `OrderBadges.tsx` |
 
 ## Scope (v1)
