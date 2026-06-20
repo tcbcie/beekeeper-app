@@ -5,15 +5,15 @@ import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 import { useCrmEnabled } from '@/hooks/useCrmEnabled'
+import { useLogbookEnabled } from '@/hooks/useLogbookEnabled'
 import IconButton from '@/components/ui/IconButton'
 import {
   getTopItems,
   getGroupedItems,
   getAfterGroupItems,
   getBottomItems,
+  filterByFeatures,
   adminNavItems,
-  crmNavItems,
-  crmNavGroupLabel,
 } from '@/lib/navigation'
 
 interface MobileDrawerProps {
@@ -24,6 +24,8 @@ interface MobileDrawerProps {
 export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const pathname = usePathname()
   const { crmEnabled } = useCrmEnabled()
+  const { logbookEnabled } = useLogbookEnabled()
+  const features = { crm: crmEnabled, logbook: logbookEnabled }
   const [userRole, setUserRole] = useState<UserRole>('User')
 
   useEffect(() => {
@@ -111,38 +113,25 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             </div>
 
             {/* Grouped items */}
-            {groupedItems.map(({ group, items }) => (
-              <div key={group.id} className="mt-4">
-                <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                  {group.label}
-                </p>
-                <div className="space-y-2 mt-1">
-                  {items.map(item => (
-                    <Link key={item.href} href={item.href} className={linkClasses(item.href)}>
-                      <item.icon size={24} />
-                      <span className="text-base">{item.label}</span>
-                    </Link>
-                  ))}
+            {groupedItems.map(({ group, items: allItems }) => {
+              const items = filterByFeatures(allItems, features)
+              if (items.length === 0) return null
+              return (
+                <div key={group.id} className="mt-4">
+                  <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+                    {group.label}
+                  </p>
+                  <div className="space-y-2 mt-1">
+                    {items.map(item => (
+                      <Link key={item.href} href={item.href} className={linkClasses(item.href)}>
+                        <item.icon size={24} />
+                        <span className="text-base">{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-
-            {/* Sales (CRM) — active subscribers who have opted in */}
-            {crmEnabled && (
-              <div className="mt-4">
-                <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                  {crmNavGroupLabel}
-                </p>
-                <div className="space-y-2 mt-1">
-                  {crmNavItems.map(item => (
-                    <Link key={item.href} href={item.href} className={linkClasses(item.href)}>
-                      <item.icon size={24} />
-                      <span className="text-base">{item.label}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
+              )
+            })}
 
             {/* After-group items (Tools) */}
             <div className="space-y-2 mt-4">

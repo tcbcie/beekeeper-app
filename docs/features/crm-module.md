@@ -7,9 +7,10 @@ orders, and recognising sales revenue inside the existing income/expense ledger.
 There is **no inventory tracking** — the module is built around selling queens,
 honey, nucs and related products.
 
-The module lives under `/dashboard/crm` and appears in navigation as a **Sales**
-group (Customers, Orders). It is **completely hidden for users without an active
-subscription**.
+The module lives under `/dashboard/crm`; the Customers and Orders nav links sit
+in the **Activity** group (after Tasks & Events), gated by `feature: 'crm'` on
+the nav items. They are **completely hidden for users without an active
+subscription** who haven't opted in.
 
 ## Access Gating
 
@@ -29,9 +30,10 @@ The CRM is shown only when **both** conditions hold:
   persistent sidebar updates the instant the toggle is flipped — no reload.
   - `src/hooks/useHasActiveSubscription.ts` provides the cached
     `resolveActiveSubscription()` primitive reused here.
-- **Navigation:** `crmNavItems` + `crmNavGroupLabel` in `src/lib/navigation.ts`,
-  rendered only when `crmEnabled` is true in `Sidebar`, `MobileDrawer` (the bottom
-  nav bar never shows CRM — it isn't flagged `bottomNav`). Mirrors the existing
+- **Navigation:** the Customers/Orders items carry `feature: 'crm'` in
+  `src/lib/navigation.ts`; `Sidebar` / `MobileDrawer` drop them via
+  `filterByFeatures` unless `crmEnabled` is true (the bottom nav bar never shows
+  CRM — it isn't flagged `bottomNav`). Mirrors the existing
   `userRole === 'Admin'` gate for the Settings item.
 - **Route guard:** `src/app/dashboard/crm/layout.tsx` redirects to `/dashboard`
   unless `crmEnabled` — defence in depth for direct URL access.
@@ -275,7 +277,7 @@ Amounts use the same EUR/GBP rule as the finance module
 | Subscription hook | `src/hooks/useHasActiveSubscription.ts` (cached, shared) |
 | Atomic operations | Postgres functions (migration `crm_atomic_operations`) |
 | Currency | `src/lib/crm-currency.ts` |
-| Navigation | `src/lib/navigation.ts` (`crmNavItems`) |
+| Navigation | `src/lib/navigation.ts` (`feature: 'crm'` items + `filterByFeatures`) |
 | Route guard | `src/app/dashboard/crm/layout.tsx` |
 | Customers page | `src/app/dashboard/crm/customers/page.tsx` |
 | Customer detail | `src/app/dashboard/crm/customers/[id]/page.tsx` |
