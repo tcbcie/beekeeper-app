@@ -53,6 +53,9 @@ function buildStorageRemotePatterns(): RemotePattern[] {
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['192.168.100.50'],
+  // @react-pdf/renderer ships native-ish internals (yoga wasm, fonts) that
+  // break when bundled — keep it external to the server build.
+  serverExternalPackages: ['@react-pdf/renderer'],
   images: {
     remotePatterns: buildStorageRemotePatterns()
   },

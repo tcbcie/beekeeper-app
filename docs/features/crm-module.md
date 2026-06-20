@@ -152,6 +152,28 @@ PDF*, which calls `window.print()`) is marked `.no-print`; the invoice body uses
 the shared `.print-container` / `.print-table` print styles so the dashboard
 chrome is hidden when printing.
 
+### Emailing the invoice (PDF attachment)
+
+The invoice toolbar also has **Email invoice**, which opens a modal pre-filled
+with the customer's email (when on file, still editable) and sends the invoice
+as a real PDF attachment:
+
+- **`POST /api/crm/invoice-email`** (`runtime = 'nodejs'`) authenticates via the
+  bearer access token → `auth.getUser` → profile **subscription gate** (mirrors
+  the voice-notes route). It loads the order/items/customer **scoped to the
+  authenticated user** (a crafted `orderId` can't reach another account).
+- The PDF is generated server-side as a **vector** document by
+  `renderInvoicePdf` in `src/components/crm/InvoicePdf.tsx` (uses
+  `@react-pdf/renderer` primitives + built-in Helvetica — no fonts/network).
+  `@react-pdf/renderer` is in `serverExternalPackages` (next.config.ts) and is
+  imported only by the server route, so it never reaches the client bundle.
+- Delivery reuses **Resend** (`info@hivecraic.com`), `reply_to` set to the
+  seller's profile email, with the PDF as a base64 attachment named
+  `{order_number}.pdf`.
+- **Env:** the route needs `RESEND_API_KEY` available to the **Vercel**
+  deployment (the edge functions have their own copy in Supabase secrets). If it
+  is absent the route returns `503` and the UI shows an error.
+
 ## Order detail
 
 The header is the order number + status/payment badges + order date — no
