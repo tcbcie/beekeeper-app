@@ -139,6 +139,11 @@ client-side filtering and summary:
   produce. An order is counted once per distinct type it contains; units sum the
   quantities. Each tile is clickable and pins the filters to that product +
   pending (click again to clear).
+- **CSV export:** an *Export* button writes the **currently-filtered** orders to
+  CSV (`src/lib/csv.ts`) — raw numeric amounts (no symbol) so spreadsheets can
+  sum, ISO dates, and a currency column. Customers has the same on its filtered
+  list. The CSV helper hardens against spreadsheet formula injection and emits a
+  UTF-8 BOM for Excel.
 - **Inline quick actions:** each row/card offers *Mark Fulfilled* (pending
   orders) and *Mark Paid* (unpaid, non-cancelled orders) without opening the
   order. These reuse the same fulfilment update and `crm_set_order_payment` RPC

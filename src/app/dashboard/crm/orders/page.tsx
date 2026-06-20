@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, X, ShoppingCart, ChevronRight, Search, PackageCheck, Banknote } from 'lucide-react'
+import { Plus, X, ShoppingCart, ChevronRight, Search, PackageCheck, Banknote, Download } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import FieldLabel from '@/components/ui/FieldLabel'
@@ -16,9 +16,10 @@ import Panel from '@/components/ui/Panel'
 import { useToast } from '@/components/ui/Toast'
 import OrderItemsEditor, { emptyOrderItem } from '@/components/crm/OrderItemsEditor'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadges'
-import { formatMoney } from '@/lib/crm-currency'
+import { formatMoney, currencyCode } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
 import { orderBalance, isPartiallyPaid } from '@/lib/crm-orders'
+import { toCsv, downloadCsv } from '@/lib/csv'
 import { PRODUCT_TYPE_LABELS } from '@/types/crm'
 import type { Customer, Order, OrderItemFormData, OrderStatus, ProductType } from '@/types/crm'
 
@@ -239,6 +240,29 @@ export default function OrdersPage() {
       .map((t) => ({ type: t, ...acc[t] }))
   }, [orders])
 
+  // Export the currently-filtered orders to CSV. Amounts are raw numbers (no
+  // currency symbol) so spreadsheets can sum them; ISO dates sort correctly.
+  const handleExport = () => {
+    const code = currencyCode(isUkNi)
+    const rows = filteredOrders.map((o) => [
+      o.order_number,
+      o.order_date,
+      o.customer?.name || 'Unknown customer',
+      o.customer?.company || '',
+      o.status,
+      o.payment_status,
+      (Number(o.total_amount) || 0).toFixed(2),
+      (Number(o.amount_paid) || 0).toFixed(2),
+      orderBalance(o).toFixed(2),
+      code,
+    ])
+    const csv = toCsv(
+      ['Order', 'Date', 'Customer', 'Company', 'Status', 'Payment', 'Total', 'Paid', 'Balance', 'Currency'],
+      rows,
+    )
+    downloadCsv(`orders-${today()}.csv`, csv)
+  }
+
   if (loading) return <LoadingSpinner text="Loading orders..." />
 
   return (
@@ -410,6 +434,15 @@ export default function OrdersPage() {
           <p className="text-sm text-text-secondary">
             {filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''} · {formatMoney(filteredTotal, isUkNi)}
           </p>
+          <Button
+            onClick={handleExport}
+            tone="neutral"
+            size="sm"
+            disabled={filteredOrders.length === 0}
+            className="sm:ml-auto"
+          >
+            <Download size={16} /> Export
+          </Button>
         </div>
       )}
 

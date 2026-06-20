@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, X, Contact, Mail, Phone, Pencil, Trash2, Search } from 'lucide-react'
+import { Plus, X, Contact, Mail, Phone, Pencil, Trash2, Search, Download } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import FieldLabel from '@/components/ui/FieldLabel'
@@ -14,8 +14,9 @@ import SelectField from '@/components/ui/SelectField'
 import Button from '@/components/ui/Button'
 import Panel from '@/components/ui/Panel'
 import { useToast } from '@/components/ui/Toast'
-import { formatMoney } from '@/lib/crm-currency'
+import { formatMoney, currencyCode } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
+import { toCsv, downloadCsv } from '@/lib/csv'
 import type { Customer, CustomerFormData, CustomerSummary } from '@/types/crm'
 
 type SortKey = 'name' | 'orders' | 'total' | 'recent'
@@ -199,6 +200,28 @@ export default function CustomersPage() {
     return sorted
   }, [customers, search, sortBy])
 
+  // Export the currently-filtered customers to CSV for bookkeeping. Totals are
+  // raw numbers; the address is the combined shipping address.
+  const handleExport = () => {
+    const code = currencyCode(isUkNi)
+    const rows = filteredCustomers.map((c) => [
+      c.name,
+      c.company || '',
+      c.email || '',
+      c.phone || '',
+      [c.address_line1, c.address_line2, c.city, c.county, c.postcode, c.country].filter(Boolean).join(', '),
+      c.order_count,
+      (Number(c.orders_total) || 0).toFixed(2),
+      c.last_order_date || '',
+      code,
+    ])
+    const csv = toCsv(
+      ['Name', 'Company', 'Email', 'Phone', 'Address', 'Orders', 'Total', 'Last order', 'Currency'],
+      rows,
+    )
+    downloadCsv(`customers-${new Date().toISOString().slice(0, 10)}.csv`, csv)
+  }
+
   if (loading) return <LoadingSpinner text="Loading customers..." />
 
   return (
@@ -375,6 +398,14 @@ export default function CustomersPage() {
               <option value="orders">Sort: Most orders</option>
               <option value="total">Sort: Highest total</option>
             </SelectField>
+            <Button
+              onClick={handleExport}
+              tone="neutral"
+              disabled={filteredCustomers.length === 0}
+              className="min-h-[48px] w-full sm:w-auto"
+            >
+              <Download size={16} /> Export
+            </Button>
           </div>
 
           {/* Desktop table */}
