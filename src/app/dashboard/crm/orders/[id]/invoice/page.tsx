@@ -4,9 +4,13 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { ArrowLeft, Printer } from 'lucide-react'
+import { ArrowLeft, Printer, Mail } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
+import ModalShell from '@/components/ui/ModalShell'
+import FieldLabel from '@/components/ui/FieldLabel'
+import TextInput from '@/components/ui/TextInput'
+import { useToast } from '@/components/ui/Toast'
 import { formatMoney } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
 import { orderBalance, isPartiallyPaid } from '@/lib/crm-orders'
@@ -24,12 +28,16 @@ interface Seller {
 export default function OrderInvoicePage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
+  const toast = useToast()
   const [order, setOrder] = useState<Order | null>(null)
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [items, setItems] = useState<OrderItem[]>([])
   const [seller, setSeller] = useState<Seller | null>(null)
   const [isUkNi, setIsUkNi] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [emailOpen, setEmailOpen] = useState(false)
+  const [recipient, setRecipient] = useState('')
+  const [sending, setSending] = useState(false)
 
   const load = useCallback(async (uid: string) => {
     const [orderRes, itemsRes, profileRes] = await Promise.all([
@@ -74,6 +82,39 @@ export default function OrderInvoicePage() {
     init()
   }, [router, load])
 
+  const openEmail = () => {
+    // Pre-fill the customer's email when one is on file; still editable.
+    setRecipient(customer?.email || '')
+    setEmailOpen(true)
+  }
+
+  const handleSendEmail = async () => {
+    if (!order) return
+    const to = recipient.trim()
+    if (!to) { toast.warning('Enter a recipient email'); return }
+    setSending(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { toast.error('Your session has expired — please sign in again'); return }
+      const res = await fetch('/api/crm/invoice-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ orderId: order.id, recipientEmail: to }),
+      })
+      const result = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(result?.error || 'Failed to send the invoice')
+      toast.success(`Invoice emailed to ${to}`)
+      setEmailOpen(false)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send the invoice')
+    } finally {
+      setSending(false)
+    }
+  }
+
   if (loading || !order) return <LoadingSpinner text="Loading invoice..." />
 
   const addressParts = customer ? [
@@ -88,10 +129,50 @@ export default function OrderInvoicePage() {
         <Link href={`/dashboard/crm/orders/${order.id}`} className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-foreground">
           <ArrowLeft size={16} /> Back to Order
         </Link>
-        <Button onClick={() => window.print()} tone="blue" className="min-h-[48px]">
-          <Printer size={16} /> Print / Save as PDF
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={openEmail} tone="success" className="min-h-[48px]">
+            <Mail size={16} /> Email invoice
+          </Button>
+          <Button onClick={() => window.print()} tone="blue" className="min-h-[48px]">
+            <Printer size={16} /> Print / Save as PDF
+          </Button>
+        </div>
       </div>
+
+      {emailOpen && (
+        <ModalShell
+          title="Email invoice"
+          onClose={() => (sending ? undefined : setEmailOpen(false))}
+          closeDisabled={sending}
+          closeOnBackdrop
+          footer={
+            <div className="border-t border-border px-6 py-4 flex justify-end gap-3">
+              <Button onClick={() => setEmailOpen(false)} tone="neutral" disabled={sending} className="min-h-[44px] px-5">
+                Cancel
+              </Button>
+              <Button onClick={handleSendEmail} tone="success" disabled={sending} className="min-h-[44px] px-5">
+                <Mail size={16} /> {sending ? 'Sending…' : 'Send'}
+              </Button>
+            </div>
+          }
+        >
+          <p className="text-sm text-text-secondary mb-3">
+            Send invoice <strong className="text-foreground">{order.order_number}</strong> as a PDF attachment.
+          </p>
+          <FieldLabel>Recipient email</FieldLabel>
+          <TextInput
+            type="email"
+            value={recipient}
+            onChange={(e) => setRecipient(e.target.value)}
+            placeholder="name@example.com"
+            className="rounded-md"
+            disabled={sending}
+          />
+          {!customer?.email && (
+            <p className="text-xs text-text-tertiary mt-2">This customer has no email on file — enter one above.</p>
+          )}
+        </ModalShell>
+      )}
 
       <div className="print-container max-w-2xl mx-auto bg-surface-elevated rounded-xl p-6 sm:p-8 border border-border">
         {/* Heading */}
