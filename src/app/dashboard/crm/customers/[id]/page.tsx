@@ -4,9 +4,10 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { ArrowLeft, Mail, Phone, MapPin } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, MapPin, Plus, Pencil, Trash2 } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Panel from '@/components/ui/Panel'
+import Button from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadges'
 import { formatMoney } from '@/lib/crm-currency'
@@ -18,10 +19,12 @@ export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const toast = useToast()
+  const [userId, setUserId] = useState<string | null>(null)
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [isUkNi, setIsUkNi] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(false)
 
   const load = useCallback(async (uid: string) => {
     const [customerRes, ordersRes, profileRes] = await Promise.all([
@@ -47,12 +50,28 @@ export default function CustomerDetailPage() {
     const init = async () => {
       const uid = await getCurrentUserId()
       if (!uid) { router.push('/login'); return }
+      setUserId(uid)
       load(uid)
     }
     init()
   }, [router, load])
 
   const stats = useMemo(() => summariseCustomerOrders(orders), [orders])
+
+  const handleDelete = async () => {
+    if (!userId || !customer) return
+    if (!confirm(`Delete "${customer.name}"? Their orders will also be deleted. Income already recognised in the ledger is kept.`)) return
+    setDeleting(true)
+    const { error } = await supabase
+      .from('crm_customers').delete().eq('id', customer.id).eq('user_id', userId)
+    if (error) {
+      toast.error('Failed to delete customer')
+      setDeleting(false)
+    } else {
+      toast.success('Customer deleted')
+      router.push('/dashboard/crm/customers')
+    }
+  }
 
   if (loading || !customer) return <LoadingSpinner text="Loading customer..." />
 
@@ -67,9 +86,22 @@ export default function CustomerDetailPage() {
         <ArrowLeft size={16} /> Back to Customers
       </Link>
 
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">{customer.name}</h1>
-        {customer.company && <p className="text-text-secondary">{customer.company}</p>}
+      <div className="flex flex-wrap justify-between items-start gap-3">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">{customer.name}</h1>
+          {customer.company && <p className="text-text-secondary">{customer.company}</p>}
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => router.push(`/dashboard/crm/orders?customer=${customer.id}`)} tone="success" className="min-h-[44px]">
+            <Plus size={16} /> New order
+          </Button>
+          <Button onClick={() => router.push(`/dashboard/crm/customers?edit=${customer.id}`)} tone="neutral" className="min-h-[44px]" aria-label="Edit customer">
+            <Pencil size={16} />
+          </Button>
+          <Button onClick={handleDelete} tone="danger" disabled={deleting} className="min-h-[44px]" aria-label="Delete customer">
+            <Trash2 size={16} />
+          </Button>
+        </div>
       </div>
 
       {/* Contact */}

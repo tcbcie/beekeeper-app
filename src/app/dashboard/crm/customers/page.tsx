@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -98,6 +98,21 @@ export default function CustomersPage() {
     })
     setShowForm(true)
   }
+
+  // Deep link from the customer detail page: ?edit=<id> opens that customer's
+  // edit form once the list has loaded (guarded so it fires only once).
+  const handledEditParam = useRef(false)
+  useEffect(() => {
+    if (handledEditParam.current || customers.length === 0) return
+    const editId = new URLSearchParams(window.location.search).get('edit')
+    if (!editId) return
+    const target = customers.find((c) => c.id === editId)
+    if (target) {
+      handledEditParam.current = true
+      handleEdit(target)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customers])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
