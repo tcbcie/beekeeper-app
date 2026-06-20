@@ -183,6 +183,7 @@ export default function OrderInvoicePage() {
           </div>
           <div className="text-sm text-text-secondary text-right">
             <p>Date: <strong className="text-foreground">{formatCrmDate(order.order_date)}</strong></p>
+            {order.due_date && <p>Due: <strong className="text-foreground">{formatCrmDate(order.due_date)}</strong></p>}
             <p>Status: <strong className="text-foreground capitalize">{order.status}</strong></p>
             <p>Payment: <strong className="text-foreground capitalize">{order.payment_status}</strong></p>
           </div>

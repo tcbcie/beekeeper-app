@@ -18,8 +18,9 @@ import OrderItemsEditor, { emptyOrderItem } from '@/components/crm/OrderItemsEdi
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadges'
 import { formatMoney, currencyCode } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
-import { orderBalance, isPartiallyPaid } from '@/lib/crm-orders'
+import { orderBalance, isPartiallyPaid, isOverdue } from '@/lib/crm-orders'
 import { toCsv, downloadCsv } from '@/lib/csv'
+import Badge from '@/components/ui/Badge'
 import { PRODUCT_TYPE_LABELS } from '@/types/crm'
 import type { Customer, Order, OrderItemFormData, OrderStatus, ProductType } from '@/types/crm'
 
@@ -61,6 +62,7 @@ export default function OrdersPage() {
   const [saving, setSaving] = useState(false)
   const [customerId, setCustomerId] = useState('')
   const [orderDate, setOrderDate] = useState(today())
+  const [dueDate, setDueDate] = useState('')
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<OrderItemFormData[]>([emptyOrderItem()])
 
@@ -109,6 +111,7 @@ export default function OrdersPage() {
     setShowForm(false)
     setCustomerId('')
     setOrderDate(today())
+    setDueDate('')
     setNotes('')
     setItems([emptyOrderItem()])
   }
@@ -131,6 +134,11 @@ export default function OrdersPage() {
         p_items: validItems,
       })
       if (error) throw error
+
+      // due_date isn't part of the atomic create RPC; set it best-effort after.
+      if (dueDate) {
+        await supabase.from('crm_orders').update({ due_date: dueDate }).eq('id', orderId).eq('user_id', userId)
+      }
 
       toast.success('Order created')
       resetForm()
@@ -204,9 +212,7 @@ export default function OrdersPage() {
   // across non-cancelled orders that aren't settled. Cancelled orders carry no
   // recognised revenue. Orders whose date is over 30 days ago are flagged.
   const outstanding = useMemo(() => {
-    const cutoff = new Date()
-    cutoff.setDate(cutoff.getDate() - 30)
-    const cutoffStr = localDate(cutoff)
+    const todayStr = localDate(new Date())
     let total = 0, count = 0, overdue = 0
     for (const o of orders) {
       if (o.status === 'cancelled') continue
@@ -214,7 +220,7 @@ export default function OrdersPage() {
       if (balance <= 0) continue
       total += balance
       count += 1
-      if (o.order_date && o.order_date < cutoffStr) overdue += 1
+      if (isOverdue(o, todayStr)) overdue += 1
     }
     return { total, count, overdue }
   }, [orders])
@@ -247,6 +253,7 @@ export default function OrdersPage() {
     const rows = filteredOrders.map((o) => [
       o.order_number,
       o.order_date,
+      o.due_date || '',
       o.customer?.name || 'Unknown customer',
       o.customer?.company || '',
       o.status,
@@ -257,11 +264,13 @@ export default function OrdersPage() {
       code,
     ])
     const csv = toCsv(
-      ['Order', 'Date', 'Customer', 'Company', 'Status', 'Payment', 'Total', 'Paid', 'Balance', 'Currency'],
+      ['Order', 'Date', 'Due', 'Customer', 'Company', 'Status', 'Payment', 'Total', 'Paid', 'Balance', 'Currency'],
       rows,
     )
     downloadCsv(`orders-${today()}.csv`, csv)
   }
+
+  const todayStr = localDate(new Date())
 
   if (loading) return <LoadingSpinner text="Loading orders..." />
 
@@ -321,6 +330,17 @@ export default function OrdersPage() {
                   className="rounded-md"
                 />
               </div>
+              <div>
+                <FieldLabel>Payment due date</FieldLabel>
+                <TextInput
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  min={orderDate}
+                  className="rounded-md"
+                />
+                <p className="text-xs text-text-tertiary mt-1">Optional — used to flag overdue orders.</p>
+              </div>
             </div>
 
             <OrderItemsEditor items={items} onChange={setItems} isUkNi={isUkNi} />
@@ -358,7 +378,7 @@ export default function OrdersPage() {
             <p className="text-sm text-text-tertiary">
               across {outstanding.count} order{outstanding.count !== 1 ? 's' : ''}
               {outstanding.overdue > 0 && (
-                <> · <span className="text-amber-600 dark:text-amber-400">{outstanding.overdue} over 30 days</span></>
+                <> · <span className="text-red-600 dark:text-red-400">{outstanding.overdue} overdue</span></>
               )}
             </p>
           </div>
@@ -504,7 +524,12 @@ export default function OrdersPage() {
                     <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{formatCrmDate(o.order_date)}</td>
                     <td className="py-3 px-4 text-right tabular-nums">{formatMoney(Number(o.total_amount), isUkNi)}</td>
                     <td className="py-3 px-4"><OrderStatusBadge status={o.status} /></td>
-                    <td className="py-3 pl-4"><PaymentStatusBadge status={o.payment_status} partial={isPartiallyPaid(o)} /></td>
+                    <td className="py-3 pl-4">
+                      <div className="flex items-center gap-1">
+                        <PaymentStatusBadge status={o.payment_status} partial={isPartiallyPaid(o)} />
+                        {isOverdue(o, todayStr) && <Badge tone="red">Overdue</Badge>}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -527,6 +552,7 @@ export default function OrdersPage() {
                       <span className="font-semibold text-foreground">{formatMoney(Number(o.total_amount), isUkNi)}</span>
                       <OrderStatusBadge status={o.status} />
                       <PaymentStatusBadge status={o.payment_status} partial={isPartiallyPaid(o)} />
+                      {isOverdue(o, todayStr) && <Badge tone="red">Overdue</Badge>}
                       <ChevronRight size={18} className="text-text-tertiary" />
                     </div>
                   </div>

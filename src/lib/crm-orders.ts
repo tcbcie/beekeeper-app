@@ -15,6 +15,20 @@ export function isPartiallyPaid(o: Pick<Order, 'payment_status' | 'amount_paid'>
 }
 
 /**
+ * True when an order has a balance owed past its due date. `todayStr` is the
+ * caller's local calendar date as `YYYY-MM-DD` (compared lexicographically
+ * against the ISO `due_date`). Cancelled and fully-paid orders are never overdue.
+ */
+export function isOverdue(
+  o: Pick<Order, 'status' | 'due_date' | 'total_amount' | 'amount_paid'>,
+  todayStr: string,
+): boolean {
+  if (o.status === 'cancelled' || !o.due_date) return false
+  if (orderBalance(o) <= 0) return false
+  return o.due_date < todayStr
+}
+
+/**
  * Rolls a customer's orders into the headline figures shown on the customer
  * detail page and the order detail customer panel. `count` includes every
  * order; `lifetime` and `outstanding` exclude cancelled ones (they carry no
