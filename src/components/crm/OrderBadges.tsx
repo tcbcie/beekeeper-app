@@ -17,7 +17,12 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
   return <Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge>
 }
 
-export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {
+export function PaymentStatusBadge({ status, partial }: { status: PaymentStatus; partial?: boolean }) {
+  // `partial` lets callers surface a part-paid deposit while payment_status
+  // itself stays binary (unpaid until the balance is cleared).
+  if (status !== 'paid' && partial) {
+    return <Badge tone="amber">Part-paid</Badge>
+  }
   return (
     <Badge tone={status === 'paid' ? 'green' : 'neutral'}>
       {status === 'paid' ? 'Paid' : 'Unpaid'}

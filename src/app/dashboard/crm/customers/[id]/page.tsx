@@ -52,13 +52,14 @@ export default function CustomerDetailPage() {
   }, [router, load])
 
   // Lifetime total excludes cancelled orders (mirrors crm_customer_summary).
-  // Outstanding is money owed across unpaid, non-cancelled orders.
+  // Outstanding is the balance owed (total minus amount paid) across
+  // non-cancelled orders, so deposits reduce it.
   const stats = useMemo(() => {
     let lifetime = 0, outstanding = 0
     for (const o of orders) {
       if (o.status === 'cancelled') continue
       lifetime += Number(o.total_amount) || 0
-      if (o.payment_status === 'unpaid') outstanding += Number(o.total_amount) || 0
+      outstanding += Math.max(0, (Number(o.total_amount) || 0) - (Number(o.amount_paid) || 0))
     }
     return { count: orders.length, lifetime, outstanding }
   }, [orders])
@@ -161,7 +162,7 @@ export default function CustomerDetailPage() {
                       <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{formatCrmDate(o.order_date)}</td>
                       <td className="py-3 px-4 text-right tabular-nums">{formatMoney(Number(o.total_amount), isUkNi)}</td>
                       <td className="py-3 px-4"><OrderStatusBadge status={o.status} /></td>
-                      <td className="py-3 pl-4"><PaymentStatusBadge status={o.payment_status} /></td>
+                      <td className="py-3 pl-4"><PaymentStatusBadge status={o.payment_status} partial={Number(o.amount_paid) > 0} /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -181,7 +182,7 @@ export default function CustomerDetailPage() {
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="font-semibold text-foreground">{formatMoney(Number(o.total_amount), isUkNi)}</span>
                         <OrderStatusBadge status={o.status} />
-                        <PaymentStatusBadge status={o.payment_status} />
+                        <PaymentStatusBadge status={o.payment_status} partial={Number(o.amount_paid) > 0} />
                       </div>
                     </div>
                   </Panel>

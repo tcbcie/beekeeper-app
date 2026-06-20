@@ -45,6 +45,7 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [isUkNi, setIsUkNi] = useState(false)
+  const [production, setProduction] = useState({ activeQueens: 0, matingNucs: 0 })
   const [statusFilter, setStatusFilter] = useState<'all' | OrderStatus>('all')
   const [productFilter, setProductFilter] = useState<'all' | ProductType>('all')
   const [search, setSearch] = useState('')
@@ -62,10 +63,12 @@ export default function OrdersPage() {
   const [items, setItems] = useState<OrderItemFormData[]>([emptyOrderItem()])
 
   const fetchData = useCallback(async (uid: string) => {
-    const [ordersRes, customersRes, profileRes] = await Promise.all([
+    const [ordersRes, customersRes, profileRes, queensRes, nucsRes] = await Promise.all([
       supabase.from('crm_orders').select('*, items:crm_order_items(product_type, quantity)').eq('user_id', uid).order('order_date', { ascending: false }),
       supabase.from('crm_customers').select('id, name, company').eq('user_id', uid).order('name'),
       supabase.from('profiles').select('is_uk_ni_resident').eq('id', uid).maybeSingle(),
+      supabase.from('queens').select('id', { count: 'exact', head: true }).eq('user_id', uid).eq('status', 'active'),
+      supabase.from('mating_nucs').select('id', { count: 'exact', head: true }).eq('user_id', uid),
     ])
 
     if (ordersRes.error) toast.error('Failed to load orders')
@@ -73,6 +76,7 @@ export default function OrdersPage() {
     const customerList = (customersRes.data || []) as Customer[]
     setCustomers(customerList)
     setIsUkNi(profileRes.data?.is_uk_ni_resident || false)
+    setProduction({ activeQueens: queensRes.count || 0, matingNucs: nucsRes.count || 0 })
 
     const nameById = new Map(customerList.map((c) => [c.id, c]))
     const enriched = ((ordersRes.data || []) as OrderListRow[]).map((o) => ({
@@ -164,7 +168,7 @@ export default function OrdersPage() {
       toast.success('Marked paid — income added to your ledger')
       // Patch the single row locally instead of refetching the whole list.
       setOrders((prev) => prev.map((o) =>
-        o.id === orderId ? { ...o, payment_status: 'paid', paid_date: today() } : o))
+        o.id === orderId ? { ...o, payment_status: 'paid', paid_date: today(), amount_paid: o.total_amount } : o))
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update payment')
     } finally {
@@ -188,17 +192,19 @@ export default function OrdersPage() {
     [filteredOrders],
   )
 
-  // Accounts receivable: money owed across unpaid, non-cancelled orders.
-  // Cancelled orders are forced unpaid but carry no recognised revenue, so they
-  // are never "owed". Orders whose date is over 30 days ago are flagged overdue.
+  // Accounts receivable: the balance owed (total minus amount already paid)
+  // across non-cancelled orders that aren't settled. Cancelled orders carry no
+  // recognised revenue. Orders whose date is over 30 days ago are flagged.
   const outstanding = useMemo(() => {
     const cutoff = new Date()
     cutoff.setDate(cutoff.getDate() - 30)
     const cutoffStr = localDate(cutoff)
     let total = 0, count = 0, overdue = 0
     for (const o of orders) {
-      if (o.status === 'cancelled' || o.payment_status !== 'unpaid') continue
-      total += Number(o.total_amount) || 0
+      if (o.status === 'cancelled') continue
+      const balance = (Number(o.total_amount) || 0) - (Number(o.amount_paid) || 0)
+      if (balance <= 0) continue
+      total += balance
       count += 1
       if (o.order_date && o.order_date < cutoffStr) overdue += 1
     }
@@ -315,11 +321,11 @@ export default function OrdersPage() {
         <Panel padding="md">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-sm text-text-secondary">Outstanding (unpaid orders)</p>
+              <p className="text-sm text-text-secondary">Outstanding (balance owed)</p>
               <p className="text-2xl font-bold text-foreground tabular-nums">{formatMoney(outstanding.total, isUkNi)}</p>
             </div>
             <p className="text-sm text-text-tertiary">
-              {outstanding.count} unpaid order{outstanding.count !== 1 ? 's' : ''}
+              across {outstanding.count} order{outstanding.count !== 1 ? 's' : ''}
               {outstanding.overdue > 0 && (
                 <> · <span className="text-amber-600 dark:text-amber-400">{outstanding.overdue} over 30 days</span></>
               )}
@@ -353,6 +359,13 @@ export default function OrdersPage() {
               )
             })}
           </div>
+          {(production.activeQueens > 0 || production.matingNucs > 0) && (
+            <p className="text-xs text-text-tertiary mt-3 pt-3 border-t border-border">
+              Your production: <span className="font-medium text-foreground tabular-nums">{production.activeQueens}</span> active queen{production.activeQueens !== 1 ? 's' : ''}
+              {' · '}
+              <span className="font-medium text-foreground tabular-nums">{production.matingNucs}</span> mating nuc{production.matingNucs !== 1 ? 's' : ''}
+            </p>
+          )}
         </Panel>
       )}
 
@@ -429,7 +442,7 @@ export default function OrdersPage() {
                     <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{formatCrmDate(o.order_date)}</td>
                     <td className="py-3 px-4 text-right tabular-nums">{formatMoney(Number(o.total_amount), isUkNi)}</td>
                     <td className="py-3 px-4"><OrderStatusBadge status={o.status} /></td>
-                    <td className="py-3 px-4"><PaymentStatusBadge status={o.payment_status} /></td>
+                    <td className="py-3 px-4"><PaymentStatusBadge status={o.payment_status} partial={Number(o.amount_paid) > 0} /></td>
                     <td className="py-3 pl-4">
                       <div className="flex gap-1 justify-end">
                         {o.status === 'pending' && (
@@ -471,7 +484,7 @@ export default function OrdersPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="font-semibold text-foreground">{formatMoney(Number(o.total_amount), isUkNi)}</span>
                       <OrderStatusBadge status={o.status} />
-                      <PaymentStatusBadge status={o.payment_status} />
+                      <PaymentStatusBadge status={o.payment_status} partial={Number(o.amount_paid) > 0} />
                       <ChevronRight size={18} className="text-text-tertiary" />
                     </div>
                   </div>
@@ -485,7 +498,7 @@ export default function OrdersPage() {
                           <PackageCheck size={16} /> Fulfil
                         </Button>
                       )}
-                      {o.payment_status === 'unpaid' && o.status !== 'cancelled' && (
+                      {o.payment_status === 'unpaid' && (
                         <Button
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); markPaid(o.id) }}
                           tone="blue" size="sm" disabled={rowBusy === o.id}

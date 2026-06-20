@@ -64,7 +64,10 @@ used by orders, cards, `.order('name')` sorting and revenue descriptions. Also
 `customer_id` (FK, cascade), `order_number` (unique per `user_id`),
 `status` (`pending` / `fulfilled` / `cancelled`),
 `payment_status` (`unpaid` / `paid`), `order_date`, `fulfilled_date`,
-`paid_date`, `total_amount` (derived), `notes`.
+`paid_date`, `total_amount` (derived), `amount_paid` (cumulative payment,
+`0 ≤ amount_paid ≤ total_amount`), `notes`. `payment_status` stays **binary**
+— it flips to `paid` only when `amount_paid >= total_amount`; a part-paid
+deposit keeps it `unpaid` and the "Part-paid" state is derived in the UI.
 
 ### `crm_order_items`
 `order_id` (FK, cascade), `product_type`
@@ -130,6 +133,13 @@ client-side filtering and summary:
   order. These reuse the same fulfilment update and `crm_set_order_payment` RPC
   as the detail page, then refresh the list. Buttons `stopPropagation`/
   `preventDefault` so they don't trigger row/card navigation.
+- **Outstanding balance** sums the **balance owed** (`total_amount − amount_paid`)
+  across non-cancelled orders with a positive balance — so deposits reduce it.
+- **Production context (read-only):** the "Open orders to fulfil" panel has a
+  footer showing the user's current production counts (active queens, mating
+  nucs) next to open queen/nuc demand. These are head-counts from `queens`
+  (`status='active'`) and `mating_nucs`; there is deliberately **no "available"
+  claim** because the app has no sold/reserved inventory flag.
 
 ## Invoice
 
@@ -147,9 +157,15 @@ chrome is hidden when printing.
 `status` (fulfilment) and `payment_status` are **independent**:
 
 - **Fulfilment:** Pending → Fulfilled (sets `fulfilled_date`) and back (Reopen).
-- **Payment:** Unpaid ↔ Paid (sets/clears `paid_date`).
-- **Cancel:** sets `status = cancelled`, forces `payment_status = unpaid`, and
-  reverses any recognised revenue. Cancelled orders are read-only.
+- **Payment:** tracked by a cumulative `amount_paid` via
+  `crm_set_order_amount_paid(order, amount)` (deposit / part / full). The order
+  detail page has a Payment panel (Total / Paid / Balance + an *Amount paid*
+  input); *Mark Paid* / *Mark Unpaid* remain as binary shortcuts that set
+  `amount_paid` to the total or zero. The server clamps `amount_paid` to
+  `[0, total]` and derives `payment_status` (`paid` iff `amount_paid >= total`).
+- **Cancel:** sets `status = cancelled`, forces `payment_status = unpaid`,
+  `amount_paid = 0`, and reverses any recognised revenue. Cancelled orders are
+  read-only.
 
 Order numbers are generated per account as `ORD-YYYY-NNN`
 (`src/lib/crm-orders.ts`); the `UNIQUE (user_id, order_number)` constraint is the
@@ -157,17 +173,26 @@ final guard.
 
 ## Revenue Recognition (Finance Integration)
 
-Revenue is recognised **when an order is marked Paid** (`src/lib/crm-finance.ts`):
+Revenue is recognised **only when an order is fully paid**
+(`amount_paid >= total_amount`), purely in SQL:
 
 1. Line items are grouped by `product_type` → income category and summed.
 2. One `financial_records` income row is inserted **per category**, dated to
    `paid_date`, described as `Order {number} — {customer}`, tagged with
    `crm_order_id`.
-3. Marking the order **Unpaid** or **Cancelled** removes the rows tagged with
-   that `crm_order_id`. Editing a paid order re-posts idempotently (reverse then
-   re-insert), so totals never double up.
-4. **Deleting** an order keeps its recognised income (`ON DELETE SET NULL`) as
+3. Dropping below full payment (part payment, **Unpaid**, **Cancelled**) removes
+   the rows tagged with that `crm_order_id`. Re-recognition is idempotent
+   (reverse then re-insert), so totals never double up. **Deposits/part payments
+   post nothing** — income appears only once the balance clears.
+4. Editing a paid order's items re-derives state from `amount_paid`: if the new
+   total now exceeds what's been paid, the order reverts to unpaid and its income
+   is removed until the balance is settled (no silently-assumed payment).
+5. **Deleting** an order keeps its recognised income (`ON DELETE SET NULL`) as
    historical fact — use Unpaid/Cancel to un-recognise.
+
+The "fully paid ⇒ recognise, else reverse" rule lives in **one** internal
+helper, `_crm_apply_payment_state`, called by every path that can change the
+total or the amount paid.
 
 All money mutations run inside **atomic Postgres functions** (single
 transaction, `SECURITY INVOKER` so RLS applies, `search_path = public` — never
@@ -180,9 +205,11 @@ that could half-fail:
 | Function | Action |
 |----------|--------|
 | `crm_create_order` | Allocates order number (numeric max, race-safe) + inserts order & items |
-| `crm_save_order_items` | Replaces items, recomputes total, re-posts revenue if paid |
-| `crm_set_order_payment` | Sets paid/unpaid + recognises/reverses revenue |
-| `crm_cancel_order` | Cancels + reverses revenue |
+| `crm_save_order_items` | Replaces items, recomputes total, re-derives payment state |
+| `crm_set_order_amount_paid` | Sets cumulative `amount_paid` (deposit/part/full); clamps to `[0, total]`; gates on subscription only when it fully pays |
+| `crm_set_order_payment` | Binary mark paid/unpaid — thin wrapper that sets `amount_paid` to total or zero |
+| `crm_cancel_order` | Cancels, zeroes `amount_paid` + reverses revenue |
+| `_crm_apply_payment_state` | Internal: the single "fully paid ⇒ recognise, else reverse" rule; keeps `amount_paid ≤ total` |
 | `_crm_recognise_revenue` | Internal: posts income rows; **raises** if the order isn't `paid` (invariant holds even if called directly) or if any product type can't map to a category (no silent under-posting) |
 | `crm_product_income_category` | Single source of truth for the product→category map |
 

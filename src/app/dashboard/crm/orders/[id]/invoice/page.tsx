@@ -153,9 +153,23 @@ export default function OrderInvoicePage() {
 
         {/* Total */}
         <div className="flex justify-end">
-          <div className="w-full sm:w-64 flex justify-between border-t border-border pt-3">
-            <span className="font-semibold text-foreground">Total</span>
-            <span className="font-bold text-foreground tabular-nums">{formatMoney(Number(order.total_amount), isUkNi)}</span>
+          <div className="w-full sm:w-64 space-y-1">
+            <div className="flex justify-between border-t border-border pt-3">
+              <span className="font-semibold text-foreground">Total</span>
+              <span className="font-bold text-foreground tabular-nums">{formatMoney(Number(order.total_amount), isUkNi)}</span>
+            </div>
+            {Number(order.amount_paid) > 0 && Number(order.amount_paid) < Number(order.total_amount) && (
+              <>
+                <div className="flex justify-between text-sm text-text-secondary">
+                  <span>Paid</span>
+                  <span className="tabular-nums">{formatMoney(Number(order.amount_paid), isUkNi)}</span>
+                </div>
+                <div className="flex justify-between text-sm font-medium text-foreground">
+                  <span>Balance due</span>
+                  <span className="tabular-nums">{formatMoney(Number(order.total_amount) - Number(order.amount_paid), isUkNi)}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

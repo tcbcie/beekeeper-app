@@ -83,6 +83,7 @@ export interface Order {
   fulfilled_date: string | null
   paid_date: string | null
   total_amount: number
+  amount_paid: number
   notes: string | null
   created_at?: string
   updated_at?: string
