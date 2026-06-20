@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import { getUserRole, type UserRole } from '@/lib/auth'
 import { useCrmEnabled } from '@/hooks/useCrmEnabled'
+import { useLogbookEnabled } from '@/hooks/useLogbookEnabled'
 import VersionDisplay from './VersionDisplay'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
@@ -13,10 +14,9 @@ import {
   getGroupedItems,
   getAfterGroupItems,
   getBottomItems,
+  filterByFeatures,
   navGroups,
   adminNavItems,
-  crmNavItems,
-  crmNavGroupLabel,
   type NavGroupId,
 } from '@/lib/navigation'
 
@@ -33,6 +33,8 @@ function safeSetItem(key: string, value: string): void {
 export default function Sidebar() {
   const pathname = usePathname()
   const { crmEnabled } = useCrmEnabled()
+  const { logbookEnabled } = useLogbookEnabled()
+  const features = { crm: crmEnabled, logbook: logbookEnabled }
   const [userRole, setUserRole] = useState<UserRole>('User')
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<NavGroupId[]>([])
@@ -129,7 +131,9 @@ export default function Sidebar() {
 
         {/* Grouped items */}
         {!isCollapsed ? (
-          groupedItems.map(({ group, items }) => {
+          groupedItems.map(({ group, items: allItems }) => {
+            const items = filterByFeatures(allItems, features)
+            if (items.length === 0) return null
             const isGroupCollapsed = collapsedGroups.includes(group.id)
             const groupRegionId = `nav-group-${group.id}`
             return (
@@ -169,7 +173,7 @@ export default function Sidebar() {
         ) : (
           /* Icon-only mode: flat list without group headers */
           groupedItems.flatMap(({ items }) =>
-            items.map(item => (
+            filterByFeatures(items, features).map(item => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -180,42 +184,6 @@ export default function Sidebar() {
                 <item.icon size={20} className="shrink-0" />
               </Link>
             ))
-          )
-        )}
-
-        {/* Sales (CRM) — active subscribers who have opted in */}
-        {crmEnabled && (
-          isCollapsed ? (
-            crmNavItems.map(item => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={linkClasses(item.href)}
-                title={item.label}
-                aria-current={isActive(item.href) ? 'page' : undefined}
-              >
-                <item.icon size={20} className="shrink-0" />
-              </Link>
-            ))
-          ) : (
-            <div className="pt-2">
-              <p className="px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                {crmNavGroupLabel}
-              </p>
-              <div className="space-y-1 mt-1">
-                {crmNavItems.map(item => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={linkClasses(item.href)}
-                    aria-current={isActive(item.href) ? 'page' : undefined}
-                  >
-                    <item.icon size={20} className="shrink-0" />
-                    <span>{item.label}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
           )
         )}
 

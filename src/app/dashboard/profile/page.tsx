@@ -12,6 +12,7 @@ import { ThemeSwitcher } from '@/components/theme-switcher'
 import type { SubscriptionStatusResponse } from '@/types/subscription'
 import { useToast } from '@/components/ui/Toast'
 import { notifyCrmPrefChanged } from '@/hooks/useCrmEnabled'
+import { notifyLogbookPrefChanged } from '@/hooks/useLogbookEnabled'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Panel from '@/components/ui/Panel'
 import ModalShell from '@/components/ui/ModalShell'
@@ -43,6 +44,7 @@ interface UserProfile {
  task_reminder_frequency?: 'realtime' | 'daily' | 'weekly' | 'disabled'
  enable_label_printing?: boolean
  enable_crm?: boolean
+ enable_logbook?: boolean
 }
 
 interface Association {
@@ -82,6 +84,7 @@ export default function ProfilePage() {
  task_reminder_frequency: 'daily' as 'realtime' | 'daily' | 'weekly' | 'disabled',
  enable_label_printing: false,
  enable_crm: false,
+ enable_logbook: false,
  })
  const [savingProfile, setSavingProfile] = useState(false)
  const [associations, setAssociations] = useState<Association[]>([])
@@ -167,6 +170,7 @@ export default function ProfilePage() {
  task_reminder_frequency: data.task_reminder_frequency || 'daily',
  enable_label_printing: data.enable_label_printing === true,
  enable_crm: data.enable_crm === true,
+ enable_logbook: data.enable_logbook === true,
  })
  }
  } catch (error) {
@@ -211,6 +215,7 @@ export default function ProfilePage() {
  task_reminder_frequency: profileFormData.task_reminder_frequency,
  enable_label_printing: profileFormData.enable_label_printing,
  enable_crm: profileFormData.enable_crm,
+ enable_logbook: profileFormData.enable_logbook,
  })
  .eq('id', userId)
 
@@ -256,6 +261,7 @@ export default function ProfilePage() {
  task_reminder_frequency: userProfile.task_reminder_frequency || 'daily',
  enable_label_printing: userProfile.enable_label_printing === true,
  enable_crm: userProfile.enable_crm === true,
+ enable_logbook: userProfile.enable_logbook === true,
  })
  }
  }
@@ -1233,6 +1239,30 @@ export default function ProfilePage() {
  id="label-printing"
  checked={profileFormData.enable_label_printing}
  onChange={(e) => updatePreference('enable_label_printing', e.target.checked)}
+ className="sr-only peer"
+ />
+ <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+ </label>
+ </div>
+ </div>
+
+ <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+ <div className="mb-4">
+ <div className="font-medium text-foreground mb-1">Logbook</div>
+ <div className="text-sm text-text-tertiary">A free-form journal for notes, observations and reminders that don&apos;t fit a structured record.</div>
+ </div>
+
+ <div className="flex items-center justify-between">
+ <div>
+ <label htmlFor="enable-logbook" className="text-sm font-medium text-foreground">Enable logbook</label>
+ <div className="text-xs text-text-tertiary">Adds a Logbook item to your menu</div>
+ </div>
+ <label className="relative inline-flex items-center cursor-pointer">
+ <input
+ type="checkbox"
+ id="enable-logbook"
+ checked={profileFormData.enable_logbook}
+ onChange={(e) => updatePreference('enable_logbook', e.target.checked, () => notifyLogbookPrefChanged(e.target.checked))}
  className="sr-only peer"
  />
  <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
