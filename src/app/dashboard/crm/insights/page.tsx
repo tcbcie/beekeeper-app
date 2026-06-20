@@ -86,7 +86,7 @@ export default function SalesInsightsPage() {
     const now = new Date()
     const yearStart = `${now.getFullYear()}-01-01`
     const monthStart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
-    let paidYear = 0, paidMonth = 0, paidAll = 0, outstanding = 0, pendingCount = 0
+    let paidYear = 0, paidMonth = 0, outstanding = 0, pendingCount = 0
     const byProduct = {} as Record<ProductType, number>
 
     for (const o of orders) {
@@ -96,7 +96,6 @@ export default function SalesInsightsPage() {
       if (o.payment_status === 'paid') {
         const total = Number(o.total_amount) || 0
         const date = o.paid_date || o.order_date
-        paidAll += total
         if (date >= monthStart) paidMonth += total
         if (date >= yearStart) {
           paidYear += total
@@ -113,7 +112,7 @@ export default function SalesInsightsPage() {
       .sort((a, b) => b.amount - a.amount)
     const maxProduct = products.reduce((m, p) => Math.max(m, p.amount), 0)
 
-    return { paidYear, paidMonth, paidAll, outstanding, pendingCount, products, maxProduct }
+    return { paidYear, paidMonth, outstanding, pendingCount, products, maxProduct }
   }, [orders])
 
   if (loading) return <LoadingSpinner text="Loading sales insights..." />

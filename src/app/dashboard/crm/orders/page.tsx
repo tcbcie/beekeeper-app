@@ -135,9 +135,12 @@ export default function OrdersPage() {
       })
       if (error) throw error
 
-      // due_date isn't part of the atomic create RPC; set it best-effort after.
+      // due_date isn't part of the atomic create RPC; set it after. The order
+      // already exists, so a failure here is a warning, not a hard error.
       if (dueDate) {
-        await supabase.from('crm_orders').update({ due_date: dueDate }).eq('id', orderId).eq('user_id', userId)
+        const { error: dueErr } = await supabase
+          .from('crm_orders').update({ due_date: dueDate }).eq('id', orderId).eq('user_id', userId)
+        if (dueErr) toast.warning('Order created, but the due date could not be saved')
       }
 
       toast.success('Order created')

@@ -19,6 +19,9 @@ const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 // Pragmatic single-@ check — full RFC validation belongs to the mail server.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const MAX_EMAIL_LEN = 254 // RFC 5321 max address length
+const RATE_LIMIT = 25 // invoice emails per user per hour
+const RATE_WINDOW_MS = 60 * 60 * 1000
 
 function joinAddress(c: Record<string, unknown>): string | null {
   const parts = [c.address_line1, c.address_line2, c.city, c.county, c.postcode, c.country]
@@ -71,10 +74,28 @@ export async function POST(request: NextRequest) {
     if (typeof orderId !== 'string' || !orderId) {
       return NextResponse.json({ error: 'Missing orderId' }, { status: 400 })
     }
-    if (typeof recipientEmail !== 'string' || !EMAIL_RE.test(recipientEmail.trim())) {
+    if (typeof recipientEmail !== 'string') {
       return NextResponse.json({ error: 'A valid recipient email is required' }, { status: 400 })
     }
     const to = recipientEmail.trim()
+    if (to.length > MAX_EMAIL_LEN || !EMAIL_RE.test(to)) {
+      return NextResponse.json({ error: 'A valid recipient email is required' }, { status: 400 })
+    }
+
+    // Rate limit per user (protects the sending domain's reputation). Checked
+    // before the expensive PDF render so abuse fails fast.
+    const since = new Date(Date.now() - RATE_WINDOW_MS).toISOString()
+    const { count: recentSends } = await supabaseAdmin
+      .from('crm_invoice_email_log')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .gte('sent_at', since)
+    if ((recentSends || 0) >= RATE_LIMIT) {
+      return NextResponse.json(
+        { error: 'Too many invoice emails sent in the last hour. Please try again later.' },
+        { status: 429 },
+      )
+    }
 
     // Load the order + items + customer, scoped to the authenticated user so a
     // crafted orderId cannot reach another account's data.
@@ -155,6 +176,12 @@ export async function POST(request: NextRequest) {
       console.error('invoice-email: Resend error:', detail)
       return NextResponse.json({ error: 'Failed to send the email' }, { status: 502 })
     }
+
+    // Record the send for the rate limit (best-effort — never fail the request).
+    const { error: logError } = await supabaseAdmin
+      .from('crm_invoice_email_log')
+      .insert({ user_id: user.id })
+    if (logError) console.error('invoice-email: failed to log send:', logError)
 
     return NextResponse.json({ success: true })
   } catch (err) {
