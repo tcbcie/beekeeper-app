@@ -1,7 +1,7 @@
 import {
   Home, Crown, Egg, Archive, MapPin, ClipboardList, Settings,
   Wrench, User, Info, Calendar, Users, FlaskConical, FileText,
-  BookOpen, Contact, ShoppingCart,
+  BookOpen, Contact, ShoppingCart, BarChart3,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -44,6 +44,7 @@ export const baseNavItems: NavItem[] = [
   { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar, group: 'activity', bottomNav: true },
   { href: '/dashboard/crm/customers', label: 'Customers', icon: Contact, group: 'activity', feature: 'crm' },
   { href: '/dashboard/crm/orders', label: 'Orders', icon: ShoppingCart, group: 'activity', feature: 'crm' },
+  { href: '/dashboard/crm/insights', label: 'Sales Insights', icon: BarChart3, group: 'activity', feature: 'crm' },
   { href: '/dashboard/logbook', label: 'Logbook', icon: BookOpen, group: 'activity', feature: 'logbook' },
   { href: '/dashboard/reports', label: 'Reports', icon: FileText, group: 'insights' },
   { href: '/dashboard/research', label: 'Research', icon: FlaskConical, group: 'insights' },
