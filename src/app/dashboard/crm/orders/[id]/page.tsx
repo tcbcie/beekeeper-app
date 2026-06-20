@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/Toast'
 import OrderItemsEditor from '@/components/crm/OrderItemsEditor'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadges'
 import { formatMoney } from '@/lib/crm-currency'
+import { orderBalance, isPartiallyPaid } from '@/lib/crm-orders'
 import type { Customer, Order, OrderItem, OrderItemFormData } from '@/types/crm'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -217,7 +218,7 @@ export default function OrderDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           <OrderStatusBadge status={order.status} />
-          <PaymentStatusBadge status={order.payment_status} partial={Number(order.amount_paid) > 0} />
+          <PaymentStatusBadge status={order.payment_status} partial={isPartiallyPaid(order)} />
         </div>
       </div>
 
@@ -245,7 +246,7 @@ export default function OrderDetailPage() {
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm mb-3">
             <span className="text-text-secondary">Total: <span className="font-medium text-foreground tabular-nums">{formatMoney(Number(order.total_amount), isUkNi)}</span></span>
             <span className="text-text-secondary">Paid: <span className="font-medium text-foreground tabular-nums">{formatMoney(Number(order.amount_paid), isUkNi)}</span></span>
-            <span className="text-text-secondary">Balance: <span className="font-medium text-foreground tabular-nums">{formatMoney(Number(order.total_amount) - Number(order.amount_paid), isUkNi)}</span></span>
+            <span className="text-text-secondary">Balance: <span className="font-medium text-foreground tabular-nums">{formatMoney(orderBalance(order), isUkNi)}</span></span>
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <div>

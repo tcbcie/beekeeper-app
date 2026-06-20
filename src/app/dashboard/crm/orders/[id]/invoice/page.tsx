@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
 import { formatMoney } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
+import { orderBalance, isPartiallyPaid } from '@/lib/crm-orders'
 import { PRODUCT_TYPE_LABELS } from '@/types/crm'
 import type { Customer, Order, OrderItem } from '@/types/crm'
 
@@ -158,7 +159,7 @@ export default function OrderInvoicePage() {
               <span className="font-semibold text-foreground">Total</span>
               <span className="font-bold text-foreground tabular-nums">{formatMoney(Number(order.total_amount), isUkNi)}</span>
             </div>
-            {Number(order.amount_paid) > 0 && Number(order.amount_paid) < Number(order.total_amount) && (
+            {isPartiallyPaid(order) && (
               <>
                 <div className="flex justify-between text-sm text-text-secondary">
                   <span>Paid</span>
@@ -166,7 +167,7 @@ export default function OrderInvoicePage() {
                 </div>
                 <div className="flex justify-between text-sm font-medium text-foreground">
                   <span>Balance due</span>
-                  <span className="tabular-nums">{formatMoney(Number(order.total_amount) - Number(order.amount_paid), isUkNi)}</span>
+                  <span className="tabular-nums">{formatMoney(orderBalance(order), isUkNi)}</span>
                 </div>
               </>
             )}

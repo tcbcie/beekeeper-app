@@ -18,6 +18,7 @@ import OrderItemsEditor, { emptyOrderItem } from '@/components/crm/OrderItemsEdi
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadges'
 import { formatMoney } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
+import { orderBalance, isPartiallyPaid } from '@/lib/crm-orders'
 import { PRODUCT_TYPE_LABELS } from '@/types/crm'
 import type { Customer, Order, OrderItemFormData, OrderStatus, ProductType } from '@/types/crm'
 
@@ -202,7 +203,7 @@ export default function OrdersPage() {
     let total = 0, count = 0, overdue = 0
     for (const o of orders) {
       if (o.status === 'cancelled') continue
-      const balance = (Number(o.total_amount) || 0) - (Number(o.amount_paid) || 0)
+      const balance = orderBalance(o)
       if (balance <= 0) continue
       total += balance
       count += 1
@@ -442,7 +443,7 @@ export default function OrdersPage() {
                     <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{formatCrmDate(o.order_date)}</td>
                     <td className="py-3 px-4 text-right tabular-nums">{formatMoney(Number(o.total_amount), isUkNi)}</td>
                     <td className="py-3 px-4"><OrderStatusBadge status={o.status} /></td>
-                    <td className="py-3 px-4"><PaymentStatusBadge status={o.payment_status} partial={Number(o.amount_paid) > 0} /></td>
+                    <td className="py-3 px-4"><PaymentStatusBadge status={o.payment_status} partial={isPartiallyPaid(o)} /></td>
                     <td className="py-3 pl-4">
                       <div className="flex gap-1 justify-end">
                         {o.status === 'pending' && (
@@ -484,7 +485,7 @@ export default function OrdersPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="font-semibold text-foreground">{formatMoney(Number(o.total_amount), isUkNi)}</span>
                       <OrderStatusBadge status={o.status} />
-                      <PaymentStatusBadge status={o.payment_status} partial={Number(o.amount_paid) > 0} />
+                      <PaymentStatusBadge status={o.payment_status} partial={isPartiallyPaid(o)} />
                       <ChevronRight size={18} className="text-text-tertiary" />
                     </div>
                   </div>

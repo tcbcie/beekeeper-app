@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/Toast'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadges'
 import { formatMoney } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
+import { orderBalance, isPartiallyPaid } from '@/lib/crm-orders'
 import type { Customer, Order } from '@/types/crm'
 
 export default function CustomerDetailPage() {
@@ -59,7 +60,7 @@ export default function CustomerDetailPage() {
     for (const o of orders) {
       if (o.status === 'cancelled') continue
       lifetime += Number(o.total_amount) || 0
-      outstanding += Math.max(0, (Number(o.total_amount) || 0) - (Number(o.amount_paid) || 0))
+      outstanding += orderBalance(o)
     }
     return { count: orders.length, lifetime, outstanding }
   }, [orders])
@@ -162,7 +163,7 @@ export default function CustomerDetailPage() {
                       <td className="py-3 px-4 text-text-secondary whitespace-nowrap">{formatCrmDate(o.order_date)}</td>
                       <td className="py-3 px-4 text-right tabular-nums">{formatMoney(Number(o.total_amount), isUkNi)}</td>
                       <td className="py-3 px-4"><OrderStatusBadge status={o.status} /></td>
-                      <td className="py-3 pl-4"><PaymentStatusBadge status={o.payment_status} partial={Number(o.amount_paid) > 0} /></td>
+                      <td className="py-3 pl-4"><PaymentStatusBadge status={o.payment_status} partial={isPartiallyPaid(o)} /></td>
                     </tr>
                   ))}
                 </tbody>
@@ -182,7 +183,7 @@ export default function CustomerDetailPage() {
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="font-semibold text-foreground">{formatMoney(Number(o.total_amount), isUkNi)}</span>
                         <OrderStatusBadge status={o.status} />
-                        <PaymentStatusBadge status={o.payment_status} partial={Number(o.amount_paid) > 0} />
+                        <PaymentStatusBadge status={o.payment_status} partial={isPartiallyPaid(o)} />
                       </div>
                     </div>
                   </Panel>
