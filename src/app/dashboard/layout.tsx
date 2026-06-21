@@ -14,6 +14,7 @@ import ChatButton from '@/components/chat/ChatButton'
 import BottomNavBar from '@/components/BottomNavBar'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import ImpersonationBanner from '@/components/ImpersonationBanner'
+import DashboardShellSkeleton from '@/components/DashboardShellSkeleton'
 import { updateManager } from '@/lib/update-manager'
 import { registerServiceWorker } from '@/lib/notifications'
 import { useToast } from '@/components/ui/Toast'
@@ -22,72 +23,63 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth()
   const toast = useToast()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [checkingAccount, setCheckingAccount] = useState(true)
   const router = useRouter()
   const hasShownDisabledAlert = useRef(false)
   const checkingAccountRef = useRef(false)
 
+  // Redirect to /login when auth resolves with no session. The grace period
+  // covers a momentary null user (e.g. mid token-refresh on a flaky connection):
+  // if the session recovers, `user` becomes truthy and the cleanup cancels it.
   useEffect(() => {
+    if (authLoading || user) return
+    const redirectTimer = setTimeout(() => router.push('/login'), 1500)
+    return () => clearTimeout(redirectTimer)
+  }, [authLoading, user, router])
+
+  // Account-status enforcement (deactivation / lockout). Runs immediately once a
+  // user is known, then every 30s. It deliberately does NOT gate rendering --
+  // the dashboard shows straight away (data is protected by RLS) and we redirect
+  // only when the server CONFIRMS the account is no longer active. A transient
+  // 'unreachable' result is ignored so flaky connectivity never logs anyone out.
+  useEffect(() => {
+    if (!user) return
     let cancelled = false
-    let redirectTimer: ReturnType<typeof setTimeout> | undefined
 
     const checkAccount = async () => {
-      if (authLoading) return
-
-      if (!user) {
-        // Grace period: a momentary null user (e.g. mid token-refresh on a
-        // flaky connection) must not bounce the user to /login. Defer the
-        // redirect briefly; if the session recovers, `user` becomes truthy,
-        // this effect's cleanup clears the timer, and the effect re-runs.
-        redirectTimer = setTimeout(() => {
-          if (!cancelled) router.push('/login')
-        }, 1500)
-        return
-      }
-
-      // Check if account is active
-      let status: Awaited<ReturnType<typeof getAccountStatus>>
+      if (checkingAccountRef.current) return
+      checkingAccountRef.current = true
       try {
-        status = await getAccountStatus()
-      } catch (err) {
-        console.error('Initial account status check failed:', err)
-        // Fail open: let the periodic check (below) re-evaluate rather than stranding the user on Loading
-        if (!cancelled) setCheckingAccount(false)
-        return
-      }
-      if (cancelled) return // User changed during async call
+        const status = await getAccountStatus()
+        if (cancelled) return
 
-      if (status === 'unreachable') {
-        // Transient: server not reachable (offline / flaky mobile). Keep the
-        // user in place; the periodic check re-evaluates once back online.
-        setCheckingAccount(false)
-        return
-      }
+        if (status === 'unreachable') return
 
-      if (status !== 'active') {
-        if (!hasShownDisabledAlert.current) {
+        if (status !== 'active' && !hasShownDisabledAlert.current) {
           hasShownDisabledAlert.current = true
-          try { await supabase.auth.signOut({ scope: 'local' }) } catch { /* proceed to redirect regardless */ }
-          if (status === 'deactivated') {
-            toast.error('Your account has been deactivated. You can request account reactivation from the login page.', 8000)
-          } else {
-            toast.error('You have been locked out. Please log on again.', 8000)
-          }
+          try { await supabase.auth.signOut({ scope: 'local' }) } catch { /* redirect regardless */ }
+          toast.error(
+            status === 'deactivated'
+              ? 'Your account has been deactivated. You can request account reactivation from the login page.'
+              : 'You have been locked out. Please log on again.',
+            8000
+          )
           router.push('/login')
         }
-        return
+      } catch (err) {
+        console.error('Account status check failed:', err)
+      } finally {
+        checkingAccountRef.current = false
       }
-
-      setCheckingAccount(false)
     }
 
     checkAccount()
+    const interval = setInterval(checkAccount, 30000)
 
     return () => {
       cancelled = true
-      if (redirectTimer) clearTimeout(redirectTimer)
+      clearInterval(interval)
     }
-  }, [user, authLoading, router, toast])
+  }, [user, router, toast])
 
   // Initialize update manager
   useEffect(() => {
@@ -108,58 +100,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     return () => { cancelled = true }
   }, [])
 
-  // Periodically check if account is still active (every 30 seconds)
-  // Only starts after initial check completes (checkingAccount === false)
-  useEffect(() => {
-    if (!user || checkingAccount) return
-    let cancelled = false
-
-    const accountCheckInterval = setInterval(async () => {
-      if (checkingAccountRef.current) return
-      checkingAccountRef.current = true
-      try {
-        const status = await getAccountStatus()
-        if (cancelled) return // User changed during async call
-
-        // Server unreachable (offline / flaky mobile) is transient -- keep the
-        // user signed in and re-check on the next tick rather than logging out.
-        if (status === 'unreachable') return
-
-        if (status !== 'active') {
-          if (!hasShownDisabledAlert.current) {
-            hasShownDisabledAlert.current = true
-            try { await supabase.auth.signOut({ scope: 'local' }) } catch { /* proceed to redirect regardless */ }
-            if (status === 'deactivated') {
-              toast.error('Your account has been deactivated. You can request account reactivation from the login page.', 8000)
-            } else {
-              toast.error('You have been locked out. Please log on again.', 8000)
-            }
-            router.push('/login')
-          }
-        }
-      } catch (err) {
-        console.error('Account check failed:', err)
-      } finally {
-        checkingAccountRef.current = false
-      }
-    }, 30000)
-
-    return () => {
-      cancelled = true
-      clearInterval(accountCheckInterval)
-    }
-  }, [user, checkingAccount, router, toast])
-
-  if (authLoading || checkingAccount) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-xl text-text-secondary">Loading...</div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return null
+  // Pre-auth, or the brief grace window before a no-session redirect: show a
+  // structural shell skeleton (not a centred spinner) so the swap to the real
+  // chrome doesn't shift layout.
+  if (authLoading || !user) {
+    return <DashboardShellSkeleton />
   }
 
   return (
@@ -188,13 +133,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode}) {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <div className="text-xl text-text-secondary">Loading...</div>
-        </div>
-      }
-    >
+    <Suspense fallback={<DashboardShellSkeleton />}>
       <AuthProvider>
         <SelectionProvider>
           <DashboardLayoutContent>{children}</DashboardLayoutContent>

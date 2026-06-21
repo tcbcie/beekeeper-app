@@ -198,7 +198,7 @@ function LoginForm() {
 
             <div className="space-y-4 text-center">
               <div className="mx-auto inline-flex items-center justify-center gap-3 rounded-2xl border border-border bg-surface-elevated/70 px-4 py-3 shadow-sm">
-                <Image src="/logo.png" alt="HiveCraic" width={40} height={40} className="h-10 w-10" />
+                <Image src="/logo.png" alt="HiveCraic" width={40} height={40} priority className="h-10 w-10" />
                 <span className="font-serif text-2xl leading-none text-forest-700 dark:text-forest-300">
                   HiveCraic
                 </span>
@@ -337,7 +337,7 @@ function LoginFallback() {
         <Panel padding="lg">
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2">
-              <Image src="/logo.png" alt="HiveCraic" width={32} height={32} className="h-8 w-8" />
+              <Image src="/logo.png" alt="HiveCraic" width={32} height={32} priority className="h-8 w-8" />
               <span className="font-serif text-xl text-forest-700 dark:text-forest-300">HiveCraic</span>
             </div>
             <LoadingSpinner text="Loading login..." size="sm" className="p-2" />

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>UX Hardening Plan — Spurious Logouts &amp; Filter Persistence</title>
+<title>Mobile Performance Plan — LCP &amp; CLS (Real Experience Score)</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.55; color: #1f2933; max-width: 980px; margin: 0 auto; padding: 24px; background: #fafafa; }
   h1 { font-size: 1.7rem; border-bottom: 3px solid #f0a500; padding-bottom: 8px; }
@@ -12,9 +12,7 @@
   code { background: #eef1f4; padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
   .sev-crit { color: #b00020; font-weight: 700; }
   .sev-high { color: #c25e00; font-weight: 700; }
-  .sev-med  { color: #8a6d00; font-weight: 700; }
   .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; margin: 12px 0; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
-  .flow { background: #fff7e6; border-left: 4px solid #f0a500; padding: 10px 16px; border-radius: 6px; font-family: ui-monospace, monospace; font-size: .9em; white-space: pre-wrap; }
   table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .92rem; }
   th, td { border: 1px solid #d9e0e7; padding: 7px 10px; text-align: left; vertical-align: top; }
   th { background: #f3f6f9; }
@@ -24,134 +22,67 @@
   ul.todo li.done::before { content: "\2611  "; color: #1a7f37; }
   .pill { display: inline-block; font-size: .72rem; padding: 2px 8px; border-radius: 999px; background: #e7eef7; color: #234; margin-left: 6px; }
   .note { font-size: .9rem; color: #555; }
+  .flow { background: #fff7e6; border-left: 4px solid #f0a500; padding: 10px 16px; border-radius: 6px; font-family: ui-monospace, monospace; font-size: .85em; white-space: pre-wrap; }
 </style>
 </head>
 <body>
 
-<h1>UX Hardening Plan</h1>
-<p class="note"><strong>Date:</strong> 21 June 2026 &nbsp;|&nbsp; <strong>Scope:</strong> (1) Frequent spurious logouts on flaky mobile connections; (2) Filters / apiary &amp; hive selections not persisting across the app. <strong>Status: AWAITING YOUR APPROVAL — no code changed yet.</strong></p>
+<h1>Mobile Performance Plan — Real Experience Score</h1>
+<p class="note"><strong>Date:</strong> 21 June 2026 &nbsp;|&nbsp; <strong>Source:</strong> Vercel Speed Insights (mobile, P75, last 7 days). RES = 56 ("Needs Improvement").</p>
 
-<!-- ============================================================ -->
-<h2>Part 1 &mdash; Spurious Logouts</h2>
-
-<h3>What actually happens (root causes)</h3>
-<p>The Supabase client itself is configured correctly (<code>@supabase/ssr</code> v0.7, <code>persistSession</code>, <code>autoRefreshToken</code>, PKCE in <code>src/lib/supabase.ts</code>). The logouts are <strong>not</strong> a token-refresh bug &mdash; they are caused by our own code treating <em>transient network failures</em> as <em>authoritative "you are signed out / deactivated"</em> signals.</p>
-
-<div class="card">
-  <p><span class="sev-crit">CRITICAL &mdash; Root cause #1:</span> The 30-second periodic account check forces a logout on any transient error.</p>
-  <p><code>src/app/dashboard/layout.tsx:99-123</code> calls <code>getAccountStatus()</code> every 30s. <code>getAccountStatus()</code> (<code>src/lib/auth.ts:166-211</code>) returns the string <code>'error'</code> when the <code>profiles</code> query fails &mdash; including when the network request simply never completed on a mobile dead-spot. The layout then does <code>if (status !== 'active')</code> &rarr; <code>signOut()</code> &rarr; <code>router.push('/login')</code>. So a single failed background request while the phone is on a flaky connection logs the user straight out.</p>
-  <p class="note">This is currently <em>deliberate</em> "fail-closed" behaviour (see the docstring at <code>auth.ts:156-165</code>) so a deactivated account can't linger during a DB outage. The flaw: it cannot tell "the server told me NO" apart from "I couldn't reach the server." Only the former justifies a logout.</p>
-</div>
-
-<div class="card">
-  <p><span class="sev-high">HIGH &mdash; Root cause #2:</span> <code>onAuthStateChange</code> ignores the event type.</p>
-  <p><code>src/contexts/AuthContext.tsx:101-111</code> uses <code>_event</code> (ignored) and only checks <code>session?.user</code>. It does not distinguish <code>SIGNED_OUT</code> / <code>TOKEN_REFRESHED</code> / token-refresh failures. Any callback delivering a null session clears <code>user</code> immediately, and the dashboard layout (<code>layout.tsx:35-36</code>) redirects to <code>/login</code> with no grace period.</p>
-</div>
-
-<div class="card">
-  <p><span class="sev-high">HIGH &mdash; Root cause #3:</span> ~26 pages redirect to <code>/login</code> on a transient null.</p>
-  <p>Pages call <code>getCurrentUserId()</code> (<code>src/lib/auth.ts:7-16</code>), which returns <code>null</code> on a <code>getSession()</code> <em>error</em> exactly as it does for "genuinely logged out". Each page then does <code>if (!id) { router.push('/login') }</code> (e.g. <code>crm/orders/page.tsx:97</code>, <code>dashboard/page.tsx:131</code>, +24 more). No retry.</p>
-</div>
-
-<div class="flow">Typical failure on mobile:
-  on /dashboard/hives  ->  brief signal drop
-  ->  30s account check's profiles query fails
-  ->  getAccountStatus() returns 'error'
-  ->  layout: status !== 'active'  ->  signOut() + push('/login')
-  ->  signal returns, but user is already on the login screen</div>
-
-<h3>Proposed fix (minimal, surgical)</h3>
-<p>The principle: <strong>only log a user out when we have a positive, server-confirmed reason</strong> (real sign-out, confirmed deactivation, or a token we know is expired). Treat "couldn't reach the server" as transient &mdash; keep the session, optionally retry.</p>
-<ul class="todo">
-  <li><strong>auth.ts:</strong> add a distinct <code>'unreachable'</code> result to <code>AccountStatus</code> (offline / network fetch failure) separate from <code>'error'</code> (server responded but data missing). Detect via <code>navigator.onLine === false</code> or a fetch/network error shape.</li>
-  <li><strong>layout.tsx (periodic + initial check):</strong> treat <code>'unreachable'</code> as "keep the user signed in, try again next tick" instead of signing out. Keep fail-closed logout only for the authoritative <code>'deactivated'</code> (and, after N consecutive confirmed failures, <code>'error'</code>) &mdash; not for transient unreachable.</li>
-  <li><strong>layout.tsx:</strong> add a short grace window / single retry before the <code>if (!user)</code> redirect so a momentary null from a token refresh doesn't bounce the user out.</li>
-  <li><strong>AuthContext.tsx:</strong> in <code>onAuthStateChange</code>, only clear <code>user</code> on a genuine signed-out event; ignore spurious null sessions while <code>navigator.onLine === false</code> (re-use the existing <code>tryOfflineFallback</code> logic that already lives in this file).</li>
-  <li><strong>AuthContext.tsx:</strong> add an <code>online</code> event listener that calls <code>refreshUser()</code> when connectivity returns, so the session is re-validated cleanly instead of left stale.</li>
-  <li class="note"><em>Open security decision below</em> &mdash; how strict to stay on the deactivation check determines exactly how lenient we make this.</li>
-</ul>
-
-<!-- ============================================================ -->
-<h2>Part 2 &mdash; Filter / Selection Persistence</h2>
-
-<h3>Current state (mapped)</h3>
-<p>There is <strong>no shared concept of a "currently selected apiary/hive"</strong>. Each page manages its own filters, with four inconsistent patterns:</p>
+<h2>Diagnosis</h2>
+<p>Only two Core Web Vitals are failing; everything else is green (FCP 1.51s, INP 96ms, FID 31ms, TTFB 0.85s).</p>
 <table>
-  <tr><th>Page</th><th>Filters</th><th>Persisted?</th></tr>
-  <tr><td>Hives</td><td>apiary, ownership, scales, sort</td><td><span style="color:#1a7f37">sessionStorage</span> (lost on tab close)</td></tr>
-  <tr><td>Batches / Reports</td><td>active tab / section</td><td><span style="color:#1a7f37">URL params</span></td></tr>
-  <tr><td>Queens</td><td>compare selection only</td><td>partial (sessionStorage); main filters <span class="sev-high">none</span></td></tr>
-  <tr><td>Apiaries</td><td>categoryFilter</td><td><span class="sev-high">none</span></td></tr>
-  <tr><td>Records</td><td>hive, apiary, period, ownership, type (<code>useRecordFilters</code>)</td><td><span class="sev-high">none</span></td></tr>
-  <tr><td>Tasks</td><td>type, category, status, hive, apiary, ownership</td><td><span class="sev-high">none</span></td></tr>
-  <tr><td>Reports (sub-reports)</td><td>apiary, hive, date range</td><td><span class="sev-high">none</span></td></tr>
+  <tr><th>Metric</th><th>Value</th><th>Target</th><th>Root cause (verified in code)</th></tr>
+  <tr><td><span class="sev-crit">LCP</span></td><td>4.63s</td><td>&lt; 2.5s</td><td>~3s gap after FCP spent on serial <em>client-side</em> gates: auth &rarr; account-status DB check (blocks all content) &rarr; per-page serial auth + data fetches. Nothing server-rendered.</td></tr>
+  <tr><td><span class="sev-crit">CLS</span></td><td>0.63</td><td>&lt; 0.1</td><td>Full-screen "Loading…" &rarr; app-shell swap, then skeleton/content size mismatch and late-arriving sections (recent activity, populating data) shoving layout.</td></tr>
 </table>
-<p class="note">Existing reusable pattern to follow: the theme provider (<code>src/app/providers/theme-provider.tsx</code>) already does the localStorage + Context + hook pattern cleanly.</p>
+<p>Worst route <code>/dashboard/records</code> (RES 39) compounds all three: behind the account-status gate, longest serial fetch chain, and a bare centred spinner replaced by a full header+filters+list.</p>
 
-<h3>Proposed fix</h3>
-<p>Introduce <strong>one small reusable persistence hook</strong> and apply it incrementally &mdash; no big rewrite. Each filter keeps its existing <code>useState</code> shape; we only swap the initialiser/setter.</p>
-<ul class="todo">
-  <li><strong>New <code>src/hooks/usePersistentState.ts</code>:</strong> a thin <code>useState</code> wrapper that reads/writes <code>localStorage</code> under a namespaced key (e.g. <code>hivecraic:filters:&lt;page&gt;:&lt;field&gt;</code>), SSR-safe, with a validator callback so a saved apiary/hive id that no longer exists is discarded (re-using the validation idea already in the Hives page). Survives tab close, unlike today's sessionStorage.</li>
-  <li><strong>Optional shared selection</strong> <span class="pill">decision below</span>: a tiny <code>SelectionContext</code> holding a global "last selected apiary" (and hive) so choosing an apiary on Hives pre-selects it on Records/Tasks/Reports too.</li>
-  <li>Migrate pages one at a time, smallest first, in this order: Apiaries &rarr; Tasks &rarr; Records (<code>useRecordFilters</code>) &rarr; Queens &rarr; Reports sub-reports &rarr; upgrade Hives from sessionStorage to the shared hook.</li>
-  <li>Each migration: change only the filter declarations; leave all rendering/filtering logic untouched to minimise risk.</li>
-  <li>Update <code>docs/features</code> with the persistence behaviour.</li>
-</ul>
+<div class="flow">LCP critical path today:
+ TTFB 0.85s  ->  FCP 1.51s ("Loading…")  ->  [auth getSession]  ->  [getAccountStatus profiles query]  ->  render shell
+   /records:  getCurrentUserId  ->  hasActiveSubscription  ->  getAccessibleHiveIds  ->  Promise.all(9 queries)  ->  LCP 4.63s</div>
 
-<!-- ============================================================ -->
 <h2>Decisions (confirmed 21 June 2026)</h2>
 <ol>
-  <li><strong>Logout strictness:</strong> <span style="color:#1a7f37">RELAX for transient errors.</span> Keep the user signed in when the server is unreachable/offline; log out only on confirmed sign-out, server-confirmed deactivation, or known-expired token. Deactivation is still enforced whenever the server is genuinely reachable.</li>
-  <li><strong>Filter scope:</strong> <span style="color:#1a7f37">Per-page filters + a shared "last selected apiary/hive"</span> that carries across Hives / Records / Tasks / Reports.</li>
-  <li><strong>Storage lifetime:</strong> <span style="color:#1a7f37">localStorage</span> &mdash; survives browser/app restart.</li>
+  <li><strong>Account-status gate:</strong> render the dashboard immediately and run the deactivation check in the background, redirecting only if it returns deactivated/locked. (Brief shell flash for deactivated users; data still protected by RLS.)</li>
+  <li><strong>Sequencing:</strong> Phase 1 first, then test/deploy and watch RES, then Phases 2 &amp; 3.</li>
 </ol>
 
-<h2>Implementation checklist</h2>
-<h3>Part 1 &mdash; Logouts <span class="pill">DONE — awaiting your test</span></h3>
+<h2>Phase 1 &mdash; LCP quick wins <span class="pill">DONE — awaiting your test</span></h2>
+<p class="note">Pure performance; no visible UX change. Lowest risk.</p>
 <ul class="todo">
-  <li class="done"><code>src/lib/auth.ts</code> &mdash; added <code>'unreachable'</code> to <code>AccountStatus</code> + <code>isNetworkError()</code> helper; <code>getAccountStatus()</code> returns <code>'unreachable'</code> when offline / fetch throws / network-shaped error, vs <code>'error'</code> for a reachable server returning no data.</li>
-  <li class="done"><code>src/app/dashboard/layout.tsx</code> &mdash; initial + periodic checks now treat <code>'unreachable'</code> as transient (keep session, retry next tick); sign-out retained for <code>'deactivated'</code> / <code>'no_session'</code> / reachable <code>'error'</code>.</li>
-  <li class="done"><code>src/app/dashboard/layout.tsx</code> &mdash; added a 1.5s grace timer before the <code>if (!user)</code> redirect, cancelled if the session recovers.</li>
-  <li class="done"><code>src/contexts/AuthContext.tsx</code> &mdash; <code>onAuthStateChange</code> keeps the user on a null session while offline (except explicit <code>SIGNED_OUT</code>); added an <code>online</code> listener that calls <code>refreshUser()</code>.</li>
-  <li class="done">Documentation: <code>docs/features/auth-transient-logout-fix.md</code>.</li>
+  <li class="done"><strong>records/page.tsx</strong> &mdash; <code>hasActiveSubscription()</code> now runs in a <code>Promise.all</code> with <code>fetchAllData()</code> instead of serially before it (removes one round-trip from the critical path).</li>
+  <li class="done"><strong>batches/page.tsx</strong> &mdash; the 5 data loads now fire before <code>hasActiveSubscription()</code>, so the sub check resolves alongside them.</li>
+  <li class="done"><strong>useDashboardStats.ts</strong> &mdash; both RPCs triggered together via <code>.then()</code> (Supabase builders are lazy), overview still awaited first to unblock; recent activity arrives sooner (also trims its late-pop-in CLS).</li>
+  <li class="done"><strong>login/page.tsx</strong> &mdash; <code>priority</code> added to both above-the-fold logos.</li>
 </ul>
-<h3>Part 2 &mdash; Filter persistence <span class="pill">DONE (primary pages) — awaiting your test</span></h3>
+
+<h2>Phase 2 &mdash; CLS (stable shell + matching skeletons) <span class="pill">DONE — awaiting your test</span></h2>
 <ul class="todo">
-  <li class="done">New <code>src/hooks/usePersistentState.ts</code> &mdash; SSR-safe localStorage-backed <code>useState</code> drop-in, namespaced keys, optional validator to drop stale/corrupt values.</li>
-  <li class="done">New <code>src/contexts/SelectionContext.tsx</code> &mdash; shared apiary &amp; hive selection (localStorage via the hook), wired into <code>dashboard/layout.tsx</code>.</li>
-  <li class="done"><strong>Apiaries</strong> &mdash; <code>category</code> persisted.</li>
-  <li class="done"><strong>Queens</strong> &mdash; <code>ownership</code>/<code>assignment</code>/<code>status</code>/<code>role</code> persisted (free-text search left ephemeral).</li>
-  <li class="done"><strong>Tasks</strong> &mdash; <code>type</code>/<code>category</code>/<code>status</code>/<code>ownership</code> persisted; apiary &amp; hive bound to shared selection (<code>'all'</code> &harr; <code>''</code> mapping).</li>
-  <li class="done"><strong>Hives</strong> &mdash; apiary bound to shared selection; <code>ownership</code>/<code>archive</code>/<code>scales</code>/<code>sort</code> persisted; old <code>sessionStorage</code> logic removed; stale-apiary guard kept.</li>
-  <li class="done"><strong>Records</strong> (<code>useRecordFilters</code>) &mdash; whole filter set persisted per-page; stale hive/apiary ids cleared once data loads.</li>
-  <li class="done">Documentation: <code>docs/features/filter-persistence.md</code>.</li>
-  <li class="done"><strong>Reports sub-reports</strong> &mdash; new <code>useReportFilters</code> hook: apiary/hive from shared selection, date window persisted per-report; applied to all 5 date reports + <code>ApiaryOverview</code> (apiary-only) bound directly to shared.</li>
-  <li class="done"><strong>Records</strong> &mdash; apiary/hive now sourced from the shared selection (carries to/from Hives, Tasks, Reports); other record filters still persisted per-page. <code>useRecordFilters</code> keeps its public API; <code>filters</code> memoised; stale shared hive/apiary cleared once hives load. (Also removed a stray unused <code>useState</code> import from the earlier pass.)</li>
+  <li class="done">New <code>DashboardShellSkeleton</code> &mdash; mirrors the real chrome (Navbar wrapper + height, content container, desktop sidebar column). Used for the authLoading/grace state and the Suspense fallback, replacing the centred "Loading…".</li>
+  <li class="done">records &amp; batches &mdash; centred spinners replaced with top-aligned skeletons (header + filter bar + rows) so content lands where the placeholder was.</li>
+  <li class="note">Banners (ImpersonationBanner/OfflineIndicator/UpdateNotification): left as-is &mdash; Offline/Update are <code>fixed</code> (no push) and Impersonation only affects admins mid-impersonation; deprioritised vs. risk.</li>
+  <li class="note">Dashboard already had a structured skeleton (no change needed).</li>
+</ul>
+
+<h2>Phase 3 &mdash; biggest LCP lever <span class="pill">DONE — awaiting your test</span></h2>
+<ul class="todo">
+  <li class="done">dashboard/layout.tsx &mdash; rendering is now gated only on <code>authLoading</code> (fast, local <code>getSession</code>), NOT on <code>getAccountStatus()</code>. The deactivation check runs in the background (immediate + every 30s) and redirects only on a server-confirmed non-active status. Removes the <code>profiles</code> round-trip from the LCP critical path. Also unified the previous duplicate initial/periodic checks into one effect.</li>
+  <li class="note"><strong>Out of scope (flagged, not now):</strong> SSR/middleware auth and RSC streaming — high impact but a large, riskier architectural change.</li>
 </ul>
 
 <h2>Review</h2>
-<h3>Part 1 &mdash; Logouts (implemented)</h3>
-<p>Four small, surgical edits across three files. No behaviour changed except that a server we cannot reach is now treated as transient instead of as a logout.</p>
+<h3>Phase 1 (LCP quick wins) &mdash; shipped &amp; tested</h3>
+<p class="note">Parallelised serial auth+data fetches on records/batches/dashboard; <code>priority</code> on the login logo. Committed earlier.</p>
+<h3>Phases 2 &amp; 3 &mdash; implemented</h3>
 <ul>
-  <li><strong>New distinction:</strong> <code>'unreachable'</code> (no authoritative answer &mdash; keep the user) vs <code>'error'</code> (server answered with a problem &mdash; still fail-closed).</li>
-  <li><strong>Deactivation still enforced:</strong> whenever the server is genuinely reachable, a deactivated/locked account is signed out within ~30s exactly as before. We only relaxed the offline / no-answer case.</li>
-  <li><strong>Grace period:</strong> a momentary null user (e.g. mid token-refresh) now waits 1.5s before redirecting; if the session recovers the redirect is cancelled.</li>
-  <li><strong>Recovery:</strong> the <code>online</code> event re-validates the session cleanly when connectivity returns.</li>
+  <li><strong>LCP:</strong> the dashboard no longer blocks first paint on the account-status DB round-trip. Content (and each page's own data fetch) now starts as soon as the session resolves locally.</li>
+  <li><strong>CLS:</strong> the full-screen centred "Loading…" &rarr; app-shell swap is gone; a structural shell skeleton holds the chrome in place, and records/batches show top-aligned skeletons instead of centred spinners.</li>
+  <li><strong>Security preserved:</strong> deactivation/lockout still enforced (background check redirects on confirmed non-active), and the offline-tolerant <code>'unreachable'</code> handling from the earlier hardening is kept. Trade-off accepted (decision #1): a deactivated user briefly sees the shell before redirect; data stays protected by RLS.</li>
+  <li><strong>Files:</strong> new <code>src/components/DashboardShellSkeleton.tsx</code>; edited <code>dashboard/layout.tsx</code>, <code>records/page.tsx</code>, <code>batches/page.tsx</code>.</li>
 </ul>
-<p class="note"><strong>Not changed (deliberately, to stay minimal):</strong> the ~26 page-level <code>getCurrentUserId()</code> redirects. <code>getSession()</code> reads from local storage and does not fail on a network blip for a valid cached session, so these are a much rarer path; the layout/context fixes address the dominant cause. Can revisit if testing shows residual issues.</p>
-<p class="note"><strong>Please test</strong> using the checklist in <code>docs/features/auth-transient-logout-fix.md</code> (DevTools offline toggle past 30s; flaky mobile navigation; server-side deactivation still logs out; manual sign-out still instant).</p>
-<h3>Part 2 &mdash; Filter persistence (implemented, primary pages)</h3>
-<p>Two reusable primitives plus minimal per-page edits (only filter declarations changed; rendering/filtering logic untouched).</p>
-<ul>
-  <li><strong><code>usePersistentState</code></strong> &mdash; localStorage-backed <code>useState</code> drop-in. Survives navigation <em>and</em> full browser/app restart (the old Hives <code>sessionStorage</code> did not).</li>
-  <li><strong><code>SelectionContext</code></strong> &mdash; shared apiary/hive that carries across pages. Hives and Tasks both bind to it, so picking an apiary on one pre-selects it on the other.</li>
-  <li><strong>Per-page persistence</strong> applied to Apiaries, Queens, Tasks, Hives and Records filters.</li>
-  <li><strong>Staleness guarded:</strong> a saved apiary/hive that has since been deleted is cleared once data loads, so a user is never stuck staring at an empty list.</li>
-</ul>
-<p class="note"><strong>Reports extension (done):</strong> a small <code>useReportFilters</code> hook gives all 6 report sub-components shared apiary/hive (carries from Hives/Tasks and between reports) plus a per-report persisted date window &mdash; existing <code>setFilters(prev =&gt; ...)</code> call sites unchanged.</p>
-<p class="note"><strong>Records shared selection (done):</strong> <code>useRecordFilters</code> now sources apiary/hive from <code>SelectionContext</code> while persisting its other filters per-page. Public hook API unchanged (apiary/hive setters route to the shared store, the rest to the persisted store); <code>filters</code> is a memoised composition so downstream filtering memos keep stable deps. All four filter surfaces (Hives, Tasks, Reports, Records) now share one live apiary/hive selection.</p>
-<p class="note"><strong>Part 2 complete.</strong></p>
-<p class="note"><strong>Please test</strong> using the checklist in <code>docs/features/filter-persistence.md</code> (pick filters &rarr; navigate away &amp; back &rarr; remembered; close &amp; reopen browser &rarr; still remembered; pick apiary on Hives &rarr; appears on Tasks).</p>
+<p class="note"><strong>Please test:</strong> dashboard/records/batches paint the shell instantly then content (no full-page flash); deactivate a test account server-side &rarr; still redirected within ~30s; offline past token expiry &rarr; still no logout. Watch RES LCP &amp; CLS on Speed Insights after some traffic.</p>
 
 </body>
 </html>

@@ -57,10 +57,17 @@ export function useDashboardStats(): UseDashboardStatsReturn {
     setRecentActivityError(null)
     setLoading(true)
 
+    // Supabase query builders are lazy -- the request only fires when awaited /
+    // then()'d. Trigger both RPCs now (via .then) so recent activity loads in
+    // parallel with the overview instead of starting only after it resolves;
+    // we still await the overview first to unblock the page as early as possible.
+    const overviewRequest = supabase.rpc('get_dashboard_overview', { p_user_id: userId }).then(res => res)
+    const activityRequest = supabase.rpc('get_recent_activity', { p_user_id: userId, p_limit: 5 }).then(res => res)
+
     try {
       try {
         // Single RPC replaces 16+ individual Supabase queries
-        const { data, error: rpcError } = await supabase.rpc('get_dashboard_overview', { p_user_id: userId })
+        const { data, error: rpcError } = await overviewRequest
         if (rpcError) throw rpcError
         if (!isCurrentRequest()) return
 
@@ -94,8 +101,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
       }
 
       try {
-        const { data: activityRows, error: activityError } = await supabase
-          .rpc('get_recent_activity', { p_user_id: userId, p_limit: 5 })
+        const { data: activityRows, error: activityError } = await activityRequest
 
         if (activityError) throw activityError
 

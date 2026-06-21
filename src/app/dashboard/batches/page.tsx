@@ -5,6 +5,7 @@ import { getCurrentUserId, hasActiveSubscription } from '@/lib/auth'
 import { Plus, Edit2, Trash2, X, Minus, MessageCircle, ChevronDown, ChevronUp, Mic, Square, Loader2 } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
@@ -492,13 +493,15 @@ export default function BatchesPage() {
  return
  }
  setUserId(id)
- const hasSubscription = await hasActiveSubscription()
- setUserHasActiveSubscription(hasSubscription)
+ // Kick off all data loads first so they run while the (non-blocking)
+ // subscription check resolves, rather than waiting behind it.
  fetchBatches(id)
  fetchQueens(id)
  fetchApiaries(id)
  fetchHives(id)
  fetchRearingGroups(id)
+ const hasSubscription = await hasActiveSubscription()
+ setUserHasActiveSubscription(hasSubscription)
  }
  initUser()
  }, [router, fetchBatches, fetchQueens, fetchApiaries, fetchHives, fetchRearingGroups])
@@ -1059,7 +1062,13 @@ export default function BatchesPage() {
  })
  }
 
- if (loading) return <LoadingSpinner text="Loading Queen Rearing..." />
+ if (loading) return (
+ <div className="space-y-4" aria-hidden="true">
+ <Skeleton className="h-8 w-56" />
+ <Skeleton className="h-12 w-full !rounded-lg" />
+ <Skeleton className="h-40 w-full !rounded-lg" />
+ </div>
+ )
 
  const stepperButtonClassName = 'w-10 h-10 shrink-0 border border-border bg-surface dark:bg-surface-elevated'
  const stepperRowClassName = 'grid grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-2'
