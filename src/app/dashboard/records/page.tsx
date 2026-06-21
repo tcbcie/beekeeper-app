@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, hasActiveSubscription } from '@/lib/auth'
 import { Home, X, ClipboardList } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { Skeleton, SkeletonRow } from '@/components/ui/Skeleton'
 import EmptyState from '@/components/ui/EmptyState'
 import FormActionRow from '@/components/ui/FormActionRow'
 import ModalShell from '@/components/ui/ModalShell'
@@ -272,10 +272,13 @@ export default function RecordsPage() {
       }
       setUserId(id)
 
-      const hasSubscription = await hasActiveSubscription()
+      // Load the records and check the subscription concurrently rather than
+      // serially -- the subscription result isn't needed to render the data.
+      const [hasSubscription] = await Promise.all([
+        hasActiveSubscription(),
+        fetchAllData(id, filters.ownershipFilter)
+      ])
       setUserHasActiveSubscription(hasSubscription)
-
-      await fetchAllData(id, filters.ownershipFilter)
     }
     initUser()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1124,9 +1127,20 @@ export default function RecordsPage() {
   }
 
   if (loading) {
+    // Top-aligned skeleton matching the loaded layout (header + filter bar +
+    // record rows) so content lands where the placeholder was -- no layout jump.
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
+      <div className="space-y-4" aria-hidden="true">
+        <div className="flex items-center justify-between gap-3">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-9 w-28 !rounded-lg" />
+        </div>
+        <Skeleton className="h-12 w-full !rounded-lg" />
+        <div className="space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <SkeletonRow key={i} className="border border-border rounded-lg" />
+          ))}
+        </div>
       </div>
     )
   }
