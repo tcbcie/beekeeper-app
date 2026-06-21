@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import { useReportsData } from '@/hooks/useReportsData'
 import { exportToCSV, printReport, exportToImage } from '@/lib/export-utils'
-import type { DAFMTreatmentRecord, TimePeriod, ReportFilters as ReportFiltersState } from '@/types/reports'
+import type { DAFMTreatmentRecord, TimePeriod } from '@/types/reports'
+import { useReportFilters } from '@/hooks/useReportFilters'
 import ReportFilters from './ReportFilters'
 import ReportExportBar from './ReportExportBar'
 
@@ -18,18 +19,16 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
   const [dataLoading, setDataLoading] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
 
-  const [filters, setFilters] = useState<ReportFiltersState>(() => {
+  const [filters, setFilters] = useReportFilters('dafm-varroa', (() => {
     const today = new Date()
     const oneYearAgo = new Date(today)
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
     return {
-      apiaryId: '',
-      hiveId: '',
       timePeriod: '1year' as TimePeriod,
       startDate: oneYearAgo.toISOString().split('T')[0],
       endDate: today.toISOString().split('T')[0]
     }
-  })
+  })())
 
   useEffect(() => {
     fetchBaseData(userId)

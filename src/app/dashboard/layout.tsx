@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getAccountStatus } from '@/lib/auth'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
+import { SelectionProvider } from '@/contexts/SelectionContext'
 import Navbar from '@/components/Navbar'
 import Sidebar from '@/components/Sidebar'
 import MobileDrawer from '@/components/MobileDrawer'
@@ -28,12 +29,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false
+    let redirectTimer: ReturnType<typeof setTimeout> | undefined
 
     const checkAccount = async () => {
       if (authLoading) return
 
       if (!user) {
-        router.push('/login')
+        // Grace period: a momentary null user (e.g. mid token-refresh on a
+        // flaky connection) must not bounce the user to /login. Defer the
+        // redirect briefly; if the session recovers, `user` becomes truthy,
+        // this effect's cleanup clears the timer, and the effect re-runs.
+        redirectTimer = setTimeout(() => {
+          if (!cancelled) router.push('/login')
+        }, 1500)
         return
       }
 
@@ -48,6 +56,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         return
       }
       if (cancelled) return // User changed during async call
+
+      if (status === 'unreachable') {
+        // Transient: server not reachable (offline / flaky mobile). Keep the
+        // user in place; the periodic check re-evaluates once back online.
+        setCheckingAccount(false)
+        return
+      }
 
       if (status !== 'active') {
         if (!hasShownDisabledAlert.current) {
@@ -68,7 +83,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
     checkAccount()
 
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      if (redirectTimer) clearTimeout(redirectTimer)
+    }
   }, [user, authLoading, router, toast])
 
   // Initialize update manager
@@ -102,6 +120,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       try {
         const status = await getAccountStatus()
         if (cancelled) return // User changed during async call
+
+        // Server unreachable (offline / flaky mobile) is transient -- keep the
+        // user signed in and re-check on the next tick rather than logging out.
+        if (status === 'unreachable') return
 
         if (status !== 'active') {
           if (!hasShownDisabledAlert.current) {
@@ -174,7 +196,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     >
       <AuthProvider>
-        <DashboardLayoutContent>{children}</DashboardLayoutContent>
+        <SelectionProvider>
+          <DashboardLayoutContent>{children}</DashboardLayoutContent>
+        </SelectionProvider>
       </AuthProvider>
     </Suspense>
   )

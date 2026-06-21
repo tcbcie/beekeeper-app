@@ -98,11 +98,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (cancelled) return
 
       // Listen for auth changes only after initial check completes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
         if (cancelled) return
         if (session?.user) {
           setUser(session.user)
           setUserId(session.user.id)
+        } else if (event !== 'SIGNED_OUT' && typeof navigator !== 'undefined' && navigator.onLine === false) {
+          // A null session while offline (e.g. a token refresh that couldn't
+          // reach the server) is almost always transient. An explicit
+          // SIGNED_OUT is authoritative and still clears the user; everything
+          // else offline keeps the existing user rather than forcing a logout.
         } else {
           setUser(null)
           setUserId(null)
@@ -116,9 +121,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     init()
 
+    // Re-validate the session the moment connectivity returns so a session that
+    // was kept through an offline blip is confirmed (or properly cleared).
+    const handleOnline = () => { refreshUser() }
+    window.addEventListener('online', handleOnline)
+
     return () => {
       cancelled = true
       cleanupRef.current?.()
+      window.removeEventListener('online', handleOnline)
     }
   }, [refreshUser])
 

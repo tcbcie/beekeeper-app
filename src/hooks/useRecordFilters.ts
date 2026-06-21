@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
+import { usePersistentState } from '@/hooks/usePersistentState'
+import { useSelection } from '@/contexts/SelectionContext'
 import type {
   UnifiedRecord,
   Hive,
@@ -49,52 +51,95 @@ interface UseRecordFiltersReturn {
 export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFiltersReturn {
   const { allRecords, hives } = options
 
-  const [filters, setFilters] = useState<FilterState>({
-    hiveId: '',
-    apiaryId: '',
-    showArchivedHives: false,
-    timePeriod: 'all',
-    customStartDate: '',
-    customEndDate: '',
-    ownershipFilter: 'my',
-    recordTypeFilter: 'all'
-  })
+  // Apiary & hive come from the app-wide shared selection (so a choice made on
+  // Hives/Tasks/Reports carries into Records and vice versa). The remaining
+  // filters persist per-page (localStorage), surviving navigation and restart.
+  const { selectedApiaryId, setSelectedApiaryId, selectedHiveId, setSelectedHiveId } = useSelection()
+  const [stored, setStored] = usePersistentState<FilterState>(
+    'records:filters',
+    {
+      hiveId: '',
+      apiaryId: '',
+      showArchivedHives: false,
+      timePeriod: 'all',
+      customStartDate: '',
+      customEndDate: '',
+      ownershipFilter: 'my',
+      recordTypeFilter: 'all'
+    },
+    // Reject corrupt stored values rather than feeding them back into the UI.
+    (v) => !!v && typeof v === 'object' && typeof v.showArchivedHives === 'boolean' && typeof v.timePeriod === 'string'
+  )
 
-  // Individual setters
+  // Effective filter set: location from the shared store, the rest persisted.
+  // (The stored object's own apiaryId/hiveId are vestigial and overridden here.)
+  // Memoised so its identity is stable for the downstream filtering memos.
+  const filters: FilterState = useMemo(
+    () => ({ ...stored, apiaryId: selectedApiaryId, hiveId: selectedHiveId }),
+    [stored, selectedApiaryId, selectedHiveId]
+  )
+
+  // Clear a shared hive/apiary selection that no longer exists for this account
+  // (e.g. deleted since it was chosen) so it can't silently hide every record.
+  useEffect(() => {
+    if (hives.length === 0) return
+    if (selectedHiveId && !hives.some(h => h.id === selectedHiveId)) setSelectedHiveId('')
+    if (selectedApiaryId && !hives.some(h => h.apiary_id === selectedApiaryId)) setSelectedApiaryId('')
+  }, [hives, selectedHiveId, selectedApiaryId, setSelectedHiveId, setSelectedApiaryId])
+
+  // Individual setters -- apiary/hive route to the shared store, the rest persist.
   const setHiveId = useCallback((id: string) => {
-    setFilters(prev => ({ ...prev, hiveId: id }))
-  }, [])
+    setSelectedHiveId(id)
+  }, [setSelectedHiveId])
 
   const setApiaryId = useCallback((id: string) => {
-    setFilters(prev => ({ ...prev, apiaryId: id }))
-  }, [])
+    setSelectedApiaryId(id)
+  }, [setSelectedApiaryId])
 
   const setShowArchivedHives = useCallback((show: boolean) => {
-    setFilters(prev => ({ ...prev, showArchivedHives: show }))
-  }, [])
+    setStored(prev => ({ ...prev, showArchivedHives: show }))
+  }, [setStored])
 
   const setTimePeriod = useCallback((period: TimePeriod) => {
-    setFilters(prev => ({ ...prev, timePeriod: period }))
-  }, [])
+    setStored(prev => ({ ...prev, timePeriod: period }))
+  }, [setStored])
 
   const setCustomStartDate = useCallback((date: string) => {
-    setFilters(prev => ({ ...prev, customStartDate: date }))
-  }, [])
+    setStored(prev => ({ ...prev, customStartDate: date }))
+  }, [setStored])
 
   const setCustomEndDate = useCallback((date: string) => {
-    setFilters(prev => ({ ...prev, customEndDate: date }))
-  }, [])
+    setStored(prev => ({ ...prev, customEndDate: date }))
+  }, [setStored])
 
   const setOwnershipFilter = useCallback((filter: OwnershipFilter) => {
-    setFilters(prev => ({ ...prev, ownershipFilter: filter }))
-  }, [])
+    setStored(prev => ({ ...prev, ownershipFilter: filter }))
+  }, [setStored])
 
   const setRecordTypeFilter = useCallback((filter: RecordType | 'all') => {
-    setFilters(prev => ({ ...prev, recordTypeFilter: filter }))
-  }, [])
+    setStored(prev => ({ ...prev, recordTypeFilter: filter }))
+  }, [setStored])
+
+  // Bulk setter kept for the hook's return contract. Routes apiary/hive to the
+  // shared store and the rest to the persisted store; reads current values via
+  // refs so its identity stays stable across renders.
+  const sharedRef = useRef({ apiaryId: selectedApiaryId, hiveId: selectedHiveId })
+  sharedRef.current = { apiaryId: selectedApiaryId, hiveId: selectedHiveId }
+  const storedRef = useRef(stored)
+  storedRef.current = stored
+
+  const setFilters = useCallback<Dispatch<SetStateAction<FilterState>>>((update) => {
+    const prev: FilterState = { ...storedRef.current, apiaryId: sharedRef.current.apiaryId, hiveId: sharedRef.current.hiveId }
+    const next = typeof update === 'function' ? (update as (p: FilterState) => FilterState)(prev) : update
+    if (next.apiaryId !== sharedRef.current.apiaryId) setSelectedApiaryId(next.apiaryId)
+    if (next.hiveId !== sharedRef.current.hiveId) setSelectedHiveId(next.hiveId)
+    setStored(next)
+  }, [setStored, setSelectedApiaryId, setSelectedHiveId])
 
   const resetFilters = useCallback(() => {
-    setFilters({
+    setSelectedApiaryId('')
+    setSelectedHiveId('')
+    setStored({
       hiveId: '',
       apiaryId: '',
       showArchivedHives: false,
@@ -104,7 +149,7 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
       ownershipFilter: 'my',
       recordTypeFilter: 'all'
     })
-  }, [])
+  }, [setStored, setSelectedApiaryId, setSelectedHiveId])
 
   // Create hive lookup map for O(1) access
   const hiveMap = useMemo(() =>

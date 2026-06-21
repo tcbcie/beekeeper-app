@@ -150,18 +150,47 @@ export function clearAccountActiveCache(): void {
 
 /**
  * Account status result type
+ *
+ * `'unreachable'` means we could not reach the server at all (offline / network
+ * failure) and therefore have NO authoritative answer. Callers must treat it as
+ * transient -- keep the user signed in and try again -- never as a logout. It is
+ * deliberately distinct from `'error'`, which means the server WAS reached but
+ * returned a problem (missing profile, query error) and still warrants fail-closed
+ * handling.
  */
-export type AccountStatus = 'active' | 'deactivated' | 'error' | 'no_session'
+export type AccountStatus = 'active' | 'deactivated' | 'error' | 'no_session' | 'unreachable'
+
+/**
+ * Decide whether a failed Supabase request was a transport/network failure
+ * (we never reached the server) rather than a server-side error.
+ *
+ * PostgREST/Postgres errors always carry a non-empty `code`; fetch/network
+ * failures surface with an empty code and a fetch-style message.
+ */
+function isNetworkError(error: { code?: string | null; message?: string | null } | null | undefined): boolean {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return true
+  if (!error) return false
+  const code = error.code ?? ''
+  const message = (error.message ?? '').toLowerCase()
+  return code === '' && (
+    message.includes('fetch') ||
+    message.includes('network') ||
+    message.includes('load failed')
+  )
+}
 
 /**
  * Get the current user's account status with specific failure reasons.
  * Uses a short-lived cache to avoid repeated database calls.
  *
- * Fail-closed semantics: on database error or missing profile data, this
- * function returns `'error'` -- NOT `'active'`. Callers in dashboard
- * /layout.tsx gate on `status === 'active'` and sign the user out for any
- * other value (including 'error'), so a DB outage cannot leave a deactivated
- * account in an authenticated state.
+ * Fail-closed semantics: when the server IS reachable but returns a database
+ * error or missing profile data, this function returns `'error'` -- NOT
+ * `'active'` -- so a deactivated account cannot linger during a DB problem.
+ *
+ * Transient exception: when the server cannot be reached at all (offline /
+ * network failure) it returns `'unreachable'`. Callers must keep the user
+ * signed in and retry, because an unreachable server is not evidence the
+ * account was deactivated.
  */
 export async function getAccountStatus(): Promise<AccountStatus> {
   const userId = await getCurrentUserId()
@@ -176,13 +205,31 @@ export async function getAccountStatus(): Promise<AccountStatus> {
     return cached.value ? 'active' : 'deactivated'
   }
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('is_active, deleted_at')
-    .eq('id', userId)
-    .single()
+  // Offline before we even start: no point hitting the network.
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return 'unreachable'
+  }
+
+  let result
+  try {
+    result = await supabase
+      .from('profiles')
+      .select('is_active, deleted_at')
+      .eq('id', userId)
+      .single()
+  } catch (err) {
+    // A thrown error from the fetch layer means we never reached the server.
+    console.error('Account status request failed (unreachable):', err)
+    return 'unreachable'
+  }
+
+  const { data, error } = result
 
   if (error) {
+    // Couldn't reach the server -> transient, not a reason to log out.
+    if (isNetworkError(error)) {
+      return 'unreachable'
+    }
     console.error('Error fetching account status:', error)
     return 'error'
   }

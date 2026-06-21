@@ -19,6 +19,8 @@ import Chip from '@/components/ui/Chip'
 import Card from '@/components/ui/Card'
 import Surface from '@/components/ui/Surface'
 import { formatLocalDate, toLocalDateString } from '@/lib/date-utils'
+import { usePersistentState } from '@/hooks/usePersistentState'
+import { useSelection } from '@/contexts/SelectionContext'
 
 interface TaskEvent {
   id: string
@@ -92,13 +94,20 @@ export default function TasksEventsPage() {
   const [editingTask, setEditingTask] = useState<TaskEvent | null>(null)
   const [isTeamMember, setIsTeamMember] = useState(false)
 
-  // Filter states
-  const [filterType, setFilterType] = useState<string>('all')
-  const [filterCategory, setFilterCategory] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<string>('active')
-  const [filterHive, setFilterHive] = useState<string>('all')
-  const [filterApiary, setFilterApiary] = useState<string>('all')
-  const [filterOwnership, setFilterOwnership] = useState<'all' | 'my' | 'team'>('all')
+  // Filter states (persisted per-page so they survive navigation/restart)
+  const [filterType, setFilterType] = usePersistentState<string>('tasks:type', 'all')
+  const [filterCategory, setFilterCategory] = usePersistentState<string>('tasks:category', 'all')
+  const [filterStatus, setFilterStatus] = usePersistentState<string>('tasks:status', 'active')
+  // Apiary/hive come from the app-wide shared selection (carries across pages).
+  // This page uses the 'all' sentinel; the shared store uses '' for "all".
+  const { selectedApiaryId, setSelectedApiaryId, selectedHiveId, setSelectedHiveId } = useSelection()
+  const filterHive = selectedHiveId || 'all'
+  const setFilterHive = useCallback((id: string) => setSelectedHiveId(id === 'all' ? '' : id), [setSelectedHiveId])
+  const filterApiary = selectedApiaryId || 'all'
+  const setFilterApiary = useCallback((id: string) => setSelectedApiaryId(id === 'all' ? '' : id), [setSelectedApiaryId])
+  const [filterOwnership, setFilterOwnership] = usePersistentState<'all' | 'my' | 'team'>(
+    'tasks:ownership', 'all', (v) => v === 'all' || v === 'my' || v === 'team'
+  )
   const [showChecklist, setShowChecklist] = useState(false)
   const [checklistApiaryId, setChecklistApiaryId] = useState<string>('all')
   const [hiveOverview, setHiveOverview] = useState<Map<string, HiveOverviewSummary>>(new Map())
