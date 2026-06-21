@@ -10,6 +10,26 @@ function buildKey(key: string): string {
   return `${NAMESPACE}:${key}`
 }
 
+/**
+ * Remove every persisted filter/selection value (the whole `hivecraic:filters:`
+ * namespace) from localStorage. Call on sign-out so a different account signing
+ * in on the same device does not inherit the previous user's selections.
+ */
+export function clearPersistedFilters(): void {
+  if (typeof window === 'undefined') return
+  try {
+    const prefix = `${NAMESPACE}:`
+    const keys: string[] = []
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i)
+      if (key && key.startsWith(prefix)) keys.push(key)
+    }
+    keys.forEach((key) => window.localStorage.removeItem(key))
+  } catch {
+    // Storage unavailable -- nothing to clear.
+  }
+}
+
 function readStored<T>(storageKey: string, fallback: T, validate?: Validator<T>): T {
   if (typeof window === 'undefined') return fallback
   try {

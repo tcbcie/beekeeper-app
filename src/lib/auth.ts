@@ -193,7 +193,24 @@ function isNetworkError(error: { code?: string | null; message?: string | null }
  * account was deactivated.
  */
 export async function getAccountStatus(): Promise<AccountStatus> {
-  const userId = await getCurrentUserId()
+  // Resolve the session directly (not via getCurrentUserId) so a transient
+  // refresh failure -- the server is unreachable while the access token needs
+  // refreshing -- is reported as 'unreachable', not 'no_session'. Collapsing
+  // both to null (as getCurrentUserId does) would sign out an offline user
+  // whose token merely needed a refresh.
+  let session
+  try {
+    const { data, error } = await supabase.auth.getSession()
+    if (error) {
+      return isNetworkError(error) ? 'unreachable' : 'error'
+    }
+    session = data.session
+  } catch (err) {
+    console.error('Session lookup failed (unreachable):', err)
+    return 'unreachable'
+  }
+
+  const userId = session?.user?.id
 
   if (!userId) {
     return 'no_session'
@@ -205,7 +222,7 @@ export async function getAccountStatus(): Promise<AccountStatus> {
     return cached.value ? 'active' : 'deactivated'
   }
 
-  // Offline before we even start: no point hitting the network.
+  // We hold a session but cannot reach the network to verify account status.
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
     return 'unreachable'
   }
