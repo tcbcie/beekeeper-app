@@ -18,6 +18,7 @@ import Button from '@/components/ui/Button'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import { queenToLabelDatum } from '@/components/labels/queenMapping'
 import { useLabelPrinting } from '@/hooks/useLabelPrinting'
+import { usePersistentState } from '@/hooks/usePersistentState'
 
 // Module-level so the identity is stable across renders and the limit lives
 // in one place. Selection persistence key kept alongside for the same reason.
@@ -140,10 +141,19 @@ export default function QueensPage() {
  const [showForm, setShowForm] = useState(false)
  const [editingQueen, setEditingQueen] = useState<Queen | null>(null)
  const [searchTerm, setSearchTerm] = useState('')
- const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
- const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'assigned' | 'unassigned'>('all')
- const [statusFilter, setStatusFilter] = useState<'active' | 'virgin' | 'cell' | 'retired' | 'dead' | 'swarmed' | 'superseded' | 'all'>('active')
- const [roleFilter, setRoleFilter] = useState<'all' | 'production' | 'breeder'>('all')
+ const [ownershipFilter, setOwnershipFilter] = usePersistentState<'my' | 'team' | 'all'>(
+   'queens:ownership', 'my', (v) => v === 'my' || v === 'team' || v === 'all'
+ )
+ const [assignmentFilter, setAssignmentFilter] = usePersistentState<'all' | 'assigned' | 'unassigned'>(
+   'queens:assignment', 'all', (v) => v === 'all' || v === 'assigned' || v === 'unassigned'
+ )
+ const [statusFilter, setStatusFilter] = usePersistentState<'active' | 'virgin' | 'cell' | 'retired' | 'dead' | 'swarmed' | 'superseded' | 'all'>(
+   'queens:status', 'active',
+   (v) => ['active', 'virgin', 'cell', 'retired', 'dead', 'swarmed', 'superseded', 'all'].includes(v)
+ )
+ const [roleFilter, setRoleFilter] = usePersistentState<'all' | 'production' | 'breeder'>(
+   'queens:role', 'all', (v) => v === 'all' || v === 'production' || v === 'breeder'
+ )
  const [loading, setLoading] = useState(true)
  const [userId, setUserId] = useState<string | null>(null)
  const [isTeamMember, setIsTeamMember] = useState(false)

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useReportsData } from '@/hooks/useReportsData'
 import { exportToCSV, printReport } from '@/lib/export-utils'
-import type { VarroaMonitoringRecord, TimePeriod, ReportFilters as ReportFiltersState } from '@/types/reports'
+import type { VarroaMonitoringRecord, TimePeriod } from '@/types/reports'
+import { useReportFilters } from '@/hooks/useReportFilters'
 import ReportFilters from './ReportFilters'
 import ReportExportBar from './ReportExportBar'
 import ReportTable, { type Column } from './ReportTable'
@@ -18,18 +19,16 @@ export default function VarroaMonitoringReport({ userId }: VarroaMonitoringRepor
   const [records, setRecords] = useState<VarroaMonitoringRecord[]>([])
   const [dataLoading, setDataLoading] = useState(false)
 
-  const [filters, setFilters] = useState<ReportFiltersState>(() => {
+  const [filters, setFilters] = useReportFilters('varroa', (() => {
     const today = new Date()
     const oneYearAgo = new Date(today)
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
     return {
-      apiaryId: '',
-      hiveId: '',
       timePeriod: '1year' as TimePeriod,
       startDate: oneYearAgo.toISOString().split('T')[0],
       endDate: today.toISOString().split('T')[0]
     }
-  })
+  })())
 
   useEffect(() => {
     fetchBaseData(userId)

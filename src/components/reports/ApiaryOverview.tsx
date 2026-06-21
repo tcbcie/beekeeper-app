@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useReportsData } from '@/hooks/useReportsData'
+import { useSelection } from '@/contexts/SelectionContext'
 import { exportToCSV, printReport } from '@/lib/export-utils'
 import type { HiveOverviewRecord } from '@/types/reports'
 import ReportExportBar from './ReportExportBar'
@@ -14,7 +15,8 @@ interface ApiaryOverviewProps {
 
 export default function ApiaryOverview({ userId }: ApiaryOverviewProps) {
   const { apiaries, profile, loading, fetchBaseData, fetchApiaryOverview } = useReportsData()
-  const [selectedApiary, setSelectedApiary] = useState('')
+  // Apiary selection comes from the app-wide shared store (carries across pages).
+  const { selectedApiaryId: selectedApiary, setSelectedApiaryId: setSelectedApiary } = useSelection()
   const [hiveData, setHiveData] = useState<HiveOverviewRecord[]>([])
   const [dataLoading, setDataLoading] = useState(false)
 

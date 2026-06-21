@@ -11,6 +11,8 @@ import { Hive, HiveFormData } from '@/types/hive'
 import { QUEENLESS_REASONS, mapReasonToQueenStatus } from '@/lib/queenless'
 import HiveListCard from '@/components/hive/HiveListCard'
 import Button from '@/components/ui/Button'
+import { usePersistentState } from '@/hooks/usePersistentState'
+import { useSelection } from '@/contexts/SelectionContext'
 
 interface HiveListApiary {
  id: string
@@ -40,12 +42,18 @@ export default function HivesPage() {
  const toast = useToast()
  const formRef = useRef<HTMLDivElement>(null)
 
- // Initialize filters from sessionStorage
- const [filterApiaryId, setFilterApiaryId] = useState<string>('')
- const [ownershipFilter, setOwnershipFilter] = useState<'my' | 'team' | 'all'>('my')
- const [archiveFilter, setArchiveFilter] = useState<'active' | 'archived' | 'all'>('active')
- const [scaleFilter, setScaleFilter] = useState(false)
- const [sortOption, setSortOption] = useState<string>('default')
+ // Apiary selection comes from the app-wide shared store (carries across pages,
+ // survives restart). Both use '' for "all apiaries".
+ const { selectedApiaryId: filterApiaryId, setSelectedApiaryId: setFilterApiaryId } = useSelection()
+ // Remaining filters persist per-page (localStorage) so they survive navigation/restart.
+ const [ownershipFilter, setOwnershipFilter] = usePersistentState<'my' | 'team' | 'all'>(
+   'hives:ownership', 'my', (v) => v === 'my' || v === 'team' || v === 'all'
+ )
+ const [archiveFilter, setArchiveFilter] = usePersistentState<'active' | 'archived' | 'all'>(
+   'hives:archive', 'active', (v) => v === 'active' || v === 'archived' || v === 'all'
+ )
+ const [scaleFilter, setScaleFilter] = usePersistentState<boolean>('hives:scales', false, (v) => typeof v === 'boolean')
+ const [sortOption, setSortOption] = usePersistentState<string>('hives:sort', 'default')
  const [filtersLoaded, setFiltersLoaded] = useState(false)
  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
  const [formData, setFormData] = useState<HiveFormData>({
@@ -551,40 +559,17 @@ export default function HivesPage() {
  }
  }, [userId])
 
- // Load filters from sessionStorage on mount and validate against available apiaries
+ // Validate the (persisted) shared apiary selection against this account's
+ // apiaries. A selection pointing at a deleted apiary is cleared so it can't
+ // silently filter out every hive. Persistence is handled by the hooks above.
  useEffect(() => {
- if (typeof window !== 'undefined' && !filtersLoaded && apiaries.length > 0) {
- const savedApiary = sessionStorage.getItem('hives_filter_apiary')
- const savedOwnership = sessionStorage.getItem('hives_filter_ownership')
-
- // Only restore apiary filter if it's valid (exists in current apiaries list)
- if (savedApiary && savedApiary !== '') {
- const apiaryExists = apiaries.some(a => a.id === savedApiary)
- if (apiaryExists) {
- setFilterApiaryId(savedApiary)
- } else {
- // Apiary no longer exists, clear the saved filter
- sessionStorage.removeItem('hives_filter_apiary')
+ if (!filtersLoaded && apiaries.length > 0) {
+ if (filterApiaryId && !apiaries.some(a => a.id === filterApiaryId)) {
+ setFilterApiaryId('')
  }
- }
-
- if (savedOwnership && (savedOwnership === 'my' || savedOwnership === 'team' || savedOwnership === 'all')) {
- setOwnershipFilter(savedOwnership)
- }
-
- const savedScaleFilter = sessionStorage.getItem('hives_filter_scales')
- if (savedScaleFilter === 'true') {
- setScaleFilter(true)
- }
-
- const savedSort = sessionStorage.getItem('hives_sort')
- if (savedSort) {
- setSortOption(savedSort)
- }
-
  setFiltersLoaded(true)
  }
- }, [filtersLoaded, apiaries])
+ }, [filtersLoaded, apiaries, filterApiaryId, setFilterApiaryId])
 
  useEffect(() => {
  const initUser = async () => {
@@ -601,25 +586,6 @@ export default function HivesPage() {
  initUser()
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [router])
-
- // Save filter settings to sessionStorage when they change
- useEffect(() => {
- if (typeof window !== 'undefined' && filtersLoaded) {
- sessionStorage.setItem('hives_filter_apiary', filterApiaryId)
- }
- }, [filterApiaryId, filtersLoaded])
-
- useEffect(() => {
- if (typeof window !== 'undefined' && filtersLoaded) {
- sessionStorage.setItem('hives_filter_ownership', ownershipFilter)
- }
- }, [ownershipFilter, filtersLoaded])
-
- useEffect(() => {
- if (typeof window !== 'undefined' && filtersLoaded) {
- sessionStorage.setItem('hives_filter_scales', scaleFilter.toString())
- }
- }, [scaleFilter, filtersLoaded])
 
  // Refetch hives when ownership or archive filter changes
  useEffect(() => {
@@ -1109,10 +1075,7 @@ export default function HivesPage() {
  )}
  <select
  value={sortOption}
- onChange={(e) => {
- setSortOption(e.target.value)
- sessionStorage.setItem('hives_sort', e.target.value)
- }}
+ onChange={(e) => setSortOption(e.target.value)}
  className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500/20 transition-all"
  >
  <option value="default">Sort: Default</option>

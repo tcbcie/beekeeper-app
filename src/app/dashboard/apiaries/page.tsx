@@ -26,6 +26,7 @@ const MapLocationPicker = dynamic(() => import('@/components/MapLocationPicker')
 import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import { usePersistentState } from '@/hooks/usePersistentState'
 import { Apiary, ApiaryFormData, UserOption } from '@/types/apiary'
 import ApiaryCard from '@/components/apiaries/ApiaryCard'
 import { fetchElevation } from '@/lib/elevation'
@@ -67,7 +68,11 @@ export default function ApiariesPage() {
   const [transferring, setTransferring] = useState(false)
 
   const [isTeamMember, setIsTeamMember] = useState(false)
-  const [categoryFilter, setCategoryFilter] = useState<'all' | 'own' | 'shared' | 'mating'>('all')
+  const [categoryFilter, setCategoryFilter] = usePersistentState<'all' | 'own' | 'shared' | 'mating'>(
+    'apiaries:category',
+    'all',
+    (v) => v === 'all' || v === 'own' || v === 'shared' || v === 'mating'
+  )
 
   // Image zoom modal state
   const [imageModalOpen, setImageModalOpen] = useState(false)
