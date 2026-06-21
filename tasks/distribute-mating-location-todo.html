@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <title>Fix: Mating station / Mated-at on distributed cells &amp; virgins</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 820px; margin: 2rem auto; line-height: 1.5; color: #1a1a1a; }
+    h1 { font-size: 1.4rem; } h2 { font-size: 1.1rem; margin-top: 1.6rem; }
+    code { background: #f3f3f3; padding: 0 .25rem; border-radius: 3px; }
+    .done { color: #166534; } .pending { color: #92400e; }
+    table { border-collapse: collapse; width: 100%; margin: .5rem 0; }
+    th, td { border: 1px solid #ddd; padding: .4rem .6rem; text-align: left; font-size: .9rem; }
+    .bad { color: #b91c1c; } .good { color: #166534; }
+  </style>
+</head>
+<body>
+  <h1>Distributed cells/virgins inherit the wrong mating station</h1>
+
+  <h2>Problem</h2>
+  <p>When a sealed cell or virgin queen is distributed to a beekeeper, the recipient's
+  queen record is stamped with the <strong>batch's</strong> mating station and eircode
+  (e.g. <span class="bad">TBKA Kilcornan / H91RHH4</span>) instead of the destination apiary
+  it was assigned to (<span class="good">AP01 - Colm</span>). An unmated queen has not mated
+  at the batch station &mdash; it will mate at its destination.</p>
+
+  <h2>Root cause</h2>
+  <p><code>createQueenForRecipient</code> in <code>src/hooks/useGraftDistributions.ts</code>
+  (lines 318&ndash;321) always derives <code>mating_station</code> / <code>mated_at_eircode</code>
+  from <code>batch.mating_apiary_*</code> regardless of distribution type. A secondary defect:
+  <code>promote_distributed_queen_on_mating</code> uses
+  <code>COALESCE(mated_at_eircode, mating_location)</code>, so the stale batch eircode can never
+  be replaced when mating is later confirmed.</p>
+  <p>Constraint: <code>get_recipient_apiaries</code> exposes only id + name (no eircode by design),
+  so the destination eircode must be resolved server-side in the SECURITY DEFINER RPC.</p>
+
+  <h2>Decisions</h2>
+  <ul>
+    <li>Cell/virgin <strong>with</strong> a destination apiary &rarr; station &amp; mated-at from that apiary.</li>
+    <li>Cell/virgin <strong>without</strong> a destination apiary &rarr; leave station/mated-at blank until mated.</li>
+    <li>Mated-queen distributions &rarr; unchanged (genuinely mated at the batch station).</li>
+    <li>Correct the lineage string too (use destination apiary name, not the batch station).</li>
+  </ul>
+
+  <h2>Tasks</h2>
+  <table>
+    <tr><th>#</th><th>Change</th><th>Status</th></tr>
+    <tr><td>1</td><td>RPC <code>create_queen_for_distribution</code>: add <code>p_recipient_apiary_id</code>; for status cell/virgin, set <code>mating_station</code>/<code>mated_at_eircode</code> from that apiary (when it belongs to the recipient).</td><td class="done">done</td></tr>
+    <tr><td>2</td><td>RPC <code>promote_distributed_queen_on_mating</code>: prefer the confirmed <code>mating_location</code> over a stale eircode.</td><td class="done">done</td></tr>
+    <tr><td>3</td><td><code>createQueensForRecipient</code>: accept <code>recipientApiaryId</code>; resolve destination apiary name via <code>get_recipient_apiaries</code> for cell/virgin.</td><td class="done">done</td></tr>
+    <tr><td>4</td><td><code>createQueenForRecipient</code>: branch by type &mdash; mated keeps batch values; cell/virgin use destination name (eircode filled server-side), lineage built from destination.</td><td class="done">done</td></tr>
+    <tr><td>5</td><td>Pass <code>recipient_apiary_id</code> from <code>createDistribution</code> &amp; <code>createBulkDistributions</code>.</td><td class="done">done</td></tr>
+    <tr><td>6</td><td>Update docs in <code>docs/features</code>.</td><td class="done">done</td></tr>
+  </table>
+
+  <h2>Review</h2>
+  <p>Two SECURITY DEFINER RPCs were updated (via migration) and one client hook
+  (<code>src/hooks/useGraftDistributions.ts</code>) edited. The fix applies only to
+  <strong>cell</strong> and <strong>virgin</strong> distributions; mated-queen distributions keep
+  the batch mating station. Type-check is clean for the changed hook (remaining errors are
+  pre-existing test-file noise).</p>
+  <p><strong>New behaviour:</strong> distributing a cell/virgin to an apiary stamps that apiary as
+  the mating station and (server-side) its eircode as &ldquo;mated at&rdquo;; the lineage string
+  reflects the destination apiary. With no apiary chosen, both stay blank until mating is confirmed.</p>
+  <p><strong>Not done (needs your call):</strong> queens distributed <em>before</em> this fix still
+  hold the old batch station (e.g. Cell&nbsp;#15, #6 in the screenshots). A one-off backfill can
+  correct them from each distribution&rsquo;s destination apiary &mdash; say the word and I&rsquo;ll
+  run it.</p>
+</body>
+</html>
