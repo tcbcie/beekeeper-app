@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { clearPersistedFilters } from '@/hooks/usePersistentState'
 
 interface AuthContextType {
   user: User | null
@@ -103,11 +104,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           setUser(session.user)
           setUserId(session.user.id)
-        } else if (event !== 'SIGNED_OUT' && typeof navigator !== 'undefined' && navigator.onLine === false) {
+        } else if (event === 'SIGNED_OUT') {
+          // Explicit sign-out is authoritative regardless of connectivity. Also
+          // clear persisted filter/selection state so a different account
+          // signing in on this device cannot inherit this user's apiary/hive
+          // selections (e.g. switching between demo and real accounts).
+          clearPersistedFilters()
+          setUser(null)
+          setUserId(null)
+        } else if (typeof navigator !== 'undefined' && navigator.onLine === false) {
           // A null session while offline (e.g. a token refresh that couldn't
-          // reach the server) is almost always transient. An explicit
-          // SIGNED_OUT is authoritative and still clears the user; everything
-          // else offline keeps the existing user rather than forcing a logout.
+          // reach the server) is almost always transient -- keep the existing
+          // user rather than forcing a logout.
         } else {
           setUser(null)
           setUserId(null)
