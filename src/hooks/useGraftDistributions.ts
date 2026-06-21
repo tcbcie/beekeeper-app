@@ -281,7 +281,9 @@ async function createQueenForRecipient(
   distributionType: 'queen_cell' | 'virgin_queen' | 'mated_queen',
   isSelfDistribution: boolean,
   recipientHiveId: string | null = null,
-  installedDate: string | null = null
+  installedDate: string | null = null,
+  recipientApiaryId: string | null = null,
+  destinationApiaryName: string | null = null
 ): Promise<void> {
   try {
     const { data: graft, error: graftError } = await supabase
@@ -315,10 +317,15 @@ async function createQueenForRecipient(
 
     const birthDate = deriveBirthDate(batch)
     const markingColor = birthDate ? getQueenColorFromYear(birthDate) : null
-    const eircode = batch.mating_apiary_eircode || null
 
-    // Distributions are open-mated at the batch's mating apiary.
-    const matingStation = batch.mating_apiary_name || null
+    // A mated queen genuinely mated at the batch's mating apiary. A distributed cell/virgin has
+    // NOT — it will mate at the destination apiary, so use that as the mating station. When no
+    // destination apiary is chosen, leave both blank until mating is confirmed. The destination
+    // eircode is resolved server-side (the breeder cannot read a recipient's eircode), so the
+    // client only supplies the station name here.
+    const isMated = distributionType === 'mated_queen'
+    const matingStation = isMated ? (batch.mating_apiary_name || null) : (destinationApiaryName || null)
+    const eircode = isMated ? (batch.mating_apiary_eircode || null) : null
 
     // Human-readable drone-source description (kept for the provenance panel).
     const droneSource = matingStation
@@ -364,6 +371,8 @@ async function createQueenForRecipient(
       p_recipient_hive_id: recipientHiveId,
       p_installed_date: installedDate,
       p_source_graft_id: graftId,
+      // Destination apiary drives the mating station/eircode for distributed cells & virgins.
+      p_recipient_apiary_id: recipientApiaryId,
     })
   } catch (err) {
     console.error('Non-blocking: failed to create queen for recipient:', err)
@@ -377,7 +386,8 @@ async function createQueensForRecipient(
   graftIds: string[],
   distributionType: 'queen_cell' | 'virgin_queen' | 'mated_queen',
   recipientHiveId: string | null = null,
-  installedDate: string | null = null
+  installedDate: string | null = null,
+  recipientApiaryId: string | null = null
 ): Promise<void> {
   try {
     // Resolve auth user ID first so a failure doesn't abort the entire batch fetch
@@ -430,8 +440,19 @@ async function createQueensForRecipient(
     const isSelfDistribution = !!callerId && recipientUserId === callerId
     // Hive placement only makes sense for a single queen; never place many grafts into one hive.
     const hiveForPlacement = graftIds.length === 1 ? recipientHiveId : null
+
+    // Resolve the destination apiary's name for distributed cells/virgins so the queen's mating
+    // station reflects where it will mate (not the breeder's batch station). Only id+name are
+    // exposed to the breeder; the eircode is resolved server-side inside the RPC.
+    let destinationApiaryName: string | null = null
+    if (recipientApiaryId && distributionType !== 'mated_queen') {
+      const { data: apiaryRows } = await supabase.rpc('get_recipient_apiaries', { recipient_uuid: recipientUserId })
+      const match = (apiaryRows as { id: string; name: string }[] | null)?.find((a) => a.id === recipientApiaryId)
+      destinationApiaryName = match?.name ?? null
+    }
+
     await Promise.allSettled(
-      graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails, distributionType, isSelfDistribution, hiveForPlacement, installedDate))
+      graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails, distributionType, isSelfDistribution, hiveForPlacement, installedDate, recipientApiaryId, destinationApiaryName))
     )
   } catch (err) {
     console.error('Non-blocking: failed to create queens for recipient:', err)
@@ -558,6 +579,7 @@ export function useGraftDistributions() {
           data.distribution_type,
           data.recipient_hive_id,
           data.distribution_date,
+          data.recipient_apiary_id,
         )
       }
 
@@ -623,7 +645,7 @@ export function useGraftDistributions() {
 
       // Create queen records for recipient (non-blocking, single batch fetch)
       if (data.recipient_user_id) {
-        createQueensForRecipient(data.recipient_user_id, data.batch_id, graftIds, data.distribution_type)
+        createQueensForRecipient(data.recipient_user_id, data.batch_id, graftIds, data.distribution_type, null, null, data.recipient_apiary_id)
       }
 
       return true
