@@ -60,4 +60,10 @@ export interface TbrPlan {
   flowCoverageScore: number
   /** The date the model recommends, or null if it could not be computed. */
   recommendedTbrDate: string | null
+  /**
+   * True when the first new foragers arrive only AFTER the flow has started — i.e. the brood-break
+   * dip lands during/after the flow. The early flow then rides existing foragers (a misleadingly
+   * decent score) before strength collapses, leaving the colony weak for the late flow and autumn.
+   */
+  recoveryAfterFlowStart: boolean
 }
