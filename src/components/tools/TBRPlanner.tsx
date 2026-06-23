@@ -1,6 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
-import { Scissors, CalendarClock, Info, ChevronDown, ChevronUp, Sparkles, AlertTriangle } from 'lucide-react'
+import { Scissors, CalendarClock, Info, ChevronDown, ChevronUp, Sparkles, AlertTriangle, Wheat } from 'lucide-react'
 import {
   Chart as ChartJS,
   LinearScale,
@@ -17,13 +17,10 @@ import 'chartjs-adapter-date-fns'
 import { Line } from 'react-chartjs-2'
 import Button from '@/components/ui/Button'
 import { useTbrPlanner } from '@/hooks/useTbrPlanner'
-import { addDays, dayDiff, parseISODate, steadyStateForagers, peakAdultPopulation, totalAdultLifespanDays } from '@/lib/tbr-model'
+import { addDays, dayDiff, parseISODate, steadyStateForagers, peakAdultPopulation, totalAdultLifespanDays, CELLS_PER_DADANT_DEEP } from '@/lib/tbr-model'
 import type { CropDateTier, TbrConstants } from '@/types/tbr'
 
 ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, ChartLegend, Filler, TimeScale)
-
-// Approx. worker cells on a Dadant Modified Deep comb (both sides) — for the brood readout.
-const DADANT_DEEP_CELLS = 9500
 
 // Draws shaded crop/flow bands and dashed marker lines OVER the forager curve, so
 // the translucent area fill underneath doesn't wash them out.
@@ -89,7 +86,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
     vegOptions, springVegId, summerVegId, setSpringVegId, setSummerVegId,
     resolvedSpring, resolvedSummer, constants, setConstants,
     precocious, setPrecocious,
-    tbrOverride, setTbrOverride, result, loading, error, noProjection,
+    tbrOverride, setTbrOverride, result, foodPlan, loading, error, noProjection,
   } = planner
 
   const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark')
@@ -375,7 +372,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                 />
                 <p className="text-xs text-text-tertiary mt-1">
                   ≈ {(constants.layRate * constants.eggToEmergenceDays).toLocaleString()} cells of brood at peak
-                  (~{(constants.layRate * constants.eggToEmergenceDays / DADANT_DEEP_CELLS).toFixed(1)} Dadant deep frames).
+                  (~{(constants.layRate * constants.eggToEmergenceDays / CELLS_PER_DADANT_DEEP).toFixed(1)} Dadant deep frames).
                   The chart shows % of full strength, so the recommended timing is independent of lay rate.
                 </p>
               </div>
@@ -404,6 +401,59 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                 <Milestone label="First brood emerges" date={result.plan.milestones.firstBroodDate} />
                 <Milestone label="First new foragers" date={result.plan.milestones.firstForagerDate} highlight />
               </div>
+
+              {/* Rebuild food budget & starvation risk */}
+              {foodPlan && (
+                <div className="bg-surface-secondary border border-border rounded-lg p-4">
+                  <h4 className="font-semibold text-foreground flex items-center gap-2 mb-3">
+                    <Wheat size={18} className="text-forest-600 dark:text-forest-400" />
+                    Rebuild food budget
+                    <span className="text-xs font-normal text-text-tertiary">
+                      ({foodPlan.budget.framesToDraw} frames of foundation to draw)
+                    </span>
+                  </h4>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm">
+                        <span className="font-semibold text-foreground">≈ {foodPlan.budget.totalHoneyKg.toFixed(1)} kg honey</span>{' '}
+                        — funded from stores
+                      </p>
+                      <ul className="text-xs text-text-secondary mt-1 space-y-0.5">
+                        <li>Comb drawing: {foodPlan.budget.combHoneyKg.toFixed(1)} kg</li>
+                        <li>Brood food: {foodPlan.budget.broodHoneyKg.toFixed(1)} kg</li>
+                        <li>Upkeep + warmth: {foodPlan.budget.upkeepHoneyKg.toFixed(1)} kg</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-sm">
+                        <span className="font-semibold text-foreground">≈ {foodPlan.budget.pollenKg.toFixed(1)} kg pollen</span>{' '}
+                        — mostly foraged
+                      </p>
+                      <p className="text-xs text-text-secondary mt-1">
+                        ~{foodPlan.budget.pollenToForageKg.toFixed(1)} kg must come from fresh foraging — stored beebread covers
+                        only ~{foodPlan.budget.storedBeebreadKg} kg, so the rebuild needs steady pollen flights (a cold, wet spell
+                        stalls it regardless of honey).
+                      </p>
+                    </div>
+                  </div>
+
+                  {foodPlan.incomeBeforeRecovery ? (
+                    <div className="mt-3 text-sm bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-green-800 dark:text-green-200">
+                      A nectar source ({foodPlan.nextNectarName}) is predicted ~{formatDate(foodPlan.nextNectarDate)} — before your
+                      foragers recover — so income resumes part-way through the rebuild and eases the cost.
+                    </div>
+                  ) : (
+                    <div className="mt-3 text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-red-800 dark:text-red-200">
+                      <span className="font-semibold">Starvation risk:</span> no worthwhile nectar flow is predicted during the rebuild
+                      {foodPlan.nextNectarName ? ` (next is ${foodPlan.nextNectarName} ~${formatDate(foodPlan.nextNectarDate)})` : ''}.
+                      Leave or feed ≈ {foodPlan.budget.totalHoneyKg.toFixed(1)} kg of stores and don&apos;t strip the spring crop bare.
+                    </div>
+                  )}
+                  <p className="text-xs text-text-tertiary mt-2">
+                    Assumes comb is drawn from foundation (worst case). Scales with lay rate; honey comes from stores, pollen mostly from foraging.
+                  </p>
+                </div>
+              )}
 
               {/* Advanced constants */}
               <div className="border border-border rounded-lg">
