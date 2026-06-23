@@ -147,9 +147,12 @@ export function flowCoverage(
 
 /**
  * Search candidate TBR dates and return the one maximising flow coverage (ties → earliest).
- * Coverage is monotonically non-increasing in the TBR date (a later break leaves less time
- * to rebuild before the flow), so the optimum is in practice `earliest`; the scan is kept for
- * robustness against future, non-monotonic scoring changes and is bounded by MAX_SIM_DAYS.
+ * Coverage is U-shaped in the TBR date: a very early break lets the colony fully recover before
+ * the flow (coverage approaches the 100% ceiling); the worst case is a break whose recovery
+ * trough lands mid-flow; and a very late break scores partially because the old foragers ride the
+ * early flow before the brood gap reaches foraging age — a false win, as the colony then collapses
+ * through the late flow. The earliest feasible date is therefore the true optimum; the scan finds
+ * it generally and is bounded by MAX_SIM_DAYS.
  */
 export function recommendTbrDate(
   earliest: string,
