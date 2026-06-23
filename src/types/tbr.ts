@@ -10,12 +10,15 @@ export interface TbrConstants {
   reLayDelayDays: number
   /** Worker egg → emergence development time. */
   eggToEmergenceDays: number
-  /** House-bee phase: emergence → first foraging flight. */
+  /** House-bee phase: emergence → first foraging flight (age at first foraging). */
   emergenceToForagerDays: number
   /** Queen lay rate (eggs/day) once re-laying. */
   layRate: number
-  /** How long a bee actively forages before dying. */
-  foragerSpanDays: number
+  /**
+   * Foraging career — days a bee actively forages before dying (~7 d median;
+   * Visscher & Dukas 1997). Total adult lifespan is this plus emergenceToForagerDays.
+   */
+  foragingCareerDays: number
 }
 
 export const DEFAULT_TBR_CONSTANTS: TbrConstants = {
@@ -23,7 +26,7 @@ export const DEFAULT_TBR_CONSTANTS: TbrConstants = {
   eggToEmergenceDays: 21,
   emergenceToForagerDays: 21,
   layRate: 1200,
-  foragerSpanDays: 21,
+  foragingCareerDays: 8,
 }
 
 /** How confident a resolved crop date is — see the 3-tier resolution model. */

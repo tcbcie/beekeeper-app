@@ -38,18 +38,22 @@ nest from scratch. It takes roughly 4 days to draw enough comb for the queen to 
 |----------|---------|---------|
 | Re-lay delay | 4 days | Comb drawn before queen resumes laying (`T+4`) |
 | Egg → emergence | 21 days | First new brood emerges at `T+25` |
-| Emergence → forager | 21 days | House-bee phase; first new foragers at `T+46` |
-| Queen lay rate | 1200/day | Adjustable 1000–1500; sets rebuild slope |
-| Forager active span | 21 days | Governs decay of the standing force during the gap |
+| Emergence → forager | 21 days | House-bee phase (age at first foraging); first new foragers at `T+46` |
+| Queen lay rate | 1200/day | Adjustable 1000–2500; scales absolute headcounts |
+| Foraging career | 8 days | Days a bee forages before dying (Visscher & Dukas 1997); governs the dip depth |
+
+**Total adult lifespan** = emergence→forager + foraging career = 29 days (derived). Peak foragers =
+`layRate × foragingCareer`; peak adult population = `layRate × adultLifespan` — both shown in the UI.
 
 ### Forager-force curve
 
 - `emergence(d)` = steady `L` for `d < T`; `0` for `T ≤ d < T+25`; `L` for `d ≥ T+25`.
-- `foragers(d)` = Σ `emergence(e)` for `e` where `e+21 ≤ d < e+42`.
+- `foragers(d)` = Σ `emergence(e)` for `e` where `e+H ≤ d < e+H+F` (H = 21, F = 8), summed over two
+  cohorts so post-break bees can forage at a precocious age when that option is enabled.
 
-Result: steady force → decline through the gap → trough ~`T+42–46` → recovery from `T+46`.
-Foragers keep being recruited from already-emerged house bees up to ~`T+21`, which is the
-"bridge" that carries the colony into the gap.
+Result: steady force → decline through the gap → a deep, wide trough (with an 8-day career the
+standing force is exhausted ~8 days after the gap reaches foraging age, so foragers fall near zero
+until ~`T+46`) → recovery from `T+46`. Already-emerged house bees bridge the early part of the gap.
 
 ### Scoring
 
@@ -88,7 +92,8 @@ slider and watch the score/curve respond.
 |-----------|-------|-----------|-------|
 | Egg → emergence | 21 d | 21 d (3+6+12) | Confirmed (Winston) |
 | Emergence → forager | 21 d, plastic | ~21–23 d normal; 7–14 d precocious under forager loss | Precocious toggle models the plastic case |
-| Forager career | 21 d | ~7 d median (Visscher & Dukas 1997) | Conflated with adult lifespan; dip is shallower than reality. A **preview toggle** overlays a realistic ~8 d career for comparison without changing the default model |
+| Foraging career | 8 d | ~7 d median (Visscher & Dukas 1997) | Now a separate constant from adult lifespan, so both the dip and absolute headcounts are correct |
+| Total adult lifespan | 29 d (derived) | ~4–6 wk summer | = house-bee phase (21 d) + foraging career (8 d) |
 | Queen lay rate | 1000–2500/d | peak ~2000/d (Laidlaw & Page 1997) | Real Dadant colonies observed ~2200/d |
 | Recovery asymptote | = original | colonies often overshoot | The model is a deliberate conservative lower bound |
 
