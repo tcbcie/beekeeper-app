@@ -65,45 +65,57 @@ function maxDate(...ds: string[]): string {
   return ds.slice().sort().slice(-1)[0]
 }
 
-function overlap(aLo: number, aHi: number, bLo: number, bHi: number): number {
-  const lo = Math.max(aLo, bLo)
-  const hi = Math.min(aHi, bHi)
+/** Biological floor for age at first foraging, even under precocious conditions (days). */
+const MIN_FORAGE_AGE_DAYS = 7
+
+function countIntegers(lo: number, hi: number): number {
   return Math.max(0, hi - lo + 1)
 }
 
 // --- Forager-force simulation ------------------------------------------------
 //
 // Emergence rate is L (lay rate) every day EXCEPT during the brood gap that
-// follows TBR — from offset 0 (re-lay has not produced brood yet) up to the day
-// the first new brood emerges. A bee emerging on day e forages during
-// [e + H, e + H + F). So foragers on day d = L × (days in the foraging window
-// that fall OUTSIDE the gap), which has a clean closed form.
+// follows TBR — offsets [0, gapLen-1], before any re-laid brood has emerged.
+// A bee emerging on day e forages during [e + H, e + H + F).
+//
+// Two cohorts are summed so precocious foraging can be modelled:
+//   • pre-break bees (emerged at offset < 0) forage at the normal age Hpre;
+//   • post-break bees (emerged at offset >= gapLen) forage at age Hpost, which is
+//     reduced by `accelDays` when the colony forages precociously after the break.
+// With accelDays = 0 (Hpost = Hpre) this is identical to the original closed form.
 
 /** Standing forager force in normal (pre-break) steady state. */
 export function steadyStateForagers(c: TbrConstants): number {
   return c.layRate * c.foragerSpanDays
 }
 
-/** Relative forager force on a day `t` days after TBR (t may be negative). */
-export function foragerForceAtOffset(t: number, c: TbrConstants): number {
-  const H = c.emergenceToForagerDays
+/** Age at first foraging for the post-break cohort (precocious when accelDays > 0). */
+function postBreakForageAge(c: TbrConstants, accelDays: number): number {
+  return Math.max(MIN_FORAGE_AGE_DAYS, c.emergenceToForagerDays - Math.max(0, accelDays))
+}
+
+/** Forager force on a day `t` days after TBR (t may be negative). */
+export function foragerForceAtOffset(t: number, c: TbrConstants, accelDays = 0): number {
   const F = c.foragerSpanDays
-  // Emergence is zero for offsets [0, gapLen-1] (re-lay delay + development).
-  const gapLen = c.reLayDelayDays + c.eggToEmergenceDays
   if (F <= 0) return 0
-  // Emergence days contributing to foraging on offset t:
-  const winLo = t - H - F + 1
-  const winHi = t - H
-  const gapOverlap = overlap(winLo, winHi, 0, gapLen - 1)
-  const activeDays = F - gapOverlap
-  return Math.max(0, c.layRate * activeDays)
+  const hPre = c.emergenceToForagerDays
+  const hPost = postBreakForageAge(c, accelDays)
+  const gapLen = c.reLayDelayDays + c.eggToEmergenceDays
+
+  // Pre-break cohort: emergence days e < 0 contributing to foraging on offset t.
+  const pre = countIntegers(t - hPre - F + 1, Math.min(t - hPre, -1))
+  // Post-break cohort: emergence days e >= gapLen contributing on offset t.
+  const post = countIntegers(Math.max(t - hPost - F + 1, gapLen), t - hPost)
+
+  return Math.max(0, c.layRate * (pre + post))
 }
 
 export function simulateForagerCurve(
   tbrDate: string,
   startDate: string,
   endDate: string,
-  c: TbrConstants
+  c: TbrConstants,
+  accelDays = 0
 ): ForagerPoint[] {
   const total = dayDiff(startDate, endDate)
   if (total < 0 || total > MAX_SIM_DAYS) return []
@@ -111,18 +123,18 @@ export function simulateForagerCurve(
   for (let i = 0; i <= total; i++) {
     const date = addDays(startDate, i)
     const t = dayDiff(tbrDate, date)
-    out.push({ date, foragers: Math.round(foragerForceAtOffset(t, c)) })
+    out.push({ date, foragers: Math.round(foragerForceAtOffset(t, c, accelDays)) })
   }
   return out
 }
 
-export function tbrMilestones(tbrDate: string, c: TbrConstants): TbrMilestones {
+export function tbrMilestones(tbrDate: string, c: TbrConstants, accelDays = 0): TbrMilestones {
   const broodOffset = c.reLayDelayDays + c.eggToEmergenceDays
   return {
     tbrDate,
     reLayDate: addDays(tbrDate, c.reLayDelayDays),
     firstBroodDate: addDays(tbrDate, broodOffset),
-    firstForagerDate: addDays(tbrDate, broodOffset + c.emergenceToForagerDays),
+    firstForagerDate: addDays(tbrDate, broodOffset + postBreakForageAge(c, accelDays)),
   }
 }
 
@@ -131,7 +143,8 @@ export function flowCoverage(
   tbrDate: string,
   flowStart: string,
   flowEnd: string,
-  c: TbrConstants
+  c: TbrConstants,
+  accelDays = 0
 ): number {
   const days = dayDiff(flowStart, flowEnd)
   if (days < 0) return 0
@@ -139,7 +152,7 @@ export function flowCoverage(
   let sum = 0
   for (let i = 0; i <= days; i++) {
     const t = dayDiff(tbrDate, addDays(flowStart, i))
-    sum += foragerForceAtOffset(t, c)
+    sum += foragerForceAtOffset(t, c, accelDays)
   }
   const avg = sum / (days + 1)
   return Math.max(0, Math.min(1, avg / steady))
@@ -159,7 +172,8 @@ export function recommendTbrDate(
   latest: string,
   flowStart: string,
   flowEnd: string,
-  c: TbrConstants
+  c: TbrConstants,
+  accelDays = 0
 ): string | null {
   const span = dayDiff(earliest, latest)
   if (span < 0 || span > MAX_SIM_DAYS) return null
@@ -167,7 +181,7 @@ export function recommendTbrDate(
   let bestScore = -1
   for (let i = 0; i <= span; i++) {
     const cand = addDays(earliest, i)
-    const score = flowCoverage(cand, flowStart, flowEnd, c)
+    const score = flowCoverage(cand, flowStart, flowEnd, c, accelDays)
     if (score > bestScore + 1e-9) {
       bestScore = score
       best = cand
@@ -310,7 +324,8 @@ export function planFromResolved(
   summerStartDate: string | null,
   summerEndDate: string | null,
   constants: TbrConstants,
-  tbrOverride: string | null
+  tbrOverride: string | null,
+  accelDays = 0
 ): TbrResult | null {
   if (!summerStartDate) return null
 
@@ -333,15 +348,15 @@ export function planFromResolved(
   const earliest = springEnd ?? addDays(flowStart, -recoveryDays)
   const latest = maxDate(earliest, flowStart)
 
-  const recommended = recommendTbrDate(earliest, latest, flowStart, flowEnd, constants)
+  const recommended = recommendTbrDate(earliest, latest, flowStart, flowEnd, constants, accelDays)
   const effectiveTbrDate = tbrOverride ?? recommended ?? earliest
 
-  const milestones = tbrMilestones(effectiveTbrDate, constants)
+  const milestones = tbrMilestones(effectiveTbrDate, constants, accelDays)
   const simStart = addDays(minDate(earliest, effectiveTbrDate, springEnd ?? earliest), -21)
   const simEnd = addDays(maxDate(flowEnd, milestones.firstForagerDate), 21)
 
-  const curve = simulateForagerCurve(effectiveTbrDate, simStart, simEnd, constants)
-  const score = flowCoverage(effectiveTbrDate, flowStart, flowEnd, constants)
+  const curve = simulateForagerCurve(effectiveTbrDate, simStart, simEnd, constants, accelDays)
+  const score = flowCoverage(effectiveTbrDate, flowStart, flowEnd, constants, accelDays)
   const recoveryAfterFlowStart = milestones.firstForagerDate > flowStart
 
   return {

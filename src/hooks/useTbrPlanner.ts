@@ -39,6 +39,9 @@ interface UseTbrPlannerReturn {
   resolvedSummer: ResolvedCropDate | null
   constants: TbrConstants
   setConstants: (c: TbrConstants) => void
+  /** When true, model precocious foraging after the break (faster recovery). */
+  precocious: boolean
+  setPrecocious: (v: boolean) => void
   tbrOverride: string | null
   setTbrOverride: (d: string | null) => void
   result: TbrResult | null
@@ -49,6 +52,10 @@ interface UseTbrPlannerReturn {
 }
 
 const RECENT_RATE_WINDOW_DAYS = 14
+
+// Days earlier that post-break bees begin foraging when precocious foraging is modelled.
+// ~7 d matches forager-depletion studies (normal onset ~21 d → precocious ~14 d).
+const PRECOCIOUS_ACCEL_DAYS = 7
 
 /**
  * Fetch this year's accumulated GDD and recent daily accrual for a location.
@@ -109,6 +116,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
   const [springVegId, setSpringVegId] = useState<string | null>(null)
   const [summerVegId, setSummerVegId] = useState<string | null>(null)
   const [constants, setConstants] = useState<TbrConstants>(DEFAULT_TBR_CONSTANTS)
+  const [precocious, setPrecocious] = useState(false)
   const [tbrOverride, setTbrOverride] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -317,9 +325,10 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
       resolvedSummer.date,
       null,
       constants,
-      tbrOverride
+      tbrOverride,
+      precocious ? PRECOCIOUS_ACCEL_DAYS : 0
     )
-  }, [resolvedSpring, resolvedSummer, constants, tbrOverride])
+  }, [resolvedSpring, resolvedSummer, constants, tbrOverride, precocious])
 
   return {
     apiaries,
@@ -337,6 +346,8 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     resolvedSummer,
     constants,
     setConstants,
+    precocious,
+    setPrecocious,
     tbrOverride,
     setTbrOverride,
     result,

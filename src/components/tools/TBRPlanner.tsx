@@ -22,6 +22,9 @@ import type { CropDateTier, TbrConstants } from '@/types/tbr'
 
 ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, ChartLegend, Filler, TimeScale)
 
+// Approx. worker cells on a Dadant Modified Deep comb (both sides) — for the brood readout.
+const DADANT_DEEP_CELLS = 9500
+
 // Draws shaded crop/flow bands and dashed marker lines OVER the forager curve, so
 // the translucent area fill underneath doesn't wash them out.
 const bandsPlugin: Plugin<'line'> = {
@@ -85,6 +88,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
     apiaries, selectedApiaryId, setSelectedApiaryId,
     vegOptions, springVegId, summerVegId, setSpringVegId, setSummerVegId,
     resolvedSpring, resolvedSummer, constants, setConstants,
+    precocious, setPrecocious,
     tbrOverride, setTbrOverride, result, loading, error, noProjection,
   } = planner
 
@@ -357,14 +361,36 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                 <input
                   type="range"
                   min={1000}
-                  max={1500}
+                  max={2500}
                   step={50}
                   value={constants.layRate}
                   onChange={(e) => setConstants({ ...constants, layRate: Number(e.target.value) })}
                   className="w-full h-3 accent-forest-600 cursor-pointer"
                   aria-label="Queen lay rate"
                 />
+                <p className="text-xs text-text-tertiary mt-1">
+                  ≈ {(constants.layRate * constants.eggToEmergenceDays).toLocaleString()} cells of brood at peak
+                  (~{(constants.layRate * constants.eggToEmergenceDays / DADANT_DEEP_CELLS).toFixed(1)} Dadant deep frames).
+                  The chart shows % of full strength, so the recommended timing is independent of lay rate.
+                </p>
               </div>
+
+              {/* Precocious-foraging toggle */}
+              <label className="flex items-start gap-3 p-3 rounded-lg border border-border cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={precocious}
+                  onChange={(e) => setPrecocious(e.target.checked)}
+                  className="mt-1 h-4 w-4 accent-forest-600 flex-shrink-0"
+                />
+                <span className="text-sm">
+                  <span className="font-medium text-foreground">Model precocious foraging (faster recovery)</span>
+                  <span className="block text-text-tertiary mt-0.5">
+                    A forager-depleted colony raises foragers ~7 days younger than usual after a break, so it
+                    recovers sooner. Off by default — the conservative estimate assumes normal timing.
+                  </span>
+                </span>
+              </label>
 
               {/* Milestones */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
