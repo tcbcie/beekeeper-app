@@ -76,8 +76,26 @@ slider and watch the score/curve respond.
 
 - Apiary picker (required); spring-crop and summer-flow pickers pre-filled from the apiary's records.
 - Chart.js forager-force curve with shaded bands (spring crop, brood gap, summer flow).
-- TBR-date slider + lay-rate slider; advanced disclosure for biological constants.
+- TBR-date slider + lay-rate slider (1000–2500/day, with a live brood-cells / Dadant-frames readout).
+- **Precocious-foraging toggle** — when on, post-break bees forage ~7 days younger, modelling the
+  accelerated recovery of a forager-depleted colony. Off by default (conservative estimate).
 - Recommendation panel: suggested `T*`, milestone dates, flow-coverage score, plain-language guidance.
+- Late-break warning when the first new foragers arrive after the flow starts (false-win guard).
+
+## Model validation (peer-reviewed)
+
+| Parameter | Model | Literature | Notes |
+|-----------|-------|-----------|-------|
+| Egg → emergence | 21 d | 21 d (3+6+12) | Confirmed (Winston) |
+| Emergence → forager | 21 d, plastic | ~21–23 d normal; 7–14 d precocious under forager loss | Precocious toggle models the plastic case |
+| Forager career | 21 d | ~7 d median (Visscher & Dukas 1997) | Conflated with adult lifespan; dip is shallower than reality — flagged for a future retune |
+| Queen lay rate | 1000–2500/d | peak ~2000/d (Laidlaw & Page 1997) | Real Dadant colonies observed ~2200/d |
+| Recovery asymptote | = original | colonies often overshoot | The model is a deliberate conservative lower bound |
+
+The simulation is a two-cohort model: pre-break bees forage at the normal age; post-break bees forage
+at the (optionally precocious) age, so the dip onset is governed by the old bees and the recovery speed
+by the new ones. The forager-strength curve is normalised to steady state, so the recommended **timing**
+is independent of the lay-rate value.
 - 50+ accessibility: large targets, high contrast, readable minimum font sizes.
 
 ## Files
