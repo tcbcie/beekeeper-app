@@ -3,86 +3,195 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mobile Performance Plan — LCP &amp; CLS (Real Experience Score)</title>
+<title>TBR Swarm-Prevention Planner — Plan</title>
 <style>
-  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.55; color: #1f2933; max-width: 980px; margin: 0 auto; padding: 24px; background: #fafafa; }
-  h1 { font-size: 1.7rem; border-bottom: 3px solid #f0a500; padding-bottom: 8px; }
-  h2 { font-size: 1.3rem; margin-top: 2rem; color: #b06f00; }
-  h3 { font-size: 1.08rem; margin-top: 1.4rem; }
-  code { background: #eef1f4; padding: 1px 5px; border-radius: 4px; font-size: 0.9em; }
-  .sev-crit { color: #b00020; font-weight: 700; }
-  .sev-high { color: #c25e00; font-weight: 700; }
-  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 18px; margin: 12px 0; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
-  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .92rem; }
-  th, td { border: 1px solid #d9e0e7; padding: 7px 10px; text-align: left; vertical-align: top; }
-  th { background: #f3f6f9; }
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.55; max-width: 980px; margin: 2rem auto; padding: 0 1.2rem; color: #1c2b22; background: #fbfbf7; }
+  h1 { font-size: 1.9rem; border-bottom: 3px solid #2f7d4f; padding-bottom: .4rem; }
+  h2 { font-size: 1.3rem; margin-top: 2rem; color: #225c39; }
+  h3 { font-size: 1.05rem; color: #2f7d4f; margin-bottom: .3rem; }
+  code { background: #eef3ee; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+  table { border-collapse: collapse; width: 100%; margin: .6rem 0 1.2rem; font-size: .92rem; }
+  th, td { border: 1px solid #cdd8cf; padding: .45rem .6rem; text-align: left; vertical-align: top; }
+  th { background: #e7f0e8; }
+  .tier { font-weight: 700; white-space: nowrap; }
   ul.todo { list-style: none; padding-left: 0; }
-  ul.todo li { margin: 6px 0; }
-  ul.todo li::before { content: "\2610  "; font-size: 1.1em; }
-  ul.todo li.done::before { content: "\2611  "; color: #1a7f37; }
-  .pill { display: inline-block; font-size: .72rem; padding: 2px 8px; border-radius: 999px; background: #e7eef7; color: #234; margin-left: 6px; }
-  .note { font-size: .9rem; color: #555; }
-  .flow { background: #fff7e6; border-left: 4px solid #f0a500; padding: 10px 16px; border-radius: 6px; font-family: ui-monospace, monospace; font-size: .85em; white-space: pre-wrap; }
+  ul.todo li { padding: .25rem 0 .25rem 1.8rem; position: relative; }
+  ul.todo li::before { content: "\2610"; position: absolute; left: 0; font-size: 1.15rem; color: #2f7d4f; }
+  ul.todo li.done::before { content: "\2611"; }
+  .note { background: #fff7e6; border-left: 4px solid #e0a800; padding: .7rem 1rem; border-radius: 6px; margin: 1rem 0; }
+  .files code { display: inline-block; }
+  .diagram { width: 100%; background: #ffffff; border: 1px solid #cdd8cf; border-radius: 8px; padding: .5rem; margin: 1rem 0; }
+  .new { color: #2f7d4f; font-weight: 700; }
+  .edit { color: #b8860b; font-weight: 700; }
+  .review { background: #eef3ee; border-radius: 8px; padding: 1rem 1.2rem; margin-top: 1.5rem; }
+  @media (prefers-color-scheme: dark) {
+    body { color: #e6efe8; background: #141815; }
+    th { background: #1e2a20; } td, th { border-color: #344337; }
+    .diagram { background: #11160f; }
+  }
 </style>
 </head>
 <body>
 
-<h1>Mobile Performance Plan — Real Experience Score</h1>
-<p class="note"><strong>Date:</strong> 21 June 2026 &nbsp;|&nbsp; <strong>Source:</strong> Vercel Speed Insights (mobile, P75, last 7 days). RES = 56 ("Needs Improvement").</p>
+<h1>TBR Swarm-Prevention Planner</h1>
+<p><strong>Goal:</strong> A live, interactive planner that recommends <em>when</em> to perform a
+Total Brood Removal (TBR) so the colony, after its induced brood break, rebuilds its forager force
+to peak across the summer nectar flow (e.g. bramble/blackberry) — bridging the gap between the early
+spring crop and the summer crop while controlling swarming.</p>
 
-<h2>Diagnosis</h2>
-<p>Only two Core Web Vitals are failing; everything else is green (FCP 1.51s, INP 96ms, FID 31ms, TTFB 0.85s).</p>
+<div class="note">
+<strong>Status:</strong> PLAN — awaiting your verification before any code is written.<br>
+<strong>Decisions locked:</strong> Placement = card on the existing <code>/dashboard/tools</code> page ·
+Persistence = live calculator only (no DB writes) · Crop dates = 3-tier resolution ·
+Prediction = GDD-projection (early/late aware) · Optimisation = maximise foragers across the summer flow.
+</div>
+
+<h2>1. The biological model</h2>
+<p>Day <code>T</code> = the day TBR is performed (all brood removed, foundation/empty comb given).
+The model is a simple <strong>daily cohort simulation</strong> driven by a handful of adjustable constants:</p>
+
 <table>
-  <tr><th>Metric</th><th>Value</th><th>Target</th><th>Root cause (verified in code)</th></tr>
-  <tr><td><span class="sev-crit">LCP</span></td><td>4.63s</td><td>&lt; 2.5s</td><td>~3s gap after FCP spent on serial <em>client-side</em> gates: auth &rarr; account-status DB check (blocks all content) &rarr; per-page serial auth + data fetches. Nothing server-rendered.</td></tr>
-  <tr><td><span class="sev-crit">CLS</span></td><td>0.63</td><td>&lt; 0.1</td><td>Full-screen "Loading…" &rarr; app-shell swap, then skeleton/content size mismatch and late-arriving sections (recent activity, populating data) shoving layout.</td></tr>
+<tr><th>Constant</th><th>Default</th><th>Meaning</th></tr>
+<tr><td>Re-lay delay</td><td>4 days</td><td>Time for the colony to draw enough comb before the queen resumes laying (<code>T+4</code>).</td></tr>
+<tr><td>Egg &rarr; emergence</td><td>21 days</td><td>Worker development. First new brood emerges at <code>T+25</code>.</td></tr>
+<tr><td>Emergence &rarr; forager</td><td>21 days</td><td>House-bee phase. First <em>new</em> foragers at <code>T+46</code>.</td></tr>
+<tr><td>Queen lay rate</td><td>1200 eggs/day</td><td>Adjustable 1000&ndash;1500 (slider). Sets the rebuild slope.</td></tr>
+<tr><td>Forager active span</td><td>21 days</td><td>How long a bee forages before dying — governs how fast the standing force decays during the gap.</td></tr>
 </table>
-<p>Worst route <code>/dashboard/records</code> (RES 39) compounds all three: behind the account-status gate, longest serial fetch chain, and a bare centred spinner replaced by a full header+filters+list.</p>
 
-<div class="flow">LCP critical path today:
- TTFB 0.85s  ->  FCP 1.51s ("Loading…")  ->  [auth getSession]  ->  [getAccountStatus profiles query]  ->  render shell
-   /records:  getCurrentUserId  ->  hasActiveSubscription  ->  getAccessibleHiveIds  ->  Promise.all(9 queries)  ->  LCP 4.63s</div>
+<h3>Key derived milestones from T</h3>
+<div class="diagram">
+<svg viewBox="0 0 920 150" width="100%" role="img" aria-label="TBR timeline">
+  <line x1="20" y1="100" x2="900" y2="100" stroke="#2f7d4f" stroke-width="2"/>
+  <g font-size="12" fill="#225c39" text-anchor="middle">
+    <line x1="40"  y1="92" x2="40"  y2="108" stroke="#2f7d4f"/><text x="40"  y="125">T (TBR)</text>
+    <line x1="190" y1="92" x2="190" y2="108" stroke="#2f7d4f"/><text x="190" y="125">T+4 re-lay</text>
+    <line x1="440" y1="92" x2="440" y2="108" stroke="#2f7d4f"/><text x="440" y="125">T+25 brood emerges</text>
+    <line x1="760" y1="92" x2="760" y2="108" stroke="#b8860b" stroke-width="2"/><text x="760" y="125" fill="#b8860b">T+46 new foragers</text>
+  </g>
+  <rect x="40" y="60" width="720" height="30" fill="#e0a80022" stroke="#e0a800" stroke-dasharray="4 3"/>
+  <text x="400" y="50" font-size="12" fill="#b8860b" text-anchor="middle">brood / forager replenishment gap &mdash; bridged by existing adult bees</text>
+</svg>
+</div>
 
-<h2>Decisions (confirmed 21 June 2026)</h2>
-<ol>
-  <li><strong>Account-status gate:</strong> render the dashboard immediately and run the deactivation check in the background, redirecting only if it returns deactivated/locked. (Brief shell flash for deactivated users; data still protected by RLS.)</li>
-  <li><strong>Sequencing:</strong> Phase 1 first, then test/deploy and watch RES, then Phases 2 &amp; 3.</li>
-</ol>
-
-<h2>Phase 1 &mdash; LCP quick wins <span class="pill">DONE — awaiting your test</span></h2>
-<p class="note">Pure performance; no visible UX change. Lowest risk.</p>
-<ul class="todo">
-  <li class="done"><strong>records/page.tsx</strong> &mdash; <code>hasActiveSubscription()</code> now runs in a <code>Promise.all</code> with <code>fetchAllData()</code> instead of serially before it (removes one round-trip from the critical path).</li>
-  <li class="done"><strong>batches/page.tsx</strong> &mdash; the 5 data loads now fire before <code>hasActiveSubscription()</code>, so the sub check resolves alongside them.</li>
-  <li class="done"><strong>useDashboardStats.ts</strong> &mdash; both RPCs triggered together via <code>.then()</code> (Supabase builders are lazy), overview still awaited first to unblock; recent activity arrives sooner (also trims its late-pop-in CLS).</li>
-  <li class="done"><strong>login/page.tsx</strong> &mdash; <code>priority</code> added to both above-the-fold logos.</li>
-</ul>
-
-<h2>Phase 2 &mdash; CLS (stable shell + matching skeletons) <span class="pill">DONE — awaiting your test</span></h2>
-<ul class="todo">
-  <li class="done">New <code>DashboardShellSkeleton</code> &mdash; mirrors the real chrome (Navbar wrapper + height, content container, desktop sidebar column). Used for the authLoading/grace state and the Suspense fallback, replacing the centred "Loading…".</li>
-  <li class="done">records &amp; batches &mdash; centred spinners replaced with top-aligned skeletons (header + filter bar + rows) so content lands where the placeholder was.</li>
-  <li class="note">Banners (ImpersonationBanner/OfflineIndicator/UpdateNotification): left as-is &mdash; Offline/Update are <code>fixed</code> (no push) and Impersonation only affects admins mid-impersonation; deprioritised vs. risk.</li>
-  <li class="note">Dashboard already had a structured skeleton (no change needed).</li>
-</ul>
-
-<h2>Phase 3 &mdash; biggest LCP lever <span class="pill">DONE — awaiting your test</span></h2>
-<ul class="todo">
-  <li class="done">dashboard/layout.tsx &mdash; rendering is now gated only on <code>authLoading</code> (fast, local <code>getSession</code>), NOT on <code>getAccountStatus()</code>. The deactivation check runs in the background (immediate + every 30s) and redirects only on a server-confirmed non-active status. Removes the <code>profiles</code> round-trip from the LCP critical path. Also unified the previous duplicate initial/periodic checks into one effect.</li>
-  <li class="note"><strong>Out of scope (flagged, not now):</strong> SSR/middleware auth and RSC streaming — high impact but a large, riskier architectural change.</li>
-</ul>
-
-<h2>Review</h2>
-<h3>Phase 1 (LCP quick wins) &mdash; shipped &amp; tested</h3>
-<p class="note">Parallelised serial auth+data fetches on records/batches/dashboard; <code>priority</code> on the login logo. Committed earlier.</p>
-<h3>Phases 2 &amp; 3 &mdash; implemented</h3>
+<h3>Forager-force curve (what the chart shows)</h3>
+<p>For each day <code>d</code> we sum the cohorts that are currently in the foraging window:</p>
 <ul>
-  <li><strong>LCP:</strong> the dashboard no longer blocks first paint on the account-status DB round-trip. Content (and each page's own data fetch) now starts as soon as the session resolves locally.</li>
-  <li><strong>CLS:</strong> the full-screen centred "Loading…" &rarr; app-shell swap is gone; a structural shell skeleton holds the chrome in place, and records/batches show top-aligned skeletons instead of centred spinners.</li>
-  <li><strong>Security preserved:</strong> deactivation/lockout still enforced (background check redirects on confirmed non-active), and the offline-tolerant <code>'unreachable'</code> handling from the earlier hardening is kept. Trade-off accepted (decision #1): a deactivated user briefly sees the shell before redirect; data stays protected by RLS.</li>
-  <li><strong>Files:</strong> new <code>src/components/DashboardShellSkeleton.tsx</code>; edited <code>dashboard/layout.tsx</code>, <code>records/page.tsx</code>, <code>batches/page.tsx</code>.</li>
+<li><code>emergence(d)</code> = steady rate <code>L</code> for <code>d &lt; T</code>; <code>0</code> for <code>T &le; d &lt; T+25</code> (brood gap); <code>L</code> for <code>d &ge; T+25</code> (rebuild).</li>
+<li><code>foragers(d)</code> = sum of <code>emergence(e)</code> for every <code>e</code> where <code>e + 21 &le; d &lt; e + 21 + 21</code>.</li>
 </ul>
-<p class="note"><strong>Please test:</strong> dashboard/records/batches paint the shell instantly then content (no full-page flash); deactivate a test account server-side &rarr; still redirected within ~30s; offline past token expiry &rarr; still no logout. Watch RES LCP &amp; CLS on Speed Insights after some traffic.</p>
+<p>This produces: a steady force &rarr; a decline through the gap (the standing force ages out and is not replaced from ~<code>T+21</code>) &rarr; a trough around <code>T+42&ndash;46</code> &rarr; recovery from <code>T+46</code>. The "bridge" the beekeeper relies on is visible as foragers keep being recruited from already-emerged house bees up to ~<code>T+21</code>.</p>
+
+<h3>Scoring &amp; recommendation</h3>
+<p>For each candidate <code>T</code> the model scores the <em>average forager force across the summer-flow window</em> <code>[flowStart, flowEnd]</code>, subject to <code>T &ge; spring-crop end</code> (so the spring crop is harvested first). The recommended <code>T*</code> is the date that maximises that score. The beekeeper can then drag the TBR slider away from <code>T*</code> and watch the score and curve respond.</p>
+
+<h2>2. Crop-date resolution (3 tiers, per apiary)</h2>
+<p>Location is mandatory — the beekeeper picks the apiary first; the GDD curve, observed dates and the 2&ndash;3 week regional spread all flow from it. The spring/summer crops are <em>selectable</em> (rapeseed-led in the east, dandelion-led in the west).</p>
+<table>
+<tr><th>Tier</th><th>Source</th><th>Used when</th></tr>
+<tr><td class="tier">1 &mdash; Observed</td><td>The apiary's actual <code>gdd_records.start_date</code> for that crop, this season.</td><td>A record already exists this year &rarr; use the date directly.</td></tr>
+<tr><td class="tier">2 &mdash; Averaged + projected</td><td>Historical <strong>average GDD-at-bloom</strong> for that crop at that apiary, projected onto this year's GDD accumulation curve.</td><td>Prior-year history exists but no record yet this season. Warm year &rarr; earlier date.</td></tr>
+<tr><td class="tier">3 &mdash; General estimate</td><td><code>vegetation_info.typical_gdd_range</code> midpoint + <code>bloom_period</code>, projected onto this location's GDD curve.</td><td>No history at all for that crop at that apiary.</td></tr>
+</table>
+
+<h3>GDD projection (how Tier 2/3 turn a GDD threshold into a date)</h3>
+<ul>
+<li>Accumulated GDD to today comes from the existing <code>fetchCurrentYearGDD(lat, lon)</code> in <code>src/lib/gdd.ts</code>.</li>
+<li>Forward projection uses the location's <strong>recent average daily GDD accrual</strong> (keeps it simple and within existing Open-Meteo data — no new API). A warm season raises both the accumulated total and the daily rate, so the predicted bloom date pulls earlier automatically.</li>
+<li>Predicted date = today + (targetGDD &minus; accumulatedGDD) / dailyRate. Each resolved crop date carries a <strong>tier badge</strong> so the beekeeper knows how confident it is.</li>
+</ul>
+
+<h2>3. Interface</h2>
+<ul>
+<li><strong>Apiary picker</strong> (required) and <strong>spring-crop / summer-flow pickers</strong>, pre-filled from what the apiary actually has records for.</li>
+<li><strong>Forager-force chart</strong> (Chart.js — already installed): the forager curve over the season with shaded bands for spring crop, the brood gap, and the summer flow.</li>
+<li><strong>TBR-date slider</strong> (native <code>&lt;input type="range"&gt;</code>) plus a lay-rate slider; an "advanced" disclosure for the biological constants. Matches the app's existing +/&minus; control aesthetic and 50+ accessibility (large targets, high contrast).</li>
+<li><strong>Recommendation panel</strong>: the suggested <code>T*</code>, the milestone dates (re-lay, emergence, first foragers), the flow-coverage score, and plain-language guidance.</li>
+</ul>
+
+<h2>4. Files</h2>
+<table class="files">
+<tr><th>File</th><th>Change</th></tr>
+<tr><td><code>src/lib/tbr-model.ts</code></td><td><span class="new">NEW</span> pure functions: forager-force simulation, scoring, optimal-date search, 3-tier crop-date resolution + GDD projection.</td></tr>
+<tr><td><code>src/types/tbr.ts</code></td><td><span class="new">NEW</span> interfaces (<code>TbrConstants</code>, <code>ResolvedCropDate</code>, <code>TbrPlan</code>, etc.).</td></tr>
+<tr><td><code>src/hooks/useTbrPlanner.ts</code></td><td><span class="new">NEW</span> loads apiaries + <code>gdd_records</code> + <code>vegetation_info</code> for the selected apiary; exposes resolved dates &amp; computed plan.</td></tr>
+<tr><td><code>src/components/tools/TBRPlanner.tsx</code></td><td><span class="new">NEW</span> the UI (pickers, sliders, chart, recommendation).</td></tr>
+<tr><td><code>src/app/dashboard/tools/page.tsx</code></td><td><span class="edit">EDIT</span> add <code>'tbr'</code> to <code>ToolsSection</code>, add a card under "Hive Health", add the tab block.</td></tr>
+<tr><td><code>docs/features/tbr-swarm-planner.md</code></td><td><span class="new">NEW</span> feature documentation (British English).</td></tr>
+</table>
+<div class="note">No database changes (live calculator). No new dependencies (Chart.js, date-fns, gdd.ts all already present). Reuses existing Supabase client and tools-page patterns. Each new file is small and single-purpose.</div>
+
+<h2>5. To-do</h2>
+<ul class="todo">
+<li class="done">Confirm this plan with the beekeeper.</li>
+<li class="done">Create <code>src/types/tbr.ts</code> with the model interfaces.</li>
+<li class="done">Create <code>src/lib/tbr-model.ts</code> — forager-force simulation + scoring + optimal-date search.</li>
+<li class="done">Add 3-tier crop-date resolution + GDD projection to <code>src/lib/tbr-model.ts</code> (reusing <code>gdd.ts</code> helpers).</li>
+<li class="done">Create <code>src/hooks/useTbrPlanner.ts</code> — data loading &amp; plan computation.</li>
+<li class="done">Create <code>src/components/tools/TBRPlanner.tsx</code> — pickers, sliders, Chart.js curve, recommendation panel.</li>
+<li class="done">Wire into <code>src/app/dashboard/tools/page.tsx</code> (type + card + tab).</li>
+<li class="done">Write <code>docs/features/tbr-swarm-planner.md</code>.</li>
+<li class="done">Type-check the new source files (<code>tsc --noEmit</code> — clean).</li>
+<li>Prompt the beekeeper to test the build (per project rule, I do not run the build).</li>
+</ul>
+
+<div class="review">
+<h2 style="margin-top:0">Review</h2>
+<p><strong>What was built:</strong> a live "TBR Swarm Planner" tool, reachable from
+<code>Dashboard → Tools → Hive Health → TBR Swarm Planner</code>. No database changes, no new
+dependencies.</p>
+<h3>Files</h3>
+<ul>
+<li><span class="new">NEW</span> <code>src/types/tbr.ts</code> — model interfaces &amp; default constants.</li>
+<li><span class="new">NEW</span> <code>src/lib/tbr-model.ts</code> — pure model: UTC-safe date maths, the
+forager-force cohort simulation (closed-form gap overlap), flow-coverage scoring, optimal-date
+search, and the 3-tier crop-date resolver with GDD projection.</li>
+<li><span class="new">NEW</span> <code>src/hooks/useTbrPlanner.ts</code> — loads apiaries +
+vegetation reference + per-apiary GDD records, fetches the apiary's GDD accumulation &amp; recent
+daily rate from Open-Meteo, auto-selects sensible default crops, and assembles the plan.</li>
+<li><span class="new">NEW</span> <code>src/components/tools/TBRPlanner.tsx</code> — apiary &amp; crop
+pickers with tier badges, the recommendation panel, the Chart.js forager-force curve (custom
+canvas plugin shades the spring-crop &amp; summer-flow bands and draws TBR / first-forager marker
+lines), the TBR-date and lay-rate sliders, milestone cards, and an advanced disclosure for the
+biological constants.</li>
+<li><span class="edit">EDIT</span> <code>src/app/dashboard/tools/page.tsx</code> — added the
+<code>tbr</code> section (type, URL whitelist, card, tab).</li>
+<li><span class="new">NEW</span> <code>docs/features/tbr-swarm-planner.md</code>.</li>
+</ul>
+<h3>Defensive choices</h3>
+<ul>
+<li>All simulation loops are bounded (<code>MAX_SIM_DAYS</code>); out-of-order date ranges return
+empty/zero instead of looping.</li>
+<li>Open-Meteo fetch is abortable, time-guarded and falls back gracefully — if a location has no
+coordinates and no records, the UI explains why no plan can be shown rather than failing.</li>
+<li>GDD projection clamps a non-positive daily rate to avoid divide-by-zero; "already reached"
+thresholds are surfaced honestly rather than back-dated.</li>
+<li>User crop/apiary choices are preserved against the auto-default logic via refs.</li>
+</ul>
+<h3>Caveats</h3>
+<ul>
+<li>Forward GDD projection uses recent average daily accrual (not a live forecast) — simple and
+location-aware; can be upgraded to the Open-Meteo 16-day forecast later if wanted.</li>
+<li>Spring-crop and summer-flow window lengths default to 30 / 35 days
+(<code>SPRING_CROP_DURATION_DAYS</code> / <code>SUMMER_FLOW_DURATION_DAYS</code>).</li>
+<li>Per project rule, the production build was not run here — please test in the app.</li>
+</ul>
+<h3>Post-build audit hardening</h3>
+<ul>
+<li><strong>Critical:</strong> <code>parseISODate</code>/<code>toISODate</code> hardened so a malformed
+date (e.g. a bad <code>gdd_records.start_date</code>) degrades to the epoch instead of throwing
+<code>RangeError</code> and crashing the render.</li>
+<li><strong>High:</strong> GDD projection now anchors on the archive&apos;s real last date
+(<code>asOf</code>) — removing the ~5-day late bias — and falls back to the season&apos;s average
+daily accrual instead of a meaningless 1 GDD/day.</li>
+<li><strong>High:</strong> a spring crop dated after the summer flow is now ignored (band suppressed)
+rather than corrupting the plan bounds.</li>
+<li><strong>Medium:</strong> latitude/longitude coerced &amp; validated (PostgREST can return
+<code>numeric</code> as string); failed record fetches are now logged; the monotonic
+recommendation invariant is documented.</li>
+</ul>
+</div>
 
 </body>
 </html>

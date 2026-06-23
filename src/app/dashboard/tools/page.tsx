@@ -2,9 +2,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { Wrench, Droplet, Cookie, Cloud, Send, Thermometer, Grid3X3, Camera, Wallet, Package, ShoppingCart, QrCode, ArrowLeft } from 'lucide-react'
+import { Wrench, Droplet, Cookie, Cloud, Send, Thermometer, Grid3X3, Camera, Wallet, Package, ShoppingCart, QrCode, ArrowLeft, Scissors } from 'lucide-react'
 import Link from 'next/link'
 import GDDTracker from '@/components/tools/GDDTracker'
+import TBRPlanner from '@/components/tools/TBRPlanner'
 import VarroaWeather from '@/components/tools/VarroaWeather'
 import FrameCellCalculator from '@/components/tools/FrameCellCalculator'
 import DiagnosisUploader from '@/components/tools/DiagnosisUploader'
@@ -14,7 +15,7 @@ import PurchaseList from '@/components/tools/PurchaseList'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
 
-type ToolsSection = 'feeding' | 'fondant' | 'cells' | 'varroa' | 'gdd' | 'diagnosis' | 'profitloss' | 'traceability' | 'purchases'
+type ToolsSection = 'feeding' | 'fondant' | 'cells' | 'varroa' | 'gdd' | 'tbr' | 'diagnosis' | 'profitloss' | 'traceability' | 'purchases'
 
 export default function ToolsPage() {
  const [userId, setUserId] = useState<string | null>(null)
@@ -31,7 +32,7 @@ export default function ToolsPage() {
  // Sync with URL params
  useEffect(() => {
  const section = searchParams.get('section')
- if (section && ['feeding', 'fondant', 'cells', 'varroa', 'gdd', 'diagnosis', 'profitloss', 'traceability', 'purchases'].includes(section)) {
+ if (section && ['feeding', 'fondant', 'cells', 'varroa', 'gdd', 'tbr', 'diagnosis', 'profitloss', 'traceability', 'purchases'].includes(section)) {
  setActiveSection(section as ToolsSection)
  } else {
  setActiveSection(null)
@@ -128,6 +129,7 @@ export default function ToolsPage() {
  tools: [
  { id: 'varroa' as const, label: 'Varroa Weather', description: 'Weather-based varroa pressure forecasts for your apiaries', icon: Cloud, type: 'inline' as const },
  { id: 'gdd' as const, label: 'GDD Tracker', description: 'Growing degree-day accumulation for forage predictions', icon: Thermometer, type: 'inline' as const },
+ { id: 'tbr' as const, label: 'TBR Swarm Planner', description: 'Time a total brood removal to peak foragers for the summer flow', icon: Scissors, type: 'inline' as const },
  { id: 'diagnosis' as const, label: 'Diagnosis', description: 'Upload photos for AI-assisted hive health analysis', icon: Camera, type: 'inline' as const },
  ],
  },
@@ -418,6 +420,13 @@ export default function ToolsPage() {
  {activeSection === 'gdd' && (
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
  <GDDTracker userId={userId} />
+ </div>
+ )}
+
+ {/* TBR Swarm Planner Tab */}
+ {activeSection === 'tbr' && (
+ <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+ <TBRPlanner userId={userId} />
  </div>
  )}
 
