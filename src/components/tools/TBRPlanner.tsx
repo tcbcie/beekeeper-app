@@ -22,10 +22,11 @@ import type { CropDateTier, TbrConstants } from '@/types/tbr'
 
 ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, ChartLegend, Filler, TimeScale)
 
-// Draws shaded crop/gap bands and dashed marker lines behind the forager curve.
+// Draws shaded crop/flow bands and dashed marker lines OVER the forager curve, so
+// the translucent area fill underneath doesn't wash them out.
 const bandsPlugin: Plugin<'line'> = {
   id: 'tbrBands',
-  beforeDatasetsDraw(chart, _args, opts) {
+  afterDatasetsDraw(chart, _args, opts) {
     const o = opts as {
       bands?: { start: string; end: string; color: string }[]
       lines?: { date: string; color: string }[]
@@ -111,9 +112,9 @@ export default function TBRPlanner({ userId }: { userId: string }) {
     }
     const bands = [
       bounds.springEnd
-        ? { start: addDays(bounds.springEnd, -30), end: bounds.springEnd, color: isDark ? 'rgba(34,197,94,0.10)' : 'rgba(34,197,94,0.12)' }
+        ? { start: addDays(bounds.springEnd, -30), end: bounds.springEnd, color: isDark ? 'rgba(34,197,94,0.22)' : 'rgba(34,197,94,0.28)' }
         : null,
-      { start: bounds.flowStart, end: bounds.flowEnd, color: isDark ? 'rgba(59,130,246,0.14)' : 'rgba(59,130,246,0.14)' },
+      { start: bounds.flowStart, end: bounds.flowEnd, color: isDark ? 'rgba(59,130,246,0.22)' : 'rgba(59,130,246,0.26)' },
     ].filter(Boolean) as { start: string; end: string; color: string }[]
     const lines = [
       { date: plan.milestones.tbrDate, color: isDark ? '#f87171' : '#dc2626' },
