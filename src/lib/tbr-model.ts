@@ -99,6 +99,62 @@ export function peakAdultPopulation(c: TbrConstants): number {
   return c.layRate * totalAdultLifespanDays(c)
 }
 
+// --- Rebuild food budget -----------------------------------------------------
+//
+// Honey (carbohydrate) is funded from stores → the starvation risk. Pollen
+// (protein) is mostly foraged fresh; stored beebread covers only a small part.
+// Comb is always costed from foundation (worst case).
+
+export const CELLS_PER_DADANT_DEEP = 9500
+
+const HONEY_PER_WAX_KG = 7           // kg honey per kg wax (Whitcomb 1946: 6.6–8.8)
+const WAX_PER_DADANT_FRAME_KG = 0.12 // ~120 g wax in a drawn deep comb
+const LARVAL_CARB_MG = 59.4          // carbohydrate fed per worker larva
+const ADULT_SUGAR_MG_PER_DAY = 4     // utilisable sugar per adult bee per day
+const POLLEN_PER_BEE_MG = 150        // pollen to rear one worker (125–187.5 mg)
+const STORED_BEEBREAD_KG = 0.75      // typical colony beebread reserve
+const THERMO_OVERHEAD_FACTOR = 0.5   // thermoregulation + nurse processing, on top of basal upkeep
+const AVG_ADULT_FRACTION = 0.7       // mean adult population through the dip + recovery, vs full strength
+
+export interface FoodBudget {
+  framesToDraw: number
+  combHoneyKg: number
+  broodHoneyKg: number
+  upkeepHoneyKg: number
+  totalHoneyKg: number
+  pollenKg: number
+  storedBeebreadKg: number
+  pollenToForageKg: number
+}
+
+/** Estimate the honey and pollen needed to rebuild after a break, over `rebuildDays`. */
+export function rebuildFoodBudget(c: TbrConstants, rebuildDays: number): FoodBudget {
+  const days = Math.max(0, rebuildDays)
+  const standingBroodCells = c.layRate * c.eggToEmergenceDays
+  const framesToDraw = Math.max(1, Math.round(standingBroodCells / CELLS_PER_DADANT_DEEP))
+  const beesFed = c.layRate * Math.max(0, days - c.reLayDelayDays)
+  const avgAdults = peakAdultPopulation(c) * AVG_ADULT_FRACTION
+
+  const combHoneyKg = framesToDraw * WAX_PER_DADANT_FRAME_KG * HONEY_PER_WAX_KG
+  const broodHoneyKg = (beesFed * LARVAL_CARB_MG) / 1e6
+  const upkeepHoneyKg = ((avgAdults * ADULT_SUGAR_MG_PER_DAY * days) / 1e6) * (1 + THERMO_OVERHEAD_FACTOR)
+  const totalHoneyKg = combHoneyKg + broodHoneyKg + upkeepHoneyKg
+
+  const pollenKg = (beesFed * POLLEN_PER_BEE_MG) / 1e6
+  const pollenToForageKg = Math.max(0, pollenKg - STORED_BEEBREAD_KG)
+
+  return {
+    framesToDraw,
+    combHoneyKg,
+    broodHoneyKg,
+    upkeepHoneyKg,
+    totalHoneyKg,
+    pollenKg,
+    storedBeebreadKg: STORED_BEEBREAD_KG,
+    pollenToForageKg,
+  }
+}
+
 /** Age at first foraging for the post-break cohort (precocious when accelDays > 0). */
 function postBreakForageAge(c: TbrConstants, accelDays: number): number {
   return Math.max(MIN_FORAGE_AGE_DAYS, c.emergenceToForagerDays - Math.max(0, accelDays))
@@ -214,6 +270,7 @@ export interface VegInfoLite {
   name: string
   typicalGddRange: string | null
   bloomPeriod: string | null
+  nectarValue: number | null
 }
 
 export interface ProjectionContext {

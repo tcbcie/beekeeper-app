@@ -6,12 +6,26 @@ import { DEFAULT_TBR_CONSTANTS, type TbrConstants, type ResolvedCropDate } from 
 import {
   dayDiff,
   planFromResolved,
+  rebuildFoodBudget,
   resolveCropDate,
   type GddRecordLite,
   type VegInfoLite,
   type ProjectionContext,
   type TbrResult,
+  type FoodBudget,
 } from '@/lib/tbr-model'
+
+const MIN_USEFUL_NECTAR_VALUE = 3
+
+export interface FoodPlan {
+  budget: FoodBudget
+  /** Earliest worthwhile nectar source predicted at/after the break, if any. */
+  nextNectarDate: string | null
+  nextNectarName: string | null
+  /** True if that nectar income arrives before the colony's own foragers recover. */
+  incomeBeforeRecovery: boolean
+  recoveryDate: string
+}
 
 export interface ApiaryOption {
   id: string
@@ -45,6 +59,8 @@ interface UseTbrPlannerReturn {
   tbrOverride: string | null
   setTbrOverride: (d: string | null) => void
   result: TbrResult | null
+  /** Honey/pollen needed to rebuild + nectar-income outlook for the chosen date. */
+  foodPlan: FoodPlan | null
   loading: boolean
   error: string | null
   /** True once apiary data has loaded but no location/records exist to project from. */
@@ -158,7 +174,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
           .order('display_order'),
         supabase
           .from('vegetation_info')
-          .select('vegetation_type_id, typical_gdd_range, bloom_period'),
+          .select('vegetation_type_id, typical_gdd_range, bloom_period, nectar_value'),
       ])
 
       if (!active) return
@@ -177,11 +193,12 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
       for (const v of (vegTypeRes.data ?? []) as { id: string; value: string }[]) {
         names.set(v.id, v.value)
       }
-      const infoByVeg = new Map<string, { typical_gdd_range: string | null; bloom_period: string | null }>()
+      const infoByVeg = new Map<string, { typical_gdd_range: string | null; bloom_period: string | null; nectar_value: number | null }>()
       for (const r of (vegInfoRes.data ?? []) as {
         vegetation_type_id: string
         typical_gdd_range: string | null
         bloom_period: string | null
+        nectar_value: number | null
       }[]) {
         infoByVeg.set(r.vegetation_type_id, r)
       }
@@ -190,6 +207,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
         name,
         typicalGddRange: infoByVeg.get(id)?.typical_gdd_range ?? null,
         bloomPeriod: infoByVeg.get(id)?.bloom_period ?? null,
+        nectarValue: infoByVeg.get(id)?.nectar_value ?? null,
       }))
       merged.sort((a, b) => a.name.localeCompare(b.name))
       setVegInfo(merged)
@@ -330,6 +348,28 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     )
   }, [resolvedSpring, resolvedSummer, constants, tbrOverride, precocious])
 
+  const foodPlan = useMemo<FoodPlan | null>(() => {
+    if (!result || !proj) return null
+    const { effectiveTbrDate, plan } = result
+    const recoveryDate = plan.milestones.firstForagerDate
+    const budget = rebuildFoodBudget(constants, dayDiff(effectiveTbrDate, recoveryDate))
+
+    // Earliest worthwhile nectar source predicted at/after the break.
+    let nextNectarDate: string | null = null
+    let nextNectarName: string | null = null
+    for (const v of vegInfo) {
+      if ((v.nectarValue ?? 0) < MIN_USEFUL_NECTAR_VALUE) continue
+      const r = resolveCropDate(v.vegetationTypeId, v.name, records, v, proj)
+      if (r.date && r.date >= effectiveTbrDate && (!nextNectarDate || r.date < nextNectarDate)) {
+        nextNectarDate = r.date
+        nextNectarName = v.name
+      }
+    }
+
+    const incomeBeforeRecovery = nextNectarDate != null && nextNectarDate <= recoveryDate
+    return { budget, nextNectarDate, nextNectarName, incomeBeforeRecovery, recoveryDate }
+  }, [result, proj, constants, vegInfo, records])
+
   return {
     apiaries,
     selectedApiaryId,
@@ -351,6 +391,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     tbrOverride,
     setTbrOverride,
     result,
+    foodPlan,
     loading,
     error,
     noProjection,

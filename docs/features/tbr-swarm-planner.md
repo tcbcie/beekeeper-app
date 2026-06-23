@@ -103,6 +103,27 @@ by the new ones. The forager-strength curve is normalised to steady state, so th
 is independent of the lay-rate value.
 - 50+ accessibility: large targets, high contrast, readable minimum font sizes.
 
+## Rebuild food budget & starvation risk
+
+An early break rebuilds during a nectar gap, so the planner estimates what the rebuild costs and
+whether the colony can pay for it. Comb is always costed from foundation (worst case).
+
+**Honey (from stores — the starvation risk):**
+- Comb drawing: `framesToDraw × 0.12 kg wax × 7` (kg honey per kg wax; Whitcomb 1946).
+- Brood food: `beesFed × 59.4 mg` carbohydrate per larva.
+- Upkeep + warmth: `avgAdults × 4 mg/day × rebuildDays`, plus a 0.5× thermoregulation/nursing overhead.
+
+**Pollen (mostly foraged):** `beesFed × 150 mg` (125–187.5 mg per worker reared). Stored beebread
+only covers ~0.75 kg, so the rest must be foraged fresh — a cold/wet spell stalls the rebuild
+regardless of honey stores.
+
+**Starvation flag:** the model finds the earliest worthwhile nectar source (nectar value ≥ 3)
+predicted at/after the break using the GDD resolver. If none arrives before the colony's own
+foragers recover, it warns and shows how much to leave or feed; otherwise it notes the income date.
+
+Everything scales with lay rate (bigger colony → bigger bill). Figures are estimates with wide error
+bars — they size the decision, not a feeding schedule.
+
 ## Files
 
 | File | Change |
