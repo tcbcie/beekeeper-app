@@ -17,7 +17,7 @@ import 'chartjs-adapter-date-fns'
 import { Line } from 'react-chartjs-2'
 import Button from '@/components/ui/Button'
 import { useTbrPlanner } from '@/hooks/useTbrPlanner'
-import { addDays, dayDiff, parseISODate, steadyStateForagers } from '@/lib/tbr-model'
+import { addDays, dayDiff, parseISODate, steadyStateForagers, peakAdultPopulation, totalAdultLifespanDays } from '@/lib/tbr-model'
 import type { CropDateTier, TbrConstants } from '@/types/tbr'
 
 ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, ChartLegend, Filler, TimeScale)
@@ -77,7 +77,7 @@ const CONSTANT_FIELDS: { key: keyof TbrConstants; label: string; min: number; ma
   { key: 'reLayDelayDays', label: 'Comb-draw / re-lay delay (days)', min: 0, max: 14, step: 1 },
   { key: 'eggToEmergenceDays', label: 'Egg → emergence (days)', min: 16, max: 24, step: 1 },
   { key: 'emergenceToForagerDays', label: 'Emergence → forager (days)', min: 14, max: 28, step: 1 },
-  { key: 'foragerSpanDays', label: 'Forager active span (days)', min: 7, max: 35, step: 1 },
+  { key: 'foragingCareerDays', label: 'Foraging career (days)', min: 5, max: 21, step: 1 },
 ]
 
 export default function TBRPlanner({ userId }: { userId: string }) {
@@ -89,7 +89,6 @@ export default function TBRPlanner({ userId }: { userId: string }) {
     vegOptions, springVegId, summerVegId, setSpringVegId, setSummerVegId,
     resolvedSpring, resolvedSummer, constants, setConstants,
     precocious, setPrecocious,
-    careerPreview, setCareerPreview, previewCareerDays, previewResult,
     tbrOverride, setTbrOverride, result, loading, error, noProjection,
   } = planner
 
@@ -101,34 +100,20 @@ export default function TBRPlanner({ userId }: { userId: string }) {
   const chart = useMemo(() => {
     if (!result) return null
     const { plan, bounds } = result
-    const datasets = [
-      {
-        label: 'Current model',
-        data: plan.curve.map((p) => ({ x: parseISODate(p.date).getTime(), y: Math.round((p.foragers / steady) * 100) })),
-        borderColor: isDark ? '#facc15' : '#b45309',
-        backgroundColor: isDark ? 'rgba(250,204,21,0.12)' : 'rgba(180,83,9,0.10)',
-        fill: true,
-        tension: 0.25,
-        pointRadius: 0,
-        borderWidth: 2,
-        borderDash: [] as number[],
-      },
-    ]
-    if (previewResult) {
-      const previewSteady = constants.layRate * previewCareerDays || 1
-      datasets.push({
-        label: `Realistic career (~${previewCareerDays} d)`,
-        data: previewResult.plan.curve.map((p) => ({ x: parseISODate(p.date).getTime(), y: Math.round((p.foragers / previewSteady) * 100) })),
-        borderColor: isDark ? '#22d3ee' : '#0e7490',
-        backgroundColor: 'transparent',
-        fill: false,
-        tension: 0.25,
-        pointRadius: 0,
-        borderWidth: 2,
-        borderDash: [6, 4],
-      })
+    const data = {
+      datasets: [
+        {
+          label: 'Forager strength',
+          data: plan.curve.map((p) => ({ x: parseISODate(p.date).getTime(), y: Math.round((p.foragers / steady) * 100) })),
+          borderColor: isDark ? '#facc15' : '#b45309',
+          backgroundColor: isDark ? 'rgba(250,204,21,0.12)' : 'rgba(180,83,9,0.10)',
+          fill: true,
+          tension: 0.25,
+          pointRadius: 0,
+          borderWidth: 2,
+        },
+      ],
     }
-    const data = { datasets }
     const bands = [
       bounds.springEnd
         ? { start: addDays(bounds.springEnd, -30), end: bounds.springEnd, color: isDark ? 'rgba(34,197,94,0.22)' : 'rgba(34,197,94,0.28)' }
@@ -177,7 +162,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
     // Custom plugin options are keyed by plugin id; attach via a typed cast.
     ;(options.plugins as Record<string, unknown>).tbrBands = { bands, lines }
     return { data, options }
-  }, [result, previewResult, previewCareerDays, constants.layRate, isDark, steady])
+  }, [result, isDark, steady])
 
   // TBR-date slider bounds.
   const slider = useMemo(() => {
@@ -291,6 +276,11 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                       </span>{' '}
                       of full strength at the chosen date.
                     </p>
+                    <p className="text-sm text-text-secondary mt-1">
+                      Full strength ≈ <span className="font-semibold text-foreground">{steadyStateForagers(constants).toLocaleString()}</span> foragers
+                      within ≈ <span className="font-semibold text-foreground">{peakAdultPopulation(constants).toLocaleString()}</span> adult bees
+                      (adult life {totalAdultLifespanDays(constants)} d = {constants.emergenceToForagerDays} d house-bee + {constants.foragingCareerDays} d foraging).
+                    </p>
                     {result.plan.recommendedTbrDate && tbrOverride && tbrOverride !== result.plan.recommendedTbrDate && (
                       <Button
                         onClick={() => setTbrOverride(null)}
@@ -335,22 +325,12 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                     <Line data={chart.data} options={chart.options} plugins={[bandsPlugin]} />
                   </div>
                   <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-xs text-text-tertiary">
-                    <Legend swatch="bg-amber-600" label="Current model" />
-                    {previewResult && <Legend swatch="bg-cyan-600" label={`Realistic career (~${previewCareerDays} d)`} dashed />}
+                    <Legend swatch="bg-amber-600" label="Forager strength" />
                     <Legend swatch="bg-green-500/40" label="Spring crop" />
                     <Legend swatch="bg-blue-500/40" label="Summer flow" />
                     <Legend swatch="bg-red-600" label="TBR date" dashed />
                     <Legend swatch="bg-amber-600" label="First new foragers" dashed />
                   </div>
-                  {previewResult && (
-                    <p className="text-xs text-text-secondary mt-2">
-                      Flow coverage — current model:{' '}
-                      <span className="font-semibold text-foreground">{Math.round(result.plan.flowCoverageScore * 100)}%</span>
-                      {' '}· realistic career:{' '}
-                      <span className="font-semibold text-foreground">{Math.round(previewResult.plan.flowCoverageScore * 100)}%</span>.
-                      A shorter foraging career makes the post-break dip deeper and wider — the same TBR date looks riskier.
-                    </p>
-                  )}
                 </div>
               )}
 
@@ -413,24 +393,6 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                   <span className="block text-text-tertiary mt-0.5">
                     A forager-depleted colony raises foragers ~7 days younger than usual after a break, so it
                     recovers sooner. Off by default — the conservative estimate assumes normal timing.
-                  </span>
-                </span>
-              </label>
-
-              {/* Forager-career preview overlay */}
-              <label className="flex items-start gap-3 p-3 rounded-lg border border-dashed border-cyan-400 dark:border-cyan-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={careerPreview}
-                  onChange={(e) => setCareerPreview(e.target.checked)}
-                  className="mt-1 h-4 w-4 accent-cyan-600 flex-shrink-0"
-                />
-                <span className="text-sm">
-                  <span className="font-medium text-foreground">Preview: realistic forager career (~{previewCareerDays} d)</span>
-                  <span className="block text-text-tertiary mt-0.5">
-                    Overlays a second curve using a ~{previewCareerDays}-day foraging career (Visscher &amp; Dukas 1997)
-                    instead of the model&apos;s 21 days. Bees die sooner, so the post-break dip is deeper and wider.
-                    Comparison only — it doesn&apos;t change the recommendation.
                   </span>
                 </span>
               </label>

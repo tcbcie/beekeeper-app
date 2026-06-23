@@ -84,9 +84,19 @@ function countIntegers(lo: number, hi: number): number {
 //     reduced by `accelDays` when the colony forages precociously after the break.
 // With accelDays = 0 (Hpost = Hpre) this is identical to the original closed form.
 
-/** Standing forager force in normal (pre-break) steady state. */
+/** Total adult lifespan (days) = pre-foraging house-bee phase + foraging career. */
+export function totalAdultLifespanDays(c: TbrConstants): number {
+  return c.emergenceToForagerDays + c.foragingCareerDays
+}
+
+/** Standing forager force in normal (pre-break) steady state (= peak foragers). */
 export function steadyStateForagers(c: TbrConstants): number {
-  return c.layRate * c.foragerSpanDays
+  return c.layRate * c.foragingCareerDays
+}
+
+/** Peak total adult population at full strength (all ages) = lay rate × adult lifespan. */
+export function peakAdultPopulation(c: TbrConstants): number {
+  return c.layRate * totalAdultLifespanDays(c)
 }
 
 /** Age at first foraging for the post-break cohort (precocious when accelDays > 0). */
@@ -96,7 +106,7 @@ function postBreakForageAge(c: TbrConstants, accelDays: number): number {
 
 /** Forager force on a day `t` days after TBR (t may be negative). */
 export function foragerForceAtOffset(t: number, c: TbrConstants, accelDays = 0): number {
-  const F = c.foragerSpanDays
+  const F = c.foragingCareerDays
   if (F <= 0) return 0
   const hPre = c.emergenceToForagerDays
   const hPost = postBreakForageAge(c, accelDays)
@@ -341,7 +351,7 @@ export function planFromResolved(
     constants.reLayDelayDays +
     constants.eggToEmergenceDays +
     constants.emergenceToForagerDays +
-    constants.foragerSpanDays
+    constants.foragingCareerDays
 
   // Earliest feasible TBR: after the spring crop is off. Without a spring crop,
   // fall back to "one full recovery before the flow".
