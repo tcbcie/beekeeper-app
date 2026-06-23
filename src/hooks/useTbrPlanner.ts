@@ -42,6 +42,13 @@ interface UseTbrPlannerReturn {
   /** When true, model precocious foraging after the break (faster recovery). */
   precocious: boolean
   setPrecocious: (v: boolean) => void
+  /** Preview: overlay a second curve using a realistic (~8 d) forager career. */
+  careerPreview: boolean
+  setCareerPreview: (v: boolean) => void
+  /** The forager-career length (days) used by the preview overlay. */
+  previewCareerDays: number
+  /** The preview plan (same TBR date as `result`), or null when the preview is off. */
+  previewResult: TbrResult | null
   tbrOverride: string | null
   setTbrOverride: (d: string | null) => void
   result: TbrResult | null
@@ -56,6 +63,9 @@ const RECENT_RATE_WINDOW_DAYS = 14
 // Days earlier that post-break bees begin foraging when precocious foraging is modelled.
 // ~7 d matches forager-depletion studies (normal onset ~21 d → precocious ~14 d).
 const PRECOCIOUS_ACCEL_DAYS = 7
+
+// Realistic foraging-career length for the preview overlay (~7 d median; Visscher & Dukas 1997).
+const PREVIEW_CAREER_DAYS = 8
 
 /**
  * Fetch this year's accumulated GDD and recent daily accrual for a location.
@@ -117,6 +127,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
   const [summerVegId, setSummerVegId] = useState<string | null>(null)
   const [constants, setConstants] = useState<TbrConstants>(DEFAULT_TBR_CONSTANTS)
   const [precocious, setPrecocious] = useState(false)
+  const [careerPreview, setCareerPreview] = useState(false)
   const [tbrOverride, setTbrOverride] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -330,6 +341,20 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     )
   }, [resolvedSpring, resolvedSummer, constants, tbrOverride, precocious])
 
+  // Preview overlay: same TBR date and crops, but a realistic forager career, so the two
+  // curves differ only in foraging-career length (each normalised to its own full strength).
+  const previewResult = useMemo<TbrResult | null>(() => {
+    if (!careerPreview || !result || !resolvedSummer?.date) return null
+    return planFromResolved(
+      resolvedSpring?.date ?? null,
+      resolvedSummer.date,
+      null,
+      { ...constants, foragerSpanDays: PREVIEW_CAREER_DAYS },
+      result.effectiveTbrDate,
+      precocious ? PRECOCIOUS_ACCEL_DAYS : 0
+    )
+  }, [careerPreview, result, resolvedSpring, resolvedSummer, constants, precocious])
+
   return {
     apiaries,
     selectedApiaryId,
@@ -348,6 +373,10 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     setConstants,
     precocious,
     setPrecocious,
+    careerPreview,
+    setCareerPreview,
+    previewCareerDays: PREVIEW_CAREER_DAYS,
+    previewResult,
     tbrOverride,
     setTbrOverride,
     result,

@@ -88,7 +88,7 @@ slider and watch the score/curve respond.
 |-----------|-------|-----------|-------|
 | Egg → emergence | 21 d | 21 d (3+6+12) | Confirmed (Winston) |
 | Emergence → forager | 21 d, plastic | ~21–23 d normal; 7–14 d precocious under forager loss | Precocious toggle models the plastic case |
-| Forager career | 21 d | ~7 d median (Visscher & Dukas 1997) | Conflated with adult lifespan; dip is shallower than reality — flagged for a future retune |
+| Forager career | 21 d | ~7 d median (Visscher & Dukas 1997) | Conflated with adult lifespan; dip is shallower than reality. A **preview toggle** overlays a realistic ~8 d career for comparison without changing the default model |
 | Queen lay rate | 1000–2500/d | peak ~2000/d (Laidlaw & Page 1997) | Real Dadant colonies observed ~2200/d |
 | Recovery asymptote | = original | colonies often overshoot | The model is a deliberate conservative lower bound |
 
