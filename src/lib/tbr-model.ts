@@ -342,10 +342,17 @@ export function planFromResolved(
 
   const curve = simulateForagerCurve(effectiveTbrDate, simStart, simEnd, constants)
   const score = flowCoverage(effectiveTbrDate, flowStart, flowEnd, constants)
+  const recoveryAfterFlowStart = milestones.firstForagerDate > flowStart
 
   return {
     bounds: { springEnd, flowStart, flowEnd, earliest, latest },
-    plan: { curve, milestones, flowCoverageScore: score, recommendedTbrDate: recommended },
+    plan: {
+      curve,
+      milestones,
+      flowCoverageScore: score,
+      recommendedTbrDate: recommended,
+      recoveryAfterFlowStart,
+    },
     effectiveTbrDate,
   }
 }

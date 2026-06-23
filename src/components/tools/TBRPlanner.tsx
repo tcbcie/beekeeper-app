@@ -1,6 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
-import { Scissors, CalendarClock, Info, ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
+import { Scissors, CalendarClock, Info, ChevronDown, ChevronUp, Sparkles, AlertTriangle } from 'lucide-react'
 import {
   Chart as ChartJS,
   LinearScale,
@@ -283,6 +283,31 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                   </div>
                 </div>
               </div>
+
+              {/* Late-break warning (false-win guard) */}
+              {result.plan.recoveryAfterFlowStart && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg p-4 flex items-start gap-3">
+                  <AlertTriangle size={22} className="text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 text-sm text-amber-900 dark:text-amber-200">
+                    <p className="font-semibold">Late break — read this score with care</p>
+                    <p className="mt-1">
+                      New foragers won&apos;t arrive until{' '}
+                      <span className="font-semibold">{formatDate(result.plan.milestones.firstForagerDate)}</span>, after the{' '}
+                      {resolvedSummer?.name ?? 'summer'} flow starts ({formatDate(result.bounds.flowStart)}). The early flow
+                      rides your existing foragers, but strength then collapses through the mid-to-late flow and the colony
+                      heads into autumn weakened — so a high coverage figure here can be misleading.
+                    </p>
+                    {result.plan.recommendedTbrDate && result.effectiveTbrDate !== result.plan.recommendedTbrDate && (
+                      <Button
+                        onClick={() => setTbrOverride(null)}
+                        className="mt-3 px-3 py-1.5 text-sm rounded-lg bg-amber-600 text-white hover:bg-amber-700"
+                      >
+                        Use recommended date ({formatDate(result.plan.recommendedTbrDate)})
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Forager-force chart */}
               {chart && (
