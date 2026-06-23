@@ -125,6 +125,9 @@ export default function TBRPlanner({ userId }: { userId: string }) {
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: false },
+        // The app registers chartjs-plugin-datalabels globally; disable it here so
+        // raw point coordinates aren't drawn over the curve.
+        datalabels: { display: false },
         tooltip: {
           callbacks: {
             title: (items) => {
