@@ -253,9 +253,10 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
       if (apiaryList.length > 0) setSelectedApiaryId((prev) => prev ?? defaultApiary.id)
 
       // Frame systems (fall back to presets if the fetch fails); default to British National Deep.
+      // Coerce dimensions: PostgREST returns numeric columns as strings, which would break the cell maths.
       const frames: FrameStandardOption[] = ((frameRes.data ?? []) as {
-        id: string; label: string; width_mm: number; height_mm: number
-      }[]).map((f) => ({ id: f.id, label: f.label, widthMm: f.width_mm, heightMm: f.height_mm }))
+        id: string; label: string; width_mm: number | string; height_mm: number | string
+      }[]).map((f) => ({ id: f.id, label: f.label, widthMm: Number(f.width_mm), heightMm: Number(f.height_mm) }))
       const frameList = frames.length > 0 ? frames : FALLBACK_FRAME_STANDARDS
       setFrameStandards(frameList)
       const defaultFrame = frameList.find((f) => /national deep/i.test(f.label)) ?? frameList[0]
