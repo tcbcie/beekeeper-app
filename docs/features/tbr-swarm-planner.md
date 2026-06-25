@@ -1,22 +1,37 @@
-# TBR Swarm-Prevention Planner
+# Swarm & Varroa Brood-Break Planner
 
-> **Status:** Design / plan (awaiting implementation). Live calculator — no database changes.
+> **Status:** Implemented. Live calculator — no database changes.
+> Supports two interventions (TBR and queen caging) — see also
+> `swarm-varroa-planner-expansion.md` for the design of the caging/population expansion.
 
 ## Purpose
 
-Help the beekeeper decide **when** to perform a **Total Brood Removal (TBR)** so that the
-colony's induced brood break controls swarming *and* the colony rebuilds its forager force to
-peak across the summer nectar flow (typically bramble/blackberry). The aim is to bridge the gap
-between the early spring crop (harvested ~mid-May) and the summer crop, maximising foragers for
-the second flow.
+Help the beekeeper decide **when** to induce a **brood break** so that it (a) controls swarming and
+(b) leaves the colony **broodless for an oxalic-acid varroa treatment**, while the colony still
+rebuilds its forager force to peak across the summer nectar flow (typically bramble/blackberry). The
+aim is to bridge the gap between the early spring crop (harvested ~mid-May) and the summer crop.
 
-### What TBR is
+### Two methods (toggle)
 
-When a colony is in swarming mode and queen cells have been broken twice (~7 days apart), all
-frames carrying brood at any stage are removed and replaced with foundation/drawn empty comb. The
-colony behaves as if it has swarmed (a natural swarm leaves with no brood) and restarts its brood
-nest from scratch. It takes roughly 4 days to draw enough comb for the queen to resume laying, then
-~21 days for the first new brood to emerge.
+- **Total Brood Removal (TBR)** — all frames carrying brood are removed and replaced with
+  foundation/drawn comb. The colony behaves as if it swarmed and restarts its brood nest. ~4 days to
+  draw comb before the queen re-lays, then ~21 days to first emergence. Strongest reset, but the
+  colony must redraw comb and loses its standing brood.
+- **Queen caging** — the queen is confined for 21 days (clears worker brood) or 24 days (also clears
+  drone brood, a varroa reservoir). The caged queen can't leave, so a swarm returns. The existing
+  brood keeps emerging for ~3 weeks before the gap opens, and the comb and most brood are preserved —
+  far cheaper in stores than TBR.
+
+Both are modelled as a **single zero-emergence window** in the colony's emergence schedule, differing
+only in when it opens (TBR at day 0; caging at +21 days, after the pipeline drains). TBR is the
+`gapStart = 0` special case, so its output is unchanged by the caging expansion.
+
+### Varroa treatment window
+
+Both methods produce a broodless period (no capped brood) suitable for a single oxalic-acid
+treatment. It is derived from the same gap parameters for both methods:
+`broodlessStart = gapStart`, `broodlessEnd = gapEnd − cappedPhase` (capped phase ≈ 12 days). The UI
+shows the exact window.
 
 ## Decisions
 
@@ -45,11 +60,19 @@ nest from scratch. It takes roughly 4 days to draw enough comb for the queen to 
 **Total adult lifespan** = emergence→forager + foraging career = 29 days (derived). Peak foragers =
 `layRate × foragingCareer`; peak adult population = `layRate × adultLifespan` — both shown in the UI.
 
-### Forager-force curve
+### Two curves: forager force + overall population
 
-- `emergence(d)` = steady `L` for `d < T`; `0` for `T ≤ d < T+25`; `L` for `d ≥ T+25`.
-- `foragers(d)` = Σ `emergence(e)` for `e` where `e+H ≤ d < e+H+F` (H = 21, F = 8), summed over two
-  cohorts so post-break bees can forage at a precocious age when that option is enabled.
+The planner draws **two stacked charts**, each normalised to its own full-strength steady state (%):
+
+- **Forager force** = Σ `emergence(e)` for bees aged `H..H+F` (H = emergence→forager, F = foraging
+  career), summed over two cohorts so post-break bees can forage at a precocious age when enabled.
+- **Overall population** = the same emergence integrated over the **full adult lifespan**
+  (`H + F`), excluding the gap. Population leads foragers — today's emerging bees are tomorrow's
+  foragers — which is why it matters most for the gentler caging scenario.
+
+Emergence is steady `L` everywhere except the zero-emergence window `[gapStart, gapEnd)`:
+- TBR: `gapStart = 0`, `gapEnd = reLay + eggToEmergence` (≈25).
+- Caging: `gapStart = eggToEmergence` (≈21), `gapEnd = gapStart + cageDuration + releaseRelay`.
 
 Result: steady force → decline through the gap → a deep, wide trough (with an 8-day career the
 standing force is exhausted ~8 days after the gap reaches foraging age, so foragers fall near zero

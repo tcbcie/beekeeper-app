@@ -1,6 +1,6 @@
 'use client'
 import { useMemo, useState } from 'react'
-import { Scissors, CalendarClock, Info, ChevronDown, ChevronUp, Sparkles, AlertTriangle, Wheat } from 'lucide-react'
+import { Scissors, CalendarClock, Info, ChevronDown, ChevronUp, Sparkles, AlertTriangle, Wheat, Bug } from 'lucide-react'
 import {
   Chart as ChartJS,
   LinearScale,
@@ -18,7 +18,7 @@ import { Line } from 'react-chartjs-2'
 import Button from '@/components/ui/Button'
 import { useTbrPlanner } from '@/hooks/useTbrPlanner'
 import { addDays, dayDiff, parseISODate, steadyStateForagers, peakAdultPopulation, totalAdultLifespanDays, CELLS_PER_DADANT_DEEP } from '@/lib/tbr-model'
-import type { CropDateTier, TbrConstants } from '@/types/tbr'
+import type { CropDateTier, TbrConstants, InterventionMethod } from '@/types/tbr'
 
 ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, ChartLegend, Filler, TimeScale)
 
@@ -70,12 +70,24 @@ function formatDate(d: string | null): string {
   return parseISODate(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-const CONSTANT_FIELDS: { key: keyof TbrConstants; label: string; min: number; max: number; step: number }[] = [
-  { key: 'reLayDelayDays', label: 'Comb-draw / re-lay delay (days)', min: 0, max: 14, step: 1 },
+type ConstantField = { key: keyof TbrConstants; label: string; min: number; max: number; step: number }
+
+const SHARED_FIELDS: ConstantField[] = [
   { key: 'eggToEmergenceDays', label: 'Egg → emergence (days)', min: 16, max: 24, step: 1 },
   { key: 'emergenceToForagerDays', label: 'Emergence → forager (days)', min: 14, max: 28, step: 1 },
   { key: 'foragingCareerDays', label: 'Foraging career (days)', min: 5, max: 21, step: 1 },
 ]
+const TBR_FIELDS: ConstantField[] = [
+  { key: 'reLayDelayDays', label: 'Comb-draw / re-lay delay (days)', min: 0, max: 14, step: 1 },
+]
+const CAGING_FIELDS: ConstantField[] = [
+  { key: 'cageDurationDays', label: 'Cage duration (days)', min: 18, max: 28, step: 1 },
+  { key: 'cageReleaseRelayDays', label: 'Re-lay delay after release (days)', min: 0, max: 7, step: 1 },
+]
+
+function constantFields(method: InterventionMethod): ConstantField[] {
+  return method === 'caging' ? [...CAGING_FIELDS, ...SHARED_FIELDS] : [...TBR_FIELDS, ...SHARED_FIELDS]
+}
 
 export default function TBRPlanner({ userId }: { userId: string }) {
   const planner = useTbrPlanner(userId)
@@ -85,32 +97,24 @@ export default function TBRPlanner({ userId }: { userId: string }) {
     apiaries, selectedApiaryId, setSelectedApiaryId,
     vegOptions, springVegId, summerVegId, setSpringVegId, setSummerVegId,
     resolvedSpring, resolvedSummer, constants, setConstants,
+    method, setMethod,
     precocious, setPrecocious,
     tbrOverride, setTbrOverride, result, foodPlan, loading, error, noProjection,
   } = planner
+
+  const isCaging = method === 'caging'
+  const breakDateLabel = isCaging ? 'caging date' : 'TBR date'
 
   const isDark = typeof window !== 'undefined' && document.documentElement.classList.contains('dark')
 
   const effectiveTbr = result?.effectiveTbrDate ?? null
   const steady = steadyStateForagers(constants) || 1
+  const peakPop = peakAdultPopulation(constants) || 1
 
-  const chart = useMemo(() => {
+  // Two stacked charts share one date axis, bands and marker lines; only the series differs.
+  const charts = useMemo(() => {
     if (!result) return null
     const { plan, bounds } = result
-    const data = {
-      datasets: [
-        {
-          label: 'Forager strength',
-          data: plan.curve.map((p) => ({ x: parseISODate(p.date).getTime(), y: Math.round((p.foragers / steady) * 100) })),
-          borderColor: isDark ? '#facc15' : '#b45309',
-          backgroundColor: isDark ? 'rgba(250,204,21,0.12)' : 'rgba(180,83,9,0.10)',
-          fill: true,
-          tension: 0.25,
-          pointRadius: 0,
-          borderWidth: 2,
-        },
-      ],
-    }
     const bands = [
       bounds.springEnd
         ? { start: addDays(bounds.springEnd, -30), end: bounds.springEnd, color: isDark ? 'rgba(34,197,94,0.22)' : 'rgba(34,197,94,0.28)' }
@@ -121,45 +125,76 @@ export default function TBRPlanner({ userId }: { userId: string }) {
       { date: plan.milestones.tbrDate, color: isDark ? '#f87171' : '#dc2626' },
       { date: plan.milestones.firstForagerDate, color: isDark ? '#facc15' : '#b45309' },
     ]
-    const options: ChartOptions<'line'> = {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        // The app registers chartjs-plugin-datalabels globally; disable it here so
-        // raw point coordinates aren't drawn over the curve.
-        datalabels: { display: false },
-        tooltip: {
-          callbacks: {
-            title: (items) => {
-              const x = items[0]?.parsed.x
-              return typeof x === 'number' ? formatDate(new Date(x).toISOString().slice(0, 10)) : ''
+
+    const mkOptions = (yTitle: string): ChartOptions<'line'> => {
+      const options: ChartOptions<'line'> = {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          // The app registers chartjs-plugin-datalabels globally; disable it here so
+          // raw point coordinates aren't drawn over the curve.
+          datalabels: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => {
+                const x = items[0]?.parsed.x
+                return typeof x === 'number' ? formatDate(new Date(x).toISOString().slice(0, 10)) : ''
+              },
+              label: (item) => `${item.dataset.label}: ${item.parsed.y}%`,
             },
-            label: (item) => `${item.dataset.label}: ${item.parsed.y}%`,
           },
         },
-      },
-      scales: {
-        x: {
-          type: 'time',
-          time: { unit: 'week', displayFormats: { week: 'd MMM' } },
-          ticks: { color: isDark ? '#9ca3af' : '#374151', maxRotation: 0 },
-          grid: { color: isDark ? '#374151' : '#e5e7eb' },
+        scales: {
+          x: {
+            type: 'time',
+            time: { unit: 'week', displayFormats: { week: 'd MMM' } },
+            ticks: { color: isDark ? '#9ca3af' : '#374151', maxRotation: 0 },
+            grid: { color: isDark ? '#374151' : '#e5e7eb' },
+          },
+          y: {
+            beginAtZero: true,
+            max: 110,
+            title: { display: true, text: yTitle, color: isDark ? '#9ca3af' : '#374151' },
+            ticks: { color: isDark ? '#9ca3af' : '#374151' },
+            grid: { color: isDark ? '#374151' : '#e5e7eb' },
+          },
         },
-        y: {
-          beginAtZero: true,
-          max: 110,
-          title: { display: true, text: 'Forager strength (%)', color: isDark ? '#9ca3af' : '#374151' },
-          ticks: { color: isDark ? '#9ca3af' : '#374151' },
-          grid: { color: isDark ? '#374151' : '#e5e7eb' },
-        },
-      },
+      }
+      // Custom plugin options are keyed by plugin id; attach via a typed cast.
+      ;(options.plugins as Record<string, unknown>).tbrBands = { bands, lines }
+      return options
     }
-    // Custom plugin options are keyed by plugin id; attach via a typed cast.
-    ;(options.plugins as Record<string, unknown>).tbrBands = { bands, lines }
-    return { data, options }
-  }, [result, isDark, steady])
+
+    const foragerData = {
+      datasets: [
+        {
+          label: 'Forager strength',
+          data: plan.curve.map((p) => ({ x: parseISODate(p.date).getTime(), y: Math.round((p.foragers / steady) * 100) })),
+          borderColor: isDark ? '#facc15' : '#b45309',
+          backgroundColor: isDark ? 'rgba(250,204,21,0.12)' : 'rgba(180,83,9,0.10)',
+          fill: true, tension: 0.25, pointRadius: 0, borderWidth: 2,
+        },
+      ],
+    }
+    const populationData = {
+      datasets: [
+        {
+          label: 'Colony population',
+          data: plan.curve.map((p) => ({ x: parseISODate(p.date).getTime(), y: Math.round((p.population / peakPop) * 100) })),
+          borderColor: isDark ? '#34d399' : '#047857',
+          backgroundColor: isDark ? 'rgba(52,211,153,0.12)' : 'rgba(4,120,87,0.10)',
+          fill: true, tension: 0.25, pointRadius: 0, borderWidth: 2,
+        },
+      ],
+    }
+
+    return {
+      forager: { data: foragerData, options: mkOptions('Forager strength (%)') },
+      population: { data: populationData, options: mkOptions('Colony population (%)') },
+    }
+  }, [result, isDark, steady, peakPop])
 
   // TBR-date slider bounds.
   const slider = useMemo(() => {
@@ -183,12 +218,43 @@ export default function TBRPlanner({ userId }: { userId: string }) {
       <div>
         <h3 className="text-xl font-semibold text-foreground flex items-center gap-2">
           <Scissors size={24} className="text-forest-600 dark:text-forest-400" />
-          TBR Swarm-Prevention Planner
+          Swarm &amp; Varroa Brood-Break Planner
         </h3>
         <p className="text-sm text-text-secondary mt-2">
-          Total Brood Removal triggers a brood break that controls swarming. This planner works out
-          when to do it so the colony&apos;s forager force rebuilds to peak across your next nectar
-          flow — bridging the gap after the early spring crop.
+          A brood break does two jobs: it <strong>controls swarming</strong> and it leaves the colony
+          <strong> broodless for an oxalic-acid varroa treatment</strong>. This planner works out when
+          to do it so the forager force rebuilds to peak across your next nectar flow — bridging the
+          gap after the early spring crop.
+        </p>
+      </div>
+
+      {/* Method toggle */}
+      <div>
+        <span className="block text-sm font-medium text-foreground mb-2">Method</span>
+        <div className="inline-flex rounded-lg border border-border overflow-hidden" role="group" aria-label="Intervention method">
+          {([
+            { key: 'tbr', label: 'Total Brood Removal' },
+            { key: 'caging', label: 'Cage the Queen' },
+          ] as const).map((m) => (
+            <button
+              key={m.key}
+              type="button"
+              onClick={() => setMethod(m.key)}
+              aria-pressed={method === m.key}
+              className={`px-4 py-3 text-base font-medium transition-colors ${
+                method === m.key
+                  ? 'bg-forest-600 text-white'
+                  : 'bg-surface text-foreground hover:bg-surface-secondary'
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-text-tertiary mt-1">
+          {isCaging
+            ? 'The caged queen can’t leave, so a swarm returns. After the cage period the colony is broodless and the comb and most brood are preserved.'
+            : 'All brood is removed and replaced with foundation, so the colony restarts its brood nest — the strongest reset, but it must redraw comb.'}
         </p>
       </div>
 
@@ -262,7 +328,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                 <div className="flex items-start gap-3">
                   <Sparkles size={22} className="text-forest-600 dark:text-forest-400 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-sm text-text-secondary">Recommended TBR date</p>
+                    <p className="text-sm text-text-secondary">Recommended {breakDateLabel}</p>
                     <p className="text-3xl font-bold text-forest-700 dark:text-forest-300">
                       {formatDate(result.plan.recommendedTbrDate)}
                     </p>
@@ -315,28 +381,82 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                 </div>
               )}
 
-              {/* Forager-force chart */}
-              {chart && (
-                <div>
-                  <div className="h-72 relative">
-                    <Line data={chart.data} options={chart.options} plugins={[bandsPlugin]} />
+              {/* Varroa treatment window (broodless) */}
+              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4 flex items-start gap-3">
+                <Bug size={22} className="text-purple-600 dark:text-purple-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 text-sm text-purple-900 dark:text-purple-200">
+                  <p className="font-semibold">Varroa treatment window (broodless)</p>
+                  <p className="mt-1">
+                    The colony has no capped brood between{' '}
+                    <span className="font-semibold">{formatDate(result.plan.milestones.broodlessStartDate)}</span> and{' '}
+                    <span className="font-semibold">{formatDate(result.plan.milestones.broodlessEndDate)}</span> — apply a
+                    single oxalic-acid treatment in this window to hit mites while none are hidden under cappings.
+                  </p>
+                </div>
+              </div>
+
+              {/* Stacked charts: forager strength + overall colony population */}
+              {charts && (
+                <div className="space-y-5">
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-1">Forager strength</p>
+                    <div className="h-64 relative">
+                      <Line data={charts.forager.data} options={charts.forager.options} plugins={[bandsPlugin]} />
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-x-5 gap-y-1 mt-2 text-xs text-text-tertiary">
+                  <div>
+                    <p className="text-sm font-medium text-foreground mb-1">Overall colony population</p>
+                    <div className="h-64 relative">
+                      <Line data={charts.population.data} options={charts.population.options} plugins={[bandsPlugin]} />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-text-tertiary">
                     <Legend swatch="bg-amber-600" label="Forager strength" />
+                    <Legend swatch="bg-emerald-600" label="Colony population" />
                     <Legend swatch="bg-green-500/40" label="Spring crop" />
                     <Legend swatch="bg-blue-500/40" label="Summer flow" />
-                    <Legend swatch="bg-red-600" label="TBR date" dashed />
+                    <Legend swatch="bg-red-600" label={isCaging ? 'Caging date' : 'TBR date'} dashed />
                     <Legend swatch="bg-amber-600" label="First new foragers" dashed />
                   </div>
                 </div>
               )}
 
-              {/* TBR-date slider */}
+              {/* Cage-duration preset (caging only) */}
+              {isCaging && (
+                <div>
+                  <span className="block text-sm font-medium text-foreground mb-2">Cage long enough to clear</span>
+                  <div className="inline-flex rounded-lg border border-border overflow-hidden">
+                    {([
+                      { days: 21, label: 'Worker brood — 21 d' },
+                      { days: 24, label: '+ Drone brood — 24 d' },
+                    ] as const).map((p) => (
+                      <button
+                        key={p.days}
+                        type="button"
+                        onClick={() => setConstants({ ...constants, cageDurationDays: p.days })}
+                        aria-pressed={constants.cageDurationDays === p.days}
+                        className={`px-4 py-2.5 text-sm font-medium transition-colors ${
+                          constants.cageDurationDays === p.days
+                            ? 'bg-forest-600 text-white'
+                            : 'bg-surface text-foreground hover:bg-surface-secondary'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-text-tertiary mt-1">
+                    24 days also clears capped drone brood (a varroa reservoir); fine-tune in Advanced.
+                  </p>
+                </div>
+              )}
+
+              {/* Break-date slider */}
               {slider && (
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
                     <CalendarClock size={16} className="inline mr-1 -mt-0.5" />
-                    Adjust TBR date — <span className="font-semibold">{formatDate(effectiveTbr)}</span>
+                    Adjust {breakDateLabel} — <span className="font-semibold">{formatDate(effectiveTbr)}</span>
                   </label>
                   <input
                     type="range"
@@ -396,10 +516,21 @@ export default function TBRPlanner({ userId }: { userId: string }) {
 
               {/* Milestones */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Milestone label="TBR performed" date={result.plan.milestones.tbrDate} />
-                <Milestone label="Queen re-lays" date={result.plan.milestones.reLayDate} />
-                <Milestone label="First brood emerges" date={result.plan.milestones.firstBroodDate} />
-                <Milestone label="First new foragers" date={result.plan.milestones.firstForagerDate} highlight />
+                {isCaging ? (
+                  <>
+                    <Milestone label="Queen caged" date={result.plan.milestones.tbrDate} />
+                    <Milestone label="Queen released" date={result.plan.milestones.releaseDate} />
+                    <Milestone label="First new brood" date={result.plan.milestones.firstBroodDate} />
+                    <Milestone label="First new foragers" date={result.plan.milestones.firstForagerDate} highlight />
+                  </>
+                ) : (
+                  <>
+                    <Milestone label="TBR performed" date={result.plan.milestones.tbrDate} />
+                    <Milestone label="Queen re-lays" date={result.plan.milestones.reLayDate} />
+                    <Milestone label="First brood emerges" date={result.plan.milestones.firstBroodDate} />
+                    <Milestone label="First new foragers" date={result.plan.milestones.firstForagerDate} highlight />
+                  </>
+                )}
               </div>
 
               {/* Rebuild food budget & starvation risk */}
@@ -409,7 +540,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                     <Wheat size={18} className="text-forest-600 dark:text-forest-400" />
                     Rebuild food budget
                     <span className="text-xs font-normal text-text-tertiary">
-                      ({foodPlan.budget.framesToDraw} frames of foundation to draw)
+                      ({isCaging ? 'comb retained — no foundation to draw' : `${foodPlan.budget.framesToDraw} frames of foundation to draw`})
                     </span>
                   </h4>
                   <div className="grid sm:grid-cols-2 gap-4">
@@ -419,7 +550,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                         — funded from stores
                       </p>
                       <ul className="text-xs text-text-secondary mt-1 space-y-0.5">
-                        <li>Comb drawing: {foodPlan.budget.combHoneyKg.toFixed(1)} kg</li>
+                        {!isCaging && <li>Comb drawing: {foodPlan.budget.combHoneyKg.toFixed(1)} kg</li>}
                         <li>Brood food: {foodPlan.budget.broodHoneyKg.toFixed(1)} kg</li>
                         <li>Upkeep + warmth: {foodPlan.budget.upkeepHoneyKg.toFixed(1)} kg</li>
                       </ul>
@@ -450,7 +581,9 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                     </div>
                   )}
                   <p className="text-xs text-text-tertiary mt-2">
-                    Assumes comb is drawn from foundation (worst case). Scales with lay rate; honey comes from stores, pollen mostly from foraging.
+                    {isCaging
+                      ? 'Caging keeps the nest and most of the brood, so the rebuild is far cheaper than TBR — no comb to redraw. Scales with lay rate; honey comes from stores, pollen mostly from foraging.'
+                      : 'Assumes comb is drawn from foundation (worst case). Scales with lay rate; honey comes from stores, pollen mostly from foraging.'}
                   </p>
                 </div>
               )}
@@ -466,7 +599,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                 </Button>
                 {showAdvanced && (
                   <div className="px-4 pb-4 grid sm:grid-cols-2 gap-4">
-                    {CONSTANT_FIELDS.map((f) => (
+                    {constantFields(method).map((f) => (
                       <div key={f.key}>
                         <label className="block text-xs font-medium text-text-secondary mb-1">{f.label}</label>
                         <input
@@ -495,10 +628,11 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                   <Info size={16} /> How to read this
                 </p>
                 <p>
-                  After TBR the standing foragers keep working but aren&apos;t replaced for several
-                  weeks, so the curve dips before recovering. Already-emerged house bees bridge the
-                  early part of that gap. The recommended date is as soon as the spring crop is off,
-                  giving the colony the most time to rebuild before the summer flow.
+                  {isCaging
+                    ? 'While the queen is caged the existing brood keeps emerging for about three weeks, so the population holds up through the swarm season before dipping — then recovers once she re-lays. The population curve leads the forager curve, since today’s emerging bees are tomorrow’s foragers.'
+                    : 'After TBR the standing foragers keep working but aren’t replaced for several weeks, so the curve dips before recovering. Already-emerged house bees bridge the early part of that gap.'}
+                  {' '}The recommended date is as soon as the spring crop is off, giving the colony the
+                  most time to rebuild before the summer flow.
                 </p>
               </div>
             </>

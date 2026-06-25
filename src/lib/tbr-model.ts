@@ -12,6 +12,7 @@
 import { parseGDDRange } from '@/lib/gdd'
 import {
   type TbrConstants,
+  type InterventionMethod,
   type ResolvedCropDate,
   type ForagerPoint,
   type TbrMilestones,
@@ -68,21 +69,42 @@ function maxDate(...ds: string[]): string {
 /** Biological floor for age at first foraging, even under precocious conditions (days). */
 const MIN_FORAGE_AGE_DAYS = 7
 
+/** Days a worker cell stays capped (sealed brood) before emergence — the varroa-reachable phase. */
+const CAPPED_PHASE_DAYS = 12
+
 function countIntegers(lo: number, hi: number): number {
   return Math.max(0, hi - lo + 1)
 }
 
+// --- Brood break: the single zero-emergence window ---------------------------
+//
+// Both interventions stop new bees emerging for one contiguous window, differing
+// only in WHEN it opens (offsets are measured from the intervention day T):
+//   • TBR    — all brood removed at T, so emergence stops immediately:
+//              gap starts at 0, length = re-lay delay + egg→emergence.
+//   • Caging — the queen is caged at T but the existing brood pipeline keeps
+//              emerging for one egg→emergence span, THEN the gap opens until the
+//              released queen's first brood emerges:
+//              gap starts at egg→emergence, length = cage duration + release re-lay.
+
+/** The zero-emergence window {start, len} (offsets from T) for the chosen method. */
+export function broodGap(c: TbrConstants, method: InterventionMethod): { start: number; len: number } {
+  if (method === 'caging') {
+    return { start: c.eggToEmergenceDays, len: c.cageDurationDays + c.cageReleaseRelayDays }
+  }
+  return { start: 0, len: c.reLayDelayDays + c.eggToEmergenceDays }
+}
+
 // --- Forager-force simulation ------------------------------------------------
 //
-// Emergence rate is L (lay rate) every day EXCEPT during the brood gap that
-// follows TBR — offsets [0, gapLen-1], before any re-laid brood has emerged.
-// A bee emerging on day e forages during [e + H, e + H + F).
+// Emergence rate is L (lay rate) every day EXCEPT during the brood gap
+// [gapStart, gapEnd). A bee emerging on day e forages during [e + H, e + H + F).
 //
 // Two cohorts are summed so precocious foraging can be modelled:
-//   • pre-break bees (emerged at offset < 0) forage at the normal age Hpre;
-//   • post-break bees (emerged at offset >= gapLen) forage at age Hpost, which is
+//   • normal-age bees (emerged at offset < gapStart) forage at the normal age Hpre;
+//   • post-gap bees (emerged at offset >= gapEnd) forage at age Hpost, which is
 //     reduced by `accelDays` when the colony forages precociously after the break.
-// With accelDays = 0 (Hpost = Hpre) this is identical to the original closed form.
+// With gapStart = 0 and accelDays = 0 this is identical to the original TBR closed form.
 
 /** Total adult lifespan (days) = pre-foraging house-bee phase + foraging career. */
 export function totalAdultLifespanDays(c: TbrConstants): number {
@@ -133,12 +155,21 @@ function nonNeg(n: number): number {
 }
 
 /** Estimate the honey and pollen needed to rebuild after a break, over `rebuildDays`. */
-export function rebuildFoodBudget(c: TbrConstants, rebuildDays: number): FoodBudget {
+export function rebuildFoodBudget(
+  c: TbrConstants,
+  rebuildDays: number,
+  method: InterventionMethod = 'tbr'
+): FoodBudget {
   const days = nonNeg(rebuildDays)
   const layRate = nonNeg(c.layRate)
   const standingBroodCells = layRate * nonNeg(c.eggToEmergenceDays)
-  const framesToDraw = Math.max(1, Math.round(standingBroodCells / CELLS_PER_DADANT_DEEP))
-  const beesFed = layRate * Math.max(0, days - nonNeg(c.reLayDelayDays))
+  // Caging retains the drawn comb, so there is no foundation to draw.
+  const framesToDraw =
+    method === 'caging' ? 0 : Math.max(1, Math.round(standingBroodCells / CELLS_PER_DADANT_DEEP))
+  // Days the queen lays nothing: TBR until comb is redrawn; caging for the whole cage period.
+  const noLayDays =
+    method === 'caging' ? nonNeg(c.cageDurationDays) + nonNeg(c.cageReleaseRelayDays) : nonNeg(c.reLayDelayDays)
+  const beesFed = layRate * Math.max(0, days - noLayDays)
   const avgAdults =
     layRate * (nonNeg(c.emergenceToForagerDays) + nonNeg(c.foragingCareerDays)) * AVG_ADULT_FRACTION
 
@@ -167,20 +198,41 @@ function postBreakForageAge(c: TbrConstants, accelDays: number): number {
   return Math.max(MIN_FORAGE_AGE_DAYS, c.emergenceToForagerDays - Math.max(0, accelDays))
 }
 
-/** Forager force on a day `t` days after TBR (t may be negative). */
-export function foragerForceAtOffset(t: number, c: TbrConstants, accelDays = 0): number {
+/** Forager force on a day `t` days after the intervention (t may be negative). */
+export function foragerForceAtOffset(
+  t: number,
+  c: TbrConstants,
+  method: InterventionMethod = 'tbr',
+  accelDays = 0
+): number {
   const F = c.foragingCareerDays
   if (F <= 0) return 0
   const hPre = c.emergenceToForagerDays
   const hPost = postBreakForageAge(c, accelDays)
-  const gapLen = c.reLayDelayDays + c.eggToEmergenceDays
+  const { start: gapStart, len: gapLen } = broodGap(c, method)
+  const gapEnd = gapStart + gapLen
 
-  // Pre-break cohort: emergence days e < 0 contributing to foraging on offset t.
-  const pre = countIntegers(t - hPre - F + 1, Math.min(t - hPre, -1))
-  // Post-break cohort: emergence days e >= gapLen contributing on offset t.
-  const post = countIntegers(Math.max(t - hPost - F + 1, gapLen), t - hPost)
+  // Normal-age cohort: emergence days e < gapStart contributing to foraging on offset t.
+  const pre = countIntegers(t - hPre - F + 1, Math.min(t - hPre, gapStart - 1))
+  // Post-gap cohort: emergence days e >= gapEnd contributing on offset t.
+  const post = countIntegers(Math.max(t - hPost - F + 1, gapEnd), t - hPost)
 
   return Math.max(0, c.layRate * (pre + post))
+}
+
+/** Overall adult population on a day `t` days after the intervention (all ages, t may be negative). */
+export function populationAtOffset(t: number, c: TbrConstants, method: InterventionMethod = 'tbr'): number {
+  const A = totalAdultLifespanDays(c)
+  if (A <= 0) return 0
+  const { start: gapStart, len: gapLen } = broodGap(c, method)
+  const gapEnd = gapStart + gapLen
+
+  // Adults alive at t emerged on days e in [t - A + 1, t]; subtract the zero-emergence gap.
+  const lo = t - A + 1
+  const total = countIntegers(lo, t)
+  const inGap = countIntegers(Math.max(lo, gapStart), Math.min(t, gapEnd - 1))
+
+  return Math.max(0, c.layRate * (total - inGap))
 }
 
 export function simulateForagerCurve(
@@ -188,6 +240,7 @@ export function simulateForagerCurve(
   startDate: string,
   endDate: string,
   c: TbrConstants,
+  method: InterventionMethod = 'tbr',
   accelDays = 0
 ): ForagerPoint[] {
   const total = dayDiff(startDate, endDate)
@@ -196,18 +249,34 @@ export function simulateForagerCurve(
   for (let i = 0; i <= total; i++) {
     const date = addDays(startDate, i)
     const t = dayDiff(tbrDate, date)
-    out.push({ date, foragers: Math.round(foragerForceAtOffset(t, c, accelDays)) })
+    out.push({
+      date,
+      foragers: Math.round(foragerForceAtOffset(t, c, method, accelDays)),
+      population: Math.round(populationAtOffset(t, c, method)),
+    })
   }
   return out
 }
 
-export function tbrMilestones(tbrDate: string, c: TbrConstants, accelDays = 0): TbrMilestones {
-  const broodOffset = c.reLayDelayDays + c.eggToEmergenceDays
+export function tbrMilestones(
+  tbrDate: string,
+  c: TbrConstants,
+  method: InterventionMethod = 'tbr',
+  accelDays = 0
+): TbrMilestones {
+  const { start: gapStart, len: gapLen } = broodGap(c, method)
+  const gapEnd = gapStart + gapLen
+  // First new egg after the break: TBR after the re-lay delay; caging after release.
+  const reLayOffset = method === 'caging' ? c.cageDurationDays + c.cageReleaseRelayDays : c.reLayDelayDays
   return {
     tbrDate,
-    reLayDate: addDays(tbrDate, c.reLayDelayDays),
-    firstBroodDate: addDays(tbrDate, broodOffset),
-    firstForagerDate: addDays(tbrDate, broodOffset + postBreakForageAge(c, accelDays)),
+    reLayDate: addDays(tbrDate, reLayOffset),
+    firstBroodDate: addDays(tbrDate, gapEnd),
+    firstForagerDate: addDays(tbrDate, gapEnd + postBreakForageAge(c, accelDays)),
+    releaseDate: addDays(tbrDate, c.cageDurationDays),
+    // No capped brood between the gap opening and the new brood being capped.
+    broodlessStartDate: addDays(tbrDate, gapStart),
+    broodlessEndDate: addDays(tbrDate, gapEnd - CAPPED_PHASE_DAYS),
   }
 }
 
@@ -217,6 +286,7 @@ export function flowCoverage(
   flowStart: string,
   flowEnd: string,
   c: TbrConstants,
+  method: InterventionMethod = 'tbr',
   accelDays = 0
 ): number {
   const days = dayDiff(flowStart, flowEnd)
@@ -225,7 +295,7 @@ export function flowCoverage(
   let sum = 0
   for (let i = 0; i <= days; i++) {
     const t = dayDiff(tbrDate, addDays(flowStart, i))
-    sum += foragerForceAtOffset(t, c, accelDays)
+    sum += foragerForceAtOffset(t, c, method, accelDays)
   }
   const avg = sum / (days + 1)
   return Math.max(0, Math.min(1, avg / steady))
@@ -246,6 +316,7 @@ export function recommendTbrDate(
   flowStart: string,
   flowEnd: string,
   c: TbrConstants,
+  method: InterventionMethod = 'tbr',
   accelDays = 0
 ): string | null {
   const span = dayDiff(earliest, latest)
@@ -254,7 +325,7 @@ export function recommendTbrDate(
   let bestScore = -1
   for (let i = 0; i <= span; i++) {
     const cand = addDays(earliest, i)
-    const score = flowCoverage(cand, flowStart, flowEnd, c, accelDays)
+    const score = flowCoverage(cand, flowStart, flowEnd, c, method, accelDays)
     if (score > bestScore + 1e-9) {
       bestScore = score
       best = cand
@@ -399,6 +470,7 @@ export function planFromResolved(
   summerEndDate: string | null,
   constants: TbrConstants,
   tbrOverride: string | null,
+  method: InterventionMethod = 'tbr',
   accelDays = 0
 ): TbrResult | null {
   if (!summerStartDate) return null
@@ -410,27 +482,26 @@ export function planFromResolved(
   const springEndRaw = springDate ? addDays(springDate, SPRING_CROP_DURATION_DAYS) : null
   const springEnd = springEndRaw && springEndRaw < flowStart ? springEndRaw : null
 
-  // Full forager recovery takes this long after a break.
+  // Full forager recovery takes this long after a break: the gap must close, then a
+  // new bee must age into foraging and serve its career.
+  const { start: gapStart, len: gapLen } = broodGap(constants, method)
   const recoveryDays =
-    constants.reLayDelayDays +
-    constants.eggToEmergenceDays +
-    constants.emergenceToForagerDays +
-    constants.foragingCareerDays
+    gapStart + gapLen + constants.emergenceToForagerDays + constants.foragingCareerDays
 
-  // Earliest feasible TBR: after the spring crop is off. Without a spring crop,
+  // Earliest feasible break: after the spring crop is off. Without a spring crop,
   // fall back to "one full recovery before the flow".
   const earliest = springEnd ?? addDays(flowStart, -recoveryDays)
   const latest = maxDate(earliest, flowStart)
 
-  const recommended = recommendTbrDate(earliest, latest, flowStart, flowEnd, constants, accelDays)
+  const recommended = recommendTbrDate(earliest, latest, flowStart, flowEnd, constants, method, accelDays)
   const effectiveTbrDate = tbrOverride ?? recommended ?? earliest
 
-  const milestones = tbrMilestones(effectiveTbrDate, constants, accelDays)
+  const milestones = tbrMilestones(effectiveTbrDate, constants, method, accelDays)
   const simStart = addDays(minDate(earliest, effectiveTbrDate, springEnd ?? earliest), -21)
   const simEnd = addDays(maxDate(flowEnd, milestones.firstForagerDate), 21)
 
-  const curve = simulateForagerCurve(effectiveTbrDate, simStart, simEnd, constants, accelDays)
-  const score = flowCoverage(effectiveTbrDate, flowStart, flowEnd, constants, accelDays)
+  const curve = simulateForagerCurve(effectiveTbrDate, simStart, simEnd, constants, method, accelDays)
+  const score = flowCoverage(effectiveTbrDate, flowStart, flowEnd, constants, method, accelDays)
   const recoveryAfterFlowStart = milestones.firstForagerDate > flowStart
 
   return {

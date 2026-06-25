@@ -3,195 +3,124 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TBR Swarm-Prevention Planner — Plan</title>
+<title>Plan — Swarm &amp; Varroa Brood-Break Planner (TBR + Queen Caging)</title>
 <style>
-  :root { color-scheme: light dark; }
-  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.55; max-width: 980px; margin: 2rem auto; padding: 0 1.2rem; color: #1c2b22; background: #fbfbf7; }
-  h1 { font-size: 1.9rem; border-bottom: 3px solid #2f7d4f; padding-bottom: .4rem; }
-  h2 { font-size: 1.3rem; margin-top: 2rem; color: #225c39; }
-  h3 { font-size: 1.05rem; color: #2f7d4f; margin-bottom: .3rem; }
-  code { background: #eef3ee; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
-  table { border-collapse: collapse; width: 100%; margin: .6rem 0 1.2rem; font-size: .92rem; }
-  th, td { border: 1px solid #cdd8cf; padding: .45rem .6rem; text-align: left; vertical-align: top; }
-  th { background: #e7f0e8; }
-  .tier { font-weight: 700; white-space: nowrap; }
+  body { font-family: system-ui, -apple-system, Segoe UI, sans-serif; max-width: 920px; margin: 2rem auto; padding: 0 1rem; line-height: 1.55; color: #1f2937; }
+  h1 { font-size: 1.5rem; } h2 { font-size: 1.15rem; margin-top: 2rem; border-bottom: 2px solid #e5e7eb; padding-bottom: .3rem; }
+  code { background: #f3f4f6; padding: .1rem .3rem; border-radius: 4px; font-size: .9em; }
   ul.todo { list-style: none; padding-left: 0; }
-  ul.todo li { padding: .25rem 0 .25rem 1.8rem; position: relative; }
-  ul.todo li::before { content: "\2610"; position: absolute; left: 0; font-size: 1.15rem; color: #2f7d4f; }
-  ul.todo li.done::before { content: "\2611"; }
-  .note { background: #fff7e6; border-left: 4px solid #e0a800; padding: .7rem 1rem; border-radius: 6px; margin: 1rem 0; }
-  .files code { display: inline-block; }
-  .diagram { width: 100%; background: #ffffff; border: 1px solid #cdd8cf; border-radius: 8px; padding: .5rem; margin: 1rem 0; }
-  .new { color: #2f7d4f; font-weight: 700; }
-  .edit { color: #b8860b; font-weight: 700; }
-  .review { background: #eef3ee; border-radius: 8px; padding: 1rem 1.2rem; margin-top: 1.5rem; }
-  @media (prefers-color-scheme: dark) {
-    body { color: #e6efe8; background: #141815; }
-    th { background: #1e2a20; } td, th { border-color: #344337; }
-    .diagram { background: #11160f; }
-  }
+  ul.todo li { margin: .35rem 0; }
+  .note { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: .75rem 1rem; }
+  .q { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: .75rem 1rem; }
+  figure { margin: 1rem 0; }
+  figcaption { font-size: .85rem; color: #6b7280; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { border: 1px solid #e5e7eb; padding: .4rem .6rem; text-align: left; }
 </style>
 </head>
 <body>
 
-<h1>TBR Swarm-Prevention Planner</h1>
-<p><strong>Goal:</strong> A live, interactive planner that recommends <em>when</em> to perform a
-Total Brood Removal (TBR) so the colony, after its induced brood break, rebuilds its forager force
-to peak across the summer nectar flow (e.g. bramble/blackberry) — bridging the gap between the early
-spring crop and the summer crop while controlling swarming.</p>
+<h1>Plan — Swarm &amp; Varroa Brood-Break Planner</h1>
+<p>Expand the existing TBR planner to support a <strong>second intervention (caging the queen)</strong>,
+add an <strong>overall colony-population curve</strong> beside the forager curve, and surface the
+<strong>broodless window for oxalic-acid varroa treatment</strong>. Live calculator only — no database changes.</p>
 
 <div class="note">
-<strong>Status:</strong> PLAN — awaiting your verification before any code is written.<br>
-<strong>Decisions locked:</strong> Placement = card on the existing <code>/dashboard/tools</code> page ·
-Persistence = live calculator only (no DB writes) · Crop dates = 3-tier resolution ·
-Prediction = GDD-projection (early/late aware) · Optimisation = maximise foragers across the summer flow.
+<strong>Core idea:</strong> both methods are a single zero-emergence window in the colony's emergence
+schedule, differing only in <em>when</em> it opens and <em>what else</em> it costs. This makes caging a
+small, additive generalisation of the existing TBR maths (TBR is the special case where the gap opens at day&nbsp;0).
 </div>
 
-<h2>1. The biological model</h2>
-<p>Day <code>T</code> = the day TBR is performed (all brood removed, foundation/empty comb given).
-The model is a simple <strong>daily cohort simulation</strong> driven by a handful of adjustable constants:</p>
+<h2>Timeline comparison</h2>
+<figure>
+<svg width="880" height="240" viewBox="0 0 880 240" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, sans-serif" font-size="12">
+  <line x1="60" y1="210" x2="840" y2="210" stroke="#9ca3af" stroke-width="1"/>
+  <text x="60" y="228" fill="#6b7280">T</text>
+  <text x="290" y="228" fill="#6b7280">T+21</text>
+  <text x="405" y="228" fill="#6b7280">T+25</text>
+  <text x="520" y="228" fill="#6b7280">T+42</text>
+  <text x="800" y="228" fill="#6b7280">days &#8594;</text>
 
-<table>
-<tr><th>Constant</th><th>Default</th><th>Meaning</th></tr>
-<tr><td>Re-lay delay</td><td>4 days</td><td>Time for the colony to draw enough comb before the queen resumes laying (<code>T+4</code>).</td></tr>
-<tr><td>Egg &rarr; emergence</td><td>21 days</td><td>Worker development. First new brood emerges at <code>T+25</code>.</td></tr>
-<tr><td>Emergence &rarr; forager</td><td>21 days</td><td>House-bee phase. First <em>new</em> foragers at <code>T+46</code>.</td></tr>
-<tr><td>Queen lay rate</td><td>1200 eggs/day</td><td>Adjustable 1000&ndash;1500 (slider). Sets the rebuild slope.</td></tr>
-<tr><td>Forager active span</td><td>21 days</td><td>How long a bee forages before dying — governs how fast the standing force decays during the gap.</td></tr>
-</table>
+  <text x="60" y="55" fill="#1f2937" font-weight="bold">TBR</text>
+  <rect x="60" y="62" width="275" height="26" fill="#ef4444" opacity="0.55"/>
+  <text x="120" y="79" fill="#7f1d1d">no emergence (gap 0&#8211;25)</text>
+  <rect x="335" y="62" width="490" height="26" fill="#22c55e" opacity="0.6"/>
+  <text x="520" y="79" fill="#14532d">emergence resumes</text>
+  <rect x="60" y="92" width="143" height="10" fill="#3b82f6" opacity="0.7"/>
+  <text x="206" y="101" fill="#1e3a8a">oxalic window T&#8211;T+13</text>
 
-<h3>Key derived milestones from T</h3>
-<div class="diagram">
-<svg viewBox="0 0 920 150" width="100%" role="img" aria-label="TBR timeline">
-  <line x1="20" y1="100" x2="900" y2="100" stroke="#2f7d4f" stroke-width="2"/>
-  <g font-size="12" fill="#225c39" text-anchor="middle">
-    <line x1="40"  y1="92" x2="40"  y2="108" stroke="#2f7d4f"/><text x="40"  y="125">T (TBR)</text>
-    <line x1="190" y1="92" x2="190" y2="108" stroke="#2f7d4f"/><text x="190" y="125">T+4 re-lay</text>
-    <line x1="440" y1="92" x2="440" y2="108" stroke="#2f7d4f"/><text x="440" y="125">T+25 brood emerges</text>
-    <line x1="760" y1="92" x2="760" y2="108" stroke="#b8860b" stroke-width="2"/><text x="760" y="125" fill="#b8860b">T+46 new foragers</text>
-  </g>
-  <rect x="40" y="60" width="720" height="30" fill="#e0a80022" stroke="#e0a800" stroke-dasharray="4 3"/>
-  <text x="400" y="50" font-size="12" fill="#b8860b" text-anchor="middle">brood / forager replenishment gap &mdash; bridged by existing adult bees</text>
+  <text x="60" y="135" fill="#1f2937" font-weight="bold">Caging (21 d)</text>
+  <rect x="60" y="142" width="231" height="26" fill="#22c55e" opacity="0.6"/>
+  <text x="95" y="159" fill="#14532d">brood pipeline still emerging</text>
+  <rect x="291" y="142" width="231" height="26" fill="#ef4444" opacity="0.55"/>
+  <text x="318" y="159" fill="#7f1d1d">no emergence (gap 21&#8211;42)</text>
+  <rect x="522" y="142" width="303" height="26" fill="#22c55e" opacity="0.6"/>
+  <text x="610" y="159" fill="#14532d">emergence resumes</text>
+  <rect x="291" y="172" width="99" height="10" fill="#3b82f6" opacity="0.7"/>
+  <text x="394" y="181" fill="#1e3a8a">oxalic window T+21&#8211;T+30</text>
+
+  <line x1="60" y1="55" x2="60" y2="210" stroke="#6b7280" stroke-dasharray="3,3"/>
 </svg>
-</div>
+<figcaption>Caging keeps the nest producing bees for ~21 days (covering the swarm weeks) before its
+gap; TBR's gap is immediate. Both end in a broodless window for oxalic-acid treatment.</figcaption>
+</figure>
 
-<h3>Forager-force curve (what the chart shows)</h3>
-<p>For each day <code>d</code> we sum the cohorts that are currently in the foraging window:</p>
-<ul>
-<li><code>emergence(d)</code> = steady rate <code>L</code> for <code>d &lt; T</code>; <code>0</code> for <code>T &le; d &lt; T+25</code> (brood gap); <code>L</code> for <code>d &ge; T+25</code> (rebuild).</li>
-<li><code>foragers(d)</code> = sum of <code>emergence(e)</code> for every <code>e</code> where <code>e + 21 &le; d &lt; e + 21 + 21</code>.</li>
-</ul>
-<p>This produces: a steady force &rarr; a decline through the gap (the standing force ages out and is not replaced from ~<code>T+21</code>) &rarr; a trough around <code>T+42&ndash;46</code> &rarr; recovery from <code>T+46</code>. The "bridge" the beekeeper relies on is visible as foragers keep being recruited from already-emerged house bees up to ~<code>T+21</code>.</p>
-
-<h3>Scoring &amp; recommendation</h3>
-<p>For each candidate <code>T</code> the model scores the <em>average forager force across the summer-flow window</em> <code>[flowStart, flowEnd]</code>, subject to <code>T &ge; spring-crop end</code> (so the spring crop is harvested first). The recommended <code>T*</code> is the date that maximises that score. The beekeeper can then drag the TBR slider away from <code>T*</code> and watch the score and curve respond.</p>
-
-<h2>2. Crop-date resolution (3 tiers, per apiary)</h2>
-<p>Location is mandatory — the beekeeper picks the apiary first; the GDD curve, observed dates and the 2&ndash;3 week regional spread all flow from it. The spring/summer crops are <em>selectable</em> (rapeseed-led in the east, dandelion-led in the west).</p>
-<table>
-<tr><th>Tier</th><th>Source</th><th>Used when</th></tr>
-<tr><td class="tier">1 &mdash; Observed</td><td>The apiary's actual <code>gdd_records.start_date</code> for that crop, this season.</td><td>A record already exists this year &rarr; use the date directly.</td></tr>
-<tr><td class="tier">2 &mdash; Averaged + projected</td><td>Historical <strong>average GDD-at-bloom</strong> for that crop at that apiary, projected onto this year's GDD accumulation curve.</td><td>Prior-year history exists but no record yet this season. Warm year &rarr; earlier date.</td></tr>
-<tr><td class="tier">3 &mdash; General estimate</td><td><code>vegetation_info.typical_gdd_range</code> midpoint + <code>bloom_period</code>, projected onto this location's GDD curve.</td><td>No history at all for that crop at that apiary.</td></tr>
-</table>
-
-<h3>GDD projection (how Tier 2/3 turn a GDD threshold into a date)</h3>
-<ul>
-<li>Accumulated GDD to today comes from the existing <code>fetchCurrentYearGDD(lat, lon)</code> in <code>src/lib/gdd.ts</code>.</li>
-<li>Forward projection uses the location's <strong>recent average daily GDD accrual</strong> (keeps it simple and within existing Open-Meteo data — no new API). A warm season raises both the accumulated total and the daily rate, so the predicted bloom date pulls earlier automatically.</li>
-<li>Predicted date = today + (targetGDD &minus; accumulatedGDD) / dailyRate. Each resolved crop date carries a <strong>tier badge</strong> so the beekeeper knows how confident it is.</li>
-</ul>
-
-<h2>3. Interface</h2>
-<ul>
-<li><strong>Apiary picker</strong> (required) and <strong>spring-crop / summer-flow pickers</strong>, pre-filled from what the apiary actually has records for.</li>
-<li><strong>Forager-force chart</strong> (Chart.js — already installed): the forager curve over the season with shaded bands for spring crop, the brood gap, and the summer flow.</li>
-<li><strong>TBR-date slider</strong> (native <code>&lt;input type="range"&gt;</code>) plus a lay-rate slider; an "advanced" disclosure for the biological constants. Matches the app's existing +/&minus; control aesthetic and 50+ accessibility (large targets, high contrast).</li>
-<li><strong>Recommendation panel</strong>: the suggested <code>T*</code>, the milestone dates (re-lay, emergence, first foragers), the flow-coverage score, and plain-language guidance.</li>
-</ul>
-
-<h2>4. Files</h2>
-<table class="files">
-<tr><th>File</th><th>Change</th></tr>
-<tr><td><code>src/lib/tbr-model.ts</code></td><td><span class="new">NEW</span> pure functions: forager-force simulation, scoring, optimal-date search, 3-tier crop-date resolution + GDD projection.</td></tr>
-<tr><td><code>src/types/tbr.ts</code></td><td><span class="new">NEW</span> interfaces (<code>TbrConstants</code>, <code>ResolvedCropDate</code>, <code>TbrPlan</code>, etc.).</td></tr>
-<tr><td><code>src/hooks/useTbrPlanner.ts</code></td><td><span class="new">NEW</span> loads apiaries + <code>gdd_records</code> + <code>vegetation_info</code> for the selected apiary; exposes resolved dates &amp; computed plan.</td></tr>
-<tr><td><code>src/components/tools/TBRPlanner.tsx</code></td><td><span class="new">NEW</span> the UI (pickers, sliders, chart, recommendation).</td></tr>
-<tr><td><code>src/app/dashboard/tools/page.tsx</code></td><td><span class="edit">EDIT</span> add <code>'tbr'</code> to <code>ToolsSection</code>, add a card under "Hive Health", add the tab block.</td></tr>
-<tr><td><code>docs/features/tbr-swarm-planner.md</code></td><td><span class="new">NEW</span> feature documentation (British English).</td></tr>
-</table>
-<div class="note">No database changes (live calculator). No new dependencies (Chart.js, date-fns, gdd.ts all already present). Reuses existing Supabase client and tools-page patterns. Each new file is small and single-purpose.</div>
-
-<h2>5. To-do</h2>
+<h2>To-do</h2>
 <ul class="todo">
-<li class="done">Confirm this plan with the beekeeper.</li>
-<li class="done">Create <code>src/types/tbr.ts</code> with the model interfaces.</li>
-<li class="done">Create <code>src/lib/tbr-model.ts</code> — forager-force simulation + scoring + optimal-date search.</li>
-<li class="done">Add 3-tier crop-date resolution + GDD projection to <code>src/lib/tbr-model.ts</code> (reusing <code>gdd.ts</code> helpers).</li>
-<li class="done">Create <code>src/hooks/useTbrPlanner.ts</code> — data loading &amp; plan computation.</li>
-<li class="done">Create <code>src/components/tools/TBRPlanner.tsx</code> — pickers, sliders, Chart.js curve, recommendation panel.</li>
-<li class="done">Wire into <code>src/app/dashboard/tools/page.tsx</code> (type + card + tab).</li>
-<li class="done">Write <code>docs/features/tbr-swarm-planner.md</code>.</li>
-<li class="done">Type-check the new source files (<code>tsc --noEmit</code> — clean).</li>
-<li>Prompt the beekeeper to test the build (per project rule, I do not run the build).</li>
+  <li><input type="checkbox" checked> <strong>Types</strong> (<code>src/types/tbr.ts</code>): add <code>InterventionMethod</code>; add <code>cageDurationDays</code> + <code>cageReleaseRelayDays</code> to <code>TbrConstants</code> &amp; defaults; add <code>population</code> to curve points; add broodless-window + release fields to <code>TbrMilestones</code>.</li>
+  <li><input type="checkbox" checked> <strong>Model — gap helper</strong> (<code>src/lib/tbr-model.ts</code>): add <code>broodGap(c, method) =&gt; {start, len}</code>.</li>
+  <li><input type="checkbox" checked> <strong>Model — forager force</strong>: generalise <code>foragerForceAtOffset</code> cohort split from <code>0</code>/<code>gapLen</code> to <code>gapStart</code>/<code>gapEnd</code>; thread <code>method</code>. (TBR output unchanged.)</li>
+  <li><input type="checkbox" checked> <strong>Model — population</strong>: add <code>populationAtOffset</code> (emergence integrated over full adult lifespan, excluding the gap).</li>
+  <li><input type="checkbox" checked> <strong>Model — curve</strong>: <code>simulateForagerCurve</code> emits both foragers &amp; population per point.</li>
+  <li><input type="checkbox" checked> <strong>Model — milestones</strong>: method-aware; add broodless window (<code>broodlessStart = gapStart</code>, <code>broodlessEnd = gapEnd &minus; cappedPhase</code>) and caging release date.</li>
+  <li><input type="checkbox" checked> <strong>Model — coverage / recommend / plan</strong>: thread <code>method</code>; make recovery-days / earliest-feasible method-aware.</li>
+  <li><input type="checkbox" checked> <strong>Model — food budget</strong>: minimal — for <code>caging</code> drop the comb-draw line and note the nest/brood are retained (far cheaper). Full recompute deferred.</li>
+  <li><input type="checkbox" checked> <strong>Hook</strong> (<code>src/hooks/useTbrPlanner.ts</code>): add <code>method</code> state + setter; thread into plan &amp; food budget; reset override on method change.</li>
+  <li><input type="checkbox" checked> <strong>UI — toggle</strong>: segmented control TBR &harr; Cage the Queen; rephrase heading/intro for swarm <em>and</em> varroa.</li>
+  <li><input type="checkbox" checked> <strong>UI — chart</strong>: second <em>stacked</em> chart (colony population %, below the forager chart), each curve as % of its own full strength; legend + tooltip per chart.</li>
+  <li><input type="checkbox" checked> <strong>UI — varroa callout</strong>: broodless-window dates ("treat with oxalic acid between &hellip;").</li>
+  <li><input type="checkbox" checked> <strong>UI — controls</strong>: method-aware advanced fields; cage-duration preset (21 worker / 24 drone); method-aware milestones, slider label, food card, explanation.</li>
+  <li><input type="checkbox" checked> <strong>Docs</strong>: update <code>docs/features/tbr-swarm-planner.md</code>.</li>
+  <li><input type="checkbox" checked> <strong>Verify</strong>: <code>tsc</code> + <code>eslint</code> on the changed files (no build); prompt the user to test.</li>
 </ul>
 
-<div class="review">
-<h2 style="margin-top:0">Review</h2>
-<p><strong>What was built:</strong> a live "TBR Swarm Planner" tool, reachable from
-<code>Dashboard → Tools → Hive Health → TBR Swarm Planner</code>. No database changes, no new
-dependencies.</p>
-<h3>Files</h3>
-<ul>
-<li><span class="new">NEW</span> <code>src/types/tbr.ts</code> — model interfaces &amp; default constants.</li>
-<li><span class="new">NEW</span> <code>src/lib/tbr-model.ts</code> — pure model: UTC-safe date maths, the
-forager-force cohort simulation (closed-form gap overlap), flow-coverage scoring, optimal-date
-search, and the 3-tier crop-date resolver with GDD projection.</li>
-<li><span class="new">NEW</span> <code>src/hooks/useTbrPlanner.ts</code> — loads apiaries +
-vegetation reference + per-apiary GDD records, fetches the apiary's GDD accumulation &amp; recent
-daily rate from Open-Meteo, auto-selects sensible default crops, and assembles the plan.</li>
-<li><span class="new">NEW</span> <code>src/components/tools/TBRPlanner.tsx</code> — apiary &amp; crop
-pickers with tier badges, the recommendation panel, the Chart.js forager-force curve (custom
-canvas plugin shades the spring-crop &amp; summer-flow bands and draws TBR / first-forager marker
-lines), the TBR-date and lay-rate sliders, milestone cards, and an advanced disclosure for the
-biological constants.</li>
-<li><span class="edit">EDIT</span> <code>src/app/dashboard/tools/page.tsx</code> — added the
-<code>tbr</code> section (type, URL whitelist, card, tab).</li>
-<li><span class="new">NEW</span> <code>docs/features/tbr-swarm-planner.md</code>.</li>
-</ul>
-<h3>Defensive choices</h3>
-<ul>
-<li>All simulation loops are bounded (<code>MAX_SIM_DAYS</code>); out-of-order date ranges return
-empty/zero instead of looping.</li>
-<li>Open-Meteo fetch is abortable, time-guarded and falls back gracefully — if a location has no
-coordinates and no records, the UI explains why no plan can be shown rather than failing.</li>
-<li>GDD projection clamps a non-positive daily rate to avoid divide-by-zero; "already reached"
-thresholds are surfaced honestly rather than back-dated.</li>
-<li>User crop/apiary choices are preserved against the auto-default logic via refs.</li>
-</ul>
-<h3>Caveats</h3>
-<ul>
-<li>Forward GDD projection uses recent average daily accrual (not a live forecast) — simple and
-location-aware; can be upgraded to the Open-Meteo 16-day forecast later if wanted.</li>
-<li>Spring-crop and summer-flow window lengths default to 30 / 35 days
-(<code>SPRING_CROP_DURATION_DAYS</code> / <code>SUMMER_FLOW_DURATION_DAYS</code>).</li>
-<li>Per project rule, the production build was not run here — please test in the app.</li>
-</ul>
-<h3>Post-build audit hardening</h3>
-<ul>
-<li><strong>Critical:</strong> <code>parseISODate</code>/<code>toISODate</code> hardened so a malformed
-date (e.g. a bad <code>gdd_records.start_date</code>) degrades to the epoch instead of throwing
-<code>RangeError</code> and crashing the render.</li>
-<li><strong>High:</strong> GDD projection now anchors on the archive&apos;s real last date
-(<code>asOf</code>) — removing the ~5-day late bias — and falls back to the season&apos;s average
-daily accrual instead of a meaningless 1 GDD/day.</li>
-<li><strong>High:</strong> a spring crop dated after the summer flow is now ignored (band suppressed)
-rather than corrupting the plan bounds.</li>
-<li><strong>Medium:</strong> latitude/longitude coerced &amp; validated (PostgREST can return
-<code>numeric</code> as string); failed record fetches are now logged; the monotonic
-recommendation invariant is documented.</li>
-</ul>
+<h2>Decisions (confirmed)</h2>
+<div class="q">
+<ol>
+  <li><strong>Chart layout</strong> — <strong>two stacked charts</strong> (forager above, population below).</li>
+  <li><strong>Population scale</strong> — <strong>% of full strength</strong> (each curve normalised to its own steady state).</li>
+  <li><strong>Food-budget depth for caging</strong> — <strong>minimal note for now</strong> ("comb retained &rarr; far cheaper"); full rework deferred.</li>
+</ol>
 </div>
+
+<h2>Review</h2>
+<p>All to-do items implemented. Summary of changes:</p>
+<ul>
+  <li><strong>Model unification</strong> — both interventions now share one <code>broodGap(c, method)</code>
+  helper (zero-emergence window). <code>foragerForceAtOffset</code> was generalised from the fixed
+  <code>0</code>/<code>gapLen</code> split to <code>gapStart</code>/<code>gapEnd</code>, so TBR output is
+  byte-for-byte unchanged (<code>gapStart = 0</code>) and caging is purely additive.</li>
+  <li><strong>New population curve</strong> — <code>populationAtOffset</code> integrates the same
+  emergence over the full adult lifespan; <code>simulateForagerCurve</code> now emits
+  <code>{ foragers, population }</code> per day.</li>
+  <li><strong>Varroa window</strong> — milestones gained <code>broodlessStartDate</code>/
+  <code>broodlessEndDate</code> (<code>gapStart</code> &hellip; <code>gapEnd &minus; cappedPhase</code>) plus
+  a caging <code>releaseDate</code>; surfaced as a purple oxalic-acid callout.</li>
+  <li><strong>Method threading</strong> — <code>method</code> flows through coverage, recommendation,
+  plan assembly and the (method-aware) food budget. Hook adds <code>method</code> state and resets the
+  date override on switch.</li>
+  <li><strong>UI</strong> — method toggle; two stacked charts (forager amber, population emerald, each
+  % of own steady state); cage-duration preset (21 / 24 d); method-aware milestones, slider label,
+  advanced fields, food card and explanation.</li>
+  <li><strong>Food budget (minimal, as agreed)</strong> — caging drops the comb-draw line/cost and
+  notes the nest is retained; full recompute deferred.</li>
+</ul>
+<p><strong>Verification:</strong> <code>tsc --noEmit</code> reports no errors in any changed file (only
+pre-existing <code>tests/</code> mock-typing errors remain); <code>eslint</code> clean on all four
+source files. Build not run locally — to be tested in the browser.</p>
+<p><strong>Files touched:</strong> <code>src/types/tbr.ts</code>, <code>src/lib/tbr-model.ts</code>,
+<code>src/hooks/useTbrPlanner.ts</code>, <code>src/components/tools/TBRPlanner.tsx</code>,
+<code>docs/features/tbr-swarm-planner.md</code>, <code>docs/features/swarm-varroa-planner-expansion.md</code>.</p>
 
 </body>
 </html>
