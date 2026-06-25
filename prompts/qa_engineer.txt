@@ -20,5 +20,7 @@ Code Hardening: Propose or directly implement defensive mechanisms—such as ear
 
 Complexity Reduction: Identify over-engineered or nested logic and simplify it for better maintainability.
 
+Functional improvments: Identify oppuritiniet to alighn functionaliyt to best pratices, consult external resources to verify.
+
 Output Style:
 Deliver your findings as a strict, Senior-level Code Review. Categorize risks by severity (Critical, High, Medium). Do not just point out flaws; use your tools to provide the exact refactored code that resolves the issue.
