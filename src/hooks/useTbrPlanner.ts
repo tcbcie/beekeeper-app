@@ -36,10 +36,13 @@ export interface ApiaryOption {
   longitude: number | null
 }
 
+/** How a crop would resolve at the selected apiary — drives the picker colour coding. */
+export type CropDataLevel = 'observed' | 'projected' | 'estimated' | 'none'
+
 export interface VegOption {
   id: string
   name: string
-  hasRecords: boolean
+  dataLevel: CropDataLevel
 }
 
 interface UseTbrPlannerReturn {
@@ -172,7 +175,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
 
     async function loadStatic() {
       setError(null)
-      const [apiaryRes, vegTypeRes, vegInfoRes] = await Promise.all([
+      const [apiaryRes, vegTypeRes, vegInfoRes, recCountRes] = await Promise.all([
         supabase
           .from('apiaries')
           .select('id, name, latitude, longitude')
@@ -187,6 +190,10 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
         supabase
           .from('vegetation_info')
           .select('vegetation_type_id, typical_gdd_range, bloom_period, nectar_value'),
+        supabase
+          .from('gdd_records')
+          .select('apiary_id')
+          .eq('user_id', userId),
       ])
 
       if (!active) return
@@ -199,7 +206,16 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
 
       const apiaryList = (apiaryRes.data ?? []) as ApiaryOption[]
       setApiaries(apiaryList)
-      if (apiaryList.length > 0) setSelectedApiaryId((prev) => prev ?? apiaryList[0].id)
+      // Default to the apiary with the most bloom records (the user's main data site), so the
+      // planner doesn't open on a sparse apiary and silently fall back to generic estimates.
+      const recCounts = new Map<string, number>()
+      for (const r of (recCountRes.data ?? []) as { apiary_id: string }[]) {
+        recCounts.set(r.apiary_id, (recCounts.get(r.apiary_id) ?? 0) + 1)
+      }
+      const defaultApiary = apiaryList
+        .slice()
+        .sort((a, b) => (recCounts.get(b.id) ?? 0) - (recCounts.get(a.id) ?? 0))[0]
+      if (apiaryList.length > 0) setSelectedApiaryId((prev) => prev ?? defaultApiary.id)
 
       const names = new Map<string, string>()
       for (const v of (vegTypeRes.data ?? []) as { id: string; value: string }[]) {
@@ -326,11 +342,25 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
   }, [selectedApiaryId, apiaries])
 
   const vegOptions: VegOption[] = useMemo(() => {
-    const withRecords = new Set(records.map((r) => r.vegetationTypeId))
+    const currentYear = proj?.currentYear ?? new Date().getFullYear()
+    const byCrop = new Map<string, GddRecordLite[]>()
+    for (const r of records) {
+      const arr = byCrop.get(r.vegetationTypeId)
+      if (arr) arr.push(r)
+      else byCrop.set(r.vegetationTypeId, [r])
+    }
+    const levelOf = (v: VegInfoLite): CropDataLevel => {
+      const recs = byCrop.get(v.vegetationTypeId) ?? []
+      if (recs.some((r) => r.year === currentYear && r.startDate)) return 'observed'
+      if (recs.some((r) => typeof r.gddValue === 'number')) return 'projected'
+      if (v.typicalGddRange) return 'estimated'
+      return 'none'
+    }
+    const rank: Record<CropDataLevel, number> = { observed: 0, projected: 1, estimated: 2, none: 3 }
     return vegInfo
-      .map((v) => ({ id: v.vegetationTypeId, name: v.name, hasRecords: withRecords.has(v.vegetationTypeId) }))
-      .sort((a, b) => (a.hasRecords === b.hasRecords ? a.name.localeCompare(b.name) : a.hasRecords ? -1 : 1))
-  }, [vegInfo, records])
+      .map((v) => ({ id: v.vegetationTypeId, name: v.name, dataLevel: levelOf(v) }))
+      .sort((a, b) => rank[a.dataLevel] - rank[b.dataLevel] || a.name.localeCompare(b.name))
+  }, [vegInfo, records, proj])
 
   const vegInfoById = useMemo(() => {
     const m = new Map<string, VegInfoLite>()

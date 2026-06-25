@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan — Observed bloom end date (5% threshold)</title>
+<title>Plan — Planner apiary default + crop data-availability coding</title>
 <style>
   body { font-family: system-ui, -apple-system, Segoe UI, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.55; color: #1f2937; }
   h1 { font-size: 1.5rem; } h2 { font-size: 1.15rem; margin-top: 2rem; border-bottom: 2px solid #e5e7eb; padding-bottom: .3rem; }
@@ -18,64 +18,58 @@
 </head>
 <body>
 
-<h1>Plan — Observed bloom end date (5% threshold)</h1>
-<p>Record the two bloom observations consistently and make the planner use the observed
-<strong>end</strong> date. Live calculator + form copy only — <strong>no database changes</strong>
-(<code>gdd_records.end_date</code> already exists; 34 of 75 records have it).</p>
+<h1>Plan — Planner apiary default + crop data-availability coding</h1>
+<p>Stop the planner silently using a generic estimate. Default to the user's main data site, and make
+the crop picker show which crops have real observations. Guidance only — <strong>no database changes</strong>,
+resolver logic unchanged (still apiary-scoped).</p>
 
 <div class="note">
-<strong>Thresholds:</strong> bloom <strong>start</strong> = ~10% of the crop in bloom (existing
-<code>start_date</code>); bloom <strong>end</strong> = under 5% still worth foraging (existing,
-under-used <code>end_date</code>). Today the planner ignores the end date and assumes a fixed
-35-day flow (spring 30) — the observed "finished" date does nothing.
+<strong>Root cause:</strong> the planner defaulted to the alphabetically-first apiary (often sparse),
+so a chosen crop with no observation there fell through to the Tier-3 generic estimate — showing
+misleading "typical GDD" dates with no signal that real data wasn't used.
 </div>
 
-<h2>End-date resolution (mirrors the start-date tiers)</h2>
+<h2>Crop data level (per crop, at the selected apiary)</h2>
 <table>
-  <tr><th>Tier</th><th>Source</th></tr>
-  <tr><td>1 — Observed</td><td>This season's record has an <code>end_date</code> → use it</td></tr>
-  <tr><td>2 — Average duration</td><td>Prior years at this apiary with both dates → <code>start + round(avg(end − start))</code></td></tr>
-  <tr><td>3 — Fixed fallback</td><td>No history → <code>start + fallbackDurationDays</code> (summer 35, spring 30)</td></tr>
+  <tr><th>Level</th><th>Meaning</th><th>Colour</th></tr>
+  <tr><td>observed</td><td>Record this season with a start date (Tier 1)</td><td>green</td></tr>
+  <tr><td>projected</td><td>Prior record with a GDD value (Tier 2)</td><td>blue</td></tr>
+  <tr><td>estimated</td><td>No records; generic <code>typical_gdd_range</code> (Tier 3)</td><td>amber</td></tr>
+  <tr><td>none</td><td>Nothing to go on</td><td>grey</td></tr>
 </table>
 
 <h2>To-do</h2>
 <ul class="todo">
-  <li><input type="checkbox" checked> <strong>Types</strong> (<code>src/types/tbr.ts</code>): <code>ResolvedCropDate</code> gains <code>endDate: string | null</code>.</li>
-  <li><input type="checkbox" checked> <strong>Model</strong> (<code>src/lib/tbr-model.ts</code>): <code>GddRecordLite</code> gains <code>endDate</code>; <code>resolveCropDate</code> resolves <code>endDate</code> via the 3 tiers with a <code>fallbackDurationDays</code> arg.</li>
-  <li><input type="checkbox" checked> <strong>Plan assembly</strong>: <code>planFromResolved</code> takes a resolved <code>springEndDate</code> and uses the resolved summer end instead of the <code>+35</code> default.</li>
-  <li><input type="checkbox" checked> <strong>Hook</strong> (<code>src/hooks/useTbrPlanner.ts</code>): select <code>end_date</code>; map to <code>endDate</code>; pass resolved spring/summer end dates into the plan.</li>
-  <li><input type="checkbox" checked> <strong>Planner UI</strong> (<code>src/components/tools/TBRPlanner.tsx</code>): show the resolved bloom-end date in the crop-picker readout.</li>
-  <li><input type="checkbox" checked> <strong>Tracker UI</strong> (<code>src/components/tools/GDDTracker.tsx</code>): threshold helper text — "~10% in bloom" / "under 5% still worth foraging".</li>
+  <li><input type="checkbox" checked> <strong>Default apiary</strong> (<code>src/hooks/useTbrPlanner.ts</code>): on load, count the user's bloom records per apiary and default to the most-recorded one (fall back to first if none).</li>
+  <li><input type="checkbox" checked> <strong>Crop data level</strong> (<code>useTbrPlanner.ts</code>): add a <code>dataLevel</code> (observed/projected/estimated/none) to each <code>VegOption</code>, computed from the selected apiary's records + <code>vegetation_info</code>.</li>
+  <li><input type="checkbox" checked> <strong>CropSelect</strong> (<code>src/components/tools/TBRPlanner.tsx</code>): custom accessible dropdown (button + <code>role="listbox"</code> popup, outside-click/Escape close, large targets) with colour-coded rows by data level.</li>
+  <li><input type="checkbox" checked> <strong>Wire it in</strong>: replace the two native crop <code>&lt;select&gt;</code>s with <code>CropSelect</code>; add a short colour legend.</li>
   <li><input type="checkbox" checked> <strong>Docs</strong>: update <code>docs/features/tbr-swarm-planner.md</code>.</li>
   <li><input type="checkbox" checked> <strong>Verify</strong>: <code>tsc</code> + <code>eslint</code> on the changed files (no build); prompt the user to test.</li>
 </ul>
 
 <h2>Decisions (confirmed)</h2>
 <div class="q">
-  <strong>End estimate</strong> — use the apiary's average observed bloom duration, falling back to the
-  fixed default only when there's no history.<br>
-  <strong>Tracker copy</strong> — add the 10% / 5% threshold guidance to the GDD Tracker form.
+  <strong>Default apiary</strong> — the apiary with the most bloom records (no location prompt).<br>
+  <strong>Crop picker</strong> — a custom styled dropdown with colour-coded rows (green observed /
+  blue projected / amber estimated / grey none).
 </div>
 
 <h2>Review</h2>
 <p>All items implemented. Summary:</p>
 <ul>
-  <li><strong>Model</strong> — <code>resolveCropDate</code> now resolves a bloom <code>endDate</code> via 3 tiers
-  (observed <code>end_date</code> → average observed duration → fixed fallback), anchored on the resolved start.
-  <code>planFromResolved</code> takes resolved spring/summer end dates and uses them for the flow band, the
-  spring-crop constraint and the scoring window (falling back to the fixed +35/+30 only when no end is known).</li>
-  <li><strong>Hook</strong> — selects <code>end_date</code>, maps it, resolves spring with the 30-day fallback and
-  summer with 35, and passes both resolved end dates into the plan.</li>
-  <li><strong>Planner UI</strong> — the crop-picker readout shows the window as <code>start → end</code>.</li>
-  <li><strong>Tracker UI</strong> — the two date fields now state the thresholds: "~10% in bloom" (start) and
-  "under 5% still worth foraging" (end). (Field labels kept as-is.)</li>
-  <li><strong>QA audit fixes</strong> — clamped the <em>estimated</em> bloom duration to ≤120 days so an outlier
-  record can't bloat the flow band/loops; reverted a cosmetic label rename that broke an existing test.</li>
-  <li><strong>No DB change</strong> — <code>gdd_records.end_date</code> already existed.</li>
+  <li><strong>Default apiary</strong> — the hook now counts each apiary's bloom records on load and defaults
+  to the most-recorded one (fallback: first), so the planner opens on the user's main data site.</li>
+  <li><strong>Crop data level</strong> — <code>vegOptions</code> carries a <code>dataLevel</code>
+  (observed / projected / estimated / none) computed from the selected apiary's records + <code>vegetation_info</code>;
+  options are sorted best-data-first.</li>
+  <li><strong>CropSelect</strong> — a custom accessible dropdown (button + <code>role="listbox"</code>, outside-click
+  &amp; Escape close, large targets) replaces the native crop selects; each row has a colour dot and a plain-word
+  data level. A legend sits under the pickers.</li>
+  <li><strong>Resolver unchanged</strong> — still apiary-scoped; this is guidance only. No DB change.</li>
 </ul>
-<p><strong>Verification:</strong> <code>tsc --noEmit</code> reports no errors in any changed file (only pre-existing
-<code>tests/</code> mock-typing errors remain); <code>eslint</code> clean on all five source files. Build not run —
-to be tested in the browser.</p>
+<p><strong>Verification:</strong> <code>tsc --noEmit</code> and <code>eslint</code> clean on both changed files
+(only pre-existing <code>tests/</code> errors remain). Build not run — to be tested in the browser.</p>
 
 </body>
 </html>

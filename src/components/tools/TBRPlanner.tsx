@@ -1,5 +1,5 @@
 'use client'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Scissors, CalendarClock, Info, ChevronDown, ChevronUp, Sparkles, AlertTriangle, Wheat, Bug } from 'lucide-react'
 import {
   Chart as ChartJS,
@@ -16,7 +16,7 @@ import {
 import 'chartjs-adapter-date-fns'
 import { Line } from 'react-chartjs-2'
 import Button from '@/components/ui/Button'
-import { useTbrPlanner } from '@/hooks/useTbrPlanner'
+import { useTbrPlanner, type VegOption, type CropDataLevel } from '@/hooks/useTbrPlanner'
 import { addDays, dayDiff, parseISODate, steadyStateForagers, peakAdultPopulation, totalAdultLifespanDays, CELLS_PER_DADANT_DEEP } from '@/lib/tbr-model'
 import type { CropDateTier, TbrConstants, InterventionMethod } from '@/types/tbr'
 
@@ -63,6 +63,20 @@ const TIER_BADGE: Record<CropDateTier, { label: string; cls: string }> = {
   projected: { label: 'Projected', cls: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
   estimated: { label: 'Estimated', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
   unknown: { label: 'No data', cls: 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
+}
+
+// Crop data-availability colour coding for the custom picker (at the selected apiary).
+const LEVEL_DOT: Record<CropDataLevel, string> = {
+  observed: 'bg-green-500',
+  projected: 'bg-blue-500',
+  estimated: 'bg-amber-500',
+  none: 'bg-gray-400',
+}
+const LEVEL_WORD: Record<CropDataLevel, string> = {
+  observed: 'observed this year',
+  projected: 'from your history',
+  estimated: 'generic estimate',
+  none: 'no data',
 }
 
 function formatDate(d: string | null): string {
@@ -322,6 +336,15 @@ export default function TBRPlanner({ userId }: { userId: string }) {
               tier={resolvedSummer?.tier}
               note={resolvedSummer?.note}
             />
+          </div>
+
+          {/* Crop data-availability legend */}
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-tertiary">
+            <span className="font-medium text-text-secondary">At this apiary:</span>
+            <LevelKey dot="bg-green-500" label="observed this year" />
+            <LevelKey dot="bg-blue-500" label="from your history" />
+            <LevelKey dot="bg-amber-500" label="generic estimate" />
+            <LevelKey dot="bg-gray-400" label="no data" />
           </div>
 
           {noProjection && (
@@ -657,7 +680,7 @@ function CropPicker({
   label, vegOptions, value, onChange, resolvedDate, resolvedEndDate, tier, note,
 }: {
   label: string
-  vegOptions: { id: string; name: string; hasRecords: boolean }[]
+  vegOptions: VegOption[]
   value: string | null
   onChange: (id: string) => void
   resolvedDate: string | null
@@ -669,16 +692,7 @@ function CropPicker({
   return (
     <div>
       <label className="block text-sm font-medium text-foreground mb-2">{label}</label>
-      <select
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-4 py-3 text-base border border-border rounded-lg bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
-      >
-        <option value="" disabled>Select a crop…</option>
-        {vegOptions.map((v) => (
-          <option key={v.id} value={v.id}>{v.hasRecords ? `★ ${v.name}` : v.name}</option>
-        ))}
-      </select>
+      <CropSelect options={vegOptions} value={value} onChange={onChange} ariaLabel={label} />
       <div className="flex items-center gap-2 mt-2">
         <span className="text-sm font-semibold text-foreground">
           {formatDate(resolvedDate)}{resolvedDate && resolvedEndDate ? ` → ${formatDate(resolvedEndDate)}` : ''}
@@ -686,6 +700,77 @@ function CropPicker({
         {badge && <span className={`text-xs px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>}
       </div>
       {note && <p className="text-xs text-text-tertiary mt-1">{note}</p>}
+    </div>
+  )
+}
+
+// Custom dropdown: native <option> colours don't render on iOS Safari, so we build our own
+// listbox with a colour dot per crop showing whether real observations back it at this apiary.
+function CropSelect({
+  options, value, onChange, ariaLabel,
+}: {
+  options: VegOption[]
+  value: string | null
+  onChange: (id: string) => void
+  ariaLabel: string
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const selected = options.find((o) => o.id === value) ?? null
+
+  useEffect(() => {
+    if (!open) return
+    const onPointer = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={ariaLabel}
+        className="w-full flex items-center justify-between gap-2 px-4 py-3 text-base border border-border rounded-lg bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+      >
+        <span className="flex items-center gap-2 min-w-0">
+          {selected && <span className={`inline-block w-3 h-3 rounded-full flex-shrink-0 ${LEVEL_DOT[selected.dataLevel]}`} />}
+          <span className="truncate">{selected ? selected.name : 'Select a crop…'}</span>
+        </span>
+        <ChevronDown size={18} className="flex-shrink-0 text-text-tertiary" />
+      </button>
+      {open && (
+        <ul
+          role="listbox"
+          aria-label={ariaLabel}
+          className="absolute z-20 mt-1 w-full max-h-72 overflow-auto rounded-lg border border-border bg-surface shadow-lg"
+        >
+          {options.map((o) => (
+            <li
+              key={o.id}
+              role="option"
+              aria-selected={o.id === value}
+              onClick={() => { onChange(o.id); setOpen(false) }}
+              className={`flex items-center justify-between gap-3 px-4 py-3 text-base cursor-pointer hover:bg-surface-secondary ${o.id === value ? 'bg-surface-secondary font-semibold' : ''}`}
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <span className={`inline-block w-3 h-3 rounded-full flex-shrink-0 ${LEVEL_DOT[o.dataLevel]}`} />
+                <span className="truncate">{o.name}</span>
+              </span>
+              <span className="text-xs text-text-tertiary flex-shrink-0">{LEVEL_WORD[o.dataLevel]}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
@@ -716,6 +801,15 @@ function SegmentedControl<T extends string | number>({
         </button>
       ))}
     </div>
+  )
+}
+
+function LevelKey({ dot, label }: { dot: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className={`inline-block w-3 h-3 rounded-full ${dot}`} />
+      {label}
+    </span>
   )
 }
 
