@@ -127,13 +127,20 @@ export interface FoodBudget {
   pollenToForageKg: number
 }
 
+/** Coerce to a finite, non-negative number so malformed constants cannot poison the budget. */
+function nonNeg(n: number): number {
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
+
 /** Estimate the honey and pollen needed to rebuild after a break, over `rebuildDays`. */
 export function rebuildFoodBudget(c: TbrConstants, rebuildDays: number): FoodBudget {
-  const days = Math.max(0, rebuildDays)
-  const standingBroodCells = c.layRate * c.eggToEmergenceDays
+  const days = nonNeg(rebuildDays)
+  const layRate = nonNeg(c.layRate)
+  const standingBroodCells = layRate * nonNeg(c.eggToEmergenceDays)
   const framesToDraw = Math.max(1, Math.round(standingBroodCells / CELLS_PER_DADANT_DEEP))
-  const beesFed = c.layRate * Math.max(0, days - c.reLayDelayDays)
-  const avgAdults = peakAdultPopulation(c) * AVG_ADULT_FRACTION
+  const beesFed = layRate * Math.max(0, days - nonNeg(c.reLayDelayDays))
+  const avgAdults =
+    layRate * (nonNeg(c.emergenceToForagerDays) + nonNeg(c.foragingCareerDays)) * AVG_ADULT_FRACTION
 
   const combHoneyKg = framesToDraw * WAX_PER_DADANT_FRAME_KG * HONEY_PER_WAX_KG
   const broodHoneyKg = (beesFed * LARVAL_CARB_MG) / 1e6

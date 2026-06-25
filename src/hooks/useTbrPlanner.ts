@@ -348,27 +348,33 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     )
   }, [resolvedSpring, resolvedSummer, constants, tbrOverride, precocious])
 
+  // Worthwhile nectar blooms (value ≥ threshold) resolved once per apiary/projection and
+  // sorted ascending, so the TBR slider can pick the next bloom without re-resolving every crop.
+  const nectarBlooms = useMemo<{ date: string; name: string }[]>(() => {
+    if (!proj) return []
+    const out: { date: string; name: string }[] = []
+    for (const v of vegInfo) {
+      if ((v.nectarValue ?? 0) < MIN_USEFUL_NECTAR_VALUE) continue
+      const r = resolveCropDate(v.vegetationTypeId, v.name, records, v, proj)
+      if (r.date) out.push({ date: r.date, name: v.name })
+    }
+    return out.sort((a, b) => a.date.localeCompare(b.date))
+  }, [vegInfo, records, proj])
+
   const foodPlan = useMemo<FoodPlan | null>(() => {
-    if (!result || !proj) return null
+    if (!result) return null
     const { effectiveTbrDate, plan } = result
     const recoveryDate = plan.milestones.firstForagerDate
     const budget = rebuildFoodBudget(constants, dayDiff(effectiveTbrDate, recoveryDate))
 
     // Earliest worthwhile nectar source predicted at/after the break.
-    let nextNectarDate: string | null = null
-    let nextNectarName: string | null = null
-    for (const v of vegInfo) {
-      if ((v.nectarValue ?? 0) < MIN_USEFUL_NECTAR_VALUE) continue
-      const r = resolveCropDate(v.vegetationTypeId, v.name, records, v, proj)
-      if (r.date && r.date >= effectiveTbrDate && (!nextNectarDate || r.date < nextNectarDate)) {
-        nextNectarDate = r.date
-        nextNectarName = v.name
-      }
-    }
+    const next = nectarBlooms.find((b) => b.date >= effectiveTbrDate) ?? null
+    const nextNectarDate = next?.date ?? null
+    const nextNectarName = next?.name ?? null
 
     const incomeBeforeRecovery = nextNectarDate != null && nextNectarDate <= recoveryDate
     return { budget, nextNectarDate, nextNectarName, incomeBeforeRecovery, recoveryDate }
-  }, [result, proj, constants, vegInfo, records])
+  }, [result, constants, nectarBlooms])
 
   return {
     apiaries,
