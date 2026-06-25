@@ -122,7 +122,12 @@ crop-picker readout (shown as `start → end`).
 
 ## Interface
 
-- Apiary picker (required); spring-crop and summer-flow pickers pre-filled from the apiary's records.
+- Apiary picker (required), **defaulting to the apiary with the most bloom records** (the user's main
+  data site) so the planner doesn't open on a sparse apiary and silently fall back to estimates.
+- Spring-crop and summer-flow pickers are **custom colour-coded dropdowns**: each crop shows a dot for
+  the data it would resolve to *at the selected apiary* — green (observed this year), blue (from your
+  history), amber (generic estimate), grey (no data) — with a legend. (Native `<option>` colours don't
+  render on iOS Safari, hence the custom control.)
 - Chart.js forager-force curve with shaded bands (spring crop, brood gap, summer flow).
 - TBR-date slider + lay-rate slider (1000–2500/day, with a live brood-cells / Dadant-frames readout).
 - **Precocious-foraging toggle** — when on, post-break bees forage ~7 days younger, modelling the
