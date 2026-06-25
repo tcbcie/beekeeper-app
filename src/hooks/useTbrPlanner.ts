@@ -165,7 +165,10 @@ function readSession<T>(key: string, initial: T): T {
     const raw = window.sessionStorage.getItem(key)
     if (raw == null) return initial
     const parsed = JSON.parse(raw) as T
-    if (initial && typeof initial === 'object' && !Array.isArray(initial) && parsed && typeof parsed === 'object') {
+    if (
+      initial && typeof initial === 'object' && !Array.isArray(initial) &&
+      parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    ) {
       return { ...initial, ...parsed }
     }
     return parsed
@@ -173,6 +176,9 @@ function readSession<T>(key: string, initial: T): T {
     return initial
   }
 }
+
+// Bump when the stored shape changes, so stale entries from an older deploy are abandoned cleanly.
+const PERSIST_VERSION = 1
 
 // useState that persists to sessionStorage, so picks survive leaving/returning to the page this session.
 function usePersistentState<T>(key: string, initial: T): [T, Dispatch<SetStateAction<T>>] {
@@ -185,8 +191,8 @@ function usePersistentState<T>(key: string, initial: T): [T, Dispatch<SetStateAc
 }
 
 export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
-  // Persist the user's picks per session (keyed by user) so navigating away and back keeps them.
-  const sk = (name: string) => `tbr:${userId}:${name}`
+  // Persist the user's picks per session (keyed by user + schema version) so navigating away and back keeps them.
+  const sk = (name: string) => `tbr:v${PERSIST_VERSION}:${userId}:${name}`
 
   const [apiaries, setApiaries] = useState<ApiaryOption[]>([])
   const [selectedApiaryId, setSelectedApiaryId] = usePersistentState<string | null>(sk('apiary'), null)
