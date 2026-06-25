@@ -68,7 +68,9 @@ under-used <code>end_date</code>). Today the planner ignores the end date and as
   summer with 35, and passes both resolved end dates into the plan.</li>
   <li><strong>Planner UI</strong> — the crop-picker readout shows the window as <code>start → end</code>.</li>
   <li><strong>Tracker UI</strong> — the two date fields now state the thresholds: "~10% in bloom" (start) and
-  "under 5% still worth foraging" (end). Renamed "Bloom Observed Date" → "Bloom Start Date" for clarity.</li>
+  "under 5% still worth foraging" (end). (Field labels kept as-is.)</li>
+  <li><strong>QA audit fixes</strong> — clamped the <em>estimated</em> bloom duration to ≤120 days so an outlier
+  record can't bloat the flow band/loops; reverted a cosmetic label rename that broke an existing test.</li>
   <li><strong>No DB change</strong> — <code>gdd_records.end_date</code> already existed.</li>
 </ul>
 <p><strong>Verification:</strong> <code>tsc --noEmit</code> reports no errors in any changed file (only pre-existing
