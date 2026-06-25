@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Scissors, CalendarClock, Info, ChevronDown, ChevronUp, Sparkles, AlertTriangle, Wheat, Bug } from 'lucide-react'
 import {
   Chart as ChartJS,
@@ -338,13 +338,12 @@ export default function TBRPlanner({ userId }: { userId: string }) {
             />
           </div>
 
-          {/* Crop data-availability legend */}
+          {/* Crop data-availability legend (derived from the level maps so they can't drift) */}
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-tertiary">
             <span className="font-medium text-text-secondary">At this apiary:</span>
-            <LevelKey dot="bg-green-500" label="observed this year" />
-            <LevelKey dot="bg-blue-500" label="from your history" />
-            <LevelKey dot="bg-amber-500" label="generic estimate" />
-            <LevelKey dot="bg-gray-400" label="no data" />
+            {(['observed', 'projected', 'estimated', 'none'] as CropDataLevel[]).map((l) => (
+              <LevelKey key={l} dot={LEVEL_DOT[l]} label={LEVEL_WORD[l]} />
+            ))}
           </div>
 
           {noProjection && (
@@ -705,7 +704,8 @@ function CropPicker({
 }
 
 // Custom dropdown: native <option> colours don't render on iOS Safari, so we build our own
-// listbox with a colour dot per crop showing whether real observations back it at this apiary.
+// listbox with a colour dot per crop. Implements the WCAG listbox keyboard pattern so it stays
+// as accessible as the native <select> it replaces.
 function CropSelect({
   options, value, onChange, ariaLabel,
 }: {
@@ -715,28 +715,72 @@ function CropSelect({
   ariaLabel: string
 }) {
   const [open, setOpen] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(0)
   const ref = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+  const optionRefs = useRef<(HTMLLIElement | null)[]>([])
   const selected = options.find((o) => o.id === value) ?? null
 
+  const closeMenu = (focusButton = true) => {
+    setOpen(false)
+    if (focusButton) buttonRef.current?.focus()
+  }
+  const openMenu = () => {
+    const i = options.findIndex((o) => o.id === value)
+    setActiveIndex(i >= 0 ? i : 0)
+    setOpen(true)
+  }
+
+  // Outside-click closes (without yanking focus back to the button).
   useEffect(() => {
     if (!open) return
     const onPointer = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', onPointer)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onPointer)
-      document.removeEventListener('keydown', onKey)
-    }
+    return () => document.removeEventListener('mousedown', onPointer)
   }, [open])
+
+  // Move focus into the list on open so keyboard navigation works; keep the active row in view.
+  useEffect(() => { if (open) listRef.current?.focus() }, [open])
+  useEffect(() => { if (open) optionRefs.current[activeIndex]?.scrollIntoView({ block: 'nearest' }) }, [open, activeIndex])
+
+  const onButtonKey = (e: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      openMenu()
+    }
+  }
+
+  const onListKey = (e: ReactKeyboardEvent<HTMLUListElement>) => {
+    switch (e.key) {
+      case 'ArrowDown': e.preventDefault(); setActiveIndex((i) => Math.min(options.length - 1, i + 1)); break
+      case 'ArrowUp': e.preventDefault(); setActiveIndex((i) => Math.max(0, i - 1)); break
+      case 'Home': e.preventDefault(); setActiveIndex(0); break
+      case 'End': e.preventDefault(); setActiveIndex(options.length - 1); break
+      case 'Enter':
+      case ' ': {
+        e.preventDefault()
+        const o = options[activeIndex]
+        if (o) { onChange(o.id); closeMenu() }
+        break
+      }
+      case 'Escape': e.preventDefault(); closeMenu(); break
+      case 'Tab': setOpen(false); break
+      default: break
+    }
+  }
+
+  const activeId = open && options[activeIndex] ? `crop-opt-${options[activeIndex].id}` : undefined
 
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? setOpen(false) : openMenu())}
+        onKeyDown={onButtonKey}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label={ariaLabel}
@@ -750,17 +794,24 @@ function CropSelect({
       </button>
       {open && (
         <ul
+          ref={listRef}
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute z-20 mt-1 w-full max-h-72 overflow-auto rounded-lg border border-border bg-surface shadow-lg"
+          tabIndex={-1}
+          aria-activedescendant={activeId}
+          onKeyDown={onListKey}
+          className="absolute z-20 mt-1 w-full max-h-72 overflow-auto rounded-lg border border-border bg-surface shadow-lg focus:outline-none"
         >
-          {options.map((o) => (
+          {options.map((o, i) => (
             <li
               key={o.id}
+              id={`crop-opt-${o.id}`}
+              ref={(el) => { optionRefs.current[i] = el }}
               role="option"
               aria-selected={o.id === value}
-              onClick={() => { onChange(o.id); setOpen(false) }}
-              className={`flex items-center justify-between gap-3 px-4 py-3 text-base cursor-pointer hover:bg-surface-secondary ${o.id === value ? 'bg-surface-secondary font-semibold' : ''}`}
+              onClick={() => { onChange(o.id); closeMenu() }}
+              onMouseEnter={() => setActiveIndex(i)}
+              className={`flex items-center justify-between gap-3 px-4 py-3 text-base cursor-pointer ${i === activeIndex ? 'bg-surface-secondary' : ''} ${o.id === value ? 'font-semibold' : ''}`}
             >
               <span className="flex items-center gap-2 min-w-0">
                 <span className={`inline-block w-3 h-3 rounded-full flex-shrink-0 ${LEVEL_DOT[o.dataLevel]}`} />
