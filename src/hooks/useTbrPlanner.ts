@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import { supabase } from '@/lib/supabase'
 import { calculateGDDFromDaily, type OpenMeteoDaily } from '@/lib/gdd'
 import { DEFAULT_TBR_CONSTANTS, type TbrConstants, type InterventionMethod, type ResolvedCropDate } from '@/types/tbr'
@@ -158,45 +158,75 @@ async function fetchGddContext(
   }
 }
 
+// Read a session-stored value, merging object shapes so newly-added fields keep their defaults.
+function readSession<T>(key: string, initial: T): T {
+  if (typeof window === 'undefined') return initial
+  try {
+    const raw = window.sessionStorage.getItem(key)
+    if (raw == null) return initial
+    const parsed = JSON.parse(raw) as T
+    if (initial && typeof initial === 'object' && !Array.isArray(initial) && parsed && typeof parsed === 'object') {
+      return { ...initial, ...parsed }
+    }
+    return parsed
+  } catch {
+    return initial
+  }
+}
+
+// useState that persists to sessionStorage, so picks survive leaving/returning to the page this session.
+function usePersistentState<T>(key: string, initial: T): [T, Dispatch<SetStateAction<T>>] {
+  const [state, setState] = useState<T>(() => readSession(key, initial))
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try { window.sessionStorage.setItem(key, JSON.stringify(state)) } catch { /* ignore quota/serialise errors */ }
+  }, [key, state])
+  return [state, setState]
+}
+
 export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
+  // Persist the user's picks per session (keyed by user) so navigating away and back keeps them.
+  const sk = (name: string) => `tbr:${userId}:${name}`
+
   const [apiaries, setApiaries] = useState<ApiaryOption[]>([])
-  const [selectedApiaryId, setSelectedApiaryId] = useState<string | null>(null)
+  const [selectedApiaryId, setSelectedApiaryId] = usePersistentState<string | null>(sk('apiary'), null)
   const [vegInfo, setVegInfo] = useState<VegInfoLite[]>([])
   const [records, setRecords] = useState<GddRecordLite[]>([])
   const [proj, setProj] = useState<ProjectionContext | null>(null)
-  const [springVegId, setSpringVegId] = useState<string | null>(null)
-  const [summerVegId, setSummerVegId] = useState<string | null>(null)
-  const [constants, setConstants] = useState<TbrConstants>(DEFAULT_TBR_CONSTANTS)
+  const [springVegId, setSpringVegId] = usePersistentState<string | null>(sk('spring'), null)
+  const [summerVegId, setSummerVegId] = usePersistentState<string | null>(sk('summer'), null)
+  const [constants, setConstants] = usePersistentState<TbrConstants>(sk('constants'), DEFAULT_TBR_CONSTANTS)
   const [frameStandards, setFrameStandards] = useState<FrameStandardOption[]>([])
-  const [frameStandardId, setFrameStandardId] = useState<string | null>(null)
-  const [broodUtilisation, setBroodUtilisation] = useState(0.8)
-  const [method, setMethodState] = useState<InterventionMethod>('tbr')
-  const [precocious, setPrecocious] = useState(false)
-  const [tbrOverride, setTbrOverride] = useState<string | null>(null)
+  const [frameStandardId, setFrameStandardId] = usePersistentState<string | null>(sk('frame'), null)
+  const [broodUtilisation, setBroodUtilisation] = usePersistentState<number>(sk('utilisation'), 0.8)
+  const [method, setMethodState] = usePersistentState<InterventionMethod>(sk('method'), 'tbr')
+  const [precocious, setPrecocious] = usePersistentState<boolean>(sk('precocious'), false)
+  const [tbrOverride, setTbrOverride] = usePersistentState<string | null>(sk('override'), null)
 
   // Switching method invalidates a hand-picked date (the feasible window differs).
   const setMethod = useCallback((m: InterventionMethod) => {
     setMethodState(m)
     setTbrOverride(null)
-  }, [])
+  }, [setMethodState, setTbrOverride])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [noProjection, setNoProjection] = useState(false)
 
   // Track whether the user has manually chosen crops, so auto-defaults don't override them.
-  const userPickedSpring = useRef(false)
-  const userPickedSummer = useRef(false)
+  // Restored picks count as user-chosen, so the auto-pick on load won't clobber them.
+  const userPickedSpring = useRef(readSession<string | null>(sk('spring'), null) != null)
+  const userPickedSummer = useRef(readSession<string | null>(sk('summer'), null) != null)
 
   const chooseSpring = useCallback((id: string) => {
     userPickedSpring.current = true
     setSpringVegId(id)
     setTbrOverride(null)
-  }, [])
+  }, [setSpringVegId, setTbrOverride])
   const chooseSummer = useCallback((id: string) => {
     userPickedSummer.current = true
     setSummerVegId(id)
     setTbrOverride(null)
-  }, [])
+  }, [setSummerVegId, setTbrOverride])
 
   // Load apiaries + vegetation reference data once.
   useEffect(() => {
@@ -250,7 +280,10 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
       const defaultApiary = apiaryList
         .slice()
         .sort((a, b) => (recCounts.get(b.id) ?? 0) - (recCounts.get(a.id) ?? 0))[0]
-      if (apiaryList.length > 0) setSelectedApiaryId((prev) => prev ?? defaultApiary.id)
+      // Keep a restored selection if it still exists, otherwise fall back to the default.
+      if (apiaryList.length > 0) {
+        setSelectedApiaryId((prev) => (prev && apiaryList.some((a) => a.id === prev) ? prev : defaultApiary.id))
+      }
 
       // Frame systems (fall back to presets if the fetch fails); default to British National Deep.
       // Coerce dimensions: PostgREST returns numeric columns as strings, which would break the cell maths.
@@ -260,7 +293,10 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
       const frameList = frames.length > 0 ? frames : FALLBACK_FRAME_STANDARDS
       setFrameStandards(frameList)
       const defaultFrame = frameList.find((f) => /national deep/i.test(f.label)) ?? frameList[0]
-      if (defaultFrame) setFrameStandardId((prev) => prev ?? defaultFrame.id)
+      // Keep a restored frame system if it still exists, otherwise fall back to the default.
+      if (defaultFrame) {
+        setFrameStandardId((prev) => (prev && frameList.some((f) => f.id === prev) ? prev : defaultFrame.id))
+      }
 
       const names = new Map<string, string>()
       for (const v of (vegTypeRes.data ?? []) as { id: string; value: string }[]) {
@@ -292,7 +328,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     return () => {
       active = false
     }
-  }, [userId])
+  }, [userId, setSelectedApiaryId, setFrameStandardId])
 
   // Load records + GDD projection whenever the selected apiary changes.
   useEffect(() => {
@@ -384,7 +420,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
       active = false
       controller.abort()
     }
-  }, [selectedApiaryId, apiaries])
+  }, [selectedApiaryId, apiaries, setSpringVegId, setSummerVegId])
 
   const vegOptions: VegOption[] = useMemo(() => {
     const currentYear = proj?.currentYear ?? new Date().getFullYear()
