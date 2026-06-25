@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { calculateGDDFromDaily, type OpenMeteoDaily } from '@/lib/gdd'
-import { DEFAULT_TBR_CONSTANTS, type TbrConstants, type ResolvedCropDate } from '@/types/tbr'
+import { DEFAULT_TBR_CONSTANTS, type TbrConstants, type InterventionMethod, type ResolvedCropDate } from '@/types/tbr'
 import {
   dayDiff,
   planFromResolved,
@@ -53,6 +53,9 @@ interface UseTbrPlannerReturn {
   resolvedSummer: ResolvedCropDate | null
   constants: TbrConstants
   setConstants: (c: TbrConstants) => void
+  /** Which brood-break intervention to model. */
+  method: InterventionMethod
+  setMethod: (m: InterventionMethod) => void
   /** When true, model precocious foraging after the break (faster recovery). */
   precocious: boolean
   setPrecocious: (v: boolean) => void
@@ -132,8 +135,15 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
   const [springVegId, setSpringVegId] = useState<string | null>(null)
   const [summerVegId, setSummerVegId] = useState<string | null>(null)
   const [constants, setConstants] = useState<TbrConstants>(DEFAULT_TBR_CONSTANTS)
+  const [method, setMethodState] = useState<InterventionMethod>('tbr')
   const [precocious, setPrecocious] = useState(false)
   const [tbrOverride, setTbrOverride] = useState<string | null>(null)
+
+  // Switching method invalidates a hand-picked date (the feasible window differs).
+  const setMethod = useCallback((m: InterventionMethod) => {
+    setMethodState(m)
+    setTbrOverride(null)
+  }, [])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [noProjection, setNoProjection] = useState(false)
@@ -344,9 +354,10 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
       null,
       constants,
       tbrOverride,
+      method,
       precocious ? PRECOCIOUS_ACCEL_DAYS : 0
     )
-  }, [resolvedSpring, resolvedSummer, constants, tbrOverride, precocious])
+  }, [resolvedSpring, resolvedSummer, constants, tbrOverride, method, precocious])
 
   // Worthwhile nectar blooms (value ≥ threshold) resolved once per apiary/projection and
   // sorted ascending, so the TBR slider can pick the next bloom without re-resolving every crop.
@@ -365,7 +376,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     if (!result) return null
     const { effectiveTbrDate, plan } = result
     const recoveryDate = plan.milestones.firstForagerDate
-    const budget = rebuildFoodBudget(constants, dayDiff(effectiveTbrDate, recoveryDate))
+    const budget = rebuildFoodBudget(constants, dayDiff(effectiveTbrDate, recoveryDate), method)
 
     // Earliest worthwhile nectar source predicted at/after the break.
     const next = nectarBlooms.find((b) => b.date >= effectiveTbrDate) ?? null
@@ -374,7 +385,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
 
     const incomeBeforeRecovery = nextNectarDate != null && nextNectarDate <= recoveryDate
     return { budget, nextNectarDate, nextNectarName, incomeBeforeRecovery, recoveryDate }
-  }, [result, constants, nectarBlooms])
+  }, [result, constants, method, nectarBlooms])
 
   return {
     apiaries,
@@ -392,6 +403,8 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     resolvedSummer,
     constants,
     setConstants,
+    method,
+    setMethod,
     precocious,
     setPrecocious,
     tbrOverride,

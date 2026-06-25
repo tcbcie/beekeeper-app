@@ -5,8 +5,15 @@
 // works out WHEN to do it so the colony's forager force rebuilds to peak across the
 // next nectar flow (e.g. bramble/blackberry).
 
+/**
+ * How the brood break is induced:
+ *   • 'tbr'    — Total Brood Removal: all brood removed at T, comb redrawn.
+ *   • 'caging' — queen caged at T: existing brood emerges, then a gap until she re-lays.
+ */
+export type InterventionMethod = 'tbr' | 'caging'
+
 export interface TbrConstants {
-  /** Days to draw enough comb before the queen resumes laying. */
+  /** Days to draw enough comb before the queen resumes laying (TBR only). */
   reLayDelayDays: number
   /** Worker egg → emergence development time. */
   eggToEmergenceDays: number
@@ -19,6 +26,10 @@ export interface TbrConstants {
    * Visscher & Dukas 1997). Total adult lifespan is this plus emergenceToForagerDays.
    */
   foragingCareerDays: number
+  /** Days the queen stays caged (caging only): 21 clears worker brood, 24 also clears drone brood. */
+  cageDurationDays: number
+  /** Small delay after release before the freed queen lays again — comb is already drawn (caging only). */
+  cageReleaseRelayDays: number
 }
 
 export const DEFAULT_TBR_CONSTANTS: TbrConstants = {
@@ -27,6 +38,8 @@ export const DEFAULT_TBR_CONSTANTS: TbrConstants = {
   emergenceToForagerDays: 21,
   layRate: 1200,
   foragingCareerDays: 8,
+  cageDurationDays: 21,
+  cageReleaseRelayDays: 1,
 }
 
 /** How confident a resolved crop date is — see the 3-tier resolution model. */
@@ -47,13 +60,24 @@ export interface ResolvedCropDate {
 export interface ForagerPoint {
   date: string
   foragers: number
+  /** Overall adult population (all ages) on that day. */
+  population: number
 }
 
 export interface TbrMilestones {
+  /** The intervention day T (brood removed, or queen caged). */
   tbrDate: string
+  /** When the queen resumes laying (TBR: T + re-lay delay; caging: release + release-relay). */
   reLayDate: string
+  /** First NEW brood emerges after the gap. */
   firstBroodDate: string
   firstForagerDate: string
+  /** Caging only: the day the queen is released from the cage. */
+  releaseDate: string
+  /** Start of the broodless (no capped brood) window — earliest oxalic-acid treatment day. */
+  broodlessStartDate: string
+  /** End of the broodless window — treat before this. */
+  broodlessEndDate: string
 }
 
 export interface TbrPlan {
