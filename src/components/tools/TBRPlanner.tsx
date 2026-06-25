@@ -308,6 +308,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
               value={springVegId}
               onChange={setSpringVegId}
               resolvedDate={resolvedSpring?.date ?? null}
+              resolvedEndDate={resolvedSpring?.endDate ?? null}
               tier={resolvedSpring?.tier}
               note={resolvedSpring?.note}
             />
@@ -317,6 +318,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
               value={summerVegId}
               onChange={setSummerVegId}
               resolvedDate={resolvedSummer?.date ?? null}
+              resolvedEndDate={resolvedSummer?.endDate ?? null}
               tier={resolvedSummer?.tier}
               note={resolvedSummer?.note}
             />
@@ -652,13 +654,14 @@ export default function TBRPlanner({ userId }: { userId: string }) {
 }
 
 function CropPicker({
-  label, vegOptions, value, onChange, resolvedDate, tier, note,
+  label, vegOptions, value, onChange, resolvedDate, resolvedEndDate, tier, note,
 }: {
   label: string
   vegOptions: { id: string; name: string; hasRecords: boolean }[]
   value: string | null
   onChange: (id: string) => void
   resolvedDate: string | null
+  resolvedEndDate?: string | null
   tier?: CropDateTier
   note?: string
 }) {
@@ -677,7 +680,9 @@ function CropPicker({
         ))}
       </select>
       <div className="flex items-center gap-2 mt-2">
-        <span className="text-sm font-semibold text-foreground">{formatDate(resolvedDate)}</span>
+        <span className="text-sm font-semibold text-foreground">
+          {formatDate(resolvedDate)}{resolvedDate && resolvedEndDate ? ` → ${formatDate(resolvedEndDate)}` : ''}
+        </span>
         {badge && <span className={`text-xs px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>}
       </div>
       {note && <p className="text-xs text-text-tertiary mt-1">{note}</p>}

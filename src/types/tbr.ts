@@ -48,8 +48,10 @@ export type CropDateTier = 'observed' | 'projected' | 'estimated' | 'unknown'
 export interface ResolvedCropDate {
   vegetationTypeId: string | null
   name: string
-  /** Predicted bloom-start date (YYYY-MM-DD), or null if it cannot be resolved. */
+  /** Predicted bloom-start date (~10% in bloom), or null if it cannot be resolved. */
   date: string | null
+  /** Predicted bloom-end date (under 5% still worth foraging), or null if start is unknown. */
+  endDate: string | null
   /** GDD threshold used to derive the date (for transparency). */
   gddTarget: number | null
   tier: CropDateTier

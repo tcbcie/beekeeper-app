@@ -345,7 +345,10 @@ export function recommendTbrDate(
 export interface GddRecordLite {
   vegetationTypeId: string
   year: number
+  /** Observed bloom start (~10% in bloom). */
   startDate: string | null
+  /** Observed bloom end (under 5% still worth foraging), if recorded. */
+  endDate: string | null
   gddValue: number | null
 }
 
@@ -381,14 +384,42 @@ export function projectDateForGdd(
   return { date: addDays(today, daysAhead), reached: false }
 }
 
+/**
+ * Resolve the bloom-end date (under 5% still worth foraging), anchored on the resolved start:
+ *   1. an observed end this season → use it;
+ *   2. else the average observed bloom duration (end − start) from prior records;
+ *   3. else the fixed fallback duration.
+ */
+function resolveBloomEnd(
+  startDate: string | null,
+  observedEnd: string | null,
+  cropRecords: GddRecordLite[],
+  fallbackDurationDays: number
+): string | null {
+  if (!startDate) return null
+  if (observedEnd && observedEnd >= startDate) return observedEnd
+
+  const durations = cropRecords
+    .filter((r) => r.startDate && r.endDate && (r.endDate as string) >= (r.startDate as string))
+    .map((r) => dayDiff(r.startDate as string, r.endDate as string))
+  const avg = durations.length > 0
+    ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+    : nonNeg(fallbackDurationDays)
+
+  return addDays(startDate, Math.max(1, avg))
+}
+
 export function resolveCropDate(
   vegetationTypeId: string,
   name: string,
   records: GddRecordLite[],
   vegInfo: VegInfoLite | undefined,
-  ctx: ProjectionContext
+  ctx: ProjectionContext,
+  fallbackDurationDays: number = SUMMER_FLOW_DURATION_DAYS
 ): ResolvedCropDate {
   const mine = records.filter((r) => r.vegetationTypeId === vegetationTypeId)
+  const end = (startDate: string | null, observedEnd: string | null) =>
+    resolveBloomEnd(startDate, observedEnd, mine, fallbackDurationDays)
 
   // Tier 1 — observed bloom record for this season.
   const thisYear = mine.find((r) => r.year === ctx.currentYear && r.startDate)
@@ -397,6 +428,7 @@ export function resolveCropDate(
       vegetationTypeId,
       name,
       date: thisYear.startDate,
+      endDate: end(thisYear.startDate, thisYear.endDate),
       gddTarget: thisYear.gddValue ?? null,
       tier: 'observed',
       note: `Observed bloom on ${thisYear.startDate} (this season).`,
@@ -414,6 +446,7 @@ export function resolveCropDate(
       vegetationTypeId,
       name,
       date,
+      endDate: end(date, null),
       gddTarget: avg,
       tier: 'projected',
       note: reached
@@ -431,6 +464,7 @@ export function resolveCropDate(
       vegetationTypeId,
       name,
       date,
+      endDate: end(date, null),
       gddTarget: mid,
       tier: 'estimated',
       note: reached
@@ -443,6 +477,7 @@ export function resolveCropDate(
     vegetationTypeId,
     name,
     date: null,
+    endDate: null,
     gddTarget: null,
     tier: 'unknown',
     note: 'No records or general data available to estimate this crop.',
@@ -472,6 +507,7 @@ export interface TbrResult {
  */
 export function planFromResolved(
   springDate: string | null,
+  springEndDate: string | null,
   summerStartDate: string | null,
   summerEndDate: string | null,
   constants: TbrConstants,
@@ -482,10 +518,11 @@ export function planFromResolved(
   if (!summerStartDate) return null
 
   const flowStart = summerStartDate
+  // Prefer the resolved (observed/averaged) bloom end; fall back to the fixed duration.
   const flowEnd = summerEndDate ?? addDays(flowStart, SUMMER_FLOW_DURATION_DAYS)
   // A spring crop only constrains the plan if it genuinely ends before the flow starts;
   // an out-of-order selection is ignored rather than corrupting the bounds.
-  const springEndRaw = springDate ? addDays(springDate, SPRING_CROP_DURATION_DAYS) : null
+  const springEndRaw = springEndDate ?? (springDate ? addDays(springDate, SPRING_CROP_DURATION_DAYS) : null)
   const springEnd = springEndRaw && springEndRaw < flowStart ? springEndRaw : null
 
   // Full forager recovery takes this long after a break: the gap must close, then a

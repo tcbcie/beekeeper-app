@@ -8,6 +8,8 @@ import {
   planFromResolved,
   rebuildFoodBudget,
   resolveCropDate,
+  SPRING_CROP_DURATION_DAYS,
+  SUMMER_FLOW_DURATION_DAYS,
   type GddRecordLite,
   type VegInfoLite,
   type ProjectionContext,
@@ -241,7 +243,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
       setNoProjection(false)
       const recRes = await supabase
         .from('gdd_records')
-        .select('vegetation_type_id, year, start_date, gdd_value')
+        .select('vegetation_type_id, year, start_date, end_date, gdd_value')
         .eq('apiary_id', apiaryId)
 
       if (!active) return
@@ -251,11 +253,13 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
         vegetation_type_id: string
         year: number
         start_date: string | null
+        end_date: string | null
         gdd_value: number | null
       }[]).map((r) => ({
         vegetationTypeId: r.vegetation_type_id,
         year: r.year,
         startDate: r.start_date,
+        endDate: r.end_date,
         gddValue: r.gdd_value,
       }))
       setRecords(recs)
@@ -337,21 +341,22 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
   const resolvedSpring = useMemo<ResolvedCropDate | null>(() => {
     if (!springVegId || !proj) return null
     const info = vegInfoById.get(springVegId)
-    return resolveCropDate(springVegId, info?.name ?? 'Spring crop', records, info, proj)
+    return resolveCropDate(springVegId, info?.name ?? 'Spring crop', records, info, proj, SPRING_CROP_DURATION_DAYS)
   }, [springVegId, proj, vegInfoById, records])
 
   const resolvedSummer = useMemo<ResolvedCropDate | null>(() => {
     if (!summerVegId || !proj) return null
     const info = vegInfoById.get(summerVegId)
-    return resolveCropDate(summerVegId, info?.name ?? 'Summer flow', records, info, proj)
+    return resolveCropDate(summerVegId, info?.name ?? 'Summer flow', records, info, proj, SUMMER_FLOW_DURATION_DAYS)
   }, [summerVegId, proj, vegInfoById, records])
 
   const result = useMemo<TbrResult | null>(() => {
     if (!resolvedSummer?.date) return null
     return planFromResolved(
       resolvedSpring?.date ?? null,
+      resolvedSpring?.endDate ?? null,
       resolvedSummer.date,
-      null,
+      resolvedSummer.endDate,
       constants,
       tbrOverride,
       method,
