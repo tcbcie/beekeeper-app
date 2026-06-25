@@ -546,14 +546,16 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Bloom Observed Date *</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Bloom Start Date *</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
               />
-              <p className="text-xs text-text-tertiary mt-1">GDD calculated from Jan 1st to this date</p>
+              <p className="text-xs text-text-tertiary mt-1">
+                Record when about 10% of the crop is in bloom. GDD is calculated from 1 Jan to this date.
+              </p>
             </div>
 
             <div>
@@ -565,6 +567,9 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                 min={startDate}
                 className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
               />
+              <p className="text-xs text-text-tertiary mt-1">
+                Record when under 5% of the crop is still worth foraging on (bloom finished).
+              </p>
             </div>
           </div>
 

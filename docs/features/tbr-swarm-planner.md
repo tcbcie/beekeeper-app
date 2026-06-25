@@ -90,11 +90,28 @@ slider and watch the score/curve respond.
 
 ## Crop-date resolution (3 tiers)
 
+Each crop resolves a **bloom start** (recorded at ~10% in bloom) and a **bloom end** (recorded when
+under 5% is still worth foraging). The start uses the GDD tiers below; the end is anchored on the
+resolved start.
+
+**Bloom start:**
+
 | Tier | Source | When |
 |------|--------|------|
 | 1 — Observed | Apiary's `gdd_records.start_date` for the crop, this season | Record exists this year |
 | 2 — Averaged + projected | Historical average GDD-at-bloom at that apiary, projected onto this year's GDD curve | Prior-year history, no record yet |
 | 3 — General estimate | `vegetation_info.typical_gdd_range` midpoint + `bloom_period`, projected | No history for that crop at that apiary |
+
+**Bloom end** (mirrors the start, anchored on the resolved start date):
+
+| Tier | Source | When |
+|------|--------|------|
+| 1 — Observed | This season's `gdd_records.end_date` | Recorded this year |
+| 2 — Average duration | `start + round(avg(end − start))` from prior records with both dates | Prior-year bloom-length history |
+| 3 — Fixed fallback | `start + fallbackDurationDays` (summer 35, spring 30) | No duration history |
+
+The resolved window drives the shaded flow band, the recommendation scoring window, and the
+crop-picker readout (shown as `start → end`).
 
 ### GDD projection
 
