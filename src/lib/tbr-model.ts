@@ -23,6 +23,8 @@ import {
 // the early spring crop (e.g. OSR/dandelion) yields for roughly a month.
 export const SPRING_CROP_DURATION_DAYS = 30
 export const SUMMER_FLOW_DURATION_DAYS = 35
+// Upper bound on an *estimated* bloom length (no single crop's useful forage runs longer).
+const MAX_BLOOM_DURATION_DAYS = 120
 
 // Hard cap on simulation length to guarantee bounded loops.
 const MAX_SIM_DAYS = 2000
@@ -406,7 +408,10 @@ function resolveBloomEnd(
     ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
     : nonNeg(fallbackDurationDays)
 
-  return addDays(startDate, Math.max(1, avg))
+  // Clamp our *estimated* duration to a sane range so an outlier record can't produce a
+  // multi-month flow band that bloats the scoring/simulation loops. (An observed end is trusted.)
+  const days = Math.min(MAX_BLOOM_DURATION_DAYS, Math.max(1, avg))
+  return addDays(startDate, days)
 }
 
 export function resolveCropDate(

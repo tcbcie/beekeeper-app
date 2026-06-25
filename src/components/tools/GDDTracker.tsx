@@ -546,7 +546,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Bloom Start Date *</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Bloom Observed Date *</label>
               <input
                 type="date"
                 value={startDate}
