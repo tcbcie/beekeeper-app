@@ -17,7 +17,7 @@ import 'chartjs-adapter-date-fns'
 import { Line } from 'react-chartjs-2'
 import Button from '@/components/ui/Button'
 import { useTbrPlanner, type VegOption, type CropDataLevel } from '@/hooks/useTbrPlanner'
-import { addDays, dayDiff, parseISODate, steadyStateForagers, peakAdultPopulation, totalAdultLifespanDays, CELLS_PER_DADANT_DEEP } from '@/lib/tbr-model'
+import { addDays, dayDiff, parseISODate, steadyStateForagers, peakAdultPopulation, totalAdultLifespanDays } from '@/lib/tbr-model'
 import type { CropDateTier, TbrConstants, InterventionMethod } from '@/types/tbr'
 
 ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, ChartLegend, Filler, TimeScale)
@@ -118,10 +118,14 @@ export default function TBRPlanner({ userId }: { userId: string }) {
     apiaries, selectedApiaryId, setSelectedApiaryId,
     vegOptions, springVegId, summerVegId, setSpringVegId, setSummerVegId,
     resolvedSpring, resolvedSummer, constants, setConstants,
+    frameStandards, frameStandardId, setFrameStandardId,
+    broodUtilisation, setBroodUtilisation, effectiveCellsPerFrame,
     method, setMethod,
     precocious, setPrecocious,
     tbrOverride, setTbrOverride, result, foodPlan, loading, error, noProjection,
   } = planner
+
+  const frameLabel = frameStandards.find((f) => f.id === frameStandardId)?.label ?? 'frame'
 
   const isCaging = method === 'caging'
   const breakDateLabel = isCaging ? 'caging date' : 'TBR date'
@@ -236,10 +240,10 @@ export default function TBRPlanner({ userId }: { userId: string }) {
   // TBR-date slider bounds.
   const slider = useMemo(() => {
     if (!result) return null
-    const { earliest, latest } = result.bounds
-    const span = Math.max(1, dayDiff(earliest, latest))
-    const value = Math.min(span, Math.max(0, effectiveTbr ? dayDiff(earliest, effectiveTbr) : 0))
-    return { earliest, span, value }
+    const { sliderEarliest, latest } = result.bounds
+    const span = Math.max(1, dayDiff(sliderEarliest, latest))
+    const value = Math.min(span, Math.max(0, effectiveTbr ? dayDiff(sliderEarliest, effectiveTbr) : 0))
+    return { earliest: sliderEarliest, span, value }
   }, [result, effectiveTbr])
 
   if (loading) {
@@ -481,9 +485,14 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                       aria-label="TBR date"
                     />
                     <div className="flex justify-between text-xs text-text-tertiary mt-1">
-                      <span>{formatDate(result.bounds.earliest)}</span>
+                      <span>{formatDate(result.bounds.sliderEarliest)}</span>
                       <span>{formatDate(result.bounds.latest)}</span>
                     </div>
+                    {effectiveTbr && effectiveTbr < result.bounds.earliest && (
+                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                        Earlier than the feasible date ({formatDate(result.bounds.earliest)}) — this breaks before the spring crop is off.
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -504,10 +513,46 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                   />
                   <p className="text-xs text-text-tertiary mt-1">
                     ≈ {(constants.layRate * constants.eggToEmergenceDays).toLocaleString()} cells of brood at peak
-                    (~{(constants.layRate * constants.eggToEmergenceDays / CELLS_PER_DADANT_DEEP).toFixed(1)} Dadant deep frames).
+                    {effectiveCellsPerFrame > 0 && (
+                      <> (~{(constants.layRate * constants.eggToEmergenceDays / effectiveCellsPerFrame).toFixed(1)} {frameLabel} frames at {Math.round(broodUtilisation * 100)}% utilisation)</>
+                    )}.
                     Lay rate scales the absolute counts (foragers, adults) and the food budget — not the % curves,
                     whose shape is independent of it.
                   </p>
+                </div>
+
+                {/* Hive frame system + brood utilisation (drive the brood readout & food budget) */}
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">Hive frame system</label>
+                    <select
+                      value={frameStandardId ?? ''}
+                      onChange={(e) => setFrameStandardId(e.target.value)}
+                      className="w-full px-4 py-3 text-base border border-border rounded-lg bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+                    >
+                      {frameStandards.map((f) => (
+                        <option key={f.id} value={f.id}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Brood-area utilisation — <span className="font-semibold">{Math.round(broodUtilisation * 100)}%</span>
+                    </label>
+                    <input
+                      type="range"
+                      min={50}
+                      max={100}
+                      step={5}
+                      value={Math.round(broodUtilisation * 100)}
+                      onChange={(e) => setBroodUtilisation(Number(e.target.value) / 100)}
+                      className="w-full h-3 accent-forest-600 cursor-pointer"
+                      aria-label="Brood-area utilisation"
+                    />
+                    <p className="text-xs text-text-tertiary mt-1">
+                      Wall-to-wall is never 100% — bees leave a gap along the bottom and under-use the corners and edge frames.
+                    </p>
+                  </div>
                 </div>
               </div>
 

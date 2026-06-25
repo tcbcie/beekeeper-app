@@ -129,7 +129,11 @@ crop-picker readout (shown as `start → end`).
   history), amber (generic estimate), grey (no data) — with a legend. (Native `<option>` colours don't
   render on iOS Safari, hence the custom control.)
 - Chart.js forager-force curve with shaded bands (spring crop, brood gap, summer flow).
-- TBR-date slider + lay-rate slider (1000–2500/day, with a live brood-cells / Dadant-frames readout).
+- Break-date slider (may be dragged up to 30 days before the feasible-earliest date, with a warning
+  when it precedes the spring crop) + lay-rate slider (1000–2500/day).
+- Hive **frame-system** picker (from `frame_standards`) and a **brood-utilisation** slider (50–100%,
+  default 80%): cells/frame come from the system's dimensions and the brood readout / food-budget
+  frame count use `cells/frame × utilisation`. Comb-drawing honey scales with the system's frame size.
 - **Precocious-foraging toggle** — when on, post-break bees forage ~7 days younger, modelling the
   accelerated recovery of a forager-depleted colony. Off by default (conservative estimate).
 - Recommendation panel: suggested `T*`, milestone dates, flow-coverage score, plain-language guidance.

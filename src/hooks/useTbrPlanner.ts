@@ -8,6 +8,8 @@ import {
   planFromResolved,
   rebuildFoodBudget,
   resolveCropDate,
+  cellsForFrame,
+  waxForFrameKg,
   SPRING_CROP_DURATION_DAYS,
   SUMMER_FLOW_DURATION_DAYS,
   type GddRecordLite,
@@ -45,6 +47,22 @@ export interface VegOption {
   dataLevel: CropDataLevel
 }
 
+export interface FrameStandardOption {
+  id: string
+  label: string
+  widthMm: number
+  heightMm: number
+}
+
+// Used only if the frame_standards fetch fails.
+const FALLBACK_FRAME_STANDARDS: FrameStandardOption[] = [
+  { id: 'british_national_deep', label: 'British National Deep', widthMm: 335, heightMm: 195 },
+  { id: 'langstroth_deep', label: 'Langstroth Deep', widthMm: 425, heightMm: 210 },
+  { id: 'dadant_modified_deep', label: 'Dadant Modified Deep', widthMm: 420, heightMm: 260 },
+  { id: 'commercial', label: 'Commercial', widthMm: 406, heightMm: 195 },
+  { id: 'smith', label: 'Smith', widthMm: 350, heightMm: 195 },
+]
+
 interface UseTbrPlannerReturn {
   apiaries: ApiaryOption[]
   selectedApiaryId: string | null
@@ -58,6 +76,15 @@ interface UseTbrPlannerReturn {
   resolvedSummer: ResolvedCropDate | null
   constants: TbrConstants
   setConstants: (c: TbrConstants) => void
+  /** Hive frame systems and the chosen one (drives the brood-frame maths). */
+  frameStandards: FrameStandardOption[]
+  frameStandardId: string | null
+  setFrameStandardId: (id: string) => void
+  /** Average brood-area utilisation (0..1) — wall-to-wall is never 100%. */
+  broodUtilisation: number
+  setBroodUtilisation: (v: number) => void
+  /** Usable brood cells per frame after utilisation, for the brood readout. */
+  effectiveCellsPerFrame: number
   /** Which brood-break intervention to model. */
   method: InterventionMethod
   setMethod: (m: InterventionMethod) => void
@@ -140,6 +167,9 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
   const [springVegId, setSpringVegId] = useState<string | null>(null)
   const [summerVegId, setSummerVegId] = useState<string | null>(null)
   const [constants, setConstants] = useState<TbrConstants>(DEFAULT_TBR_CONSTANTS)
+  const [frameStandards, setFrameStandards] = useState<FrameStandardOption[]>([])
+  const [frameStandardId, setFrameStandardId] = useState<string | null>(null)
+  const [broodUtilisation, setBroodUtilisation] = useState(0.8)
   const [method, setMethodState] = useState<InterventionMethod>('tbr')
   const [precocious, setPrecocious] = useState(false)
   const [tbrOverride, setTbrOverride] = useState<string | null>(null)
@@ -175,7 +205,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
 
     async function loadStatic() {
       setError(null)
-      const [apiaryRes, vegTypeRes, vegInfoRes, recCountRes] = await Promise.all([
+      const [apiaryRes, vegTypeRes, vegInfoRes, recCountRes, frameRes] = await Promise.all([
         supabase
           .from('apiaries')
           .select('id, name, latitude, longitude')
@@ -194,6 +224,11 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
           .from('gdd_records')
           .select('apiary_id')
           .eq('user_id', userId),
+        supabase
+          .from('frame_standards')
+          .select('id, label, width_mm, height_mm')
+          .eq('is_active', true)
+          .order('display_order'),
       ])
 
       if (!active) return
@@ -216,6 +251,15 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
         .slice()
         .sort((a, b) => (recCounts.get(b.id) ?? 0) - (recCounts.get(a.id) ?? 0))[0]
       if (apiaryList.length > 0) setSelectedApiaryId((prev) => prev ?? defaultApiary.id)
+
+      // Frame systems (fall back to presets if the fetch fails); default to British National Deep.
+      const frames: FrameStandardOption[] = ((frameRes.data ?? []) as {
+        id: string; label: string; width_mm: number; height_mm: number
+      }[]).map((f) => ({ id: f.id, label: f.label, widthMm: f.width_mm, heightMm: f.height_mm }))
+      const frameList = frames.length > 0 ? frames : FALLBACK_FRAME_STANDARDS
+      setFrameStandards(frameList)
+      const defaultFrame = frameList.find((f) => /national deep/i.test(f.label)) ?? frameList[0]
+      if (defaultFrame) setFrameStandardId((prev) => prev ?? defaultFrame.id)
 
       const names = new Map<string, string>()
       for (const v of (vegTypeRes.data ?? []) as { id: string; value: string }[]) {
@@ -368,6 +412,16 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     return m
   }, [vegInfo])
 
+  // Selected frame system → brood-frame geometry for the readout and food budget.
+  const selectedFrame = useMemo(
+    () => frameStandards.find((f) => f.id === frameStandardId) ?? null,
+    [frameStandards, frameStandardId]
+  )
+  const effectiveCellsPerFrame = useMemo(() => {
+    if (!selectedFrame) return 0
+    return Math.max(1, Math.round(cellsForFrame(selectedFrame.widthMm, selectedFrame.heightMm) * broodUtilisation))
+  }, [selectedFrame, broodUtilisation])
+
   const resolvedSpring = useMemo<ResolvedCropDate | null>(() => {
     if (!springVegId || !proj) return null
     const info = vegInfoById.get(springVegId)
@@ -411,7 +465,13 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     if (!result) return null
     const { effectiveTbrDate, plan } = result
     const recoveryDate = plan.milestones.firstForagerDate
-    const budget = rebuildFoodBudget(constants, dayDiff(effectiveTbrDate, recoveryDate), method)
+    const frameSpec = selectedFrame
+      ? {
+          cellsPerBroodFrame: effectiveCellsPerFrame,
+          waxPerFrameKg: waxForFrameKg(selectedFrame.widthMm, selectedFrame.heightMm),
+        }
+      : undefined
+    const budget = rebuildFoodBudget(constants, dayDiff(effectiveTbrDate, recoveryDate), method, frameSpec)
 
     // Earliest worthwhile nectar source predicted at/after the break.
     const next = nectarBlooms.find((b) => b.date >= effectiveTbrDate) ?? null
@@ -420,7 +480,7 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
 
     const incomeBeforeRecovery = nextNectarDate != null && nextNectarDate <= recoveryDate
     return { budget, nextNectarDate, nextNectarName, incomeBeforeRecovery, recoveryDate }
-  }, [result, constants, method, nectarBlooms])
+  }, [result, constants, method, nectarBlooms, selectedFrame, effectiveCellsPerFrame])
 
   return {
     apiaries,
@@ -438,6 +498,12 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     resolvedSummer,
     constants,
     setConstants,
+    frameStandards,
+    frameStandardId,
+    setFrameStandardId,
+    broodUtilisation,
+    setBroodUtilisation,
+    effectiveCellsPerFrame,
     method,
     setMethod,
     precocious,

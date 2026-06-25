@@ -25,6 +25,8 @@ export const SPRING_CROP_DURATION_DAYS = 30
 export const SUMMER_FLOW_DURATION_DAYS = 35
 // Upper bound on an *estimated* bloom length (no single crop's useful forage runs longer).
 const MAX_BLOOM_DURATION_DAYS = 120
+// How far before the feasible-earliest date the break-date slider may be dragged.
+export const SLIDER_BACK_DAYS = 30
 
 // Hard cap on simulation length to guarantee bounded loops.
 const MAX_SIM_DAYS = 2000
@@ -138,6 +140,35 @@ export const CELLS_PER_DADANT_DEEP = 9500
 
 const HONEY_PER_WAX_KG = 7           // kg honey per kg wax (Whitcomb 1946: 6.6–8.8)
 const WAX_PER_DADANT_FRAME_KG = 0.12 // ~120 g wax in a drawn deep comb
+
+// --- Frame geometry (per chosen hive system) ---------------------------------
+
+const WORKER_CELL_MM = 5.4           // flat-to-flat worker cell (small cell ≈ 4.9)
+const DADANT_DEEP_AREA_MM2 = 420 * 260 // matches the Dadant Modified Deep frame_standard
+
+/** Worker cells on a frame from its comb dimensions (both sides) — same maths as the Frame Cell Calculator. */
+export function cellsForFrame(widthMm: number, heightMm: number): number {
+  const hexArea = 0.866 * WORKER_CELL_MM * WORKER_CELL_MM
+  return Math.round((nonNeg(widthMm) * nonNeg(heightMm)) / hexArea * 2)
+}
+
+/** Wax to draw one full frame, scaled from the known Dadant figure by comb area. */
+export function waxForFrameKg(widthMm: number, heightMm: number): number {
+  return WAX_PER_DADANT_FRAME_KG * ((nonNeg(widthMm) * nonNeg(heightMm)) / DADANT_DEEP_AREA_MM2)
+}
+
+/** Brood-frame geometry the food budget uses (already adjusted for utilisation). */
+export interface BroodFrameSpec {
+  /** Usable brood cells per frame = cells/frame × utilisation%. */
+  cellsPerBroodFrame: number
+  /** Wax to draw one full frame of this system. */
+  waxPerFrameKg: number
+}
+
+const DEFAULT_BROOD_FRAME: BroodFrameSpec = {
+  cellsPerBroodFrame: CELLS_PER_DADANT_DEEP,
+  waxPerFrameKg: WAX_PER_DADANT_FRAME_KG,
+}
 const LARVAL_CARB_MG = 59.4          // carbohydrate fed per worker larva
 const ADULT_SUGAR_MG_PER_DAY = 4     // utilisable sugar per adult bee per day
 const POLLEN_PER_BEE_MG = 150        // pollen to rear one worker (125–187.5 mg)
@@ -165,14 +196,16 @@ function nonNeg(n: number): number {
 export function rebuildFoodBudget(
   c: TbrConstants,
   rebuildDays: number,
-  method: InterventionMethod = 'tbr'
+  method: InterventionMethod = 'tbr',
+  frame: BroodFrameSpec = DEFAULT_BROOD_FRAME
 ): FoodBudget {
   const days = nonNeg(rebuildDays)
   const layRate = nonNeg(c.layRate)
   const standingBroodCells = layRate * nonNeg(c.eggToEmergenceDays)
+  const cellsPerFrame = nonNeg(frame.cellsPerBroodFrame) || CELLS_PER_DADANT_DEEP
   // Caging retains the drawn comb, so there is no foundation to draw.
   const framesToDraw =
-    method === 'caging' ? 0 : Math.max(1, Math.round(standingBroodCells / CELLS_PER_DADANT_DEEP))
+    method === 'caging' ? 0 : Math.max(1, Math.round(standingBroodCells / cellsPerFrame))
   // Days the queen lays nothing: TBR until comb is redrawn; caging for the whole cage period.
   const noLayDays =
     method === 'caging' ? nonNeg(c.cageDurationDays) + nonNeg(c.cageReleaseRelayDays) : nonNeg(c.reLayDelayDays)
@@ -180,7 +213,7 @@ export function rebuildFoodBudget(
   const avgAdults =
     layRate * (nonNeg(c.emergenceToForagerDays) + nonNeg(c.foragingCareerDays)) * AVG_ADULT_FRACTION
 
-  const combHoneyKg = framesToDraw * WAX_PER_DADANT_FRAME_KG * HONEY_PER_WAX_KG
+  const combHoneyKg = framesToDraw * nonNeg(frame.waxPerFrameKg) * HONEY_PER_WAX_KG
   const broodHoneyKg = (beesFed * LARVAL_CARB_MG) / 1e6
   const upkeepHoneyKg = ((avgAdults * ADULT_SUGAR_MG_PER_DAY * days) / 1e6) * (1 + THERMO_OVERHEAD_FACTOR)
   const totalHoneyKg = combHoneyKg + broodHoneyKg + upkeepHoneyKg
@@ -495,7 +528,10 @@ export interface TbrBounds {
   springEnd: string | null
   flowStart: string
   flowEnd: string
+  /** Earliest agronomically-feasible break (after the spring crop is off). */
   earliest: string
+  /** Lower bound the slider allows (earliest − SLIDER_BACK_DAYS) so the user can model an earlier break. */
+  sliderEarliest: string
   latest: string
 }
 
@@ -539,13 +575,14 @@ export function planFromResolved(
   // Earliest feasible break: after the spring crop is off. Without a spring crop,
   // fall back to "one full recovery before the flow".
   const earliest = springEnd ?? addDays(flowStart, -recoveryDays)
+  const sliderEarliest = addDays(earliest, -SLIDER_BACK_DAYS)
   const latest = maxDate(earliest, flowStart)
 
   const recommended = recommendTbrDate(earliest, latest, flowStart, flowEnd, constants, method, accelDays)
   const effectiveTbrDate = tbrOverride ?? recommended ?? earliest
 
   const milestones = tbrMilestones(effectiveTbrDate, constants, method, accelDays)
-  const simStart = addDays(minDate(earliest, effectiveTbrDate, springEnd ?? earliest), -21)
+  const simStart = addDays(minDate(sliderEarliest, effectiveTbrDate, springEnd ?? earliest), -21)
   const simEnd = addDays(maxDate(flowEnd, milestones.firstForagerDate), 21)
 
   const curve = simulateForagerCurve(effectiveTbrDate, simStart, simEnd, constants, method, accelDays)
@@ -553,7 +590,7 @@ export function planFromResolved(
   const recoveryAfterFlowStart = milestones.firstForagerDate > flowStart
 
   return {
-    bounds: { springEnd, flowStart, flowEnd, earliest, latest },
+    bounds: { springEnd, flowStart, flowEnd, earliest, sliderEarliest, latest },
     plan: {
       curve,
       milestones,
