@@ -231,26 +231,15 @@ export default function TBRPlanner({ userId }: { userId: string }) {
       {/* Method toggle */}
       <div>
         <span className="block text-sm font-medium text-foreground mb-2">Method</span>
-        <div className="inline-flex rounded-lg border border-border overflow-hidden" role="group" aria-label="Intervention method">
-          {([
-            { key: 'tbr', label: 'Total Brood Removal' },
-            { key: 'caging', label: 'Cage the Queen' },
-          ] as const).map((m) => (
-            <button
-              key={m.key}
-              type="button"
-              onClick={() => setMethod(m.key)}
-              aria-pressed={method === m.key}
-              className={`px-4 py-3 text-base font-medium transition-colors ${
-                method === m.key
-                  ? 'bg-forest-600 text-white'
-                  : 'bg-surface text-foreground hover:bg-surface-secondary'
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl<InterventionMethod>
+          ariaLabel="Intervention method"
+          value={method}
+          onChange={setMethod}
+          options={[
+            { value: 'tbr', label: 'Total Brood Removal' },
+            { value: 'caging', label: 'Cage the Queen' },
+          ]}
+        />
         <p className="text-xs text-text-tertiary mt-1">
           {isCaging
             ? 'The caged queen can’t leave, so a swarm returns. After the cage period the colony is broodless and the comb and most brood are preserved.'
@@ -425,26 +414,16 @@ export default function TBRPlanner({ userId }: { userId: string }) {
               {isCaging && (
                 <div>
                   <span className="block text-sm font-medium text-foreground mb-2">Cage long enough to clear</span>
-                  <div className="inline-flex rounded-lg border border-border overflow-hidden">
-                    {([
-                      { days: 21, label: 'Worker brood — 21 d' },
-                      { days: 24, label: '+ Drone brood — 24 d' },
-                    ] as const).map((p) => (
-                      <button
-                        key={p.days}
-                        type="button"
-                        onClick={() => setConstants({ ...constants, cageDurationDays: p.days })}
-                        aria-pressed={constants.cageDurationDays === p.days}
-                        className={`px-4 py-2.5 text-sm font-medium transition-colors ${
-                          constants.cageDurationDays === p.days
-                            ? 'bg-forest-600 text-white'
-                            : 'bg-surface text-foreground hover:bg-surface-secondary'
-                        }`}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
+                  <SegmentedControl<number>
+                    size="sm"
+                    ariaLabel="Cage duration"
+                    value={constants.cageDurationDays}
+                    onChange={(days) => setConstants({ ...constants, cageDurationDays: days })}
+                    options={[
+                      { value: 21, label: 'Worker brood — 21 d' },
+                      { value: 24, label: '+ Drone brood — 24 d' },
+                    ]}
+                  />
                   <p className="text-xs text-text-tertiary mt-1">
                     24 days also clears capped drone brood (a varroa reservoir); fine-tune in Advanced.
                   </p>
@@ -673,6 +652,35 @@ function CropPicker({
         {badge && <span className={`text-xs px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>}
       </div>
       {note && <p className="text-xs text-text-tertiary mt-1">{note}</p>}
+    </div>
+  )
+}
+
+function SegmentedControl<T extends string | number>({
+  options, value, onChange, ariaLabel, size = 'lg',
+}: {
+  options: { value: T; label: string }[]
+  value: T
+  onChange: (v: T) => void
+  ariaLabel: string
+  size?: 'lg' | 'sm'
+}) {
+  const pad = size === 'lg' ? 'px-4 py-3 text-base' : 'px-4 py-2.5 text-sm'
+  return (
+    <div className="inline-flex rounded-lg border border-border overflow-hidden" role="group" aria-label={ariaLabel}>
+      {options.map((o) => (
+        <button
+          key={String(o.value)}
+          type="button"
+          onClick={() => onChange(o.value)}
+          aria-pressed={value === o.value}
+          className={`${pad} font-medium transition-colors ${
+            value === o.value ? 'bg-forest-600 text-white' : 'bg-surface text-foreground hover:bg-surface-secondary'
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
   )
 }
