@@ -155,6 +155,10 @@ at the (optionally precocious) age, so the dip onset is governed by the old bees
 by the new ones. The forager-strength curve is normalised to steady state, so the recommended **timing**
 is independent of the lay-rate value.
 - 50+ accessibility: large targets, high contrast, readable minimum font sizes.
+- **Session persistence**: the apiary, crops, method, lay rate, advanced constants, frame system,
+  brood-utilisation, precocious toggle and any manual break-date override are saved to
+  `sessionStorage` (keyed per user), so leaving and returning to the page keeps the picks. Restored
+  apiary/frame ids are validated against the current lists and fall back to the default if stale.
 
 ## Rebuild food budget & starvation risk
 
