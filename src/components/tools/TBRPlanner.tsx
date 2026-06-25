@@ -109,7 +109,6 @@ export default function TBRPlanner({ userId }: { userId: string }) {
 
   const effectiveTbr = result?.effectiveTbrDate ?? null
   const steady = steadyStateForagers(constants) || 1
-  const peakPop = peakAdultPopulation(constants) || 1
 
   // Two stacked charts share one date axis, bands and marker lines; only the series differs.
   const charts = useMemo(() => {
@@ -126,7 +125,9 @@ export default function TBRPlanner({ userId }: { userId: string }) {
       { date: plan.milestones.firstForagerDate, color: isDark ? '#facc15' : '#b45309' },
     ]
 
-    const mkOptions = (yTitle: string): ChartOptions<'line'> => {
+    // Forager chart is normalised (% of full strength — drives the timing call); the
+    // population chart shows absolute bees so the lay rate visibly scales the colony.
+    const mkOptions = (yTitle: string, mode: 'percent' | 'count'): ChartOptions<'line'> => {
       const options: ChartOptions<'line'> = {
         responsive: true,
         maintainAspectRatio: false,
@@ -142,7 +143,10 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                 const x = items[0]?.parsed.x
                 return typeof x === 'number' ? formatDate(new Date(x).toISOString().slice(0, 10)) : ''
               },
-              label: (item) => `${item.dataset.label}: ${item.parsed.y}%`,
+              label: (item) =>
+                mode === 'percent'
+                  ? `${item.dataset.label}: ${item.parsed.y}%`
+                  : `${item.dataset.label}: ${Math.round(item.parsed.y ?? 0).toLocaleString()} bees`,
             },
           },
         },
@@ -155,9 +159,14 @@ export default function TBRPlanner({ userId }: { userId: string }) {
           },
           y: {
             beginAtZero: true,
-            max: 110,
+            ...(mode === 'percent' ? { max: 110 } : {}),
             title: { display: true, text: yTitle, color: isDark ? '#9ca3af' : '#374151' },
-            ticks: { color: isDark ? '#9ca3af' : '#374151' },
+            ticks: {
+              color: isDark ? '#9ca3af' : '#374151',
+              ...(mode === 'count'
+                ? { callback: (v) => (typeof v === 'number' ? v.toLocaleString() : v) }
+                : {}),
+            },
             grid: { color: isDark ? '#374151' : '#e5e7eb' },
           },
         },
@@ -182,7 +191,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
       datasets: [
         {
           label: 'Colony population',
-          data: plan.curve.map((p) => ({ x: parseISODate(p.date).getTime(), y: Math.round((p.population / peakPop) * 100) })),
+          data: plan.curve.map((p) => ({ x: parseISODate(p.date).getTime(), y: p.population })),
           borderColor: isDark ? '#34d399' : '#047857',
           backgroundColor: isDark ? 'rgba(52,211,153,0.12)' : 'rgba(4,120,87,0.10)',
           fill: true, tension: 0.25, pointRadius: 0, borderWidth: 2,
@@ -191,10 +200,10 @@ export default function TBRPlanner({ userId }: { userId: string }) {
     }
 
     return {
-      forager: { data: foragerData, options: mkOptions('Forager strength (%)') },
-      population: { data: populationData, options: mkOptions('Colony population (%)') },
+      forager: { data: foragerData, options: mkOptions('Forager strength (%)', 'percent') },
+      population: { data: populationData, options: mkOptions('Colony population (bees)', 'count') },
     }
-  }, [result, isDark, steady, peakPop])
+  }, [result, isDark, steady])
 
   // TBR-date slider bounds.
   const slider = useMemo(() => {
@@ -384,22 +393,94 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                 </div>
               </div>
 
-              {/* Stacked charts: forager strength + overall colony population */}
+              {/* Forager-strength chart */}
               {charts && (
-                <div className="space-y-5">
+                <div>
+                  <p className="text-sm font-medium text-foreground mb-1">Forager strength</p>
+                  <div className="h-64 relative">
+                    <Line data={charts.forager.data} options={charts.forager.options} plugins={[bandsPlugin]} />
+                  </div>
+                </div>
+              )}
+
+              {/* Controls sit between the two charts so an adjustment moves both curves in view at once */}
+              <div className="space-y-5 border-y border-border py-5">
+                {/* Cage-duration preset (caging only) */}
+                {isCaging && (
                   <div>
-                    <p className="text-sm font-medium text-foreground mb-1">Forager strength</p>
-                    <div className="h-64 relative">
-                      <Line data={charts.forager.data} options={charts.forager.options} plugins={[bandsPlugin]} />
+                    <span className="block text-sm font-medium text-foreground mb-2">Cage long enough to clear</span>
+                    <SegmentedControl<number>
+                      size="sm"
+                      ariaLabel="Cage duration"
+                      value={constants.cageDurationDays}
+                      onChange={(days) => setConstants({ ...constants, cageDurationDays: days })}
+                      options={[
+                        { value: 21, label: 'Worker brood — 21 d' },
+                        { value: 24, label: '+ Drone brood — 24 d' },
+                      ]}
+                    />
+                    <p className="text-xs text-text-tertiary mt-1">
+                      24 days also clears capped drone brood (a varroa reservoir); fine-tune in Advanced.
+                    </p>
+                  </div>
+                )}
+
+                {/* Break-date slider */}
+                {slider && (
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      <CalendarClock size={16} className="inline mr-1 -mt-0.5" />
+                      Adjust {breakDateLabel} — <span className="font-semibold">{formatDate(effectiveTbr)}</span>
+                    </label>
+                    <input
+                      type="range"
+                      min={0}
+                      max={slider.span}
+                      step={1}
+                      value={slider.value}
+                      onChange={(e) => setTbrOverride(addDays(slider.earliest, Number(e.target.value)))}
+                      className="w-full h-3 accent-forest-600 cursor-pointer"
+                      aria-label="TBR date"
+                    />
+                    <div className="flex justify-between text-xs text-text-tertiary mt-1">
+                      <span>{formatDate(result.bounds.earliest)}</span>
+                      <span>{formatDate(result.bounds.latest)}</span>
                     </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground mb-1">Overall colony population</p>
-                    <div className="h-64 relative">
-                      <Line data={charts.population.data} options={charts.population.options} plugins={[bandsPlugin]} />
-                    </div>
+                )}
+
+                {/* Lay-rate slider */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Queen lay rate — <span className="font-semibold">{constants.layRate}</span> eggs/day
+                  </label>
+                  <input
+                    type="range"
+                    min={1000}
+                    max={2500}
+                    step={50}
+                    value={constants.layRate}
+                    onChange={(e) => setConstants({ ...constants, layRate: Number(e.target.value) })}
+                    className="w-full h-3 accent-forest-600 cursor-pointer"
+                    aria-label="Queen lay rate"
+                  />
+                  <p className="text-xs text-text-tertiary mt-1">
+                    ≈ {(constants.layRate * constants.eggToEmergenceDays).toLocaleString()} cells of brood at peak
+                    (~{(constants.layRate * constants.eggToEmergenceDays / CELLS_PER_DADANT_DEEP).toFixed(1)} Dadant deep frames).
+                    Lay rate scales the absolute counts (foragers, adults) and the food budget — not the % curves,
+                    whose shape is independent of it.
+                  </p>
+                </div>
+              </div>
+
+              {/* Overall colony population chart */}
+              {charts && (
+                <div>
+                  <p className="text-sm font-medium text-foreground mb-1">Overall colony population</p>
+                  <div className="h-64 relative">
+                    <Line data={charts.population.data} options={charts.population.options} plugins={[bandsPlugin]} />
                   </div>
-                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs text-text-tertiary">
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-xs text-text-tertiary">
                     <Legend swatch="bg-amber-600" label="Forager strength" />
                     <Legend swatch="bg-emerald-600" label="Colony population" />
                     <Legend swatch="bg-green-500/40" label="Spring crop" />
@@ -409,72 +490,6 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                   </div>
                 </div>
               )}
-
-              {/* Cage-duration preset (caging only) */}
-              {isCaging && (
-                <div>
-                  <span className="block text-sm font-medium text-foreground mb-2">Cage long enough to clear</span>
-                  <SegmentedControl<number>
-                    size="sm"
-                    ariaLabel="Cage duration"
-                    value={constants.cageDurationDays}
-                    onChange={(days) => setConstants({ ...constants, cageDurationDays: days })}
-                    options={[
-                      { value: 21, label: 'Worker brood — 21 d' },
-                      { value: 24, label: '+ Drone brood — 24 d' },
-                    ]}
-                  />
-                  <p className="text-xs text-text-tertiary mt-1">
-                    24 days also clears capped drone brood (a varroa reservoir); fine-tune in Advanced.
-                  </p>
-                </div>
-              )}
-
-              {/* Break-date slider */}
-              {slider && (
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    <CalendarClock size={16} className="inline mr-1 -mt-0.5" />
-                    Adjust {breakDateLabel} — <span className="font-semibold">{formatDate(effectiveTbr)}</span>
-                  </label>
-                  <input
-                    type="range"
-                    min={0}
-                    max={slider.span}
-                    step={1}
-                    value={slider.value}
-                    onChange={(e) => setTbrOverride(addDays(slider.earliest, Number(e.target.value)))}
-                    className="w-full h-3 accent-forest-600 cursor-pointer"
-                    aria-label="TBR date"
-                  />
-                  <div className="flex justify-between text-xs text-text-tertiary mt-1">
-                    <span>{formatDate(result.bounds.earliest)}</span>
-                    <span>{formatDate(result.bounds.latest)}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Lay-rate slider */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Queen lay rate — <span className="font-semibold">{constants.layRate}</span> eggs/day
-                </label>
-                <input
-                  type="range"
-                  min={1000}
-                  max={2500}
-                  step={50}
-                  value={constants.layRate}
-                  onChange={(e) => setConstants({ ...constants, layRate: Number(e.target.value) })}
-                  className="w-full h-3 accent-forest-600 cursor-pointer"
-                  aria-label="Queen lay rate"
-                />
-                <p className="text-xs text-text-tertiary mt-1">
-                  ≈ {(constants.layRate * constants.eggToEmergenceDays).toLocaleString()} cells of brood at peak
-                  (~{(constants.layRate * constants.eggToEmergenceDays / CELLS_PER_DADANT_DEEP).toFixed(1)} Dadant deep frames).
-                  The chart shows % of full strength, so the recommended timing is independent of lay rate.
-                </p>
-              </div>
 
               {/* Precocious-foraging toggle */}
               <label className="flex items-start gap-3 p-3 rounded-lg border border-border cursor-pointer">

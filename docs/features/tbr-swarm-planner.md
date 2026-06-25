@@ -62,12 +62,16 @@ shows the exact window.
 
 ### Two curves: forager force + overall population
 
-The planner draws **two stacked charts**, each normalised to its own full-strength steady state (%):
+The planner draws **two stacked charts** with the date sliders between them so an adjustment moves
+both in view at once:
 
-- **Forager force** = Σ `emergence(e)` for bees aged `H..H+F` (H = emergence→forager, F = foraging
-  career), summed over two cohorts so post-break bees can forage at a precocious age when enabled.
-- **Overall population** = the same emergence integrated over the **full adult lifespan**
-  (`H + F`), excluding the gap. Population leads foragers — today's emerging bees are tomorrow's
+- **Forager force** (top, **% of full strength**) = Σ `emergence(e)` for bees aged `H..H+F`
+  (H = emergence→forager, F = foraging career), summed over two cohorts so post-break bees can
+  forage at a precocious age when enabled. Normalised because the *timing* recommendation is what
+  matters here, and that timing is independent of lay rate (it cancels in the ratio).
+- **Overall population** (bottom, **absolute bees**) = the same emergence integrated over the
+  **full adult lifespan** (`H + F`), excluding the gap. Shown as real head-counts so the lay rate
+  visibly scales the colony. Population leads foragers — today's emerging bees are tomorrow's
   foragers — which is why it matters most for the gentler caging scenario.
 
 Emergence is steady `L` everywhere except the zero-emergence window `[gapStart, gapEnd)`:
