@@ -87,12 +87,17 @@ function countIntegers(lo: number, hi: number): number {
 //              released queen's first brood emerges:
 //              gap starts at egg→emergence, length = cage duration + release re-lay.
 
-/** The zero-emergence window {start, len} (offsets from T) for the chosen method. */
+/**
+ * The zero-emergence window {start, len} (offsets from T) for the chosen method.
+ * Inputs are sanitised here (the single chokepoint every consumer routes through) so a
+ * malformed constant cannot propagate NaN/negative offsets into the curves or milestones.
+ */
 export function broodGap(c: TbrConstants, method: InterventionMethod): { start: number; len: number } {
+  const egg = nonNeg(c.eggToEmergenceDays)
   if (method === 'caging') {
-    return { start: c.eggToEmergenceDays, len: c.cageDurationDays + c.cageReleaseRelayDays }
+    return { start: egg, len: nonNeg(c.cageDurationDays) + nonNeg(c.cageReleaseRelayDays) }
   }
-  return { start: 0, len: c.reLayDelayDays + c.eggToEmergenceDays }
+  return { start: 0, len: nonNeg(c.reLayDelayDays) + egg }
 }
 
 // --- Forager-force simulation ------------------------------------------------
@@ -274,9 +279,10 @@ export function tbrMilestones(
     firstBroodDate: addDays(tbrDate, gapEnd),
     firstForagerDate: addDays(tbrDate, gapEnd + postBreakForageAge(c, accelDays)),
     releaseDate: addDays(tbrDate, c.cageDurationDays),
-    // No capped brood between the gap opening and the new brood being capped.
+    // No capped brood between the gap opening and the new brood being capped. Clamp so the
+    // window can never invert if the gap is shorter than the capped phase.
     broodlessStartDate: addDays(tbrDate, gapStart),
-    broodlessEndDate: addDays(tbrDate, gapEnd - CAPPED_PHASE_DAYS),
+    broodlessEndDate: addDays(tbrDate, Math.max(gapStart, gapEnd - CAPPED_PHASE_DAYS)),
   }
 }
 
