@@ -89,6 +89,13 @@ function constantFields(method: InterventionMethod): ConstantField[] {
   return method === 'caging' ? [...CAGING_FIELDS, ...SHARED_FIELDS] : [...TBR_FIELDS, ...SHARED_FIELDS]
 }
 
+// Lay-rate slider bounds (shared so the population axis ceiling stays in step with the slider).
+const LAY_RATE_MIN = 1000
+const LAY_RATE_MAX = 2500
+const LAY_RATE_STEP = 50
+// Fixed y-axis width (px) so the two stacked charts' plot areas line up despite different tick widths.
+const Y_AXIS_WIDTH = 76
+
 export default function TBRPlanner({ userId }: { userId: string }) {
   const planner = useTbrPlanner(userId)
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -127,6 +134,10 @@ export default function TBRPlanner({ userId }: { userId: string }) {
 
     // Forager chart is normalised (% of full strength — drives the timing call); the
     // population chart shows absolute bees so the lay rate visibly scales the colony.
+    // Pin the absolute-count axis to the peak at the max lay rate, so a lower lay rate visibly
+    // sits lower in the frame (an auto-scaled axis would just relabel and look unchanged).
+    const countMax = Math.round(LAY_RATE_MAX * totalAdultLifespanDays(constants) * 1.05)
+
     const mkOptions = (yTitle: string, mode: 'percent' | 'count'): ChartOptions<'line'> => {
       const options: ChartOptions<'line'> = {
         responsive: true,
@@ -145,7 +156,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
               },
               label: (item) =>
                 mode === 'percent'
-                  ? `${item.dataset.label}: ${item.parsed.y}%`
+                  ? `${item.dataset.label}: ${Math.round(item.parsed.y ?? 0)}%`
                   : `${item.dataset.label}: ${Math.round(item.parsed.y ?? 0).toLocaleString()} bees`,
             },
           },
@@ -159,7 +170,10 @@ export default function TBRPlanner({ userId }: { userId: string }) {
           },
           y: {
             beginAtZero: true,
-            ...(mode === 'percent' ? { max: 110 } : {}),
+            max: mode === 'percent' ? 110 : countMax,
+            // Force both stacked charts to the same y-axis width so their plot areas (and the
+            // shared marker lines/bands) align horizontally.
+            afterFit: (scale) => { scale.width = Y_AXIS_WIDTH },
             title: { display: true, text: yTitle, color: isDark ? '#9ca3af' : '#374151' },
             ticks: {
               color: isDark ? '#9ca3af' : '#374151',
@@ -203,7 +217,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
       forager: { data: foragerData, options: mkOptions('Forager strength (%)', 'percent') },
       population: { data: populationData, options: mkOptions('Colony population (bees)', 'count') },
     }
-  }, [result, isDark, steady])
+  }, [result, isDark, steady, constants])
 
   // TBR-date slider bounds.
   const slider = useMemo(() => {
@@ -456,9 +470,9 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                   </label>
                   <input
                     type="range"
-                    min={1000}
-                    max={2500}
-                    step={50}
+                    min={LAY_RATE_MIN}
+                    max={LAY_RATE_MAX}
+                    step={LAY_RATE_STEP}
                     value={constants.layRate}
                     onChange={(e) => setConstants({ ...constants, layRate: Number(e.target.value) })}
                     className="w-full h-3 accent-forest-600 cursor-pointer"
