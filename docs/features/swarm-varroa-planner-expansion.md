@@ -48,9 +48,10 @@ With TBR's `gapStart = 0` this is **identical** to the current output — caging
 ## What the user will see
 
 - A **method toggle** (segmented control): *Total Brood Removal* ↔ *Cage the Queen*.
-- **Two stacked charts** (forager strength above, overall colony population below), each curve as a
-  **% of its own full-strength steady state** (0–110% axis). Caging visibly keeps the population
-  curve high through the swarm weeks while TBR drops both early.
+- **Two stacked charts** (forager strength above as **% of full strength**; overall colony
+  population below as **absolute bees**, so the lay rate visibly scales it). The date sliders sit
+  between the charts so an adjustment moves both in view at once. Caging visibly keeps the
+  population high through the swarm weeks while TBR drops both early.
 - A **Varroa treatment window** callout (broodless start/end) — "treat with oxalic acid between …".
 - **Method-aware controls**: cage duration (21 worker / 24 drone-brood preset) for caging; comb-draw
   / re-lay delay for TBR; shared biology (egg→emergence, emergence→forager, foraging career, lay
