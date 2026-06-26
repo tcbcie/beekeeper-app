@@ -528,11 +528,13 @@ export interface TbrBounds {
   springEnd: string | null
   flowStart: string
   flowEnd: string
-  /** Earliest agronomically-feasible break (after the spring crop is off). */
+  /** Earliest break the plan allows — relaxed by the spring-strength floor and the weather forecast. */
   earliest: string
   /** Lower bound the slider allows (earliest − SLIDER_BACK_DAYS) so the user can model an earlier break. */
   sliderEarliest: string
   latest: string
+  /** Spring bloom end after weather trimming (the last forecast foraging day, capped at bloom end). */
+  effectiveSpringEnd: string | null
 }
 
 export interface TbrResult {
@@ -545,6 +547,13 @@ export interface TbrResult {
 /**
  * Build the full plan from resolved crop dates. Returns null when there is no
  * summer-flow target to work towards (nothing to optimise).
+ *
+ * `effectiveSpringEnd` is the weather-trimmed spring bloom end (the last forecast foraging day,
+ * capped at the bloom end). `springFloor` (0..1) is the minimum average spring forager strength the
+ * beekeeper is willing to keep: it relaxes the earliest break date so an early break that lets the
+ * spring crop tail off — in exchange for a stronger summer force — becomes available. With the
+ * defaults (`effectiveSpringEnd = null`, `springFloor = 1`) the behaviour is the original
+ * "break only after the spring crop is fully off".
  */
 export function planFromResolved(
   springDate: string | null,
@@ -554,7 +563,9 @@ export function planFromResolved(
   constants: TbrConstants,
   tbrOverride: string | null,
   method: InterventionMethod = 'tbr',
-  accelDays = 0
+  accelDays = 0,
+  effectiveSpringEnd: string | null = null,
+  springFloor = 1
 ): TbrResult | null {
   if (!summerStartDate) return null
 
@@ -572,9 +583,36 @@ export function planFromResolved(
   const recoveryDays =
     gapStart + gapLen + constants.emergenceToForagerDays + constants.foragingCareerDays
 
-  // Earliest feasible break: after the spring crop is off. Without a spring crop,
+  // Hard earliest feasible break: after the spring crop is off. Without a spring crop,
   // fall back to "one full recovery before the flow".
-  const earliest = springEnd ?? addDays(flowStart, -recoveryDays)
+  const hardEarliest = springEnd ?? addDays(flowStart, -recoveryDays)
+
+  // The spring window we actually protect, trimmed by the weather-effective end when supplied
+  // (weather can only shorten the crop, never extend it). Null when no spring crop constrains.
+  const floor = Math.max(0, Math.min(1, springFloor))
+  const springWindowEnd = springEnd ? minDate(effectiveSpringEnd ?? springEnd, springEnd) : null
+
+  // Weather-aware relaxed earliest: the earliest break that still keeps average spring forager
+  // strength at/above the floor over [springDate, springWindowEnd]. Spring coverage rises with a
+  // later break, so the first acceptable date found scanning forward is the earliest one. A spring
+  // window the weather has already ended (empty range) satisfies the floor trivially → break freely.
+  let earliest = hardEarliest
+  if (springEnd && springDate && springWindowEnd && floor < 1) {
+    const scanStart = addDays(hardEarliest, -SLIDER_BACK_DAYS)
+    if (dayDiff(springDate, springWindowEnd) < 0) {
+      earliest = scanStart
+    } else {
+      const span = dayDiff(scanStart, hardEarliest)
+      for (let i = 0; i <= span; i++) {
+        const cand = addDays(scanStart, i)
+        if (flowCoverage(cand, springDate, springWindowEnd, constants, method, accelDays) >= floor) {
+          earliest = cand
+          break
+        }
+      }
+    }
+  }
+
   const sliderEarliest = addDays(earliest, -SLIDER_BACK_DAYS)
   const latest = maxDate(earliest, flowStart)
 
@@ -587,14 +625,21 @@ export function planFromResolved(
 
   const curve = simulateForagerCurve(effectiveTbrDate, simStart, simEnd, constants, method, accelDays)
   const score = flowCoverage(effectiveTbrDate, flowStart, flowEnd, constants, method, accelDays)
+  // Spring coverage at the chosen date over the (weather-trimmed) spring window. No spring crop, or
+  // a window the weather has ended, means there is nothing to protect → report full strength.
+  const springScore =
+    springEnd && springDate && springWindowEnd && dayDiff(springDate, springWindowEnd) >= 0
+      ? flowCoverage(effectiveTbrDate, springDate, springWindowEnd, constants, method, accelDays)
+      : 1
   const recoveryAfterFlowStart = milestones.firstForagerDate > flowStart
 
   return {
-    bounds: { springEnd, flowStart, flowEnd, earliest, sliderEarliest, latest },
+    bounds: { springEnd, flowStart, flowEnd, earliest, sliderEarliest, latest, effectiveSpringEnd: springWindowEnd },
     plan: {
       curve,
       milestones,
       flowCoverageScore: score,
+      springCoverageScore: springScore,
       recommendedTbrDate: recommended,
       recoveryAfterFlowStart,
     },

@@ -1,7 +1,7 @@
 'use client'
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react'
 import { supabase } from '@/lib/supabase'
-import { calculateGDDFromDaily, type OpenMeteoDaily } from '@/lib/gdd'
+import { calculateGDDFromDaily, calculateForagingHours, type OpenMeteoDaily } from '@/lib/gdd'
 import { DEFAULT_TBR_CONSTANTS, type TbrConstants, type InterventionMethod, type ResolvedCropDate } from '@/types/tbr'
 import {
   dayDiff,
@@ -93,6 +93,15 @@ interface UseTbrPlannerReturn {
   setPrecocious: (v: boolean) => void
   tbrOverride: string | null
   setTbrOverride: (d: string | null) => void
+  /** Minimum average spring forager strength to protect (0..1) — relaxes the earliest break date. */
+  springFloor: number
+  setSpringFloor: (v: number) => void
+  /** Foraging days in the forecast horizon (null if no forecast available for this apiary). */
+  forecastForagingDays: number | null
+  /** Length of the forecast horizon in days. */
+  forecastDays: number
+  /** True when the forecast trims the spring crop short (its tail yields no foraging weather). */
+  springTreatedFinished: boolean
   result: TbrResult | null
   /** Honey/pollen needed to rebuild + nectar-income outlook for the chosen date. */
   foodPlan: FoodPlan | null
@@ -107,6 +116,52 @@ const RECENT_RATE_WINDOW_DAYS = 14
 // Days earlier that post-break bees begin foraging when precocious foraging is modelled.
 // ~7 d matches forager-depletion studies (normal onset ~21 d → precocious ~14 d).
 const PRECOCIOUS_ACCEL_DAYS = 7
+
+// Weather-aware spring trade-off: how far ahead we forecast, and the flyable-hours bar for a day to
+// count as a foraging day (the app's authoritative 12°C / sunshine / rain rule lives in calculateForagingHours).
+const FORECAST_DAYS = 10
+const FORAGING_HOUR_THRESHOLD = 1
+
+/**
+ * Fetch the apiary's daily forecast over FORECAST_DAYS and score each day's foraging hours,
+ * so the planner can tell when the spring crop is weather-finished. Returns null on any failure.
+ */
+async function fetchForecast(
+  lat: number,
+  lon: number,
+  signal: AbortSignal
+): Promise<{ date: string; hours: number }[] | null> {
+  const url =
+    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&daily=temperature_2m_max,temperature_2m_min,sunshine_duration,precipitation_sum` +
+    `&timezone=Europe/Dublin&forecast_days=${FORECAST_DAYS}`
+  try {
+    const res = await fetch(url, { signal })
+    if (!res.ok) return null
+    const data = await res.json()
+    const d = data?.daily as {
+      time?: string[]
+      temperature_2m_max?: number[]
+      temperature_2m_min?: number[]
+      sunshine_duration?: number[]
+      precipitation_sum?: number[]
+    } | undefined
+    if (!d?.time || !d.temperature_2m_max) return null
+    const out: { date: string; hours: number }[] = []
+    for (let i = 0; i < d.time.length; i++) {
+      const hours = calculateForagingHours(
+        Number(d.temperature_2m_min?.[i]),
+        Number(d.temperature_2m_max?.[i]),
+        Number(d.sunshine_duration?.[i]),
+        Number(d.precipitation_sum?.[i] ?? 0)
+      )
+      out.push({ date: d.time[i], hours: Number.isFinite(hours) ? hours : 0 })
+    }
+    return out
+  } catch {
+    return null
+  }
+}
 
 /**
  * Fetch this year's accumulated GDD and recent daily accrual for a location.
@@ -208,6 +263,9 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
   const [method, setMethodState] = usePersistentState<InterventionMethod>(sk('method'), 'tbr')
   const [precocious, setPrecocious] = usePersistentState<boolean>(sk('precocious'), false)
   const [tbrOverride, setTbrOverride] = usePersistentState<string | null>(sk('override'), null)
+  const [springFloor, setSpringFloor] = usePersistentState<number>(sk('springFloor'), 0.8)
+  // 10-day foraging forecast for the selected apiary (null until/unless it loads).
+  const [forecast, setForecast] = useState<{ date: string; hours: number }[] | null>(null)
 
   // Switching method invalidates a hand-picked date (the feasible window differs).
   const setMethod = useCallback((m: InterventionMethod) => {
@@ -416,6 +474,15 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
       }
       setProj(ctx)
 
+      // 10-day foraging forecast (weather-aware spring trade-off). Cleared when the apiary has no coords.
+      if (lat != null && lon != null && Number.isFinite(lat) && Number.isFinite(lon)) {
+        const fc = await fetchForecast(lat, lon, controller.signal)
+        if (!active) return
+        setForecast(fc)
+      } else {
+        setForecast(null)
+      }
+
       // Flag when nothing can be projected (no coords AND no usable records).
       const hasThisYearObserved = recs.some((r) => r.year === now.getFullYear() && r.startDate)
       if (ctx.accumulatedGdd == null && !hasThisYearObserved) setNoProjection(true)
@@ -477,6 +544,37 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     return resolveCropDate(summerVegId, info?.name ?? 'Summer flow', records, info, proj, SUMMER_FLOW_DURATION_DAYS)
   }, [summerVegId, proj, vegInfoById, records])
 
+  // Weather-trim the spring crop: walk the forecast horizon and find where foraging weather ends.
+  //   • No foraging weather across the visible spring tail  → crop treated as finished now.
+  //   • Foraging stops before the visible tail end          → trim to the last foraging day.
+  //   • Foraging persists to the edge we can see            → assume normal past the horizon (bloom-end caps).
+  const springWeather = useMemo(() => {
+    const bloomStart = resolvedSpring?.date ?? null
+    const bloomEnd = resolvedSpring?.endDate ?? null
+    if (!forecast || forecast.length === 0) {
+      return { effectiveSpringEnd: bloomEnd, foragingDays: null as number | null, treatedFinished: false }
+    }
+    const horizonForaging = forecast.filter((d) => d.hours >= FORAGING_HOUR_THRESHOLD).length
+    if (!bloomStart || !bloomEnd || !proj) {
+      return { effectiveSpringEnd: bloomEnd, foragingDays: horizonForaging, treatedFinished: false }
+    }
+    const today = proj.today
+    const horizonEnd = forecast[forecast.length - 1].date
+    const visibleEnd = bloomEnd < horizonEnd ? bloomEnd : horizonEnd
+    const visible = forecast.filter((d) => d.date >= today && d.date <= visibleEnd)
+    if (visible.length === 0) {
+      // The bloom tail isn't inside the forecast window — nothing to trim.
+      return { effectiveSpringEnd: bloomEnd, foragingDays: horizonForaging, treatedFinished: false }
+    }
+    const foragingVisible = visible.filter((d) => d.hours >= FORAGING_HOUR_THRESHOLD)
+    if (foragingVisible.length === 0) {
+      return { effectiveSpringEnd: today, foragingDays: horizonForaging, treatedFinished: true }
+    }
+    const lastForaging = foragingVisible[foragingVisible.length - 1].date
+    const effectiveSpringEnd = lastForaging < visibleEnd ? lastForaging : bloomEnd
+    return { effectiveSpringEnd, foragingDays: horizonForaging, treatedFinished: effectiveSpringEnd < bloomEnd }
+  }, [forecast, resolvedSpring, proj])
+
   const result = useMemo<TbrResult | null>(() => {
     if (!resolvedSummer?.date) return null
     return planFromResolved(
@@ -487,9 +585,11 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
       constants,
       tbrOverride,
       method,
-      precocious ? PRECOCIOUS_ACCEL_DAYS : 0
+      precocious ? PRECOCIOUS_ACCEL_DAYS : 0,
+      springWeather.effectiveSpringEnd,
+      springFloor
     )
-  }, [resolvedSpring, resolvedSummer, constants, tbrOverride, method, precocious])
+  }, [resolvedSpring, resolvedSummer, constants, tbrOverride, method, precocious, springWeather.effectiveSpringEnd, springFloor])
 
   // Worthwhile nectar blooms (value ≥ threshold) resolved once per apiary/projection and
   // sorted ascending, so the TBR slider can pick the next bloom without re-resolving every crop.
@@ -553,6 +653,11 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     setPrecocious,
     tbrOverride,
     setTbrOverride,
+    springFloor,
+    setSpringFloor,
+    forecastForagingDays: springWeather.foragingDays,
+    forecastDays: FORECAST_DAYS,
+    springTreatedFinished: springWeather.treatedFinished,
     result,
     foodPlan,
     loading,

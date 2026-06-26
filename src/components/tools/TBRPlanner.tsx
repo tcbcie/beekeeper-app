@@ -122,6 +122,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
     broodUtilisation, setBroodUtilisation, effectiveCellsPerFrame,
     method, setMethod,
     precocious, setPrecocious,
+    springFloor, setSpringFloor, forecastForagingDays, forecastDays, springTreatedFinished,
     tbrOverride, setTbrOverride, result, foodPlan, loading, error, noProjection,
   } = planner
 
@@ -373,11 +374,14 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                       {formatDate(result.plan.recommendedTbrDate)}
                     </p>
                     <p className="text-sm text-text-secondary mt-2">
-                      Forager strength sustained across the {resolvedSummer?.name} flow:{' '}
+                      Forager strength at the chosen date —{' '}
                       <span className="font-semibold text-foreground">
-                        {Math.round(result.plan.flowCoverageScore * 100)}%
+                        Spring {Math.round(result.plan.springCoverageScore * 100)}%
+                      </span>{' · '}
+                      <span className="font-semibold text-foreground">
+                        {resolvedSummer?.name ?? 'Summer'} {Math.round(result.plan.flowCoverageScore * 100)}%
                       </span>{' '}
-                      of full strength at the chosen date.
+                      of full strength. An earlier break trades spring strength for a stronger summer force.
                     </p>
                     <p className="text-sm text-text-secondary mt-1">
                       Full strength ≈ <span className="font-semibold text-foreground">{steadyStateForagers(constants).toLocaleString()}</span> foragers
@@ -490,11 +494,43 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                     </div>
                     {effectiveTbr && effectiveTbr < result.bounds.earliest && (
                       <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-                        Earlier than the feasible date ({formatDate(result.bounds.earliest)}) — this breaks before the spring crop is off.
+                        Earlier than the floor allows ({formatDate(result.bounds.earliest)}) — spring strength
+                        drops below your {Math.round(springFloor * 100)}% setting here.
                       </p>
                     )}
                   </div>
                 )}
+
+                {/* Spring-strength floor (the weather-aware spring/summer trade-off) */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Protect spring strength ≥ <span className="font-semibold">{Math.round(springFloor * 100)}%</span>
+                  </label>
+                  <input
+                    type="range"
+                    min={50}
+                    max={100}
+                    step={5}
+                    value={Math.round(springFloor * 100)}
+                    onChange={(e) => { setSpringFloor(Number(e.target.value) / 100); setTbrOverride(null) }}
+                    className="w-full h-3 accent-forest-600 cursor-pointer"
+                    aria-label="Protect spring strength floor"
+                  />
+                  <p className="text-xs text-text-tertiary mt-1">
+                    Lower this to accept the spring crop tailing off on a declining force, in exchange for an
+                    earlier break and a stronger force for the summer flow. 100% keeps the spring crop at full strength.
+                    {forecastForagingDays != null && (
+                      <>
+                        {' '}
+                        {forecastForagingDays === 0
+                          ? `No foraging weather in the next ${forecastDays} days — the spring crop is treated as finished.`
+                          : `Next ${forecastDays} days: ${forecastForagingDays} foraging ${forecastForagingDays === 1 ? 'day' : 'days'} forecast.`}
+                        {springTreatedFinished && forecastForagingDays > 0 &&
+                          ' Foraging weather ends before the spring crop does, so its tail is treated as finished.'}
+                      </>
+                    )}
+                  </p>
+                </div>
 
                 {/* Lay-rate slider */}
                 <div>
