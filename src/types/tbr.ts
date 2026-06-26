@@ -87,6 +87,8 @@ export interface TbrPlan {
   milestones: TbrMilestones
   /** 0..1 — average forager strength across the flow window, as a fraction of full strength. */
   flowCoverageScore: number
+  /** 0..1 — average forager strength across the (weather-trimmed) spring window at the chosen date. */
+  springCoverageScore: number
   /** The date the model recommends, or null if it could not be computed. */
   recommendedTbrDate: string | null
   /**

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan — Earlier break + hive-system &amp; brood utilisation</title>
+<title>Plan — Weather-aware spring/summer trade-off (Option B)</title>
 <style>
   body { font-family: system-ui, -apple-system, Segoe UI, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.55; color: #1f2937; }
   h1 { font-size: 1.5rem; } h2 { font-size: 1.15rem; margin-top: 2rem; border-bottom: 2px solid #e5e7eb; padding-bottom: .3rem; }
@@ -13,65 +13,93 @@
   .note { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: .75rem 1rem; }
   .q { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: .75rem 1rem; }
   table { border-collapse: collapse; width: 100%; font-size: .9rem; }
-  th, td { border: 1px solid #e5e7eb; padding: .4rem .6rem; text-align: left; }
+  th, td { border: 1px solid #e5e7eb; padding: .4rem .6rem; text-align: left; vertical-align: top; }
+  th { background: #f9fafb; }
 </style>
 </head>
 <body>
+<h1>Plan — Weather-aware spring/summer trade-off (Option B)</h1>
 
-<h1>Plan — Earlier break + hive-system &amp; brood utilisation</h1>
-<p>Three planner refinements. Live calculator only — <strong>no database changes</strong>
-(<code>frame_standards</code> already exists with 9 systems).</p>
+<p class="note"><strong>Status:</strong> Awaiting your sign-off before any code is written.
+Full design lives in <code>docs/features/planner-weather-aware-spring-floor.md</code>. No database changes.</p>
 
-<div class="note">
-<strong>1. Earlier break</strong> — the break-date slider is pinned at the feasible-earliest date;
-extend it ~30 days earlier so the user can model breaking sooner.<br>
-<strong>2. Hive system</strong> — replace the hard-coded Dadant 9,500 cells/frame with a picker over
-<code>frame_standards</code>; derive cells/frame from each system's real dimensions.<br>
-<strong>3. Brood utilisation</strong> — a % slider (wall-to-wall is never 100%) scaling usable cells
-per frame; drives the brood readout and the food budget's frame count.
-</div>
+<h2>Problem</h2>
+<p>The planner currently refuses to break before the spring crop is fully off
+(<code>T &ge; spring-crop end</code>), so it always protects the spring crop at full forager
+strength and only optimises the summer flow. You want the opposite to be possible: accept the
+spring crop <em>tailing off on a declining forager force</em> in exchange for a
+<strong>stronger force for the summer crop</strong> — and the spring crop's real end is
+<strong>weather-gated</strong>: if the 10-day forecast has no foraging weather, the remaining
+bloom yields nothing and breaking early costs nothing.</p>
 
-<h2>Maths</h2>
-<table>
-  <tr><td>cells/frame</td><td><code>round(w × h / (0.866 × 5.4²) × 2)</code> (both sides, hexagon)</td></tr>
-  <tr><td>effective cells/frame</td><td><code>cells/frame × utilisation%</code></td></tr>
-  <tr><td>frames to draw</td><td><code>standingBroodCells / effectiveCellsPerFrame</code></td></tr>
-  <tr><td>wax/frame</td><td><code>w × h × (0.12 kg ÷ Dadant area)</code> — scales comb honey by frame size</td></tr>
-</table>
+<h2>Approach (confirmed: Option B, weather-aware)</h2>
+<ol>
+  <li><strong>Weather-effective spring end</strong> — fetch the apiary's 10-day Open-Meteo forecast,
+    score each day with the existing <code>calculateForagingHours()</code>; a day is a foraging day
+    if it has &ge; 1 flyable hour. <code>effectiveSpringEnd = min(bloom-end, last foraging day)</code>.</li>
+  <li><strong>Acceptable-decline floor</strong> — a <code>springFloor</code> slider (50&ndash;100%,
+    default 80%). Relaxed <code>earliest</code> = earliest break <code>T</code> that keeps spring
+    coverage &ge; floor over <code>[springStart, effectiveSpringEnd]</code>.</li>
+  <li><strong>Recommendation</strong> — same objective (maximise summer coverage), now searched within
+    the relaxed, weather-aware range.</li>
+  <li><strong>UI</strong> — floor slider, a forecast note, and a dual <em>Spring X% &middot; Summer Y%</em>
+    coverage readout so the trade-off is visible.</li>
+</ol>
 
 <h2>To-do</h2>
 <ul class="todo">
-  <li><input type="checkbox" checked> <strong>Model — earlier break</strong> (<code>tbr-model.ts</code>): <code>SLIDER_BACK_DAYS</code> (30); add <code>sliderEarliest = earliest − 30</code> to <code>TbrBounds</code>.</li>
-  <li><input type="checkbox" checked> <strong>Model — frame maths</strong>: <code>cellsForFrame(w,h)</code> + <code>waxForFrameKg(w,h)</code> helpers; <code>rebuildFoodBudget</code> takes <code>frame { cellsPerBroodFrame, waxPerFrameKg }</code> (defaults to current Dadant values).</li>
-  <li><input type="checkbox" checked> <strong>Hook</strong> (<code>useTbrPlanner.ts</code>): load <code>frame_standards</code> (fallback presets); <code>frameStandardId</code> + <code>broodUtilisation</code> state; compute effective cells + wax; feed the food budget; expose.</li>
-  <li><input type="checkbox" checked> <strong>UI — controls</strong> (<code>TBRPlanner.tsx</code>): frame-system picker + utilisation slider; brood readout uses the chosen system + utilisation.</li>
-  <li><input type="checkbox" checked> <strong>UI — slider</strong>: extend the break-date slider 30 days earlier (use <code>sliderEarliest</code>).</li>
-  <li><input type="checkbox" checked> <strong>Docs</strong>: update <code>docs/features/tbr-swarm-planner.md</code>.</li>
-  <li><input type="checkbox" checked> <strong>Verify</strong>: <code>tsc</code> + <code>eslint</code> (no build); prompt the user to test.</li>
+  <li>&#9745; <strong>Model</strong> (<code>src/lib/tbr-model.ts</code>): <code>planFromResolved</code> now accepts <code>effectiveSpringEnd</code> + <code>springFloor</code>, computes the relaxed weather-aware <code>earliest</code> (reusing the <code>flowCoverage</code> maths on the spring window), and exposes <code>springCoverageScore</code> + <code>bounds.effectiveSpringEnd</code>.</li>
+  <li>&#9745; <strong>Hook</strong> (<code>src/hooks/useTbrPlanner.ts</code>): fetches the 10-day Open-Meteo forecast, classifies foraging days via <code>calculateForagingHours</code>, derives <code>effectiveSpringEnd</code> + a forecast summary, adds a persisted <code>springFloor</code> state (default 80%), and threads both into <code>planFromResolved</code>.</li>
+  <li>&#9745; <strong>UI</strong> (<code>src/components/tools/TBRPlanner.tsx</code>): &ldquo;Protect spring strength &ge; X%&rdquo; slider; forecast note; dual Spring/Summer coverage readout; reframed slider warning.</li>
+  <li>&#9745; <strong>Docs</strong>: updated <code>docs/features/tbr-swarm-planner.md</code> (trade-off + weather gating).</li>
+  <li>&#9745; <strong>Verify</strong>: <code>npx tsc --noEmit</code> (no new errors in changed files) + <code>npx eslint</code> (clean). Build left for you to test.</li>
 </ul>
 
-<h2>Decisions (confirmed)</h2>
-<div class="q">
-  <strong>Default frame system</strong> — British National Deep (changeable via the picker).<br>
-  <strong>Brood utilisation</strong> — a slider (50–100%), default 80%.
-</div>
+<h2>Files to change</h2>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><code>src/lib/tbr-model.ts</code></td><td>spring coverage + weather-aware relaxed <code>earliest</code> + exposed scores</td></tr>
+  <tr><td><code>src/hooks/useTbrPlanner.ts</code></td><td>forecast fetch + flyable classification + <code>effectiveSpringEnd</code> + <code>springFloor</code> state</td></tr>
+  <tr><td><code>src/components/tools/TBRPlanner.tsx</code></td><td>floor slider + forecast note + dual coverage readout</td></tr>
+  <tr><td><code>docs/features/tbr-swarm-planner.md</code></td><td>document the trade-off &amp; weather gating</td></tr>
+</table>
+
+<h2>Defaults &amp; scope</h2>
+<ul>
+  <li>Forecast horizon <strong>10 days</strong>; foraging day = <strong>&ge; 1 flyable hour</strong>; spring floor default <strong>80%</strong>.</li>
+  <li><strong>No DB change.</strong> Reuses <code>calculateForagingHours</code> and the existing forecast pattern (DRY).</li>
+  <li>Out of scope: per-day flyable weighting <em>inside</em> the spring window; forecasting beyond the API horizon (bloom-end still caps).</li>
+</ul>
 
 <h2>Review</h2>
-<p>All items implemented. Summary:</p>
+<p>Implemented the weather-aware spring/summer trade-off as planned, touching only the four files above
+plus the type definition. Summary of changes:</p>
 <ul>
-  <li><strong>Earlier break</strong> — <code>TbrBounds</code> gained <code>sliderEarliest = earliest − 30 d</code>; the
-  break-date slider now spans from there, with a warning when the chosen date precedes the spring crop. The
-  simulation window extends to cover the earlier range.</li>
-  <li><strong>Hive system</strong> — new <code>cellsForFrame()</code>/<code>waxForFrameKg()</code> helpers; the hook loads
-  <code>frame_standards</code> (fallback presets) and defaults to British National Deep; a picker chooses the system.</li>
-  <li><strong>Brood utilisation</strong> — a 50–100% slider (default 80%) scales usable cells/frame; the brood readout
-  shows "~N [system] frames at X% utilisation".</li>
-  <li><strong>Food budget</strong> — <code>rebuildFoodBudget</code> takes a <code>frame</code> spec, so <code>framesToDraw</code>
-  uses the chosen system + utilisation and comb-drawing honey scales with frame size (smaller frames cost less wax).</li>
-  <li><strong>No DB change</strong>; curves are unaffected (frame system only drives brood/food figures).</li>
+  <li><strong>Model</strong> — <code>planFromResolved</code> gained two optional, backward-compatible
+    parameters (<code>effectiveSpringEnd = null</code>, <code>springFloor = 1</code>). With the
+    defaults its output is byte-for-byte the old "break only after the spring crop is off" behaviour,
+    so nothing that called it before changes. When a floor below 100% is supplied it scans forward
+    from <code>hardEarliest &minus; 30 days</code> and relaxes <code>earliest</code> to the soonest
+    date whose average spring coverage still clears the floor (spring coverage is monotonic in the
+    break date, so the first hit is the earliest valid one). An empty/weather-ended spring window
+    satisfies the floor trivially. Added <code>springCoverageScore</code> to the plan and
+    <code>effectiveSpringEnd</code> to the bounds.</li>
+  <li><strong>Hook</strong> — added a guarded 10-day Open-Meteo forecast fetch (aborts with the
+    existing controller, returns <code>null</code> on any failure, clears when the apiary has no
+    coordinates). Each day is scored with the app's authoritative <code>calculateForagingHours</code>.
+    A memo derives the weather-effective spring end with three cases (no foraging weather &rarr;
+    finished now; foraging stops early &rarr; trim; foraging persists &rarr; assume normal past the
+    horizon). New persisted <code>springFloor</code> state (default 0.8).</li>
+  <li><strong>UI</strong> — a "Protect spring strength &ge; X%" slider, a forecast note, a dual
+    <em>Spring X% &middot; Summer Y%</em> readout, and a reframed slider warning. Slider range
+    50&ndash;100% with 5% steps and a large hit target for the 50+ audience.</li>
 </ul>
-<p><strong>Verification:</strong> <code>tsc --noEmit</code> and <code>eslint</code> clean on all three changed files
-(only pre-existing <code>tests/</code> errors remain). Build not run — to be tested in the browser.</p>
-
+<p><strong>Defensive notes:</strong> the forecast fetch and JSON access are fully null-guarded and
+coerced with <code>Number()</code>; <code>springFloor</code> is clamped to [0,1] in the model; the
+relaxed-earliest scan is bounded by <code>SLIDER_BACK_DAYS</code>; and all new branches degrade to
+the prior behaviour when the forecast is unavailable.</p>
+<p><strong>Verification:</strong> <code>npx tsc --noEmit</code> reports no errors in the changed files;
+<code>npx eslint</code> on all four files is clean. The production build was not run &mdash; please
+test it.</p>
 </body>
 </html>
