@@ -88,29 +88,32 @@ For each candidate `T`, score = average forager force across `[flowStart, flowEn
 `T*` maximises the score within the feasible `[earliest, latest]` range. The beekeeper can override
 via the slider and watch the score/curve respond.
 
-### Spring/summer trade-off (weather-aware)
+### Swarm-season floor
 
-The earliest break is no longer hard-pinned to the spring-crop end. Instead the beekeeper sets a
+A brood break is first and foremost a **swarm-control tool**, so it makes no sense to recommend it in
+early spring when the colony isn't yet in swarm mode — doing so wastes the break and needlessly
+sacrifices the spring forager force. The recommended break is therefore **floored at the start of
+swarm season** (`SWARM_SEASON_START_MD`, default **8 May** — Ireland's season builds from about the
+second week of May). The slider can still be dragged earlier for what-if exploration.
+
+### Spring/summer trade-off
+
+The earliest break is no longer hard-pinned to the spring-crop end. The beekeeper sets a
 **"protect spring strength ≥ X %"** floor (slider, 50–100 %, default 80 %), and the model relaxes the
 earliest break to the soonest date that still keeps average spring forager strength at/above the
-floor over the spring window. Lowering the floor accepts the spring crop tailing off on a declining
-force in exchange for an earlier break and a **stronger force for the summer flow**.
+floor over the spring window — then applies the swarm-season floor. Lowering the floor accepts the
+spring crop tailing off on a declining force in exchange for an earlier break and a **stronger force
+for the summer flow**. The recommendation panel shows a dual **Spring X % · Summer Y %** coverage
+readout at the chosen date.
 
-The spring window is **weather-gated**. A 10-day Open-Meteo forecast for the apiary is scored with
-the app's existing `calculateForagingHours()` (12 °C / sunshine / rain rule); a day counts as a
-foraging day if it has ≥ 1 flyable hour. The weather-effective spring end is the last forecast
-foraging day, capped at the bloom end:
+### Weather is a judgment call (not in the model)
 
-- **No foraging weather across the visible spring tail** → the spring crop is treated as finished now
-  (the floor is satisfied trivially, so the break can come forward freely).
-- **Foraging stops before the visible tail end** → the spring window is trimmed to the last foraging day.
-- **Foraging persists to the edge we can see** → normal foraging is assumed past the forecast horizon
-  (bloom-end still caps the window).
-
-The recommendation panel shows a dual **Spring X % · Summer Y %** coverage readout at the chosen
-date, and the controls show a forecast note ("Next 10 days: N foraging days" or "No foraging weather
-… spring crop treated as finished") so the trade-off is visible. See
-`planner-weather-aware-spring-floor.md` for the design.
+A 10-day Open-Meteo forecast for the apiary is scored with the app's `calculateForagingHours()`
+(12 °C / sunshine / rain rule; a day counts as a foraging day at ≥ 1 flyable hour) and the foraging-day
+count is shown as **guidance only**. The forecast is **deliberately not fed into the model**: an
+earlier version trimmed the spring window by the forecast, which dragged the recommendation far too
+early. Whether a poor forecast justifies breaking sooner is the beekeeper's call, surfaced as a note
+("the next 10 days show N foraging days … you may decide to break a little earlier than recommended").
 
 ## Crop-date resolution (3 tiers)
 
@@ -155,8 +158,8 @@ crop-picker readout (shown as `start → end`).
 - Chart.js forager-force curve with shaded bands (spring crop, brood gap, summer flow).
 - Break-date slider (may be dragged up to 30 days before the floor-relaxed earliest date, with a
   warning when spring strength drops below the floor) + lay-rate slider (1000–2500/day).
-- **Spring-strength floor** slider (50–100 %, default 80 %) + a 10-day foraging forecast note — the
-  weather-aware spring/summer trade-off described above.
+- **Spring-strength floor** slider (50–100 %, default 80 %) for the spring/summer trade-off, plus a
+  10-day foraging-forecast note shown as guidance only (weather is not baked into the model).
 - Hive **frame-system** picker (from `frame_standards`) and a **brood-utilisation** slider (50–100%,
   default 80%): cells/frame come from the system's dimensions and the brood readout / food-budget
   frame count use `cells/frame × utilisation`. Comb-drawing honey scales with the system's frame size.
