@@ -96,12 +96,10 @@ interface UseTbrPlannerReturn {
   /** Minimum average spring forager strength to protect (0..1) — relaxes the earliest break date. */
   springFloor: number
   setSpringFloor: (v: number) => void
-  /** Foraging days in the forecast horizon (null if no forecast available for this apiary). */
+  /** Foraging days in the forecast horizon (null if no forecast available) — guidance only, not fed into the model. */
   forecastForagingDays: number | null
   /** Length of the forecast horizon in days. */
   forecastDays: number
-  /** True when the forecast trims the spring crop short (its tail yields no foraging weather). */
-  springTreatedFinished: boolean
   result: TbrResult | null
   /** Honey/pollen needed to rebuild + nectar-income outlook for the chosen date. */
   foodPlan: FoodPlan | null
@@ -544,36 +542,12 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     return resolveCropDate(summerVegId, info?.name ?? 'Summer flow', records, info, proj, SUMMER_FLOW_DURATION_DAYS)
   }, [summerVegId, proj, vegInfoById, records])
 
-  // Weather-trim the spring crop: walk the forecast horizon and find where foraging weather ends.
-  //   • No foraging weather across the visible spring tail  → crop treated as finished now.
-  //   • Foraging stops before the visible tail end          → trim to the last foraging day.
-  //   • Foraging persists to the edge we can see            → assume normal past the horizon (bloom-end caps).
-  const springWeather = useMemo(() => {
-    const bloomStart = resolvedSpring?.date ?? null
-    const bloomEnd = resolvedSpring?.endDate ?? null
-    if (!forecast || forecast.length === 0) {
-      return { effectiveSpringEnd: bloomEnd, foragingDays: null as number | null, treatedFinished: false }
-    }
-    const horizonForaging = forecast.filter((d) => d.hours >= FORAGING_HOUR_THRESHOLD).length
-    if (!bloomStart || !bloomEnd || !proj) {
-      return { effectiveSpringEnd: bloomEnd, foragingDays: horizonForaging, treatedFinished: false }
-    }
-    const today = proj.today
-    const horizonEnd = forecast[forecast.length - 1].date
-    const visibleEnd = bloomEnd < horizonEnd ? bloomEnd : horizonEnd
-    const visible = forecast.filter((d) => d.date >= today && d.date <= visibleEnd)
-    if (visible.length === 0) {
-      // The bloom tail isn't inside the forecast window — nothing to trim.
-      return { effectiveSpringEnd: bloomEnd, foragingDays: horizonForaging, treatedFinished: false }
-    }
-    const foragingVisible = visible.filter((d) => d.hours >= FORAGING_HOUR_THRESHOLD)
-    if (foragingVisible.length === 0) {
-      return { effectiveSpringEnd: today, foragingDays: horizonForaging, treatedFinished: true }
-    }
-    const lastForaging = foragingVisible[foragingVisible.length - 1].date
-    const effectiveSpringEnd = lastForaging < visibleEnd ? lastForaging : bloomEnd
-    return { effectiveSpringEnd, foragingDays: horizonForaging, treatedFinished: effectiveSpringEnd < bloomEnd }
-  }, [forecast, resolvedSpring, proj])
+  // Foraging days in the forecast horizon — surfaced as guidance only. Weather is deliberately NOT
+  // fed into the model: a poor forecast is the beekeeper's judgment call, not an automatic shift.
+  const forecastForagingDays = useMemo<number | null>(() => {
+    if (!forecast || forecast.length === 0) return null
+    return forecast.filter((d) => d.hours >= FORAGING_HOUR_THRESHOLD).length
+  }, [forecast])
 
   const result = useMemo<TbrResult | null>(() => {
     if (!resolvedSummer?.date) return null
@@ -586,10 +560,9 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
       tbrOverride,
       method,
       precocious ? PRECOCIOUS_ACCEL_DAYS : 0,
-      springWeather.effectiveSpringEnd,
       springFloor
     )
-  }, [resolvedSpring, resolvedSummer, constants, tbrOverride, method, precocious, springWeather.effectiveSpringEnd, springFloor])
+  }, [resolvedSpring, resolvedSummer, constants, tbrOverride, method, precocious, springFloor])
 
   // Worthwhile nectar blooms (value ≥ threshold) resolved once per apiary/projection and
   // sorted ascending, so the TBR slider can pick the next bloom without re-resolving every crop.
@@ -655,9 +628,8 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     setTbrOverride,
     springFloor,
     setSpringFloor,
-    forecastForagingDays: springWeather.foragingDays,
+    forecastForagingDays,
     forecastDays: FORECAST_DAYS,
-    springTreatedFinished: springWeather.treatedFinished,
     result,
     foodPlan,
     loading,

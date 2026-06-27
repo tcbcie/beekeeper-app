@@ -122,7 +122,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
     broodUtilisation, setBroodUtilisation, effectiveCellsPerFrame,
     method, setMethod,
     precocious, setPrecocious,
-    springFloor, setSpringFloor, forecastForagingDays, forecastDays, springTreatedFinished,
+    springFloor, setSpringFloor, forecastForagingDays, forecastDays,
     tbrOverride, setTbrOverride, result, foodPlan, loading, error, noProjection,
   } = planner
 
@@ -383,6 +383,11 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                       </span>{' '}
                       of full strength. An earlier break trades spring strength for a stronger summer force.
                     </p>
+                    <p className="text-xs text-text-tertiary mt-2">
+                      Timed to the start of swarm season (~{formatDate(result.bounds.swarmSeasonStart)}) — a brood break
+                      is a swarm-control tool, so it isn&apos;t brought forward into early spring when the colony isn&apos;t
+                      yet in swarm mode.
+                    </p>
                     <p className="text-sm text-text-secondary mt-1">
                       Full strength ≈ <span className="font-semibold text-foreground">{steadyStateForagers(constants).toLocaleString()}</span> foragers
                       within ≈ <span className="font-semibold text-foreground">{peakAdultPopulation(constants).toLocaleString()}</span> adult bees
@@ -494,8 +499,8 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                     </div>
                     {effectiveTbr && effectiveTbr < result.bounds.earliest && (
                       <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-                        Earlier than the floor allows ({formatDate(result.bounds.earliest)}) — spring strength
-                        drops below your {Math.round(springFloor * 100)}% setting here.
+                        Earlier than recommended ({formatDate(result.bounds.earliest)}) — before swarm season starts
+                        and/or below your {Math.round(springFloor * 100)}% spring-strength floor.
                       </p>
                     )}
                   </div>
@@ -519,18 +524,23 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                   <p className="text-xs text-text-tertiary mt-1">
                     Lower this to accept the spring crop tailing off on a declining force, in exchange for an
                     earlier break and a stronger force for the summer flow. 100% keeps the spring crop at full strength.
-                    {forecastForagingDays != null && (
-                      <>
-                        {' '}
-                        {forecastForagingDays === 0
-                          ? `No foraging weather in the next ${forecastDays} days — the spring crop is treated as finished.`
-                          : `Next ${forecastDays} days: ${forecastForagingDays} foraging ${forecastForagingDays === 1 ? 'day' : 'days'} forecast.`}
-                        {springTreatedFinished && forecastForagingDays > 0 &&
-                          ' Foraging weather ends before the spring crop does, so its tail is treated as finished.'}
-                      </>
-                    )}
                   </p>
                 </div>
+
+                {/* Weather is a judgment call, deliberately NOT baked into the model */}
+                {forecastForagingDays != null && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-start gap-2 text-sm text-blue-800 dark:text-blue-200">
+                    <Info size={18} className="mt-0.5 flex-shrink-0" />
+                    <p>
+                      <span className="font-semibold">Weather is your call.</span> The next {forecastDays} days show{' '}
+                      <span className="font-semibold">
+                        {forecastForagingDays} foraging {forecastForagingDays === 1 ? 'day' : 'days'}
+                      </span>
+                      . The model assumes normal foraging and does <em>not</em> shift the date for the forecast — if it
+                      looks poor for finishing the spring crop, you may decide to break a little earlier than recommended.
+                    </p>
+                  </div>
+                )}
 
                 {/* Lay-rate slider */}
                 <div>

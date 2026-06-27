@@ -1,6 +1,10 @@
 # Planner: weather-aware spring/summer trade-off (Option B)
 
-> **Status:** Plan (awaiting verification). No database changes. Adds a forecast fetch.
+> **Status: SUPERSEDED.** The weather *trimming of the spring window* was reverted — feeding the
+> forecast into the model dragged the recommended break far too early. The forecast is now shown as a
+> **judgment-call note only**, and the recommendation is floored at the start of swarm season. The
+> spring-strength floor (the trade-off slider) was kept. See `tbr-swarm-planner.md` for the current
+> behaviour. The original design is retained below for history.
 
 ## Why
 
