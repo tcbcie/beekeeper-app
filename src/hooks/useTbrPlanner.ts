@@ -12,6 +12,7 @@ import {
   waxForFrameKg,
   SPRING_CROP_DURATION_DAYS,
   SUMMER_FLOW_DURATION_DAYS,
+  SWARM_SEASON_START_MD,
   type GddRecordLite,
   type VegInfoLite,
   type ProjectionContext,
@@ -96,6 +97,9 @@ interface UseTbrPlannerReturn {
   /** Minimum average spring forager strength to protect (0..1) — relaxes the earliest break date. */
   springFloor: number
   setSpringFloor: (v: number) => void
+  /** Swarm-season floor the recommendation can't precede, plus the slider's date bounds (this season). */
+  swarmSeason: { start: string; min: string; max: string }
+  setSwarmSeasonStart: (d: string) => void
   /** Foraging days in the forecast horizon (null if no forecast available) — guidance only, not fed into the model. */
   forecastForagingDays: number | null
   /** Length of the forecast horizon in days. */
@@ -262,6 +266,8 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
   const [precocious, setPrecocious] = usePersistentState<boolean>(sk('precocious'), false)
   const [tbrOverride, setTbrOverride] = usePersistentState<string | null>(sk('override'), null)
   const [springFloor, setSpringFloor] = usePersistentState<number>(sk('springFloor'), 0.8)
+  // Swarm-season start the recommendation is floored at (null = regional default for the season).
+  const [swarmSeasonStart, setSwarmSeasonStart] = usePersistentState<string | null>(sk('swarmSeason'), null)
   // 10-day foraging forecast for the selected apiary (null until/unless it loads).
   const [forecast, setForecast] = useState<{ date: string; hours: number }[] | null>(null)
 
@@ -549,6 +555,21 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     return forecast.filter((d) => d.hours >= FORAGING_HOUR_THRESHOLD).length
   }, [forecast])
 
+  // Swarm-season slider bounds (this season) and the effective floor date. A stored value from
+  // another year or outside the window falls back to the regional default.
+  const swarmSeason = useMemo(() => {
+    const year = resolvedSummer?.date?.slice(0, 4)
+      ?? proj?.currentYear?.toString()
+      ?? new Date().getFullYear().toString()
+    const min = `${year}-04-01`
+    const max = `${year}-06-30`
+    const fallback = `${year}-${SWARM_SEASON_START_MD}`
+    const start = swarmSeasonStart && swarmSeasonStart >= min && swarmSeasonStart <= max
+      ? swarmSeasonStart
+      : fallback
+    return { start, min, max }
+  }, [resolvedSummer, proj, swarmSeasonStart])
+
   const result = useMemo<TbrResult | null>(() => {
     if (!resolvedSummer?.date) return null
     return planFromResolved(
@@ -560,9 +581,10 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
       tbrOverride,
       method,
       precocious ? PRECOCIOUS_ACCEL_DAYS : 0,
-      springFloor
+      springFloor,
+      swarmSeason.start
     )
-  }, [resolvedSpring, resolvedSummer, constants, tbrOverride, method, precocious, springFloor])
+  }, [resolvedSpring, resolvedSummer, constants, tbrOverride, method, precocious, springFloor, swarmSeason.start])
 
   // Worthwhile nectar blooms (value ≥ threshold) resolved once per apiary/projection and
   // sorted ascending, so the TBR slider can pick the next bloom without re-resolving every crop.
@@ -628,6 +650,11 @@ export function useTbrPlanner(userId: string): UseTbrPlannerReturn {
     setTbrOverride,
     springFloor,
     setSpringFloor,
+    swarmSeason,
+    setSwarmSeasonStart: (d) => {
+      setSwarmSeasonStart(d)
+      setTbrOverride(null)
+    },
     forecastForagingDays,
     forecastDays: FORECAST_DAYS,
     result,

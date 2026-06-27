@@ -122,7 +122,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
     broodUtilisation, setBroodUtilisation, effectiveCellsPerFrame,
     method, setMethod,
     precocious, setPrecocious,
-    springFloor, setSpringFloor, forecastForagingDays, forecastDays,
+    springFloor, setSpringFloor, swarmSeason, setSwarmSeasonStart, forecastForagingDays, forecastDays,
     tbrOverride, setTbrOverride, result, foodPlan, loading, error, noProjection,
   } = planner
 
@@ -506,7 +506,35 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                   </div>
                 )}
 
-                {/* Spring-strength floor (the weather-aware spring/summer trade-off) */}
+                {/* Swarm-season floor — the recommendation is never brought forward past this date */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Swarm season starts — <span className="font-semibold">{formatDate(swarmSeason.start)}</span>
+                  </label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={Math.max(1, dayDiff(swarmSeason.min, swarmSeason.max))}
+                    step={1}
+                    value={Math.min(
+                      dayDiff(swarmSeason.min, swarmSeason.max),
+                      Math.max(0, dayDiff(swarmSeason.min, swarmSeason.start))
+                    )}
+                    onChange={(e) => setSwarmSeasonStart(addDays(swarmSeason.min, Number(e.target.value)))}
+                    className="w-full h-3 accent-forest-600 cursor-pointer"
+                    aria-label="Swarm season start date"
+                  />
+                  <div className="flex justify-between text-xs text-text-tertiary mt-1">
+                    <span>{formatDate(swarmSeason.min)}</span>
+                    <span>{formatDate(swarmSeason.max)}</span>
+                  </div>
+                  <p className="text-xs text-text-tertiary mt-1">
+                    A brood break is a swarm-control tool, so the recommended date is never brought forward past
+                    this. Move it to match when your colonies actually start swarm preparations.
+                  </p>
+                </div>
+
+                {/* Spring-strength floor (the spring/summer trade-off) */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Protect spring strength ≥ <span className="font-semibold">{Math.round(springFloor * 100)}%</span>
@@ -724,10 +752,12 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                   <div className="px-4 pb-4 grid sm:grid-cols-2 gap-4">
                     {constantFields(method).map((f) => (
                       <div key={f.key}>
-                        <label className="block text-xs font-medium text-text-secondary mb-1">{f.label}</label>
+                        <label className="block text-xs font-medium text-text-secondary mb-1">
+                          {f.label} — <span className="font-semibold text-foreground">{constants[f.key]}</span>
+                        </label>
                         <input
-                          type="number"
-                          value={constants[f.key]}
+                          type="range"
+                          value={Math.min(f.max, Math.max(f.min, constants[f.key]))}
                           min={f.min}
                           max={f.max}
                           step={f.step}
@@ -737,8 +767,13 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                               setConstants({ ...constants, [f.key]: Math.min(f.max, Math.max(f.min, n)) })
                             }
                           }}
-                          className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-forest-500"
+                          className="w-full h-3 accent-forest-600 cursor-pointer"
+                          aria-label={f.label}
                         />
+                        <div className="flex justify-between text-xs text-text-tertiary mt-0.5">
+                          <span>{f.min}</span>
+                          <span>{f.max}</span>
+                        </div>
                       </div>
                     ))}
                   </div>
