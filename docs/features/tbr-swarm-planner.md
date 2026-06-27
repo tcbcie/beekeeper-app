@@ -93,8 +93,10 @@ via the slider and watch the score/curve respond.
 A brood break is first and foremost a **swarm-control tool**, so it makes no sense to recommend it in
 early spring when the colony isn't yet in swarm mode — doing so wastes the break and needlessly
 sacrifices the spring forager force. The recommended break is therefore **floored at the start of
-swarm season** (`SWARM_SEASON_START_MD`, default **8 May** — Ireland's season builds from about the
-second week of May). The slider can still be dragged earlier for what-if exploration.
+swarm season**, exposed as an **adjustable slider** (1 Apr – 30 Jun) defaulting to
+`SWARM_SEASON_START_MD` (**8 May** — Ireland's season builds from about the second week of May). The
+beekeeper moves it to match when their own colonies start swarm preparations; the break-date slider
+can still be dragged earlier for what-if exploration.
 
 ### Spring/summer trade-off
 
@@ -158,8 +160,12 @@ crop-picker readout (shown as `start → end`).
 - Chart.js forager-force curve with shaded bands (spring crop, brood gap, summer flow).
 - Break-date slider (may be dragged up to 30 days before the floor-relaxed earliest date, with a
   warning when spring strength drops below the floor) + lay-rate slider (1000–2500/day).
+- **Swarm-season start** slider (1 Apr – 30 Jun, default 8 May) — the floor the recommendation can't
+  precede.
 - **Spring-strength floor** slider (50–100 %, default 80 %) for the spring/summer trade-off, plus a
   10-day foraging-forecast note shown as guidance only (weather is not baked into the model).
+- Every model variable is adjustable: the **advanced biological constants** are sliders too
+  (egg→emergence, emergence→forager, foraging career, comb-draw/re-lay, cage duration & release).
 - Hive **frame-system** picker (from `frame_standards`) and a **brood-utilisation** slider (50–100%,
   default 80%): cells/frame come from the system's dimensions and the brood readout / food-budget
   frame count use `cells/frame × utilisation`. Comb-drawing honey scales with the system's frame size.

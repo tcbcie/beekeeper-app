@@ -558,7 +558,8 @@ export interface TbrResult {
  * keep: it relaxes the earliest break date so an early break that lets the spring crop tail off — in
  * exchange for a stronger summer force — becomes available. With the default (`springFloor = 1`) the
  * behaviour is the original "break only after the spring crop is fully off". Either way the
- * recommended break is floored at the start of swarm season, since the break is a swarm-control tool.
+ * recommended break is floored at the start of swarm season (`swarmSeasonStartDate`, or the regional
+ * default), since the break is a swarm-control tool.
  */
 export function planFromResolved(
   springDate: string | null,
@@ -569,7 +570,8 @@ export function planFromResolved(
   tbrOverride: string | null,
   method: InterventionMethod = 'tbr',
   accelDays = 0,
-  springFloor = 1
+  springFloor = 1,
+  swarmSeasonStartDate: string | null = null
 ): TbrResult | null {
   if (!summerStartDate) return null
 
@@ -608,8 +610,9 @@ export function planFromResolved(
     }
   }
 
-  // Swarm-season floor: never recommend a break before swarming realistically begins.
-  const swarmSeasonStart = `${flowStart.slice(0, 4)}-${SWARM_SEASON_START_MD}`
+  // Swarm-season floor: never recommend a break before swarming realistically begins. The beekeeper
+  // can move this date; otherwise it defaults to the regional season start.
+  const swarmSeasonStart = swarmSeasonStartDate ?? `${flowStart.slice(0, 4)}-${SWARM_SEASON_START_MD}`
   const earliest = maxDate(relaxedEarliest, swarmSeasonStart)
 
   const sliderEarliest = addDays(earliest, -SLIDER_BACK_DAYS)
