@@ -81,6 +81,26 @@ export interface Queen {
   }
 }
 
+// One stint a queen spends in a hive (production) or a mating nuc (parked).
+// ended_at === null means it is her current home.
+export interface QueenAssignment {
+  id: string
+  queen_id: string
+  location_type: 'hive' | 'nuc'
+  hive_id: string | null
+  mating_nuc_id: string | null
+  apiary_id: string | null
+  location_label: string | null
+  started_at: string
+  ended_at: string | null
+  source: 'system' | 'manual' | 'backfill'
+  notes: string | null
+  user_id: string
+  created_at: string
+  // Apiary name resolved via embed when available
+  apiary_name?: string | null
+}
+
 export interface QueenFormData {
   queen_number: string
   birth_date: string

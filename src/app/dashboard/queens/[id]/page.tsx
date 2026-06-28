@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 import NavTabButton from '@/components/ui/NavTabButton'
 import QueenReportTab from '@/components/queens/QueenReportTab'
+import QueenAssignmentHistory from '@/components/queens/QueenAssignmentHistory'
 import { useQueenDetail } from '@/hooks'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
@@ -532,7 +533,7 @@ export default function QueenDetailPage() {
               {queen.batch && (
                 <p>
                   <span className="text-text-tertiary">Batch:</span>{' '}
-                  <Link href={`/dashboard/batches`} className="text-forest-600 dark:text-forest-400 hover:underline">
+                  <Link href={`/dashboard/batches?batch=${queen.batch.id}`} className="text-forest-600 dark:text-forest-400 hover:underline">
                     {queen.batch.batch_name}
                   </Link>
                 </p>
@@ -582,7 +583,7 @@ export default function QueenDetailPage() {
         )}
         {queen.batch && (
           <Link
-            href="/dashboard/batches"
+            href={`/dashboard/batches?batch=${queen.batch.id}`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface dark:bg-surface border border-border rounded-full hover:border-forest-500 dark:hover:border-forest-400 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
           >
             <ExternalLink size={14} />
@@ -590,6 +591,9 @@ export default function QueenDetailPage() {
           </Link>
         )}
       </div>
+
+      {/* Where this queen has lived over time (parked nucs + production hives) */}
+      <QueenAssignmentHistory queenId={queenId} />
 
       {/* Distributed queens show breeder provenance (the genealogy tree cannot render a
           cross-user ancestor). The tree below still surfaces locally-bred descendants, with
