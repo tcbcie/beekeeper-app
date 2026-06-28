@@ -1175,11 +1175,15 @@ export default function HivesPage() {
 
  if (loading) return <LoadingSpinner text="Loading hives..." />
 
+ // Reserve space at the bottom so the fixed bulk-action bar never covers the
+ // last hive cards (taller reserve on mobile where the bar may wrap to 2 rows).
+ const bulkBarVisible = selectionMode && selectedOwnedHives.length > 0
+
  return (
- <div className="space-y-6">
+ <div className={`space-y-6 ${bulkBarVisible ? 'pb-40 sm:pb-24' : ''}`}>
  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
  <h1 className="text-responsive-3xl font-bold text-foreground">Hives</h1>
- <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+ <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-end gap-3 w-full md:w-auto min-w-0">
  {isTeamMember && (
  <select
  value={ownershipFilter}
@@ -1863,29 +1867,29 @@ export default function HivesPage() {
  )}
 
  {/* Floating bulk action bar — shown while hives are selected */}
- {selectionMode && selectedOwnedHives.length > 0 && (
- <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] sm:w-auto">
- <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-surface dark:bg-surface-elevated border border-border rounded-xl shadow-xl px-4 py-3">
- <span className="text-sm font-semibold text-text-primary text-center sm:text-left">
+ {bulkBarVisible && (
+ <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-1rem)] sm:w-auto max-w-2xl">
+ <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 bg-surface dark:bg-surface-elevated border border-border rounded-xl shadow-xl px-3 py-3 sm:px-4">
+ <span className="w-full sm:w-auto text-sm font-semibold text-text-primary text-center sm:text-left">
  {selectedOwnedHives.length} selected
  </span>
  <Button
  onClick={() => setShowMoveModal(true)}
- className="px-4 py-3 sm:py-2 min-h-[48px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2"
+ className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2 whitespace-nowrap"
  >
- <FolderInput size={18} />
- Move to apiary
+ <FolderInput size={18} className="flex-shrink-0" />
+ <span>Move<span className="hidden sm:inline"> to apiary</span></span>
  </Button>
  <Button
  onClick={handleBulkClone}
- className="px-4 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 font-medium flex items-center justify-center gap-2"
+ className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 font-medium flex items-center justify-center gap-2 whitespace-nowrap"
  >
- <Copy size={18} />
+ <Copy size={18} className="flex-shrink-0" />
  Clone
  </Button>
  <Button
  onClick={exitSelection}
- className="px-4 py-3 sm:py-2 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated font-medium"
+ className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated font-medium whitespace-nowrap"
  >
  Clear
  </Button>
