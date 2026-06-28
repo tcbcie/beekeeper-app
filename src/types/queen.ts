@@ -75,6 +75,7 @@ export interface Queen {
     id: string
     hive_number: string
     apiaries?: {
+      id: string
       name: string
     }
   }
