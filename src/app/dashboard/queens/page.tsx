@@ -154,6 +154,11 @@ export default function QueensPage() {
  const [roleFilter, setRoleFilter] = usePersistentState<'all' | 'production' | 'breeder'>(
    'queens:role', 'all', (v) => v === 'all' || v === 'production' || v === 'breeder'
  )
+ // Apiary filter holds an apiary id, or 'all'. Stays local to this page
+ // (consistent with the other queen filters), not the app-wide selection.
+ const [apiaryFilter, setApiaryFilter] = usePersistentState<string>(
+   'queens:apiary', 'all', (v) => typeof v === 'string'
+ )
  const [loading, setLoading] = useState(true)
  const [userId, setUserId] = useState<string | null>(null)
  const [isTeamMember, setIsTeamMember] = useState(false)
@@ -347,6 +352,7 @@ export default function QueensPage() {
  id,
  hive_number,
  apiaries (
+ id,
  name
  )
  `)
@@ -832,6 +838,25 @@ export default function QueensPage() {
  a.click()
  }
 
+ // Distinct apiaries present among the loaded queens, for the filter dropdown.
+ // Built from the data itself so the options always match what is shown.
+ const apiaryOptions = Array.from(
+ queens.reduce((map, q) => {
+ const ap = q.hives?.apiaries
+ if (ap?.id && !map.has(ap.id)) map.set(ap.id, ap.name)
+ return map
+ }, new Map<string, string>())
+ )
+ .map(([id, name]) => ({ id, name }))
+ .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+
+ // Guard against a persisted apiary that is no longer present (deleted, or out
+ // of the current ownership view) — fall back to "all" rather than show nothing.
+ const effectiveApiaryFilter =
+ apiaryFilter !== 'all' && apiaryOptions.some((a) => a.id === apiaryFilter)
+ ? apiaryFilter
+ : 'all'
+
  const filteredQueens = queens.filter((q) => {
  // Apply search filter — queen number, subspecies, or mother's queen number
  const needle = searchTerm.toLowerCase()
@@ -853,6 +878,9 @@ export default function QueensPage() {
  // Apply assignment filter
  if (assignmentFilter === 'assigned' && !q.hives?.id) return false
  if (assignmentFilter === 'unassigned' && q.hives?.id) return false
+
+ // Apply apiary filter (by the assigned hive's apiary)
+ if (effectiveApiaryFilter !== 'all' && q.hives?.apiaries?.id !== effectiveApiaryFilter) return false
 
  // Apply ownership filter
  if (ownershipFilter === 'my') {
@@ -1362,8 +1390,8 @@ export default function QueensPage() {
  )}
 
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
- <div className="mb-4 flex flex-col sm:flex-row gap-3">
- <div className="relative flex-1">
+ <div className="mb-4 flex flex-col sm:flex-row sm:flex-wrap gap-3">
+ <div className="relative flex-1 sm:min-w-[220px]">
  <Search
  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-tertiary"
  size={20}
@@ -1418,6 +1446,16 @@ export default function QueensPage() {
  <option value="all">All Roles</option>
  <option value="production">Production</option>
  <option value="breeder">Breeder/Reference</option>
+ </select>
+ <select
+ value={effectiveApiaryFilter}
+ onChange={(e) => setApiaryFilter(e.target.value)}
+ className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500 transition-all"
+ >
+ <option value="all">All Apiaries</option>
+ {apiaryOptions.map((a) => (
+ <option key={a.id} value={a.id}>{a.name}</option>
+ ))}
  </select>
  </div>
 
