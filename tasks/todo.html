@@ -2,104 +2,72 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan — Weather-aware spring/summer trade-off (Option B)</title>
+<title>Todo — Hive Bulk Actions</title>
 <style>
-  body { font-family: system-ui, -apple-system, Segoe UI, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.55; color: #1f2937; }
-  h1 { font-size: 1.5rem; } h2 { font-size: 1.15rem; margin-top: 2rem; border-bottom: 2px solid #e5e7eb; padding-bottom: .3rem; }
-  code { background: #f3f4f6; padding: .1rem .3rem; border-radius: 4px; font-size: .9em; }
-  ul.todo { list-style: none; padding-left: 0; }
-  ul.todo li { margin: .35rem 0; }
-  .note { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: .75rem 1rem; }
-  .q { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: .75rem 1rem; }
-  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
-  th, td { border: 1px solid #e5e7eb; padding: .4rem .6rem; text-align: left; vertical-align: top; }
-  th { background: #f9fafb; }
+  body { font-family: system-ui, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1c2a22; }
+  h1 { color: #1f6f43; }
+  h2 { color: #2a7d52; margin-top: 1.8rem; }
+  code { background: #eef4f0; padding: 1px 5px; border-radius: 4px; }
+  ul { list-style: none; padding-left: 0; }
+  li { margin: 0.35rem 0; }
+  .note { background: #f4f9f6; border-left: 4px solid #2a7d52; padding: 0.6rem 0.9rem; border-radius: 4px; }
+  .review { background: #fff8ec; border-left: 4px solid #d9a300; padding: 0.6rem 0.9rem; border-radius: 4px; }
 </style>
 </head>
 <body>
-<h1>Plan — Weather-aware spring/summer trade-off (Option B)</h1>
 
-<p class="note"><strong>Status:</strong> Awaiting your sign-off before any code is written.
-Full design lives in <code>docs/features/planner-weather-aware-spring-floor.md</code>. No database changes.</p>
+<h1>Hive Bulk Actions — multi-select + group quick actions</h1>
 
-<h2>Problem</h2>
-<p>The planner currently refuses to break before the spring crop is fully off
-(<code>T &ge; spring-crop end</code>), so it always protects the spring crop at full forager
-strength and only optimises the summer flow. You want the opposite to be possible: accept the
-spring crop <em>tailing off on a declining forager force</em> in exchange for a
-<strong>stronger force for the summer crop</strong> — and the spring crop's real end is
-<strong>weather-gated</strong>: if the 10-day forecast has no foraging weather, the remaining
-bloom yields nothing and breaking early costs nothing.</p>
+<p class="note">
+  Full spec: <code>docs/features/hive-bulk-actions.md</code>.
+  Clone scope confirmed: <strong>copy the box setup config</strong>, reset queen/position/history, auto-generate a unique hive number.
+</p>
 
-<h2>Approach (confirmed: Option B, weather-aware)</h2>
-<ol>
-  <li><strong>Weather-effective spring end</strong> — fetch the apiary's 10-day Open-Meteo forecast,
-    score each day with the existing <code>calculateForagingHours()</code>; a day is a foraging day
-    if it has &ge; 1 flyable hour. <code>effectiveSpringEnd = min(bloom-end, last foraging day)</code>.</li>
-  <li><strong>Acceptable-decline floor</strong> — a <code>springFloor</code> slider (50&ndash;100%,
-    default 80%). Relaxed <code>earliest</code> = earliest break <code>T</code> that keeps spring
-    coverage &ge; floor over <code>[springStart, effectiveSpringEnd]</code>.</li>
-  <li><strong>Recommendation</strong> — same objective (maximise summer coverage), now searched within
-    the relaxed, weather-aware range.</li>
-  <li><strong>UI</strong> — floor slider, a forecast note, and a dual <em>Spring X% &middot; Summer Y%</em>
-    coverage readout so the trade-off is visible.</li>
-</ol>
-
-<h2>To-do</h2>
-<ul class="todo">
-  <li>&#9745; <strong>Model</strong> (<code>src/lib/tbr-model.ts</code>): <code>planFromResolved</code> now accepts <code>effectiveSpringEnd</code> + <code>springFloor</code>, computes the relaxed weather-aware <code>earliest</code> (reusing the <code>flowCoverage</code> maths on the spring window), and exposes <code>springCoverageScore</code> + <code>bounds.effectiveSpringEnd</code>.</li>
-  <li>&#9745; <strong>Hook</strong> (<code>src/hooks/useTbrPlanner.ts</code>): fetches the 10-day Open-Meteo forecast, classifies foraging days via <code>calculateForagingHours</code>, derives <code>effectiveSpringEnd</code> + a forecast summary, adds a persisted <code>springFloor</code> state (default 80%), and threads both into <code>planFromResolved</code>.</li>
-  <li>&#9745; <strong>UI</strong> (<code>src/components/tools/TBRPlanner.tsx</code>): &ldquo;Protect spring strength &ge; X%&rdquo; slider; forecast note; dual Spring/Summer coverage readout; reframed slider warning.</li>
-  <li>&#9745; <strong>Docs</strong>: updated <code>docs/features/tbr-swarm-planner.md</code> (trade-off + weather gating).</li>
-  <li>&#9745; <strong>Verify</strong>: <code>npx tsc --noEmit</code> (no new errors in changed files) + <code>npx eslint</code> (clean). Build left for you to test.</li>
+<h2>Plan / Todo</h2>
+<ul>
+  <li>☑ <strong>1. Card checkbox</strong> — added <code>selectionMode</code> / <code>selected</code> / <code>onToggleSelect</code> props to <code>HiveListCard.tsx</code>; large owner-only checkbox + selected ring.</li>
+  <li>☑ <strong>2. Selection state</strong> — added <code>selectionMode</code> + <code>selectedIds</code> state and a "Select / Done" toggle button in the filter bar of <code>hives/page.tsx</code>.</li>
+  <li>☑ <strong>3. Action bar</strong> — floating bottom bar shown when ≥1 owned hive selected: count + "Move to apiary", "Clone", "Clear".</li>
+  <li>☑ <strong>4. Move modal</strong> — new <code>MoveHivesModal.tsx</code> (ModalShell) with apiary dropdown + "No apiary (unassign)".</li>
+  <li>☑ <strong>5. Bulk move</strong> — <code>handleBulkMove</code>: one update of <code>apiary_id</code>, nulls <code>row_in_apiary</code>/<code>order_in_apiary</code>, refetch, clear selection.</li>
+  <li>☑ <strong>6. Bulk clone</strong> — <code>handleBulkClone</code>: copies setup config + apiary, resets queen/position/history, unique <code>-copy-N</code> number, writes initial <code>hive_configuration_history</code> row, confirm dialog, refetch.</li>
+  <li>☑ <strong>7. Docs</strong> — <code>docs/features/hive-bulk-actions.md</code> created.</li>
 </ul>
 
-<h2>Files to change</h2>
-<table>
-  <tr><th>File</th><th>Change</th></tr>
-  <tr><td><code>src/lib/tbr-model.ts</code></td><td>spring coverage + weather-aware relaxed <code>earliest</code> + exposed scores</td></tr>
-  <tr><td><code>src/hooks/useTbrPlanner.ts</code></td><td>forecast fetch + flyable classification + <code>effectiveSpringEnd</code> + <code>springFloor</code> state</td></tr>
-  <tr><td><code>src/components/tools/TBRPlanner.tsx</code></td><td>floor slider + forecast note + dual coverage readout</td></tr>
-  <tr><td><code>docs/features/tbr-swarm-planner.md</code></td><td>document the trade-off &amp; weather gating</td></tr>
-</table>
-
-<h2>Defaults &amp; scope</h2>
+<h2>Principles</h2>
 <ul>
-  <li>Forecast horizon <strong>10 days</strong>; foraging day = <strong>&ge; 1 flyable hour</strong>; spring floor default <strong>80%</strong>.</li>
-  <li><strong>No DB change.</strong> Reuses <code>calculateForagingHours</code> and the existing forecast pattern (DRY).</li>
-  <li>Out of scope: per-day flyable weighting <em>inside</em> the spring window; forecasting beyond the API horizon (bloom-end still caps).</li>
+  <li>☑ Smallest possible change; reused existing <code>ModalShell</code>, <code>useConfirm</code>, <code>useToast</code> patterns.</li>
+  <li>☑ Owner-only selection so all writes are RLS-safe (guarded again in handlers with <code>.eq('user_id', userId)</code>).</li>
+  <li>☑ Large tap targets (min-h-48px) / clear text labels for the 50+ reduced-eyesight audience.</li>
 </ul>
 
 <h2>Review</h2>
-<p>Implemented the weather-aware spring/summer trade-off as planned, touching only the four files above
-plus the type definition. Summary of changes:</p>
-<ul>
-  <li><strong>Model</strong> — <code>planFromResolved</code> gained two optional, backward-compatible
-    parameters (<code>effectiveSpringEnd = null</code>, <code>springFloor = 1</code>). With the
-    defaults its output is byte-for-byte the old "break only after the spring crop is off" behaviour,
-    so nothing that called it before changes. When a floor below 100% is supplied it scans forward
-    from <code>hardEarliest &minus; 30 days</code> and relaxes <code>earliest</code> to the soonest
-    date whose average spring coverage still clears the floor (spring coverage is monotonic in the
-    break date, so the first hit is the earliest valid one). An empty/weather-ended spring window
-    satisfies the floor trivially. Added <code>springCoverageScore</code> to the plan and
-    <code>effectiveSpringEnd</code> to the bounds.</li>
-  <li><strong>Hook</strong> — added a guarded 10-day Open-Meteo forecast fetch (aborts with the
-    existing controller, returns <code>null</code> on any failure, clears when the apiary has no
-    coordinates). Each day is scored with the app's authoritative <code>calculateForagingHours</code>.
-    A memo derives the weather-effective spring end with three cases (no foraging weather &rarr;
-    finished now; foraging stops early &rarr; trim; foraging persists &rarr; assume normal past the
-    horizon). New persisted <code>springFloor</code> state (default 0.8).</li>
-  <li><strong>UI</strong> — a "Protect spring strength &ge; X%" slider, a forecast note, a dual
-    <em>Spring X% &middot; Summer Y%</em> readout, and a reframed slider warning. Slider range
-    50&ndash;100% with 5% steps and a large hit target for the 50+ audience.</li>
-</ul>
-<p><strong>Defensive notes:</strong> the forecast fetch and JSON access are fully null-guarded and
-coerced with <code>Number()</code>; <code>springFloor</code> is clamped to [0,1] in the model; the
-relaxed-earliest scan is bounded by <code>SLIDER_BACK_DAYS</code>; and all new branches degrade to
-the prior behaviour when the forecast is unavailable.</p>
-<p><strong>Verification:</strong> <code>npx tsc --noEmit</code> reports no errors in the changed files;
-<code>npx eslint</code> on all four files is clean. The production build was not run &mdash; please
-test it.</p>
+<div class="review">
+  <p><strong>Files changed</strong></p>
+  <ul>
+    <li><code>src/components/hive/MoveHivesModal.tsx</code> — <em>new</em>. Small ModalShell picker: destination apiary or unassign.</li>
+    <li><code>src/components/hive/HiveListCard.tsx</code> — 3 optional props; owner-only checkbox row + selected ring. No change to existing behaviour when not in selection mode.</li>
+    <li><code>src/app/dashboard/hives/page.tsx</code> — selection state, "Select/Done" toggle, floating action bar, <code>handleBulkMove</code> + <code>handleBulkClone</code>, move modal render.</li>
+    <li><code>docs/features/hive-bulk-actions.md</code> — <em>new</em> feature spec.</li>
+  </ul>
+
+  <p><strong>How it works</strong></p>
+  <ul>
+    <li>Press <strong>Select</strong> → each of your own hive cards shows a large checkbox; team/shared hives are not selectable.</li>
+    <li>A bottom bar shows the count with <strong>Move to apiary</strong>, <strong>Clone</strong> and <strong>Clear</strong>.</li>
+    <li><strong>Move</strong> reassigns the apiary for all selected hives and clears their grid position (so the destination's unique row/position rule can't clash).</li>
+    <li><strong>Clone</strong> creates a sister hive per selection: copies the box setup, hive type, apiary and order direction; new auto number <code>…-copy</code>(<code>-2</code>,<code>-3</code>…); no queen, no position, no history, dates = today.</li>
+  </ul>
+
+  <p><strong>Safety checks</strong></p>
+  <ul>
+    <li>Clone numbers are de-duplicated against <em>all</em> of the account's hive numbers (queried fresh, includes archived) — no collisions.</li>
+    <li>Verified DB nullability: only <code>hive_number</code> is NOT NULL; <code>queen_installed_date</code> etc. are nullable, so the queenless clone insert is valid.</li>
+    <li>Actions operate only on selected hives still loaded and owned by the user; a hive hidden by a later filter change is never silently written.</li>
+  </ul>
+
+  <p><strong>Please test (build not run per project rule):</strong> select a few hives → Move to another apiary; select a few → Clone; verify clones appear with <code>-copy</code> numbers, same setup, no queen, and that the original hives are untouched.</p>
+</div>
+
 </body>
 </html>

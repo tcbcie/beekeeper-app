@@ -15,10 +15,17 @@ interface HiveListCardProps {
  onUnarchive: (hive: Hive) => void
  openMenuId: string | null
  setOpenMenuId: (id: string | null) => void
+ selectionMode?: boolean
+ selected?: boolean
+ onToggleSelect?: (id: string) => void
 }
 
-export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchive, openMenuId, setOpenMenuId }: HiveListCardProps) {
+export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchive, openMenuId, setOpenMenuId, selectionMode = false, selected = false, onToggleSelect }: HiveListCardProps) {
  const router = useRouter()
+
+ // Bulk actions only ever write to the user's own hives (RLS rejects others'),
+ // so the selection checkbox is shown for owned hives only.
+ const isOwner = hive.user_id === userId
 
  // Days since last inspection badge. Must use last_inspection_date specifically —
  // last_record covers any record type (inspections, varroa treatments, feedings,
@@ -28,7 +35,22 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  : null
 
  return (
- <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-border min-h-[280px]">
+ <div className={`bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border min-h-[280px] ${selected ? 'border-forest-500 ring-2 ring-forest-500' : 'border-border'}`}>
+ {/* Selection checkbox (owner-only) - shown while in selection mode */}
+ {selectionMode && isOwner && (
+ <label className="flex items-center gap-3 mb-4 p-3 rounded-lg border border-border bg-surface-secondary cursor-pointer min-h-[48px]">
+ <input
+ type="checkbox"
+ checked={selected}
+ onChange={() => onToggleSelect?.(hive.id)}
+ className="w-5 h-5 rounded border-border text-forest-600 focus:ring-forest-500"
+ />
+ <span className="text-sm font-medium text-text-primary">
+ {selected ? 'Selected' : 'Select this hive'}
+ </span>
+ </label>
+ )}
+
  {/* Overview & Records Button - Top of Card */}
  <Button
  onClick={() => router.push(`/dashboard/hives/${hive.id}`)}

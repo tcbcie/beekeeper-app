@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { Plus, X, Scale, Archive } from 'lucide-react'
+import { Plus, X, Scale, Archive, CheckSquare, Copy, FolderInput } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -10,7 +10,9 @@ import { useToast } from '@/components/ui/Toast'
 import { Hive, HiveFormData } from '@/types/hive'
 import { QUEENLESS_REASONS, mapReasonToQueenStatus } from '@/lib/queenless'
 import HiveListCard from '@/components/hive/HiveListCard'
+import MoveHivesModal from '@/components/hive/MoveHivesModal'
 import Button from '@/components/ui/Button'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useSelection } from '@/contexts/SelectionContext'
 
@@ -40,7 +42,15 @@ export default function HivesPage() {
  const [isTeamMember, setIsTeamMember] = useState(false)
  const router = useRouter()
  const toast = useToast()
+ // Named confirmDialog (not `confirm`) so it never shadows the native
+ // window.confirm() used elsewhere on this page (e.g. handleDelete).
+ const confirmDialog = useConfirm()
  const formRef = useRef<HTMLDivElement>(null)
+
+ // Bulk select + group actions (move / clone)
+ const [selectionMode, setSelectionMode] = useState(false)
+ const [selectedIds, setSelectedIds] = useState<string[]>([])
+ const [showMoveModal, setShowMoveModal] = useState(false)
 
  // Apiary selection comes from the app-wide shared store (carries across pages,
  // survives restart). Both use '' for "all apiaries".
@@ -928,6 +938,152 @@ export default function HivesPage() {
  }
  }
 
+ // --- Bulk select + group actions ---------------------------------------
+
+ const toggleSelect = (id: string) => {
+ setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+ }
+
+ const exitSelection = () => {
+ setSelectionMode(false)
+ setSelectedIds([])
+ }
+
+ // Only act on the user's own hives that are still loaded — RLS rejects writes to
+ // others' hives, and a hive hidden by a filter change should not be touched.
+ const selectedOwnedHives = hives.filter((h) => selectedIds.includes(h.id) && h.user_id === userId)
+
+ const handleBulkMove = async (apiaryId: string | null) => {
+ if (!userId) return
+ const ids = selectedOwnedHives.map((h) => h.id)
+ if (ids.length === 0) return
+
+ // Clear row/order so old positions can't collide with the destination's
+ // unique (apiary, row, order) rule; the user re-places hives afterwards.
+ const { error } = await supabase
+ .from('hives')
+ .update({ apiary_id: apiaryId, row_in_apiary: null, order_in_apiary: null })
+ .in('id', ids)
+ .eq('user_id', userId)
+
+ if (error) {
+ console.error('Bulk move error:', error)
+ toast.error('Failed to move hives: ' + error.message)
+ return
+ }
+
+ toast.success(`Moved ${ids.length} hive${ids.length === 1 ? '' : 's'}.`)
+ setShowMoveModal(false)
+ exitSelection()
+ fetchHives(userId)
+ }
+
+ const handleBulkClone = async () => {
+ if (!userId) return
+ const sources = selectedOwnedHives
+ if (sources.length === 0) return
+
+ const ok = await confirmDialog({
+ title: `Clone ${sources.length} hive${sources.length === 1 ? '' : 's'}?`,
+ message:
+ 'Each clone copies the box setup and apiary, with a new hive number. Queens, ' +
+ 'position and history are not copied.',
+ confirmLabel: 'Clone',
+ variant: 'info',
+ })
+ if (!ok) return
+
+ // Build a set of existing hive numbers for this account so generated
+ // "-copy" numbers never clash (includes archived hives not in the list).
+ const { data: existingRows, error: existingError } = await supabase
+ .from('hives')
+ .select('hive_number')
+ .eq('user_id', userId)
+
+ if (existingError) {
+ console.error('Bulk clone lookup error:', existingError)
+ toast.error('Failed to clone hives: ' + existingError.message)
+ return
+ }
+
+ const usedNumbers = new Set((existingRows || []).map((r) => r.hive_number))
+ const today = new Date().toISOString().split('T')[0]
+ const nowIso = new Date().toISOString()
+
+ const newRows = sources.map((h) => {
+ let num = `${h.hive_number}-copy`
+ let n = 2
+ while (usedNumbers.has(num)) {
+ num = `${h.hive_number}-copy-${n}`
+ n++
+ }
+ usedNumbers.add(num)
+ return {
+ hive_number: num,
+ apiary_id: h.apiary_id,
+ order_direction: h.order_direction || 'entrances',
+ hive_type: h.hive_type,
+ configuration: h.configuration,
+ status: 'active',
+ is_queenless: false,
+ queen_id: null,
+ queen_marked: false,
+ queen_marking_color: null,
+ queen_mated: false,
+ queen_clipped: false,
+ row_in_apiary: null,
+ order_in_apiary: null,
+ colony_established_date: today,
+ queen_installed_date: null,
+ user_id: userId,
+ configuration_changed_at: nowIso,
+ configuration_changed_by: userId,
+ }
+ })
+
+ const { data: inserted, error } = await supabase
+ .from('hives')
+ .insert(newRows)
+ .select('id, configuration, apiary_id')
+
+ if (error) {
+ console.error('Bulk clone error:', error)
+ toast.error('Failed to clone hives: ' + error.message)
+ return
+ }
+
+ // Mirror the single-hive create path: record the initial configuration in
+ // history (there is no INSERT trigger, only an UPDATE one).
+ if (inserted && inserted.length > 0) {
+ const historyRows = inserted.map((h) => ({
+ hive_id: h.id,
+ changed_at: nowIso,
+ changed_by: userId,
+ configuration: h.configuration,
+ apiary_id: h.apiary_id,
+ row_in_apiary: null,
+ order_in_apiary: null,
+ queen_id: null,
+ queen_marked: false,
+ queen_marking_color: null,
+ queen_mated: false,
+ queen_clipped: false,
+ is_queenless: false,
+ }))
+ const { error: historyError } = await supabase
+ .from('hive_configuration_history')
+ .insert(historyRows)
+ if (historyError) {
+ console.error('Failed to record cloned configuration history:', historyError)
+ // Hives were created successfully; history is supplementary.
+ }
+ }
+
+ toast.success(`Created ${newRows.length} cloned hive${newRows.length === 1 ? '' : 's'}.`)
+ exitSelection()
+ fetchHives(userId)
+ }
+
  const resetForm = () => {
  setShowForm(false)
  setEditingHive(null)
@@ -1083,6 +1239,17 @@ export default function HivesPage() {
  <option value="last_inspected">Sort: Last Inspected</option>
  <option value="status">Sort: Status</option>
  </select>
+ <Button
+ onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
+ className={`px-4 py-3 sm:py-2 min-h-[48px] rounded-lg font-medium flex items-center justify-center gap-2 touch-manipulation w-full sm:w-auto border ${
+ selectionMode
+ ? 'bg-forest-600 dark:bg-forest-500 text-white border-forest-600 dark:border-forest-500 hover:bg-forest-700 dark:hover:bg-forest-600'
+ : 'bg-surface dark:bg-surface-elevated text-foreground border-border hover:border-forest-500'
+ }`}
+ >
+ <CheckSquare size={18} />
+ {selectionMode ? 'Done' : 'Select'}
+ </Button>
  <Button
  onClick={() => setShowForm(!showForm)}
  className="px-4 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 active:bg-forest-800 dark:active:bg-forest-700 font-medium flex items-center justify-center gap-2 touch-manipulation w-full sm:w-auto"
@@ -1676,6 +1843,9 @@ export default function HivesPage() {
  onUnarchive={handleUnarchive}
  openMenuId={openMenuId}
  setOpenMenuId={setOpenMenuId}
+ selectionMode={selectionMode}
+ selected={selectedIds.includes(hive.id)}
+ onToggleSelect={toggleSelect}
  />
  ))}
  </div>
@@ -1689,6 +1859,46 @@ export default function HivesPage() {
  : 'Add your first hive to start tracking colonies, inspections, and queen records.'}
  actionLabel={!filterApiaryId ? 'Add Hive' : undefined}
  actionOnClick={!filterApiaryId ? () => setShowForm(true) : undefined}
+ />
+ )}
+
+ {/* Floating bulk action bar — shown while hives are selected */}
+ {selectionMode && selectedOwnedHives.length > 0 && (
+ <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-2rem)] sm:w-auto">
+ <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-surface dark:bg-surface-elevated border border-border rounded-xl shadow-xl px-4 py-3">
+ <span className="text-sm font-semibold text-text-primary text-center sm:text-left">
+ {selectedOwnedHives.length} selected
+ </span>
+ <Button
+ onClick={() => setShowMoveModal(true)}
+ className="px-4 py-3 sm:py-2 min-h-[48px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2"
+ >
+ <FolderInput size={18} />
+ Move to apiary
+ </Button>
+ <Button
+ onClick={handleBulkClone}
+ className="px-4 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 font-medium flex items-center justify-center gap-2"
+ >
+ <Copy size={18} />
+ Clone
+ </Button>
+ <Button
+ onClick={exitSelection}
+ className="px-4 py-3 sm:py-2 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated font-medium"
+ >
+ Clear
+ </Button>
+ </div>
+ </div>
+ )}
+
+ {showMoveModal && (
+ <MoveHivesModal
+ count={selectedOwnedHives.length}
+ apiaries={apiaries}
+ onClose={() => setShowMoveModal(false)}
+ onMove={handleBulkMove}
  />
  )}
  </div>
