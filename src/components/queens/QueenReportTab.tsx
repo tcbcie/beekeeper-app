@@ -174,7 +174,7 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
             {queen.batch && (
               <p>
                 <span className="text-text-tertiary">Batch:</span>{' '}
-                <Link href="/dashboard/batches" className="text-forest-600 dark:text-forest-400 hover:underline">
+                <Link href={`/dashboard/batches?batch=${queen.batch.id}`} className="text-forest-600 dark:text-forest-400 hover:underline">
                   {queen.batch.batch_name}
                 </Link>
               </p>

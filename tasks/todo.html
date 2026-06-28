@@ -2,9 +2,9 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<title>Todo — Hive Bulk Actions</title>
+<title>Todo — Queen Assignment History + View Batch fix</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1c2a22; }
+  body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1c2a22; }
   h1 { color: #1f6f43; }
   h2 { color: #2a7d52; margin-top: 1.8rem; }
   code { background: #eef4f0; padding: 1px 5px; border-radius: 4px; }
@@ -16,58 +16,44 @@
 </head>
 <body>
 
-<h1>Hive Bulk Actions — multi-select + group quick actions</h1>
+<h1>Queen Assignment History + View Batch deep-link fix</h1>
 
 <p class="note">
-  Full spec: <code>docs/features/hive-bulk-actions.md</code>.
-  Clone scope confirmed: <strong>copy the box setup config</strong>, reset queen/position/history, auto-generate a unique hive number.
+  Full spec: <code>docs/features/queen-assignment-history.md</code>.
+  Confirmed: capture via <strong>DB triggers on hives + mating_nucs</strong> into a new
+  <code>queen_assignments</code> table; <strong>manual add/edit</strong> on the overview; back-fill from existing data.
 </p>
 
-<h2>Plan / Todo</h2>
+<h2>Part 1 — Assignment history</h2>
 <ul>
-  <li>☑ <strong>1. Card checkbox</strong> — added <code>selectionMode</code> / <code>selected</code> / <code>onToggleSelect</code> props to <code>HiveListCard.tsx</code>; large owner-only checkbox + selected ring.</li>
-  <li>☑ <strong>2. Selection state</strong> — added <code>selectionMode</code> + <code>selectedIds</code> state and a "Select / Done" toggle button in the filter bar of <code>hives/page.tsx</code>.</li>
-  <li>☑ <strong>3. Action bar</strong> — floating bottom bar shown when ≥1 owned hive selected: count + "Move to apiary", "Clone", "Clear".</li>
-  <li>☑ <strong>4. Move modal</strong> — new <code>MoveHivesModal.tsx</code> (ModalShell) with apiary dropdown + "No apiary (unassign)".</li>
-  <li>☑ <strong>5. Bulk move</strong> — <code>handleBulkMove</code>: one update of <code>apiary_id</code>, nulls <code>row_in_apiary</code>/<code>order_in_apiary</code>, refetch, clear selection.</li>
-  <li>☑ <strong>6. Bulk clone</strong> — <code>handleBulkClone</code>: copies setup config + apiary, resets queen/position/history, unique <code>-copy-N</code> number, writes initial <code>hive_configuration_history</code> row, confirm dialog, refetch.</li>
-  <li>☑ <strong>7. Docs</strong> — <code>docs/features/hive-bulk-actions.md</code> created.</li>
+  <li>☑ <strong>1. Migration (Supabase MCP)</strong> — <code>queen_assignments</code> table + indexes + one-open-per-queen partial unique + owner-only RLS.</li>
+  <li>☑ <strong>2. Triggers</strong> — SECURITY DEFINER (<code>search_path=public</code>) functions + triggers on <code>hives</code> and <code>mating_nucs</code>; wrapped so a logging error never blocks the hive/nuc save. RPC execute revoked from API roles.</li>
+  <li>☑ <strong>3. Back-fill</strong> — seeded current hive/nuc occupants as open stints (de-duped one per queen). Historical reconstruction deferred to manual entry to avoid noise.</li>
+  <li>☑ <strong>4. Types</strong> — <code>QueenAssignment</code> in <code>src/types/queen.ts</code>.</li>
+  <li>☑ <strong>5. Hook</strong> — <code>useQueenAssignments(queenId)</code>: list / add / edit / delete.</li>
+  <li>☑ <strong>6. Timeline UI</strong> — <code>QueenAssignmentHistory.tsx</code> on the Overview tab.</li>
 </ul>
 
-<h2>Principles</h2>
+<h2>Part 2 — View Batch fix</h2>
 <ul>
-  <li>☑ Smallest possible change; reused existing <code>ModalShell</code>, <code>useConfirm</code>, <code>useToast</code> patterns.</li>
-  <li>☑ Owner-only selection so all writes are RLS-safe (guarded again in handlers with <code>.eq('user_id', userId)</code>).</li>
-  <li>☑ Large tap targets (min-h-48px) / clear text labels for the 50+ reduced-eyesight audience.</li>
+  <li>☑ <strong>7. Batches page</strong> — reads <code>?batch=&lt;id&gt;</code>, switches to Grafting tab and opens that batch via <code>handleEdit</code> (once, after load).</li>
+  <li>☑ <strong>8. Queen links</strong> — overview genetics link, overview "View Batch", and report batch link all → <code>/dashboard/batches?batch=${queen.batch.id}</code>.</li>
 </ul>
 
 <h2>Review</h2>
 <div class="review">
-  <p><strong>Files changed</strong></p>
-  <ul>
-    <li><code>src/components/hive/MoveHivesModal.tsx</code> — <em>new</em>. Small ModalShell picker: destination apiary or unassign.</li>
-    <li><code>src/components/hive/HiveListCard.tsx</code> — 3 optional props; owner-only checkbox row + selected ring. No change to existing behaviour when not in selection mode.</li>
-    <li><code>src/app/dashboard/hives/page.tsx</code> — selection state, "Select/Done" toggle, floating action bar, <code>handleBulkMove</code> + <code>handleBulkClone</code>, move modal render.</li>
-    <li><code>docs/features/hive-bulk-actions.md</code> — <em>new</em> feature spec.</li>
-  </ul>
-
-  <p><strong>How it works</strong></p>
-  <ul>
-    <li>Press <strong>Select</strong> → each of your own hive cards shows a large checkbox; team/shared hives are not selectable.</li>
-    <li>A bottom bar shows the count with <strong>Move to apiary</strong>, <strong>Clone</strong> and <strong>Clear</strong>.</li>
-    <li><strong>Move</strong> reassigns the apiary for all selected hives and clears their grid position (so the destination's unique row/position rule can't clash).</li>
-    <li><strong>Clone</strong> creates a sister hive per selection: copies the box setup, hive type, apiary and order direction; new auto number <code>…-copy</code>(<code>-2</code>,<code>-3</code>…); no queen, no position, no history, dates = today.</li>
-  </ul>
-
-  <p><strong>Safety checks</strong></p>
-  <ul>
-    <li>Clone numbers are de-duplicated against <em>all</em> of the account's hive numbers (queried fresh, includes archived) — no collisions.</li>
-    <li>Verified DB nullability: only <code>hive_number</code> is NOT NULL; <code>queen_installed_date</code> etc. are nullable, so the queenless clone insert is valid.</li>
-    <li>Actions operate only on selected hives still loaded and owned by the user; a hive hidden by a later filter change is never silently written.</li>
-  </ul>
-
-  <p><strong>Please test (build not run per project rule):</strong> select a few hives → Move to another apiary; select a few → Clone; verify clones appear with <code>-copy</code> numbers, same setup, no queen, and that the original hives are untouched.</p>
+  <p><strong>DB (live, via MCP):</strong> new <code>queen_assignments</code> table, two triggers (hives + mating_nucs), helper functions, current-occupant back-fill, and an RPC-execute revoke (security advisor fix).</p>
+  <p><strong>App:</strong> <code>QueenAssignment</code> type; <code>useQueenAssignments</code> hook; <code>QueenAssignmentHistory</code> timeline on the queen Overview; three batch links deep-linked; batches page <code>?batch=</code> auto-open.</p>
+  <p><strong>Test:</strong> open queen 25W → an "Assignment History" card shows her current stint; move a queen between hives/nucs and re-check; click "View Batch" and confirm it opens that specific batch.</p>
 </div>
+
+<h2>Principles</h2>
+<ul>
+  <li>☐ Triggers observe existing assignment writes — the hive/nuc forms are unchanged.</li>
+  <li>☐ Snapshot <code>location_label</code> so history survives hive/nuc rename or deletion.</li>
+  <li>☐ Owner-only RLS; SECURITY DEFINER triggers pin <code>search_path=public</code>.</li>
+  <li>☑ Large text / clear Parked vs Production tags for the 50+ low-vision audience.</li>
+</ul>
 
 </body>
 </html>

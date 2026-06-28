@@ -769,6 +769,25 @@ export default function BatchesPage() {
  setShowForm(true)
  }
 
+ // Deep-link: /dashboard/batches?batch=<id> opens that batch directly (used by the
+ // "View Batch" links on a queen). Runs once, after batches have loaded.
+ const batchDeepLinkRef = useRef(false)
+ useEffect(() => {
+ if (batchDeepLinkRef.current || loading) return
+ const batchId = searchParams.get('batch')
+ if (!batchId) return
+ const target = batches.find(b => b.id === batchId)
+ if (!target) return // not loaded yet, or not this user's batch
+ batchDeepLinkRef.current = true
+ setActiveTab('grafting')
+ handleEdit(target)
+ // Drop the batch param so tab changes / re-renders don't reopen it.
+ const params = new URLSearchParams(searchParams.toString())
+ params.delete('batch')
+ params.set('tab', 'grafting')
+ router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+ }, [loading, batches, searchParams, handleEdit, router, pathname])
+
  const handleDelete = async (id: string) => {
  if (!userId) return
  if (confirm('Are you sure you want to delete this batch?')) {
