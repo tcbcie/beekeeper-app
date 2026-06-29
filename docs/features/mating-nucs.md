@@ -59,6 +59,15 @@ Batch (graft date, breeder queen)
 - **Group Member** recipient tab appears when the nuc's batch belongs to a rearing group (fetches `rearing_group_members` on modal open)
 - Error handling distinguishes: success, already-distributed (conflict), and generic failure
 
+### Nuc Search
+- Search box above the nuc list on the `Nuc Setup` tab (magnifier icon, clear button)
+- Filters the list client-side by `nuc_number` and `reference_code` (case-insensitive, trimmed)
+- Searches across **all nucs** regardless of batch or retirement:
+  - typing automatically clears any active "View Nucs" batch filter
+  - while a search is active, the server query drops the retired filter so **both active and retired** nucs are reachable without using the "Show Retired" toggle (gated on a search-active boolean, so it refetches only when search starts/ends — not per keystroke)
+- When the search narrows the list to a single nuc, that nuc's record card is expanded automatically
+- Search-aware empty state ("No nucs match …"); bulk "Select all" operates on the visible (filtered) list
+
 ### Retirement and History
 - Duplicate active nuc numbers are blocked
 - Nucs are retired (archived) rather than deleted
