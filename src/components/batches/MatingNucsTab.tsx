@@ -166,6 +166,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [bulkCellSearch, setBulkCellSearch] = useState('')
  // Free-text search over the nuc list (matches nuc_number / reference_code)
  const [nucSearch, setNucSearch] = useState('')
+ // Filter the nuc list by mating site (apiary). '' = all sites.
+ const [apiaryFilter, setApiaryFilter] = useState('')
  const [matingLocationOptions, setMatingLocationOptions] = useState<MatingLocationOption[]>([])
  const [inventoryNucs, setInventoryNucs] = useState<{ id: string; nuc_number: string; qr_tag_code: string | null }[]>([])
  const [selectedInventoryNucId, setSelectedInventoryNucId] = useState('')
@@ -926,15 +928,23 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  // A nuc can be bulk-selected unless it has left active management (sold or retired).
  const isNucSelectable = (nuc: MatingNuc) => !nuc.retired_at && nuc.status !== 'sold'
- // Narrow the list to the current search (nuc_number / reference_code), case-insensitive.
+ // Distinct mating sites present on the loaded nucs, for the apiary filter dropdown.
+ const matingSites = useMemo(
+ () => Array.from(new Set(nucs.map(n => n.mating_location).filter((l): l is string => !!l)))
+ .sort((a, b) => a.localeCompare(b)),
+ [nucs]
+ )
+ // Narrow the list by search (nuc_number / reference_code, case-insensitive) and mating site.
  const trimmedNucSearch = nucSearch.trim().toLowerCase()
  const visibleNucs = useMemo(() => {
- if (!trimmedNucSearch) return nucs
- return nucs.filter(n =>
- (n.nuc_number || '').toLowerCase().includes(trimmedNucSearch) ||
- (n.reference_code || '').toLowerCase().includes(trimmedNucSearch)
- )
- }, [nucs, trimmedNucSearch])
+ return nucs.filter(n => {
+ if (apiaryFilter && n.mating_location !== apiaryFilter) return false
+ if (trimmedNucSearch &&
+ !(n.nuc_number || '').toLowerCase().includes(trimmedNucSearch) &&
+ !(n.reference_code || '').toLowerCase().includes(trimmedNucSearch)) return false
+ return true
+ })
+ }, [nucs, trimmedNucSearch, apiaryFilter])
  const selectableNucs = visibleNucs.filter(isNucSelectable)
  const allSelectableSelected = selectableNucs.length > 0 && selectableNucs.every((n) => selectedNucIds.has(n.id))
 
@@ -1469,8 +1479,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  )}
  </div>
 
- {/* Nuc search */}
- <div className="relative">
+ {/* Nuc filters: search + mating site */}
+ <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+ <div className="relative flex-1">
  <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
  <input
  type="text"
@@ -1495,6 +1506,21 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <X size={18} />
  </button>
  )}
+ </div>
+ <select
+ value={apiaryFilter}
+ onChange={(e) => setApiaryFilter(e.target.value)}
+ aria-label="Filter nucs by mating site"
+ className="rounded-lg border border-border bg-surface py-2.5 px-3 text-base text-foreground focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-500/30 dark:bg-surface-elevated/95 sm:w-56"
+ >
+ <option value="">All mating sites</option>
+ {apiaryFilter && !matingSites.includes(apiaryFilter) && (
+ <option value={apiaryFilter}>{apiaryFilter}</option>
+ )}
+ {matingSites.map(site => (
+ <option key={site} value={site}>{site}</option>
+ ))}
+ </select>
  </div>
 
  {/* Bulk action bar */}
@@ -1539,6 +1565,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <p className="text-text-secondary">
  {trimmedNucSearch
  ? `No nucs match “${nucSearch.trim()}”.`
+ : apiaryFilter
+ ? `No nucs at “${apiaryFilter}”.`
  : activeBatchId ? 'No nucs found for the selected batch.' : 'No mating nucs yet. Create your first nuc above.'}
  </p>
  </div>
