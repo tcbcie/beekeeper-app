@@ -1019,6 +1019,23 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }
  }, [trimmedNucSearch, visibleNucs])
 
+ // Keep bulk selection in sync with the visible list: when a filter (search / mating
+ // site / batch / retired) changes the rendered set, drop any selected nucs that are no
+ // longer shown so a bulk action can never silently act on hidden rows.
+ useEffect(() => {
+ const visibleIds = new Set(visibleNucs.map(n => n.id))
+ setSelectedNucIds(prev => {
+ if (prev.size === 0) return prev
+ let changed = false
+ const next = new Set<string>()
+ for (const id of prev) {
+ if (visibleIds.has(id)) next.add(id)
+ else changed = true
+ }
+ return changed ? next : prev
+ })
+ }, [visibleNucs])
+
  const getStatusBadge = (status: string) => {
  const statusConfig = NUC_STATUSES.find(s => s.value === status)
  return statusConfig?.color || 'bg-surface-secondary text-text-secondary border border-border'
