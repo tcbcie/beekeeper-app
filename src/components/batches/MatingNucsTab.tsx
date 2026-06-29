@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Plus, Edit2, Archive, Trash2, X, ClipboardList, ChevronDown, ChevronUp, History, Eye, EyeOff, Send } from 'lucide-react'
+import { Plus, Edit2, Archive, Trash2, X, ClipboardList, ChevronDown, ChevronUp, History, Eye, EyeOff, Send, Search } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
 import NucInspectionPanel from './NucInspectionPanel'
@@ -164,6 +164,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [activeBatchId, setActiveBatchId] = useState<string | null>(null)
  const [availableBulkGrafts, setAvailableBulkGrafts] = useState<AvailableSealedGraft[]>([])
  const [bulkCellSearch, setBulkCellSearch] = useState('')
+ // Free-text search over the nuc list (matches nuc_number / reference_code)
+ const [nucSearch, setNucSearch] = useState('')
  const [matingLocationOptions, setMatingLocationOptions] = useState<MatingLocationOption[]>([])
  const [inventoryNucs, setInventoryNucs] = useState<{ id: string; nuc_number: string; qr_tag_code: string | null }[]>([])
  const [selectedInventoryNucId, setSelectedInventoryNucId] = useState('')
@@ -210,6 +212,11 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  status: 'setup',
  })
 
+ // A search spans both active and retired nucs, so the retired filter is dropped
+ // while searching. Boolean (not the raw text) gates the refetch, so it only fires
+ // when search starts/ends — not on every keystroke.
+ const isSearching = nucSearch.trim().length > 0
+
  const fetchNucs = useCallback(async () => {
  const gen = ++fetchNucsGenRef.current
  let query = supabase
@@ -218,8 +225,10 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .eq('user_id', userId)
  .eq('is_inventory', false)
 
- // Filter by retired status
- if (showRetired) {
+ // Filter by retired status (skipped while searching so retired nucs are reachable)
+ if (isSearching) {
+ // no retired filter — load both active and retired
+ } else if (showRetired) {
  query = query.not('retired_at', 'is', null)
  } else {
  query = query.is('retired_at', null)
@@ -333,7 +342,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }
 
  if (gen === fetchNucsGenRef.current) setLoading(false)
- }, [userId, showRetired, activeBatchId])
+ }, [userId, showRetired, activeBatchId, isSearching])
 
  const fetchBatches = useCallback(async () => {
  const { data } = await supabase
@@ -917,7 +926,16 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  // A nuc can be bulk-selected unless it has left active management (sold or retired).
  const isNucSelectable = (nuc: MatingNuc) => !nuc.retired_at && nuc.status !== 'sold'
- const selectableNucs = nucs.filter(isNucSelectable)
+ // Narrow the list to the current search (nuc_number / reference_code), case-insensitive.
+ const trimmedNucSearch = nucSearch.trim().toLowerCase()
+ const visibleNucs = useMemo(() => {
+ if (!trimmedNucSearch) return nucs
+ return nucs.filter(n =>
+ (n.nuc_number || '').toLowerCase().includes(trimmedNucSearch) ||
+ (n.reference_code || '').toLowerCase().includes(trimmedNucSearch)
+ )
+ }, [nucs, trimmedNucSearch])
+ const selectableNucs = visibleNucs.filter(isNucSelectable)
  const allSelectableSelected = selectableNucs.length > 0 && selectableNucs.every((n) => selectedNucIds.has(n.id))
 
  const toggleNucSelection = (id: string) => {
@@ -983,6 +1001,13 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  selectAllRef.current.indeterminate = selectedNucIds.size > 0 && !allSelectableSelected
  }
  }, [selectedNucIds, allSelectableSelected])
+
+ // When a search narrows the list to a single nuc, open its record automatically.
+ useEffect(() => {
+ if (trimmedNucSearch && visibleNucs.length === 1) {
+ setExpandedNucId(visibleNucs[0].id)
+ }
+ }, [trimmedNucSearch, visibleNucs])
 
  const getStatusBadge = (status: string) => {
  const statusConfig = NUC_STATUSES.find(s => s.value === status)
@@ -1444,6 +1469,34 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  )}
  </div>
 
+ {/* Nuc search */}
+ <div className="relative">
+ <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+ <input
+ type="text"
+ value={nucSearch}
+ onChange={(e) => {
+ const value = e.target.value
+ setNucSearch(value)
+ // Searching looks across all active nucs, so drop any batch filter.
+ if (value.trim() && activeBatchId) setActiveBatchId(null)
+ }}
+ placeholder="Search by nuc number…"
+ aria-label="Search nucs by number"
+ className="w-full rounded-lg border border-border bg-surface py-2.5 pl-10 pr-10 text-base text-foreground placeholder:text-text-tertiary focus:border-forest-500 focus:outline-none focus:ring-2 focus:ring-forest-500/30 dark:bg-surface-elevated/95"
+ />
+ {nucSearch && (
+ <button
+ type="button"
+ onClick={() => setNucSearch('')}
+ aria-label="Clear nuc search"
+ className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-text-tertiary hover:text-foreground"
+ >
+ <X size={18} />
+ </button>
+ )}
+ </div>
+
  {/* Bulk action bar */}
  {selectableNucs.length > 0 && (
  <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 dark:bg-surface-elevated/95">
@@ -1481,15 +1534,17 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  )}
 
  {/* Nucs List */}
- {nucs.length === 0 ? (
+ {visibleNucs.length === 0 ? (
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-8 text-center border border-border">
  <p className="text-text-secondary">
- {activeBatchId ? 'No nucs found for the selected batch.' : 'No mating nucs yet. Create your first nuc above.'}
+ {trimmedNucSearch
+ ? `No nucs match “${nucSearch.trim()}”.`
+ : activeBatchId ? 'No nucs found for the selected batch.' : 'No mating nucs yet. Create your first nuc above.'}
  </p>
  </div>
  ) : (
  <div className="space-y-1.5">
- {nucs.map(nuc => {
+ {visibleNucs.map(nuc => {
  const isExpanded = expandedNucId === nuc.id
  const isSelected = selectedNucId === nuc.id
  const isHighlighted = highlightNucId === nuc.id || highlightNucNumber === nuc.nuc_number

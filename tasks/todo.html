@@ -1,59 +1,67 @@
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
-<meta charset="utf-8">
-<title>Todo — Queen Assignment History + View Batch fix</title>
-<style>
-  body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1c2a22; }
-  h1 { color: #1f6f43; }
-  h2 { color: #2a7d52; margin-top: 1.8rem; }
-  code { background: #eef4f0; padding: 1px 5px; border-radius: 4px; }
-  ul { list-style: none; padding-left: 0; }
-  li { margin: 0.35rem 0; }
-  .note { background: #f4f9f6; border-left: 4px solid #2a7d52; padding: 0.6rem 0.9rem; border-radius: 4px; }
-  .review { background: #fff8ec; border-left: 4px solid #d9a300; padding: 0.6rem 0.9rem; border-radius: 4px; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Plan — Nuc Number Search (Nuc Setup tab)</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; line-height: 1.55; }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.15rem; margin-top: 1.8rem; border-bottom: 1px solid #e5e7eb; padding-bottom: .3rem; }
+    code { background: #f3f4f6; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+    .todo { list-style: none; padding-left: 0; }
+    .todo li { margin: .4rem 0; }
+    .file { color: #047857; font-weight: 600; }
+    .note { background: #fffbeb; border-left: 4px solid #f59e0b; padding: .6rem .9rem; border-radius: 4px; }
+    .scope { background: #ecfdf5; border-left: 4px solid #10b981; padding: .6rem .9rem; border-radius: 4px; }
+  </style>
 </head>
 <body>
+  <h1>Plan — Search a Nuc by Number on the Nuc Setup tab</h1>
 
-<h1>Queen Assignment History + View Batch deep-link fix</h1>
+  <h2>Goal</h2>
+  <p>On <strong>Queen Rearing &rarr; Nuc Setup</strong>, let the user type a nuc number (e.g. <code>A-06</code>) into a search box and have the list instantly narrow to the matching nuc so its record can be pulled up.</p>
 
-<p class="note">
-  Full spec: <code>docs/features/queen-assignment-history.md</code>.
-  Confirmed: capture via <strong>DB triggers on hives + mating_nucs</strong> into a new
-  <code>queen_assignments</code> table; <strong>manual add/edit</strong> on the overview; back-fill from existing data.
-</p>
+  <h2>What I found</h2>
+  <ul>
+    <li>The tab is rendered by <span class="file">src/components/batches/MatingNucsTab.tsx</span>. Nucs are a flat, collapsible list (<code>nucs.map</code>, ~line&nbsp;1492). No search box exists today.</li>
+    <li>The searchable identifier is <code>nuc_number</code> (free-text), with <code>reference_code</code> as a fallback for unnumbered bulk nucs.</li>
+    <li>A nuc&rsquo;s &ldquo;record&rdquo; is the inline expandable card (<code>toggleExpand</code> / <code>expandedNucId</code>) &mdash; there is no separate detail page, so &ldquo;pull up the record&rdquo; = filter to it and expand it.</li>
+    <li>No DB / RLS / type changes are needed &mdash; this is a pure client-side filter over already-loaded nucs.</li>
+  </ul>
 
-<h2>Part 1 — Assignment history</h2>
-<ul>
-  <li>☑ <strong>1. Migration (Supabase MCP)</strong> — <code>queen_assignments</code> table + indexes + one-open-per-queen partial unique + owner-only RLS.</li>
-  <li>☑ <strong>2. Triggers</strong> — SECURITY DEFINER (<code>search_path=public</code>) functions + triggers on <code>hives</code> and <code>mating_nucs</code>; wrapped so a logging error never blocks the hive/nuc save. RPC execute revoked from API roles.</li>
-  <li>☑ <strong>3. Back-fill</strong> — seeded current hive/nuc occupants as open stints (de-duped one per queen). Historical reconstruction deferred to manual entry to avoid noise.</li>
-  <li>☑ <strong>4. Types</strong> — <code>QueenAssignment</code> in <code>src/types/queen.ts</code>.</li>
-  <li>☑ <strong>5. Hook</strong> — <code>useQueenAssignments(queenId)</code>: list / add / edit / delete.</li>
-  <li>☑ <strong>6. Timeline UI</strong> — <code>QueenAssignmentHistory.tsx</code> on the Overview tab.</li>
-</ul>
+  <h2>Proposed change (single file)</h2>
+  <ul class="todo">
+    <li>&#9744; Add a <code>nucSearch</code> state (string, default <code>''</code>).</li>
+    <li>&#9744; Add a compact search input with a magnifier icon and a clear (&times;) button, placed just above the nucs list (below the &ldquo;Nucs by Batch&rdquo; summary). Mobile-first, full-width on small screens. Honours the 50+ minimum font sizes.</li>
+    <li>&#9744; Derive <code>visibleNucs = nucs.filter(...)</code> matching the trimmed, case-insensitive search against <code>nuc_number</code> and <code>reference_code</code>. Render <code>visibleNucs</code> instead of <code>nucs</code>.</li>
+    <li>&#9744; Point bulk-select (<code>selectableNucs</code> / Select-all) at the visible list so &ldquo;Select all&rdquo; matches what is shown while searching.</li>
+    <li>&#9744; When the search yields exactly one match, auto-expand that nuc&rsquo;s card so the record opens immediately.</li>
+    <li>&#9744; Update the empty-state copy to say &ldquo;No nucs match &lsquo;&hellip;&rsquo;&rdquo; when a search is active.</li>
+    <li>&#9744; Update <span class="file">docs/features</span> with a short note on the new nuc search.</li>
+  </ul>
 
-<h2>Part 2 — View Batch fix</h2>
-<ul>
-  <li>☑ <strong>7. Batches page</strong> — reads <code>?batch=&lt;id&gt;</code>, switches to Grafting tab and opens that batch via <code>handleEdit</code> (once, after load).</li>
-  <li>☑ <strong>8. Queen links</strong> — overview genetics link, overview "View Batch", and report batch link all → <code>/dashboard/batches?batch=${queen.batch.id}</code>.</li>
-</ul>
+  <div class="scope">
+    <strong>Scope guardrails:</strong> one component touched; no schema, hook, type, or routing changes; existing batch filter and Retired toggle keep working (search is applied on top of whatever list is loaded). Search is scoped to the currently loaded active/retired list &mdash; clearing the batch filter searches all nucs.
+  </div>
 
-<h2>Review</h2>
-<div class="review">
-  <p><strong>DB (live, via MCP):</strong> new <code>queen_assignments</code> table, two triggers (hives + mating_nucs), helper functions, current-occupant back-fill, and an RPC-execute revoke (security advisor fix).</p>
-  <p><strong>App:</strong> <code>QueenAssignment</code> type; <code>useQueenAssignments</code> hook; <code>QueenAssignmentHistory</code> timeline on the queen Overview; three batch links deep-linked; batches page <code>?batch=</code> auto-open.</p>
-  <p><strong>Test:</strong> open queen 25W → an "Assignment History" card shows her current stint; move a queen between hives/nucs and re-check; click "View Batch" and confirm it opens that specific batch.</p>
-</div>
+  <div class="note" style="margin-top:1rem;">
+    <strong>Decision to confirm:</strong> Should search look across <em>all</em> active nucs regardless of the current batch filter, or only within the batch you&rsquo;ve selected? Default plan: search whatever is currently loaded (respects the active batch filter / Retired toggle).
+  </div>
 
-<h2>Principles</h2>
-<ul>
-  <li>☐ Triggers observe existing assignment writes — the hive/nuc forms are unchanged.</li>
-  <li>☐ Snapshot <code>location_label</code> so history survives hive/nuc rename or deletion.</li>
-  <li>☐ Owner-only RLS; SECURITY DEFINER triggers pin <code>search_path=public</code>.</li>
-  <li>☑ Large text / clear Parked vs Production tags for the 50+ low-vision audience.</li>
-</ul>
-
+  <h2>Review</h2>
+  <p>Implemented as a single-file, client-side change in <span class="file">src/components/batches/MatingNucsTab.tsx</span>. No DB, type, hook, or routing changes.</p>
+  <ul>
+    <li>&#9745; Added <code>nucSearch</code> state and imported <code>useMemo</code> + the <code>Search</code> icon.</li>
+    <li>&#9745; Added a full-width search input (magnifier + clear button) above the nuc list, with <code>text-base</code> sizing for the 50+ audience and <code>aria-label</code>s.</li>
+    <li>&#9745; Derived <code>visibleNucs</code> via <code>useMemo</code> (case-insensitive match on <code>nuc_number</code> / <code>reference_code</code>); the list and empty state now render from it.</li>
+    <li>&#9745; Per your choice, typing auto-clears the active batch filter so search spans <strong>all active nucs</strong>.</li>
+    <li>&#9745; Bulk-select (<code>selectableNucs</code> / Select-all) now derives from the visible list, so it matches what is shown while searching.</li>
+    <li>&#9745; A single match auto-expands that nuc&rsquo;s record card (effect guarded so it only fires while searching, never conflicting with the existing deep-link highlight).</li>
+    <li>&#9745; Search-aware empty state: &ldquo;No nucs match &lsquo;&hellip;&rsquo;&rdquo;.</li>
+    <li>&#9745; Documented in <span class="file">docs/features/mating-nucs.md</span> (new &ldquo;Nuc Search&rdquo; section).</li>
+    <li>&#9745; <strong>Follow-up (approved):</strong> search now also reaches <strong>retired</strong> nucs without the &ldquo;Show Retired&rdquo; toggle. While a search is active, <code>fetchNucs</code> drops the retired filter so both active and retired load. Gated on an <code>isSearching</code> boolean added to the <code>useCallback</code> deps, so it refetches only when search starts/ends &mdash; not on every keystroke.</li>
+  </ul>
+  <p class="note"><strong>Please test:</strong> on Queen Rearing &rarr; Nuc Setup, type a nuc number (e.g. <code>A-06</code>) &mdash; the list should narrow, the batch filter should clear, and a single match should open its card. Clearing the box restores the full list.</p>
 </body>
 </html>
