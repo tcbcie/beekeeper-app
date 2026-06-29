@@ -38,6 +38,18 @@ single distribution. On save, `create_queen_for_distribution` (SECURITY DEFINER 
 All hive/queen writes are guarded to the recipient's own rows. The hive-config-history trigger
 logs the change automatically. Bulk distribution never auto-places (one hive can't hold many).
 
+### Duplicate prevention (one graft → one queen per account)
+
+The RPC is **idempotent**: a graft may only ever produce a single queen per account. Before
+inserting, it looks up an existing queen by `(recipient_user_id, source_graft_id)` and reuses it
+if found; the `INSERT` also carries `ON CONFLICT (user_id, source_graft_id) … DO NOTHING` and
+re-selects on a lost race. A partial unique index
+`queens_user_source_graft_unique (user_id, source_graft_id) WHERE source_graft_id IS NOT NULL`
+is the hard backstop at the DB level. This prevents the historical bug where re-running a
+(self-)distribution — double submit, re-confirm, or a backfill re-run — created a second queen
+record and left the first orphaned/superseded. Both RPC overloads (with and without
+`p_recipient_apiary_id`) carry the guard so a stale PWA-cached client cannot duplicate either.
+
 ## Lifecycle promotions
 
 **Recipient, on their own queen detail page** (`queens/[id]`):
