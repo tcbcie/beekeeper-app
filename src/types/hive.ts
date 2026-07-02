@@ -51,6 +51,9 @@ export interface Hive {
   order_in_apiary?: number | null
   row_in_apiary?: number | null
   order_direction?: 'entrances' | 'backs' | null
+  map_x?: number | null
+  map_y?: number | null
+  entrance_direction?: 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' | null
   queen_id: string | null
   queen_marked: boolean
   queen_marking_color: string | null
