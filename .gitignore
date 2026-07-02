@@ -57,3 +57,6 @@ _ul
 
 # Codex local settings
 .codex/config.toml
+
+# Codex scratch/temp files
+.codex-temp/
