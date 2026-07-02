@@ -4,8 +4,10 @@ import Link from 'next/link'
 import { ArrowUp, RotateCcw } from 'lucide-react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Grid } from '@react-three/drei'
-import { useApiaryMap } from '@/hooks/useApiaryMap'
+import { useApiaryMap, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
+import { BENCH_TOP_UNITS, slotOffsetUnits, rotatedOffset } from '@/lib/yard-geometry'
 import Hive3D from './Hive3D'
+import Bench3D from './Bench3D'
 import HiveInspectorPanel from './HiveInspectorPanel'
 
 // Yard ground-plane size in scene units, matching the 2D map's 3:2 aspect.
@@ -36,16 +38,19 @@ interface YardScene3DProps {
 const noop = () => {}
 
 export default function YardScene3D({ apiaryId }: YardScene3DProps) {
-  const { hives, yard, loading } = useApiaryMap(apiaryId)
+  const { hives, benches, yard, loading } = useApiaryMap(apiaryId)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [webgl, setWebgl] = useState<boolean | null>(null)
   const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null)
 
   useEffect(() => { setWebgl(webglAvailable()) }, [])
 
+  const benchById = useMemo(() => new Map<string, YardBench>(benches.map(b => [b.id, b])), [benches])
   const placedHives = useMemo(
-    () => hives.filter(h => h.map_x != null && h.map_y != null),
-    [hives],
+    () => hives.filter(h =>
+      (h.map_x != null && h.map_y != null) || (h.bench_id != null && benchById.has(h.bench_id)),
+    ),
+    [hives, benchById],
   )
   const unplacedCount = hives.length - placedHives.length
   const selectedHive = selectedId ? hives.find(h => h.id === selectedId) ?? null : null
@@ -53,6 +58,18 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
     ? toScene(Number(yard.yard_entrance_x), Number(yard.yard_entrance_y))
     : null
   const northAngle = Number(yard.north_angle_deg ?? 0)
+
+  // A hive on a bench stands on the bench top at its slot; otherwise on the
+  // ground at its own map position.
+  const hivePlacement = (hive: MapHive): { position: [number, number]; elevation: number } => {
+    const bench = hive.bench_id != null ? benchById.get(hive.bench_id) : undefined
+    if (bench && hive.bench_slot != null) {
+      const [bx, bz] = toScene(Number(bench.map_x), Number(bench.map_y))
+      const off = rotatedOffset(slotOffsetUnits(hive.bench_slot, bench.capacity), Number(bench.rotation_deg))
+      return { position: [bx + off.dx, bz + off.dy], elevation: BENCH_TOP_UNITS }
+    }
+    return { position: toScene(Number(hive.map_x), Number(hive.map_y)), elevation: 0 }
+  }
 
   if (loading) {
     return <p className="text-text-secondary py-8 text-center">Loading 3D yard…</p>
@@ -140,15 +157,27 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
               </group>
             )}
 
-            {placedHives.map(hive => (
-              <Hive3D
-                key={hive.id}
-                hive={hive}
-                position={toScene(Number(hive.map_x), Number(hive.map_y))}
-                selected={selectedId === hive.id}
-                onSelect={setSelectedId}
+            {benches.map(bench => (
+              <Bench3D
+                key={bench.id}
+                bench={bench}
+                position={toScene(Number(bench.map_x), Number(bench.map_y))}
               />
             ))}
+
+            {placedHives.map(hive => {
+              const { position, elevation } = hivePlacement(hive)
+              return (
+                <Hive3D
+                  key={hive.id}
+                  hive={hive}
+                  position={position}
+                  elevation={elevation}
+                  selected={selectedId === hive.id}
+                  onSelect={setSelectedId}
+                />
+              )
+            })}
 
             <OrbitControls
               ref={controlsRef}

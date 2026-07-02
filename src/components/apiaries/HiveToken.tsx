@@ -24,9 +24,14 @@ interface HiveTokenProps {
   onSelect?: (hiveId: string) => void
   /** Persist a new body rotation (degrees) after the rotate handle is released. */
   onRotate?: (deg: number) => void
+  /**
+   * Bench anchor: position at a % point plus a pixel offset (the slot centre),
+   * so a hive on a bench always sits exactly on its slot at any screen size.
+   */
+  anchor?: { xPct: number; yPct: number; dxPx: number; dyPx: number }
 }
 
-export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect, onRotate }: HiveTokenProps) {
+export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect, onRotate, anchor }: HiveTokenProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: hive.id,
     disabled: isReadOnly,
@@ -60,14 +65,15 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
     ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
     : ''
   const centreTransform = placed ? 'translate(-50%, -50%)' : ''
+  const anchorTransform = anchor ? `translate(${anchor.dxPx}px, ${anchor.dyPx}px)` : ''
   const style: React.CSSProperties = placed
     ? {
         position: 'absolute',
-        left: `${hive.map_x ?? 50}%`,
-        top: `${hive.map_y ?? 50}%`,
+        left: `${anchor ? anchor.xPct : hive.map_x ?? 50}%`,
+        top: `${anchor ? anchor.yPct : hive.map_y ?? 50}%`,
         width: CONTAINER,
         height: CONTAINER,
-        transform: `${dragTransform} ${centreTransform}`.trim(),
+        transform: `${dragTransform} ${centreTransform} ${anchorTransform}`.trim(),
         zIndex: isDragging || selected ? 30 : 10,
         touchAction: 'none',
       }
