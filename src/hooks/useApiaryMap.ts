@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getCurrentUserId } from '@/lib/auth'
+import type { HiveConfiguration } from '@/types/hive'
 
 export type EntranceDirection = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW'
 
@@ -14,6 +15,8 @@ export interface MapHive {
   map_x: number | null
   map_y: number | null
   entrance_direction: EntranceDirection | null
+  // Physical box stack, used by the 3D view to build the hive model.
+  configuration: HiveConfiguration | null
   queens?: {
     id: string
     queen_number: string
@@ -74,7 +77,7 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
         supabase.from('apiaries').select('name, user_id').eq('id', apiaryId).single(),
         supabase
           .from('hives')
-          .select('id, hive_number, status, is_queenless, queenless_reason, map_x, map_y, entrance_direction, queens(id, queen_number, marking_color)')
+          .select('id, hive_number, status, is_queenless, queenless_reason, map_x, map_y, entrance_direction, configuration, queens(id, queen_number, marking_color)')
           .eq('apiary_id', apiaryId)
           .is('archived_at', null)
           .order('hive_number'),
