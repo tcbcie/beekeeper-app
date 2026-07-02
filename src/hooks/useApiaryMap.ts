@@ -41,6 +41,8 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
   const toast = useToast()
   const mountedRef = useRef(true)
   const userIdRef = useRef<string | null>(null)
+  // Monotonic token so a slow reload can never overwrite a newer one's result.
+  const loadSeqRef = useRef(0)
   // Mirrors the latest hives so a save can read the pre-change snapshot
   // synchronously, without depending on when React runs a state updater.
   const hivesRef = useRef<MapHive[]>([])
@@ -60,6 +62,9 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
 
   const reload = useCallback(async () => {
     if (!apiaryId) return
+    const seq = ++loadSeqRef.current
+    // Ignore results once a newer load has started or the component unmounted.
+    const isCurrent = () => mountedRef.current && seq === loadSeqRef.current
     setLoading(true)
     try {
       const userId = userIdRef.current ?? (await getCurrentUserId())
@@ -77,16 +82,16 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
 
       if (apiaryRes.error) throw apiaryRes.error
       if (hivesRes.error) throw hivesRes.error
-      if (!mountedRef.current) return
+      if (!isCurrent()) return
 
       setApiaryName(apiaryRes.data?.name ?? null)
       setIsOwner(!!userId && apiaryRes.data?.user_id === userId)
       setHives((hivesRes.data || []) as MapHive[])
     } catch (error) {
       console.error('Error loading apiary map:', error)
-      if (mountedRef.current) toast.error('Failed to load yard map')
+      if (isCurrent()) toast.error('Failed to load yard map')
     } finally {
-      if (mountedRef.current) setLoading(false)
+      if (isCurrent()) setLoading(false)
     }
   }, [apiaryId, toast])
 
@@ -110,14 +115,17 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     // Optimistically apply the change.
     setHives(prev => prev.map(h => (h.id === hiveId ? { ...h, ...patch } : h)))
 
-    const { error } = await supabase
+    // Return the affected row so a silently blocked write (RLS denial, ownership
+    // mismatch, row removed) is caught rather than left diverging from the DB.
+    const { data, error } = await supabase
       .from('hives')
       .update(patch)
       .eq('id', hiveId)
       .eq('user_id', userId)
+      .select('id')
 
-    if (error) {
-      console.error('Error saving hive placement:', error)
+    if (error || !data || data.length === 0) {
+      console.error('Error saving hive placement:', error ?? 'no matching row updated')
       if (!mountedRef.current) return
       // Roll back to the exact prior values.
       setHives(prev => prev.map(h => (h.id === hiveId ? previous : h)))
