@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { X, Search, User, Users, UserPlus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { RecipientUser, RecipientApiary, RecipientHive, CreateDistributionData, BulkDistributionData } from '@/hooks/useGraftDistributions'
@@ -38,6 +38,15 @@ const TYPE_FROM_GRAFT_STATUS: Record<string, 'queen_cell' | 'virgin_queen' | 'ma
 }
 
 type RecipientMode = 'group' | 'app_user' | 'external'
+
+// A pending CRM order the distribution can optionally be recorded against.
+interface OpenOrder {
+  id: string
+  order_number: string
+  customer_name: string | null
+  customer_email: string | null
+  has_queens_line: boolean
+}
 
 export default function DistributeGraftModal({
   graftId,
@@ -93,6 +102,10 @@ export default function DistributeGraftModal({
   // Mating location for app-user distributions — pre-filled from records when available
   const [matingLocation, setMatingLocation] = useState(defaultMatingLocation || '')
   const [locationError, setLocationError] = useState('')
+
+  // Optional CRM order link
+  const [openOrders, setOpenOrders] = useState<OpenOrder[]>([])
+  const [selectedOrderId, setSelectedOrderId] = useState('')
 
   const today = new Date().toISOString().split('T')[0]
   const [distributionDate, setDistributionDate] = useState(today)
@@ -169,6 +182,60 @@ export default function DistributeGraftModal({
     fetchRecipientHives(selectedUser.id, selectedApiaryId).then(setHives, () => setHives([]))
   }, [selectedUser, selectedApiaryId, fetchRecipientHives])
 
+  // Fetch this user's open (pending) orders once, so a distribution can be recorded against one.
+  useEffect(() => {
+    let active = true
+    supabase
+      .from('crm_orders')
+      .select('id, order_number, customer:crm_customers(name, email), items:crm_order_items(product_type)')
+      .eq('user_id', userId)
+      .eq('status', 'pending')
+      .order('order_date', { ascending: false })
+      .then(({ data, error }) => {
+        if (!active) return
+        if (error || !data) {
+          if (error) console.error('Failed to fetch open orders:', error)
+          setOpenOrders([])
+          return
+        }
+        // PostgREST returns embedded relations as arrays for explicit selects.
+        setOpenOrders(
+          data.map((o) => {
+            const customer = Array.isArray(o.customer) ? o.customer[0] : o.customer
+            const items = (Array.isArray(o.items) ? o.items : []) as { product_type: string }[]
+            return {
+              id: o.id as string,
+              order_number: o.order_number as string,
+              customer_name: customer?.name ?? null,
+              customer_email: customer?.email ?? null,
+              has_queens_line: items.some((i) => i.product_type === 'queens'),
+            }
+          })
+        )
+      }, (err) => {
+        // Network-level rejection (not a PostgREST error payload): fail soft —
+        // the dialogue stays fully usable without the optional order link.
+        if (!active) return
+        console.error('Failed to fetch open orders:', err)
+        setOpenOrders([])
+      })
+    return () => { active = false }
+  }, [userId])
+
+  // Float orders that match the chosen recipient (by name/email) or sell queens to the top.
+  const sortedOrders = useMemo(() => {
+    const ext = recipientMode === 'external'
+    const recipName = (ext ? extName : selectedUser?.full_name || '').trim().toLowerCase()
+    const recipEmail = (ext ? extEmail : selectedUser?.email || '').trim().toLowerCase()
+    const recipientMatches = (o: OpenOrder) =>
+      (!!recipEmail && (o.customer_email || '').toLowerCase() === recipEmail) ||
+      (!!recipName && (o.customer_name || '').toLowerCase() === recipName)
+    const score = (o: OpenOrder) => (recipientMatches(o) ? 2 : 0) + (o.has_queens_line ? 1 : 0)
+    return openOrders
+      .map((o) => ({ order: o, matches: recipientMatches(o), score: score(o) }))
+      .sort((a, b) => b.score - a.score) // stable: preserves newest-first within equal scores
+  }, [openOrders, recipientMode, extName, extEmail, selectedUser])
+
   const handleSelectUser = useCallback((user: RecipientUser) => {
     setSelectedUser(user)
     setSearchText('')
@@ -211,6 +278,7 @@ export default function DistributeGraftModal({
         external_recipient_phone: isExternal ? (extPhone.trim() || null) : null,
         external_recipient_location: isExternal ? (extLocation.trim() || null) : null,
         mating_location: !isExternal ? (matingLocation.trim() || null) : null,
+        crm_order_id: selectedOrderId || null,
       }
       success = await onBulkSave(bulkData)
     } else {
@@ -230,6 +298,7 @@ export default function DistributeGraftModal({
         external_recipient_phone: isExternal ? (extPhone.trim() || null) : null,
         external_recipient_location: isExternal ? (extLocation.trim() || null) : null,
         mating_location: !isExternal ? (matingLocation.trim() || null) : null,
+        crm_order_id: selectedOrderId || null,
       }
       success = await onSave(data)
     }
@@ -539,6 +608,29 @@ export default function DistributeGraftModal({
               {hives.length === 0 && (
                 <p className="text-xs text-text-tertiary mt-1">No hives recorded at this apiary yet &mdash; this is optional.</p>
               )}
+            </div>
+          )}
+
+          {/* Optional CRM order link — open orders, with recipient/product matches floated to the top */}
+          {openOrders.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-1">
+                Record against order <span className="text-text-tertiary font-normal">(optional)</span>
+              </label>
+              <select
+                value={selectedOrderId}
+                onChange={(e) => setSelectedOrderId(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+              >
+                <option value="">No order</option>
+                {sortedOrders.map(({ order, matches }) => (
+                  <option key={order.id} value={order.id}>
+                    {order.order_number}
+                    {order.customer_name ? ` — ${order.customer_name}` : ''}
+                    {matches ? ' ✓ matches recipient' : order.has_queens_line ? ' • queens' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 

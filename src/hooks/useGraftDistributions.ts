@@ -74,6 +74,8 @@ export interface CreateDistributionData {
   external_recipient_phone: string | null
   external_recipient_location: string | null
   mating_location: string | null
+  // Optional link to the CRM order this distribution fulfils (informational only)
+  crm_order_id?: string | null
 }
 
 export interface BulkDistributionData {
@@ -91,6 +93,8 @@ export interface BulkDistributionData {
   external_recipient_phone: string | null
   external_recipient_location: string | null
   mating_location: string | null
+  // Optional link to the CRM order this distribution fulfils (informational only)
+  crm_order_id?: string | null
 }
 
 interface BatchDetails {
@@ -617,6 +621,7 @@ export function useGraftDistributions() {
         external_recipient_phone: data.external_recipient_phone,
         external_recipient_location: data.external_recipient_location,
         mating_location: data.mating_location,
+        crm_order_id: data.crm_order_id ?? null,
         ...(isMatedQueen ? { mating_confirmed: true, mating_confirmed_date: data.distribution_date } : {}),
       }))
 

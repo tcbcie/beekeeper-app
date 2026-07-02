@@ -18,8 +18,18 @@ import { formatMoney } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
 import { orderBalance, isPartiallyPaid, isOverdue, summariseCustomerOrders } from '@/lib/crm-orders'
 import type { Customer, Order, OrderItem, OrderItemFormData } from '@/types/crm'
+import { TYPE_LABELS } from '@/components/batches/graftConstants'
 
 const today = () => new Date().toISOString().slice(0, 10)
+
+// A queen/cell distribution recorded against this order (informational link).
+interface LinkedDistribution {
+  id: string
+  distribution_type: 'queen_cell' | 'virgin_queen' | 'mated_queen'
+  distribution_date: string
+  cell_number: number | null
+  recipient: string | null
+}
 
 function toFormItems(items: OrderItem[]): OrderItemFormData[] {
   return items.map((i) => ({
@@ -45,12 +55,18 @@ export default function OrderDetailPage() {
   const [busy, setBusy] = useState(false)
   const [amountPaidInput, setAmountPaidInput] = useState('')
   const [dueDateInput, setDueDateInput] = useState('')
+  const [distributions, setDistributions] = useState<LinkedDistribution[]>([])
 
   const load = useCallback(async (uid: string) => {
-    const [orderRes, itemsRes, profileRes] = await Promise.all([
+    const [orderRes, itemsRes, profileRes, distRes] = await Promise.all([
       supabase.from('crm_orders').select('*').eq('id', id).eq('user_id', uid).maybeSingle(),
       supabase.from('crm_order_items').select('*').eq('order_id', id).eq('user_id', uid).order('created_at'),
       supabase.from('profiles').select('is_uk_ni_resident').eq('id', uid).maybeSingle(),
+      supabase
+        .from('graft_distributions')
+        .select('id, distribution_type, distribution_date, external_recipient_name, graft:batch_grafts!graft_distributions_graft_id_fkey(cell_number), recipient:profiles!graft_distributions_recipient_profile_id_fkey(full_name, email)')
+        .eq('crm_order_id', id).eq('user_id', uid)
+        .order('distribution_date', { ascending: false }),
     ])
 
     if (orderRes.error || !orderRes.data) {
@@ -66,6 +82,22 @@ export default function OrderDetailPage() {
     setDueDateInput(ord.due_date || '')
     setItems(toFormItems((itemsRes.data || []) as OrderItem[]))
     setIsUkNi(profileRes.data?.is_uk_ni_resident || false)
+
+    // PostgREST returns embedded relations as arrays for explicit selects.
+    setDistributions(((distRes.data || []) as Record<string, unknown>[]).map((d) => {
+      const graft = (Array.isArray(d.graft) ? d.graft[0] : d.graft) as { cell_number?: number } | null
+      const recip = (Array.isArray(d.recipient) ? d.recipient[0] : d.recipient) as { full_name?: string; email?: string } | null
+      return {
+        id: d.id as string,
+        distribution_type: d.distribution_type as LinkedDistribution['distribution_type'],
+        distribution_date: d.distribution_date as string,
+        cell_number: graft?.cell_number ?? null,
+        recipient: (d.external_recipient_name as string | null)
+          || recip?.full_name
+          || recip?.email
+          || 'App user',
+      }
+    }))
 
     const [custRes, custOrdersRes] = await Promise.all([
       supabase.from('crm_customers').select('*').eq('id', ord.customer_id).eq('user_id', uid).maybeSingle(),
@@ -393,6 +425,28 @@ export default function OrderDetailPage() {
           </>
         )}
       </Panel>
+
+      {/* Distributions recorded against this order (read-only) */}
+      {distributions.length > 0 && (
+        <Panel padding="lg">
+          <h3 className="text-xl font-semibold text-foreground mb-3">Distributions linked to this order</h3>
+          <ul className="divide-y divide-border">
+            {distributions.map((d) => (
+              <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+                <span className="font-medium text-foreground">
+                  {d.cell_number != null ? `Cell #${d.cell_number}` : 'Queen'}
+                  <span className="ml-2 font-normal text-text-secondary">
+                    {TYPE_LABELS[d.distribution_type]?.label || d.distribution_type}
+                  </span>
+                </span>
+                <span className="text-text-secondary">
+                  {d.recipient} · {formatCrmDate(d.distribution_date)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
     </div>
   )
 }
