@@ -21,6 +21,11 @@ export interface Apiary {
   is_mating_apiary?: boolean
   is_shared?: boolean
   team_name?: string | null
+  /** Yard map entrance marker, 0-100 % of canvas (NULL = unset). */
+  yard_entrance_x?: number | null
+  yard_entrance_y?: number | null
+  /** Yard map north direction, degrees clockwise from canvas-up. */
+  north_angle_deg?: number
 }
 
 export interface ApiaryFormData {

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react'
 import Link from 'next/link'
-import { RotateCcw } from 'lucide-react'
+import { ArrowUp, RotateCcw } from 'lucide-react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Grid } from '@react-three/drei'
 import { useApiaryMap } from '@/hooks/useApiaryMap'
@@ -36,7 +36,7 @@ interface YardScene3DProps {
 const noop = () => {}
 
 export default function YardScene3D({ apiaryId }: YardScene3DProps) {
-  const { hives, loading } = useApiaryMap(apiaryId)
+  const { hives, yard, loading } = useApiaryMap(apiaryId)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [webgl, setWebgl] = useState<boolean | null>(null)
   const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null)
@@ -49,6 +49,10 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
   )
   const unplacedCount = hives.length - placedHives.length
   const selectedHive = selectedId ? hives.find(h => h.id === selectedId) ?? null : null
+  const entrance = yard.yard_entrance_x != null && yard.yard_entrance_y != null
+    ? toScene(Number(yard.yard_entrance_x), Number(yard.yard_entrance_y))
+    : null
+  const northAngle = Number(yard.north_angle_deg ?? 0)
 
   if (loading) {
     return <p className="text-text-secondary py-8 text-center">Loading 3D yard…</p>
@@ -91,6 +95,10 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
           >
             <RotateCcw className="w-4 h-4" /> Reset view
           </button>
+          {/* North indicator (matches the 2D map's user-set angle) */}
+          <span className="pointer-events-none absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 dark:bg-slate-900/80 text-sm font-semibold text-forest-800 dark:text-forest-200">
+            <ArrowUp className="w-4 h-4" style={{ transform: `rotate(${northAngle}deg)` }} /> N
+          </span>
           <Canvas
             frameloop="demand"
             camera={{ position: [0, 6, 9], fov: 45 }}
@@ -114,11 +122,29 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
               infiniteGrid={false}
             />
 
+            {/* Yard entrance marker: two posts and a lintel at the gate. */}
+            {entrance && (
+              <group position={[entrance[0], 0, entrance[1]]}>
+                <mesh position={[-0.35, 0.45, 0]} castShadow>
+                  <boxGeometry args={[0.12, 0.9, 0.12]} />
+                  <meshStandardMaterial color="#7c5a2e" />
+                </mesh>
+                <mesh position={[0.35, 0.45, 0]} castShadow>
+                  <boxGeometry args={[0.12, 0.9, 0.12]} />
+                  <meshStandardMaterial color="#7c5a2e" />
+                </mesh>
+                <mesh position={[0, 0.95, 0]} castShadow>
+                  <boxGeometry args={[0.95, 0.1, 0.14]} />
+                  <meshStandardMaterial color="#7c5a2e" />
+                </mesh>
+              </group>
+            )}
+
             {placedHives.map(hive => (
               <Hive3D
                 key={hive.id}
                 hive={hive}
-                position={toScene(hive.map_x as number, hive.map_y as number)}
+                position={toScene(Number(hive.map_x), Number(hive.map_y))}
                 selected={selectedId === hive.id}
                 onSelect={setSelectedId}
               />
