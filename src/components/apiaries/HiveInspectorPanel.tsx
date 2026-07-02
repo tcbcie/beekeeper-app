@@ -4,28 +4,41 @@ import { RotateCcw, RotateCw, X, ExternalLink, Undo2 } from 'lucide-react'
 import IconButton from '@/components/ui/IconButton'
 import Button from '@/components/ui/Button'
 import { formatQueenlessLabel } from '@/lib/queenless'
-import type { MapHive, EntranceDirection } from '@/hooks/useApiaryMap'
+import { normaliseDeg, type MapHive } from '@/hooks/useApiaryMap'
 
-// Clockwise order used to cycle the entrance with the rotate controls.
-const DIRECTIONS: EntranceDirection[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+const NUDGE_DEG = 15
 
-function nextDirection(current: EntranceDirection | null, step: 1 | -1): EntranceDirection {
-  if (!current) return 'N'
-  const index = DIRECTIONS.indexOf(current)
-  return DIRECTIONS[(index + step + DIRECTIONS.length) % DIRECTIONS.length]
+/**
+ * Plain-language readout of where the hive's entrance faces relative to the
+ * yard entrance marker — beekeepers think "as I walk in", not in compass terms.
+ */
+function entranceRelation(hive: MapHive, entrance: { x: number; y: number } | null): string | null {
+  if (!entrance || hive.map_x == null || hive.map_y == null || hive.rotation_deg == null) return null
+  const bearing = normaliseDeg(
+    (Math.atan2(entrance.x - hive.map_x, -(entrance.y - hive.map_y)) * 180) / Math.PI,
+  )
+  const diff = ((hive.rotation_deg - bearing + 540) % 360) - 180
+  if (Math.abs(diff) <= 45) return 'Faces towards the yard entrance'
+  if (Math.abs(diff) >= 135) return 'Faces away from the yard entrance'
+  return diff > 0 ? 'Yard entrance is to its left' : 'Yard entrance is to its right'
 }
 
 interface HiveInspectorPanelProps {
   hive: MapHive
   isReadOnly: boolean
-  onRotate: (direction: EntranceDirection) => void
+  onRotate: (deg: number) => void
   onRemove: () => void
   onClose: () => void
+  /** Yard entrance marker position (0-100 %), when set on the apiary. */
+  entrance?: { x: number; y: number } | null
 }
 
-export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemove, onClose }: HiveInspectorPanelProps) {
+export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemove, onClose, entrance }: HiveInspectorPanelProps) {
   const queen = hive.queens?.[0]
   const isPlaced = hive.map_x != null && hive.map_y != null
+  // numeric columns can arrive as strings; coerce before doing arithmetic.
+  const rotation = Number(hive.rotation_deg ?? 0)
+  const relation = entranceRelation(hive, entrance ?? null)
 
   return (
     <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
@@ -41,6 +54,7 @@ export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemov
             {' · '}
             <span className="capitalize">{hive.status}</span>
           </p>
+          {relation && <p className="text-sm text-text-secondary mt-0.5">{relation}</p>}
         </div>
         <IconButton onClick={onClose} aria-label="Close hive details" className="min-h-[48px] min-w-[48px]">
           <X className="w-5 h-5" />
@@ -48,21 +62,21 @@ export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemov
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        {!isReadOnly && (
+        {!isReadOnly && isPlaced && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-text-secondary">
-              Entrance: <span className="font-semibold text-foreground">{hive.entrance_direction ?? '—'}</span>
+              Rotation: <span className="font-semibold text-foreground">{Math.round(rotation)}°</span>
             </span>
             <IconButton
-              onClick={() => onRotate(nextDirection(hive.entrance_direction, -1))}
-              aria-label="Rotate entrance anticlockwise"
+              onClick={() => onRotate(normaliseDeg(rotation - NUDGE_DEG))}
+              aria-label={`Rotate ${NUDGE_DEG} degrees anticlockwise`}
               className="min-h-[48px] min-w-[48px]"
             >
               <RotateCcw className="w-5 h-5" />
             </IconButton>
             <IconButton
-              onClick={() => onRotate(nextDirection(hive.entrance_direction, 1))}
-              aria-label="Rotate entrance clockwise"
+              onClick={() => onRotate(normaliseDeg(rotation + NUDGE_DEG))}
+              aria-label={`Rotate ${NUDGE_DEG} degrees clockwise`}
               className="min-h-[48px] min-w-[48px]"
             >
               <RotateCw className="w-5 h-5" />

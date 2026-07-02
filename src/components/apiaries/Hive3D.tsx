@@ -2,12 +2,7 @@
 import { useMemo } from 'react'
 import { Html } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
-import type { MapHive, EntranceDirection } from '@/hooks/useApiaryMap'
-
-// Compass heading → yaw in radians (N = away from camera baseline).
-const DIRECTION_DEGREES: Record<EntranceDirection, number> = {
-  N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315,
-}
+import type { MapHive } from '@/hooks/useApiaryMap'
 
 // Relative box dimensions (1 unit ≈ one hive footprint). Heights mirror the
 // 2D card's sense of scale: supers/half boxes shallower than full brood.
@@ -60,7 +55,8 @@ export default function Hive3D({ hive, position, selected, onSelect }: Hive3DPro
   const isNuc = hive.configuration?.hive_size === 'nuc'
   const width = isNuc ? 0.45 : 0.9
   const depth = 0.9
-  const yaw = hive.entrance_direction ? (DIRECTION_DEGREES[hive.entrance_direction] * Math.PI) / 180 : 0
+  // numeric columns can arrive as strings; coerce before doing arithmetic.
+  const yaw = (Number(hive.rotation_deg ?? 0) * Math.PI) / 180
 
   // Precompute each layer's vertical centre.
   let cursor = 0
@@ -97,13 +93,12 @@ export default function Hive3D({ hive, position, selected, onSelect }: Hive3DPro
         </mesh>
       ))}
 
-      {/* Entrance notch on the front (+Z) face at floor level. */}
-      {hive.entrance_direction && (
-        <mesh position={[0, FLOOR_H, depth / 2 + 0.03]}>
-          <boxGeometry args={[width * 0.4, FLOOR_H, 0.08]} />
-          <meshStandardMaterial color="#374151" />
-        </mesh>
-      )}
+      {/* Entrance notch on the front (+Z) face at floor level; the front is
+          defined by rotation_deg, so it is always drawn. */}
+      <mesh position={[0, FLOOR_H, depth / 2 + 0.03]}>
+        <boxGeometry args={[width * 0.4, FLOOR_H, 0.08]} />
+        <meshStandardMaterial color="#374151" />
+      </mesh>
 
       {/* Invisible taller hit area so small/short stacks are still easy to tap. */}
       <mesh position={[0, totalHeight / 2, 0]} visible={false}>

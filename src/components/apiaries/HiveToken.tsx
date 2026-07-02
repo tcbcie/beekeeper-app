@@ -1,10 +1,7 @@
 'use client'
+import { useRef, useState, useCallback } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import type { MapHive, EntranceDirection } from '@/hooks/useApiaryMap'
-
-const DIRECTION_DEGREES: Record<EntranceDirection, number> = {
-  N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315,
-}
+import { normaliseDeg, type MapHive } from '@/hooks/useApiaryMap'
 
 interface HiveTokenProps {
   hive: MapHive
@@ -14,15 +11,28 @@ interface HiveTokenProps {
   isReadOnly: boolean
   selected?: boolean
   onSelect?: (hiveId: string) => void
+  /** Persist a new body rotation (degrees) after the rotate handle is released. */
+  onRotate?: (deg: number) => void
 }
 
-export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect }: HiveTokenProps) {
+export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect, onRotate }: HiveTokenProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: hive.id,
     disabled: isReadOnly,
   })
 
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
+  // Live angle while the rotate handle is being dragged (null = not rotating).
+  const [liveDeg, setLiveDeg] = useState<number | null>(null)
+
+  const setRefs = useCallback((node: HTMLButtonElement | null) => {
+    buttonRef.current = node
+    setNodeRef(node)
+  }, [setNodeRef])
+
   const queen = hive.queens?.[0]
+  // numeric columns can arrive as strings; coerce before doing arithmetic.
+  const rotation = liveDeg ?? Number(hive.rotation_deg ?? 0)
 
   // Colour the border by colony health so it reads at a glance in the field.
   const borderTone = hive.is_queenless
@@ -51,9 +61,44 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
         touchAction: 'none',
       }
 
+  // Free rotation: drag the handle around the token centre; angle is measured
+  // clockwise from canvas-up. Saved once on release; live-previewed meanwhile.
+  const handleRotateStart = (e: React.PointerEvent<HTMLSpanElement>) => {
+    if (isReadOnly || !onRotate) return
+    // Keep dnd-kit's drag sensors from hijacking the gesture.
+    e.stopPropagation()
+    e.preventDefault()
+
+    const rect = buttonRef.current?.getBoundingClientRect()
+    if (!rect) return
+    const cx = rect.left + rect.width / 2
+    const cy = rect.top + rect.height / 2
+
+    const degFrom = (ev: PointerEvent) =>
+      normaliseDeg((Math.atan2(ev.clientX - cx, -(ev.clientY - cy)) * 180) / Math.PI)
+
+    let latest = rotation
+    const onMove = (ev: PointerEvent) => {
+      latest = degFrom(ev)
+      setLiveDeg(latest)
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+      setLiveDeg(null)
+      onRotate(Math.round(latest))
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+  }
+
+  const showRotateHandle = placed && selected && !isReadOnly && !!onRotate
+
   return (
     <button
-      ref={setNodeRef}
+      ref={setRefs}
       style={style}
       type="button"
       onClick={() => onSelect?.(hive.id)}
@@ -64,16 +109,33 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
         ${isDragging ? 'opacity-90' : ''}`}
       {...(isReadOnly ? {} : listeners)}
       {...attributes}
-      aria-label={`Hive ${hive.hive_number}${hive.entrance_direction ? `, entrance facing ${hive.entrance_direction}` : ''}`}
+      aria-label={`Hive ${hive.hive_number}${hive.rotation_deg != null ? `, rotated ${Math.round(hive.rotation_deg)} degrees` : ''}`}
     >
       {/* Entrance arrow: an upright triangle rotated around the token centre. */}
-      {hive.entrance_direction && (
+      {(placed || hive.rotation_deg != null) && (
         <span
           aria-hidden
           className="pointer-events-none absolute inset-0"
-          style={{ transform: `rotate(${DIRECTION_DEGREES[hive.entrance_direction]}deg)` }}
+          style={{ transform: `rotate(${rotation}deg)` }}
         >
           <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full h-0 w-0 border-l-[7px] border-r-[7px] border-b-[9px] border-l-transparent border-r-transparent border-b-amber-500" />
+        </span>
+      )}
+
+      {/* Free-rotate handle: a grip that orbits the token as it turns. */}
+      {showRotateHandle && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ transform: `rotate(${rotation}deg)` }}
+        >
+          <span
+            onPointerDown={handleRotateStart}
+            className="pointer-events-auto absolute left-1/2 -top-7 -translate-x-1/2 h-7 w-7 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-xs font-bold"
+            style={{ touchAction: 'none' }}
+          >
+            ⟳
+          </span>
         </span>
       )}
 
