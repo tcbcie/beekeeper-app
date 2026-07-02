@@ -3,6 +3,17 @@ import { useRef, useState, useCallback } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { normaliseDeg, type MapHive } from '@/hooks/useApiaryMap'
 
+// Footprint pixels: a full hive is square, a nuc is a narrow ~1:2 rectangle
+// (mirrors the 3D footprint of 0.9×0.9 vs 0.45×0.9). At rotation 0 the
+// entrance is the top edge.
+const FULL_W = 68
+const FULL_H = 68
+const NUC_W = 40
+const NUC_H = 80
+// Fixed container so the rotated footprint (diagonal ≤ ~96px) never clips and
+// the touch target stays comfortably above 48px.
+const CONTAINER = 96
+
 interface HiveTokenProps {
   hive: MapHive
   // A placed token is absolutely positioned on the canvas; an unplaced one
@@ -33,6 +44,9 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
   const queen = hive.queens?.[0]
   // numeric columns can arrive as strings; coerce before doing arithmetic.
   const rotation = liveDeg ?? Number(hive.rotation_deg ?? 0)
+  const isNuc = hive.configuration?.hive_size === 'nuc'
+  const fpW = isNuc ? NUC_W : FULL_W
+  const fpH = isNuc ? NUC_H : FULL_H
 
   // Colour the border by colony health so it reads at a glance in the field.
   const borderTone = hive.is_queenless
@@ -51,6 +65,8 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
         position: 'absolute',
         left: `${hive.map_x ?? 50}%`,
         top: `${hive.map_y ?? 50}%`,
+        width: CONTAINER,
+        height: CONTAINER,
         transform: `${dragTransform} ${centreTransform}`.trim(),
         zIndex: isDragging || selected ? 30 : 10,
         touchAction: 'none',
@@ -102,47 +118,55 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
       style={style}
       type="button"
       onClick={() => onSelect?.(hive.id)}
-      className={`relative flex flex-col items-center justify-center rounded-lg border-2 bg-surface px-3 py-2 min-w-[64px] min-h-[56px] shadow-md select-none
-        ${borderTone}
-        ${selected ? 'ring-2 ring-forest-500 ring-offset-1' : ''}
+      className={`select-none flex items-center justify-center
+        ${placed ? 'bg-transparent' : 'p-1'}
         ${isReadOnly ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'}
         ${isDragging ? 'opacity-90' : ''}`}
       {...(isReadOnly ? {} : listeners)}
       {...attributes}
-      aria-label={`Hive ${hive.hive_number}${hive.rotation_deg != null ? `, rotated ${Math.round(hive.rotation_deg)} degrees` : ''}`}
+      aria-label={`Hive ${hive.hive_number}${isNuc ? ' (nuc)' : ''}${hive.rotation_deg != null ? `, rotated ${Math.round(Number(hive.rotation_deg))} degrees` : ''}`}
     >
-      {/* Entrance arrow: an upright triangle rotated around the token centre. */}
-      {(placed || hive.rotation_deg != null) && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{ transform: `rotate(${rotation}deg)` }}
-        >
-          <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full h-0 w-0 border-l-[7px] border-r-[7px] border-b-[9px] border-l-transparent border-r-transparent border-b-amber-500" />
-        </span>
-      )}
+      {/* Footprint: the hive body seen from above; rotates as a whole. */}
+      <span
+        className={`relative flex items-center justify-center rounded-md border-2 bg-surface shadow-md
+          ${borderTone}
+          ${selected ? 'ring-2 ring-forest-500 ring-offset-1' : ''}`}
+        style={{
+          width: fpW,
+          height: fpH,
+          transform: placed ? `rotate(${rotation}deg)` : undefined,
+        }}
+      >
+        {/* Entrance: a triangle on the top (front) edge, turning with the body. */}
+        {placed && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full h-0 w-0 border-l-[7px] border-r-[7px] border-b-[9px] border-l-transparent border-r-transparent border-b-amber-500"
+          />
+        )}
 
-      {/* Free-rotate handle: a grip that orbits the token as it turns. */}
-      {showRotateHandle && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{ transform: `rotate(${rotation}deg)` }}
-        >
+        {/* Free-rotate handle above the entrance edge; orbits with the body. */}
+        {showRotateHandle && (
           <span
             onPointerDown={handleRotateStart}
-            className="pointer-events-auto absolute left-1/2 -top-7 -translate-x-1/2 h-7 w-7 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-xs font-bold"
+            className="pointer-events-auto absolute left-1/2 -top-9 -translate-x-1/2 h-7 w-7 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-xs font-bold"
             style={{ touchAction: 'none' }}
           >
             ⟳
           </span>
-        </span>
-      )}
+        )}
 
-      <span className="text-lg font-bold text-foreground leading-none">{hive.hive_number}</span>
-      {queen && (
-        <span className="mt-0.5 text-sm text-text-secondary leading-none">Q{queen.queen_number}</span>
-      )}
+        {/* Label counter-rotates so text stays horizontal and readable. */}
+        <span
+          className="flex flex-col items-center whitespace-nowrap"
+          style={{ transform: placed ? `rotate(${-rotation}deg)` : undefined }}
+        >
+          <span className="text-base font-bold text-foreground leading-none">{hive.hive_number}</span>
+          {queen && (
+            <span className="mt-0.5 text-sm text-text-secondary leading-none">Q{queen.queen_number}</span>
+          )}
+        </span>
+      </span>
     </button>
   )
 }
