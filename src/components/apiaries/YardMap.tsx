@@ -1,13 +1,17 @@
 'use client'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import {
   DndContext,
   useDroppable,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   KeyboardSensor,
   useSensor,
   useSensors,
+  pointerWithin,
+  rectIntersection,
   type DragEndEvent,
+  type CollisionDetection,
 } from '@dnd-kit/core'
 import { Compass } from 'lucide-react'
 import { useApiaryMap, type EntranceDirection } from '@/hooks/useApiaryMap'
@@ -18,6 +22,23 @@ const CANVAS_ID = 'yard-canvas'
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
 
+// The droppable MUST be registered from inside <DndContext>, so it lives in its
+// own child component. Registering it in YardMap (the DndContext's parent) would
+// bind it to the default context, leaving the drag with no drop target.
+function YardCanvas({ children }: { children: React.ReactNode }) {
+  const { setNodeRef } = useDroppable({ id: CANVAS_ID })
+  return (
+    <div
+      ref={setNodeRef}
+      role="group"
+      aria-label="Yard layout. Drag hives to position them within the yard."
+      className="relative w-full aspect-[3/2] rounded-xl border-2 border-forest-700 overflow-hidden bg-forest-100 dark:bg-forest-900/40"
+    >
+      {children}
+    </div>
+  )
+}
+
 interface YardMapProps {
   apiaryId: string
 }
@@ -27,13 +48,22 @@ export default function YardMap({ apiaryId }: YardMapProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const isReadOnly = !isOwner
 
-  // A small activation distance so a tap can still select without starting a drag.
+  // Separate mouse and touch sensors: a single PointerSensor is unreliable at
+  // starting a drag on touch devices (our field users are on phones). Mouse
+  // uses a small distance so a tap still selects; touch uses a short press-and-
+  // hold so a tap can scroll/select but a hold-and-drag moves the hive.
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
     useSensor(KeyboardSensor),
   )
 
-  const { setNodeRef: setCanvasRef } = useDroppable({ id: CANVAS_ID })
+  // Prefer the pointer position for drop detection (forgiving for placement),
+  // falling back to rectangle overlap so keyboard dragging still works.
+  const collisionDetection = useCallback<CollisionDetection>((args) => {
+    const pointerCollisions = pointerWithin(args)
+    return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args)
+  }, [])
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -76,7 +106,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
   }
 
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
       <div className="space-y-4">
         {isReadOnly && (
           <p className="text-sm text-text-secondary">
@@ -85,12 +115,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
         )}
 
         {/* Yard canvas — a fixed-aspect rectangle representing the bee yard. */}
-        <div
-          ref={setCanvasRef}
-          role="group"
-          aria-label="Yard layout. Drag hives to position them within the yard."
-          className="relative w-full aspect-[3/2] rounded-xl border-2 border-forest-700 overflow-hidden bg-forest-100 dark:bg-forest-900/40"
-        >
+        <YardCanvas>
           {/* North indicator */}
           <span className="pointer-events-none absolute top-2 right-2 flex items-center gap-1 text-sm font-semibold text-forest-800 dark:text-forest-200">
             <Compass className="w-4 h-4" /> N
@@ -116,7 +141,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
               onSelect={setSelectedId}
             />
           ))}
-        </div>
+        </YardCanvas>
 
         {/* Details + entrance control for the selected hive */}
         {selectedHive && (
