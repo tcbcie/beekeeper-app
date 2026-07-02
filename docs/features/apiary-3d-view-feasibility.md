@@ -1,7 +1,7 @@
 # Feasibility: 3D Apiary View (Rotatable Yard with Rendered Hives)
 
 **Date:** 02/07/2026
-**Status:** Assessment (not scheduled)
+**Status:** Implemented — now a permanent feature, see `apiary-3d-view.md`
 **Requested by:** Max Dampford
 
 ## 1. The idea

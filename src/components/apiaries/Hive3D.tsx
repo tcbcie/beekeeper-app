@@ -1,5 +1,6 @@
 'use client'
 import { useMemo } from 'react'
+import { Html } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
 import type { MapHive, EntranceDirection } from '@/hooks/useApiaryMap'
 
@@ -109,6 +110,27 @@ export default function Hive3D({ hive, position, selected, onSelect }: Hive3DPro
         <boxGeometry args={[width + 0.1, Math.max(totalHeight, 0.4), depth + 0.1]} />
         <meshStandardMaterial transparent opacity={0} />
       </mesh>
+
+      {/* Camera-facing hive-number label, high contrast for readability. */}
+      <Html
+        position={[0, totalHeight + 0.2, 0]}
+        center
+        distanceFactor={9}
+        style={{ pointerEvents: 'none' }}
+        zIndexRange={[10, 0]}
+      >
+        <span
+          className={`inline-block rounded-md border px-2 py-0.5 text-sm font-bold whitespace-nowrap shadow-sm bg-white/95 text-gray-900 ${
+            selected
+              ? 'border-forest-600 ring-2 ring-forest-500'
+              : hive.is_queenless
+                ? 'border-red-500 ring-1 ring-red-400'
+                : 'border-gray-300'
+          }`}
+        >
+          {hive.hive_number}
+        </span>
+      </Html>
     </group>
   )
 }

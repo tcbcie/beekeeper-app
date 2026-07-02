@@ -5,8 +5,8 @@ import Link from 'next/link'
 import { ArrowLeft, Map } from 'lucide-react'
 import IconButton from '@/components/ui/IconButton'
 
-// SPIKE: three.js is heavy — load client-side only so it stays off SSR and the
-// shared bundle. Isolated to this route while we evaluate the 3D view.
+// three.js is heavy — load client-side only so it stays off SSR and the shared
+// bundle. Kept isolated to this route so it never touches the critical path.
 const YardScene3D = dynamic(() => import('@/components/apiaries/YardScene3D'), {
   ssr: false,
   loading: () => <p className="text-text-secondary py-8 text-center">Loading 3D yard…</p>,
@@ -28,7 +28,7 @@ export default function ApiaryMap3DPage() {
         </IconButton>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">3D Yard View</h1>
-          <p className="text-sm text-text-secondary">A spin-around preview of the yard (experimental).</p>
+          <p className="text-sm text-text-secondary">Spin the yard around to see your hives in 3D.</p>
         </div>
         <Link
           href={`/dashboard/apiaries/${apiaryId}/map`}

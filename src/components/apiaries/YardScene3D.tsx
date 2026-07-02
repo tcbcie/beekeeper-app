@@ -1,6 +1,7 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react'
 import Link from 'next/link'
+import { RotateCcw } from 'lucide-react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Grid } from '@react-three/drei'
 import { useApiaryMap } from '@/hooks/useApiaryMap'
@@ -38,6 +39,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
   const { hives, loading } = useApiaryMap(apiaryId)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [webgl, setWebgl] = useState<boolean | null>(null)
+  const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null)
 
   useEffect(() => { setWebgl(webglAvailable()) }, [])
 
@@ -80,11 +82,20 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
           first, then return here.
         </p>
       ) : (
-        <div className="w-full aspect-[3/2] rounded-xl border-2 border-forest-700 overflow-hidden bg-sky-100 dark:bg-slate-800">
+        <div className="relative w-full aspect-[3/2] rounded-xl border-2 border-forest-700 overflow-hidden bg-sky-100 dark:bg-slate-800">
+          <button
+            type="button"
+            onClick={() => controlsRef.current?.reset()}
+            aria-label="Reset the camera view"
+            className="absolute top-2 right-2 z-10 inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg bg-white/90 dark:bg-slate-900/90 border border-border text-foreground shadow-sm hover:bg-white dark:hover:bg-slate-900"
+          >
+            <RotateCcw className="w-4 h-4" /> Reset view
+          </button>
           <Canvas
             frameloop="demand"
             camera={{ position: [0, 6, 9], fov: 45 }}
             onPointerMissed={() => setSelectedId(null)}
+            aria-label="3D view of the yard. A text list of hives is provided below as an accessible alternative."
           >
             <ambientLight intensity={0.85} />
             <directionalLight position={[6, 12, 8]} intensity={1} />
@@ -114,6 +125,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
             ))}
 
             <OrbitControls
+              ref={controlsRef}
               enablePan={false}
               minDistance={4}
               maxDistance={20}
@@ -137,6 +149,30 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
           onRemove={noop}
           onClose={() => setSelectedId(null)}
         />
+      )}
+
+      {/* Accessible, keyboard-navigable alternative to the 3D canvas. */}
+      {placedHives.length > 0 && (
+        <div className="rounded-lg border border-border bg-surface p-3">
+          <h2 className="text-sm font-semibold text-text-secondary mb-2">Hives on this yard</h2>
+          <ul className="flex flex-wrap gap-2">
+            {placedHives.map(hive => (
+              <li key={hive.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(hive.id)}
+                  aria-pressed={selectedId === hive.id}
+                  className={`inline-flex items-center min-h-[44px] px-3 py-1.5 rounded-lg border text-sm font-medium text-foreground hover:border-forest-500 ${
+                    selectedId === hive.id ? 'border-forest-600 ring-2 ring-forest-500' : 'border-border'
+                  }`}
+                >
+                  Hive {hive.hive_number}
+                  {hive.is_queenless && <span className="ml-1.5 text-red-600 dark:text-red-400">(queenless)</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   )
