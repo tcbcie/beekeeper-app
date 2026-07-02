@@ -23,11 +23,16 @@ nav bar only ever shows `bottomNav` items, none of which are feature-gated.
 |---------|--------|---------------|------|-------------|
 | CRM (Customers, Orders) | `profiles.enable_crm` | **Yes** + opt-in | `useCrmEnabled` | `dashboard/crm/layout.tsx` |
 | Logbook | `profiles.enable_logbook` | No — opt-in only | `useLogbookEnabled` | `dashboard/logbook/layout.tsx` |
+| Yard Map (2D + 3D) | `profiles.enable_yard_map` | **Yes** + opt-in | `useYardMapEnabled` | `dashboard/apiaries/[id]/map/layout.tsx` |
 
-Both columns default to `false` (the feature must be switched on under **Profile →
+All columns default to `false` (the feature must be switched on under **Profile →
 Preferences**). Logbook is preference-only, mirroring the label-printing toggle —
-it is not a premium feature. Customers and Orders now sit in the **Activity**
-group (after Tasks & Events) rather than a separate "Sales" section.
+it is not a premium feature. CRM and Yard Map are premium: their profile toggle
+only appears for active subscribers, and the hook ANDs the preference with
+`resolveActiveSubscription()`. Unlike CRM/Logbook, Yard Map is **not** a top-level
+nav item — it is a Quick Action on the apiary detail page — so it is not part of
+the `NavFeature` union; gating is applied to that entry point plus the route guard
+(which covers both `/map` and the nested `/map/3d`).
 
 ## Live refresh
 

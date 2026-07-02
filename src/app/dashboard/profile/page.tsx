@@ -13,6 +13,7 @@ import type { SubscriptionStatusResponse } from '@/types/subscription'
 import { useToast } from '@/components/ui/Toast'
 import { notifyCrmPrefChanged } from '@/hooks/useCrmEnabled'
 import { notifyLogbookPrefChanged } from '@/hooks/useLogbookEnabled'
+import { notifyYardMapPrefChanged } from '@/hooks/useYardMapEnabled'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Panel from '@/components/ui/Panel'
 import ModalShell from '@/components/ui/ModalShell'
@@ -45,6 +46,7 @@ interface UserProfile {
  enable_label_printing?: boolean
  enable_crm?: boolean
  enable_logbook?: boolean
+ enable_yard_map?: boolean
 }
 
 interface Association {
@@ -85,6 +87,7 @@ export default function ProfilePage() {
  enable_label_printing: false,
  enable_crm: false,
  enable_logbook: false,
+ enable_yard_map: false,
  })
  const [savingProfile, setSavingProfile] = useState(false)
  const [associations, setAssociations] = useState<Association[]>([])
@@ -171,6 +174,7 @@ export default function ProfilePage() {
  enable_label_printing: data.enable_label_printing === true,
  enable_crm: data.enable_crm === true,
  enable_logbook: data.enable_logbook === true,
+ enable_yard_map: data.enable_yard_map === true,
  })
  }
  } catch (error) {
@@ -216,6 +220,7 @@ export default function ProfilePage() {
  enable_label_printing: profileFormData.enable_label_printing,
  enable_crm: profileFormData.enable_crm,
  enable_logbook: profileFormData.enable_logbook,
+ enable_yard_map: profileFormData.enable_yard_map,
  })
  .eq('id', userId)
 
@@ -262,6 +267,7 @@ export default function ProfilePage() {
  enable_label_printing: userProfile.enable_label_printing === true,
  enable_crm: userProfile.enable_crm === true,
  enable_logbook: userProfile.enable_logbook === true,
+ enable_yard_map: userProfile.enable_yard_map === true,
  })
  }
  }
@@ -1288,6 +1294,32 @@ export default function ProfilePage() {
  id="enable-crm"
  checked={profileFormData.enable_crm}
  onChange={(e) => updatePreference('enable_crm', e.target.checked, () => notifyCrmPrefChanged(e.target.checked))}
+ className="sr-only peer"
+ />
+ <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+ </label>
+ </div>
+ </div>
+ )}
+
+ {subscriptionStatus?.is_active && (
+ <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+ <div className="mb-4">
+ <div className="font-medium text-foreground mb-1">Yard Map</div>
+ <div className="text-sm text-text-tertiary">Arrange your hives on a visual yard map and view the apiary in 3D, built from each hive&apos;s configuration.</div>
+ </div>
+
+ <div className="flex items-center justify-between">
+ <div>
+ <label htmlFor="enable-yard-map" className="text-sm font-medium text-foreground">Enable yard map</label>
+ <div className="text-xs text-text-tertiary">Adds a Yard Map action to each apiary</div>
+ </div>
+ <label className="relative inline-flex items-center cursor-pointer">
+ <input
+ type="checkbox"
+ id="enable-yard-map"
+ checked={profileFormData.enable_yard_map}
+ onChange={(e) => updatePreference('enable_yard_map', e.target.checked, () => notifyYardMapPrefChanged(e.target.checked))}
  className="sr-only peer"
  />
  <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>

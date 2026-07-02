@@ -109,6 +109,26 @@ All schema changes are applied **via the Supabase MCP server** (`apply_migration
 | `src/app/dashboard/apiaries/[id]/map/page.tsx` | Yard Map route (dynamic, client-only) |
 | `src/app/dashboard/apiaries/[id]/page.tsx` | "Yard Map" Quick Action pill |
 
+## Access & gating
+
+The Yard Map (and its 3D view) is a **premium, opt-in** feature, gated exactly like the CRM
+module:
+
+* **Requires an active subscription AND opt-in.** `profiles.enable_yard_map` (boolean, default
+  `false`) is the preference; `useYardMapEnabled()` ANDs it with `resolveActiveSubscription()`.
+* **Profile toggle** — a "Yard Map" switch under **Profile → Preferences** that appears **only for
+  active subscribers** (mirrors the CRM toggle). Saving fires `notifyYardMapPrefChanged()` so gated
+  UI refreshes live.
+* **Entry point** — the "Yard Map" Quick Action on the apiary detail page renders only when
+  `yardMapEnabled` is true.
+* **Route guard** — `src/app/dashboard/apiaries/[id]/map/layout.tsx` redirects to `/dashboard` on
+  direct URL access when the feature is off; it covers both `/map` and the nested `/map/3d`.
+* **Server-side note:** yard-map writes are plain `hives.map_x/map_y/entrance_direction` column
+  updates (no billable value), so gating is UI + route level. If defence-in-depth is wanted later,
+  add a trigger rejecting those column changes without an active subscription.
+
+See `nav-feature-gating.md` for the shared gating mechanism.
+
 ## See also
 
 * `distributed-queen-hive-placement.md` — "placement" as a queen→hive data association (not spatial).
