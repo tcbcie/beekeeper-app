@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 import { useApiaryDetail } from '@/hooks'
+import { useYardMapEnabled } from '@/hooks/useYardMapEnabled'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import { formatQueenlessLabel } from '@/lib/queenless'
 
@@ -24,6 +25,7 @@ export default function ApiaryDetailPage() {
     loading,
     fetchApiaryData,
   } = useApiaryDetail(apiaryId)
+  const { yardMapEnabled } = useYardMapEnabled()
 
   useEffect(() => {
     const init = async () => {
@@ -173,13 +175,15 @@ export default function ApiaryDetailPage() {
           <Search size={14} />
           New Inspection
         </Link>
-        <Link
-          href={`/dashboard/apiaries/${apiaryId}/map`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface dark:bg-surface border border-border rounded-full hover:border-forest-500 dark:hover:border-forest-400 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
-        >
-          <Map size={14} />
-          Yard Map
-        </Link>
+        {yardMapEnabled && (
+          <Link
+            href={`/dashboard/apiaries/${apiaryId}/map`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface dark:bg-surface border border-border rounded-full hover:border-forest-500 dark:hover:border-forest-400 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
+          >
+            <Map size={14} />
+            Yard Map
+          </Link>
+        )}
         {apiary.latitude && apiary.longitude && (
           <Link
             href="/dashboard/community-map"
