@@ -30,6 +30,7 @@ The NIHBS monthly report auto-calculates external distribution counts from these
 | external_recipient_phone | TEXT | Free-text mobile for non-app recipients |
 | external_recipient_location | TEXT | Apiary / mating location (closest Eircode) for non-app recipients |
 | mating_location | TEXT | Apiary / mating location (closest Eircode) for app-user queen cell distributions |
+| crm_order_id | UUID | FK to crm_orders (optional, `ON DELETE SET NULL`) — the open CRM order this distribution fulfils. Informational only. See [distribution-order-linking.md](distribution-order-linking.md) |
 
 ### RLS Policies
 

@@ -205,6 +205,11 @@ Outstanding**) computed by the shared `summariseCustomerOrders` helper (same
 figures as the customer detail page). Full order history is reached via the
 link, not embedded here.
 
+A read-only **Distributions linked to this order** panel lists any queen/cell
+distributions recorded against the order from the distribution dialogue. The link
+is informational and does not affect fulfilment or revenue — see
+[distribution-order-linking.md](distribution-order-linking.md).
+
 ## Sales Insights
 
 `crm/insights` — a cash-basis sales overview, computed client-side from the
