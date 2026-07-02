@@ -13,15 +13,20 @@ import {
   type DragEndEvent,
   type CollisionDetection,
 } from '@dnd-kit/core'
-import { ArrowUp, DoorOpen, RotateCcw, RotateCw } from 'lucide-react'
-import { useApiaryMap, normaliseDeg } from '@/hooks/useApiaryMap'
+import { ArrowUp, DoorOpen, Plus, RotateCcw, RotateCw, Trash2, X } from 'lucide-react'
+import { useApiaryMap, normaliseDeg, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
+import { UNIT_PX, SLOT_UNITS, slotOffsetUnits, slotPositionPct, rotatedOffset } from '@/lib/yard-geometry'
 import IconButton from '@/components/ui/IconButton'
 import Button from '@/components/ui/Button'
 import HiveToken from './HiveToken'
+import BenchToken from './BenchToken'
 import HiveInspectorPanel from './HiveInspectorPanel'
 
 const CANVAS_ID = 'yard-canvas'
 const NORTH_STEP_DEG = 15
+const BENCH_STEP_DEG = 15
+// A hive dropped within this distance of a free bench slot snaps onto it.
+const SNAP_PX = SLOT_UNITS * UNIT_PX * 0.65
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
 
@@ -50,7 +55,7 @@ function YardCanvas({
     <div
       ref={setNodeRef}
       role="group"
-      aria-label="Yard layout. Drag hives to position them within the yard."
+      aria-label="Yard layout. Drag hives and benches to position them within the yard."
       onClick={handleClick}
       className="relative w-full aspect-[3/2] rounded-xl border-2 border-forest-700 overflow-hidden bg-forest-100 dark:bg-forest-900/40"
     >
@@ -59,14 +64,50 @@ function YardCanvas({
   )
 }
 
+/** Nearest free slot on any bench to a dropped point, in canvas pixels. */
+function findSnapSlot(
+  dropPx: { x: number; y: number },
+  canvasRect: { left: number; top: number; width: number; height: number },
+  benches: YardBench[],
+  hives: MapHive[],
+  draggedHiveId: string,
+): { bench: YardBench; slot: number } | null {
+  let best: { bench: YardBench; slot: number; dist: number } | null = null
+  for (const bench of benches) {
+    const centrePx = {
+      x: canvasRect.left + (Number(bench.map_x) / 100) * canvasRect.width,
+      y: canvasRect.top + (Number(bench.map_y) / 100) * canvasRect.height,
+    }
+    const occupied = new Set(
+      hives
+        .filter(h => h.bench_id === bench.id && h.id !== draggedHiveId && h.bench_slot != null)
+        .map(h => h.bench_slot as number),
+    )
+    for (let slot = 0; slot < bench.capacity; slot++) {
+      if (occupied.has(slot)) continue
+      const off = rotatedOffset(slotOffsetUnits(slot, bench.capacity) * UNIT_PX, Number(bench.rotation_deg))
+      const dist = Math.hypot(dropPx.x - (centrePx.x + off.dx), dropPx.y - (centrePx.y + off.dy))
+      if (dist <= SNAP_PX && (!best || dist < best.dist)) {
+        best = { bench, slot, dist }
+      }
+    }
+  }
+  return best ? { bench: best.bench, slot: best.slot } : null
+}
+
 interface YardMapProps {
   apiaryId: string
 }
 
 export default function YardMap({ apiaryId }: YardMapProps) {
-  const { hives, yard, loading, isOwner, saveHivePlacement, saveYardSettings } = useApiaryMap(apiaryId)
+  const {
+    hives, benches, yard, loading, isOwner,
+    saveHivePlacement, saveYardSettings, addBench, saveBenchPlacement, deleteBench,
+  } = useApiaryMap(apiaryId)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedBenchId, setSelectedBenchId] = useState<string | null>(null)
   const [placingEntrance, setPlacingEntrance] = useState(false)
+  const [benchCapacity, setBenchCapacity] = useState(2)
   const isReadOnly = !isOwner
 
   // Separate mouse and touch sensors: a single PointerSensor is unreliable at
@@ -86,6 +127,15 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args)
   }, [])
 
+  const selectHive = (hiveId: string) => {
+    setSelectedId(hiveId)
+    setSelectedBenchId(null)
+  }
+  const selectBench = (benchId: string) => {
+    setSelectedBenchId(benchId)
+    setSelectedId(null)
+  }
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     // Only persist when dropped onto the yard canvas.
@@ -95,25 +145,55 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     const canvasRect = over.rect
     if (!activeRect || !canvasRect.width || !canvasRect.height) return
 
-    // Convert the dragged token's centre point into a canvas-relative percentage.
-    const centreX = activeRect.left + activeRect.width / 2
-    const centreY = activeRect.top + activeRect.height / 2
-    const map_x = clamp(((centreX - canvasRect.left) / canvasRect.width) * 100, 0, 100)
-    const map_y = clamp(((centreY - canvasRect.top) / canvasRect.height) * 100, 0, 100)
+    // The dragged item's centre point, in viewport px and canvas %.
+    const centrePx = {
+      x: activeRect.left + activeRect.width / 2,
+      y: activeRect.top + activeRect.height / 2,
+    }
+    const map_x = clamp(((centrePx.x - canvasRect.left) / canvasRect.width) * 100, 0, 100)
+    const map_y = clamp(((centrePx.y - canvasRect.top) / canvasRect.height) * 100, 0, 100)
+    const roundedX = Math.round(map_x * 100) / 100
+    const roundedY = Math.round(map_y * 100) / 100
 
-    saveHivePlacement(String(active.id), {
-      map_x: Math.round(map_x * 100) / 100,
-      map_y: Math.round(map_y * 100) / 100,
-    })
+    const idStr = String(active.id)
+    if (idStr.startsWith('bench:')) {
+      saveBenchPlacement(idStr.slice('bench:'.length), { map_x: roundedX, map_y: roundedY })
+      return
+    }
+
+    // Hive drop: snap to the nearest free bench slot when close enough,
+    // otherwise place on the ground and clear any bench link.
+    const snap = findSnapSlot(centrePx, canvasRect, benches, hives, idStr)
+    if (snap) {
+      const pos = slotPositionPct(snap.bench, snap.slot)
+      saveHivePlacement(idStr, {
+        bench_id: snap.bench.id,
+        bench_slot: snap.slot,
+        map_x: pos.x,
+        map_y: pos.y,
+        rotation_deg: normaliseDeg(Math.round(Number(snap.bench.rotation_deg))),
+      })
+    } else {
+      saveHivePlacement(idStr, {
+        map_x: roundedX,
+        map_y: roundedY,
+        bench_id: null,
+        bench_slot: null,
+      })
+    }
   }
 
   if (loading) {
     return <p className="text-text-secondary py-8 text-center">Loading yard map…</p>
   }
 
-  const placedHives = hives.filter(h => h.map_x != null && h.map_y != null)
-  const unplacedHives = hives.filter(h => h.map_x == null || h.map_y == null)
+  const benchById = new Map(benches.map(b => [b.id, b]))
+  const isPlaced = (h: MapHive) =>
+    (h.map_x != null && h.map_y != null) || (h.bench_id != null && benchById.has(h.bench_id))
+  const placedHives = hives.filter(isPlaced)
+  const unplacedHives = hives.filter(h => !isPlaced(h))
   const selectedHive = selectedId ? hives.find(h => h.id === selectedId) ?? null : null
+  const selectedBench = selectedBenchId ? benchById.get(selectedBenchId) ?? null : null
   const entrance = yard.yard_entrance_x != null && yard.yard_entrance_y != null
     ? { x: Number(yard.yard_entrance_x), y: Number(yard.yard_entrance_y) }
     : null
@@ -126,7 +206,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
   const handleRemove = () => {
     if (!selectedHive) return
     // Nulling the coordinates returns the hive to the unplaced tray.
-    saveHivePlacement(selectedHive.id, { map_x: null, map_y: null })
+    saveHivePlacement(selectedHive.id, { map_x: null, map_y: null, bench_id: null, bench_slot: null })
   }
 
   const handleCanvasClick = (x: number, y: number) => {
@@ -134,6 +214,18 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     setPlacingEntrance(false)
     saveYardSettings({ yard_entrance_x: x, yard_entrance_y: y })
   }
+
+  /** Bench anchor for a hive standing on a bench (exact slot at any zoom). */
+  const benchAnchor = (hive: MapHive) => {
+    if (hive.bench_id == null || hive.bench_slot == null) return undefined
+    const bench = benchById.get(hive.bench_id)
+    if (!bench) return undefined
+    const off = rotatedOffset(slotOffsetUnits(hive.bench_slot, bench.capacity) * UNIT_PX, Number(bench.rotation_deg))
+    return { xPct: Number(bench.map_x), yPct: Number(bench.map_y), dxPx: off.dx, dyPx: off.dy }
+  }
+
+  const benchOccupancy = (benchId: string) =>
+    hives.filter(h => h.bench_id === benchId).length
 
   return (
     <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
@@ -144,7 +236,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
           </p>
         )}
 
-        {/* Yard toolbar: entrance marker + adjustable north */}
+        {/* Yard toolbar: entrance marker, benches, adjustable north */}
         {!isReadOnly && (
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -156,9 +248,23 @@ export default function YardMap({ apiaryId }: YardMapProps) {
               <DoorOpen className="w-4 h-4 mr-1" />
               {placingEntrance ? 'Tap the yard…' : entrance ? 'Move entrance' : 'Set entrance'}
             </Button>
-            {placingEntrance && (
-              <span className="text-sm text-text-secondary">Tap where you walk into the yard.</span>
-            )}
+
+            <div className="flex items-center gap-1">
+              <label htmlFor="bench-capacity" className="sr-only">Bench size (hives)</label>
+              <select
+                id="bench-capacity"
+                value={benchCapacity}
+                onChange={(e) => setBenchCapacity(Number(e.target.value))}
+                className="px-2 py-1.5 border border-border rounded-md bg-surface text-foreground text-sm min-h-[40px]"
+              >
+                {[1, 2, 3, 4, 5, 6].map(n => (
+                  <option key={n} value={n}>{n} {n === 1 ? 'hive' : 'hives'}</option>
+                ))}
+              </select>
+              <Button size="sm" tone="neutral" onClick={() => addBench(benchCapacity)}>
+                <Plus className="w-4 h-4 mr-1" /> Add bench
+              </Button>
+            </div>
 
             <div className="ml-auto flex items-center gap-1">
               <span className="text-sm text-text-secondary mr-1">North</span>
@@ -188,7 +294,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
         {/* Yard canvas — a fixed-aspect rectangle representing the bee yard. */}
         <YardCanvas onCanvasClick={placingEntrance ? handleCanvasClick : undefined}>
           {/* North indicator (user-adjustable) */}
-          <span className="pointer-events-none absolute top-2 right-2 flex items-center gap-1 text-sm font-semibold text-forest-800 dark:text-forest-200">
+          <span className="pointer-events-none absolute top-2 right-2 flex items-center gap-1 text-sm font-semibold text-forest-800 dark:text-forest-200 z-10">
             <ArrowUp className="w-4 h-4" style={{ transform: `rotate(${northAngle}deg)` }} /> N
           </span>
 
@@ -206,7 +312,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
             </span>
           )}
 
-          {placedHives.length === 0 && (
+          {placedHives.length === 0 && benches.length === 0 && (
             <span className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center text-sm font-medium text-forest-800 dark:text-forest-200">
               {isReadOnly
                 ? 'No hives have been placed on this yard yet.'
@@ -216,6 +322,17 @@ export default function YardMap({ apiaryId }: YardMapProps) {
             </span>
           )}
 
+          {/* Benches render beneath the hives standing on them. */}
+          {benches.map(bench => (
+            <BenchToken
+              key={bench.id}
+              bench={bench}
+              isReadOnly={isReadOnly}
+              selected={selectedBenchId === bench.id}
+              onSelect={selectBench}
+            />
+          ))}
+
           {placedHives.map(hive => (
             <HiveToken
               key={hive.id}
@@ -223,8 +340,9 @@ export default function YardMap({ apiaryId }: YardMapProps) {
               placed
               isReadOnly={isReadOnly}
               selected={selectedId === hive.id}
-              onSelect={setSelectedId}
+              onSelect={selectHive}
               onRotate={(deg) => rotateHive(hive.id, deg)}
+              anchor={benchAnchor(hive)}
             />
           ))}
         </YardCanvas>
@@ -241,6 +359,58 @@ export default function YardMap({ apiaryId }: YardMapProps) {
           />
         )}
 
+        {/* Bench inspector: rotate + delete */}
+        {selectedBench && (
+          <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">
+                  Bench — {selectedBench.capacity} {selectedBench.capacity === 1 ? 'slot' : 'slots'}
+                </h3>
+                <p className="text-sm text-text-secondary">
+                  {benchOccupancy(selectedBench.id)} of {selectedBench.capacity} slots occupied
+                </p>
+              </div>
+              <IconButton onClick={() => setSelectedBenchId(null)} aria-label="Close bench details" className="min-h-[48px] min-w-[48px]">
+                <X className="w-5 h-5" />
+              </IconButton>
+            </div>
+
+            {!isReadOnly && (
+              <div className="mt-4 flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-text-secondary">
+                    Rotation: <span className="font-semibold text-foreground">{Math.round(Number(selectedBench.rotation_deg))}°</span>
+                  </span>
+                  <IconButton
+                    onClick={() => saveBenchPlacement(selectedBench.id, { rotation_deg: normaliseDeg(Number(selectedBench.rotation_deg) - BENCH_STEP_DEG) })}
+                    aria-label={`Rotate bench ${BENCH_STEP_DEG} degrees anticlockwise`}
+                    className="min-h-[48px] min-w-[48px]"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                  </IconButton>
+                  <IconButton
+                    onClick={() => saveBenchPlacement(selectedBench.id, { rotation_deg: normaliseDeg(Number(selectedBench.rotation_deg) + BENCH_STEP_DEG) })}
+                    aria-label={`Rotate bench ${BENCH_STEP_DEG} degrees clockwise`}
+                    className="min-h-[48px] min-w-[48px]"
+                  >
+                    <RotateCw className="w-5 h-5" />
+                  </IconButton>
+                </div>
+
+                <Button
+                  size="sm"
+                  tone="danger"
+                  className="ml-auto"
+                  onClick={() => { deleteBench(selectedBench.id); setSelectedBenchId(null) }}
+                >
+                  <Trash2 className="w-4 h-4 mr-1" /> Delete bench
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Unplaced tray — drag onto the canvas to place; removed hives return here */}
         {!isReadOnly && unplacedHives.length > 0 && (
           <div className="rounded-lg border border-border bg-surface p-3">
@@ -255,7 +425,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
                   placed={false}
                   isReadOnly={isReadOnly}
                   selected={selectedId === hive.id}
-                  onSelect={setSelectedId}
+                  onSelect={selectHive}
                 />
               ))}
             </div>

@@ -55,6 +55,9 @@ export interface Hive {
   map_y?: number | null
   /** Yard map body rotation, degrees clockwise from canvas-up (entrance = front face). */
   rotation_deg?: number | null
+  /** Yard map bench the hive stands on (NULL = on the ground). */
+  bench_id?: string | null
+  bench_slot?: number | null
   /** @deprecated Superseded by rotation_deg; kept one release as a safety net. */
   entrance_direction?: 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' | null
   queen_id: string | null

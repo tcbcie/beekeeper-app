@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getCurrentUserId } from '@/lib/auth'
+import { slotPositionPct } from '@/lib/yard-geometry'
 import type { HiveConfiguration } from '@/types/hive'
 
 /** Normalise any angle to [0, 360). */
@@ -17,6 +18,9 @@ export interface MapHive {
   map_y: number | null
   /** Body rotation, degrees clockwise from canvas-up (entrance = front face). */
   rotation_deg: number | null
+  /** Bench the hive stands on (NULL = on the ground). */
+  bench_id: string | null
+  bench_slot: number | null
   // Physical box stack, used by the 3D view to build the hive model.
   configuration: HiveConfiguration | null
   queens?: {
@@ -26,11 +30,27 @@ export interface MapHive {
   }[]
 }
 
+export interface YardBench {
+  id: string
+  map_x: number
+  map_y: number
+  rotation_deg: number
+  capacity: number
+}
+
 // Only the placement fields may be patched from the yard map.
 export interface HivePlacementPatch {
   map_x?: number | null
   map_y?: number | null
   rotation_deg?: number | null
+  bench_id?: string | null
+  bench_slot?: number | null
+}
+
+export interface BenchPlacementPatch {
+  map_x?: number
+  map_y?: number
+  rotation_deg?: number
 }
 
 /** Per-apiary yard frame: entrance marker position + where north points. */
@@ -45,11 +65,15 @@ export type YardSettingsPatch = Partial<YardSettings>
 interface UseApiaryMapReturn {
   apiaryName: string | null
   hives: MapHive[]
+  benches: YardBench[]
   yard: YardSettings
   loading: boolean
   isOwner: boolean
   saveHivePlacement: (hiveId: string, patch: HivePlacementPatch) => Promise<void>
   saveYardSettings: (patch: YardSettingsPatch) => Promise<void>
+  addBench: (capacity: number) => Promise<void>
+  saveBenchPlacement: (benchId: string, patch: BenchPlacementPatch) => Promise<void>
+  deleteBench: (benchId: string) => Promise<void>
   reload: () => Promise<void>
 }
 
@@ -61,9 +85,10 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
   const userIdRef = useRef<string | null>(null)
   // Monotonic token so a slow reload can never overwrite a newer one's result.
   const loadSeqRef = useRef(0)
-  // Mirror the latest hives/yard so a save can read the pre-change snapshot
+  // Mirror the latest state so a save can read the pre-change snapshot
   // synchronously, without depending on when React runs a state updater.
   const hivesRef = useRef<MapHive[]>([])
+  const benchesRef = useRef<YardBench[]>([])
   const yardRef = useRef<YardSettings>(DEFAULT_YARD)
 
   useEffect(() => {
@@ -73,12 +98,14 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
 
   const [apiaryName, setApiaryName] = useState<string | null>(null)
   const [hives, setHives] = useState<MapHive[]>([])
+  const [benches, setBenches] = useState<YardBench[]>([])
   const [yard, setYard] = useState<YardSettings>(DEFAULT_YARD)
   const [loading, setLoading] = useState(true)
   const [isOwner, setIsOwner] = useState(false)
 
   // Keep the snapshot refs current with rendered state.
   useEffect(() => { hivesRef.current = hives }, [hives])
+  useEffect(() => { benchesRef.current = benches }, [benches])
   useEffect(() => { yardRef.current = yard }, [yard])
 
   const reload = useCallback(async () => {
@@ -91,20 +118,26 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
       const userId = userIdRef.current ?? (await getCurrentUserId())
       userIdRef.current = userId
 
-      const [apiaryRes, hivesRes] = await Promise.all([
+      const [apiaryRes, hivesRes, benchesRes] = await Promise.all([
         supabase.from('apiaries')
           .select('name, user_id, yard_entrance_x, yard_entrance_y, north_angle_deg')
           .eq('id', apiaryId).single(),
         supabase
           .from('hives')
-          .select('id, hive_number, status, is_queenless, queenless_reason, map_x, map_y, rotation_deg, configuration, queens(id, queen_number, marking_color)')
+          .select('id, hive_number, status, is_queenless, queenless_reason, map_x, map_y, rotation_deg, bench_id, bench_slot, configuration, queens(id, queen_number, marking_color)')
           .eq('apiary_id', apiaryId)
           .is('archived_at', null)
           .order('hive_number'),
+        supabase
+          .from('yard_benches')
+          .select('id, map_x, map_y, rotation_deg, capacity')
+          .eq('apiary_id', apiaryId)
+          .order('created_at'),
       ])
 
       if (apiaryRes.error) throw apiaryRes.error
       if (hivesRes.error) throw hivesRes.error
+      if (benchesRes.error) throw benchesRes.error
       if (!isCurrent()) return
 
       setApiaryName(apiaryRes.data?.name ?? null)
@@ -115,6 +148,7 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
         north_angle_deg: apiaryRes.data?.north_angle_deg ?? 0,
       })
       setHives((hivesRes.data || []) as MapHive[])
+      setBenches((benchesRes.data || []) as YardBench[])
     } catch (error) {
       console.error('Error loading apiary map:', error)
       if (isCurrent()) toast.error('Failed to load yard map')
@@ -127,12 +161,15 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     reload()
   }, [reload])
 
-  const saveHivePlacement = useCallback(async (hiveId: string, patch: HivePlacementPatch) => {
+  const requireUser = useCallback((): string | null => {
     const userId = userIdRef.current
-    if (!userId) {
-      toast.error('You must be signed in to edit the yard map')
-      return
-    }
+    if (!userId) toast.error('You must be signed in to edit the yard map')
+    return userId
+  }, [toast])
+
+  const saveHivePlacement = useCallback(async (hiveId: string, patch: HivePlacementPatch) => {
+    const userId = requireUser()
+    if (!userId) return
 
     // Snapshot the hive being changed (read synchronously from the ref) so we
     // can roll back on failure. Reading state here would be stale; reading it
@@ -159,14 +196,11 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
       setHives(prev => prev.map(h => (h.id === hiveId ? previous : h)))
       toast.error('Could not save hive position')
     }
-  }, [toast])
+  }, [requireUser, toast])
 
   const saveYardSettings = useCallback(async (patch: YardSettingsPatch) => {
-    const userId = userIdRef.current
-    if (!userId) {
-      toast.error('You must be signed in to edit the yard map')
-      return
-    }
+    const userId = requireUser()
+    if (!userId) return
 
     const previous = yardRef.current
     setYard(prev => ({ ...prev, ...patch }))
@@ -184,7 +218,140 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
       setYard(previous)
       toast.error('Could not save yard settings')
     }
-  }, [apiaryId, toast])
+  }, [apiaryId, requireUser, toast])
 
-  return { apiaryName, hives, yard, loading, isOwner, saveHivePlacement, saveYardSettings, reload }
+  const addBench = useCallback(async (capacity: number) => {
+    const userId = requireUser()
+    if (!userId) return
+
+    const { data, error } = await supabase
+      .from('yard_benches')
+      .insert({ user_id: userId, apiary_id: apiaryId, map_x: 50, map_y: 50, rotation_deg: 0, capacity })
+      .select('id, map_x, map_y, rotation_deg, capacity')
+      .single()
+
+    if (error || !data) {
+      console.error('Error adding bench:', error)
+      if (mountedRef.current) toast.error('Could not add the bench')
+      return
+    }
+    if (mountedRef.current) setBenches(prev => [...prev, data as YardBench])
+  }, [apiaryId, requireUser, toast])
+
+  /**
+   * Move/rotate a bench. The bench carries its hives: every linked hive gets
+   * its canonical percent position (and, on rotation, its facing) recomputed
+   * and persisted so the 3D view and any fallback consumers stay true.
+   */
+  const saveBenchPlacement = useCallback(async (benchId: string, patch: BenchPlacementPatch) => {
+    const userId = requireUser()
+    if (!userId) return
+
+    const prevBench = benchesRef.current.find(b => b.id === benchId)
+    if (!prevBench) return
+    const nextBench = { ...prevBench, ...patch }
+    const linkedHives = hivesRef.current.filter(h => h.bench_id === benchId)
+    const prevHives = new Map(linkedHives.map(h => [h.id, h]))
+
+    // Optimistically move the bench and its hives together.
+    setBenches(prev => prev.map(b => (b.id === benchId ? nextBench : b)))
+    setHives(prev => prev.map(h => {
+      if (h.bench_id !== benchId || h.bench_slot == null) return h
+      const pos = slotPositionPct(nextBench, h.bench_slot)
+      return {
+        ...h,
+        map_x: pos.x,
+        map_y: pos.y,
+        ...(patch.rotation_deg != null ? { rotation_deg: patch.rotation_deg } : {}),
+      }
+    }))
+
+    const rollback = () => {
+      if (!mountedRef.current) return
+      setBenches(prev => prev.map(b => (b.id === benchId ? prevBench : b)))
+      setHives(prev => prev.map(h => prevHives.get(h.id) ?? h))
+      toast.error('Could not save bench position')
+    }
+
+    const { data, error } = await supabase
+      .from('yard_benches')
+      .update(patch)
+      .eq('id', benchId)
+      .eq('user_id', userId)
+      .select('id')
+
+    if (error || !data || data.length === 0) {
+      console.error('Error saving bench placement:', error ?? 'no matching row updated')
+      rollback()
+      return
+    }
+
+    // Persist the recomputed hive placements (best effort, per hive).
+    const results = await Promise.all(linkedHives.map(h => {
+      if (h.bench_slot == null) return Promise.resolve({ error: null })
+      const pos = slotPositionPct(nextBench, h.bench_slot)
+      return supabase
+        .from('hives')
+        .update({
+          map_x: pos.x,
+          map_y: pos.y,
+          ...(patch.rotation_deg != null ? { rotation_deg: patch.rotation_deg } : {}),
+        })
+        .eq('id', h.id)
+        .eq('user_id', userId)
+    }))
+    if (results.some(r => r.error)) {
+      console.error('Error updating hives on bench move:', results.find(r => r.error)?.error)
+      // Bench itself saved; a reload will re-derive the true hive positions.
+    }
+  }, [requireUser, toast])
+
+  /** Delete a bench; its hives stay where they are, just unlinked (grounded). */
+  const deleteBench = useCallback(async (benchId: string) => {
+    const userId = requireUser()
+    if (!userId) return
+
+    const prevBenches = benchesRef.current
+    const prevHives = hivesRef.current
+    const linkedHives = prevHives.filter(h => h.bench_id === benchId)
+
+    setBenches(prev => prev.filter(b => b.id !== benchId))
+    setHives(prev => prev.map(h => (h.bench_id === benchId ? { ...h, bench_id: null, bench_slot: null } : h)))
+
+    // Ground the hives first so no window exists where they point at a dead bench.
+    const groundResults = await Promise.all(linkedHives.map(h =>
+      supabase.from('hives')
+        .update({ bench_id: null, bench_slot: null })
+        .eq('id', h.id)
+        .eq('user_id', userId),
+    ))
+    const { error } = await supabase
+      .from('yard_benches')
+      .delete()
+      .eq('id', benchId)
+      .eq('user_id', userId)
+
+    if (error || groundResults.some(r => r.error)) {
+      console.error('Error deleting bench:', error ?? groundResults.find(r => r.error)?.error)
+      if (!mountedRef.current) return
+      setBenches(prevBenches)
+      setHives(prevHives)
+      toast.error('Could not delete the bench')
+    }
+  }, [requireUser, toast])
+
+  return {
+    apiaryName,
+    hives,
+    benches,
+    yard,
+    loading,
+    isOwner,
+    saveHivePlacement,
+    saveYardSettings,
+    addBench,
+    saveBenchPlacement,
+    deleteBench,
+    reload,
+  }
 }

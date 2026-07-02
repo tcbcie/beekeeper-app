@@ -64,11 +64,13 @@ interface Hive3DProps {
   hive: MapHive
   // Ground position in scene units [x, z].
   position: [number, number]
+  /** Standing height (e.g. a bench top); defaults to ground level. */
+  elevation?: number
   selected: boolean
   onSelect: (hiveId: string) => void
 }
 
-export default function Hive3D({ hive, position, selected, onSelect }: Hive3DProps) {
+export default function Hive3D({ hive, position, elevation = 0, selected, onSelect }: Hive3DProps) {
   const config = hive.configuration ?? {}
   const isNuc = config.hive_size === 'nuc'
   const width = isNuc ? 0.45 : 0.9
@@ -114,7 +116,7 @@ export default function Hive3D({ hive, position, selected, onSelect }: Hive3DPro
 
   return (
     <group
-      position={[position[0], 0, position[1]]}
+      position={[position[0], elevation, position[1]]}
       rotation={[0, -yaw, 0]}
       onClick={handleClick}
       onPointerOver={setPointer(true)}
