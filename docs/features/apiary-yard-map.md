@@ -109,6 +109,27 @@ All schema changes are applied **via the Supabase MCP server** (`apply_migration
 | `src/app/dashboard/apiaries/[id]/map/page.tsx` | Yard Map route (dynamic, client-only) |
 | `src/app/dashboard/apiaries/[id]/page.tsx` | "Yard Map" Quick Action pill |
 
+## Yard Map v2 (03/07/2026)
+
+The layout model was substantially extended — see `yard-map-v2-plan.md` for the full design:
+
+* **Orientation** — `hives.rotation_deg` (free-angle body rotation, 0–359.9, clockwise from
+  canvas-up) replaces the 8-way `entrance_direction` compass (deprecated in place, backfilled).
+  Rotation is set with a drag handle on the selected token or ±15° inspector nudges.
+* **Yard frame** — `apiaries.yard_entrance_x/y` (entrance marker, set by tapping the yard) and
+  `apiaries.north_angle_deg` (user-adjustable north). The inspector reads out facing relative to
+  the entrance ("Faces towards the yard entrance" etc.), since beekeepers think "as I walk in".
+* **Footprints** — tokens are top-down footprints: square full hives, 1:2 rectangular nucs,
+  rotating bodily with counter-rotating labels.
+* **Benches** — `yard_benches` table (centre, rotation, capacity 1–6; RLS mirrors hives) +
+  `hives.bench_id`/`bench_slot`. Hives snap to free slots, adopt the bench facing, and move with
+  the bench; deleting a bench grounds its hives. Slot geometry lives in `src/lib/yard-geometry.ts`
+  and is shared by the 2D map (px), the 3D scene (units) and the stored percent positions.
+* **Queen lineage** — the map query embeds `queens!mother_id` (with the
+  `distributed_mother_queen` snapshot fallback) plus `mating_station`/`mated_at_eircode`;
+  `describeQueenLineage()` renders "Mother: … · Mated: @ … (…)" in the inspector and on the
+  selected 3D label.
+
 ## Access & gating
 
 The Yard Map (and its 3D view) is a **premium, opt-in** feature, gated exactly like the CRM

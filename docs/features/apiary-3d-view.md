@@ -49,6 +49,20 @@ accessibility pass.
 * `frameloop="demand"` avoids a continuous render loop; the hidden hit-area mesh keeps short stacks
   easy to tap without extra draw cost.
 
+## 4b. v2 additions (03/07/2026)
+
+* **Full-detail hives** — the parametric model now honours the whole configuration: open varroa
+  floors render as grey mesh on stand feet (solid amber when closed), entrance reducers pinch the
+  notch, top feeders are a slab under the roof and entrance/boardman feeders a block at the door,
+  warm/cold frame orientation draws lines on the brood box face, and every hive gets an
+  overhanging roof.
+* **Free rotation + yard frame** — hive yaw comes from `hives.rotation_deg`; the yard entrance
+  renders as a gate (posts + lintel) and the north indicator follows `apiaries.north_angle_deg`.
+* **Benches** — `yard_benches` render as a slab on legs, with hives elevated at their exact slots
+  (shared `src/lib/yard-geometry.ts` keeps 2D and 3D identical).
+* **Queen lineage** — labels show `hive · Qnumber`; the selected hive's label expands with
+  "Mother: … · Mated: …", and the accessible hive list includes queen numbers.
+
 ## 5. Files
 
 | File | Role |

@@ -1,7 +1,7 @@
 # Feature: Yard Map v2 — Entrance-Relative Orientation, Benches, Full Hive Rendering, Queen Lineage
 
 **Date:** 02/07/2026
-**Status:** Draft — awaiting approval
+**Status:** Implemented (03/07/2026)
 
 ## 1. Overview
 
@@ -141,18 +141,24 @@ readability. Drag/drop maths unchanged (centre-point percentages).
 
 ## 5. Implementation Phases
 
-1. **Orientation core:** migrations 1–2 (MCP) + backfill; replace compass with `rotation_deg`
+1. ✅ **Orientation core:** migrations 1–2 (MCP) + backfill; replaced compass with `rotation_deg`
    across the 9 consumer sites; free-rotate handle + ±15° nudges; entrance marker + adjustable
    north (2D toolbar + 3D indicators); entrance-relative readout in the inspector.
-2. **Footprints:** square vs rectangular tokens in 2D, rotating with the body.
-3. **3D fidelity:** floor/feeder/reducer/frame-orientation/roof rendering from `configuration`.
-4. **Benches:** migration 3 + RLS; 2D add/move/rotate/delete + slot snapping (bench carries hives);
-   3D bench rendering with elevated hives.
-5. **Queen lineage:** query extension; inspector lineage line; expanded selected label in 3D.
-6. **Polish + docs:** accessibility pass, update `apiary-yard-map.md` / `apiary-3d-view.md`, flip
-   this doc to Implemented.
+2. ✅ **Footprints:** square vs rectangular (nuc) tokens in 2D, rotating with the body,
+   counter-rotating labels, 96px hit container.
+3. ✅ **3D fidelity:** open/closed floor on stand feet, feeder types, entrance reducer,
+   warm/cold frame-orientation lines, roof — all from `configuration`.
+4. ✅ **Benches:** `yard_benches` + RLS (advisor-clean); 2D add/move/rotate/delete + slot
+   snapping (bench carries its hives; delete grounds them); 3D bench slab on legs with hives
+   elevated at their exact slots via shared `yard-geometry`.
+5. ✅ **Queen lineage:** single-query extension (`queens!mother_id` self-join +
+   `mating_station`/`mated_at_eircode`/`distributed_mother_queen`); inspector lineage line;
+   3D labels show hive + queen number, expanding with lineage when selected.
+6. ✅ **Polish + docs:** aria-hidden pointer-only rotate handle (nudge buttons are the
+   accessible path), 48px toolbar targets, queen numbers in the 3D accessible hive list,
+   docs updated.
 
-Each phase is independently committable and testable; you test on the deployed app between phases.
+Each phase was independently committed and testable on the deployed app.
 
 ## See also
 
