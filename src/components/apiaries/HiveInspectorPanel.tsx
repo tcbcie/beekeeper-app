@@ -4,7 +4,7 @@ import { RotateCcw, RotateCw, X, ExternalLink, Undo2 } from 'lucide-react'
 import IconButton from '@/components/ui/IconButton'
 import Button from '@/components/ui/Button'
 import { formatQueenlessLabel } from '@/lib/queenless'
-import { normaliseDeg, type MapHive } from '@/hooks/useApiaryMap'
+import { normaliseDeg, describeQueenLineage, type MapHive } from '@/hooks/useApiaryMap'
 
 const NUDGE_DEG = 15
 
@@ -35,10 +35,11 @@ interface HiveInspectorPanelProps {
 
 export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemove, onClose, entrance }: HiveInspectorPanelProps) {
   const queen = hive.queens?.[0]
-  const isPlaced = hive.map_x != null && hive.map_y != null
+  const isPlaced = (hive.map_x != null && hive.map_y != null) || hive.bench_id != null
   // numeric columns can arrive as strings; coerce before doing arithmetic.
   const rotation = Number(hive.rotation_deg ?? 0)
   const relation = entranceRelation(hive, entrance ?? null)
+  const lineage = describeQueenLineage(queen)
 
   return (
     <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
@@ -54,6 +55,7 @@ export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemov
             {' · '}
             <span className="capitalize">{hive.status}</span>
           </p>
+          {lineage && <p className="text-sm text-text-secondary mt-0.5">{lineage}</p>}
           {relation && <p className="text-sm text-text-secondary mt-0.5">{relation}</p>}
         </div>
         <IconButton onClick={onClose} aria-label="Close hive details" className="min-h-[48px] min-w-[48px]">

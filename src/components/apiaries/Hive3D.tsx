@@ -2,7 +2,7 @@
 import { useMemo } from 'react'
 import { Html } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
-import type { MapHive } from '@/hooks/useApiaryMap'
+import { describeQueenLineage, type MapHive } from '@/hooks/useApiaryMap'
 
 // Relative box dimensions (1 unit ≈ one hive footprint). Heights mirror the
 // 2D card's sense of scale: supers/half boxes shallower than full brood.
@@ -80,6 +80,9 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
 
   // numeric columns can arrive as strings; coerce before doing arithmetic.
   const yaw = (Number(hive.rotation_deg ?? 0) * Math.PI) / 180
+
+  const queen = hive.queens?.[0]
+  const lineage = describeQueenLineage(queen)
 
   // Precompute each layer's vertical centre; the stack sits on the feet.
   let cursor = FEET_H
@@ -177,7 +180,8 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
         <meshStandardMaterial transparent opacity={0} />
       </mesh>
 
-      {/* Camera-facing hive-number label, high contrast for readability. */}
+      {/* Camera-facing label: compact by default (hive + queen number); the
+          selected hive's label expands with the queen lineage line. */}
       <Html
         position={[0, totalHeight + 0.2, 0]}
         center
@@ -186,7 +190,7 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
         zIndexRange={[10, 0]}
       >
         <span
-          className={`inline-block rounded-md border px-2 py-0.5 text-sm font-bold whitespace-nowrap shadow-sm bg-white/95 text-gray-900 ${
+          className={`inline-block rounded-md border px-2 py-0.5 shadow-sm bg-white/95 text-gray-900 text-center ${
             selected
               ? 'border-forest-600 ring-2 ring-forest-500'
               : hive.is_queenless
@@ -194,7 +198,15 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
                 : 'border-gray-300'
           }`}
         >
-          {hive.hive_number}
+          <span className="block text-sm font-bold whitespace-nowrap leading-tight">
+            {hive.hive_number}
+            {queen && <span className="font-medium text-gray-700"> · Q{queen.queen_number}</span>}
+          </span>
+          {selected && lineage && (
+            <span className="block text-sm font-medium text-gray-700 whitespace-nowrap leading-tight">
+              {lineage}
+            </span>
+          )}
         </span>
       </Html>
     </group>

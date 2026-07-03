@@ -8,6 +8,20 @@ import type { HiveConfiguration } from '@/types/hive'
 /** Normalise any angle to [0, 360). */
 export const normaliseDeg = (deg: number) => ((deg % 360) + 360) % 360
 
+export interface MapQueen {
+  id: string
+  queen_number: string
+  marking_color?: string
+  /** Free-text mating site/station name (denormalised snapshot). */
+  mating_station?: string | null
+  /** Postcode of the mating location. */
+  mated_at_eircode?: string | null
+  /** Text snapshot of the breeder's mother for distributed queens (no local FK). */
+  distributed_mother_queen?: string | null
+  /** Self-join via queens.mother_id; PostgREST may return object or array. */
+  mother?: { id: string; queen_number: string } | { id: string; queen_number: string }[] | null
+}
+
 export interface MapHive {
   id: string
   hive_number: string
@@ -23,11 +37,31 @@ export interface MapHive {
   bench_slot: number | null
   // Physical box stack, used by the 3D view to build the hive model.
   configuration: HiveConfiguration | null
-  queens?: {
-    id: string
-    queen_number: string
-    marking_color?: string
-  }[]
+  queens?: MapQueen[]
+}
+
+/**
+ * One-line lineage summary for map labels/inspectors:
+ * "Mother: RZ018 · Mated: @ Glenview (D02X285)". Unknown parts are omitted;
+ * returns null when nothing is known. Mother comes from the mother_id FK,
+ * falling back to the distributed snapshot — the same rule as the queen
+ * detail page.
+ */
+export function describeQueenLineage(queen: MapQueen | undefined): string | null {
+  if (!queen) return null
+  const motherRel = Array.isArray(queen.mother) ? queen.mother[0] : queen.mother
+  const mother = motherRel?.queen_number || queen.distributed_mother_queen || null
+
+  const station = queen.mating_station?.trim() || null
+  const eircode = queen.mated_at_eircode?.trim() || null
+  const mated = station
+    ? `@ ${station}${eircode ? ` (${eircode})` : ''}`
+    : eircode
+
+  const parts: string[] = []
+  if (mother) parts.push(`Mother: ${mother}`)
+  if (mated) parts.push(`Mated: ${mated}`)
+  return parts.length > 0 ? parts.join(' · ') : null
 }
 
 export interface YardBench {
@@ -124,7 +158,7 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
           .eq('id', apiaryId).single(),
         supabase
           .from('hives')
-          .select('id, hive_number, status, is_queenless, queenless_reason, map_x, map_y, rotation_deg, bench_id, bench_slot, configuration, queens(id, queen_number, marking_color)')
+          .select('id, hive_number, status, is_queenless, queenless_reason, map_x, map_y, rotation_deg, bench_id, bench_slot, configuration, queens(id, queen_number, marking_color, mating_station, mated_at_eircode, distributed_mother_queen, mother:queens!mother_id(id, queen_number))')
           .eq('apiary_id', apiaryId)
           .is('archived_at', null)
           .order('hive_number'),
