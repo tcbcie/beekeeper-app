@@ -172,16 +172,24 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
             Pointer-only by design — the inspector's nudge buttons are the
             accessible path, so this is hidden from assistive tech. */}
         {showRotateHandle && (
-          <span
-            aria-hidden
-            onPointerDown={handleRotateStart}
-            onMouseDown={swallowEvent}
-            onTouchStart={swallowEvent}
-            className="pointer-events-auto absolute left-1/2 -top-10 -translate-x-1/2 h-9 w-9 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-sm font-bold"
-            style={{ touchAction: 'none' }}
-          >
-            ⟳
-          </span>
+          <>
+            {/* Stem connecting the handle to the hive, so it reads as a
+                rotation handle at a glance. */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute left-1/2 -top-4 -translate-x-1/2 h-4 w-0.5 bg-forest-600"
+            />
+            <span
+              aria-hidden
+              onPointerDown={handleRotateStart}
+              onMouseDown={swallowEvent}
+              onTouchStart={swallowEvent}
+              className="pointer-events-auto absolute left-1/2 -top-[52px] -translate-x-1/2 h-9 w-9 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-sm font-bold"
+              style={{ touchAction: 'none' }}
+            >
+              ⟳
+            </span>
+          </>
         )}
 
         {/* Label counter-rotates so text stays horizontal and readable. */}
