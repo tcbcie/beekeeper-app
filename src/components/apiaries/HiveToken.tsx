@@ -1,5 +1,5 @@
 'use client'
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { normaliseDeg, type MapHive } from '@/hooks/useApiaryMap'
 
@@ -40,6 +40,12 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
   const buttonRef = useRef<HTMLButtonElement | null>(null)
   // Live angle while the rotate handle is being dragged (null = not rotating).
   const [liveDeg, setLiveDeg] = useState<number | null>(null)
+  // Detaches an in-flight rotation's window listeners; doubles as the
+  // "already rotating" flag so a second touch can't stack listeners.
+  const rotateCleanupRef = useRef<(() => void) | null>(null)
+
+  // Never leave window listeners behind if the token unmounts mid-rotation.
+  useEffect(() => () => { rotateCleanupRef.current?.() }, [])
 
   const setRefs = useCallback((node: HTMLButtonElement | null) => {
     buttonRef.current = node
@@ -87,6 +93,7 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
   // clockwise from canvas-up. Saved once on release; live-previewed meanwhile.
   const handleRotateStart = (e: React.PointerEvent<HTMLSpanElement>) => {
     if (isReadOnly || !onRotate) return
+    if (rotateCleanupRef.current) return // a rotation is already in progress
     // Keep dnd-kit's drag sensors from hijacking the gesture.
     e.stopPropagation()
     e.preventDefault()
@@ -105,15 +112,20 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
       setLiveDeg(latest)
     }
     const onUp = () => {
+      detach()
+      setLiveDeg(null)
+      onRotate(Math.round(latest))
+    }
+    const detach = () => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onUp)
-      setLiveDeg(null)
-      onRotate(Math.round(latest))
+      rotateCleanupRef.current = null
     }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
     window.addEventListener('pointercancel', onUp)
+    rotateCleanupRef.current = detach
   }
 
   const showRotateHandle = placed && selected && !isReadOnly && !!onRotate
