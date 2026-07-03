@@ -1,6 +1,6 @@
 'use client'
 import { useMemo } from 'react'
-import { Html } from '@react-three/drei'
+import { Html, Edges } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
 import { describeQueenLineage, type MapHive } from '@/hooks/useApiaryMap'
 
@@ -21,7 +21,8 @@ const COL_FLOOR_OPEN = '#9ca3af'   // grey (varroa mesh)
 const COL_FULL = '#fde68a'         // amber-200
 const COL_HALF = '#fcd34d'         // amber-300
 const COL_EXCLUDER = '#9ca3af'     // gray-400
-const COL_SUPER = '#fde047'        // yellow-300
+const COL_SUPER = '#facc15'        // yellow-400 (one step richer than the 2D
+                                   // card so supers read against pale brood)
 const COL_ROOF = '#57534e'         // stone-600
 const COL_FEEDER = '#93c5fd'       // blue-300
 const COL_FEET = '#78350f'         // amber-900
@@ -137,6 +138,9 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
         <mesh key={l.key} position={[0, l.centre, 0]} castShadow receiveShadow>
           <boxGeometry args={[l.w ?? width, l.height, l.d ?? depth]} />
           <meshStandardMaterial color={l.colour} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+          {/* Outline every box so adjacent same-colour boxes (e.g. two honey
+              supers) read as separate boxes rather than one merged slab. */}
+          <Edges color="#a16207" threshold={15} />
         </mesh>
       ))}
 
