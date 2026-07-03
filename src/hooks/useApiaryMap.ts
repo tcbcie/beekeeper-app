@@ -81,6 +81,18 @@ export interface YardBench {
   capacity: number
 }
 
+/**
+ * A hive is on the yard when it has ground coordinates, or a COMPLETE bench
+ * link (the bench exists and a slot is set). A partial link (e.g. a slot lost
+ * to a partial write or the FK backstop) counts as unplaced — it returns to
+ * the tray rather than rendering at a phantom position. Single source of
+ * truth for both the 2D map and the 3D scene.
+ */
+export function isHivePlaced(hive: MapHive, benchIds: { has(id: string): boolean }): boolean {
+  if (hive.map_x != null && hive.map_y != null) return true
+  return hive.bench_id != null && hive.bench_slot != null && benchIds.has(hive.bench_id)
+}
+
 // Only the placement fields may be patched from the yard map.
 export interface HivePlacementPatch {
   map_x?: number | null

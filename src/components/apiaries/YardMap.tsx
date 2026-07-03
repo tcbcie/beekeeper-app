@@ -14,7 +14,7 @@ import {
   type CollisionDetection,
 } from '@dnd-kit/core'
 import { ArrowUp, DoorOpen, Plus, RotateCcw, RotateCw, Trash2, X } from 'lucide-react'
-import { useApiaryMap, normaliseDeg, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
+import { useApiaryMap, normaliseDeg, isHivePlaced, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
 import { UNIT_PX, SLOT_UNITS, slotOffsetUnits, slotPositionPct, rotatedOffset } from '@/lib/yard-geometry'
 import IconButton from '@/components/ui/IconButton'
 import Button from '@/components/ui/Button'
@@ -188,10 +188,8 @@ export default function YardMap({ apiaryId }: YardMapProps) {
   }
 
   const benchById = new Map(benches.map(b => [b.id, b]))
-  const isPlaced = (h: MapHive) =>
-    (h.map_x != null && h.map_y != null) || (h.bench_id != null && benchById.has(h.bench_id))
-  const placedHives = hives.filter(isPlaced)
-  const unplacedHives = hives.filter(h => !isPlaced(h))
+  const placedHives = hives.filter(h => isHivePlaced(h, benchById))
+  const unplacedHives = hives.filter(h => !isHivePlaced(h, benchById))
   const selectedHive = selectedId ? hives.find(h => h.id === selectedId) ?? null : null
   const selectedBench = selectedBenchId ? benchById.get(selectedBenchId) ?? null : null
   const entrance = yard.yard_entrance_x != null && yard.yard_entrance_y != null

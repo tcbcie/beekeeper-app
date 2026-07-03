@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { ArrowUp, RotateCcw } from 'lucide-react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Grid } from '@react-three/drei'
-import { useApiaryMap, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
+import { useApiaryMap, isHivePlaced, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
 import { BENCH_TOP_UNITS, slotOffsetUnits, rotatedOffset } from '@/lib/yard-geometry'
 import Hive3D from './Hive3D'
 import Bench3D from './Bench3D'
@@ -47,9 +47,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
 
   const benchById = useMemo(() => new Map<string, YardBench>(benches.map(b => [b.id, b])), [benches])
   const placedHives = useMemo(
-    () => hives.filter(h =>
-      (h.map_x != null && h.map_y != null) || (h.bench_id != null && benchById.has(h.bench_id)),
-    ),
+    () => hives.filter(h => isHivePlaced(h, benchById)),
     [hives, benchById],
   )
   const unplacedCount = hives.length - placedHives.length
