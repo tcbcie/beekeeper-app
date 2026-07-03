@@ -1,8 +1,14 @@
 'use client'
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { useDraggable } from '@dnd-kit/core'
+import { GripHorizontal } from 'lucide-react'
 import { normaliseDeg, type YardBench } from '@/hooks/useApiaryMap'
 import { UNIT_PX, BENCH_DEPTH_UNITS, benchLengthUnits, slotOffsetUnits } from '@/lib/yard-geometry'
+
+// dnd-kit's Mouse/Touch sensors listen to mousedown/touchstart, which are
+// separate native streams from pointerdown — stop them on rotate handles so
+// a rotation gesture can never also start a drag.
+const swallowEvent = (e: React.SyntheticEvent) => e.stopPropagation()
 
 const DEPTH_PX = BENCH_DEPTH_UNITS * UNIT_PX
 const SLOT_BOX_PX = 64 // dashed slot outline, slightly smaller than a hive token
@@ -38,10 +44,10 @@ export default function BenchToken({ bench, isReadOnly, selected, onSelect, onRo
   // Never leave window listeners behind if the token unmounts mid-rotation.
   useEffect(() => () => { rotateCleanupRef.current?.() }, [])
 
-  const setRefs = (node: HTMLButtonElement | null) => {
+  const setRefs = useCallback((node: HTMLButtonElement | null) => {
     buttonRef.current = node
     setNodeRef(node)
-  }
+  }, [setNodeRef])
 
   // numeric columns can arrive as strings; coerce before doing arithmetic.
   const rotation = liveDeg ?? Number(bench.rotation_deg ?? 0)
@@ -136,9 +142,9 @@ export default function BenchToken({ bench, isReadOnly, selected, onSelect, onRo
       {!isReadOnly && (
         <span
           aria-hidden
-          className="absolute left-1/2 top-full mt-3 -translate-x-1/2 flex items-center justify-center h-7 min-w-[56px] px-2 rounded-md border-2 border-amber-900 bg-amber-700 text-white text-xs font-bold shadow-md"
+          className="absolute left-1/2 top-full mt-3 -translate-x-1/2 flex items-center justify-center gap-1 h-9 min-w-[64px] px-2 rounded-md border-2 border-amber-900 bg-amber-700 text-white text-sm font-bold shadow-md"
         >
-          ⣿ bench
+          <GripHorizontal className="w-4 h-4" /> bench
         </span>
       )}
 
@@ -147,7 +153,9 @@ export default function BenchToken({ bench, isReadOnly, selected, onSelect, onRo
         <span
           aria-hidden
           onPointerDown={handleRotateStart}
-          className="pointer-events-auto absolute top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-sm font-bold"
+          onMouseDown={swallowEvent}
+          onTouchStart={swallowEvent}
+          className="pointer-events-auto absolute top-1/2 -translate-y-1/2 h-9 w-9 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-sm font-bold"
           style={{ left: '100%', marginLeft: 14, touchAction: 'none' }}
         >
           ⟳
