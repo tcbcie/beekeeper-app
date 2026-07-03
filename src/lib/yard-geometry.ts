@@ -11,6 +11,23 @@ export const BENCH_TOP_UNITS = 0.38
 /** 2D pixels per scene unit (a 68px hive token / 0.9 units). */
 export const UNIT_PX = 76
 
+// 2D token footprints in pixels (a full hive is square; a nuc is ~1:2).
+export const FULL_TOKEN_PX = { w: 68, h: 68 }
+export const NUC_TOKEN_PX = { w: 40, h: 80 }
+
+export function tokenFootprintPx(isNuc: boolean): { w: number; h: number } {
+  return isNuc ? NUC_TOKEN_PX : FULL_TOKEN_PX
+}
+
+/** Half-extents of a w×h footprint's axis-aligned bounding box after rotation. */
+export function rotatedBboxHalfPx(w: number, h: number, deg: number): { hw: number; hh: number } {
+  const t = (deg * Math.PI) / 180
+  return {
+    hw: (Math.abs(w * Math.cos(t)) + Math.abs(h * Math.sin(t))) / 2,
+    hh: (Math.abs(w * Math.sin(t)) + Math.abs(h * Math.cos(t))) / 2,
+  }
+}
+
 /** Local offset of a slot centre along the bench's long axis, in units. */
 export function slotOffsetUnits(slot: number, capacity: number): number {
   return (slot - (capacity - 1) / 2) * SLOT_UNITS

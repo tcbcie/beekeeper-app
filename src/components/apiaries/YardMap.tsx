@@ -15,7 +15,7 @@ import {
 } from '@dnd-kit/core'
 import { ArrowUp, DoorOpen, Plus, Printer, RotateCcw, RotateCw, Trash2, X } from 'lucide-react'
 import { useApiaryMap, normaliseDeg, isHivePlaced, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
-import { UNIT_PX, slotOffsetUnits, slotPositionPct, rotatedOffset } from '@/lib/yard-geometry'
+import { UNIT_PX, slotOffsetUnits, slotPositionPct, rotatedOffset, tokenFootprintPx, rotatedBboxHalfPx } from '@/lib/yard-geometry'
 import { printImageDataUrl, downloadDataUrl, printedOnLabel, excludeNoPrint } from '@/lib/print-layout'
 import { useToast } from '@/components/ui/Toast'
 import IconButton from '@/components/ui/IconButton'
@@ -28,6 +28,10 @@ const CANVAS_ID = 'yard-canvas'
 const NORTH_STEP_DEG = 15
 const BENCH_STEP_DEG = 15
 const SLOT_ID_PATTERN = /^bench:(.+):slot:(\d+)$/
+// Ground-drop snapping: centres align within this distance, and bodies pull
+// flush when their edges are this close on the aligned axis.
+const ALIGN_SNAP_PX = 10
+const ABUT_SNAP_PX = 16
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
 
@@ -194,12 +198,76 @@ export default function YardMap({ apiaryId }: YardMapProps) {
 
     // Otherwise: place on the ground and clear any bench link.
     if (overId === CANVAS_ID) {
+      const snapped = snapToNeighbours(idStr, centrePx, canvasRect)
       saveHivePlacement(idStr, {
-        map_x,
-        map_y,
+        map_x: snapped?.x ?? map_x,
+        map_y: snapped?.y ?? map_y,
         bench_id: null,
         bench_slot: null,
       })
+    }
+  }
+
+  /**
+   * Ground-drop alignment: snap the dropped hive's centre into line with the
+   * nearest neighbour per axis, then pull the bodies flush when their rotated
+   * bounding boxes almost touch on the aligned axis (the back-to-back case).
+   * Returns snapped canvas percentages, or null when nothing is close.
+   */
+  const snapToNeighbours = (
+    draggedId: string,
+    dropPx: { x: number; y: number },
+    rect: { left: number; top: number; width: number; height: number },
+  ): { x: number; y: number } | null => {
+    const dragged = hives.find(h => h.id === draggedId)
+    if (!dragged) return null
+    const draggedFp = tokenFootprintPx(dragged.configuration?.hive_size === 'nuc')
+    const draggedHalf = rotatedBboxHalfPx(draggedFp.w, draggedFp.h, Number(dragged.rotation_deg ?? 0))
+
+    const point = { ...dropPx }
+    let alignedXWith: { y: number; half: { hw: number; hh: number } } | null = null
+    let alignedYWith: { x: number; half: { hw: number; hh: number } } | null = null
+    let bestDx = ALIGN_SNAP_PX + 1
+    let bestDy = ALIGN_SNAP_PX + 1
+
+    for (const other of hives) {
+      if (other.id === draggedId || other.map_x == null || other.map_y == null) continue
+      const ox = rect.left + (Number(other.map_x) / 100) * rect.width
+      const oy = rect.top + (Number(other.map_y) / 100) * rect.height
+      const otherFp = tokenFootprintPx(other.configuration?.hive_size === 'nuc')
+      const otherHalf = rotatedBboxHalfPx(otherFp.w, otherFp.h, Number(other.rotation_deg ?? 0))
+      const dx = Math.abs(dropPx.x - ox)
+      const dy = Math.abs(dropPx.y - oy)
+      if (dx <= ALIGN_SNAP_PX && dx < bestDx) {
+        bestDx = dx
+        point.x = ox
+        alignedXWith = { y: oy, half: otherHalf }
+      }
+      if (dy <= ALIGN_SNAP_PX && dy < bestDy) {
+        bestDy = dy
+        point.y = oy
+        alignedYWith = { x: ox, half: otherHalf }
+      }
+    }
+    if (!alignedXWith && !alignedYWith) return null
+
+    // Pull flush along the aligned axis when the gap is small but positive.
+    if (alignedXWith) {
+      const dy = point.y - alignedXWith.y
+      const touch = draggedHalf.hh + alignedXWith.half.hh
+      const gap = Math.abs(dy) - touch
+      if (gap > 0 && gap <= ABUT_SNAP_PX) point.y = alignedXWith.y + Math.sign(dy) * touch
+    }
+    if (alignedYWith) {
+      const dx = point.x - alignedYWith.x
+      const touch = draggedHalf.hw + alignedYWith.half.hw
+      const gap = Math.abs(dx) - touch
+      if (gap > 0 && gap <= ABUT_SNAP_PX) point.x = alignedYWith.x + Math.sign(dx) * touch
+    }
+
+    return {
+      x: Math.round(clamp(((point.x - rect.left) / rect.width) * 100, 0, 100) * 100) / 100,
+      y: Math.round(clamp(((point.y - rect.top) / rect.height) * 100, 0, 100) * 100) / 100,
     }
   }
 
