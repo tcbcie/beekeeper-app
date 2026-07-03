@@ -144,16 +144,17 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
         </mesh>
       ))}
 
-      {/* Entrance notch on the front (+Z) face at floor level; the front is
-          defined by rotation_deg, so it is always drawn. */}
-      <mesh position={[0, FEET_H + FLOOR_H, depth / 2 + 0.03]}>
+      {/* Entrance notch on the front (−Z) face at floor level — −Z maps to
+          canvas-up, matching the 2D triangle at rotation 0. Always drawn,
+          since the front is defined by rotation_deg. */}
+      <mesh position={[0, FEET_H + FLOOR_H, -(depth / 2 + 0.03)]}>
         <boxGeometry args={[notchWidth, FLOOR_H, 0.08]} />
         <meshStandardMaterial color="#374151" />
       </mesh>
 
       {/* Entrance/Boardman feeder block in front of the entrance. */}
       {hasEntranceFeeder && (
-        <mesh position={[0, FEET_H + 0.05, depth / 2 + 0.16]} castShadow>
+        <mesh position={[0, FEET_H + 0.05, -(depth / 2 + 0.16)]} castShadow>
           <boxGeometry args={[width * 0.28, 0.1, 0.18]} />
           <meshStandardMaterial color={COL_FEEDER} />
         </mesh>
@@ -161,7 +162,7 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
 
       {/* Frame-orientation lines on the bottom brood box's front face. */}
       {frameOrientation && bottomBroodCentre != null && (
-        <group position={[0, bottomBroodCentre, depth / 2 + 0.005]}>
+        <group position={[0, bottomBroodCentre, -(depth / 2 + 0.005)]}>
           {[-0.24, -0.08, 0.08, 0.24].map(off =>
             frameOrientation === 'warm' ? (
               <mesh key={`fl-${off}`} position={[0, off * (FULL_H / 0.8), 0]}>
