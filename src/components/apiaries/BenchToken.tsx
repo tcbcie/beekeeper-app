@@ -1,34 +1,75 @@
 'use client'
 import { useRef, useState, useEffect, useCallback } from 'react'
-import { useDraggable } from '@dnd-kit/core'
+import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { GripHorizontal } from 'lucide-react'
 import { normaliseDeg, type YardBench } from '@/hooks/useApiaryMap'
-import { UNIT_PX, BENCH_DEPTH_UNITS, benchLengthUnits, slotOffsetUnits } from '@/lib/yard-geometry'
+import { UNIT_PX, SLOT_UNITS, BENCH_DEPTH_UNITS, benchLengthUnits, slotOffsetUnits } from '@/lib/yard-geometry'
+
+const DEPTH_PX = BENCH_DEPTH_UNITS * UNIT_PX
+const SLOT_AREA_PX = SLOT_UNITS * UNIT_PX // droppable region per slot (contiguous)
+const SLOT_BOX_PX = 64 // dashed slot outline, slightly smaller than a hive token
 
 // dnd-kit's Mouse/Touch sensors listen to mousedown/touchstart, which are
 // separate native streams from pointerdown — stop them on rotate handles so
 // a rotation gesture can never also start a drag.
 const swallowEvent = (e: React.SyntheticEvent) => e.stopPropagation()
 
-const DEPTH_PX = BENCH_DEPTH_UNITS * UNIT_PX
-const SLOT_BOX_PX = 64 // dashed slot outline, slightly smaller than a hive token
+/**
+ * One droppable slot on the bench. Dropping a hive is resolved by dnd-kit's
+ * pointer collision against these regions (no distance thresholds), and the
+ * slot highlights while a hive hovers it so the user can see the snap coming.
+ */
+function BenchSlot({ benchId, slot, capacity, occupied }: {
+  benchId: string
+  slot: number
+  capacity: number
+  occupied: boolean
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: `bench:${benchId}:slot:${slot}` })
+
+  return (
+    <span
+      ref={setNodeRef}
+      aria-hidden
+      className="absolute top-0 h-full flex items-center justify-center"
+      style={{
+        left: '50%',
+        width: SLOT_AREA_PX,
+        transform: `translateX(calc(-50% + ${slotOffsetUnits(slot, capacity) * UNIT_PX}px))`,
+      }}
+    >
+      <span
+        className={`rounded-md border-2 transition-colors ${
+          isOver
+            ? occupied
+              ? 'border-red-400 border-solid bg-red-500/20'
+              : 'border-forest-300 border-solid bg-forest-400/30'
+            : 'border-dashed border-white/50 dark:border-white/30'
+        }`}
+        style={{ width: SLOT_BOX_PX, height: SLOT_BOX_PX }}
+      />
+    </span>
+  )
+}
 
 interface BenchTokenProps {
   bench: YardBench
   isReadOnly: boolean
   selected: boolean
+  /** Slots currently taken by hives (indices), for hover feedback. */
+  occupiedSlots: number[]
   onSelect: (benchId: string) => void
   /** Persist a new bench rotation (degrees) after the rotate handle is released. */
   onRotate?: (deg: number) => void
 }
 
 /**
- * A bench (hive stand) on the 2D yard: a wooden slab with dashed hive slots.
- * Hive tokens standing on the bench cover it, so a grab tab protrudes beyond
- * the front edge — tap it to select, drag it to move the bench (its hives
- * ride along). When selected, a rotate handle orbits one end.
+ * A bench (hive stand) on the 2D yard: a wooden slab whose slots are real
+ * drop targets. Hive tokens standing on the bench cover it, so a grab tab
+ * protrudes beyond the front edge — tap it to select, drag it to move the
+ * bench (its hives ride along). When selected, a rotate handle orbits one end.
  */
-export default function BenchToken({ bench, isReadOnly, selected, onSelect, onRotate }: BenchTokenProps) {
+export default function BenchToken({ bench, isReadOnly, selected, occupiedSlots, onSelect, onRotate }: BenchTokenProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `bench:${bench.id}`,
     disabled: isReadOnly,
@@ -122,18 +163,14 @@ export default function BenchToken({ bench, isReadOnly, selected, onSelect, onRo
       {...(isReadOnly ? {} : listeners)}
       {...attributes}
     >
-      {/* Dashed outline per hive slot along the bench's long axis. */}
+      {/* Droppable slots along the bench's long axis. */}
       {Array.from({ length: bench.capacity }).map((_, slot) => (
-        <span
+        <BenchSlot
           key={slot}
-          aria-hidden
-          className="absolute top-1/2 rounded-md border-2 border-dashed border-white/50 dark:border-white/30"
-          style={{
-            left: '50%',
-            width: SLOT_BOX_PX,
-            height: SLOT_BOX_PX,
-            transform: `translate(calc(-50% + ${slotOffsetUnits(slot, bench.capacity) * UNIT_PX}px), -50%)`,
-          }}
+          benchId={bench.id}
+          slot={slot}
+          capacity={bench.capacity}
+          occupied={occupiedSlots.includes(slot)}
         />
       ))}
 
