@@ -62,7 +62,7 @@ function YardCanvas({
     <div
       ref={setRefs}
       role="group"
-      aria-label="Yard layout. Drag hives and benches to position them within the yard."
+      aria-label="Apiary layout. Drag hives and benches to position them within the apiary."
       onClick={handleClick}
       className="relative w-full aspect-[3/2] rounded-xl border-2 border-forest-700 overflow-hidden bg-forest-100 dark:bg-forest-900/40"
     >
@@ -99,11 +99,20 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     useSensor(KeyboardSensor),
   )
 
-  // Prefer the pointer position for drop detection: bench slots are small
-  // droppables inside the canvas, and pointerWithin picks the one under the
-  // finger. Falls back to rectangle overlap so keyboard dragging still works.
+  // Slot-first collision. pointerWithin alone judges the FINGER position, but
+  // the user aims by the TOKEN: a hive can visually cover a slot while the
+  // finger is off it (grabbed by an edge). So: 1) slot under the pointer wins;
+  // 2) otherwise the slot most covered by the dragged rect wins; 3) otherwise
+  // pointer/rect against everything (canvas) so ground drops still work.
   const collisionDetection = useCallback<CollisionDetection>((args) => {
     const pointerCollisions = pointerWithin(args)
+    const pointerSlot = pointerCollisions.find(c => SLOT_ID_PATTERN.test(String(c.id)))
+    if (pointerSlot) return [pointerSlot]
+
+    const slotContainers = args.droppableContainers.filter(c => SLOT_ID_PATTERN.test(String(c.id)))
+    const tokenSlotHits = rectIntersection({ ...args, droppableContainers: slotContainers })
+    if (tokenSlotHits.length > 0) return tokenSlotHits
+
     return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args)
   }, [])
 
@@ -194,7 +203,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
   }
 
   if (loading) {
-    return <p className="text-text-secondary py-8 text-center">Loading yard map…</p>
+    return <p className="text-text-secondary py-8 text-center">Loading apiary map…</p>
   }
 
   const benchById = new Map(benches.map(b => [b.id, b]))
@@ -254,7 +263,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
               aria-pressed={placingEntrance}
             >
               <DoorOpen className="w-4 h-4 mr-1" />
-              {placingEntrance ? 'Tap the yard…' : entrance ? 'Move entrance' : 'Set entrance'}
+              {placingEntrance ? 'Tap the map…' : entrance ? 'Move entrance' : 'Set entrance'}
             </Button>
 
             <div className="flex items-center gap-1">
@@ -323,10 +332,10 @@ export default function YardMap({ apiaryId }: YardMapProps) {
           {placedHives.length === 0 && benches.length === 0 && (
             <span className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center text-sm font-medium text-forest-800 dark:text-forest-200">
               {isReadOnly
-                ? 'No hives have been placed on this yard yet.'
+                ? 'No hives have been placed on this map yet.'
                 : hives.length === 0
-                  ? 'This apiary has no hives yet. Add hives to place them on the yard.'
-                  : 'Drag a hive from the tray below onto the yard to place it.'}
+                  ? 'This apiary has no hives yet. Add hives to place them on the map.'
+                  : 'Drag a hive from the tray below onto the map to place it.'}
             </span>
           )}
 
