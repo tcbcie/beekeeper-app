@@ -63,6 +63,15 @@ accessibility pass.
 * **Queen lineage** — labels show `hive · Qnumber`; the selected hive's label expands with
   "Mother: … · Mated: …", and the accessible hive list includes queen numbers.
 
+## 4c. Printing (03/07/2026)
+
+A **Print** button beside "Reset view" captures the scene *as currently framed* (orbit to the
+angle you want first). The capture runs `html-to-image` over the scene wrapper so the floating
+hive labels and north badge are included — the WebGL canvas is readable because the renderer runs
+with `preserveDrawingBuffer: true`. Output opens in a print window (name + date + image, Save as
+PDF included); a blocked pop-up falls back to a PNG download. Shared helper:
+`src/lib/print-layout.ts`.
+
 ## 5. Files
 
 | File | Role |

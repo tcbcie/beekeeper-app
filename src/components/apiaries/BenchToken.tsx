@@ -179,6 +179,7 @@ export default function BenchToken({ bench, isReadOnly, selected, occupiedSlots,
       {!isReadOnly && (
         <span
           aria-hidden
+          data-noprint
           className="absolute left-1/2 top-full mt-3 -translate-x-1/2 flex items-center justify-center gap-1 h-9 min-w-[64px] px-2 rounded-md border-2 border-amber-900 bg-amber-700 text-white text-sm font-bold shadow-md"
         >
           <GripHorizontal className="w-4 h-4" /> bench

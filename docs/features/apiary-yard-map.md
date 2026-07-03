@@ -130,6 +130,15 @@ The layout model was substantially extended — see `yard-map-v2-plan.md` for th
   `describeQueenLineage()` renders "Mother: … · Mated: @ … (…)" in the inspector and on the
   selected 3D label.
 
+## Printing
+
+A **Print** button (available to read-only viewers too) snapshots the map to a high-resolution
+PNG via `html-to-image` (selection cleared first; the bench grab tab is excluded via
+`data-noprint`) and opens a minimal print window — apiary name, date, image — triggering the
+browser print dialogue (which includes Save as PDF). If the pop-up is blocked, the PNG downloads
+instead with a toast. Shared helper: `src/lib/print-layout.ts`. The 3D view has the same button
+(see `apiary-3d-view.md`).
+
 ## Access & gating
 
 The Yard Map (and its 3D view) is a **premium, opt-in** feature, gated exactly like the CRM

@@ -1,11 +1,13 @@
 'use client'
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react'
 import Link from 'next/link'
-import { ArrowUp, RotateCcw } from 'lucide-react'
+import { ArrowUp, Printer, RotateCcw } from 'lucide-react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Grid } from '@react-three/drei'
 import { useApiaryMap, isHivePlaced, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
 import { BENCH_TOP_UNITS, slotOffsetUnits, rotatedOffset } from '@/lib/yard-geometry'
+import { printImageDataUrl, downloadDataUrl, printedOnLabel, excludeNoPrint } from '@/lib/print-layout'
+import { useToast } from '@/components/ui/Toast'
 import Hive3D from './Hive3D'
 import Bench3D from './Bench3D'
 import HiveInspectorPanel from './HiveInspectorPanel'
@@ -38,10 +40,13 @@ interface YardScene3DProps {
 const noop = () => {}
 
 export default function YardScene3D({ apiaryId }: YardScene3DProps) {
-  const { hives, benches, yard, loading } = useApiaryMap(apiaryId)
+  const { apiaryName, hives, benches, yard, loading } = useApiaryMap(apiaryId)
+  const toast = useToast()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [webgl, setWebgl] = useState<boolean | null>(null)
   const controlsRef = useRef<ComponentRef<typeof OrbitControls>>(null)
+  // The captured print area: WebGL canvas + floating labels + north badge.
+  const sceneWrapRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => { setWebgl(webglAvailable()) }, [])
 
@@ -67,6 +72,27 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
       return { position: [bx + off.dx, bz + off.dy], elevation: BENCH_TOP_UNITS }
     }
     return { position: toScene(Number(hive.map_x), Number(hive.map_y)), elevation: 0 }
+  }
+
+  /** Snapshot the 3D view (as currently framed) and open the print dialogue. */
+  const handlePrint = async () => {
+    const node = sceneWrapRef.current
+    if (!node) return
+    // Clear selection so the highlight doesn't appear on the printout.
+    setSelectedId(null)
+    await new Promise(resolve => setTimeout(resolve, 80))
+    try {
+      const { toPng } = await import('html-to-image')
+      const dataUrl = await toPng(node, { pixelRatio: 2, filter: excludeNoPrint })
+      const title = `${apiaryName ?? 'Apiary'} — 3D Apiary View`
+      if (!printImageDataUrl(dataUrl, title, printedOnLabel())) {
+        downloadDataUrl(dataUrl, `${title}.png`)
+        toast.info('Pop-up blocked — the image was downloaded instead.')
+      }
+    } catch (error) {
+      console.error('Error printing 3D apiary view:', error)
+      toast.error('Could not create the printable view')
+    }
   }
 
   if (loading) {
@@ -101,21 +127,33 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
           first, then return here.
         </p>
       ) : (
-        <div className="relative w-full aspect-[3/2] rounded-xl border-2 border-forest-700 overflow-hidden bg-sky-100 dark:bg-slate-800">
-          <button
-            type="button"
-            onClick={() => controlsRef.current?.reset()}
-            aria-label="Reset the camera view"
-            className="absolute top-2 right-2 z-10 inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg bg-white/90 dark:bg-slate-900/90 border border-border text-foreground shadow-sm hover:bg-white dark:hover:bg-slate-900"
-          >
-            <RotateCcw className="w-4 h-4" /> Reset view
-          </button>
+        <div ref={sceneWrapRef} className="relative w-full aspect-[3/2] rounded-xl border-2 border-forest-700 overflow-hidden bg-sky-100 dark:bg-slate-800">
+          <div data-noprint className="absolute top-2 right-2 z-10 flex gap-2">
+            <button
+              type="button"
+              onClick={handlePrint}
+              aria-label="Print this view"
+              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg bg-white/90 dark:bg-slate-900/90 border border-border text-foreground shadow-sm hover:bg-white dark:hover:bg-slate-900"
+            >
+              <Printer className="w-4 h-4" /> Print
+            </button>
+            <button
+              type="button"
+              onClick={() => controlsRef.current?.reset()}
+              aria-label="Reset the camera view"
+              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg bg-white/90 dark:bg-slate-900/90 border border-border text-foreground shadow-sm hover:bg-white dark:hover:bg-slate-900"
+            >
+              <RotateCcw className="w-4 h-4" /> Reset view
+            </button>
+          </div>
           {/* North indicator (matches the 2D map's user-set angle) */}
           <span className="pointer-events-none absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 dark:bg-slate-900/80 text-sm font-semibold text-forest-800 dark:text-forest-200">
             <ArrowUp className="w-4 h-4" style={{ transform: `rotate(${northAngle}deg)` }} /> N
           </span>
           <Canvas
             frameloop="demand"
+            // Keep the drawing buffer so the canvas can be captured for printing.
+            gl={{ preserveDrawingBuffer: true }}
             camera={{ position: [0, 6, 9], fov: 45 }}
             onPointerMissed={() => setSelectedId(null)}
             aria-label="3D view of the apiary. A text list of hives is provided below as an accessible alternative."

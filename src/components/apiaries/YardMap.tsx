@@ -13,9 +13,10 @@ import {
   type DragEndEvent,
   type CollisionDetection,
 } from '@dnd-kit/core'
-import { ArrowUp, DoorOpen, Plus, RotateCcw, RotateCw, Trash2, X } from 'lucide-react'
+import { ArrowUp, DoorOpen, Plus, Printer, RotateCcw, RotateCw, Trash2, X } from 'lucide-react'
 import { useApiaryMap, normaliseDeg, isHivePlaced, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
 import { UNIT_PX, slotOffsetUnits, slotPositionPct, rotatedOffset } from '@/lib/yard-geometry'
+import { printImageDataUrl, downloadDataUrl, printedOnLabel, excludeNoPrint } from '@/lib/print-layout'
 import { useToast } from '@/components/ui/Toast'
 import IconButton from '@/components/ui/IconButton'
 import Button from '@/components/ui/Button'
@@ -77,7 +78,7 @@ interface YardMapProps {
 
 export default function YardMap({ apiaryId }: YardMapProps) {
   const {
-    hives, benches, yard, loading, isOwner,
+    apiaryName, hives, benches, yard, loading, isOwner,
     saveHivePlacement, saveYardSettings, addBench, saveBenchPlacement, deleteBench,
   } = useApiaryMap(apiaryId)
   const toast = useToast()
@@ -232,6 +233,28 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     saveYardSettings({ yard_entrance_x: x, yard_entrance_y: y })
   }
 
+  /** Snapshot the map to a PNG and open the browser print dialogue. */
+  const handlePrint = async () => {
+    const node = canvasElRef.current
+    if (!node) return
+    // Clear selection so rings and handles don't appear on the printout.
+    setSelectedId(null)
+    setSelectedBenchId(null)
+    await new Promise(resolve => setTimeout(resolve, 80))
+    try {
+      const { toPng } = await import('html-to-image')
+      const dataUrl = await toPng(node, { pixelRatio: 2, filter: excludeNoPrint })
+      const title = `${apiaryName ?? 'Apiary'} — Apiary Map`
+      if (!printImageDataUrl(dataUrl, title, printedOnLabel())) {
+        downloadDataUrl(dataUrl, `${title}.png`)
+        toast.info('Pop-up blocked — the map image was downloaded instead.')
+      }
+    } catch (error) {
+      console.error('Error printing apiary map:', error)
+      toast.error('Could not create the printable map')
+    }
+  }
+
   /** Bench anchor for a hive standing on a bench (exact slot at any zoom). */
   const benchAnchor = (hive: MapHive) => {
     if (hive.bench_id == null || hive.bench_slot == null) return undefined
@@ -248,9 +271,14 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
       <div className="space-y-4">
         {isReadOnly && (
-          <p className="text-sm text-text-secondary">
-            You have view-only access to this apiary, so the layout cannot be changed.
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm text-text-secondary flex-1">
+              You have view-only access to this apiary, so the layout cannot be changed.
+            </p>
+            <Button size="sm" tone="neutral" onClick={handlePrint}>
+              <Printer className="w-4 h-4 mr-1" /> Print
+            </Button>
+          </div>
         )}
 
         {/* Yard toolbar: entrance marker, benches, adjustable north */}
@@ -282,6 +310,10 @@ export default function YardMap({ apiaryId }: YardMapProps) {
                 <Plus className="w-4 h-4 mr-1" /> Add bench
               </Button>
             </div>
+
+            <Button size="sm" tone="neutral" onClick={handlePrint}>
+              <Printer className="w-4 h-4 mr-1" /> Print
+            </Button>
 
             <div className="ml-auto flex items-center gap-1">
               <span className="text-sm text-text-secondary mr-1">North</span>
