@@ -328,6 +328,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
               isReadOnly={isReadOnly}
               selected={selectedBenchId === bench.id}
               onSelect={selectBench}
+              onRotate={(deg) => saveBenchPlacement(bench.id, { rotation_deg: normaliseDeg(Math.round(deg)) })}
             />
           ))}
 
@@ -367,6 +368,9 @@ export default function YardMap({ apiaryId }: YardMapProps) {
                 </h3>
                 <p className="text-sm text-text-secondary">
                   {benchOccupancy(selectedBench.id)} of {selectedBench.capacity} slots occupied
+                </p>
+                <p className="text-sm text-text-secondary mt-0.5">
+                  Drag the wooden tab to move the bench — its hives move with it. Drag the ⟳ handle or use the buttons below to turn it.
                 </p>
               </div>
               <IconButton onClick={() => setSelectedBenchId(null)} aria-label="Close bench details" className="min-h-[48px] min-w-[48px]">
