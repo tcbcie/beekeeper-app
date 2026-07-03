@@ -3,6 +3,11 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { normaliseDeg, type MapHive } from '@/hooks/useApiaryMap'
 
+// dnd-kit's Mouse/Touch sensors listen to mousedown/touchstart, which are
+// separate native streams from pointerdown — stop them on the rotate handle so
+// a rotation gesture can never also start a drag.
+const swallowEvent = (e: React.SyntheticEvent) => e.stopPropagation()
+
 // Footprint pixels: a full hive is square, a nuc is a narrow ~1:2 rectangle
 // (mirrors the 3D footprint of 0.9×0.9 vs 0.45×0.9). At rotation 0 the
 // entrance is the top edge.
@@ -170,7 +175,9 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
           <span
             aria-hidden
             onPointerDown={handleRotateStart}
-            className="pointer-events-auto absolute left-1/2 -top-9 -translate-x-1/2 h-7 w-7 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-xs font-bold"
+            onMouseDown={swallowEvent}
+            onTouchStart={swallowEvent}
+            className="pointer-events-auto absolute left-1/2 -top-10 -translate-x-1/2 h-9 w-9 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-sm font-bold"
             style={{ touchAction: 'none' }}
           >
             ⟳
