@@ -1101,7 +1101,7 @@ export default function ApiariesPage() {
         <EmptyState
           icon={MapPinOff}
           title="No Apiaries Yet"
-          description="Add your first apiary to start tracking your bee yard locations, coordinates, and weather data."
+          description="Add your first apiary to start tracking your apiary locations, coordinates, and weather data."
           actionLabel="Add Apiary"
           actionOnClick={() => setShowForm(true)}
         />

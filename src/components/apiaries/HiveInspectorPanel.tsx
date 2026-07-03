@@ -18,9 +18,9 @@ function entranceRelation(hive: MapHive, entrance: { x: number; y: number } | nu
     (Math.atan2(entrance.x - hive.map_x, -(entrance.y - hive.map_y)) * 180) / Math.PI,
   )
   const diff = ((hive.rotation_deg - bearing + 540) % 360) - 180
-  if (Math.abs(diff) <= 45) return 'Faces towards the yard entrance'
-  if (Math.abs(diff) >= 135) return 'Faces away from the yard entrance'
-  return diff > 0 ? 'Yard entrance is to its left' : 'Yard entrance is to its right'
+  if (Math.abs(diff) <= 45) return 'Faces towards the apiary entrance'
+  if (Math.abs(diff) >= 135) return 'Faces away from the apiary entrance'
+  return diff > 0 ? 'Apiary entrance is to its left' : 'Apiary entrance is to its right'
 }
 
 interface HiveInspectorPanelProps {
@@ -89,7 +89,7 @@ export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemov
         <div className="ml-auto flex items-center gap-2">
           {!isReadOnly && isPlaced && (
             <Button size="sm" tone="danger" onClick={onRemove}>
-              <Undo2 className="w-4 h-4 mr-1" /> Remove from yard
+              <Undo2 className="w-4 h-4 mr-1" /> Remove from map
             </Button>
           )}
           <Link href={`/dashboard/hives/${hive.id}`}>

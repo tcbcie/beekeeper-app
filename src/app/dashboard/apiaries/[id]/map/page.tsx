@@ -9,7 +9,7 @@ import IconButton from '@/components/ui/IconButton'
 // the server bundle and off the initial shared bundle.
 const YardMap = dynamic(() => import('@/components/apiaries/YardMap'), {
   ssr: false,
-  loading: () => <p className="text-text-secondary py-8 text-center">Loading yard map…</p>,
+  loading: () => <p className="text-text-secondary py-8 text-center">Loading apiary map…</p>,
 })
 
 export default function ApiaryMapPage() {
@@ -27,8 +27,8 @@ export default function ApiaryMapPage() {
           <ArrowLeft className="w-5 h-5" />
         </IconButton>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-foreground">Yard Map</h1>
-          <p className="text-sm text-text-secondary">Drag hives to match their real position in the yard.</p>
+          <h1 className="text-2xl font-bold text-foreground">Apiary Map</h1>
+          <p className="text-sm text-text-secondary">Drag hives to match their real position in the apiary.</p>
         </div>
         <Link
           href={`/dashboard/apiaries/${apiaryId}/map/3d`}

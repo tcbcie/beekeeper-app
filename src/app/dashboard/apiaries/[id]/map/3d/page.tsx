@@ -9,7 +9,7 @@ import IconButton from '@/components/ui/IconButton'
 // bundle. Kept isolated to this route so it never touches the critical path.
 const YardScene3D = dynamic(() => import('@/components/apiaries/YardScene3D'), {
   ssr: false,
-  loading: () => <p className="text-text-secondary py-8 text-center">Loading 3D yard…</p>,
+  loading: () => <p className="text-text-secondary py-8 text-center">Loading 3D apiary…</p>,
 })
 
 export default function ApiaryMap3DPage() {
@@ -22,13 +22,13 @@ export default function ApiaryMap3DPage() {
       <div className="flex items-center gap-3">
         <IconButton
           onClick={() => router.push(`/dashboard/apiaries/${apiaryId}/map`)}
-          aria-label="Back to yard map"
+          aria-label="Back to apiary map"
         >
           <ArrowLeft className="w-5 h-5" />
         </IconButton>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-foreground">3D Yard View</h1>
-          <p className="text-sm text-text-secondary">Spin the yard around to see your hives in 3D.</p>
+          <h1 className="text-2xl font-bold text-foreground">3D Apiary View</h1>
+          <p className="text-sm text-text-secondary">Spin the apiary around to see your hives in 3D.</p>
         </div>
         <Link
           href={`/dashboard/apiaries/${apiaryId}/map`}

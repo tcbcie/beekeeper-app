@@ -16,7 +16,7 @@ const features = [
   {
     icon: aboutFeatureIcons.apiaryManagement,
     title: 'Apiary Management',
-    description: 'Track all your bee yards and hives in one place with detailed records.',
+    description: 'Track all your apiaries and hives in one place with detailed records.',
   },
   {
     icon: aboutFeatureIcons.queenTracking,
