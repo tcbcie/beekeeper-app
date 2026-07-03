@@ -151,9 +151,12 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
           />
         )}
 
-        {/* Free-rotate handle above the entrance edge; orbits with the body. */}
+        {/* Free-rotate handle above the entrance edge; orbits with the body.
+            Pointer-only by design — the inspector's nudge buttons are the
+            accessible path, so this is hidden from assistive tech. */}
         {showRotateHandle && (
           <span
+            aria-hidden
             onPointerDown={handleRotateStart}
             className="pointer-events-auto absolute left-1/2 -top-9 -translate-x-1/2 h-7 w-7 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-xs font-bold"
             style={{ touchAction: 'none' }}

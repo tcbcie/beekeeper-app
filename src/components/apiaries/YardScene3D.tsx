@@ -222,6 +222,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
                   }`}
                 >
                   Hive {hive.hive_number}
+                  {hive.queens?.[0] && <span className="ml-1.5 text-text-secondary">Q{hive.queens[0].queen_number}</span>}
                   {hive.is_queenless && <span className="ml-1.5 text-red-600 dark:text-red-400">(queenless)</span>}
                 </button>
               </li>

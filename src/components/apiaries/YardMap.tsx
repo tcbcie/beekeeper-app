@@ -255,7 +255,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
                 id="bench-capacity"
                 value={benchCapacity}
                 onChange={(e) => setBenchCapacity(Number(e.target.value))}
-                className="px-2 py-1.5 border border-border rounded-md bg-surface text-foreground text-sm min-h-[40px]"
+                className="px-2 py-1.5 border border-border rounded-md bg-surface text-foreground text-sm min-h-[48px]"
               >
                 {[1, 2, 3, 4, 5, 6].map(n => (
                   <option key={n} value={n}>{n} {n === 1 ? 'hive' : 'hives'}</option>
