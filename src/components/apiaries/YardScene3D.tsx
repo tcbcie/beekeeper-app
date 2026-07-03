@@ -139,20 +139,26 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
               infiniteGrid={false}
             />
 
-            {/* Yard entrance marker: two posts and a lintel at the gate. */}
+            {/* Yard entrance: a low farm gate — end posts, three rails and a
+                diagonal brace — well below hive height. */}
             {entrance && (
               <group position={[entrance[0], 0, entrance[1]]}>
-                <mesh position={[-0.35, 0.45, 0]} castShadow>
-                  <boxGeometry args={[0.12, 0.9, 0.12]} />
-                  <meshStandardMaterial color="#7c5a2e" />
-                </mesh>
-                <mesh position={[0.35, 0.45, 0]} castShadow>
-                  <boxGeometry args={[0.12, 0.9, 0.12]} />
-                  <meshStandardMaterial color="#7c5a2e" />
-                </mesh>
-                <mesh position={[0, 0.95, 0]} castShadow>
-                  <boxGeometry args={[0.95, 0.1, 0.14]} />
-                  <meshStandardMaterial color="#7c5a2e" />
+                {[-0.6, 0.6].map(x => (
+                  <mesh key={`gatepost-${x}`} position={[x, 0.21, 0]} castShadow>
+                    <boxGeometry args={[0.09, 0.42, 0.09]} />
+                    <meshStandardMaterial color="#6b4423" />
+                  </mesh>
+                ))}
+                {[0.1, 0.22, 0.34].map(y => (
+                  <mesh key={`gaterail-${y}`} position={[0, y, 0]} castShadow>
+                    <boxGeometry args={[1.2, 0.045, 0.035]} />
+                    <meshStandardMaterial color="#8b5e34" />
+                  </mesh>
+                ))}
+                {/* Diagonal brace from bottom-left to top-right rail. */}
+                <mesh position={[0, 0.22, 0.01]} rotation={[0, 0, 0.2]} castShadow>
+                  <boxGeometry args={[1.18, 0.045, 0.03]} />
+                  <meshStandardMaterial color="#8b5e34" />
                 </mesh>
               </group>
             )}
