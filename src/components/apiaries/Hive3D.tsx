@@ -2,7 +2,7 @@
 import { useMemo } from 'react'
 import { Html, Edges } from '@react-three/drei'
 import type { ThreeEvent } from '@react-three/fiber'
-import { describeQueenLineage, type MapHive } from '@/hooks/useApiaryMap'
+import { queenLineageParts, type MapHive } from '@/hooks/useApiaryMap'
 
 // Relative box dimensions (1 unit ≈ one hive footprint). Heights mirror the
 // 2D card's sense of scale: supers/half boxes shallower than full brood.
@@ -83,7 +83,7 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
   const yaw = (Number(hive.rotation_deg ?? 0) * Math.PI) / 180
 
   const queen = hive.queens?.[0]
-  const lineage = describeQueenLineage(queen)
+  const lineageParts = queenLineageParts(queen)
 
   // Precompute each layer's vertical centre; the stack sits on the feet.
   let cursor = FEET_H
@@ -206,11 +206,13 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
             {hive.hive_number}
             {queen && <span className="font-medium text-gray-700"> · Q{queen.queen_number}</span>}
           </span>
-          {selected && lineage && (
-            <span className="block text-sm font-medium text-gray-700 whitespace-nowrap leading-tight">
-              {lineage}
+          {/* Lineage stacks as short lines (capped width, wrapping) so a long
+              mating-station name can't run across neighbouring labels. */}
+          {selected && lineageParts.map(part => (
+            <span key={part} className="block text-sm font-medium text-gray-700 whitespace-normal leading-tight max-w-[220px]">
+              {part}
             </span>
-          )}
+          ))}
         </span>
       </Html>
     </group>

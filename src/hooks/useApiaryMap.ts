@@ -52,8 +52,8 @@ export interface MapHive {
  * falling back to the distributed snapshot — the same rule as the queen
  * detail page.
  */
-export function describeQueenLineage(queen: MapQueen | undefined): string | null {
-  if (!queen) return null
+export function queenLineageParts(queen: MapQueen | undefined): string[] {
+  if (!queen) return []
   const mother = queen.mother?.queen_number || queen.distributed_mother_queen || null
 
   const station = queen.mating_station?.trim() || null
@@ -65,6 +65,11 @@ export function describeQueenLineage(queen: MapQueen | undefined): string | null
   const parts: string[] = []
   if (mother) parts.push(`Mother: ${mother}`)
   if (mated) parts.push(`Mated: ${mated}`)
+  return parts
+}
+
+export function describeQueenLineage(queen: MapQueen | undefined): string | null {
+  const parts = queenLineageParts(queen)
   return parts.length > 0 ? parts.join(' · ') : null
 }
 
