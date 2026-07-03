@@ -70,7 +70,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
   }
 
   if (loading) {
-    return <p className="text-text-secondary py-8 text-center">Loading 3D yard…</p>
+    return <p className="text-text-secondary py-8 text-center">Loading 3D apiary…</p>
   }
 
   // Graceful fallback when the device/browser cannot run WebGL.
@@ -78,13 +78,13 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
     return (
       <div className="rounded-lg border border-border bg-surface p-6 text-center">
         <p className="text-text-secondary mb-3">
-          This device can&apos;t display the 3D view. You can still use the flat yard map.
+          This device can&apos;t display the 3D view. You can still use the flat apiary map.
         </p>
         <Link
           href={`/dashboard/apiaries/${apiaryId}/map`}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-border rounded-full hover:border-forest-500 text-forest-700 dark:text-forest-300"
         >
-          Open 2D yard map
+          Open 2D apiary map
         </Link>
       </div>
     )
@@ -94,9 +94,9 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
     <div className="space-y-4">
       {placedHives.length === 0 ? (
         <p className="rounded-lg border border-border bg-surface p-6 text-center text-sm text-text-secondary">
-          No hives are placed on this yard yet. Place them on the{' '}
+          No hives are placed on this map yet. Place them on the{' '}
           <Link href={`/dashboard/apiaries/${apiaryId}/map`} className="text-forest-700 dark:text-forest-300 underline">
-            2D yard map
+            2D apiary map
           </Link>{' '}
           first, then return here.
         </p>
@@ -118,7 +118,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
             frameloop="demand"
             camera={{ position: [0, 6, 9], fov: 45 }}
             onPointerMissed={() => setSelectedId(null)}
-            aria-label="3D view of the yard. A text list of hives is provided below as an accessible alternative."
+            aria-label="3D view of the apiary. A text list of hives is provided below as an accessible alternative."
           >
             <ambientLight intensity={0.85} />
             <directionalLight position={[6, 12, 8]} intensity={1} />
@@ -196,7 +196,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
       )}
 
       <p className="text-sm text-text-secondary">
-        Drag to spin the yard · pinch or scroll to zoom · tap a hive for its details.
+        Drag to spin the apiary · pinch or scroll to zoom · tap a hive for its details.
         {unplacedCount > 0 && ` (${unplacedCount} unplaced ${unplacedCount === 1 ? 'hive is' : 'hives are'} hidden.)`}
       </p>
 
@@ -213,7 +213,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
       {/* Accessible, keyboard-navigable alternative to the 3D canvas. */}
       {placedHives.length > 0 && (
         <div className="rounded-lg border border-border bg-surface p-3">
-          <h2 className="text-sm font-semibold text-text-secondary mb-2">Hives on this yard</h2>
+          <h2 className="text-sm font-semibold text-text-secondary mb-2">Hives in this apiary</h2>
           <ul className="flex flex-wrap gap-2">
             {placedHives.map(hive => (
               <li key={hive.id}>

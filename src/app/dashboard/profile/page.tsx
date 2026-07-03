@@ -1305,14 +1305,14 @@ export default function ProfilePage() {
  {subscriptionStatus?.is_active && (
  <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
  <div className="mb-4">
- <div className="font-medium text-foreground mb-1">Yard Map</div>
- <div className="text-sm text-text-tertiary">Arrange your hives on a visual yard map and view the apiary in 3D, built from each hive&apos;s configuration.</div>
+ <div className="font-medium text-foreground mb-1">Apiary Map</div>
+ <div className="text-sm text-text-tertiary">Arrange your hives on a visual apiary map and view the apiary in 3D, built from each hive&apos;s configuration.</div>
  </div>
 
  <div className="flex items-center justify-between">
  <div>
- <label htmlFor="enable-yard-map" className="text-sm font-medium text-foreground">Enable yard map</label>
- <div className="text-xs text-text-tertiary">Adds a Yard Map action to each apiary</div>
+ <label htmlFor="enable-yard-map" className="text-sm font-medium text-foreground">Enable apiary map</label>
+ <div className="text-xs text-text-tertiary">Adds an Apiary Map action to each apiary</div>
  </div>
  <label className="relative inline-flex items-center cursor-pointer">
  <input

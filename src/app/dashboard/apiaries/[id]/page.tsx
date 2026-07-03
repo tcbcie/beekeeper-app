@@ -181,7 +181,7 @@ export default function ApiaryDetailPage() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface dark:bg-surface border border-border rounded-full hover:border-forest-500 dark:hover:border-forest-400 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
           >
             <Map size={14} />
-            Yard Map
+            Apiary Map
           </Link>
         )}
         {apiary.latitude && apiary.longitude && (
