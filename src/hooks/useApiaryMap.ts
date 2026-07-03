@@ -18,8 +18,13 @@ export interface MapQueen {
   mated_at_eircode?: string | null
   /** Text snapshot of the breeder's mother for distributed queens (no local FK). */
   distributed_mother_queen?: string | null
-  /** Self-join via queens.mother_id; PostgREST may return object or array. */
-  mother?: { id: string; queen_number: string } | { id: string; queen_number: string }[] | null
+  mother_id?: string | null
+  /**
+   * Resolved by a second batched lookup on mother_id (the useQueenDetail
+   * pattern) — an embedded queens→queens self-join is directionally ambiguous
+   * in PostgREST and could return daughters instead of the mother.
+   */
+  mother?: { id: string; queen_number: string } | null
 }
 
 export interface MapHive {
@@ -49,8 +54,7 @@ export interface MapHive {
  */
 export function describeQueenLineage(queen: MapQueen | undefined): string | null {
   if (!queen) return null
-  const motherRel = Array.isArray(queen.mother) ? queen.mother[0] : queen.mother
-  const mother = motherRel?.queen_number || queen.distributed_mother_queen || null
+  const mother = queen.mother?.queen_number || queen.distributed_mother_queen || null
 
   const station = queen.mating_station?.trim() || null
   const eircode = queen.mated_at_eircode?.trim() || null
@@ -158,7 +162,7 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
           .eq('id', apiaryId).single(),
         supabase
           .from('hives')
-          .select('id, hive_number, status, is_queenless, queenless_reason, map_x, map_y, rotation_deg, bench_id, bench_slot, configuration, queens(id, queen_number, marking_color, mating_station, mated_at_eircode, distributed_mother_queen, mother:queens!mother_id(id, queen_number))')
+          .select('id, hive_number, status, is_queenless, queenless_reason, map_x, map_y, rotation_deg, bench_id, bench_slot, configuration, queens(id, queen_number, marking_color, mating_station, mated_at_eircode, distributed_mother_queen, mother_id)')
           .eq('apiary_id', apiaryId)
           .is('archived_at', null)
           .order('hive_number'),
@@ -174,6 +178,34 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
       if (benchesRes.error) throw benchesRes.error
       if (!isCurrent()) return
 
+      // Resolve mother queens with one batched lookup (the useQueenDetail
+      // pattern): an embedded queens→queens self-join is directionally
+      // ambiguous in PostgREST. Failure degrades gracefully — lineage simply
+      // omits the mother.
+      let hiveRows = (hivesRes.data || []) as MapHive[]
+      const motherIds = Array.from(new Set(
+        hiveRows.flatMap(h => (h.queens ?? []).map(q => q.mother_id).filter((id): id is string => !!id)),
+      ))
+      if (motherIds.length > 0) {
+        const { data: mothers, error: mothersError } = await supabase
+          .from('queens')
+          .select('id, queen_number')
+          .in('id', motherIds)
+        if (!isCurrent()) return
+        if (mothersError) {
+          console.error('Error resolving mother queens:', mothersError)
+        } else {
+          const motherById = new Map((mothers || []).map(m => [m.id as string, m as { id: string; queen_number: string }]))
+          hiveRows = hiveRows.map(h => ({
+            ...h,
+            queens: h.queens?.map(q => ({
+              ...q,
+              mother: q.mother_id ? motherById.get(q.mother_id) ?? null : null,
+            })),
+          }))
+        }
+      }
+
       setApiaryName(apiaryRes.data?.name ?? null)
       setIsOwner(!!userId && apiaryRes.data?.user_id === userId)
       setYard({
@@ -181,7 +213,7 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
         yard_entrance_y: apiaryRes.data?.yard_entrance_y ?? null,
         north_angle_deg: apiaryRes.data?.north_angle_deg ?? 0,
       })
-      setHives((hivesRes.data || []) as MapHive[])
+      setHives(hiveRows)
       setBenches((benchesRes.data || []) as YardBench[])
     } catch (error) {
       console.error('Error loading apiary map:', error)
@@ -336,18 +368,17 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     }))
     if (results.some(r => r.error)) {
       console.error('Error updating hives on bench move:', results.find(r => r.error)?.error)
-      // Bench itself saved; a reload will re-derive the true hive positions.
+      // Bench itself saved; re-sync so the UI shows the DB's true positions.
+      if (mountedRef.current) reload()
     }
-  }, [requireUser, toast])
+  }, [requireUser, reload, toast])
 
   /** Delete a bench; its hives stay where they are, just unlinked (grounded). */
   const deleteBench = useCallback(async (benchId: string) => {
     const userId = requireUser()
     if (!userId) return
 
-    const prevBenches = benchesRef.current
-    const prevHives = hivesRef.current
-    const linkedHives = prevHives.filter(h => h.bench_id === benchId)
+    const linkedHives = hivesRef.current.filter(h => h.bench_id === benchId)
 
     setBenches(prev => prev.filter(b => b.id !== benchId))
     setHives(prev => prev.map(h => (h.bench_id === benchId ? { ...h, bench_id: null, bench_slot: null } : h)))
@@ -368,11 +399,13 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     if (error || groundResults.some(r => r.error)) {
       console.error('Error deleting bench:', error ?? groundResults.find(r => r.error)?.error)
       if (!mountedRef.current) return
-      setBenches(prevBenches)
-      setHives(prevHives)
       toast.error('Could not delete the bench')
+      // The grounding writes may have partially succeeded, so a local rollback
+      // could show hives linked to a bench the DB has already unlinked —
+      // re-sync from the DB instead of guessing.
+      reload()
     }
-  }, [requireUser, toast])
+  }, [requireUser, reload, toast])
 
   return {
     apiaryName,
