@@ -178,11 +178,21 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
       if (benchesRes.error) throw benchesRes.error
       if (!isCurrent()) return
 
+      // PostgREST returns the queens embed as a single OBJECT for this
+      // to-one relationship (hives.queen_id → queens), not an array —
+      // normalise at this one chokepoint so every consumer can rely on
+      // MapHive.queens being an array.
+      type RawQueens = MapQueen | MapQueen[] | null | undefined
+      let hiveRows: MapHive[] = ((hivesRes.data || []) as (Omit<MapHive, 'queens'> & { queens?: RawQueens })[])
+        .map(row => ({
+          ...row,
+          queens: row.queens == null ? [] : Array.isArray(row.queens) ? row.queens : [row.queens],
+        }))
+
       // Resolve mother queens with one batched lookup (the useQueenDetail
       // pattern): an embedded queens→queens self-join is directionally
       // ambiguous in PostgREST. Failure degrades gracefully — lineage simply
       // omits the mother.
-      let hiveRows = (hivesRes.data || []) as MapHive[]
       const motherIds = Array.from(new Set(
         hiveRows.flatMap(h => (h.queens ?? []).map(q => q.mother_id).filter((id): id is string => !!id)),
       ))
