@@ -39,6 +39,11 @@ export function printImageDataUrl(dataUrl: string, title: string, subtitle: stri
     win.focus()
     win.print()
   }
+  img.onerror = () => {
+    // Never leave a blank window sitting there if the image cannot render.
+    console.error('Print image failed to load')
+    win.close()
+  }
   img.src = dataUrl
 
   doc.body.append(heading, meta, img)
@@ -49,7 +54,9 @@ export function printImageDataUrl(dataUrl: string, title: string, subtitle: stri
 export function downloadDataUrl(dataUrl: string, filename: string) {
   const link = document.createElement('a')
   link.href = dataUrl
-  link.download = filename
+  // Apiary names feed the filename — strip characters that are invalid on
+  // common filesystems so the download never fails or mangles.
+  link.download = filename.replace(/[\\/:*?"<>|]/g, '-')
   document.body.appendChild(link)
   link.click()
   link.remove()
