@@ -57,6 +57,11 @@ export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemov
           </p>
           {lineage && <p className="text-sm text-text-secondary mt-0.5">{lineage}</p>}
           {relation && <p className="text-sm text-text-secondary mt-0.5">{relation}</p>}
+          {!isReadOnly && isPlaced && (
+            <p className="text-sm text-text-secondary mt-0.5">
+              Drag the ⟳ handle above the hive to turn it freely, or use the buttons below.
+            </p>
+          )}
         </div>
         <IconButton onClick={onClose} aria-label="Close hive details" className="min-h-[48px] min-w-[48px]">
           <X className="w-5 h-5" />

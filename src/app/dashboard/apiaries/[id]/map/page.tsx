@@ -28,7 +28,7 @@ export default function ApiaryMapPage() {
         </IconButton>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">Apiary Map</h1>
-          <p className="text-sm text-text-secondary">Drag hives to match their real position in the apiary.</p>
+          <p className="text-sm text-text-secondary">Drag hives to match their real position in the apiary. Tap one, then drag its ⟳ handle to turn it.</p>
         </div>
         <Link
           href={`/dashboard/apiaries/${apiaryId}/map/3d`}
