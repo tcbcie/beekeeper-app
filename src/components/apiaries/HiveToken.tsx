@@ -2,22 +2,17 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { normaliseDeg, type MapHive } from '@/hooks/useApiaryMap'
+import { tokenFootprintPx, rotatedBboxHalfPx } from '@/lib/yard-geometry'
 
 // dnd-kit's Mouse/Touch sensors listen to mousedown/touchstart, which are
 // separate native streams from pointerdown — stop them on the rotate handle so
 // a rotation gesture can never also start a drag.
 const swallowEvent = (e: React.SyntheticEvent) => e.stopPropagation()
 
-// Footprint pixels: a full hive is square, a nuc is a narrow ~1:2 rectangle
-// (mirrors the 3D footprint of 0.9×0.9 vs 0.45×0.9). At rotation 0 the
-// entrance is the top edge.
-const FULL_W = 68
-const FULL_H = 68
-const NUC_W = 40
-const NUC_H = 80
-// Fixed container so the rotated footprint (diagonal ≤ ~96px) never clips and
-// the touch target stays comfortably above 48px.
-const CONTAINER = 96
+// The hit container hugs the rotated footprint plus a small margin — a fixed
+// oversized container made adjacent nucs grab each other's invisible edges.
+const CONTAINER_MARGIN_PX = 8
+const MIN_TOUCH_PX = 48
 
 interface HiveTokenProps {
   hive: MapHive
@@ -61,8 +56,11 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
   // numeric columns can arrive as strings; coerce before doing arithmetic.
   const rotation = liveDeg ?? Number(hive.rotation_deg ?? 0)
   const isNuc = hive.configuration?.hive_size === 'nuc'
-  const fpW = isNuc ? NUC_W : FULL_W
-  const fpH = isNuc ? NUC_H : FULL_H
+  const { w: fpW, h: fpH } = tokenFootprintPx(isNuc)
+  // Hit container = rotated footprint bbox + margin, floored at touch size.
+  const { hw, hh } = rotatedBboxHalfPx(fpW, fpH, rotation)
+  const containerW = Math.max(MIN_TOUCH_PX, Math.ceil(hw * 2) + CONTAINER_MARGIN_PX)
+  const containerH = Math.max(MIN_TOUCH_PX, Math.ceil(hh * 2) + CONTAINER_MARGIN_PX)
 
   // Colour the border by colony health so it reads at a glance in the field.
   const borderTone = hive.is_queenless
@@ -82,8 +80,8 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
         position: 'absolute',
         left: `${anchor ? anchor.xPct : hive.map_x ?? 50}%`,
         top: `${anchor ? anchor.yPct : hive.map_y ?? 50}%`,
-        width: CONTAINER,
-        height: CONTAINER,
+        width: containerW,
+        height: containerH,
         transform: `${dragTransform} ${centreTransform} ${anchorTransform}`.trim(),
         zIndex: isDragging || selected ? 30 : 10,
         touchAction: 'none',
