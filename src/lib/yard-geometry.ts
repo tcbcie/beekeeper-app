@@ -8,15 +8,19 @@ export const SLOT_UNITS = 1.05
 export const BENCH_DEPTH_UNITS = 1.0
 /** Height of the bench's standing surface in the 3D scene. */
 export const BENCH_TOP_UNITS = 0.38
-/** 2D pixels per scene unit (a 68px hive token / 0.9 units). */
+/**
+ * Fallback 2D pixels per scene unit, used before the canvas is measured and
+ * for tray tokens. On the canvas itself the live scale is canvasWidth / 10,
+ * so the 2D map is true-to-scale with the 3D view at any screen size.
+ */
 export const UNIT_PX = 76
 
-// 2D token footprints in pixels (a full hive is square; a nuc is ~1:2).
-export const FULL_TOKEN_PX = { w: 68, h: 68 }
-export const NUC_TOKEN_PX = { w: 40, h: 80 }
+// Token footprints in scene units (a full hive is square; a nuc is 1:2).
+export const FULL_TOKEN_UNITS = { w: 0.9, h: 0.9 }
+export const NUC_TOKEN_UNITS = { w: 0.45, h: 0.9 }
 
-export function tokenFootprintPx(isNuc: boolean): { w: number; h: number } {
-  return isNuc ? NUC_TOKEN_PX : FULL_TOKEN_PX
+export function tokenFootprintUnits(isNuc: boolean): { w: number; h: number } {
+  return isNuc ? NUC_TOKEN_UNITS : FULL_TOKEN_UNITS
 }
 
 /** Half-extents of a w×h footprint's axis-aligned bounding box after rotation. */

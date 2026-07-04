@@ -5,9 +5,8 @@ import { GripHorizontal } from 'lucide-react'
 import { normaliseDeg, type YardBench } from '@/hooks/useApiaryMap'
 import { UNIT_PX, SLOT_UNITS, BENCH_DEPTH_UNITS, benchLengthUnits, slotOffsetUnits } from '@/lib/yard-geometry'
 
-const DEPTH_PX = BENCH_DEPTH_UNITS * UNIT_PX
-const SLOT_AREA_PX = SLOT_UNITS * UNIT_PX // droppable region per slot (contiguous)
-const SLOT_BOX_PX = 64 // dashed slot outline, slightly smaller than a hive token
+// Dashed slot outline, slightly smaller than a hive footprint (in units).
+const SLOT_BOX_UNITS = 0.84
 
 // dnd-kit's Mouse/Touch sensors listen to mousedown/touchstart, which are
 // separate native streams from pointerdown — stop them on rotate handles so
@@ -19,11 +18,12 @@ const swallowEvent = (e: React.SyntheticEvent) => e.stopPropagation()
  * pointer collision against these regions (no distance thresholds), and the
  * slot highlights while a hive hovers it so the user can see the snap coming.
  */
-function BenchSlot({ benchId, slot, capacity, occupied }: {
+function BenchSlot({ benchId, slot, capacity, occupied, pxPerUnit }: {
   benchId: string
   slot: number
   capacity: number
   occupied: boolean
+  pxPerUnit: number
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `bench:${benchId}:slot:${slot}` })
 
@@ -34,8 +34,8 @@ function BenchSlot({ benchId, slot, capacity, occupied }: {
       className="absolute top-0 h-full flex items-center justify-center"
       style={{
         left: '50%',
-        width: SLOT_AREA_PX,
-        transform: `translateX(calc(-50% + ${slotOffsetUnits(slot, capacity) * UNIT_PX}px))`,
+        width: SLOT_UNITS * pxPerUnit,
+        transform: `translateX(calc(-50% + ${slotOffsetUnits(slot, capacity) * pxPerUnit}px))`,
       }}
     >
       <span
@@ -46,7 +46,7 @@ function BenchSlot({ benchId, slot, capacity, occupied }: {
               : 'border-forest-300 border-solid bg-forest-400/30'
             : 'border-dashed border-white/50 dark:border-white/30'
         }`}
-        style={{ width: SLOT_BOX_PX, height: SLOT_BOX_PX }}
+        style={{ width: SLOT_BOX_UNITS * pxPerUnit, height: SLOT_BOX_UNITS * pxPerUnit }}
       />
     </span>
   )
@@ -61,6 +61,8 @@ interface BenchTokenProps {
   onSelect: (benchId: string) => void
   /** Persist a new bench rotation (degrees) after the rotate handle is released. */
   onRotate?: (deg: number) => void
+  /** Live canvas scale (canvasWidth / 10). */
+  pxPerUnit?: number
 }
 
 /**
@@ -69,7 +71,7 @@ interface BenchTokenProps {
  * protrudes beyond the front edge — tap it to select, drag it to move the
  * bench (its hives ride along). When selected, a rotate handle orbits one end.
  */
-export default function BenchToken({ bench, isReadOnly, selected, occupiedSlots, onSelect, onRotate }: BenchTokenProps) {
+export default function BenchToken({ bench, isReadOnly, selected, occupiedSlots, onSelect, onRotate, pxPerUnit = UNIT_PX }: BenchTokenProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `bench:${bench.id}`,
     disabled: isReadOnly,
@@ -92,7 +94,8 @@ export default function BenchToken({ bench, isReadOnly, selected, occupiedSlots,
 
   // numeric columns can arrive as strings; coerce before doing arithmetic.
   const rotation = liveDeg ?? Number(bench.rotation_deg ?? 0)
-  const lengthPx = benchLengthUnits(bench.capacity) * UNIT_PX
+  const lengthPx = benchLengthUnits(bench.capacity) * pxPerUnit
+  const depthPx = BENCH_DEPTH_UNITS * pxPerUnit
 
   const dragTransform = transform
     ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
@@ -154,7 +157,7 @@ export default function BenchToken({ bench, isReadOnly, selected, occupiedSlots,
         left: `${Number(bench.map_x)}%`,
         top: `${Number(bench.map_y)}%`,
         width: lengthPx,
-        height: DEPTH_PX,
+        height: depthPx,
         transform: `${dragTransform} translate(-50%, -50%) rotate(${rotation}deg)`.trim(),
         zIndex: isDragging || selected ? 20 : 5,
         touchAction: 'none',
@@ -171,6 +174,7 @@ export default function BenchToken({ bench, isReadOnly, selected, occupiedSlots,
           slot={slot}
           capacity={bench.capacity}
           occupied={occupiedSlots.includes(slot)}
+          pxPerUnit={pxPerUnit}
         />
       ))}
 
