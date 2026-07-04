@@ -28,6 +28,20 @@ export function rotatedBboxHalfPx(w: number, h: number, deg: number): { hw: numb
   }
 }
 
+// Placement grid: everything (hives and benches) lands on intersections of a
+// half-hive-pitch grid (0.5 units), defined in canonical percent space so the
+// layout is identical on every device. 0.5 units = 5 % of width; the vertical
+// pitch is 1.5× that because the canvas is 3:2.
+export const GRID_X_PCT = 5
+export const GRID_Y_PCT = 7.5
+
+/** Quantise a canvas-percent point to the nearest grid intersection. */
+export function snapPctToGrid(xPct: number, yPct: number): { x: number; y: number } {
+  const x = Math.min(100, Math.max(0, Math.round(xPct / GRID_X_PCT) * GRID_X_PCT))
+  const y = Math.min(100, Math.max(0, Math.round(yPct / GRID_Y_PCT) * GRID_Y_PCT))
+  return { x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 }
+}
+
 /** Local offset of a slot centre along the bench's long axis, in units. */
 export function slotOffsetUnits(slot: number, capacity: number): number {
   return (slot - (capacity - 1) / 2) * SLOT_UNITS

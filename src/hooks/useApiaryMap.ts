@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getCurrentUserId } from '@/lib/auth'
-import { slotPositionPct } from '@/lib/yard-geometry'
+import { slotPositionPct, snapPctToGrid } from '@/lib/yard-geometry'
 import type { HiveConfiguration } from '@/types/hive'
 
 /** Normalise any angle to [0, 360). */
@@ -317,9 +317,11 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     const userId = requireUser()
     if (!userId) return
 
+    // Spawn at the grid intersection nearest the canvas centre.
+    const centre = snapPctToGrid(50, 50)
     const { data, error } = await supabase
       .from('yard_benches')
-      .insert({ user_id: userId, apiary_id: apiaryId, map_x: 50, map_y: 50, rotation_deg: 0, capacity })
+      .insert({ user_id: userId, apiary_id: apiaryId, map_x: centre.x, map_y: centre.y, rotation_deg: 0, capacity })
       .select('id, map_x, map_y, rotation_deg, capacity')
       .single()
 

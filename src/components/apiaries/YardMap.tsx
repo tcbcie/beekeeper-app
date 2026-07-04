@@ -11,11 +11,16 @@ import {
   pointerWithin,
   rectIntersection,
   type DragEndEvent,
+  type DragMoveEvent,
   type CollisionDetection,
 } from '@dnd-kit/core'
 import { ArrowUp, DoorOpen, Plus, Printer, RotateCcw, RotateCw, Trash2, X } from 'lucide-react'
 import { useApiaryMap, normaliseDeg, isHivePlaced, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
-import { UNIT_PX, slotOffsetUnits, slotPositionPct, rotatedOffset, tokenFootprintPx, rotatedBboxHalfPx } from '@/lib/yard-geometry'
+import {
+  UNIT_PX, BENCH_DEPTH_UNITS, GRID_X_PCT, GRID_Y_PCT,
+  slotOffsetUnits, slotPositionPct, rotatedOffset,
+  tokenFootprintPx, rotatedBboxHalfPx, benchLengthUnits, snapPctToGrid,
+} from '@/lib/yard-geometry'
 import { printImageDataUrl, downloadDataUrl, printedOnLabel, excludeNoPrint } from '@/lib/print-layout'
 import { useToast } from '@/components/ui/Toast'
 import IconButton from '@/components/ui/IconButton'
@@ -28,10 +33,14 @@ const CANVAS_ID = 'yard-canvas'
 const NORTH_STEP_DEG = 15
 const BENCH_STEP_DEG = 15
 const SLOT_ID_PATTERN = /^bench:(.+):slot:(\d+)$/
-// Ground-drop snapping: centres align within this distance, and bodies pull
-// flush when their edges are this close on the aligned axis.
-const ALIGN_SNAP_PX = 10
-const ABUT_SNAP_PX = 16
+
+/** Dashed outline previewing where the dragged item will land. */
+interface DropGhost {
+  xPct: number
+  yPct: number
+  wPx: number
+  hPx: number
+}
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
 
@@ -70,6 +79,11 @@ function YardCanvas({
       aria-label="Apiary layout. Drag hives and benches to position them within the apiary."
       onClick={handleClick}
       className="relative w-full aspect-[3/2] rounded-xl border-2 border-forest-700 overflow-hidden bg-forest-100 dark:bg-forest-900/40"
+      style={{
+        // Placement-grid dots at every intersection everything snaps to.
+        backgroundImage: 'radial-gradient(circle at 0 0, rgba(22, 101, 52, 0.35) 1.5px, transparent 1.5px)',
+        backgroundSize: `${GRID_X_PCT}% ${GRID_Y_PCT}%`,
+      }}
     >
       {children}
     </div>
@@ -90,6 +104,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
   const [selectedBenchId, setSelectedBenchId] = useState<string | null>(null)
   const [placingEntrance, setPlacingEntrance] = useState(false)
   const [benchCapacity, setBenchCapacity] = useState(2)
+  const [ghost, setGhost] = useState<DropGhost | null>(null)
   // Live canvas element so drop maths always uses the current viewport rect.
   const canvasElRef = useRef<HTMLDivElement | null>(null)
   const isReadOnly = !isOwner
@@ -130,6 +145,65 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     setSelectedId(null)
   }
 
+  /** The dragged item's rotated bounding box, for sizing the drop ghost. */
+  const draggedBboxPx = (idStr: string): { w: number; h: number } | null => {
+    if (idStr.startsWith('bench:')) {
+      const bench = benches.find(b => b.id === idStr.slice('bench:'.length))
+      if (!bench) return null
+      const { hw, hh } = rotatedBboxHalfPx(
+        benchLengthUnits(bench.capacity) * UNIT_PX,
+        BENCH_DEPTH_UNITS * UNIT_PX,
+        Number(bench.rotation_deg ?? 0),
+      )
+      return { w: hw * 2, h: hh * 2 }
+    }
+    const hive = hives.find(h => h.id === idStr)
+    if (!hive) return null
+    const fp = tokenFootprintPx(hive.configuration?.hive_size === 'nuc')
+    const { hw, hh } = rotatedBboxHalfPx(fp.w, fp.h, Number(hive.rotation_deg ?? 0))
+    return { w: hw * 2, h: hh * 2 }
+  }
+
+  /** Live preview: show the grid cell the dragged item will land on. */
+  const handleDragMove = (event: DragMoveEvent) => {
+    const { active, over } = event
+    const canvasRect = canvasElRef.current?.getBoundingClientRect()
+    const activeRect = active.rect.current.translated
+    if (!canvasRect || !canvasRect.width || !canvasRect.height || !activeRect) {
+      setGhost(null)
+      return
+    }
+
+    const idStr = String(active.id)
+    const overId = over ? String(over.id) : null
+    const overSlot = overId != null && SLOT_ID_PATTERN.test(overId)
+    // A hive hovering a bench slot is previewed by the slot's own highlight.
+    if (!overId || (overSlot && !idStr.startsWith('bench:'))) {
+      setGhost(null)
+      return
+    }
+
+    const bbox = draggedBboxPx(idStr)
+    if (!bbox) {
+      setGhost(null)
+      return
+    }
+
+    const centreX = activeRect.left + activeRect.width / 2
+    const centreY = activeRect.top + activeRect.height / 2
+    const snapped = snapPctToGrid(
+      ((centreX - canvasRect.left) / canvasRect.width) * 100,
+      ((centreY - canvasRect.top) / canvasRect.height) * 100,
+    )
+    // Keep the same object while the target cell is unchanged — the map only
+    // re-renders when the ghost actually moves to another intersection.
+    setGhost(prev =>
+      prev && prev.xPct === snapped.x && prev.yPct === snapped.y && prev.wPx === bbox.w
+        ? prev
+        : { xPct: snapped.x, yPct: snapped.y, wPx: bbox.w, hPx: bbox.h },
+    )
+  }
+
   /** The requested slot if free, else the nearest free slot on the bench. */
   const resolveFreeSlot = (bench: YardBench, requested: number, draggedHiveId: string): number | null => {
     const occupied = new Set(
@@ -147,6 +221,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
+    setGhost(null)
     const { active, over } = event
     if (!over) return
 
@@ -167,10 +242,11 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     const overId = String(over.id)
 
     // Bench move: any target inside the yard counts (the pointer may sit over
-    // a slot droppable rather than the canvas itself).
+    // a slot droppable rather than the canvas itself). Lands on the grid.
     if (idStr.startsWith('bench:')) {
       if (overId !== CANVAS_ID && !SLOT_ID_PATTERN.test(overId)) return
-      saveBenchPlacement(idStr.slice('bench:'.length), { map_x, map_y })
+      const snapped = snapPctToGrid(map_x, map_y)
+      saveBenchPlacement(idStr.slice('bench:'.length), { map_x: snapped.x, map_y: snapped.y })
       return
     }
 
@@ -196,78 +272,16 @@ export default function YardMap({ apiaryId }: YardMapProps) {
       }
     }
 
-    // Otherwise: place on the ground and clear any bench link.
+    // Otherwise: land on the grid and clear any bench link. Alignment is by
+    // construction — every hive and bench sits on the same intersections.
     if (overId === CANVAS_ID) {
-      const snapped = snapToNeighbours(idStr, centrePx, canvasRect)
+      const snapped = snapPctToGrid(map_x, map_y)
       saveHivePlacement(idStr, {
-        map_x: snapped?.x ?? map_x,
-        map_y: snapped?.y ?? map_y,
+        map_x: snapped.x,
+        map_y: snapped.y,
         bench_id: null,
         bench_slot: null,
       })
-    }
-  }
-
-  /**
-   * Ground-drop alignment: snap the dropped hive's centre into line with the
-   * nearest neighbour per axis, then pull the bodies flush when their rotated
-   * bounding boxes almost touch on the aligned axis (the back-to-back case).
-   * Returns snapped canvas percentages, or null when nothing is close.
-   */
-  const snapToNeighbours = (
-    draggedId: string,
-    dropPx: { x: number; y: number },
-    rect: { left: number; top: number; width: number; height: number },
-  ): { x: number; y: number } | null => {
-    const dragged = hives.find(h => h.id === draggedId)
-    if (!dragged) return null
-    const draggedFp = tokenFootprintPx(dragged.configuration?.hive_size === 'nuc')
-    const draggedHalf = rotatedBboxHalfPx(draggedFp.w, draggedFp.h, Number(dragged.rotation_deg ?? 0))
-
-    const point = { ...dropPx }
-    let alignedXWith: { y: number; half: { hw: number; hh: number } } | null = null
-    let alignedYWith: { x: number; half: { hw: number; hh: number } } | null = null
-    let bestDx = ALIGN_SNAP_PX + 1
-    let bestDy = ALIGN_SNAP_PX + 1
-
-    for (const other of hives) {
-      if (other.id === draggedId || other.map_x == null || other.map_y == null) continue
-      const ox = rect.left + (Number(other.map_x) / 100) * rect.width
-      const oy = rect.top + (Number(other.map_y) / 100) * rect.height
-      const otherFp = tokenFootprintPx(other.configuration?.hive_size === 'nuc')
-      const otherHalf = rotatedBboxHalfPx(otherFp.w, otherFp.h, Number(other.rotation_deg ?? 0))
-      const dx = Math.abs(dropPx.x - ox)
-      const dy = Math.abs(dropPx.y - oy)
-      if (dx <= ALIGN_SNAP_PX && dx < bestDx) {
-        bestDx = dx
-        point.x = ox
-        alignedXWith = { y: oy, half: otherHalf }
-      }
-      if (dy <= ALIGN_SNAP_PX && dy < bestDy) {
-        bestDy = dy
-        point.y = oy
-        alignedYWith = { x: ox, half: otherHalf }
-      }
-    }
-    if (!alignedXWith && !alignedYWith) return null
-
-    // Pull flush along the aligned axis when the gap is small but positive.
-    if (alignedXWith) {
-      const dy = point.y - alignedXWith.y
-      const touch = draggedHalf.hh + alignedXWith.half.hh
-      const gap = Math.abs(dy) - touch
-      if (gap > 0 && gap <= ABUT_SNAP_PX) point.y = alignedXWith.y + Math.sign(dy) * touch
-    }
-    if (alignedYWith) {
-      const dx = point.x - alignedYWith.x
-      const touch = draggedHalf.hw + alignedYWith.half.hw
-      const gap = Math.abs(dx) - touch
-      if (gap > 0 && gap <= ABUT_SNAP_PX) point.x = alignedYWith.x + Math.sign(dx) * touch
-    }
-
-    return {
-      x: Math.round(clamp(((point.x - rect.left) / rect.width) * 100, 0, 100) * 100) / 100,
-      y: Math.round(clamp(((point.y - rect.top) / rect.height) * 100, 0, 100) * 100) / 100,
     }
   }
 
@@ -336,7 +350,13 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     hives.filter(h => h.bench_id === benchId && h.bench_slot != null).map(h => h.bench_slot as number)
 
   return (
-    <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={collisionDetection}
+      onDragMove={handleDragMove}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setGhost(null)}
+    >
       <div className="space-y-4">
         {isReadOnly && (
           <div className="flex flex-wrap items-center gap-2">
@@ -437,6 +457,20 @@ export default function YardMap({ apiaryId }: YardMapProps) {
                   ? 'This apiary has no hives yet. Add hives to place them on the map.'
                   : 'Drag a hive from the tray below onto the map to place it.'}
             </span>
+          )}
+
+          {/* Drop ghost: the grid cell the dragged item will land on. */}
+          {ghost && (
+            <span
+              aria-hidden
+              className="pointer-events-none absolute z-40 -translate-x-1/2 -translate-y-1/2 rounded-md border-2 border-dashed border-forest-600 bg-forest-500/15"
+              style={{
+                left: `${ghost.xPct}%`,
+                top: `${ghost.yPct}%`,
+                width: ghost.wPx,
+                height: ghost.hPx,
+              }}
+            />
           )}
 
           {/* Benches render beneath the hives standing on them. */}
