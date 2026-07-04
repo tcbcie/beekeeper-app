@@ -130,6 +130,16 @@ The layout model was substantially extended — see `yard-map-v2-plan.md` for th
   `describeQueenLineage()` renders "Mother: … · Mated: @ … (…)" in the inspector and on the
   selected 3D label.
 
+## Placement grid (03/07/2026)
+
+Free-form pixel placement proved impossible to align (especially rows of benches), so placement
+is **grid-based**: hives and benches land on intersections of a half-hive-pitch grid
+(`GRID_X_PCT`/`GRID_Y_PCT` in `src/lib/yard-geometry.ts`, canonical percent space — identical on
+every device). Faint dots mark the grid on the canvas, and while dragging, a **dashed ghost**
+previews the exact landing cell (hidden while hovering a bench slot, whose own highlight takes
+over). Rows and columns align by construction; the earlier centre-align/flush-abutment heuristics
+were removed as superseded. Bench slot positions and rotation remain free of the grid.
+
 ## Printing
 
 A **Print** button (available to read-only viewers too) snapshots the map to a high-resolution
