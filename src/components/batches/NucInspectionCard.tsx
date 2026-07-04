@@ -11,6 +11,7 @@ interface NucInspection {
   queen_status: string | null
   eggs_present: boolean
   larvae_present: boolean
+  capped_brood_present: boolean
   population: string | null
   temperament: string | null
   notes: string | null
@@ -120,6 +121,11 @@ export default function NucInspectionCard({ inspection, onEdit, onDelete, readOn
             {inspection.larvae_present && (
               <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded">
                 Larvae
+              </span>
+            )}
+            {inspection.capped_brood_present && (
+              <span className="px-2 py-0.5 text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 rounded">
+                Capped Brood
               </span>
             )}
           </div>

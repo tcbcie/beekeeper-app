@@ -17,6 +17,7 @@ interface NucInspection {
   queen_status: string | null
   eggs_present: boolean
   larvae_present: boolean
+  capped_brood_present: boolean
   population: string | null
   temperament: string | null
   notes: string | null
@@ -29,6 +30,7 @@ interface NucInspectionFormData {
   queen_status: string
   eggs_present: boolean
   larvae_present: boolean
+  capped_brood_present: boolean
   population: string
   temperament: string
   notes: string
@@ -65,6 +67,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(autoOpenForm === true)
   const [editingInspection, setEditingInspection] = useState<NucInspection | null>(null)
+  const [formSaving, setFormSaving] = useState(false)
   const [showMarkForm, setShowMarkForm] = useState(false)
   const [markQueenNumber, setMarkQueenNumber] = useState('')
   const [markDate, setMarkDate] = useState(new Date().toISOString().split('T')[0])
@@ -74,6 +77,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
     queen_status: '',
     eggs_present: false,
     larvae_present: false,
+    capped_brood_present: false,
     population: '',
     temperament: '',
     notes: '',
@@ -106,6 +110,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       queen_status: '',
       eggs_present: false,
       larvae_present: false,
+      capped_brood_present: false,
       population: '',
       temperament: '',
       notes: '',
@@ -118,10 +123,11 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
     setEditingInspection(inspection)
     setFormData({
       inspection_date: inspection.inspection_date,
-      queen_seen: inspection.queen_seen,
+      queen_seen: inspection.queen_seen ?? false,
       queen_status: inspection.queen_status || '',
-      eggs_present: inspection.eggs_present,
-      larvae_present: inspection.larvae_present,
+      eggs_present: inspection.eggs_present ?? false,
+      larvae_present: inspection.larvae_present ?? false,
+      capped_brood_present: inspection.capped_brood_present ?? false,
       population: inspection.population || '',
       temperament: inspection.temperament || '',
       notes: inspection.notes || '',
@@ -131,6 +137,8 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (formSaving) return
+    setFormSaving(true)
 
     const inspectionData = {
       nuc_id: nucId,
@@ -139,6 +147,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       queen_status: formData.queen_status || null,
       eggs_present: formData.eggs_present,
       larvae_present: formData.larvae_present,
+      capped_brood_present: formData.capped_brood_present,
       population: formData.population || null,
       temperament: formData.temperament || null,
       notes: formData.notes || null,
@@ -219,6 +228,8 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
     } catch (error) {
       console.error('Error saving inspection:', error)
       toast.error('Failed to save inspection')
+    } finally {
+      setFormSaving(false)
     }
   }
 
@@ -660,6 +671,15 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                 />
                 <span className="text-sm text-foreground">Larvae Present</span>
               </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={formData.capped_brood_present}
+                  onChange={(e) => setFormData({ ...formData, capped_brood_present: e.target.checked })}
+                  className="rounded"
+                />
+                <span className="text-sm text-foreground">Capped Brood</span>
+              </label>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -707,8 +727,9 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                 type="submit"
                 tone="success"
                 size="sm"
+                disabled={formSaving}
               >
-                {editingInspection ? 'Update' : 'Save'} Inspection
+                {formSaving ? 'Saving...' : `${editingInspection ? 'Update' : 'Save'} Inspection`}
               </Button>
               <Button
                 type="button"
