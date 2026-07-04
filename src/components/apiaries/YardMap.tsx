@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import {
   DndContext,
   useDroppable,
@@ -19,7 +19,7 @@ import { useApiaryMap, normaliseDeg, isHivePlaced, type MapHive, type YardBench 
 import {
   UNIT_PX, BENCH_DEPTH_UNITS, GRID_X_PCT, GRID_Y_PCT,
   slotOffsetUnits, slotPositionPct, rotatedOffset,
-  tokenFootprintPx, rotatedBboxHalfPx, benchLengthUnits, snapPctToGrid,
+  tokenFootprintUnits, rotatedBboxHalfPx, benchLengthUnits, snapPctToGrid,
 } from '@/lib/yard-geometry'
 import { printImageDataUrl, downloadDataUrl, printedOnLabel, excludeNoPrint } from '@/lib/print-layout'
 import { useToast } from '@/components/ui/Toast'
@@ -73,19 +73,23 @@ function YardCanvas({
   }
 
   return (
-    <div
-      ref={setRefs}
-      role="group"
-      aria-label="Apiary layout. Drag hives and benches to position them within the apiary."
-      onClick={handleClick}
-      className="relative w-full aspect-[3/2] rounded-xl border-2 border-forest-700 overflow-hidden bg-forest-100 dark:bg-forest-900/40"
-      style={{
-        // Placement-grid dots at every intersection everything snaps to.
-        backgroundImage: 'radial-gradient(circle at 0 0, rgba(22, 101, 52, 0.35) 1.5px, transparent 1.5px)',
-        backgroundSize: `${GRID_X_PCT}% ${GRID_Y_PCT}%`,
-      }}
-    >
-      {children}
+    // On narrow screens the map keeps a workable minimum width and scrolls
+    // horizontally instead of shrinking tokens below usable size.
+    <div className="overflow-x-auto">
+      <div
+        ref={setRefs}
+        role="group"
+        aria-label="Apiary layout. Drag hives and benches to position them within the apiary."
+        onClick={handleClick}
+        className="relative w-full min-w-[720px] aspect-[3/2] rounded-xl border-2 border-forest-700 overflow-hidden bg-forest-100 dark:bg-forest-900/40"
+        style={{
+          // Placement-grid dots at every intersection everything snaps to.
+          backgroundImage: 'radial-gradient(circle at 0 0, rgba(22, 101, 52, 0.35) 1.5px, transparent 1.5px)',
+          backgroundSize: `${GRID_X_PCT}% ${GRID_Y_PCT}%`,
+        }}
+      >
+        {children}
+      </div>
     </div>
   )
 }
@@ -107,7 +111,21 @@ export default function YardMap({ apiaryId }: YardMapProps) {
   const [ghost, setGhost] = useState<DropGhost | null>(null)
   // Live canvas element so drop maths always uses the current viewport rect.
   const canvasElRef = useRef<HTMLDivElement | null>(null)
+  // True-to-scale rendering: 1 scene unit = canvasWidth / 10 pixels, exactly
+  // like the 3D view — the two views can never disagree about sizes again.
+  const [pxPerUnit, setPxPerUnit] = useState(UNIT_PX)
   const isReadOnly = !isOwner
+
+  useEffect(() => {
+    const el = canvasElRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(entries => {
+      const width = entries[0]?.contentRect.width
+      if (width) setPxPerUnit(width / 10)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [loading])
 
   // Separate mouse and touch sensors: a single PointerSensor is unreliable at
   // starting a drag on touch devices (our field users are on phones). Mouse
@@ -151,16 +169,16 @@ export default function YardMap({ apiaryId }: YardMapProps) {
       const bench = benches.find(b => b.id === idStr.slice('bench:'.length))
       if (!bench) return null
       const { hw, hh } = rotatedBboxHalfPx(
-        benchLengthUnits(bench.capacity) * UNIT_PX,
-        BENCH_DEPTH_UNITS * UNIT_PX,
+        benchLengthUnits(bench.capacity) * pxPerUnit,
+        BENCH_DEPTH_UNITS * pxPerUnit,
         Number(bench.rotation_deg ?? 0),
       )
       return { w: hw * 2, h: hh * 2 }
     }
     const hive = hives.find(h => h.id === idStr)
     if (!hive) return null
-    const fp = tokenFootprintPx(hive.configuration?.hive_size === 'nuc')
-    const { hw, hh } = rotatedBboxHalfPx(fp.w, fp.h, Number(hive.rotation_deg ?? 0))
+    const fp = tokenFootprintUnits(hive.configuration?.hive_size === 'nuc')
+    const { hw, hh } = rotatedBboxHalfPx(fp.w * pxPerUnit, fp.h * pxPerUnit, Number(hive.rotation_deg ?? 0))
     return { w: hw * 2, h: hh * 2 }
   }
 
@@ -342,7 +360,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     if (hive.bench_id == null || hive.bench_slot == null) return undefined
     const bench = benchById.get(hive.bench_id)
     if (!bench) return undefined
-    const off = rotatedOffset(slotOffsetUnits(hive.bench_slot, bench.capacity) * UNIT_PX, Number(bench.rotation_deg))
+    const off = rotatedOffset(slotOffsetUnits(hive.bench_slot, bench.capacity) * pxPerUnit, Number(bench.rotation_deg))
     return { xPct: Number(bench.map_x), yPct: Number(bench.map_y), dxPx: off.dx, dyPx: off.dy }
   }
 
@@ -483,6 +501,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
               occupiedSlots={occupiedSlots(bench.id)}
               onSelect={selectBench}
               onRotate={(deg) => saveBenchPlacement(bench.id, { rotation_deg: normaliseDeg(Math.round(deg)) })}
+              pxPerUnit={pxPerUnit}
             />
           ))}
 
@@ -496,6 +515,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
               onSelect={selectHive}
               onRotate={(deg) => rotateHive(hive.id, deg)}
               anchor={benchAnchor(hive)}
+              pxPerUnit={pxPerUnit}
             />
           ))}
         </YardCanvas>

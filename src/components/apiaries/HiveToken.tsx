@@ -2,7 +2,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { normaliseDeg, type MapHive } from '@/hooks/useApiaryMap'
-import { tokenFootprintPx, rotatedBboxHalfPx } from '@/lib/yard-geometry'
+import { UNIT_PX, tokenFootprintUnits, rotatedBboxHalfPx } from '@/lib/yard-geometry'
 
 // dnd-kit's Mouse/Touch sensors listen to mousedown/touchstart, which are
 // separate native streams from pointerdown — stop them on the rotate handle so
@@ -29,9 +29,11 @@ interface HiveTokenProps {
    * so a hive on a bench always sits exactly on its slot at any screen size.
    */
   anchor?: { xPct: number; yPct: number; dxPx: number; dyPx: number }
+  /** Live canvas scale (canvasWidth / 10); tray tokens use the default. */
+  pxPerUnit?: number
 }
 
-export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect, onRotate, anchor }: HiveTokenProps) {
+export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect, onRotate, anchor, pxPerUnit = UNIT_PX }: HiveTokenProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: hive.id,
     disabled: isReadOnly,
@@ -56,7 +58,9 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
   // numeric columns can arrive as strings; coerce before doing arithmetic.
   const rotation = liveDeg ?? Number(hive.rotation_deg ?? 0)
   const isNuc = hive.configuration?.hive_size === 'nuc'
-  const { w: fpW, h: fpH } = tokenFootprintPx(isNuc)
+  const fpUnits = tokenFootprintUnits(isNuc)
+  const fpW = fpUnits.w * pxPerUnit
+  const fpH = fpUnits.h * pxPerUnit
   // Hit container = rotated footprint bbox + margin, floored at touch size.
   const { hw, hh } = rotatedBboxHalfPx(fpW, fpH, rotation)
   const containerW = Math.max(MIN_TOUCH_PX, Math.ceil(hw * 2) + CONTAINER_MARGIN_PX)
