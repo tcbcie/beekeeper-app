@@ -119,7 +119,7 @@ export const getNucDetails: Tool = {
     // Fetch inspections for this nuc
     const { data: inspections } = await supabase
       .from('mating_nuc_inspections')
-      .select('inspection_date, queen_seen, queen_status, eggs_present, larvae_present, population, temperament, notes')
+      .select('inspection_date, queen_seen, queen_status, eggs_present, larvae_present, capped_brood_present, population, temperament, notes')
       .eq('nuc_id', nuc.id)
       .order('inspection_date', { ascending: false })
 
@@ -143,6 +143,7 @@ export const getNucDetails: Tool = {
         queenStatus: i.queen_status || 'Unknown',
         eggsPresent: i.eggs_present,
         larvaePresent: i.larvae_present,
+        cappedBroodPresent: i.capped_brood_present,
         population: i.population || 'Unknown',
         temperament: i.temperament || 'Unknown',
         notes: i.notes?.substring(0, 100) || 'None'

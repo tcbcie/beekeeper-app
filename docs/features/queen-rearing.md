@@ -65,7 +65,7 @@ The active tab is mirrored to the `?tab=` query parameter so deep links, refresh
 
 **`mating_nuc_inspections`** — nuc health records
 - `id`, `nuc_id` (FK, CASCADE), `user_id` (FK, CASCADE)
-- `inspection_date`, `queen_seen`, `queen_status`, `eggs_present`, `larvae_present`
+- `inspection_date`, `queen_seen`, `queen_status`, `eggs_present`, `larvae_present`, `capped_brood_present`
 - `population` (strong/moderate/weak), `temperament` (calm/nervous/aggressive), `notes`
 
 **`queens`** — queen registry (see also queen-specific docs)
