@@ -554,8 +554,13 @@ export default function YardMap({ apiaryId }: YardMapProps) {
               size="sm"
               tone="success"
               onClick={() => {
-                saveYardDimensions(Number(widthInput), Number(depthInput))
-                setResizing(false)
+                const w = Number(widthInput)
+                const d = Number(depthInput)
+                saveYardDimensions(w, d)
+                // Keep the panel open on invalid input (saveYardDimensions
+                // toasts the reason) so the user can correct it in place.
+                const valid = [w, d].every(v => Number.isFinite(v) && v >= 2 && v <= 60)
+                if (valid) setResizing(false)
               }}
             >
               Apply

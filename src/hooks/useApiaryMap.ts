@@ -518,7 +518,10 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     ])
     if (results.some(r => r.error)) {
       console.error('Error rescaling placements:', results.find(r => r.error)?.error)
-      if (mountedRef.current) reload()
+      if (mountedRef.current) {
+        toast.error('The apiary was resized, but some positions could not be saved and were reloaded')
+        reload()
+      }
     }
   }, [apiaryId, requireUser, reload, toast])
 
