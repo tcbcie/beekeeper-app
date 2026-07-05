@@ -21,6 +21,15 @@ function readApiaryName(row: Record<string, unknown>): string | null {
   return ap.name ?? null
 }
 
+// Same normalisation for the hive/nuc embeds used to resolve the live
+// (post-rename) number of the location a stint points at.
+function readEmbedName(value: unknown, key: 'hive_number' | 'nuc_number'): string | null {
+  if (!value) return null
+  const record = (Array.isArray(value) ? value[0] : value) as Record<string, unknown> | undefined
+  const name = record?.[key]
+  return typeof name === 'string' && name.length > 0 ? name : null
+}
+
 export function useQueenAssignments(queenId: string | null | undefined) {
   const [assignments, setAssignments] = useState<QueenAssignment[]>([])
   const [loading, setLoading] = useState(true)
@@ -34,7 +43,7 @@ export function useQueenAssignments(queenId: string | null | undefined) {
     setLoading(true)
     const { data, error } = await supabase
       .from('queen_assignments')
-      .select('*, apiaries(name)')
+      .select('*, apiaries(name), hives(hive_number), mating_nucs(nuc_number)')
       .eq('queen_id', queenId)
       .order('started_at', { ascending: false })
       .order('created_at', { ascending: false })
@@ -44,10 +53,19 @@ export function useQueenAssignments(queenId: string | null | undefined) {
       setAssignments([])
     } else {
       setAssignments(
-        (data || []).map((row) => ({
-          ...(row as unknown as QueenAssignment),
-          apiary_name: readApiaryName(row as Record<string, unknown>),
-        }))
+        (data || []).map((row) => {
+          const raw = row as Record<string, unknown>
+          const base = row as unknown as QueenAssignment
+          const liveLabel =
+            readEmbedName(raw.hives, 'hive_number') ?? readEmbedName(raw.mating_nucs, 'nuc_number')
+          return {
+            ...base,
+            apiary_name: readApiaryName(raw),
+            // Prefer the live number so renames show through; the snapshot
+            // remains the fallback for deleted hives/nucs and manual entries.
+            display_label: liveLabel ?? base.location_label,
+          }
+        })
       )
     }
     setLoading(false)

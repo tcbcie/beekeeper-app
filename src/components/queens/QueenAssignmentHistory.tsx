@@ -59,7 +59,7 @@ export default function QueenAssignmentHistory({ queenId }: QueenAssignmentHisto
     setEditingId(a.id)
     setForm({
       location_type: a.location_type,
-      location_label: a.location_label || '',
+      location_label: a.display_label || a.location_label || '',
       started_at: a.started_at.slice(0, 10),
       ended_at: a.ended_at ? a.ended_at.slice(0, 10) : null,
       notes: a.notes,
@@ -88,7 +88,7 @@ export default function QueenAssignmentHistory({ queenId }: QueenAssignmentHisto
   const handleDelete = async (a: QueenAssignment) => {
     const ok = await confirmDialog({
       title: 'Delete assignment?',
-      message: `Remove the ${a.location_type === 'nuc' ? 'parked' : 'production'} stint "${a.location_label || 'unknown'}" from this queen's history?`,
+      message: `Remove the ${a.location_type === 'nuc' ? 'parked' : 'production'} stint "${a.display_label || a.location_label || 'unknown'}" from this queen's history?`,
       confirmLabel: 'Delete',
       variant: 'danger',
     })
@@ -152,13 +152,13 @@ export default function QueenAssignmentHistory({ queenId }: QueenAssignmentHisto
                         href={`/dashboard/hives/${a.hive_id}`}
                         className="inline-flex items-center gap-1 font-medium text-forest-600 dark:text-forest-400 hover:underline"
                       >
-                        {a.location_label || 'Hive'}
+                        {a.display_label || a.location_label || 'Hive'}
                         <ExternalLink size={12} />
                       </Link>
                     ) : (
                       <span className="inline-flex items-center gap-1 font-medium text-text-primary">
                         <MapPin size={12} className="text-text-tertiary" />
-                        {a.location_label || (parked ? 'Mating nuc' : 'Hive')}
+                        {a.display_label || a.location_label || (parked ? 'Mating nuc' : 'Hive')}
                       </span>
                     )}
                     {a.apiary_name && (

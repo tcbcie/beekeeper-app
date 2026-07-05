@@ -99,6 +99,9 @@ export interface QueenAssignment {
   created_at: string
   // Apiary name resolved via embed when available
   apiary_name?: string | null
+  // Live hive/nuc number resolved via embed; falls back to the
+  // location_label snapshot when the hive/nuc has been deleted
+  display_label?: string | null
 }
 
 export interface QueenFormData {
