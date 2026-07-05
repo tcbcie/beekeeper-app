@@ -287,7 +287,9 @@ async function createQueenForRecipient(
   recipientHiveId: string | null = null,
   installedDate: string | null = null,
   recipientApiaryId: string | null = null,
-  destinationApiaryName: string | null = null
+  destinationApiaryName: string | null = null,
+  matedStationOverride: string | null = null,
+  matedEircodeOverride: string | null = null
 ): Promise<void> {
   try {
     const { data: graft, error: graftError } = await supabase
@@ -322,14 +324,20 @@ async function createQueenForRecipient(
     const birthDate = deriveBirthDate(batch)
     const markingColor = birthDate ? getQueenColorFromYear(birthDate) : null
 
-    // A mated queen genuinely mated at the batch's mating apiary. A distributed cell/virgin has
-    // NOT — it will mate at the destination apiary, so use that as the mating station. When no
-    // destination apiary is chosen, leave both blank until mating is confirmed. The destination
-    // eircode is resolved server-side (the breeder cannot read a recipient's eircode), so the
-    // client only supplies the station name here.
+    // A mated queen actually mated in its mating nuc, whose real location is recorded on the
+    // distribution and can differ from the batch's default mating apiary — prefer that actual
+    // station (and its resolved eircode) when supplied, else fall back to the batch apiary. A
+    // distributed cell/virgin has NOT mated yet, so it uses the destination apiary; when none is
+    // chosen, both stay blank until mating is confirmed. The destination eircode is resolved
+    // server-side (the breeder cannot read a recipient's eircode), so the client only supplies
+    // the station name for that case.
     const isMated = distributionType === 'mated_queen'
-    const matingStation = isMated ? (batch.mating_apiary_name || null) : (destinationApiaryName || null)
-    const eircode = isMated ? (batch.mating_apiary_eircode || null) : null
+    const matingStation = isMated
+      ? (matedStationOverride || batch.mating_apiary_name || null)
+      : (destinationApiaryName || null)
+    const eircode = isMated
+      ? (matedStationOverride ? matedEircodeOverride : (batch.mating_apiary_eircode || null))
+      : null
 
     // Human-readable drone-source description (kept for the provenance panel).
     const droneSource = matingStation
@@ -391,7 +399,8 @@ async function createQueensForRecipient(
   distributionType: 'queen_cell' | 'virgin_queen' | 'mated_queen',
   recipientHiveId: string | null = null,
   installedDate: string | null = null,
-  recipientApiaryId: string | null = null
+  recipientApiaryId: string | null = null,
+  matingLocationOverride: string | null = null
 ): Promise<void> {
   try {
     // Resolve auth user ID first so a failure doesn't abort the entire batch fetch
@@ -455,8 +464,29 @@ async function createQueensForRecipient(
       destinationApiaryName = match?.name ?? null
     }
 
+    // For a mated queen, the true mating site is the nuc's location recorded on the distribution,
+    // which can differ from the batch default. Use it as the station and resolve its eircode from
+    // the breeder's own apiaries (best effort — a free-text location simply carries no eircode).
+    let matedStationOverride: string | null = null
+    let matedEircodeOverride: string | null = null
+    if (distributionType === 'mated_queen') {
+      const loc = matingLocationOverride?.trim() || null
+      if (loc && loc !== batchDetails.mating_apiary_name) {
+        matedStationOverride = loc
+        const { data: apRows } = await supabase
+          .from('apiaries')
+          .select('eircode')
+          .eq('user_id', callerId)
+          // Exact match on purpose: `loc` is free text, so `ilike` would let a stray
+          // `_`/`%` match the wrong apiary and stamp its eircode — worse than none.
+          .eq('name', loc)
+          .limit(1)
+        matedEircodeOverride = (apRows as { eircode: string | null }[] | null)?.[0]?.eircode ?? null
+      }
+    }
+
     await Promise.allSettled(
-      graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails, distributionType, isSelfDistribution, hiveForPlacement, installedDate, recipientApiaryId, destinationApiaryName))
+      graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails, distributionType, isSelfDistribution, hiveForPlacement, installedDate, recipientApiaryId, destinationApiaryName, matedStationOverride, matedEircodeOverride))
     )
   } catch (err) {
     console.error('Non-blocking: failed to create queens for recipient:', err)
@@ -584,6 +614,7 @@ export function useGraftDistributions() {
           data.recipient_hive_id,
           data.distribution_date,
           data.recipient_apiary_id,
+          data.mating_location,
         )
       }
 
