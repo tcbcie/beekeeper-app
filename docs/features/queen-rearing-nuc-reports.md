@@ -105,3 +105,23 @@ Add a new "Reports" tab to the Queen Rearing page (`/dashboard/batches?tab=repor
 - **[High]** `handleExportImage` wrapped in try/catch with `toast.error()` — `exportToImage` re-throws on failure, previously caused unhandled promise rejection with no user feedback.
 - **[High]** Print header date range consolidated into single expression — previously produced unbalanced parentheses when only one of start/end date was set.
 - **[Medium]** Custom date filter inputs guarded with `isNaN` — invalid dates no longer silently filter out all nucs.
+
+### Phase 4: Breeder Queen Column + Contextual Date Columns
+
+#### Changes
+- **Breeder Queen column** added to the Mating Nuc's Overview table (desktop column
+  and mobile card row) and to that table's CSV export. Resolved per nuc: the cell's
+  own breeder (`mating_nucs.graft_id → batch_grafts.breeder_queen_id → queens`) for
+  multi-breeder batches, falling back to the batch-level mother
+  (`rearing_batches.mother_queen_id → queens`) for single-breeder batches. Shows
+  `—` when neither is set.
+- **Cell Introduced / Queen Emerged columns are now contextual.** They only apply to
+  cell-reared queens, so each column is hidden when *no* nuc currently shown carries
+  that date (e.g. a batch started from virgin queens). If any displayed nuc still has
+  the date, the column stays for the whole table — the data is never dropped where it
+  is needed. The mobile card already only renders dates that have values, so it was
+  already correct.
+- The query now embeds `queens` via both the batch mother FK (`mother_queen_id`) and
+  the graft breeder FK (`batch_grafts_breeder_queen_id_fkey`); `firstEmbed` /
+  `embedQueenNumber` helpers normalise PostgREST's object-or-array embeds.
+- Single file change (plus this doc): `NucReportsTab.tsx`.
