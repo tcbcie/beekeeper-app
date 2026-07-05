@@ -45,7 +45,7 @@ apiary it was assigned to.
 
 | Distribution type | Mating station | Mated at (eircode) |
 |-------------------|----------------|--------------------|
-| Mated queen       | Batch mating apiary (genuinely mated there) | Batch eircode |
+| Mated queen       | The distribution's recorded `mating_location` (the nuc's actual site), else the batch mating apiary | Eircode of the apiary matching that location, else the batch eircode |
 | Cell / Virgin **with** destination apiary | Destination apiary name | Destination apiary eircode |
 | Cell / Virgin **without** destination apiary | Blank until mated | Blank until mated |
 
@@ -66,3 +66,34 @@ apiary it was assigned to.
 | `create_queen_for_distribution` (RPC) | Add `p_recipient_apiary_id`; for cell/virgin, set station + eircode from that apiary |
 | `promote_distributed_queen_on_mating` (RPC) | Prefer confirmed `mating_location` over a stale eircode |
 | `src/hooks/useGraftDistributions.ts` | Branch station/eircode by distribution type; resolve destination apiary name; thread `recipient_apiary_id` to the RPC |
+
+## Correction 2 — Mated queen inherits the nuc's actual mating site, not the batch default
+
+**Symptom.** Queen 21 (batch `TQRQB_RZ03`) matured in nuc 120, which was sited at
+`AP03 - Stephen` (eircode `H91 073H`), but its queen record showed the batch's default station
+`TBKA Kilcornan` (`H91RHH4`).
+
+**Root cause.** For `mated_queen` distributions, `createQueenForRecipient` hard-coded the mating
+station/eircode to the **batch's** `mating_apiary_id`, ignoring the true per-nuc location that is
+recorded on the distribution row (`graft_distributions.mating_location`) and shown on the nuc card.
+That location was never threaded into the queen-creation path, so the batch default always won
+whenever a nuc had been sited away from the batch's default apiary.
+
+**Fix (`src/hooks/useGraftDistributions.ts`).**
+- The distribution's `mating_location` is now passed into `createQueensForRecipient`
+  (`matingLocationOverride`).
+- For a mated queen, when that location differs from the batch apiary it becomes the queen's
+  `mating_station`, and its eircode is resolved from the breeder's own apiaries by name
+  (best effort — a free-text location with no matching apiary simply carries no eircode, which is
+  preferable to a wrong one). Otherwise the batch default is retained (unchanged behaviour).
+- The mating station also flows into the lineage and drone-source strings, so all derived text
+  stays consistent.
+
+**Data.** Queen 21's `mating_station`, `mated_at_eircode`, `lineage`, and
+`distributed_drone_source` were corrected to `AP03 - Stephen` / `H91 073H`. A scan of all
+mated-queen distributions found no other affected records.
+
+**Known limitation.** The bulk-distribution path (`createQueensForRecipient` from a multi-graft
+insert) still defaults `matingLocationOverride` to null, because a single shared field cannot
+represent several nucs sited at different apiaries. Single mated-queen distribution — the reported
+and common case — is fully covered.
