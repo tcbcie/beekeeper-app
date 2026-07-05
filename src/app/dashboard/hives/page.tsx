@@ -624,6 +624,14 @@ export default function HivesPage() {
  e.preventDefault()
  if (!userId) return
 
+ // Validate: hive number must not be blank once trimmed (the input's
+ // `required` attribute still accepts whitespace-only values).
+ const trimmedHiveNumber = formData.hive_number.trim()
+ if (!trimmedHiveNumber) {
+ toast.warning('Please enter a hive number.')
+ return
+ }
+
  // Validate: queenless requires a reason
  if (formData.is_queenless && !formData.queenless_reason) {
  toast.warning('Please select a reason for the queenless status before saving.')
@@ -652,7 +660,7 @@ export default function HivesPage() {
  ...formData,
  // Trim so stray whitespace never reaches the DB (labels, history
  // snapshots and duplicate checks all compare on the exact string).
- hive_number: formData.hive_number.trim(),
+ hive_number: trimmedHiveNumber,
  apiary_id: formData.apiary_id || null,
  // When queenless, the hive has no current queen — clear the link.
  queen_id: formData.is_queenless ? null : (formData.queen_id || null),

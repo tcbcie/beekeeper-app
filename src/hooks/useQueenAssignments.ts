@@ -84,7 +84,7 @@ export function useQueenAssignments(queenId: string | null | undefined) {
       const { error } = await supabase.from('queen_assignments').insert({
         queen_id: queenId,
         location_type: input.location_type,
-        location_label: input.location_label || null,
+        location_label: input.location_label.trim() || null,
         started_at: input.started_at,
         ended_at: input.ended_at,
         notes: input.notes,
@@ -110,7 +110,7 @@ export function useQueenAssignments(queenId: string | null | undefined) {
         .from('queen_assignments')
         .update({
           location_type: input.location_type,
-          location_label: input.location_label || null,
+          location_label: input.location_label.trim() || null,
           started_at: input.started_at,
           ended_at: input.ended_at,
           notes: input.notes,
