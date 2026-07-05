@@ -1,6 +1,8 @@
 // Shared yard-map geometry. One "unit" ≈ one full hive footprint (0.9 units
-// square). The 2D map renders units at a fixed pixel scale; the 3D scene uses
-// units directly, so bench slots line up identically in both views.
+// square), and 1 unit = 0.5 real metres — so a hive is 0.45 m, close to a
+// National. The apiary's rectangle is user-set in metres; the 2D map renders
+// units at a live pixel scale and the 3D scene uses units directly, so both
+// views are true-to-scale at any apiary size.
 
 export const HIVE_UNIT = 0.9
 /** Centre-to-centre spacing of bench slots (small gap between hives). */
@@ -10,10 +12,30 @@ export const BENCH_DEPTH_UNITS = 1.0
 export const BENCH_TOP_UNITS = 0.38
 /**
  * Fallback 2D pixels per scene unit, used before the canvas is measured and
- * for tray tokens. On the canvas itself the live scale is canvasWidth / 10,
- * so the 2D map is true-to-scale with the 3D view at any screen size.
+ * for tray tokens. On the canvas itself the live scale is
+ * canvasWidth / yard widthUnits.
  */
 export const UNIT_PX = 76
+
+/** Scene units per real metre (1 unit = 0.5 m). */
+export const UNITS_PER_METRE = 2
+
+/** The apiary rectangle in scene units. */
+export interface YardDims {
+  widthUnits: number
+  depthUnits: number
+}
+
+/** Default apiary size: 5.00 m × 3.33 m (the original fixed 3:2 canvas). */
+export const DEFAULT_YARD_WIDTH_M = 5
+export const DEFAULT_YARD_DEPTH_M = 3.33
+
+export function yardDimsFromMetres(widthM: number, depthM: number): YardDims {
+  return {
+    widthUnits: widthM * UNITS_PER_METRE,
+    depthUnits: depthM * UNITS_PER_METRE,
+  }
+}
 
 // Token footprints in scene units (a full hive is square; a nuc is 1:2).
 export const FULL_TOKEN_UNITS = { w: 0.9, h: 0.9 }
@@ -33,16 +55,23 @@ export function rotatedBboxHalfPx(w: number, h: number, deg: number): { hw: numb
 }
 
 // Placement grid: everything (hives and benches) lands on intersections of a
-// half-hive-pitch grid (0.5 units), defined in canonical percent space so the
-// layout is identical on every device. 0.5 units = 5 % of width; the vertical
-// pitch is 1.5× that because the canvas is 3:2.
-export const GRID_X_PCT = 5
-export const GRID_Y_PCT = 7.5
+// half-hive-pitch grid (0.5 units = 0.25 m), defined in canonical percent
+// space so the layout is identical on every device.
+const GRID_PITCH_UNITS = 0.5
+
+/** Grid pitch as canvas percentages for the given apiary size. */
+export function gridPcts(dims: YardDims): { x: number; y: number } {
+  return {
+    x: (GRID_PITCH_UNITS / dims.widthUnits) * 100,
+    y: (GRID_PITCH_UNITS / dims.depthUnits) * 100,
+  }
+}
 
 /** Quantise a canvas-percent point to the nearest grid intersection. */
-export function snapPctToGrid(xPct: number, yPct: number): { x: number; y: number } {
-  const x = Math.min(100, Math.max(0, Math.round(xPct / GRID_X_PCT) * GRID_X_PCT))
-  const y = Math.min(100, Math.max(0, Math.round(yPct / GRID_Y_PCT) * GRID_Y_PCT))
+export function snapPctToGrid(xPct: number, yPct: number, dims: YardDims): { x: number; y: number } {
+  const grid = gridPcts(dims)
+  const x = Math.min(100, Math.max(0, Math.round(xPct / grid.x) * grid.x))
+  const y = Math.min(100, Math.max(0, Math.round(yPct / grid.y) * grid.y))
   return { x: Math.round(x * 100) / 100, y: Math.round(y * 100) / 100 }
 }
 
@@ -65,22 +94,18 @@ export function rotatedOffset(u: number, rotationDeg: number): { dx: number; dy:
   return { dx: u * Math.cos(t), dy: u * Math.sin(t) }
 }
 
-// The 3D yard is 10 units wide with a 3:2 aspect, so 1 unit = 10 % of canvas
-// width, and a vertical unit spans 15 % of canvas height (10 % × 3/2).
-const UNIT_TO_PCT_X = 10
-const PCT_Y_PER_PCT_X = 1.5
-
 const clampPct = (v: number) => Math.min(100, Math.max(0, v))
 
 /** A bench slot's centre in canvas-percent space (the stored/canonical form). */
 export function slotPositionPct(
   bench: { map_x: number | string; map_y: number | string; rotation_deg: number | string; capacity: number },
   slot: number,
+  dims: YardDims,
 ): { x: number; y: number } {
-  const u = slotOffsetUnits(slot, bench.capacity) * UNIT_TO_PCT_X
+  const u = slotOffsetUnits(slot, bench.capacity)
   const { dx, dy } = rotatedOffset(u, Number(bench.rotation_deg))
   return {
-    x: Math.round(clampPct(Number(bench.map_x) + dx) * 100) / 100,
-    y: Math.round(clampPct(Number(bench.map_y) + dy * PCT_Y_PER_PCT_X) * 100) / 100,
+    x: Math.round(clampPct(Number(bench.map_x) + (dx / dims.widthUnits) * 100) * 100) / 100,
+    y: Math.round(clampPct(Number(bench.map_y) + (dy / dims.depthUnits) * 100) * 100) / 100,
   }
 }

@@ -26,6 +26,9 @@ export interface Apiary {
   yard_entrance_y?: number | null
   /** Yard map north direction, degrees clockwise from canvas-up. */
   north_angle_deg?: number
+  /** Apiary map dimensions in metres (1 scene unit = 0.5 m). */
+  yard_width_m?: number
+  yard_depth_m?: number
 }
 
 export interface ApiaryFormData {

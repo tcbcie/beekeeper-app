@@ -5,20 +5,16 @@ import { ArrowUp, Printer, RotateCcw } from 'lucide-react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Grid } from '@react-three/drei'
 import { useApiaryMap, isHivePlaced, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
-import { BENCH_TOP_UNITS, slotOffsetUnits, rotatedOffset } from '@/lib/yard-geometry'
+import { BENCH_TOP_UNITS, slotOffsetUnits, rotatedOffset, type YardDims } from '@/lib/yard-geometry'
 import { printImageDataUrl, downloadDataUrl, printedOnLabel, excludeNoPrint } from '@/lib/print-layout'
 import { useToast } from '@/components/ui/Toast'
 import Hive3D from './Hive3D'
 import Bench3D from './Bench3D'
 import HiveInspectorPanel from './HiveInspectorPanel'
 
-// Yard ground-plane size in scene units, matching the 2D map's 3:2 aspect.
-const YARD_W = 10
-const YARD_D = YARD_W * (2 / 3)
-
-// Map a hive's 0–100 % position onto the ground plane, centred on the origin.
-function toScene(mapX: number, mapY: number): [number, number] {
-  return [(mapX / 100 - 0.5) * YARD_W, (mapY / 100 - 0.5) * YARD_D]
+// Map a 0–100 % position onto the ground plane, centred on the origin.
+function toScene(mapX: number, mapY: number, dims: YardDims): [number, number] {
+  return [(mapX / 100 - 0.5) * dims.widthUnits, (mapY / 100 - 0.5) * dims.depthUnits]
 }
 
 function webglAvailable(): boolean {
@@ -40,7 +36,7 @@ interface YardScene3DProps {
 const noop = () => {}
 
 export default function YardScene3D({ apiaryId }: YardScene3DProps) {
-  const { apiaryName, hives, benches, yard, loading } = useApiaryMap(apiaryId)
+  const { apiaryName, hives, benches, yard, yardDims, loading } = useApiaryMap(apiaryId)
   const toast = useToast()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [webgl, setWebgl] = useState<boolean | null>(null)
@@ -58,20 +54,22 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
   const unplacedCount = hives.length - placedHives.length
   const selectedHive = selectedId ? hives.find(h => h.id === selectedId) ?? null : null
   const entrance = yard.yard_entrance_x != null && yard.yard_entrance_y != null
-    ? toScene(Number(yard.yard_entrance_x), Number(yard.yard_entrance_y))
+    ? toScene(Number(yard.yard_entrance_x), Number(yard.yard_entrance_y), yardDims)
     : null
   const northAngle = Number(yard.north_angle_deg ?? 0)
+  // Frame the camera to the apiary's actual size.
+  const maxDim = Math.max(yardDims.widthUnits, yardDims.depthUnits)
 
   // A hive on a bench stands on the bench top at its slot; otherwise on the
   // ground at its own map position.
   const hivePlacement = (hive: MapHive): { position: [number, number]; elevation: number } => {
     const bench = hive.bench_id != null ? benchById.get(hive.bench_id) : undefined
     if (bench && hive.bench_slot != null) {
-      const [bx, bz] = toScene(Number(bench.map_x), Number(bench.map_y))
+      const [bx, bz] = toScene(Number(bench.map_x), Number(bench.map_y), yardDims)
       const off = rotatedOffset(slotOffsetUnits(hive.bench_slot, bench.capacity), Number(bench.rotation_deg))
       return { position: [bx + off.dx, bz + off.dy], elevation: BENCH_TOP_UNITS }
     }
-    return { position: toScene(Number(hive.map_x), Number(hive.map_y)), elevation: 0 }
+    return { position: toScene(Number(hive.map_x), Number(hive.map_y), yardDims), elevation: 0 }
   }
 
   /** Snapshot the 3D view (as currently framed) and open the print dialogue. */
@@ -154,7 +152,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
             frameloop="demand"
             // Keep the drawing buffer so the canvas can be captured for printing.
             gl={{ preserveDrawingBuffer: true }}
-            camera={{ position: [0, 6, 9], fov: 45 }}
+            camera={{ position: [0, maxDim * 0.6, maxDim * 0.9], fov: 45 }}
             onPointerMissed={() => setSelectedId(null)}
             aria-label="3D view of the apiary. A text list of hives is provided below as an accessible alternative."
           >
@@ -163,11 +161,11 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
 
             {/* Grass ground plane + reference grid */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
-              <planeGeometry args={[YARD_W, YARD_D]} />
+              <planeGeometry args={[yardDims.widthUnits, yardDims.depthUnits]} />
               <meshStandardMaterial color="#86b049" />
             </mesh>
             <Grid
-              args={[YARD_W, YARD_D]}
+              args={[yardDims.widthUnits, yardDims.depthUnits]}
               cellSize={0.5}
               cellColor="#6f9a3c"
               sectionColor="#5c8233"
@@ -203,7 +201,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
               <Bench3D
                 key={bench.id}
                 bench={bench}
-                position={toScene(Number(bench.map_x), Number(bench.map_y))}
+                position={toScene(Number(bench.map_x), Number(bench.map_y), yardDims)}
               />
             ))}
 
@@ -225,7 +223,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
               ref={controlsRef}
               enablePan={false}
               minDistance={4}
-              maxDistance={20}
+              maxDistance={Math.max(20, maxDim * 2)}
               maxPolarAngle={Math.PI / 2 - 0.05}
               makeDefault
             />

@@ -14,12 +14,13 @@ import {
   type DragMoveEvent,
   type CollisionDetection,
 } from '@dnd-kit/core'
-import { ArrowUp, DoorOpen, Plus, Printer, RotateCcw, RotateCw, Trash2, X } from 'lucide-react'
+import { ArrowUp, DoorOpen, Plus, Printer, RotateCcw, RotateCw, Ruler, Trash2, X } from 'lucide-react'
 import { useApiaryMap, normaliseDeg, isHivePlaced, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
 import {
-  UNIT_PX, BENCH_DEPTH_UNITS, GRID_X_PCT, GRID_Y_PCT, SLOT_UNITS,
-  slotOffsetUnits, slotPositionPct, rotatedOffset,
+  UNIT_PX, BENCH_DEPTH_UNITS, SLOT_UNITS,
+  slotOffsetUnits, slotPositionPct, rotatedOffset, gridPcts,
   tokenFootprintUnits, rotatedBboxHalfPx, benchLengthUnits, snapPctToGrid,
+  type YardDims,
 } from '@/lib/yard-geometry'
 import { printImageDataUrl, downloadDataUrl, printedOnLabel, excludeNoPrint } from '@/lib/print-layout'
 import { useToast } from '@/components/ui/Toast'
@@ -51,10 +52,12 @@ function YardCanvas({
   children,
   onCanvasClick,
   canvasElRef,
+  dims,
 }: {
   children: React.ReactNode
   onCanvasClick?: (x: number, y: number) => void
   canvasElRef: React.MutableRefObject<HTMLDivElement | null>
+  dims: YardDims
 }) {
   const { setNodeRef } = useDroppable({ id: CANVAS_ID })
 
@@ -72,20 +75,25 @@ function YardCanvas({
     onCanvasClick(Math.round(x * 100) / 100, Math.round(y * 100) / 100)
   }
 
+  const grid = gridPcts(dims)
+  // Large apiaries keep a workable pixel scale (hive tokens ≥ ~32px) and
+  // scroll horizontally instead of shrinking everything to fit.
+  const minWidthPx = Math.max(720, Math.round(dims.widthUnits * 36))
+
   return (
-    // On narrow screens the map keeps a workable minimum width and scrolls
-    // horizontally instead of shrinking tokens below usable size.
     <div className="overflow-x-auto">
       <div
         ref={setRefs}
         role="group"
         aria-label="Apiary layout. Drag hives and benches to position them within the apiary."
         onClick={handleClick}
-        className="relative w-full min-w-[720px] aspect-[3/2] rounded-xl border-2 border-forest-700 overflow-hidden bg-forest-100 dark:bg-forest-900/40"
+        className="relative w-full rounded-xl border-2 border-forest-700 overflow-hidden bg-forest-100 dark:bg-forest-900/40"
         style={{
+          aspectRatio: `${dims.widthUnits} / ${dims.depthUnits}`,
+          minWidth: minWidthPx,
           // Placement-grid dots at every intersection everything snaps to.
           backgroundImage: 'radial-gradient(circle at 0 0, rgba(22, 101, 52, 0.35) 1.5px, transparent 1.5px)',
-          backgroundSize: `${GRID_X_PCT}% ${GRID_Y_PCT}%`,
+          backgroundSize: `${grid.x}% ${grid.y}%`,
         }}
       >
         {children}
@@ -100,8 +108,8 @@ interface YardMapProps {
 
 export default function YardMap({ apiaryId }: YardMapProps) {
   const {
-    apiaryName, hives, benches, yard, loading, isOwner,
-    saveHivePlacement, saveYardSettings, addBench, saveBenchPlacement, deleteBench,
+    apiaryName, hives, benches, yard, yardDims, loading, isOwner,
+    saveHivePlacement, saveYardSettings, saveYardDimensions, addBench, saveBenchPlacement, deleteBench,
   } = useApiaryMap(apiaryId)
   const toast = useToast()
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -109,11 +117,15 @@ export default function YardMap({ apiaryId }: YardMapProps) {
   const [placingEntrance, setPlacingEntrance] = useState(false)
   const [benchCapacity, setBenchCapacity] = useState(2)
   const [ghost, setGhost] = useState<DropGhost | null>(null)
+  const [resizing, setResizing] = useState(false)
+  const [widthInput, setWidthInput] = useState('')
+  const [depthInput, setDepthInput] = useState('')
   // Live canvas element so drop maths always uses the current viewport rect.
   const canvasElRef = useRef<HTMLDivElement | null>(null)
-  // True-to-scale rendering: 1 scene unit = canvasWidth / 10 pixels, exactly
-  // like the 3D view — the two views can never disagree about sizes again.
-  const [pxPerUnit, setPxPerUnit] = useState(UNIT_PX)
+  // True-to-scale rendering: 1 scene unit = canvasWidth / widthUnits pixels,
+  // exactly like the 3D view — the two views can never disagree about sizes.
+  const [canvasWidth, setCanvasWidth] = useState<number | null>(null)
+  const pxPerUnit = canvasWidth ? canvasWidth / yardDims.widthUnits : UNIT_PX
   const isReadOnly = !isOwner
 
   useEffect(() => {
@@ -121,7 +133,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     if (!el || typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(entries => {
       const width = entries[0]?.contentRect.width
-      if (width) setPxPerUnit(width / 10)
+      if (width) setCanvasWidth(width)
     })
     observer.observe(el)
     return () => observer.disconnect()
@@ -212,6 +224,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     const snapped = snapPctToGrid(
       ((centreX - canvasRect.left) / canvasRect.width) * 100,
       ((centreY - canvasRect.top) / canvasRect.height) * 100,
+      yardDims,
     )
     // Keep the same object while the target cell is unchanged — the map only
     // re-renders when the ghost actually moves to another intersection.
@@ -232,7 +245,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     px: { x: number; y: number },
     rect: { left: number; top: number; width: number; height: number },
   ): { bench: YardBench; slot: number } | null => {
-    const ppu = rect.width / 10
+    const ppu = rect.width / yardDims.widthUnits
     for (const bench of benches) {
       const bx = rect.left + (Number(bench.map_x) / 100) * rect.width
       const by = rect.top + (Number(bench.map_y) / 100) * rect.height
@@ -294,7 +307,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     // a slot droppable rather than the canvas itself). Lands on the grid.
     if (idStr.startsWith('bench:')) {
       if (overId !== CANVAS_ID && !SLOT_ID_PATTERN.test(overId)) return
-      const snapped = snapPctToGrid(map_x, map_y)
+      const snapped = snapPctToGrid(map_x, map_y, yardDims)
       saveBenchPlacement(idStr.slice('bench:'.length), { map_x: snapped.x, map_y: snapped.y })
       return
     }
@@ -309,7 +322,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
           toast.error('This bench is full')
           return
         }
-        const pos = slotPositionPct(bench, target)
+        const pos = slotPositionPct(bench, target, yardDims)
         saveHivePlacement(idStr, {
           bench_id: bench.id,
           bench_slot: target,
@@ -333,7 +346,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
           toast.error('This bench is full')
           return
         }
-        const pos = slotPositionPct(onBench.bench, target)
+        const pos = slotPositionPct(onBench.bench, target, yardDims)
         saveHivePlacement(idStr, {
           bench_id: onBench.bench.id,
           bench_slot: target,
@@ -344,7 +357,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
         return
       }
 
-      const snapped = snapPctToGrid(map_x, map_y)
+      const snapped = snapPctToGrid(map_x, map_y, yardDims)
       saveHivePlacement(idStr, {
         map_x: snapped.x,
         map_y: snapped.y,
@@ -472,6 +485,19 @@ export default function YardMap({ apiaryId }: YardMapProps) {
               <Printer className="w-4 h-4 mr-1" /> Print
             </Button>
 
+            <Button
+              size="sm"
+              tone={resizing ? 'success' : 'neutral'}
+              aria-pressed={resizing}
+              onClick={() => {
+                setWidthInput(String(yard.yard_width_m))
+                setDepthInput(String(yard.yard_depth_m))
+                setResizing(v => !v)
+              }}
+            >
+              <Ruler className="w-4 h-4 mr-1" /> {yard.yard_width_m} × {yard.yard_depth_m} m
+            </Button>
+
             <div className="ml-auto flex items-center gap-1">
               <span className="text-sm text-text-secondary mr-1">North</span>
               <IconButton
@@ -497,8 +523,54 @@ export default function YardMap({ apiaryId }: YardMapProps) {
           </div>
         )}
 
-        {/* Yard canvas — a fixed-aspect rectangle representing the bee yard. */}
-        <YardCanvas onCanvasClick={placingEntrance ? handleCanvasClick : undefined} canvasElRef={canvasElRef}>
+        {/* Apiary size editor (metres; positions keep their real-world spots) */}
+        {resizing && !isReadOnly && (
+          <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface p-3">
+            <label className="text-sm font-medium text-text-secondary">
+              Width (m)
+              <input
+                type="number"
+                min={2}
+                max={60}
+                step={0.5}
+                value={widthInput}
+                onChange={(e) => setWidthInput(e.target.value)}
+                className="mt-1 block w-28 px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
+              />
+            </label>
+            <label className="text-sm font-medium text-text-secondary">
+              Depth (m)
+              <input
+                type="number"
+                min={2}
+                max={60}
+                step={0.5}
+                value={depthInput}
+                onChange={(e) => setDepthInput(e.target.value)}
+                className="mt-1 block w-28 px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
+              />
+            </label>
+            <Button
+              size="sm"
+              tone="success"
+              onClick={() => {
+                saveYardDimensions(Number(widthInput), Number(depthInput))
+                setResizing(false)
+              }}
+            >
+              Apply
+            </Button>
+            <Button size="sm" tone="neutral" onClick={() => setResizing(false)}>
+              Cancel
+            </Button>
+            <p className="basis-full text-sm text-text-secondary">
+              Hives and benches keep their real-world positions when the apiary is resized.
+            </p>
+          </div>
+        )}
+
+        {/* Apiary canvas — the yard rectangle at its real proportions. */}
+        <YardCanvas onCanvasClick={placingEntrance ? handleCanvasClick : undefined} canvasElRef={canvasElRef} dims={yardDims}>
           {/* North indicator (user-adjustable) */}
           <span className="pointer-events-none absolute top-2 right-2 flex items-center gap-1 text-sm font-semibold text-forest-800 dark:text-forest-200 z-10">
             <ArrowUp className="w-4 h-4" style={{ transform: `rotate(${northAngle}deg)` }} /> N
