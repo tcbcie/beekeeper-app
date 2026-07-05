@@ -130,6 +130,16 @@ The layout model was substantially extended — see `yard-map-v2-plan.md` for th
   `describeQueenLineage()` renders "Mother: … · Mated: @ … (…)" in the inspector and on the
   selected 3D label.
 
+## Adjustable dimensions (05/07/2026)
+
+The apiary rectangle is user-sized in **real metres** (`apiaries.yard_width_m` /
+`yard_depth_m`, defaults 5.00 × 3.33 m = the original fixed canvas; range 2–60 m; 1 scene unit
+= 0.5 m, so a hive ≈ 0.45 m). A **Resize** control on the toolbar edits both in 0.5 m steps.
+Resizing rescales every placed hive, bench and the entrance so **real-world positions are
+preserved** (anchored top-left; shrinking clamps overhang). The 2D canvas aspect, grid pitch,
+pixel scale, minimum scroll width, and the 3D ground/camera all follow the dimensions, so both
+views stay true-to-scale at any apiary size.
+
 ## Placement grid (03/07/2026)
 
 Free-form pixel placement proved impossible to align (especially rows of benches), so placement

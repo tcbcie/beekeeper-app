@@ -2,7 +2,10 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getCurrentUserId } from '@/lib/auth'
-import { slotPositionPct, snapPctToGrid } from '@/lib/yard-geometry'
+import {
+  slotPositionPct, snapPctToGrid, yardDimsFromMetres,
+  DEFAULT_YARD_WIDTH_M, DEFAULT_YARD_DEPTH_M, type YardDims,
+} from '@/lib/yard-geometry'
 import type { HiveConfiguration } from '@/types/hive'
 
 /** Normalise any angle to [0, 360). */
@@ -108,11 +111,14 @@ export interface BenchPlacementPatch {
   rotation_deg?: number
 }
 
-/** Per-apiary yard frame: entrance marker position + where north points. */
+/** Per-apiary yard frame: dimensions, entrance marker, and where north points. */
 export interface YardSettings {
   yard_entrance_x: number | null
   yard_entrance_y: number | null
   north_angle_deg: number
+  /** Real apiary size in metres (1 scene unit = 0.5 m). */
+  yard_width_m: number
+  yard_depth_m: number
 }
 
 export type YardSettingsPatch = Partial<YardSettings>
@@ -122,17 +128,32 @@ interface UseApiaryMapReturn {
   hives: MapHive[]
   benches: YardBench[]
   yard: YardSettings
+  /** The apiary rectangle in scene units, derived from the metre dimensions. */
+  yardDims: YardDims
   loading: boolean
   isOwner: boolean
   saveHivePlacement: (hiveId: string, patch: HivePlacementPatch) => Promise<void>
   saveYardSettings: (patch: YardSettingsPatch) => Promise<void>
+  saveYardDimensions: (widthM: number, depthM: number) => Promise<void>
   addBench: (capacity: number) => Promise<void>
   saveBenchPlacement: (benchId: string, patch: BenchPlacementPatch) => Promise<void>
   deleteBench: (benchId: string) => Promise<void>
   reload: () => Promise<void>
 }
 
-const DEFAULT_YARD: YardSettings = { yard_entrance_x: null, yard_entrance_y: null, north_angle_deg: 0 }
+const DEFAULT_YARD: YardSettings = {
+  yard_entrance_x: null,
+  yard_entrance_y: null,
+  north_angle_deg: 0,
+  yard_width_m: DEFAULT_YARD_WIDTH_M,
+  yard_depth_m: DEFAULT_YARD_DEPTH_M,
+}
+
+const dimsOf = (yard: YardSettings): YardDims =>
+  yardDimsFromMetres(
+    Number(yard.yard_width_m) || DEFAULT_YARD_WIDTH_M,
+    Number(yard.yard_depth_m) || DEFAULT_YARD_DEPTH_M,
+  )
 
 export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
   const toast = useToast()
@@ -175,7 +196,7 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
 
       const [apiaryRes, hivesRes, benchesRes] = await Promise.all([
         supabase.from('apiaries')
-          .select('name, user_id, yard_entrance_x, yard_entrance_y, north_angle_deg')
+          .select('name, user_id, yard_entrance_x, yard_entrance_y, north_angle_deg, yard_width_m, yard_depth_m')
           .eq('id', apiaryId).single(),
         supabase
           .from('hives')
@@ -239,6 +260,8 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
         yard_entrance_x: apiaryRes.data?.yard_entrance_x ?? null,
         yard_entrance_y: apiaryRes.data?.yard_entrance_y ?? null,
         north_angle_deg: apiaryRes.data?.north_angle_deg ?? 0,
+        yard_width_m: Number(apiaryRes.data?.yard_width_m) || DEFAULT_YARD_WIDTH_M,
+        yard_depth_m: Number(apiaryRes.data?.yard_depth_m) || DEFAULT_YARD_DEPTH_M,
       })
       setHives(hiveRows)
       setBenches((benchesRes.data || []) as YardBench[])
@@ -318,7 +341,7 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     if (!userId) return
 
     // Spawn at the grid intersection nearest the canvas centre.
-    const centre = snapPctToGrid(50, 50)
+    const centre = snapPctToGrid(50, 50, dimsOf(yardRef.current))
     const { data, error } = await supabase
       .from('yard_benches')
       .insert({ user_id: userId, apiary_id: apiaryId, map_x: centre.x, map_y: centre.y, rotation_deg: 0, capacity })
@@ -348,11 +371,13 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     const linkedHives = hivesRef.current.filter(h => h.bench_id === benchId)
     const prevHives = new Map(linkedHives.map(h => [h.id, h]))
 
+    const dims = dimsOf(yardRef.current)
+
     // Optimistically move the bench and its hives together.
     setBenches(prev => prev.map(b => (b.id === benchId ? nextBench : b)))
     setHives(prev => prev.map(h => {
       if (h.bench_id !== benchId || h.bench_slot == null) return h
-      const pos = slotPositionPct(nextBench, h.bench_slot)
+      const pos = slotPositionPct(nextBench, h.bench_slot, dims)
       return {
         ...h,
         map_x: pos.x,
@@ -384,7 +409,7 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     // Persist the recomputed hive placements (best effort, per hive).
     const results = await Promise.all(linkedHives.map(h => {
       if (h.bench_slot == null) return Promise.resolve({ error: null })
-      const pos = slotPositionPct(nextBench, h.bench_slot)
+      const pos = slotPositionPct(nextBench, h.bench_slot, dims)
       return supabase
         .from('hives')
         .update({
@@ -401,6 +426,101 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
       if (mountedRef.current) reload()
     }
   }, [requireUser, reload, toast])
+
+  /**
+   * Resize the apiary rectangle (metres). Positions are stored as percentages,
+   * so every placed object is rescaled to keep its REAL-WORLD position
+   * (anchored to the top-left corner) — enlarging adds space right/bottom,
+   * shrinking clamps anything that would fall outside.
+   */
+  const saveYardDimensions = useCallback(async (widthM: number, depthM: number) => {
+    const userId = requireUser()
+    if (!userId) return
+
+    // 0.5 m steps, matching the DB CHECK range.
+    const w = Math.round(widthM * 2) / 2
+    const d = Math.round(depthM * 2) / 2
+    if (!Number.isFinite(w) || !Number.isFinite(d) || w < 2 || w > 60 || d < 2 || d > 60) {
+      toast.error('Apiary size must be between 2 and 60 metres')
+      return
+    }
+
+    const prevYard = yardRef.current
+    const oldW = Number(prevYard.yard_width_m) || DEFAULT_YARD_WIDTH_M
+    const oldD = Number(prevYard.yard_depth_m) || DEFAULT_YARD_DEPTH_M
+    if (oldW === w && oldD === d) return
+
+    const sx = oldW / w
+    const sy = oldD / d
+    const newDims = yardDimsFromMetres(w, d)
+    const scalePct = (v: number | string | null, s: number) =>
+      v == null ? null : Math.round(Math.min(100, Math.max(0, Number(v) * s)) * 100) / 100
+
+    const prevHives = hivesRef.current
+    const prevBenches = benchesRef.current
+
+    const scaledBenches = prevBenches.map(b => ({
+      ...b,
+      map_x: scalePct(b.map_x, sx) as number,
+      map_y: scalePct(b.map_y, sy) as number,
+    }))
+    const scaledBenchById = new Map(scaledBenches.map(b => [b.id, b]))
+
+    const scaledHives = prevHives.map(h => {
+      // Bench hives re-derive from their (rescaled) bench so they stay on slot.
+      if (h.bench_id != null && h.bench_slot != null && scaledBenchById.has(h.bench_id)) {
+        const pos = slotPositionPct(scaledBenchById.get(h.bench_id)!, h.bench_slot, newDims)
+        return { ...h, map_x: pos.x, map_y: pos.y }
+      }
+      if (h.map_x == null || h.map_y == null) return h
+      return { ...h, map_x: scalePct(h.map_x, sx) as number, map_y: scalePct(h.map_y, sy) as number }
+    })
+
+    const apiaryPatch = {
+      yard_width_m: w,
+      yard_depth_m: d,
+      yard_entrance_x: scalePct(prevYard.yard_entrance_x, sx),
+      yard_entrance_y: scalePct(prevYard.yard_entrance_y, sy),
+    }
+
+    // Optimistically apply everything together.
+    setYard(prev => ({ ...prev, ...apiaryPatch }))
+    setBenches(scaledBenches)
+    setHives(scaledHives)
+
+    const { data, error } = await supabase
+      .from('apiaries')
+      .update(apiaryPatch)
+      .eq('id', apiaryId)
+      .eq('user_id', userId)
+      .select('id')
+
+    if (error || !data || data.length === 0) {
+      console.error('Error resizing apiary:', error ?? 'no matching row updated')
+      if (!mountedRef.current) return
+      setYard(prevYard)
+      setBenches(prevBenches)
+      setHives(prevHives)
+      toast.error('Could not resize the apiary')
+      return
+    }
+
+    // Persist the rescaled placements (best effort; re-sync on any failure).
+    const results = await Promise.all([
+      ...scaledBenches.map(b =>
+        supabase.from('yard_benches').update({ map_x: b.map_x, map_y: b.map_y }).eq('id', b.id).eq('user_id', userId),
+      ),
+      ...scaledHives
+        .filter(h => h.map_x != null && h.map_y != null)
+        .map(h =>
+          supabase.from('hives').update({ map_x: h.map_x, map_y: h.map_y }).eq('id', h.id).eq('user_id', userId),
+        ),
+    ])
+    if (results.some(r => r.error)) {
+      console.error('Error rescaling placements:', results.find(r => r.error)?.error)
+      if (mountedRef.current) reload()
+    }
+  }, [apiaryId, requireUser, reload, toast])
 
   /** Delete a bench; its hives stay where they are, just unlinked (grounded). */
   const deleteBench = useCallback(async (benchId: string) => {
@@ -441,10 +561,12 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     hives,
     benches,
     yard,
+    yardDims: dimsOf(yard),
     loading,
     isOwner,
     saveHivePlacement,
     saveYardSettings,
+    saveYardDimensions,
     addBench,
     saveBenchPlacement,
     deleteBench,
