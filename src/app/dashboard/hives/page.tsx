@@ -650,6 +650,9 @@ export default function HivesPage() {
 
  let dataToSubmit: HiveSubmitData = {
  ...formData,
+ // Trim so stray whitespace never reaches the DB (labels, history
+ // snapshots and duplicate checks all compare on the exact string).
+ hive_number: formData.hive_number.trim(),
  apiary_id: formData.apiary_id || null,
  // When queenless, the hive has no current queen — clear the link.
  queen_id: formData.is_queenless ? null : (formData.queen_id || null),

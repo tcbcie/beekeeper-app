@@ -32,7 +32,7 @@ This document covers two things requested together:
 | `hive_id` | uuid NULL | FK → `hives(id)` ON DELETE SET NULL |
 | `mating_nuc_id` | uuid NULL | FK → `mating_nucs(id)` ON DELETE SET NULL |
 | `apiary_id` | uuid NULL | snapshot (hive's apiary; null for nucs) |
-| `location_label` | text NULL | snapshot of `hive_number` / `nuc_number` (survives renames/deletes) |
+| `location_label` | text NULL | snapshot of `hive_number` / `nuc_number` taken at assignment time (survives deletes) |
 | `started_at` | timestamptz NOT NULL | default `now()` |
 | `ended_at` | timestamptz NULL | `null` = current location |
 | `source` | text NOT NULL | `'system'` \| `'manual'` \| `'backfill'` |
@@ -77,6 +77,12 @@ new. Triggers must close before insert so the partial-unique index isn't violate
 ### UI — Queen overview "Assignment History"
 - New hook `src/hooks/useQueenAssignments.ts`: fetch (newest first), add, edit,
   delete (owner-only; manual rows `source = 'manual'`).
+- **Renames show through:** the fetch also embeds `hives(hive_number)` and
+  `mating_nucs(nuc_number)` and exposes a `display_label` (live number when the
+  FK still resolves, otherwise the `location_label` snapshot). The timeline,
+  edit prefill, and delete confirmation all use `display_label`, so a renamed
+  hive appears under its current number while deleted locations keep their
+  snapshot label.
 - New component `src/components/queens/QueenAssignmentHistory.tsx`: a vertical
   timeline on the Overview tab (below the Provenance box / Assignment block).
   Each row shows:
