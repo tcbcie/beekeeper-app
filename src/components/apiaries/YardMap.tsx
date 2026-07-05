@@ -17,7 +17,7 @@ import {
 import { ArrowUp, DoorOpen, Plus, Printer, RotateCcw, RotateCw, Trash2, X } from 'lucide-react'
 import { useApiaryMap, normaliseDeg, isHivePlaced, type MapHive, type YardBench } from '@/hooks/useApiaryMap'
 import {
-  UNIT_PX, BENCH_DEPTH_UNITS, GRID_X_PCT, GRID_Y_PCT,
+  UNIT_PX, BENCH_DEPTH_UNITS, GRID_X_PCT, GRID_Y_PCT, SLOT_UNITS,
   slotOffsetUnits, slotPositionPct, rotatedOffset,
   tokenFootprintUnits, rotatedBboxHalfPx, benchLengthUnits, snapPctToGrid,
 } from '@/lib/yard-geometry'
@@ -222,6 +222,37 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     )
   }
 
+  /**
+   * The bench (and nearest slot) whose footprint contains a viewport point —
+   * a hive dropped onto a bench's body clearly means "put it on this bench",
+   * even when it missed a slot's drop zone. Prevents ground hives standing
+   * through a bench.
+   */
+  const benchAtPoint = (
+    px: { x: number; y: number },
+    rect: { left: number; top: number; width: number; height: number },
+  ): { bench: YardBench; slot: number } | null => {
+    const ppu = rect.width / 10
+    for (const bench of benches) {
+      const bx = rect.left + (Number(bench.map_x) / 100) * rect.width
+      const by = rect.top + (Number(bench.map_y) / 100) * rect.height
+      const t = (Number(bench.rotation_deg ?? 0) * Math.PI) / 180
+      const dx = px.x - bx
+      const dy = px.y - by
+      // Inverse-rotate into bench-local coordinates (clockwise, y-down).
+      const lx = dx * Math.cos(t) + dy * Math.sin(t)
+      const ly = -dx * Math.sin(t) + dy * Math.cos(t)
+      if (
+        Math.abs(lx) <= (benchLengthUnits(bench.capacity) * ppu) / 2 &&
+        Math.abs(ly) <= (BENCH_DEPTH_UNITS * ppu) / 2
+      ) {
+        const idx = Math.round(lx / (SLOT_UNITS * ppu) + (bench.capacity - 1) / 2)
+        return { bench, slot: Math.min(bench.capacity - 1, Math.max(0, idx)) }
+      }
+    }
+    return null
+  }
+
   /** The requested slot if free, else the nearest free slot on the bench. */
   const resolveFreeSlot = (bench: YardBench, requested: number, draggedHiveId: string): number | null => {
     const occupied = new Set(
@@ -293,6 +324,26 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     // Otherwise: land on the grid and clear any bench link. Alignment is by
     // construction — every hive and bench sits on the same intersections.
     if (overId === CANVAS_ID) {
+      // Belt and braces: a drop point inside a bench footprint means "put it
+      // on this bench" — never leave a ground hive standing through a bench.
+      const onBench = benchAtPoint(centrePx, canvasRect)
+      if (onBench) {
+        const target = resolveFreeSlot(onBench.bench, onBench.slot, idStr)
+        if (target == null) {
+          toast.error('This bench is full')
+          return
+        }
+        const pos = slotPositionPct(onBench.bench, target)
+        saveHivePlacement(idStr, {
+          bench_id: onBench.bench.id,
+          bench_slot: target,
+          map_x: pos.x,
+          map_y: pos.y,
+          rotation_deg: normaliseDeg(Math.round(Number(onBench.bench.rotation_deg))),
+        })
+        return
+      }
+
       const snapped = snapPctToGrid(map_x, map_y)
       saveHivePlacement(idStr, {
         map_x: snapped.x,
