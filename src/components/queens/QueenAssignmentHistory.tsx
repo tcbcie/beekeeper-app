@@ -46,6 +46,11 @@ export default function QueenAssignmentHistory({ queenId }: QueenAssignmentHisto
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+
+  // Entries still linked to a live hive/nuc display that record's current
+  // name, so a hand-edited label would not show — warn the user in the form.
+  const editingEntry = editingId ? assignments.find((a) => a.id === editingId) : null
+  const editingIsLinked = !!(editingEntry && (editingEntry.hive_id || editingEntry.mating_nuc_id))
   const [form, setForm] = useState<QueenAssignmentInput>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
 
@@ -241,6 +246,12 @@ export default function QueenAssignmentHistory({ queenId }: QueenAssignmentHisto
                 placeholder="e.g. 77-HMN+ or Nuc 3"
                 className="w-full px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:border-forest-500 focus:ring-2 focus:ring-forest-500/20"
               />
+              {editingIsLinked && (
+                <p className="text-sm text-text-secondary mt-1">
+                  This entry is linked to a live hive or nuc, so the timeline always shows that
+                  record&apos;s current name rather than this label.
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
