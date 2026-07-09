@@ -6,6 +6,7 @@ import type { Hive } from '@/types/hive'
 import { queenStatusBadgeClass } from '@/types/queen'
 import Button from '@/components/ui/Button'
 import { formatQueenlessLabel } from '@/lib/queenless'
+import SuperFullnessGauge from '@/components/hive/SuperFullnessGauge'
 
 interface HiveListCardProps {
  hive: Hive
@@ -295,11 +296,16 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {/* Visual Hive Stack */}
  <div className={`flex flex-col items-center gap-1 mb-3 ${hive.configuration.hive_size === 'nuc' ? 'w-1/2 mx-auto' : 'w-full'}`}>
  {/* Honey Supers */}
- {Array.from({ length: hive.configuration.honey_supers || 0 }).map((_, i) => (
- <div key={`super-${i}`} className="w-full h-8 bg-yellow-300 border-2 border-yellow-500 rounded flex items-center justify-center text-xs font-semibold">
- 🍯 Super {i + 1}
+ {Array.from({ length: hive.configuration.honey_supers || 0 }).map((_, i) => {
+ const fullness = hive.last_super_fullness?.[i]
+ const hasFullness = typeof fullness === 'number' && Number.isFinite(fullness)
+ return (
+ <div key={`super-${i}`} className={`w-full h-8 bg-yellow-300 border-2 border-yellow-500 rounded flex items-center text-xs font-semibold ${hasFullness ? 'justify-between px-2' : 'justify-center'}`}>
+ <span>🍯 Super {i + 1}</span>
+ {hasFullness && <SuperFullnessGauge value={fullness} />}
  </div>
- ))}
+ )
+ })}
 
  {/* Queen Excluder */}
  {hive.configuration.queen_excluder && (

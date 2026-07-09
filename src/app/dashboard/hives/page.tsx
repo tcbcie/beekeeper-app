@@ -271,7 +271,7 @@ export default function HivesPage() {
  // shared hives are hidden from the hive card aggregates.
  const { data: allInspections } = await supabase
  .from('inspections')
- .select('hive_id, inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength, queen_seen, eggs_present')
+ .select('hive_id, inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength, queen_seen, eggs_present, honey_super_fullness')
  .in('hive_id', hiveIds)
  .order('inspection_date', { ascending: false })
 
@@ -388,6 +388,12 @@ export default function HivesPage() {
  const queenInspection = inspections.find(i => i.queen_seen === true)
  const eggsInspection = inspections.find(i => i.eggs_present === true)
 
+ // Latest inspection's per-super fullness (inspections are ordered newest-first).
+ // May be null when the most recent inspection did not record fullness.
+ const latestSuperFullness = Array.isArray(inspections[0]?.honey_super_fullness)
+ ? inspections[0].honey_super_fullness as number[]
+ : null
+
  // Determine team info for shared hives
  const isShared = hive.user_id !== currentUserId
  const teamData = hive.apiary_id ? teamDataMap.get(hive.apiary_id) : undefined
@@ -412,6 +418,7 @@ export default function HivesPage() {
  last_inspection_date: lastInspectionByHive.get(hive.id) || null,
  active_tasks_count: activeTasksByHive.get(hive.id) || 0,
  qr_tag_code: qrTagByHive.get(hive.id) ?? null,
+ last_super_fullness: latestSuperFullness,
  }
  })
 

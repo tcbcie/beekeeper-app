@@ -35,7 +35,12 @@ interface Layer {
   /** Optional per-layer footprint override (roof overhangs the body). */
   w?: number
   d?: number
+  /** Honey-super fullness 0-100 from the last inspection (super layers only). */
+  fullness?: number
 }
+
+// Darker honey fill drawn on a super's front face to show how full it is.
+const COL_SUPER_FILL = '#b45309' // amber-700
 
 // Build the box stack bottom→top from the hive's configuration, mirroring the
 // fixed order used by the 2D card: floor → full brood → half brood → excluder
@@ -53,7 +58,11 @@ function buildStack(hive: MapHive, width: number, depth: number): Layer[] {
   for (let i = 0; i < fullCount; i++) layers.push({ key: `full-${i}`, height: FULL_H, colour: COL_FULL })
   for (let i = 0; i < halfCount; i++) layers.push({ key: `half-${i}`, height: HALF_H, colour: COL_HALF })
   if (c.queen_excluder) layers.push({ key: 'excluder', height: EXCLUDER_H, colour: COL_EXCLUDER })
-  for (let i = 0; i < superCount; i++) layers.push({ key: `super-${i}`, height: SUPER_H, colour: COL_SUPER })
+  for (let i = 0; i < superCount; i++) {
+    const raw = hive.last_super_fullness?.[i]
+    const fullness = typeof raw === 'number' && Number.isFinite(raw) ? Math.min(100, Math.max(0, raw)) : undefined
+    layers.push({ key: `super-${i}`, height: SUPER_H, colour: COL_SUPER, fullness })
+  }
   if (c.feeder && c.feeder_type === 'top') {
     layers.push({ key: 'feeder-top', height: FEEDER_TOP_H, colour: COL_FEEDER })
   }
@@ -143,6 +152,23 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
           <Edges color="#a16207" threshold={15} />
         </mesh>
       ))}
+
+      {/* Honey fill on each super's front (−Z) face, rising from the box's
+          bottom in proportion to the last inspection's recorded fullness. */}
+      {placed.map(l =>
+        l.key.startsWith('super-') && typeof l.fullness === 'number' && l.fullness > 0 ? (
+          (() => {
+            const fillH = (l.fullness / 100) * SUPER_H
+            const bottom = l.centre - SUPER_H / 2
+            return (
+              <mesh key={`fill-${l.key}`} position={[0, bottom + fillH / 2, -(depth / 2 + 0.006)]}>
+                <boxGeometry args={[width * 0.82, fillH, 0.012]} />
+                <meshStandardMaterial color={COL_SUPER_FILL} />
+              </mesh>
+            )
+          })()
+        ) : null,
+      )}
 
       {/* Entrance notch on the front (−Z) face at floor level — −Z maps to
           canvas-up, matching the 2D triangle at rotation 0. Always drawn,

@@ -100,6 +100,8 @@ export interface Hive {
   } | null
   last_inspection_date?: string | null
   active_tasks_count?: number
+  /** Per-super fullness (0-100) from the most recent inspection; null when not recorded. */
+  last_super_fullness?: number[] | null
   colonies?: Colony
   archive_reason_value?: {
     value?: string
