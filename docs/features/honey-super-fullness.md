@@ -11,7 +11,8 @@ recorded value as a mini gauge beside each super on the hive card.
 - Recording control: native **range slider (0–100%, step 5)** per super — large, glove- and
   low-vision-friendly touch target.
 - Display: a small **circular mini gauge** drawn beside each super in the hive card, using the
-  latest inspection's recorded values.
+  **last inspection that actually recorded fullness** (the last known level — fullness is optional,
+  so most inspections leave it unrecorded).
 
 ## Data model
 

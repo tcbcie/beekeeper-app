@@ -388,10 +388,12 @@ export default function HivesPage() {
  const queenInspection = inspections.find(i => i.queen_seen === true)
  const eggsInspection = inspections.find(i => i.eggs_present === true)
 
- // Latest inspection's per-super fullness (inspections are ordered newest-first).
- // May be null when the most recent inspection did not record fullness.
- const latestSuperFullness = Array.isArray(inspections[0]?.honey_super_fullness)
- ? inspections[0].honey_super_fullness as number[]
+ // Last *recorded* per-super fullness: the newest inspection that actually
+ // recorded it (fullness is optional, so most inspections leave it null).
+ // inspections are ordered newest-first, so find() returns the latest match.
+ const fullnessInspection = inspections.find(i => Array.isArray(i.honey_super_fullness))
+ const latestSuperFullness = fullnessInspection
+ ? (fullnessInspection.honey_super_fullness as number[])
  : null
 
  // Determine team info for shared hives
