@@ -152,9 +152,9 @@ already works. We mirror it:</p>
 <ul>
   <li>Slider count reflects the hive&rsquo;s super count at the moment of recording; a super added via the
       same inspection&rsquo;s Given/Taken adjustment isn&rsquo;t reflected until the hive count updates on save.</li>
-  <li>The card gauge always reflects the <em>most recent</em> inspection — if that inspection didn&rsquo;t
-      record fullness, no gauge shows even if an earlier one did (matches &ldquo;based on the last
-      inspection record&rdquo;).</li>
+  <li>The card gauge reflects the <em>last inspection that actually recorded fullness</em> (last known
+      level), not strictly the most recent inspection — because fullness is optional and most inspections
+      leave it unrecorded, so a strict-latest rule would almost never show a gauge.</li>
 </ul>
 
 <h3>Not done here</h3>

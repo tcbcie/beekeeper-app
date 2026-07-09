@@ -256,9 +256,10 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
         }
       }
 
-      // Attach each hive's latest recorded per-super fullness for the 3D view.
-      // Rows are newest-first; the first row per hive is its last inspection,
-      // so its value wins (null when that inspection recorded no fullness).
+      // Attach each hive's last *recorded* per-super fullness for the 3D view.
+      // Fullness is optional, so most inspections leave it null; rows are
+      // newest-first, so the first row per hive that actually has an array is
+      // the latest recorded value.
       const hiveIds = hiveRows.map(h => h.id)
       if (hiveIds.length > 0) {
         const { data: fullnessRows, error: fullnessError } = await supabase
@@ -270,13 +271,10 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
         if (fullnessError) {
           console.error('Error loading super fullness:', fullnessError)
         } else {
-          const fullnessByHive = new Map<string, number[] | null>()
+          const fullnessByHive = new Map<string, number[]>()
           for (const row of fullnessRows || []) {
-            if (!fullnessByHive.has(row.hive_id)) {
-              fullnessByHive.set(
-                row.hive_id,
-                Array.isArray(row.honey_super_fullness) ? (row.honey_super_fullness as number[]) : null,
-              )
+            if (!fullnessByHive.has(row.hive_id) && Array.isArray(row.honey_super_fullness)) {
+              fullnessByHive.set(row.hive_id, row.honey_super_fullness as number[])
             }
           }
           hiveRows = hiveRows.map(h => ({ ...h, last_super_fullness: fullnessByHive.get(h.id) ?? null }))
