@@ -1,0 +1,175 @@
+<h1>Customer Credit from Order Overpayments — Plan &amp; To-Do</h1>
+
+<p><strong>Goal:</strong> When a customer pays more than an order's total, keep the surplus on record as
+<strong>customer credit</strong>. The credit is <strong>visible on the customer account</strong> and can be
+<strong>optionally applied to another order</strong> as payment. This supersedes the earlier order-only
+overpayment plan.</p>
+
+<h2>Confirmed findings</h2>
+<ul>
+  <li>Payment is a single scalar <code>crm_orders.amount_paid</code>, clamped to <code>[0, total_amount]</code>;
+      surplus is silently dropped in <code>crm_set_order_amount_paid</code>
+      (<code>v_amount := LEAST(GREATEST(&hellip;,0), v_total)</code>) and re-clamped in
+      <code>_crm_apply_payment_state</code>.</li>
+  <li>No customer-credit concept exists anywhere (types, tables, UI) &mdash; greenfield.</li>
+  <li>All <code>crm_*</code> tables are <code>user_id</code>-scoped with the identical 4-policy RLS pattern
+      (<code>auth.uid() = user_id</code>). All money mutations are atomic SQL RPCs
+      (<code>SET search_path = public</code>, <code>SECURITY INVOKER</code>, EXECUTE to authenticated only);
+      client-side money orchestration is explicitly forbidden.</li>
+  <li><strong>Revenue is safe:</strong> <code>_crm_recognise_revenue</code> books
+      <code>SUM(quantity &times; unit_price)</code> = order total, never <code>amount_paid</code>. Credit does
+      not distort the P&amp;L. Surplus cash is a liability/credit, not income, and correctly appears as
+      revenue only once applied to an order that then fully pays.</li>
+  <li>Customer rollups live in SQL view <code>crm_customer_summary</code>; customer detail page loads
+      customer + orders via <code>Promise.all</code>.</li>
+</ul>
+
+<h2>Design (confirmed with user: customer-level credit, applied optionally to another order)</h2>
+<ul>
+  <li><strong>Single source of truth = a credit ledger.</strong> New table <code>crm_customer_credit</code>
+      (append-style, signed amounts). Customer balance = <code>SUM(amount)</code>, always <code>&gt;= 0</code>.</li>
+  <li><strong>Overpayment is swept to the ledger</strong> (orders keep <code>amount_paid ∈ [0, total]</code>).
+      A surplus becomes a <code>+</code> ledger entry linked to the source order.</li>
+  <li><strong>Credit is applied manually</strong> to a chosen order via a new atomic RPC (a <code>−</code>
+      ledger entry + bump that order's <code>amount_paid</code>), capped at the order's remaining balance so
+      credit never creates a new overpayment loop.</li>
+  <li><code>payment_status</code> stays binary; no enum change. "Overpaid"/credit shown as derived UI.</li>
+</ul>
+
+<h3>Ledger table shape</h3>
+<pre>crm_customer_credit (
+  id uuid pk default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  customer_id uuid not null references crm_customers(id) on delete cascade,
+  order_id uuid references crm_orders(id) on delete set null,
+  amount numeric(10,2) not null,        -- + = credit added, − = credit applied
+  reason text not null check (reason in
+    ('order_overpayment','applied_to_order','manual_adjustment')),
+  created_at timestamptz default now()
+)  -- RLS enabled, 4 policies mirroring crm_orders</pre>
+
+<h2>To-Do</h2>
+
+<h3>1. Database (Supabase MCP migrations)</h3>
+<ul>
+  <li>[ ] Create <code>crm_customer_credit</code> + enable RLS + 4 <code>auth.uid() = user_id</code> policies.
+      Index on <code>(user_id, customer_id)</code> and <code>(order_id)</code>.</li>
+  <li>[ ] Modify <code>crm_set_order_amount_paid(p_order_id, p_amount)</code>: still set
+      <code>amount_paid = LEAST(cash, total)</code>, but <strong>reconcile a single
+      <code>order_overpayment</code> ledger entry</strong> for this order to <code>surplus = max(0, cash − total)</code>
+      (delete-then-insert so repeated "set" calls stay idempotent — never duplicates credit).
+      <strong>Guard:</strong> if reducing an existing surplus would push the customer's balance below 0
+      (credit already applied elsewhere), <code>RAISE EXCEPTION</code> with a clear message.</li>
+  <li>[ ] New RPC <code>crm_apply_credit_to_order(p_order_id, p_amount)</code>:
+      <code>v_apply := LEAST(GREATEST(p_amount,0), customer_balance, order_remaining)</code>; insert
+      <code>−v_apply</code> (<code>applied_to_order</code>); <code>amount_paid += v_apply</code>; call
+      <code>_crm_apply_payment_state</code>; subscription gate only if it fully pays. Reject when
+      <code>v_apply &lt;= 0</code>.</li>
+  <li>[ ] (Optional v1) <code>crm_remove_credit_from_order(p_order_id)</code> to reverse an application
+      (delete <code>applied_to_order</code> entries for the order, reduce <code>amount_paid</code>, re-apply
+      state). Decide keep/drop for v1.</li>
+  <li>[ ] Handle <code>crm_cancel_order</code> interaction: cancelling must not lose or duplicate credit.
+      Inspect it and decide — likely detach the source <code>order_overpayment</code> entry
+      (<code>order_id = null</code>, reason <code>manual_adjustment</code>) rather than delete, since the cash
+      was really received. Document the choice.</li>
+  <li>[ ] Extend view <code>crm_customer_summary</code> with
+      <code>credit_balance = COALESCE((select sum(amount) from crm_customer_credit cc where cc.customer_id = c.id), 0)</code>.</li>
+  <li>[ ] Run <code>get_advisors</code> (security + performance) after DDL; revoke EXECUTE from
+      public/anon on any new functions per project convention.</li>
+</ul>
+
+<h3>2. Types &mdash; <code>src/types/crm.ts</code></h3>
+<ul>
+  <li>[ ] Add <code>CustomerCreditEntry { id; user_id; customer_id; order_id: string | null; amount: number;
+      reason: 'order_overpayment' | 'applied_to_order' | 'manual_adjustment'; created_at: string }</code>.</li>
+  <li>[ ] Add <code>credit_balance: number</code> to <code>CustomerSummary</code> (and expose on the detail
+      page's customer load).</li>
+</ul>
+
+<h3>3. Helpers &mdash; <code>src/lib/crm-credit.ts</code> (new)</h3>
+<ul>
+  <li>[ ] <code>creditBalance(entries)</code>, <code>overpaymentForOrder(entries, orderId)</code>,
+      <code>appliedCreditForOrder(entries, orderId)</code>. Keep <code>orderBalance</code> floored at 0 in
+      <code>crm-orders.ts</code> unchanged.</li>
+</ul>
+
+<h3>4. Customer account UI &mdash; <code>src/app/dashboard/crm/customers/[id]/page.tsx</code></h3>
+<ul>
+  <li>[ ] Fetch credit balance + ledger entries (4th parallel query in the existing <code>Promise.all</code>).</li>
+  <li>[ ] Add a <strong>"Credit balance"</strong> stat panel (extend the 3-panel grid at lines ~132-146 to 4).</li>
+  <li>[ ] Add a <strong>"Credit history"</strong> section (mirror the Order-history desktop-table + mobile-card
+      pattern, lines ~148-216): date · reason · linked order · amount.</li>
+  <li>[ ] (Optional) show <code>credit_balance</code> on the customers list + CSV export.</li>
+</ul>
+
+<h3>5. Order detail UI &mdash; <code>src/app/dashboard/crm/orders/[id]/page.tsx</code></h3>
+<ul>
+  <li>[ ] In <code>handleSetAmountPaid</code>, replace the "exceeded the total — recorded the full &hellip;"
+      toast with "Overpaid £X credited to {customer}'s account" when a surplus was captured.</li>
+  <li>[ ] In the Payment panel, when the source order has an overpayment entry, show
+      <strong>"Overpaid: £X → credit"</strong>; when credit was applied, show <strong>"£X applied from credit"</strong>.</li>
+  <li>[ ] Add an <strong>"Apply credit"</strong> control (visible when the customer has available credit and the
+      order has a remaining balance) → <code>crm_apply_credit_to_order</code>, defaulting the amount to
+      <code>min(availableCredit, orderBalance)</code>. Reload after.</li>
+</ul>
+
+<h3>6. Badge &mdash; <code>src/components/crm/OrderBadges.tsx</code></h3>
+<ul>
+  <li>[ ] (Optional) derived "Overpaid" badge on the source order. Lower priority now that credit lives on the
+      customer, not the order.</li>
+</ul>
+
+<h3>7. Docs</h3>
+<ul>
+  <li>[ ] Rewrite <code>docs/features/order-overpayment.md</code> &rarr; customer credit; update
+      <code>docs/features/crm-module.md</code> (new ledger table, RPCs, invariants, revenue note).</li>
+  <li>[ ] Version bump (minor) + changelog entry.</li>
+</ul>
+
+<h2>Money-correctness notes (why this stays consistent)</h2>
+<ul>
+  <li>Revenue is always the <em>order total</em>, per order. Surplus cash is never booked as income until it is
+      applied to an order that then fully pays &mdash; so no double-counting and no inflated P&amp;L.</li>
+  <li>Ledger balance is the single source of truth and is guarded <code>&gt;= 0</code> on every debit.</li>
+  <li>Applied credit is capped at the target order's remaining balance, so credit can never itself generate a
+      new overpayment.</li>
+  <li>All mutations are atomic server RPCs; the client never orchestrates multi-step money changes.</li>
+</ul>
+
+<h2>Out of scope (v1)</h2>
+<ul>
+  <li>Applying credit at order-creation time (apply on the detail page after creation instead).</li>
+  <li>Refunds / paying credit back out as cash; per-payment method/date ledger for cash itself.</li>
+  <li>Cross-customer credit transfer.</li>
+</ul>
+
+<h2>Review — implemented</h2>
+<p><strong>Status:</strong> Implemented. Version bumped 1.10.0 &rarr; 1.11.0 with a changelog entry.</p>
+<h3>Database (Supabase MCP migrations)</h3>
+<ul>
+  <li><code>create_crm_customer_credit_ledger</code> — new table + RLS (4 policies) + indexes + grants.</li>
+  <li><code>crm_set_order_amount_paid_sweep_overpayment</code> — sweeps surplus to the ledger idempotently
+      with the negative-balance guard.</li>
+  <li><code>crm_apply_credit_to_order</code> — new RPC; caps at available credit &amp; order remaining;
+      returns applied amount; EXECUTE limited to authenticated.</li>
+  <li><code>crm_cancel_order_handle_credit</code> — returns applied credit, detaches generated credit.</li>
+  <li><code>crm_customer_summary_add_credit_balance</code> — view exposes <code>credit_balance</code>.</li>
+  <li>Advisors: only the pre-existing <code>security_definer_view</code> notice (unchanged); new table has RLS.</li>
+</ul>
+<h3>Code</h3>
+<ul>
+  <li><code>src/types/crm.ts</code> — <code>CustomerCreditEntry</code>, <code>CreditReason</code>,
+      <code>credit_balance</code> on <code>CustomerSummary</code>.</li>
+  <li><code>src/lib/crm-credit.ts</code> (new) — <code>creditBalance</code>, <code>overpaymentForOrder</code>,
+      <code>appliedCreditForOrder</code>, reason labels.</li>
+  <li><code>customers/[id]/page.tsx</code> — Credit balance stat panel + Credit history section.</li>
+  <li><code>customers/page.tsx</code> — coerce <code>credit_balance</code>.</li>
+  <li><code>orders/[id]/page.tsx</code> — overpayment/credit messaging, "From credit"/"Overpaid → credit"
+      figures, and the "Apply credit" control.</li>
+  <li>Docs: <code>docs/features/crm-module.md</code> + <code>docs/features/order-overpayment.md</code>.</li>
+</ul>
+<h3>Not done here</h3>
+<ul>
+  <li>Optional un-apply-credit RPC (deferred), applying credit at order creation, refunds — all out of scope.</li>
+  <li>Build/commit/push left to the user per workflow.</li>
+</ul>

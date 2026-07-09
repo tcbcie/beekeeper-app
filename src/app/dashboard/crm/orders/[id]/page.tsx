@@ -17,7 +17,8 @@ import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadg
 import { formatMoney } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
 import { orderBalance, isPartiallyPaid, isOverdue, summariseCustomerOrders } from '@/lib/crm-orders'
-import type { Customer, Order, OrderItem, OrderItemFormData } from '@/types/crm'
+import { creditBalance, appliedCreditForOrder, overpaymentForOrder } from '@/lib/crm-credit'
+import type { Customer, Order, OrderItem, OrderItemFormData, CustomerCreditEntry } from '@/types/crm'
 import { TYPE_LABELS } from '@/components/batches/graftConstants'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -56,6 +57,8 @@ export default function OrderDetailPage() {
   const [amountPaidInput, setAmountPaidInput] = useState('')
   const [dueDateInput, setDueDateInput] = useState('')
   const [distributions, setDistributions] = useState<LinkedDistribution[]>([])
+  const [creditEntries, setCreditEntries] = useState<CustomerCreditEntry[]>([])
+  const [applyCreditInput, setApplyCreditInput] = useState('')
 
   const load = useCallback(async (uid: string) => {
     const [orderRes, itemsRes, profileRes, distRes] = await Promise.all([
@@ -78,7 +81,6 @@ export default function OrderDetailPage() {
     const ord = orderRes.data as Order
     setOrder(ord)
     setNotes(ord.notes || '')
-    setAmountPaidInput(String(Number(ord.amount_paid) || 0))
     setDueDateInput(ord.due_date || '')
     setItems(toFormItems((itemsRes.data || []) as OrderItem[]))
     setIsUkNi(profileRes.data?.is_uk_ni_resident || false)
@@ -99,12 +101,22 @@ export default function OrderDetailPage() {
       }
     }))
 
-    const [custRes, custOrdersRes] = await Promise.all([
+    const [custRes, custOrdersRes, creditRes] = await Promise.all([
       supabase.from('crm_customers').select('*').eq('id', ord.customer_id).eq('user_id', uid).maybeSingle(),
       supabase.from('crm_orders').select('status, total_amount, amount_paid').eq('customer_id', ord.customer_id).eq('user_id', uid),
+      supabase.from('crm_customer_credit').select('*').eq('customer_id', ord.customer_id).eq('user_id', uid),
     ])
     setCustomer((custRes.data as Customer) || null)
     setCustomerStats(summariseCustomerOrders((custOrdersRes.data || []) as Order[]))
+    const entries = (creditRes.data || []) as CustomerCreditEntry[]
+    setCreditEntries(entries)
+    // Show the GROSS amount paid (capped amount_paid + any surplus this order
+    // swept to credit) so the field reflects reality and re-submitting the same
+    // value is idempotent — it must not silently erase the overpayment credit.
+    const grossPaid = (Number(ord.amount_paid) || 0) + overpaymentForOrder(entries, ord.id)
+    setAmountPaidInput(grossPaid.toFixed(2))
+    // Default the "apply credit" amount to the most that can be applied here.
+    setApplyCreditInput(Math.min(creditBalance(entries), orderBalance(ord)).toFixed(2))
     setLoading(false)
   }, [id, router, toast])
 
@@ -179,14 +191,14 @@ export default function OrderDetailPage() {
     }
   }
 
-  // Records a specific amount paid (deposit / partial / full). The server
-  // clamps to [0, total] and recognises income only once fully paid.
+  // Records a specific amount paid (deposit / partial / full). The order keeps
+  // amount_paid in [0, total]; any surplus is swept to the customer's credit.
   const handleSetAmountPaid = async () => {
     if (!userId || !order) return
     const amount = parseFloat(amountPaidInput)
     if (!Number.isFinite(amount) || amount < 0) { toast.warning('Enter a valid amount'); return }
     const total = Number(order.total_amount) || 0
-    const capped = amount > total
+    const surplus = amount > total ? amount - total : 0
     setBusy(true)
     try {
       const { error } = await supabase.rpc('crm_set_order_amount_paid', {
@@ -194,13 +206,35 @@ export default function OrderDetailPage() {
         p_amount: amount,
       })
       if (error) throw error
-      // The server clamps to the order total — tell the user when that happens.
-      toast.success(capped
-        ? `Amount exceeded the total — recorded the full ${formatMoney(total, isUkNi)} as paid`
+      toast.success(surplus > 0
+        ? `Recorded ${formatMoney(total, isUkNi)} paid — ${formatMoney(surplus, isUkNi)} added as credit to ${customer?.name ?? 'the customer'}'s account`
         : 'Payment updated')
       load(userId)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update payment')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // Applies the customer's stored credit to this order. The server caps it at
+  // the available balance and the order's remaining balance in one transaction.
+  const handleApplyCredit = async () => {
+    if (!userId || !order) return
+    const amount = parseFloat(applyCreditInput)
+    if (!Number.isFinite(amount) || amount <= 0) { toast.warning('Enter a valid amount'); return }
+    setBusy(true)
+    try {
+      const { data, error } = await supabase.rpc('crm_apply_credit_to_order', {
+        p_order_id: order.id,
+        p_amount: amount,
+      })
+      if (error) throw error
+      const applied = Number(data) || 0
+      toast.success(`Applied ${formatMoney(applied, isUkNi)} from credit`)
+      load(userId)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to apply credit')
     } finally {
       setBusy(false)
     }
@@ -256,6 +290,10 @@ export default function OrderDetailPage() {
   if (loading || !order) return <LoadingSpinner text="Loading order..." />
 
   const isCancelled = order.status === 'cancelled'
+  const availableCredit = creditBalance(creditEntries)
+  const overpaidFromThis = overpaymentForOrder(creditEntries, order.id)
+  const appliedToThis = appliedCreditForOrder(creditEntries, order.id)
+  const remaining = orderBalance(order)
   const addressParts = customer ? [
     customer.address_line1, customer.address_line2, customer.city,
     customer.county, customer.postcode, customer.country,
@@ -315,6 +353,12 @@ export default function OrderDetailPage() {
             <span className="text-text-secondary">Total: <span className="font-medium text-foreground tabular-nums">{formatMoney(Number(order.total_amount), isUkNi)}</span></span>
             <span className="text-text-secondary">Paid: <span className="font-medium text-foreground tabular-nums">{formatMoney(Number(order.amount_paid), isUkNi)}</span></span>
             <span className="text-text-secondary">Balance: <span className="font-medium text-foreground tabular-nums">{formatMoney(orderBalance(order), isUkNi)}</span></span>
+            {appliedToThis > 0 && (
+              <span className="text-text-secondary">From credit: <span className="font-medium text-forest-700 dark:text-forest-400 tabular-nums">{formatMoney(appliedToThis, isUkNi)}</span></span>
+            )}
+            {overpaidFromThis > 0 && (
+              <span className="text-text-secondary">Overpaid → credit: <span className="font-medium text-forest-700 dark:text-forest-400 tabular-nums">{formatMoney(overpaidFromThis, isUkNi)}</span></span>
+            )}
           </div>
           <div className="flex flex-wrap items-end gap-3">
             <div>
@@ -342,13 +386,36 @@ export default function OrderDetailPage() {
               />
             </div>
           </div>
+          {availableCredit > 0 && remaining > 0 && (
+            <div className="mt-4 border-t border-border pt-3">
+              <p className="text-sm text-text-secondary mb-2">
+                {customer?.name ?? 'This customer'} has <span className="font-semibold text-forest-700 dark:text-forest-400">{formatMoney(availableCredit, isUkNi)}</span> credit available.
+              </p>
+              <div className="flex flex-wrap items-end gap-3">
+                <div>
+                  <FieldLabel>Apply from credit</FieldLabel>
+                  <TextInput
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={applyCreditInput}
+                    onChange={(e) => setApplyCreditInput(e.target.value)}
+                    className="rounded-md w-40"
+                  />
+                </div>
+                <Button onClick={handleApplyCredit} tone="success" disabled={busy} className="min-h-[48px]">
+                  Apply credit
+                </Button>
+              </div>
+            </div>
+          )}
           {isOverdue(order, today()) && (
             <p className="text-sm text-red-600 dark:text-red-400 mt-2">
               Overdue — {formatMoney(orderBalance(order), isUkNi)} was due by {formatCrmDate(order.due_date)}.
             </p>
           )}
           <p className="text-xs text-text-tertiary mt-2">
-            Record a deposit or part payment here. Income is recognised in your ledger only once the full amount is paid.
+            Record a deposit or part payment here. Overpayments are kept as customer credit. Income is recognised in your ledger only once the full amount is paid.
           </p>
         </Panel>
       )}
