@@ -71,6 +71,22 @@ due date — drives overdue flagging), `fulfilled_date`,
 `0 ≤ amount_paid ≤ total_amount`), `notes`. `payment_status` stays **binary**
 — it flips to `paid` only when `amount_paid >= total_amount`; a part-paid
 deposit keeps it `unpaid` and the "Part-paid" state is derived in the UI.
+An **overpayment** never pushes `amount_paid` above `total_amount`; the surplus
+is swept to the customer credit ledger instead (see below).
+
+### `crm_customer_credit`
+
+Customer credit ledger. `customer_id` (FK, cascade), `order_id` (FK, nullable,
+`ON DELETE SET NULL`), `amount numeric(10,2)` (signed: **+** credit added, **−**
+credit applied), `reason` (`order_overpayment` / `applied_to_order` /
+`manual_adjustment`). A customer's available credit = `SUM(amount)`, guarded
+`>= 0` by the RPCs, and surfaced as `credit_balance` on `crm_customer_summary`.
+RLS is the standard `auth.uid() = user_id` pattern. Overpaying an order sweeps
+the surplus here (`crm_set_order_amount_paid`); `crm_apply_credit_to_order`
+spends it against another order (capped at that order's remaining balance).
+Revenue is still recognised per order at the **order total**, so credit never
+distorts the P&L — surplus cash becomes revenue only when applied to an order
+that then fully pays.
 
 ### `crm_order_items`
 `order_id` (FK, cascade), `product_type`
@@ -233,11 +249,19 @@ user's orders (`+ items`) and `crm_customer_summary`:
   `crm_set_order_amount_paid(order, amount)` (deposit / part / full). The order
   detail page has a Payment panel (Total / Paid / Balance + an *Amount paid*
   input); *Mark Paid* / *Mark Unpaid* remain as binary shortcuts that set
-  `amount_paid` to the total or zero. The server clamps `amount_paid` to
+  `amount_paid` to the total or zero. The server keeps `amount_paid` in
   `[0, total]` and derives `payment_status` (`paid` iff `amount_paid >= total`).
+- **Overpayment → credit:** paying more than the total keeps `amount_paid` at
+  the total and sweeps the surplus into the customer credit ledger
+  (`crm_customer_credit`), reconciled idempotently per source order. The credit
+  shows on the customer account and can be applied to another order via
+  `crm_apply_credit_to_order` (capped at that order's remaining balance so it
+  can't create a fresh overpayment). Reducing an overpayment that has already
+  been spent elsewhere is rejected.
 - **Cancel:** sets `status = cancelled`, forces `payment_status = unpaid`,
-  `amount_paid = 0`, and reverses any recognised revenue. Cancelled orders are
-  read-only.
+  `amount_paid = 0`, and reverses any recognised revenue. Credit **applied to**
+  the order is returned to the customer; credit the order **generated** is kept
+  but detached from the cancelled order. Cancelled orders are read-only.
 
 Order numbers are generated per account as `ORD-YYYY-NNN`
 (`src/lib/crm-orders.ts`); the `UNIQUE (user_id, order_number)` constraint is the
@@ -278,9 +302,10 @@ that could half-fail:
 |----------|--------|
 | `crm_create_order` | Allocates order number (numeric max, race-safe) + inserts order & items |
 | `crm_save_order_items` | Replaces items, recomputes total, re-derives payment state |
-| `crm_set_order_amount_paid` | Sets cumulative `amount_paid` (deposit/part/full); clamps to `[0, total]`; gates on subscription only when it fully pays |
+| `crm_set_order_amount_paid` | Sets cumulative `amount_paid` (deposit/part/full); keeps it in `[0, total]` and sweeps any surplus to the customer credit ledger; gates on subscription only when it fully pays |
+| `crm_apply_credit_to_order` | Spends a customer's stored credit against an order (capped at available credit and the order's remaining balance); returns the amount applied |
 | `crm_set_order_payment` | Binary mark paid/unpaid — thin wrapper that sets `amount_paid` to total or zero |
-| `crm_cancel_order` | Cancels, zeroes `amount_paid` + reverses revenue |
+| `crm_cancel_order` | Cancels, zeroes `amount_paid` + reverses revenue; returns applied credit and detaches generated credit |
 | `_crm_apply_payment_state` | Internal: the single "fully paid ⇒ recognise, else reverse" rule; keeps `amount_paid ≤ total` |
 | `_crm_recognise_revenue` | Internal: posts income rows; **raises** if the order isn't `paid` (invariant holds even if called directly) or if any product type can't map to a category (no silent under-posting) |
 | `crm_product_income_category` | Single source of truth for the product→category map |

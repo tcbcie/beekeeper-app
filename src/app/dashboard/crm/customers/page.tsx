@@ -55,6 +55,7 @@ export default function CustomersPage() {
         ...r,
         order_count: Number(r.order_count) || 0,
         orders_total: Number(r.orders_total) || 0,
+        credit_balance: Number(r.credit_balance) || 0,
       })) as CustomerSummary[])
     }
     setLoading(false)

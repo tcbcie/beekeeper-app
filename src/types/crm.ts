@@ -37,6 +37,22 @@ export interface CustomerSummary extends Customer {
   order_count: number
   orders_total: number
   last_order_date: string | null
+  /** Available customer credit (SUM of the credit ledger), always >= 0. */
+  credit_balance: number
+}
+
+export type CreditReason = 'order_overpayment' | 'applied_to_order' | 'manual_adjustment'
+
+/** One row of the `crm_customer_credit` ledger. Positive amount = credit added
+ *  (e.g. an order overpayment); negative = credit applied to an order. */
+export interface CustomerCreditEntry {
+  id: string
+  user_id: string
+  customer_id: string
+  order_id: string | null
+  amount: number
+  reason: CreditReason
+  created_at: string
 }
 
 export interface CustomerFormData {

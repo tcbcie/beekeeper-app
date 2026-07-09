@@ -13,7 +13,8 @@ import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadg
 import { formatMoney } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
 import { isPartiallyPaid, summariseCustomerOrders } from '@/lib/crm-orders'
-import type { Customer, Order } from '@/types/crm'
+import { creditBalance, CREDIT_REASON_LABELS } from '@/lib/crm-credit'
+import type { Customer, Order, CustomerCreditEntry } from '@/types/crm'
 
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -22,14 +23,16 @@ export default function CustomerDetailPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
+  const [creditEntries, setCreditEntries] = useState<CustomerCreditEntry[]>([])
   const [isUkNi, setIsUkNi] = useState(false)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
 
   const load = useCallback(async (uid: string) => {
-    const [customerRes, ordersRes, profileRes] = await Promise.all([
+    const [customerRes, ordersRes, creditRes, profileRes] = await Promise.all([
       supabase.from('crm_customers').select('*').eq('id', id).eq('user_id', uid).maybeSingle(),
       supabase.from('crm_orders').select('*').eq('customer_id', id).eq('user_id', uid).order('order_date', { ascending: false }),
+      supabase.from('crm_customer_credit').select('*').eq('customer_id', id).eq('user_id', uid).order('created_at', { ascending: false }),
       supabase.from('profiles').select('is_uk_ni_resident').eq('id', uid).maybeSingle(),
     ])
 
@@ -39,9 +42,11 @@ export default function CustomerDetailPage() {
       return
     }
     if (ordersRes.error) toast.error('Failed to load order history')
+    if (creditRes.error) toast.error('Failed to load credit history')
 
     setCustomer(customerRes.data as Customer)
     setOrders((ordersRes.data || []) as Order[])
+    setCreditEntries((creditRes.data || []) as CustomerCreditEntry[])
     setIsUkNi(profileRes.data?.is_uk_ni_resident || false)
     setLoading(false)
   }, [id, router, toast])
@@ -57,6 +62,12 @@ export default function CustomerDetailPage() {
   }, [router, load])
 
   const stats = useMemo(() => summariseCustomerOrders(orders), [orders])
+  const credit = useMemo(() => creditBalance(creditEntries), [creditEntries])
+  const orderNumberById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const o of orders) m.set(o.id, o.order_number)
+    return m
+  }, [orders])
 
   const handleDelete = async () => {
     if (!userId || !customer) return
@@ -130,7 +141,7 @@ export default function CustomerDetailPage() {
       )}
 
       {/* Lifetime stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <Panel padding="md">
           <p className="text-sm text-text-secondary">Orders</p>
           <p className="text-2xl font-bold text-foreground tabular-nums">{stats.count}</p>
@@ -142,6 +153,12 @@ export default function CustomerDetailPage() {
         <Panel padding="md">
           <p className="text-sm text-text-secondary">Outstanding</p>
           <p className="text-2xl font-bold text-foreground tabular-nums">{formatMoney(stats.outstanding, isUkNi)}</p>
+        </Panel>
+        <Panel padding="md" className={credit > 0 ? 'border-forest-400' : undefined}>
+          <p className="text-sm text-text-secondary">Credit balance</p>
+          <p className={`text-2xl font-bold tabular-nums ${credit > 0 ? 'text-forest-700 dark:text-forest-400' : 'text-foreground'}`}>
+            {formatMoney(credit, isUkNi)}
+          </p>
         </Panel>
       </div>
 
@@ -214,6 +231,42 @@ export default function CustomerDetailPage() {
           </>
         )}
       </div>
+
+      {/* Credit history */}
+      {creditEntries.length > 0 && (
+        <div>
+          <h3 className="text-xl font-semibold text-foreground mb-3">Credit history</h3>
+          <div className="space-y-2">
+            {creditEntries.map((e) => {
+              const linkedOrder = e.order_id ? orderNumberById.get(e.order_id) : null
+              const isCredit = Number(e.amount) >= 0
+              return (
+                <Panel key={e.id} padding="md">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground">
+                        {CREDIT_REASON_LABELS[e.reason]}
+                        {linkedOrder && (
+                          <Link
+                            href={`/dashboard/crm/orders/${e.order_id}`}
+                            className="ml-2 text-sm font-normal text-text-secondary hover:underline"
+                          >
+                            {linkedOrder}
+                          </Link>
+                        )}
+                      </p>
+                      <p className="text-sm text-text-tertiary">{formatCrmDate(e.created_at)}</p>
+                    </div>
+                    <span className={`font-bold tabular-nums shrink-0 ${isCredit ? 'text-forest-700 dark:text-forest-400' : 'text-red-700 dark:text-red-400'}`}>
+                      {isCredit ? '+' : '−'}{formatMoney(Math.abs(Number(e.amount)), isUkNi)}
+                    </span>
+                  </div>
+                </Panel>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
