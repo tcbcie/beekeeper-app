@@ -13,6 +13,8 @@ recorded value as a mini gauge beside each super on the hive card.
 - Display: a small **circular mini gauge** drawn beside each super in the hive card, using the
   **last inspection that actually recorded fullness** (the last known level — fullness is optional,
   so most inspections leave it unrecorded).
+- 3D yard view: a honey-coloured band wraps **all four faces** of each super, rising in proportion
+  to fullness, with a camera-facing **% label** so it reads at any angle without rotating the hive.
 
 ## Data model
 

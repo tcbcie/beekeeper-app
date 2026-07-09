@@ -153,22 +153,38 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
         </mesh>
       ))}
 
-      {/* Honey fill on each super's front (−Z) face, rising from the box's
-          bottom in proportion to the last inspection's recorded fullness. */}
-      {placed.map(l =>
-        l.key.startsWith('super-') && typeof l.fullness === 'number' && l.fullness > 0 ? (
-          (() => {
-            const fillH = (l.fullness / 100) * SUPER_H
-            const bottom = l.centre - SUPER_H / 2
-            return (
-              <mesh key={`fill-${l.key}`} position={[0, bottom + fillH / 2, -(depth / 2 + 0.006)]}>
-                <boxGeometry args={[width * 0.82, fillH, 0.012]} />
+      {/* Honey fill wrapping all four faces of each super, rising from the
+          box's bottom in proportion to the last inspection's recorded
+          fullness, plus a camera-facing % label so it's readable at any
+          angle and obviously means "how full", not a shadow. */}
+      {placed.map(l => {
+        if (!l.key.startsWith('super-') || typeof l.fullness !== 'number') return null
+        const bottom = l.centre - SUPER_H / 2
+        const fillH = (l.fullness / 100) * SUPER_H
+        return (
+          <group key={`fill-${l.key}`}>
+            {l.fullness > 0 && (
+              // Slightly larger footprint than the super so the honey band
+              // shows just outside all four faces (no need to face the entrance).
+              <mesh position={[0, bottom + fillH / 2, 0]}>
+                <boxGeometry args={[width + 0.02, fillH, depth + 0.02]} />
                 <meshStandardMaterial color={COL_SUPER_FILL} />
               </mesh>
-            )
-          })()
-        ) : null,
-      )}
+            )}
+            <Html
+              position={[0, l.centre, 0]}
+              center
+              distanceFactor={9}
+              style={{ pointerEvents: 'none' }}
+              zIndexRange={[10, 0]}
+            >
+              <span className="inline-block rounded bg-amber-700/95 px-1.5 py-0.5 text-xs font-bold text-white shadow whitespace-nowrap">
+                🍯 {Math.round(l.fullness)}%
+              </span>
+            </Html>
+          </group>
+        )
+      })}
 
       {/* Entrance notch on the front (−Z) face at floor level — −Z maps to
           canvas-up, matching the 2D triangle at rotation 0. Always drawn,
