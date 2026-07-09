@@ -76,6 +76,8 @@ export default function InspectionCard({
   const droneLabel = getLevelLabel(inspection.drones_present)
   const propolisLabel = getLevelLabel(inspection.propolis_level)
 
+  const superFullness = Array.isArray(inspection.honey_super_fullness) ? inspection.honey_super_fullness : []
+
   const hasQueenCells = inspection.queen_cups || inspection.swarm_cells || inspection.supercedure_cells || inspection.emergency_cells
   const hasBehaviour = inspection.population_strength > 0 || inspection.temperament_rating > 0 || inspection.brood_pattern_rating > 0 || inspection.swarming_tendency > 0 || inspection.calmness > 0
   const hasHygienic = (inspection.recapping !== 3 && inspection.recapping !== 0) || (inspection.vsh !== 3 && inspection.vsh !== 0) || (inspection.smr !== 3 && inspection.smr !== 0)
@@ -285,6 +287,19 @@ export default function InspectionCard({
                 <span className={`font-bold ${item.value > 0 ? 'text-forest-700 dark:text-forest-400' : 'text-red-700 dark:text-red-400'}`}>
                   {formatSignedAdjustment(item.value)}
                 </span>
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Honey Super Fullness */}
+        {superFullness.length > 0 && (
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide self-center">Super Fullness:</span>
+            {superFullness.map((value, i) => (
+              <span key={`super-fullness-${i}`}>
+                <span className="text-text-secondary">Super {i + 1}:</span>{' '}
+                <span className="font-bold text-amber-700 dark:text-amber-400">{value}%</span>
               </span>
             ))}
           </div>

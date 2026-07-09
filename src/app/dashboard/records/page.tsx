@@ -211,6 +211,7 @@ export default function RecordsPage() {
       frames_brood: editingInspection.frames_brood ?? defaults.frames_brood,
       frames_drawn: editingInspection.frames_drawn ?? defaults.frames_drawn,
       honey_supers: editingInspection.honey_supers ?? defaults.honey_supers,
+      honey_super_fullness: editingInspection.honey_super_fullness ?? defaults.honey_super_fullness,
       drone_frames: editingInspection.drone_frames ?? defaults.drone_frames,
       store_frames: editingInspection.store_frames ?? defaults.store_frames,
       recapping: editingInspection.recapping ?? defaults.recapping,
@@ -669,10 +670,18 @@ export default function RecordsPage() {
         setFetchingWeather(false)
       }
 
+      // Only persist valid 0-100 integers; NULL stays NULL ("not recorded").
+      const sanitisedSuperFullness = Array.isArray(formData.honey_super_fullness)
+        ? formData.honey_super_fullness.map(v =>
+            Number.isFinite(v) ? Math.min(100, Math.max(0, Math.trunc(v))) : 0
+          )
+        : null
+
       const submitData = {
         ...formData,
         drones_present: formData.drones_present === -1 ? null : formData.drones_present,
         propolis_level: formData.propolis_level === -1 ? null : formData.propolis_level,
+        honey_super_fullness: sanitisedSuperFullness,
         image_url: imageUrl,
         weather_temp: weatherData?.temp ?? null,
         weather_condition: weatherData?.condition ?? null,

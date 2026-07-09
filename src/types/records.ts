@@ -86,6 +86,7 @@ export interface Inspection {
   frames_brood: number
   frames_drawn: number
   honey_supers: number
+  honey_super_fullness: number[] | null
   drone_frames: number
   store_frames: number
   recapping: number
@@ -266,6 +267,7 @@ export interface InspectionFormData {
   frames_brood: number
   frames_drawn: number
   honey_supers: number
+  honey_super_fullness: number[] | null
   drone_frames: number
   store_frames: number
   recapping: number
@@ -455,6 +457,7 @@ export function getDefaultInspectionFormData(): InspectionFormData {
     frames_brood: 0,
     frames_drawn: 0,
     honey_supers: 0,
+    honey_super_fullness: null,
     drone_frames: 0,
     store_frames: 0,
     recapping: 0,

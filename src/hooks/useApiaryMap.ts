@@ -45,6 +45,8 @@ export interface MapHive {
   bench_slot: number | null
   // Physical box stack, used by the 3D view to build the hive model.
   configuration: HiveConfiguration | null
+  /** Per-super fullness (0-100) from the most recent inspection; null when not recorded. */
+  last_super_fullness?: number[] | null
   queens?: MapQueen[]
 }
 
@@ -251,6 +253,33 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
               mother: q.mother_id ? motherById.get(q.mother_id) ?? null : null,
             })),
           }))
+        }
+      }
+
+      // Attach each hive's latest recorded per-super fullness for the 3D view.
+      // Rows are newest-first; the first row per hive is its last inspection,
+      // so its value wins (null when that inspection recorded no fullness).
+      const hiveIds = hiveRows.map(h => h.id)
+      if (hiveIds.length > 0) {
+        const { data: fullnessRows, error: fullnessError } = await supabase
+          .from('inspections')
+          .select('hive_id, inspection_date, honey_super_fullness')
+          .in('hive_id', hiveIds)
+          .order('inspection_date', { ascending: false })
+        if (!isCurrent()) return
+        if (fullnessError) {
+          console.error('Error loading super fullness:', fullnessError)
+        } else {
+          const fullnessByHive = new Map<string, number[] | null>()
+          for (const row of fullnessRows || []) {
+            if (!fullnessByHive.has(row.hive_id)) {
+              fullnessByHive.set(
+                row.hive_id,
+                Array.isArray(row.honey_super_fullness) ? (row.honey_super_fullness as number[]) : null,
+              )
+            }
+          }
+          hiveRows = hiveRows.map(h => ({ ...h, last_super_fullness: fullnessByHive.get(h.id) ?? null }))
         }
       }
 

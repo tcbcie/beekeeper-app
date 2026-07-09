@@ -1,0 +1,164 @@
+<h1>Honey Super Fullness — Plan &amp; To-Do</h1>
+
+<p><strong>Goal:</strong> Let a beekeeper record, during an inspection, how full each honey super is
+(0&ndash;100%). The number of controls is <em>dynamic</em> — driven by the hive's current honey-super
+count (one super &rarr; one control, four supers &rarr; four controls). The section is
+<strong>optional and collapsible</strong>, consistent with the other inspection sections. The most
+recent recorded value is then shown graphically as a <strong>mini gauge beside each drawn super</strong>
+on the hive card.</p>
+
+<h2>Design decisions (confirmed with user)</h2>
+<ul>
+  <li><strong>Recording control:</strong> one <code>&lt;input type="range"&gt;</code> <strong>slider (0&ndash;100%)</strong>
+      per super, with the current % shown large beside it. Native range = biggest, most reliable
+      touch target on mobile; suits users 50+ with reduced eyesight.</li>
+  <li><strong>Card display:</strong> a small <strong>circular mini gauge</strong> (pie/arc) drawn beside each
+      honey super, showing the last recorded fullness. No fill inside the box.</li>
+</ul>
+
+<h2>Data model (follows existing precedent)</h2>
+<p>The established pattern for optional, variable-length inspection data is a <strong>nullable
+<code>jsonb</code> column typed as a small array</strong> — exactly how <code>brood_frames_per_box</code>
+already works. We mirror it:</p>
+<ul>
+  <li>New column <code>inspections.honey_super_fullness</code> — <code>jsonb</code>, nullable, default
+      <code>NULL</code>. Holds <code>number[]</code>, one 0&ndash;100 integer per super, index 0 = bottom super.</li>
+  <li><code>NULL</code> = "not recorded" (section never opened). This cleanly distinguishes
+      <em>not recorded</em> from a genuinely recorded <em>0%</em>.</li>
+  <li>How many controls to show = the hive's current <code>configuration.honey_supers</code> count. When
+      editing an older inspection whose stored array is longer, show <code>max(stored.length, current count)</code>
+      so no recorded data is hidden.</li>
+</ul>
+
+<h2>To-Do</h2>
+
+<h3>1. Database</h3>
+<ul>
+  <li>[ ] Add column via Supabase MCP migration (direct DB connection, no SQL-file parsing):
+      <code>ALTER TABLE public.inspections ADD COLUMN honey_super_fullness jsonb;</code></li>
+  <li>[ ] Run <code>get_advisors</code> after DDL to confirm no new security/perf warnings.</li>
+</ul>
+
+<h3>2. Types &mdash; <code>src/types/records.ts</code></h3>
+<ul>
+  <li>[ ] Add <code>honey_super_fullness: number[] | null</code> to <code>Inspection</code>.</li>
+  <li>[ ] Add <code>honey_super_fullness: number[] | null</code> to <code>InspectionFormData</code>.</li>
+  <li>[ ] Default <code>honey_super_fullness: null</code> in <code>getDefaultInspectionFormData()</code>.</li>
+</ul>
+
+<h3>3. Inspection form &mdash; <code>src/components/records/forms/InspectionForm.tsx</code></h3>
+<ul>
+  <li>[ ] Derive the selected hive's honey-super count (from the hive's <code>configuration.honey_supers</code>).
+      Confirm the form already has access to the selected hive; if not, pass the count in as a prop from
+      the records page (which already loads hives).</li>
+  <li>[ ] Add a collapsible <strong>&ldquo;Honey Super Fullness&rdquo;</strong> section using the exact existing
+      pattern (Button toggle + Chevron + <code>{expanded &amp;&amp; (...)}</code> body, <code>md:col-span-2</code>).</li>
+  <li>[ ] Render one slider per super (0&ndash;100, step 5), each labelled &ldquo;Super N&rdquo; with the live %
+      shown in large text. Big thumb / tall track for accessibility.</li>
+  <li>[ ] On first expand (or in edit mode) seed the array to zeros (or the stored values) so a value exists;
+      leave <code>honey_super_fullness = null</code> if the user never opens the section.</li>
+  <li>[ ] Auto-expand in edit mode when <code>initialData.honey_super_fullness</code> is non-null
+      (same pattern as other sections).</li>
+  <li>[ ] Hide the section entirely when the hive has 0 honey supers (nothing to record).</li>
+</ul>
+
+<h3>4. Save handler &mdash; <code>src/app/dashboard/records/page.tsx</code></h3>
+<ul>
+  <li>[ ] Verify <code>honey_super_fullness</code> flows through the existing <code>...formData</code> spread
+      into insert/update (like <code>brood_frames_per_box</code>). No sentinel conversion needed — it is
+      either an array or <code>null</code>. Trim the array to the current super count on save to avoid stale
+      trailing entries.</li>
+</ul>
+
+<h3>5. Read-only inspection card &mdash; <code>src/components/records/cards/InspectionCard.tsx</code></h3>
+<ul>
+  <li>[ ] When <code>honey_super_fullness</code> is present, show a compact &ldquo;Super fullness&rdquo; line
+      (e.g. <code>Super 1: 60% &middot; Super 2: 80%</code>). Optional but keeps parity with other sections.</li>
+</ul>
+
+<h3>6. Hive card gauge &mdash; hives list</h3>
+<ul>
+  <li>[ ] In <code>src/app/dashboard/hives/page.tsx</code> (<code>fetchHives</code> enrichment), attach the
+      <strong>latest inspection's</strong> <code>honey_super_fullness</code> to each enriched hive (the page
+      already fetches inspection aggregates per hive — extend that select/derivation).</li>
+  <li>[ ] New tiny presentational component <code>src/components/hive/SuperFullnessGauge.tsx</code>: a small
+      SVG circular gauge (single value 0&ndash;100) with the % label. Theme-aware, honey colour.</li>
+  <li>[ ] In <code>src/components/hive/HiveListCard.tsx</code> honey-super <code>.map()</code> (lines ~297&ndash;302),
+      render the mini gauge beside each super using <code>fullness[i]</code>. Show nothing (or a muted dash)
+      when no value recorded for that index.</li>
+</ul>
+
+<h3>7. Docs &amp; version</h3>
+<ul>
+  <li>[ ] Add <code>docs/features/honey-super-fullness.md</code> describing the feature, data model, and files.</li>
+  <li>[ ] Bump app version per the versioning skill.</li>
+</ul>
+
+<h2>Out of scope / notes</h2>
+<ul>
+  <li>3D yard map (<code>Hive3D.tsx</code>) gauge overlay — deliberately excluded to keep the change small;
+      can be a follow-up.</li>
+  <li>No changes to the existing <code>honey_supers</code> given/taken adjustment logic; fullness is a
+      separate, purely descriptive field.</li>
+</ul>
+
+<h2>Review — completed</h2>
+
+<p><strong>Status:</strong> Implemented, including the 3D yard view (added at user request). Version bumped
+1.9.3 &rarr; 1.10.0 with a changelog entry.</p>
+
+<h3>What changed</h3>
+<ul>
+  <li><strong>Database:</strong> added nullable <code>jsonb</code> column
+      <code>inspections.honey_super_fullness</code> via Supabase MCP migration
+      (<code>add_honey_super_fullness_to_inspections</code>). No advisor warnings introduced (additive
+      nullable column, no RLS/policy surface).</li>
+  <li><strong>Types</strong> (<code>src/types/records.ts</code>, <code>src/types/hive.ts</code>,
+      <code>src/hooks/useApiaryMap.ts</code>): added <code>honey_super_fullness: number[] | null</code> to
+      <code>Inspection</code>/<code>InspectionFormData</code> (+ default <code>null</code>),
+      <code>last_super_fullness</code> to <code>Hive</code> and <code>MapHive</code>.</li>
+  <li><strong>Inspection form</strong> (<code>InspectionForm.tsx</code>): new collapsible
+      &ldquo;Honey Super Fullness&rdquo; section, one 0&ndash;100 slider per super, count driven by the
+      selected hive&rsquo;s <code>configuration.honey_supers</code> (and never fewer than an edited
+      inspection&rsquo;s stored values). The array is created lazily — an untouched section stays
+      <code>null</code> (&ldquo;not recorded&rdquo;) so it never shows a misleading 0% gauge. Auto-expands
+      in edit mode when data exists; hidden entirely when the hive has no supers.</li>
+  <li><strong>Save</strong> (<code>records/page.tsx</code>): values sanitised to whole 0&ndash;100 integers
+      (or <code>null</code>) before insert/update; edit-mode form seeding carries the field through.</li>
+  <li><strong>Read-only inspection card</strong> (<code>InspectionCard.tsx</code>): compact
+      &ldquo;Super Fullness: Super 1: 60% &middot; &hellip;&rdquo; line when recorded.</li>
+  <li><strong>Hive card 2D</strong> (<code>hives/page.tsx</code> + new
+      <code>SuperFullnessGauge.tsx</code> + <code>HiveListCard.tsx</code>): the latest inspection&rsquo;s
+      fullness is attached per hive and drawn as a small amber ring gauge beside each super. Supers with
+      no recorded value keep their original centred label.</li>
+  <li><strong>Yard 3D</strong> (<code>useApiaryMap.ts</code> + <code>Hive3D.tsx</code>): latest fullness
+      fetched per hive; each super shows a proportional honey-coloured fill rising from its base on the
+      front face — the 3D-appropriate analogue of the ring gauge (avoids per-super HTML overlays that
+      would clutter a busy yard).</li>
+</ul>
+
+<h3>Defensive / robustness notes</h3>
+<ul>
+  <li><code>null</code> vs <code>[]</code>/<code>0</code> kept strictly distinct end-to-end: not-recorded
+      never renders as 0%.</li>
+  <li>All fullness reads guard with <code>Array.isArray</code> + <code>Number.isFinite</code> and clamp to
+      0&ndash;100, so malformed/legacy JSON can&rsquo;t crash a render (consistent with the
+      PostgREST-embed-shape caution in project memory).</li>
+  <li>3D fetch mirrors the 2D card&rsquo;s &ldquo;newest inspection wins&rdquo; rule and degrades
+      gracefully (logs, doesn&rsquo;t throw) if the query fails.</li>
+</ul>
+
+<h3>Known trade-offs (documented, intentional)</h3>
+<ul>
+  <li>Slider count reflects the hive&rsquo;s super count at the moment of recording; a super added via the
+      same inspection&rsquo;s Given/Taken adjustment isn&rsquo;t reflected until the hive count updates on save.</li>
+  <li>The card gauge always reflects the <em>most recent</em> inspection — if that inspection didn&rsquo;t
+      record fullness, no gauge shows even if an earlier one did (matches &ldquo;based on the last
+      inspection record&rdquo;).</li>
+</ul>
+
+<h3>Not done here</h3>
+<ul>
+  <li>Build/commit/push left to you per project workflow. Please test the inspection form (create + edit),
+      the hive card gauges, and the 3D yard view.</li>
+</ul>

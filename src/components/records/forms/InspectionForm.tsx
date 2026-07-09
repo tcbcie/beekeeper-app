@@ -143,6 +143,7 @@ export default function InspectionForm({
   const [dronesExpanded, setDronesExpanded] = useState(false)
   const [propolisExpanded, setPropolisExpanded] = useState(false)
   const [givenTakenExpanded, setGivenTakenExpanded] = useState(false)
+  const [superFullnessExpanded, setSuperFullnessExpanded] = useState(false)
   const [hygienicBehaviourExpanded, setHygienicBehaviourExpanded] = useState(false)
   const [diseaseExpanded, setDiseaseExpanded] = useState(false)
   const [followUpExpanded, setFollowUpExpanded] = useState(false)
@@ -278,6 +279,33 @@ export default function InspectionForm({
     return typeof previousValue === 'number' && previousValue > 0 ? previousValue : null
   }, [previousRightSizedFramesByHive])
 
+  // Number of honey supers on the selected hive drives how many fullness sliders show.
+  // When editing an older inspection whose stored array is longer, keep every recorded value.
+  const honeySuperSliderCount = useMemo(() => {
+    const configuredSupers = hives.find(hive => hive.id === formData.hive_id)?.configuration?.honey_supers ?? 0
+    const recorded = formData.honey_super_fullness?.length ?? 0
+    return Math.max(Math.max(0, Math.trunc(configuredSupers)), recorded)
+  }, [hives, formData.hive_id, formData.honey_super_fullness])
+
+  // Clamp a slider value to a whole 0-100 percentage.
+  const clampFullness = (value: number): number => {
+    if (!Number.isFinite(value)) return 0
+    return Math.min(100, Math.max(0, Math.trunc(value)))
+  }
+
+  // Record one super's fullness. The array is created lazily so an untouched
+  // section stays null ("not recorded") and never renders a misleading 0% gauge.
+  const setSuperFullness = useCallback((index: number, value: number) => {
+    setFormData(prev => {
+      const next = Array.from({ length: honeySuperSliderCount }, (_, i) => {
+        const existing = prev.honey_super_fullness?.[i]
+        return typeof existing === 'number' ? existing : 0
+      })
+      next[index] = value
+      return { ...prev, honey_super_fullness: next }
+    })
+  }, [honeySuperSliderCount])
+
   // Update form data when initialData changes
   useEffect(() => {
     if (!initialData) {
@@ -288,6 +316,7 @@ export default function InspectionForm({
         setFormApiaryId(selectedApiaryId)
         setDronesExpanded(false)
         setPropolisExpanded(false)
+        setSuperFullnessExpanded(false)
         setFollowUpExpanded(false)
         setFollowUpDrafts([])
         resetImage()
@@ -320,6 +349,9 @@ export default function InspectionForm({
     )
     setPropolisExpanded(
       initialData.propolis_level !== LEVEL_NOT_RECORDED && initialData.propolis_level !== null
+    )
+    setSuperFullnessExpanded(
+      Array.isArray(initialData.honey_super_fullness) && initialData.honey_super_fullness.length > 0
     )
 
     if (initialData.image_url) {
@@ -1294,6 +1326,54 @@ export default function InspectionForm({
             </div>
           )}
         </div>
+
+        {/* Honey Super Fullness Section - Collapsible (only when the hive has supers) */}
+        {honeySuperSliderCount > 0 && (
+          <div className="md:col-span-2 rounded-lg border border-border">
+            <Button
+              unstyled
+              type="button"
+              onClick={() => setSuperFullnessExpanded(!superFullnessExpanded)}
+              className="w-full p-4 flex items-center justify-between hover:bg-surface-elevated transition-colors rounded-lg"
+            >
+              <div className="text-left">
+                <h4 className="text-sm font-semibold text-foreground">Honey Super Fullness</h4>
+                <p className="mt-1 text-xs text-text-tertiary">Estimate how full each honey super is (0&ndash;100%).</p>
+              </div>
+              {superFullnessExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </Button>
+            {superFullnessExpanded && (
+              <div className="space-y-4 p-4 pt-0">
+                {Array.from({ length: honeySuperSliderCount }).map((_, i) => {
+                  const value = clampFullness(formData.honey_super_fullness?.[i] ?? 0)
+                  return (
+                    <div key={`super-fullness-${i}`} className="rounded-xl border border-border bg-surface-secondary/60 p-3">
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <label htmlFor={`super-fullness-${i}`} className="text-sm font-medium text-text-secondary">
+                          🍯 Super {i + 1}
+                        </label>
+                        <span className="min-w-[3.5rem] rounded-full bg-amber-100 px-3 py-1 text-center text-lg font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                          {value}%
+                        </span>
+                      </div>
+                      <input
+                        id={`super-fullness-${i}`}
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={value}
+                        onChange={(e) => setSuperFullness(i, clampFullness(Number(e.target.value)))}
+                        aria-label={`Super ${i + 1} fullness percentage`}
+                        className="h-6 w-full cursor-pointer accent-amber-600 touch-manipulation"
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Disease Section - Collapsible */}
         <div className="md:col-span-2 rounded-lg border border-border">
