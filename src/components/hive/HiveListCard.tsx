@@ -299,7 +299,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
      excluder, closest to the brood); higher numbers stack above it, so
      render top-down from the highest number. Fullness index = number − 1. */}
  {Array.from({ length: hive.configuration.honey_supers || 0 }).map((_, row) => {
- const superNumber = (hive.configuration.honey_supers || 0) - row
+ const superNumber = (hive.configuration?.honey_supers || 0) - row
  const fullness = hive.last_super_fullness?.[superNumber - 1]
  const hasFullness = typeof fullness === 'number' && Number.isFinite(fullness)
  return (
