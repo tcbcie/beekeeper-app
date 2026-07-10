@@ -1,67 +1,102 @@
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Plan — Nuc Number Search (Nuc Setup tab)</title>
-  <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; color: #1f2937; line-height: 1.55; }
-    h1 { font-size: 1.5rem; }
-    h2 { font-size: 1.15rem; margin-top: 1.8rem; border-bottom: 1px solid #e5e7eb; padding-bottom: .3rem; }
-    code { background: #f3f4f6; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
-    .todo { list-style: none; padding-left: 0; }
-    .todo li { margin: .4rem 0; }
-    .file { color: #047857; font-weight: 600; }
-    .note { background: #fffbeb; border-left: 4px solid #f59e0b; padding: .6rem .9rem; border-radius: 4px; }
-    .scope { background: #ecfdf5; border-left: 4px solid #10b981; padding: .6rem .9rem; border-radius: 4px; }
-  </style>
+<meta charset="utf-8">
+<title>Plan — 3D hive super fullness: side gauge column</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1f2937; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.1rem; margin-top: 1.8rem; border-bottom: 2px solid #fbbf24; padding-bottom: .2rem; }
+  code { background: #f3f4f6; padding: .1rem .3rem; border-radius: .2rem; font-size: .9em; }
+  .problem { background: #fef2f2; border-left: 4px solid #ef4444; padding: .6rem 1rem; }
+  .goal { background: #ecfdf5; border-left: 4px solid #10b981; padding: .6rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  ul.todo li { margin: .4rem 0; }
+  ul.todo li::before { content: "\2610  "; }
+  ul.todo li.done::before { content: "\2611  "; }
+  pre.mock { background: #1f2937; color: #e5e7eb; padding: 1rem; border-radius: .4rem; font-size: .85rem; overflow-x: auto; }
+</style>
 </head>
 <body>
-  <h1>Plan — Search a Nuc by Number on the Nuc Setup tab</h1>
+<h1>3D hive — super fullness readability fix</h1>
 
-  <h2>Goal</h2>
-  <p>On <strong>Queen Rearing &rarr; Nuc Setup</strong>, let the user type a nuc number (e.g. <code>A-06</code>) into a search box and have the list instantly narrow to the matching nuc so its record can be pulled up.</p>
+<h2>Problem</h2>
+<div class="problem">
+<p>In <code>src/components/apiaries/Hive3D.tsx</code> each honey super renders its
+own floating <code>%</code> badge anchored at that super's vertical centre
+(lines 160&ndash;187). Supers are only <code>0.16</code> units tall, so the
+badges pile on top of one another and become unreadable at two supers, worse at
+three (see reported screenshot). The honey-fill band already conveys fullness
+visually; the stacked numbers are the noise.</p>
+</div>
 
-  <h2>What I found</h2>
-  <ul>
-    <li>The tab is rendered by <span class="file">src/components/batches/MatingNucsTab.tsx</span>. Nucs are a flat, collapsible list (<code>nucs.map</code>, ~line&nbsp;1492). No search box exists today.</li>
-    <li>The searchable identifier is <code>nuc_number</code> (free-text), with <code>reference_code</code> as a fallback for unnumbered bulk nucs.</li>
-    <li>A nuc&rsquo;s &ldquo;record&rdquo; is the inline expandable card (<code>toggleExpand</code> / <code>expandedNucId</code>) &mdash; there is no separate detail page, so &ldquo;pull up the record&rdquo; = filter to it and expand it.</li>
-    <li>No DB / RLS / type changes are needed &mdash; this is a pure client-side filter over already-loaded nucs.</li>
-  </ul>
+<h2>Chosen direction (confirmed)</h2>
+<div class="goal">
+<p><strong>One side gauge column.</strong> Keep the honey-fill bands on the boxes.
+Replace the N overlapping per-super badges with a <em>single</em> compact
+vertical gauge rendered beside the stack &mdash; one labelled segment per super,
+ordered top&rarr;bottom. One DOM overlay, laid out with flexbox, so segments can
+never collide regardless of super count.</p>
+</div>
 
-  <h2>Proposed change (single file)</h2>
-  <ul class="todo">
-    <li>&#9744; Add a <code>nucSearch</code> state (string, default <code>''</code>).</li>
-    <li>&#9744; Add a compact search input with a magnifier icon and a clear (&times;) button, placed just above the nucs list (below the &ldquo;Nucs by Batch&rdquo; summary). Mobile-first, full-width on small screens. Honours the 50+ minimum font sizes.</li>
-    <li>&#9744; Derive <code>visibleNucs = nucs.filter(...)</code> matching the trimmed, case-insensitive search against <code>nuc_number</code> and <code>reference_code</code>. Render <code>visibleNucs</code> instead of <code>nucs</code>.</li>
-    <li>&#9744; Point bulk-select (<code>selectableNucs</code> / Select-all) at the visible list so &ldquo;Select all&rdquo; matches what is shown while searching.</li>
-    <li>&#9744; When the search yields exactly one match, auto-expand that nuc&rsquo;s card so the record opens immediately.</li>
-    <li>&#9744; Update the empty-state copy to say &ldquo;No nucs match &lsquo;&hellip;&rsquo;&rdquo; when a search is active.</li>
-    <li>&#9744; Update <span class="file">docs/features</span> with a short note on the new nuc search.</li>
-  </ul>
+<pre class="mock">        [ 30-DA ]
+  &#9484;&#9472;&#9472;&#9472;&#9472;&#9488;   &#9143; 100%   (top super)
+  &#9474;////&#9474;   &#9147;
+  &#9500;&#9472;&#9472;&#9472;&#9472;&#9508;   &#9143;  70%   (lower super)
+  &#9474;//  &#9474;   &#9147;
+  &#9492;&#9472;&#9472;&#9472;&#9472;&#9496;
+  fill band on box  +  one gauge column beside it</pre>
 
-  <div class="scope">
-    <strong>Scope guardrails:</strong> one component touched; no schema, hook, type, or routing changes; existing batch filter and Retired toggle keep working (search is applied on top of whatever list is loaded). Search is scoped to the currently loaded active/retired list &mdash; clearing the batch filter searches all nucs.
-  </div>
+<h2>Todo</h2>
+<ul class="todo">
+  <li class="done">Derive a <code>supers</code> list (placed layers with numeric fullness) and the vertical centre of the super band.</li>
+  <li class="done">Remove the per-super <code>&lt;Html&gt;</code> <code>%</code> badge loop (keep the honey-fill mesh loop untouched).</li>
+  <li class="done">Add ONE <code>&lt;Html&gt;</code> gauge column, anchored beside the stack (local +X), billboarded/camera-facing, listing supers top&rarr;bottom &mdash; each row a tiny vertical fill bar + <code>%</code> label.</li>
+  <li class="done">Respect the 50+ low-vision minimum: legible font size, bold, high-contrast amber-on-white.</li>
+  <li class="done">Render nothing when a hive has no supers with recorded fullness (no empty widget).</li>
+  <li class="done">Update <code>docs/features</code> for the yard 3D view.</li>
+  <li>Prompt user to test the build (do not build locally).</li>
+  <li class="done">Add review section below.</li>
+</ul>
 
-  <div class="note" style="margin-top:1rem;">
-    <strong>Decision to confirm:</strong> Should search look across <em>all</em> active nucs regardless of the current batch filter, or only within the batch you&rsquo;ve selected? Default plan: search whatever is currently loaded (respects the active batch filter / Retired toggle).
-  </div>
+<h2>Scope guard</h2>
+<p>Only <code>Hive3D.tsx</code> changes (plus a feature doc). No data-layer, no
+schema, no changes to the 2D card or <code>SuperFullnessGauge</code>. Smallest
+possible diff.</p>
 
-  <h2>Review</h2>
-  <p>Implemented as a single-file, client-side change in <span class="file">src/components/batches/MatingNucsTab.tsx</span>. No DB, type, hook, or routing changes.</p>
-  <ul>
-    <li>&#9745; Added <code>nucSearch</code> state and imported <code>useMemo</code> + the <code>Search</code> icon.</li>
-    <li>&#9745; Added a full-width search input (magnifier + clear button) above the nuc list, with <code>text-base</code> sizing for the 50+ audience and <code>aria-label</code>s.</li>
-    <li>&#9745; Derived <code>visibleNucs</code> via <code>useMemo</code> (case-insensitive match on <code>nuc_number</code> / <code>reference_code</code>); the list and empty state now render from it.</li>
-    <li>&#9745; Per your choice, typing auto-clears the active batch filter so search spans <strong>all active nucs</strong>.</li>
-    <li>&#9745; Bulk-select (<code>selectableNucs</code> / Select-all) now derives from the visible list, so it matches what is shown while searching.</li>
-    <li>&#9745; A single match auto-expands that nuc&rsquo;s record card (effect guarded so it only fires while searching, never conflicting with the existing deep-link highlight).</li>
-    <li>&#9745; Search-aware empty state: &ldquo;No nucs match &lsquo;&hellip;&rsquo;&rdquo;.</li>
-    <li>&#9745; Documented in <span class="file">docs/features/mating-nucs.md</span> (new &ldquo;Nuc Search&rdquo; section).</li>
-    <li>&#9745; <strong>Follow-up (approved):</strong> search now also reaches <strong>retired</strong> nucs without the &ldquo;Show Retired&rdquo; toggle. While a search is active, <code>fetchNucs</code> drops the retired filter so both active and retired load. Gated on an <code>isSearching</code> boolean added to the <code>useCallback</code> deps, so it refetches only when search starts/ends &mdash; not on every keystroke.</li>
-  </ul>
-  <p class="note"><strong>Please test:</strong> on Queen Rearing &rarr; Nuc Setup, type a nuc number (e.g. <code>A-06</code>) &mdash; the list should narrow, the batch filter should clear, and a single match should open its card. Clearing the box restores the full list.</p>
+<h2>Review</h2>
+<p>Single file of application code changed: <code>src/components/apiaries/Hive3D.tsx</code>
+(plus a feature-doc update in <code>docs/features/apiary-3d-view.md</code>).</p>
+<ul>
+  <li><strong>Root cause removed.</strong> The old code rendered one
+  <code>&lt;Html&gt;</code> <code>%</code> badge per super, each anchored at that
+  super's centre. Because supers are only <code>0.16</code> units tall, the
+  badges overlapped &mdash; unreadable at two supers, worse at three.</li>
+  <li><strong>New readout.</strong> One camera-facing gauge column now sits beside
+  the stack. It is a single flexbox <code>&lt;Html&gt;</code> with one row per
+  super (top super first): a small vertical fill bar + a bold <code>%</code>.
+  Because it is one DOM element with stacked flex rows, the rows can never
+  collide, regardless of super count.</li>
+  <li><strong>Always on the camera side.</strong> The gauge is anchored on the
+  stack's vertical axis (<code>position={[0, gaugeCentreY, 0]}</code>) so the
+  hive's stored rotation can't swing it out of view, then shifted screen-right in
+  CSS (<code>translateX(calc(50% + 44px))</code>). Since the overlay billboards
+  toward the viewer, it stays on the camera-facing side however the hive or
+  camera is turned; the px offset scales with the hive via
+  <code>distanceFactor</code>, so it clears the box at every zoom.</li>
+  <li><strong>Honey-fill bands kept.</strong> The four-face fill band per super is
+  unchanged &mdash; it remains the glanceable indicator. Fill still suppressed at
+  0% / no recorded fullness.</li>
+  <li><strong>Low-vision.</strong> <code>text-sm</code> bold amber-900 on white
+  with an amber ring; <code>tabular-nums</code> so numbers don't jitter.</li>
+  <li><strong>Empty state.</strong> A hive with no measured supers renders no
+  gauge column (guarded by <code>supersTopFirst.length &gt; 0</code>).</li>
+  <li><strong>Scope.</strong> No data-layer, schema, 2D-card, or
+  <code>SuperFullnessGauge</code> changes. Smallest viable diff.</li>
+</ul>
+<p><strong>Please test the build</strong> (I did not build locally): open a yard's
+3D view with hives that have 2&ndash;3 honey supers of differing fullness and
+confirm the gauge column beside each stack is clearly readable and no longer
+overlaps.</p>
 </body>
 </html>

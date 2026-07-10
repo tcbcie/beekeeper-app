@@ -105,6 +105,17 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
   })
   const totalHeight = cursor
 
+  // Supers that have a recorded fullness, plus the vertical centre of the super
+  // band — used to place one consolidated gauge column beside the stack instead
+  // of a badge per super (which overlap once supers are stacked).
+  const superLayers = placed.filter(l => l.key.startsWith('super-') && typeof l.fullness === 'number')
+  const superCentres = superLayers.map(l => l.centre)
+  const gaugeCentreY = superCentres.length
+    ? (Math.min(...superCentres) + Math.max(...superCentres)) / 2
+    : 0
+  // Display order is top super first, matching how the beekeeper sees the stack.
+  const supersTopFirst = [...superLayers].reverse()
+
   // Entrance notch: full width normally, pinched by an entrance reducer.
   const notchWidth = width * (config.entrance_reducer ? 0.16 : 0.4)
   // Entrance/Boardman feeders sit as a small block in front of the entrance.
@@ -153,38 +164,62 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
         </mesh>
       ))}
 
-      {/* Honey fill wrapping all four faces of each super, rising from the
-          box's bottom in proportion to the last inspection's recorded
-          fullness, plus a camera-facing % label so it's readable at any
-          angle and obviously means "how full", not a shadow. */}
+      {/* Honey fill wrapping all four faces of each super, rising from the box's
+          bottom in proportion to the last inspection's recorded fullness. A
+          slightly larger footprint shows the honey band just outside all four
+          faces (no need to face the entrance). */}
       {placed.map(l => {
-        if (!l.key.startsWith('super-') || typeof l.fullness !== 'number') return null
+        if (!l.key.startsWith('super-') || typeof l.fullness !== 'number' || l.fullness <= 0) return null
         const bottom = l.centre - SUPER_H / 2
         const fillH = (l.fullness / 100) * SUPER_H
         return (
-          <group key={`fill-${l.key}`}>
-            {l.fullness > 0 && (
-              // Slightly larger footprint than the super so the honey band
-              // shows just outside all four faces (no need to face the entrance).
-              <mesh position={[0, bottom + fillH / 2, 0]}>
-                <boxGeometry args={[width + 0.02, fillH, depth + 0.02]} />
-                <meshStandardMaterial color={COL_SUPER_FILL} />
-              </mesh>
-            )}
-            <Html
-              position={[0, l.centre, 0]}
-              center
-              distanceFactor={9}
-              style={{ pointerEvents: 'none' }}
-              zIndexRange={[10, 0]}
-            >
-              <span className="inline-block rounded bg-amber-700/95 px-1.5 py-0.5 text-xs font-bold text-white shadow whitespace-nowrap">
-                🍯 {Math.round(l.fullness)}%
-              </span>
-            </Html>
-          </group>
+          <mesh key={`fill-${l.key}`} position={[0, bottom + fillH / 2, 0]}>
+            <boxGeometry args={[width + 0.02, fillH, depth + 0.02]} />
+            <meshStandardMaterial color={COL_SUPER_FILL} />
+          </mesh>
         )
       })}
+
+      {/* One consolidated gauge column beside the stack: a compact bar + %
+          per super, top super first. A single camera-facing overlay laid out
+          with flexbox, so rows can never overlap however many supers there are
+          — unlike a badge anchored on each (thin) super box.
+          Anchored on the stack's vertical axis (x=0, z=0) so the hive's own
+          rotation can't swing it out of view, then shifted to screen-right in
+          CSS — because the overlay always billboards toward the viewer, that
+          keeps the gauge on the camera-facing side whichever way the hive or
+          camera is turned. The px offset scales with the hive via
+          distanceFactor, so it clears the box at every zoom. */}
+      {supersTopFirst.length > 0 && (
+        <Html
+          position={[0, gaugeCentreY, 0]}
+          center
+          distanceFactor={9}
+          style={{ pointerEvents: 'none' }}
+          zIndexRange={[10, 0]}
+        >
+          <div
+            className="flex flex-col gap-1 rounded-md bg-white/95 px-1.5 py-1 shadow ring-1 ring-amber-300"
+            style={{ transform: 'translateX(calc(50% + 44px))' }}
+          >
+            {supersTopFirst.map(l => {
+              // fullness is guaranteed finite 0-100 by buildStack; coalesce
+              // instead of casting so a broken invariant degrades to 0%, never NaN%.
+              const pct = Math.round(l.fullness ?? 0)
+              return (
+                <div key={`gauge-${l.key}`} className="flex items-center gap-1">
+                  <span className="relative block h-4 w-2 shrink-0 overflow-hidden rounded-sm bg-amber-100">
+                    <span className="absolute inset-x-0 bottom-0 bg-amber-600" style={{ height: `${pct}%` }} />
+                  </span>
+                  <span className="text-sm font-bold tabular-nums text-amber-900 whitespace-nowrap leading-none">
+                    {pct}%
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </Html>
+      )}
 
       {/* Entrance notch on the front (−Z) face at floor level — −Z maps to
           canvas-up, matching the 2D triangle at rotation 0. Always drawn,

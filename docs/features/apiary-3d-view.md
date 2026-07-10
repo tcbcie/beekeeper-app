@@ -19,6 +19,15 @@ accessibility pass.
 * **Model:** `Hive3D.tsx` builds the box stack bottom→top (floor → full brood → half brood →
   excluder → supers), mirroring the 2D `HiveListCard` order and colours. Nucs render at half width.
   No 3D assets — just scaled cuboids, so there is nothing to author or store.
+* **Super fullness:** each honey super shows its last recorded fullness two ways — a honey-coloured
+  fill band rising up all four faces of the box (glanceable), and one consolidated gauge column
+  beside the stack listing every super top→bottom as a bar + `%`. A single camera-facing `Html`
+  laid out with flexbox, so the rows never overlap however many supers are stacked (the earlier
+  per-super badges collided once two or more supers were present). The gauge is anchored on the
+  stack's vertical axis (`x=0, z=0`) and shifted to screen-right in CSS, so it stays on the
+  camera-facing side whichever way the hive or camera is turned — the hive's own rotation can't
+  hide it. Supers with no recorded fullness, or 0%, draw no fill band; a hive with no measured
+  supers shows no gauge column.
 * **Scene:** `YardScene3D.tsx` renders a react-three-fiber `Canvas` with `frameloop="demand"`
   (renders only on interaction, to save battery), a grass ground-plane + reference grid, and
   `OrbitControls` (pan disabled, tilt clamped above the horizon, min/max zoom distance).
