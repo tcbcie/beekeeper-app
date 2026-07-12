@@ -382,8 +382,9 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </div>
  )}
 
- {/* Edit/Delete are owner-only; team members can view shared hives but not modify them (matches hives RLS). */}
- {hive.user_id === userId && (
+ {/* Edit is available to the owner and to team members of the shared apiary
+     (matches hives RLS). Delete stays owner-only. */}
+ {(isOwner || hive.is_shared) && (
  <div className="flex gap-2">
  <Button
  onClick={() => onEdit(hive)}
@@ -391,12 +392,14 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  >
  Edit
  </Button>
+ {isOwner && (
  <Button
  onClick={() => onDelete(hive.id)}
  className="flex-1 px-3 py-2 text-sm bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/70 border border-red-300 dark:border-red-800 min-h-[44px]"
  >
  Delete
  </Button>
+ )}
  </div>
  )}
  </div>

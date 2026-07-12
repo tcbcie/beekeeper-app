@@ -1,102 +1,95 @@
 <!DOCTYPE html>
 <html lang="en-GB">
 <head>
-<meta charset="utf-8">
-<title>Plan — 3D hive super fullness: side gauge column</title>
-<style>
-  body { font-family: system-ui, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; color: #1f2937; }
-  h1 { font-size: 1.4rem; }
-  h2 { font-size: 1.1rem; margin-top: 1.8rem; border-bottom: 2px solid #fbbf24; padding-bottom: .2rem; }
-  code { background: #f3f4f6; padding: .1rem .3rem; border-radius: .2rem; font-size: .9em; }
-  .problem { background: #fef2f2; border-left: 4px solid #ef4444; padding: .6rem 1rem; }
-  .goal { background: #ecfdf5; border-left: 4px solid #10b981; padding: .6rem 1rem; }
-  ul.todo { list-style: none; padding-left: 0; }
-  ul.todo li { margin: .4rem 0; }
-  ul.todo li::before { content: "\2610  "; }
-  ul.todo li.done::before { content: "\2611  "; }
-  pre.mock { background: #1f2937; color: #e5e7eb; padding: 1rem; border-radius: .4rem; font-size: .85rem; overflow-x: auto; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plan — Team-member hive setup editing &amp; super auto-sync</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.55; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+    h1 { font-size: 1.5rem; } h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 2px solid #f2c94c; padding-bottom: .25rem; }
+    code { background: #f4f4f4; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+    pre { background: #f7f7f7; padding: .75rem 1rem; border-radius: 8px; overflow-x: auto; border-left: 4px solid #f2c94c; }
+    .box { background: #fff8e1; border: 1px solid #f2c94c; border-radius: 8px; padding: .75rem 1rem; margin: 1rem 0; }
+    .root { background: #fdecea; border: 1px solid #e57373; border-radius: 8px; padding: .75rem 1rem; }
+    ul.todo { list-style: none; padding-left: 0; }
+    ul.todo li { margin: .4rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: .5rem 0; }
+    th, td { border: 1px solid #ddd; padding: .4rem .6rem; text-align: left; font-size: .92em; }
+    th { background: #faf5e6; }
+  </style>
 </head>
 <body>
-<h1>3D hive — super fullness readability fix</h1>
+  <h1>Team members editing hive setup &amp; inspection super auto-sync</h1>
 
-<h2>Problem</h2>
-<div class="problem">
-<p>In <code>src/components/apiaries/Hive3D.tsx</code> each honey super renders its
-own floating <code>%</code> badge anchored at that super's vertical centre
-(lines 160&ndash;187). Supers are only <code>0.16</code> units tall, so the
-badges pile on top of one another and become unreadable at two supers, worse at
-three (see reported screenshot). The honey-fill band already conveys fullness
-visually; the stacked numbers are the noise.</p>
-</div>
+  <div class="box">
+    <strong>Decision confirmed:</strong> Full config edit + super sync. Loosen the <code>hives</code> UPDATE RLS so any
+    team member with access to the shared apiary can edit a hive's setup; un-hide the Edit button for shared hives.
+    <strong>DELETE stays owner-only.</strong>
+  </div>
 
-<h2>Chosen direction (confirmed)</h2>
-<div class="goal">
-<p><strong>One side gauge column.</strong> Keep the honey-fill bands on the boxes.
-Replace the N overlapping per-super badges with a <em>single</em> compact
-vertical gauge rendered beside the stack &mdash; one labelled segment per super,
-ordered top&rarr;bottom. One DOM overlay, laid out with flexbox, so segments can
-never collide regardless of super count.</p>
-</div>
+  <h2>Root cause (one rule, both symptoms)</h2>
+  <div class="root">
+    Team members cannot <code>UPDATE</code> a hive they don't own.
+    <ul>
+      <li><strong>RLS:</strong> <code>hives_update_policy</code> is <code>USING (user_id = auth.uid())</code> — owner-only.</li>
+      <li><strong>UI:</strong> <code>HiveListCard.tsx:386</code> renders Edit/Delete only when <code>hive.user_id === userId</code>, so the Edit option is hidden for Hive 2 (owned by a different member).</li>
+      <li><strong>Super not reflected:</strong> the auto-sync RPC <code>adjust_hive_honey_supers</code> is <code>SECURITY INVOKER</code>. When a team member saves the inspection, its <code>UPDATE</code> runs as them, is filtered to 0 rows by the owner-only policy, and changes nothing. A 0-row RLS-filtered update returns no error, so even the warning toast stayed silent.</li>
+    </ul>
+    Confirmed on live DB: Hive 2 (TBKA Kilcornan) owner = <code>806e7ce4…</code>; yesterday's inspection recorded by rico = <code>08e38bd9…</code> (a different member). Stored <code>honey_supers</code> still = 1.
+  </div>
 
-<pre class="mock">        [ 30-DA ]
-  &#9484;&#9472;&#9472;&#9472;&#9472;&#9488;   &#9143; 100%   (top super)
-  &#9474;////&#9474;   &#9147;
-  &#9500;&#9472;&#9472;&#9472;&#9472;&#9508;   &#9143;  70%   (lower super)
-  &#9474;//  &#9474;   &#9147;
-  &#9492;&#9472;&#9472;&#9472;&#9472;&#9496;
-  fill band on box  +  one gauge column beside it</pre>
+  <h2>Todo</h2>
+  <ul class="todo">
+    <li>☑ <strong>1. RLS.</strong> Replace <code>hives_update_policy</code> so UPDATE is allowed for the owner <em>or</em> a team member with apiary access. Keep DELETE owner-only (unchanged). Applied via Supabase MCP migration.
+      <pre>USING      ( user_id = auth.uid()
+             OR (apiary_id IS NOT NULL AND can_access_apiary(apiary_id, auth.uid())) )
+WITH CHECK ( user_id = auth.uid()
+             OR (apiary_id IS NOT NULL AND can_access_apiary(apiary_id, auth.uid())) )</pre>
+      <em>Effect:</em> owner keeps full rights (incl. moving a hive to no apiary); a team member can edit a hive only while it stays in an apiary they can access — they cannot orphan it. The edit path spreads only <code>formData</code> (no <code>user_id</code>), so ownership is never reassigned.
+    </li>
+    <li>☑ <strong>2. UI — show Edit for shared hives.</strong> In <code>HiveListCard.tsx</code>, split the owner-only block: render <strong>Edit</strong> when <code>hive.user_id === userId || hive.is_shared</code>; render <strong>Delete</strong> only when <code>hive.user_id === userId</code>. Update the comment.</li>
+    <li>☑ <strong>3. Super auto-sync — verify, no code change.</strong> Once RLS allows it, the existing <code>SECURITY INVOKER</code> RPC succeeds for team members automatically. Confirm a fresh inspection super +1 by a team member moves the stored count.</li>
+    <li>☑ <strong>4. One-off data correction (needs your confirm).</strong> Set Hive 2 (TBKA Kilcornan) stored <code>honey_supers</code> from 1 → 2, as you stated it physically has two. Historical inspections are not auto-backfilled, so this is a manual correction. <em>I will do this only after you confirm 2 is the right number</em> — once step 2 ships you could also just tap Edit and set it yourself.</li>
+    <li>☑ <strong>5. Docs.</strong> Update <code>team-member-hive-placement.md</code> (UPDATE now team-scoped, DELETE still owner-only) and <code>honey-supers-auto-sync.md</code> (sync now works for team members).</li>
+    <li>☑ <strong>6. Review section.</strong> Summarise changes below.</li>
+  </ul>
 
-<h2>Todo</h2>
-<ul class="todo">
-  <li class="done">Derive a <code>supers</code> list (placed layers with numeric fullness) and the vertical centre of the super band.</li>
-  <li class="done">Remove the per-super <code>&lt;Html&gt;</code> <code>%</code> badge loop (keep the honey-fill mesh loop untouched).</li>
-  <li class="done">Add ONE <code>&lt;Html&gt;</code> gauge column, anchored beside the stack (local +X), billboarded/camera-facing, listing supers top&rarr;bottom &mdash; each row a tiny vertical fill bar + <code>%</code> label.</li>
-  <li class="done">Respect the 50+ low-vision minimum: legible font size, bold, high-contrast amber-on-white.</li>
-  <li class="done">Render nothing when a hive has no supers with recorded fullness (no empty widget).</li>
-  <li class="done">Update <code>docs/features</code> for the yard 3D view.</li>
-  <li>Prompt user to test the build (do not build locally).</li>
-  <li class="done">Add review section below.</li>
-</ul>
+  <h2>Files touched</h2>
+  <table>
+    <tr><th>File / object</th><th>Change</th></tr>
+    <tr><td>DB migration (Supabase MCP)</td><td>Replace <code>hives_update_policy</code> (owner or team-with-access)</td></tr>
+    <tr><td><code>src/components/hive/HiveListCard.tsx</code></td><td>Show Edit for shared hives; keep Delete owner-only</td></tr>
+    <tr><td><code>docs/features/team-member-hive-placement.md</code></td><td>Reflect new UPDATE scope</td></tr>
+    <tr><td><code>docs/features/honey-supers-auto-sync.md</code></td><td>Note team-member sync now works</td></tr>
+    <tr><td>Hive 2 config (data)</td><td>One-off <code>honey_supers</code> 1 → 2 (on confirm)</td></tr>
+  </table>
 
-<h2>Scope guard</h2>
-<p>Only <code>Hive3D.tsx</code> changes (plus a feature doc). No data-layer, no
-schema, no changes to the 2D card or <code>SuperFullnessGauge</code>. Smallest
-possible diff.</p>
+  <h2>Not doing (kept simple)</h2>
+  <ul>
+    <li>No change to the RPC — it works as-is once RLS permits.</li>
+    <li>No column-level WITH CHECK guards (queen assignment etc.) — full config edit per your decision.</li>
+    <li>No bulk retroactive backfill of past inspections — only the one Hive 2 correction you asked for.</li>
+  </ul>
 
-<h2>Review</h2>
-<p>Single file of application code changed: <code>src/components/apiaries/Hive3D.tsx</code>
-(plus a feature-doc update in <code>docs/features/apiary-3d-view.md</code>).</p>
-<ul>
-  <li><strong>Root cause removed.</strong> The old code rendered one
-  <code>&lt;Html&gt;</code> <code>%</code> badge per super, each anchored at that
-  super's centre. Because supers are only <code>0.16</code> units tall, the
-  badges overlapped &mdash; unreadable at two supers, worse at three.</li>
-  <li><strong>New readout.</strong> One camera-facing gauge column now sits beside
-  the stack. It is a single flexbox <code>&lt;Html&gt;</code> with one row per
-  super (top super first): a small vertical fill bar + a bold <code>%</code>.
-  Because it is one DOM element with stacked flex rows, the rows can never
-  collide, regardless of super count.</li>
-  <li><strong>Always on the camera side.</strong> The gauge is anchored on the
-  stack's vertical axis (<code>position={[0, gaugeCentreY, 0]}</code>) so the
-  hive's stored rotation can't swing it out of view, then shifted screen-right in
-  CSS (<code>translateX(calc(50% + 44px))</code>). Since the overlay billboards
-  toward the viewer, it stays on the camera-facing side however the hive or
-  camera is turned; the px offset scales with the hive via
-  <code>distanceFactor</code>, so it clears the box at every zoom.</li>
-  <li><strong>Honey-fill bands kept.</strong> The four-face fill band per super is
-  unchanged &mdash; it remains the glanceable indicator. Fill still suppressed at
-  0% / no recorded fullness.</li>
-  <li><strong>Low-vision.</strong> <code>text-sm</code> bold amber-900 on white
-  with an amber ring; <code>tabular-nums</code> so numbers don't jitter.</li>
-  <li><strong>Empty state.</strong> A hive with no measured supers renders no
-  gauge column (guarded by <code>supersTopFirst.length &gt; 0</code>).</li>
-  <li><strong>Scope.</strong> No data-layer, schema, 2D-card, or
-  <code>SuperFullnessGauge</code> changes. Smallest viable diff.</li>
-</ul>
-<p><strong>Please test the build</strong> (I did not build locally): open a yard's
-3D view with hives that have 2&ndash;3 honey supers of differing fullness and
-confirm the gauge column beside each stack is clearly readable and no longer
-overlaps.</p>
+  <h2>Review</h2>
+  <p>All steps complete. One root cause fixed two symptoms.</p>
+  <table>
+    <tr><th>Change</th><th>Detail</th></tr>
+    <tr><td>DB migration <code>hives_update_policy_team_edit</code></td><td>Replaced the owner-only <code>hives_update_policy</code>. UPDATE is now allowed for the owner <em>or</em> a team member with apiary access (<code>can_access_apiary</code>), with a <code>WITH CHECK</code> that keeps the hive in an accessible apiary (members cannot orphan it; only the owner may move it to no apiary). DELETE unchanged (owner-only).</td></tr>
+    <tr><td><code>HiveListCard.tsx</code></td><td>Edit button now shows for the owner <em>or</em> a shared hive (<code>hive.user_id === userId || hive.is_shared</code>). Delete button wrapped in its own owner-only guard, so team members see Edit but not Delete. Sole edit entry point for the hive list — no other view to change.</td></tr>
+    <tr><td>Super auto-sync</td><td>No code change needed. The existing <code>SECURITY INVOKER</code> RPC <code>adjust_hive_honey_supers</code> now succeeds for team members because the loosened UPDATE policy lets their inspection-driven update through.</td></tr>
+    <tr><td>Hive 2 (TBKA Kilcornan) data</td><td>Stored <code>honey_supers</code> corrected 1 → 2 (only the <code>honey_supers</code> key touched; audit fields updated, attributed to the inspecting member). Verified: now returns 2.</td></tr>
+    <tr><td>Docs</td><td><code>team-member-hive-placement.md</code> (UPDATE now team-scoped, DELETE owner-only) and <code>honey-supers-auto-sync.md</code> (team-member sync explanation) updated.</td></tr>
+  </table>
+  <p><strong>Security check:</strong> <code>get_advisors(security)</code> showed only pre-existing, unrelated findings (search_path / SECURITY DEFINER notes on <code>get_recipient_hives</code>, <code>set_hives_user_id</code>). The new policy mirrors the existing SELECT policy shape and introduced no new advisory.</p>
+
+  <h2>QA audit (post-implementation)</h2>
+  <table>
+    <tr><th>Severity</th><th>Finding</th><th>Fix</th></tr>
+    <tr><td>🔴 Critical</td><td><code>handleEdit</code> (<code>hives/page.tsx:866</code>) began with <code>if (hive.user_id !== userId) return</code>. Since <code>onEdit={handleEdit}</code>, the Edit button newly exposed for shared hives was a <strong>dead no-op</strong> — a team member clicked Edit and nothing happened. The RLS + button gate were changed but this handler guard was missed.</td><td>Guard loosened to <code>hive.user_id !== userId &amp;&amp; !hive.is_shared</code> (mirrors the card + RLS); stale comment refreshed. RLS remains the real boundary on save.</td></tr>
+    <tr><td>🟡 Medium</td><td>DRY: the edit block repeated <code>hive.user_id === userId</code> inline twice, though the component already defines <code>isOwner</code> (line 29) as the canonical owner check.</td><td>Both new conditions now use <code>isOwner</code>.</td></tr>
+  </table>
+  <p>Verified: <code>npx tsc --noEmit</code> — no type errors in the changed files; <code>npx eslint</code> on both files — clean.</p>
+  <p><strong>Please test:</strong> as a team member (not the hive owner), open the Hives list for a shared apiary — the Edit button should now appear (Delete should not). Editing a hive's supers should save. Recording an inspection with a Given/Taken super as a team member should now move the hive's stored super count.</p>
 </body>
 </html>
