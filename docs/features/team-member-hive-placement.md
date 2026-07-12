@@ -52,9 +52,15 @@ application logic alone:
 - **INSERT** — the row must record the user as owner
   (`user_id = auth.uid()`) and target an apiary the user can access (or none).
   This enforces the placement rule above at the database level.
-- **UPDATE / DELETE** — **hive owner only** (`user_id = auth.uid()`). Team members
-  can view each other's hives in a shared apiary but only edit/delete their own.
-  UPDATE may still move a hive to any apiary the user can access (or none).
+- **UPDATE** — the hive **owner**, or **any team member** with access to the hive's
+  apiary (`can_access_apiary`). This lets team members edit the setup of a shared
+  hive (super count, brood boxes, queen assignment, etc.), and is what allows the
+  inspection honey-super auto-sync to work when a team member records the inspection.
+  A member can only edit a hive while it stays in an apiary they can access
+  (`WITH CHECK`), so they cannot orphan a hive out of the shared apiary; only the
+  owner may move it to no apiary. Migration `hives_update_policy_team_edit`.
+- **DELETE** — **hive owner only** (`user_id = auth.uid()`). Team members can view
+  and edit each other's shared hives, but only the owner can delete.
 
 Policies are scoped to the `authenticated` role; service-role server routes
 (admin, beep, wolf-waagen, AI tools) bypass RLS and scope in code.

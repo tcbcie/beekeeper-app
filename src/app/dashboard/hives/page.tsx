@@ -861,9 +861,9 @@ export default function HivesPage() {
  }
 
  const handleEdit = (hive: Hive) => {
- // Owner-only: hives RLS rejects UPDATE on others' hives and the card hides the
- // Edit control, so guard here too in case this is ever called from elsewhere.
- if (hive.user_id !== userId) return
+ // Editable by the owner or a team member of the shared apiary (mirrors the hives
+ // RLS UPDATE policy and the card). RLS is the real boundary enforced on save.
+ if (hive.user_id !== userId && !hive.is_shared) return
  setEditingHive(hive)
  setFormData({
  hive_number: hive.hive_number,

@@ -73,3 +73,15 @@ Every super adjustment driven by an inspection produces an entry in `hive_config
 - DB migration `add_adjust_hive_honey_supers_rpc` — Postgres function `public.adjust_hive_honey_supers(uuid, int) RETURNS int`, `SECURITY INVOKER` (RLS preserved).
 
 The `hives.configuration` column and `hive_configuration_history` trigger are pre-existing.
+
+## Team members
+
+The RPC is `SECURITY INVOKER`, so it runs under the submitting user's RLS. Originally the
+`hives` UPDATE policy was owner-only, which meant an inspection recorded by a **team member**
+(not the hive's owner) silently failed to sync the super count — the RPC's `UPDATE` matched 0
+rows and, because an RLS-filtered 0-row update raises no error, no warning toast appeared either.
+
+Since migration `hives_update_policy_team_edit`, the `hives` UPDATE policy also permits team
+members with access to the hive's apiary (`can_access_apiary`). The auto-sync now works for
+everyone on a shared apiary with **no change to this RPC** — the loosened policy is sufficient.
+See `docs/features/team-member-hive-placement.md`.
