@@ -753,6 +753,59 @@ export function useGraftDistributions() {
     return Boolean(result?.id)
   }, [])
 
+  // Re-point an existing queen's distribution to a new recipient. Because
+  // graft_distributions is UNIQUE on graft_id, redistribution UPDATEs the single row
+  // rather than inserting a second. mating_confirmed / mating_confirmed_date are left
+  // untouched so the recipient's minted queen inherits the original mated date
+  // (create_queen_for_distribution reads mated_date from this row).
+  const redistributeQueen = useCallback(async (data: CreateDistributionData): Promise<boolean | null> => {
+    try {
+      const { error, count } = await supabase
+        .from('graft_distributions')
+        .update({
+          distribution_type: data.distribution_type,
+          recipient_user_id: data.recipient_user_id,
+          recipient_apiary_id: data.recipient_apiary_id,
+          recipient_hive_id: data.recipient_hive_id,
+          distribution_date: data.distribution_date,
+          notes: data.notes,
+          external_recipient_name: data.external_recipient_name,
+          external_recipient_email: data.external_recipient_email,
+          external_recipient_phone: data.external_recipient_phone,
+          external_recipient_location: data.external_recipient_location,
+          mating_location: data.mating_location,
+          crm_order_id: data.crm_order_id ?? null,
+        }, { count: 'exact' })
+        .eq('graft_id', data.graft_id)
+        .eq('user_id', data.user_id)
+
+      if (error) throw error
+      if (!count) {
+        console.error('No distribution row found to redistribute for graft:', data.graft_id)
+        return false
+      }
+
+      // Mint the queen in an app-user recipient's account (external recipients are record-only).
+      if (data.recipient_user_id) {
+        createQueensForRecipient(
+          data.recipient_user_id,
+          data.batch_id,
+          [data.graft_id],
+          data.distribution_type,
+          data.recipient_hive_id,
+          data.distribution_date,
+          data.recipient_apiary_id,
+          data.mating_location,
+        )
+      }
+
+      return true
+    } catch (err) {
+      console.error('Error redistributing queen:', err)
+      return null
+    }
+  }, [])
+
   const searchUsers = useCallback(async (searchText: string): Promise<RecipientUser[]> => {
     if (!searchText || searchText.length < 2) return []
     try {
@@ -799,6 +852,7 @@ export function useGraftDistributions() {
     fetchDistributions,
     createDistribution,
     createBulkDistributions,
+    redistributeQueen,
     deleteDistribution,
     confirmMatingWithLocation,
     clearMatingConfirmation,

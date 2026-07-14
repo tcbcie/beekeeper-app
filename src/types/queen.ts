@@ -25,6 +25,7 @@ export const queenStatusBadgeClass = (status?: string | null): string => {
     case 'cell': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
     case 'swarmed': return 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border border-orange-300 dark:border-orange-700'
     case 'superseded': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700'
+    case 'distributed': return 'bg-slate-100 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600'
     default: return 'bg-surface-secondary text-text-secondary border border-border'
   }
 }
