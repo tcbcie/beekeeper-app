@@ -20,6 +20,10 @@ export interface HiveConfiguration {
   brood_boxes?: number
   brood_boxes_full?: number
   brood_boxes_half?: number
+  /** Number of frames a full-depth brood box holds (drives inspection frame picker). */
+  frames_per_full_box?: number
+  /** Number of frames a half-depth brood box holds (drives inspection frame picker). */
+  frames_per_half_box?: number
   honey_supers?: number
   queen_excluder?: boolean
   feeder?: boolean
