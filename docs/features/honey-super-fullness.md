@@ -56,3 +56,12 @@ instead of resetting every gauge to 0 (supers don't empty between visits, so 0 w
   plus a hive-keyed effect that seeds `honey_super_fullness` **only when not editing**, so
   historical inspections are never overwritten. If the hive has no prior inspection the gauges
   stay unset (default 0). See [inspection-right-sized-frames-prefill-plan.md](inspection-right-sized-frames-prefill-plan.md).
+
+## Newly added super reads 0% on the Hive Setup card (added later)
+
+`HiveListCard` previously showed **no gauge** for a configured super with no recorded reading —
+so adding a super in Hive Setup (beyond the last inspection's `last_super_fullness` array) left it
+blank. A configured super with no recorded reading now reads **0%** (empty) instead of blank,
+matching the mental model that a freshly added / not-yet-inspected super is empty. The same
+`last_super_fullness?.[i]` pattern is used in the 3D yard view (`Hive3D.tsx`), which still renders
+unrecorded supers without a fill overlay.
