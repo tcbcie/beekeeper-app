@@ -769,28 +769,38 @@ function getRecipientApiaryLabel(distribution: TrackedQueen): string {
     : apiaryLabel
 }
 
+// Recipient-type dot palette. Deliberately uses the indigo/violet/fuchsia band, which the
+// lifecycle stats legend (slate/green/blue/red/amber) never uses — so a recipient-type dot can
+// never be misread as a queen status. Keep in sync with the RECIPIENT_TYPE_LEGEND below.
 function getRecipientTypePresentation(distribution: TrackedQueen) {
   switch (distribution.recipient_type) {
     case 'group_member':
       return {
         label: 'Group Member',
-        dotClass: 'bg-green-500',
-        className: 'border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900/35 dark:text-green-300',
+        dotClass: 'bg-indigo-500',
+        className: 'border-indigo-200 bg-indigo-100 text-indigo-800 dark:border-indigo-800 dark:bg-indigo-900/35 dark:text-indigo-300',
       }
     case 'app_user':
       return {
         label: 'App User',
-        dotClass: 'bg-sky-500',
-        className: 'border-sky-200 bg-sky-100 text-sky-800 dark:border-sky-800 dark:bg-sky-900/35 dark:text-sky-300',
+        dotClass: 'bg-violet-500',
+        className: 'border-violet-200 bg-violet-100 text-violet-800 dark:border-violet-800 dark:bg-violet-900/35 dark:text-violet-300',
       }
     default:
       return {
         label: 'Public Recipient',
-        dotClass: 'bg-amber-500',
-        className: 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800 dark:bg-amber-900/35 dark:text-amber-300',
+        dotClass: 'bg-fuchsia-500',
+        className: 'border-fuchsia-200 bg-fuchsia-100 text-fuchsia-800 dark:border-fuchsia-800 dark:bg-fuchsia-900/35 dark:text-fuchsia-300',
       }
   }
 }
+
+// Legend for the recipient-type dot shown in the DISTRIBUTION column.
+const RECIPIENT_TYPE_LEGEND: { label: string; dotClass: string }[] = [
+  { label: 'Group member', dotClass: 'bg-indigo-500' },
+  { label: 'App user', dotClass: 'bg-violet-500' },
+  { label: 'Public', dotClass: 'bg-fuchsia-500' },
+]
 
 function getOriginMatingApiaryLabel(distribution: TrackedQueen): string {
   if (!distribution.mating_apiary_name) return '-'
@@ -1512,6 +1522,15 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         </div>
       ) : (
         <div className="overflow-hidden rounded-[1.6rem] border border-border bg-surface shadow-sm dark:bg-surface-elevated/95">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2.5 text-xs text-text-secondary">
+            <span className="font-medium text-text-tertiary">Recipient dot:</span>
+            {RECIPIENT_TYPE_LEGEND.map((item) => (
+              <span key={item.label} className="inline-flex items-center gap-1.5">
+                <span className={`inline-block h-2.5 w-2.5 rounded-full ${item.dotClass}`} />
+                {item.label}
+              </span>
+            ))}
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-[48rem] w-full border-separate border-spacing-0 text-sm">
               <thead className="bg-surface-secondary/70 dark:bg-surface-elevated/85">
