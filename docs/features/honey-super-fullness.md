@@ -62,6 +62,6 @@ instead of resetting every gauge to 0 (supers don't empty between visits, so 0 w
 `HiveListCard` previously showed **no gauge** for a configured super with no recorded reading —
 so adding a super in Hive Setup (beyond the last inspection's `last_super_fullness` array) left it
 blank. A configured super with no recorded reading now reads **0%** (empty) instead of blank,
-matching the mental model that a freshly added / not-yet-inspected super is empty. The same
-`last_super_fullness?.[i]` pattern is used in the 3D yard view (`Hive3D.tsx`), which still renders
-unrecorded supers without a fill overlay.
+matching the mental model that a freshly added / not-yet-inspected super is empty. The 3D yard
+view (`Hive3D.tsx`) was updated to match: an unrecorded super now reads 0% in the camera-side
+gauge column (and renders with no fill overlay, since the fill is only drawn for fullness > 0).

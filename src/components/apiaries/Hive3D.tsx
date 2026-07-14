@@ -60,7 +60,9 @@ function buildStack(hive: MapHive, width: number, depth: number): Layer[] {
   if (c.queen_excluder) layers.push({ key: 'excluder', height: EXCLUDER_H, colour: COL_EXCLUDER })
   for (let i = 0; i < superCount; i++) {
     const raw = hive.last_super_fullness?.[i]
-    const fullness = typeof raw === 'number' && Number.isFinite(raw) ? Math.min(100, Math.max(0, raw)) : undefined
+    // A configured super with no recorded reading — a newly added super, or a hive not yet
+    // inspected — reads as empty (0%) rather than showing no gauge (matches the 2D setup card).
+    const fullness = typeof raw === 'number' && Number.isFinite(raw) ? Math.min(100, Math.max(0, raw)) : 0
     layers.push({ key: `super-${i}`, height: SUPER_H, colour: COL_SUPER, fullness })
   }
   if (c.feeder && c.feeder_type === 'top') {
