@@ -300,12 +300,14 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
      render top-down from the highest number. Fullness index = number − 1. */}
  {Array.from({ length: hive.configuration.honey_supers || 0 }).map((_, row) => {
  const superNumber = (hive.configuration?.honey_supers || 0) - row
- const fullness = hive.last_super_fullness?.[superNumber - 1]
- const hasFullness = typeof fullness === 'number' && Number.isFinite(fullness)
+ const raw = hive.last_super_fullness?.[superNumber - 1]
+ // A configured super with no recorded reading — a newly added super, or a hive not
+ // yet inspected — reads as empty (0%) rather than showing no gauge at all.
+ const fullness = typeof raw === 'number' && Number.isFinite(raw) ? raw : 0
  return (
- <div key={`super-${superNumber}`} className={`w-full h-8 bg-yellow-300 border-2 border-yellow-500 rounded flex items-center text-xs font-semibold ${hasFullness ? 'justify-between px-2' : 'justify-center'}`}>
+ <div key={`super-${superNumber}`} className="w-full h-8 bg-yellow-300 border-2 border-yellow-500 rounded flex items-center justify-between px-2 text-xs font-semibold">
  <span>🍯 Super {superNumber}</span>
- {hasFullness && <SuperFullnessGauge value={fullness} />}
+ <SuperFullnessGauge value={fullness} />
  </div>
  )
  })}
