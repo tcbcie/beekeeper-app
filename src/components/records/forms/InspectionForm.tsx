@@ -639,6 +639,13 @@ export default function InspectionForm({
   }, [broodBoxFullCount, broodBoxHalfCount])
   const isMultiBox = broodBoxList.length > 1
 
+  // Frames a box of the given depth holds, from the hive's configuration.
+  // Falls back to the historical default of 10 when unset.
+  const framesForType = (type?: BroodBoxType) =>
+    type === 'half'
+      ? (selectedHive?.configuration?.frames_per_half_box ?? 10)
+      : (selectedHive?.configuration?.frames_per_full_box ?? 10)
+
   // Reconcile formData.brood_frames_per_box with the hive's current box list.
   // Single-box hives clear it to null. Multi-box hives initialise from the
   // existing total (Box 1 seed) when transitioning from null, and otherwise
@@ -717,14 +724,15 @@ export default function InspectionForm({
     </div>
   ), [])
 
-  // Render number selector (1-10)
-  const renderNumberSelector = useCallback((value: number | null, onChange: (val: number | null) => void, label: string, color: NumberSelectorTheme = 'purple') => (
+  // Render number selector (1..max). `max` comes from the hive's per-box frame
+  // count so the picker can extend beyond the historical 1-10 range.
+  const renderNumberSelector = useCallback((value: number | null, onChange: (val: number | null) => void, label: string, color: NumberSelectorTheme = 'purple', max: number = 10) => (
     <div className="mb-4">
       <label className="block text-sm font-medium text-text-secondary mb-3">
         {label} {value !== null ? `(${value})` : ''}
       </label>
-      <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-11 gap-2">
-        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: Math.max(1, max) }, (_, i) => i + 1).map((num) => (
           <Button
           unstyled
             key={num}
@@ -743,7 +751,7 @@ export default function InspectionForm({
           unstyled
           type="button"
           onClick={() => onChange(null)}
-          className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-5 sm:col-span-2 md:col-span-1 ${
+          className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] px-4 rounded-lg font-medium text-sm transition-all touch-manipulation ${
             value === null
               ? 'bg-surface-secondary text-foreground shadow-lg ring-2 ring-border'
               : 'bg-surface-elevated text-foreground hover:bg-surface-secondary active:bg-surface-secondary border border-border'
@@ -1012,7 +1020,9 @@ export default function InspectionForm({
                   {renderNumberSelector(
                     box.frames,
                     (val) => setBroodFramesForBox(box.box, val ?? 0),
-                    `Box ${box.box} (${box.type})`
+                    `Box ${box.box} (${box.type})`,
+                    'purple',
+                    framesForType(box.type)
                   )}
                 </div>
               ))}
@@ -1029,7 +1039,9 @@ export default function InspectionForm({
             renderNumberSelector(
               formData.brood_frames,
               (val) => setFormData(prev => ({ ...prev, brood_frames: val })),
-              'Frames with Brood'
+              'Frames with Brood',
+              'purple',
+              framesForType(broodBoxList[0]?.type)
             )
           )}
 
@@ -1037,7 +1049,8 @@ export default function InspectionForm({
             formData.right_sized_frames,
             (val) => setFormData(prev => ({ ...prev, right_sized_frames: val })),
             'Right-Sized to How Many Frames',
-            'forest'
+            'forest',
+            selectedHive?.configuration?.frames_per_full_box ?? 10
           )}
 
           {/* Queen Cells Subsection - Collapsible */}

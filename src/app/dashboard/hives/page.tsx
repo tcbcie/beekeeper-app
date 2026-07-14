@@ -88,6 +88,8 @@ export default function HivesPage() {
  brood_boxes: 1, // Legacy field
  brood_boxes_full: 1,
  brood_boxes_half: 0,
+ frames_per_full_box: 10,
+ frames_per_half_box: 10,
  honey_supers: 0,
  queen_excluder: false,
  feeder: false,
@@ -887,6 +889,8 @@ export default function HivesPage() {
  brood_boxes: hive.configuration?.brood_boxes || 1, // Legacy field
  brood_boxes_full: hive.configuration?.brood_boxes_full ?? (hive.configuration?.brood_boxes || 1),
  brood_boxes_half: hive.configuration?.brood_boxes_half ?? 0,
+ frames_per_full_box: hive.configuration?.frames_per_full_box ?? 10,
+ frames_per_half_box: hive.configuration?.frames_per_half_box ?? 10,
  honey_supers: hive.configuration?.honey_supers || 0,
  queen_excluder: hive.configuration?.queen_excluder || false,
  feeder: hive.configuration?.feeder || false,
@@ -1129,6 +1133,8 @@ export default function HivesPage() {
  brood_boxes: 1, // Legacy field
  brood_boxes_full: 1,
  brood_boxes_half: 0,
+ frames_per_full_box: 10,
+ frames_per_half_box: 10,
  honey_supers: 0,
  queen_excluder: false,
  feeder: false,
@@ -1695,6 +1701,60 @@ export default function HivesPage() {
  {num}
  </Button>
  ))}
+ </div>
+ </div>
+
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-2">
+ Frames per Full-Size Box: {formData.configuration.frames_per_full_box ?? 10}
+ </label>
+ <div className="flex items-center gap-3">
+ <Button
+ type="button"
+ onClick={() => setFormData({...formData, configuration: {...formData.configuration, frames_per_full_box: Math.max(1, (formData.configuration.frames_per_full_box ?? 10) - 1)}})}
+ className="min-h-[48px] min-w-[48px] rounded-lg text-2xl font-semibold fj-btn-neutral"
+ aria-label="Decrease frames per full-size box"
+ >
+ −
+ </Button>
+ <span className="min-w-[2.5rem] text-center text-lg font-semibold text-foreground">
+ {formData.configuration.frames_per_full_box ?? 10}
+ </span>
+ <Button
+ type="button"
+ onClick={() => setFormData({...formData, configuration: {...formData.configuration, frames_per_full_box: Math.min(20, (formData.configuration.frames_per_full_box ?? 10) + 1)}})}
+ className="min-h-[48px] min-w-[48px] rounded-lg text-2xl font-semibold fj-btn-neutral"
+ aria-label="Increase frames per full-size box"
+ >
+ +
+ </Button>
+ </div>
+ </div>
+
+ <div>
+ <label className="block text-sm font-medium text-text-secondary mb-2">
+ Frames per Half-Size Box: {formData.configuration.frames_per_half_box ?? 10}
+ </label>
+ <div className="flex items-center gap-3">
+ <Button
+ type="button"
+ onClick={() => setFormData({...formData, configuration: {...formData.configuration, frames_per_half_box: Math.max(1, (formData.configuration.frames_per_half_box ?? 10) - 1)}})}
+ className="min-h-[48px] min-w-[48px] rounded-lg text-2xl font-semibold fj-btn-neutral"
+ aria-label="Decrease frames per half-size box"
+ >
+ −
+ </Button>
+ <span className="min-w-[2.5rem] text-center text-lg font-semibold text-foreground">
+ {formData.configuration.frames_per_half_box ?? 10}
+ </span>
+ <Button
+ type="button"
+ onClick={() => setFormData({...formData, configuration: {...formData.configuration, frames_per_half_box: Math.min(20, (formData.configuration.frames_per_half_box ?? 10) + 1)}})}
+ className="min-h-[48px] min-w-[48px] rounded-lg text-2xl font-semibold fj-btn-neutral"
+ aria-label="Increase frames per half-size box"
+ >
+ +
+ </Button>
  </div>
  </div>
 
