@@ -24,6 +24,12 @@ interface DistributeGraftModalProps {
   onBulkSave?: (data: BulkDistributionData) => Promise<boolean | null>
   // Pre-fill mating location from existing records (e.g. nuc or batch mating apiary)
   defaultMatingLocation?: string
+  // Force the distribution type instead of inferring it from graft status. Used when
+  // redistributing an existing queen whose graft is already 'sold' (which would otherwise
+  // wrongly map to 'queen_cell').
+  distributionTypeOverride?: 'queen_cell' | 'virgin_queen' | 'mated_queen'
+  // Replace the modal title (e.g. "Redistribute Queen 38W") instead of "Distribute Cell #N".
+  titleOverride?: string
 }
 
 const STATUS_ORDER: string[] = ['accepted', 'sealed', 'caged', 'emerged', 'in_nuc', 'mated']
@@ -63,6 +69,8 @@ export default function DistributeGraftModal({
   bulkGrafts,
   onBulkSave,
   defaultMatingLocation,
+  distributionTypeOverride,
+  titleOverride,
 }: DistributeGraftModalProps) {
   const isBulk = bulkGrafts && bulkGrafts.length > 0
   const effectiveStatus = isBulk
@@ -70,7 +78,7 @@ export default function DistributeGraftModal({
         return STATUS_ORDER.indexOf(g.status) > STATUS_ORDER.indexOf(best) ? g.status : best
       }, bulkGrafts[0].status)
     : graftStatus
-  const distributionType = TYPE_FROM_GRAFT_STATUS[effectiveStatus] || 'queen_cell'
+  const distributionType = distributionTypeOverride || TYPE_FROM_GRAFT_STATUS[effectiveStatus] || 'queen_cell'
   const typeInfo = TYPE_LABELS[distributionType] || { label: 'Queen Cell', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' }
 
   const hasGroup = groupMemberIds && groupMemberIds.length > 0
@@ -315,7 +323,7 @@ export default function DistributeGraftModal({
       <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
         <div className="p-4 border-b border-border flex justify-between items-center">
           <h3 className="text-lg font-semibold text-foreground">
-            {isBulk ? `Distribute ${bulkGrafts.length} Grafts` : `Distribute Cell #${cellNumber}`}
+            {titleOverride ?? (isBulk ? `Distribute ${bulkGrafts.length} Grafts` : `Distribute Cell #${cellNumber}`)}
           </h3>
           <Button onClick={onClose} className="p-2 text-text-secondary hover:text-foreground rounded">
             <X size={20} />

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Edit2, ExternalLink, AlertTriangle, CheckCircle, XCircle, Clock, Printer } from 'lucide-react'
+import { ArrowLeft, Edit2, ExternalLink, AlertTriangle, CheckCircle, XCircle, Clock, Printer, Send } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import QueenLineageTree from '@/components/QueenLineageTree'
@@ -21,6 +21,8 @@ import { queenCodeFor, type BreederContext } from '@/lib/queen-code'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import { queenToLabelDatum } from '@/components/labels/queenMapping'
 import { useLabelPrinting } from '@/hooks/useLabelPrinting'
+import DistributeGraftModal from '@/components/batches/DistributeGraftModal'
+import { useGraftDistributions, type CreateDistributionData } from '@/hooks/useGraftDistributions'
 
 export default function QueenDetailPage() {
   const params = useParams()
@@ -38,7 +40,9 @@ export default function QueenDetailPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [breederProfile, setBreederProfile] = useState<BreederContext | null>(null)
   const [printOpen, setPrintOpen] = useState(false)
+  const [showRedistribute, setShowRedistribute] = useState(false)
   const { enabled: labelPrintingEnabled } = useLabelPrinting()
+  const { searchUsers, fetchRecipientApiaries, fetchRecipientHives, redistributeQueen } = useGraftDistributions()
 
   const {
     queen,
@@ -230,6 +234,41 @@ export default function QueenDetailPage() {
     }
   }
 
+  // Redistribute an existing (graft-sourced) queen to another beekeeper. Re-points the graft's
+  // distribution row (via redistributeQueen), then marks this account's copy as distributed-out
+  // and detaches it from its hive.
+  const handleRedistribute = async (data: CreateDistributionData): Promise<boolean | null> => {
+    if (!currentUserId) return null
+    const ok = await redistributeQueen(data)
+    if (!ok) {
+      toast.error('Failed to redistribute queen')
+      return ok
+    }
+    const { error: qErr } = await supabase
+      .from('queens')
+      .update({ status: 'distributed' })
+      .eq('id', queen.id)
+      .eq('user_id', currentUserId)
+    if (qErr) console.error('Non-blocking: failed to mark queen distributed:', qErr)
+    if (hive?.id) {
+      const { error: hErr } = await supabase
+        .from('hives')
+        .update({ queen_id: null, queen_mated: false, is_queenless: true, queenless_reason: 'Queen distributed to another beekeeper' })
+        .eq('id', hive.id)
+        .eq('user_id', currentUserId)
+      if (hErr) console.error('Non-blocking: failed to detach queen from hive:', hErr)
+    }
+    toast.success('Queen redistributed')
+    fetchQueenData(currentUserId)
+    return ok
+  }
+
+  // Only graft-sourced live queens can be redistributed (they have a distribution row to re-point).
+  const canRedistribute = isOwner
+    && !!queen.source_graft_id
+    && !!queen.batch_id
+    && (queen.status === 'active' || queen.status === 'virgin')
+
   const markingColor = getQueenColorFromYear(queen.birth_date)
   const age = calculateQueenAge(queen.birth_date)
 
@@ -287,6 +326,8 @@ export default function QueenDetailPage() {
                 ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-700'
                 : queen.status === 'superseded'
                 ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700'
+                : queen.status === 'distributed'
+                ? 'bg-slate-100 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600'
                 : 'bg-surface-secondary text-text-secondary border-border'
             }`}>
               {queen.status === 'cell'
@@ -297,6 +338,8 @@ export default function QueenDetailPage() {
                 ? 'Swarmed'
                 : queen.status === 'superseded'
                 ? 'Superseded'
+                : queen.status === 'distributed'
+                ? 'Distributed'
                 : queen.status}
             </span>
           </div>
@@ -310,6 +353,16 @@ export default function QueenDetailPage() {
             title="Print label"
           >
             <Printer size={18} className="text-text-secondary" />
+          </button>
+        )}
+        {canRedistribute && (
+          <button
+            type="button"
+            onClick={() => setShowRedistribute(true)}
+            className="p-2 hover:bg-surface-secondary rounded-lg transition-colors"
+            title="Redistribute queen to another beekeeper"
+          >
+            <Send size={18} className="text-text-secondary" />
           </button>
         )}
         {isOwner && (
@@ -693,6 +746,23 @@ export default function QueenDetailPage() {
         presetId="queen_label"
         title={`Print label — ${queen.queen_number}`}
       />
+
+      {showRedistribute && canRedistribute && currentUserId && (
+        <DistributeGraftModal
+          graftId={queen.source_graft_id as string}
+          batchId={queen.batch_id as string}
+          cellNumber={0}
+          graftStatus="mated"
+          userId={currentUserId}
+          searchUsers={searchUsers}
+          fetchRecipientApiaries={fetchRecipientApiaries}
+          fetchRecipientHives={fetchRecipientHives}
+          onSave={handleRedistribute}
+          onClose={() => setShowRedistribute(false)}
+          distributionTypeOverride={queen.status === 'active' ? 'mated_queen' : 'virgin_queen'}
+          titleOverride={`Redistribute Queen ${queen.queen_number}`}
+        />
+      )}
     </div>
   )
 }
