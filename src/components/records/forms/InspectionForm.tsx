@@ -474,11 +474,19 @@ export default function InspectionForm({
 
     lastSuperFullnessPrefillKeyRef.current = nextPrefillKey
 
+    // Copy the source array so later slider edits can never mutate the cached
+    // `previousSuperFullnessByHive` (which references the fetched inspection rows).
     setFormData(prev => (
       prev.hive_id === currentHiveId
-        ? { ...prev, honey_super_fullness: previousValue }
+        ? { ...prev, honey_super_fullness: previousValue ? [...previousValue] : null }
         : prev
     ))
+
+    // Reveal the section so the carried-forward values are visible immediately;
+    // otherwise a new inspection looks like it reset to 0 until the user expands it.
+    if (previousValue) {
+      setSuperFullnessExpanded(true)
+    }
   }, [formData.hive_id, getPreviousSuperFullness, isEditing])
 
   // Auto-fill the Weight (kg) field from a connected scale when starting a new
