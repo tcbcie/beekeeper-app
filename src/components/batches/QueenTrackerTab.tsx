@@ -520,6 +520,7 @@ function ExpandedTrackerRowContent({
         <div className="mt-3 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
           <DetailItem label="Recipient" value={distribution.recipient_display_name} />
           <DetailItem label="Type" value={distribution.recipient_type_label} />
+          <DetailItem label="Club member" value={distribution.recipient_is_club_member ? 'Yes' : 'No'} />
           <DetailItem label="Contact" value={distribution.recipient_contact_label} />
           {!(distribution.distribution_type === 'mated_queen' && distribution.recipient_type === 'public') && (
             <>
@@ -1677,6 +1678,11 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                             <span className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${distribution.recipient_type_dot}`} title={distribution.recipient_type_label} />
                             <span className="font-medium text-foreground">{distribution.recipient_display_name}</span>
+                            {distribution.recipient_is_club_member && (
+                              <span className="inline-flex items-center rounded-full border border-forest-300 bg-forest-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-forest-800 dark:border-forest-700 dark:bg-forest-900/40 dark:text-forest-300" title="Club member (mated-queen pricing differs)">
+                                Club
+                              </span>
+                            )}
                             <span className="text-xs text-text-secondary">
                               {formatOptionalDate(distribution.distribution_date)}
                             </span>
