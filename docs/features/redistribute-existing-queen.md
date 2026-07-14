@@ -91,6 +91,15 @@ automatically shows the new recipient and keeps the queen's outcome history.
 No DB migration (`queens.status` has no CHECK constraint; `graft_distributions` unchanged).
 `tsc` and `eslint` clean on all changed files.
 
+### Follow-up — mating location not mandatory for mated queens
+
+`DistributeGraftModal` previously required an apiary or mating location for **every** app-user
+distribution. Redistributing an already-mated queen (which carries its recorded mating data)
+was blocked by "Please select an apiary or enter a mating location". The requirement now applies
+only to **unmated** queens (`cell` / `virgin`), which genuinely need a destination where they will
+mate; for `mated_queen` the field stays visible but optional (still pre-filled and editable in the
+normal mated-distribution flow, so no regression there).
+
 ### To verify (user)
 
 - Open queen 38W → tap the Redistribute (send) icon → pick an app user or external beekeeper → save.

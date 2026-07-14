@@ -260,8 +260,10 @@ export default function DistributeGraftModal({
   const handleSubmit = async () => {
     if (!canSubmit || saving || submittingRef.current) return
 
-    // Require either apiary or mating location for all distribution types
-    if (!isExternal && !selectedApiaryId && !matingLocation.trim()) {
+    // An unmated queen (cell/virgin) needs a destination where it will mate, so require an
+    // apiary or mating location. A mated queen already carries its recorded mating data, so
+    // the location is historical and must not be mandatory here.
+    if (!isExternal && distributionType !== 'mated_queen' && !selectedApiaryId && !matingLocation.trim()) {
       setLocationError('Please select an apiary or enter a mating location')
       return
     }
