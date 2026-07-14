@@ -178,6 +178,25 @@ export default function RecordsPage() {
     return latestValues
   }, [inspections])
 
+  // Most recent per-super fullness per hive (inspections are newest-first, so the first
+  // occurrence wins), used to pre-fill a new inspection's Super Fullness gauges.
+  const previousSuperFullnessByHive = useMemo<Record<string, number[] | null>>(() => {
+    const latestValues: Record<string, number[] | null> = {}
+
+    for (const inspection of inspections) {
+      if (!inspection.hive_id || inspection.hive_id in latestValues) {
+        continue
+      }
+
+      latestValues[inspection.hive_id] =
+        Array.isArray(inspection.honey_super_fullness) && inspection.honey_super_fullness.length > 0
+          ? inspection.honey_super_fullness
+          : null
+    }
+
+    return latestValues
+  }, [inspections])
+
   const inspectionFormData = useMemo<InspectionFormData | null>(() => {
     if (inspectionDraft) {
       return inspectionDraft
@@ -1224,6 +1243,7 @@ export default function RecordsPage() {
                 hives={hives}
                 apiaries={apiaries}
                 previousRightSizedFramesByHive={previousRightSizedFramesByHive}
+                previousSuperFullnessByHive={previousSuperFullnessByHive}
                 selectedApiaryId={filters.apiaryId}
                 selectedHiveId={filters.hiveId}
                 isEditing={Boolean(editingInspection?.id)}

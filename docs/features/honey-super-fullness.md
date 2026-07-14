@@ -44,3 +44,15 @@ small array, `NULL` when not recorded.
 
 - 3D yard-map (`Hive3D.tsx`) gauge overlay — possible follow-up.
 - No change to the `honey_supers` given/taken adjustment logic.
+
+## Pre-fill from last inspection (added later)
+
+A **new** inspection now seeds its Super Fullness gauges from the hive's most recent inspection
+instead of resetting every gauge to 0 (supers don't empty between visits, so 0 was misleading).
+
+- `records/page.tsx` builds `previousSuperFullnessByHive` (newest-first `inspections`, first
+  occurrence per hive) and passes it to `InspectionForm`.
+- `InspectionForm` mirrors the existing right-sized-frames prefill: `getPreviousSuperFullness`
+  plus a hive-keyed effect that seeds `honey_super_fullness` **only when not editing**, so
+  historical inspections are never overwritten. If the hive has no prior inspection the gauges
+  stay unset (default 0). See [inspection-right-sized-frames-prefill-plan.md](inspection-right-sized-frames-prefill-plan.md).
