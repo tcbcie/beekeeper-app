@@ -35,6 +35,7 @@ export interface GraftDistribution {
   external_recipient_phone: string | null
   external_recipient_location: string | null
   mating_location: string | null
+  recipient_is_club_member: boolean
 }
 
 export type DistributionMatingUpdate = Pick<
@@ -74,6 +75,7 @@ export interface CreateDistributionData {
   external_recipient_phone: string | null
   external_recipient_location: string | null
   mating_location: string | null
+  recipient_is_club_member: boolean
   // Optional link to the CRM order this distribution fulfils (informational only)
   crm_order_id?: string | null
 }
@@ -93,6 +95,7 @@ export interface BulkDistributionData {
   external_recipient_phone: string | null
   external_recipient_location: string | null
   mating_location: string | null
+  recipient_is_club_member: boolean
   // Optional link to the CRM order this distribution fulfils (informational only)
   crm_order_id?: string | null
 }
@@ -561,6 +564,7 @@ export function useGraftDistributions() {
           external_recipient_phone: d.external_recipient_phone as string | null,
           external_recipient_location: d.external_recipient_location as string | null,
           mating_location: d.mating_location as string | null,
+          recipient_is_club_member: d.recipient_is_club_member === true,
         }
       })
 
@@ -652,6 +656,7 @@ export function useGraftDistributions() {
         external_recipient_phone: data.external_recipient_phone,
         external_recipient_location: data.external_recipient_location,
         mating_location: data.mating_location,
+        recipient_is_club_member: data.recipient_is_club_member,
         crm_order_id: data.crm_order_id ?? null,
         ...(isMatedQueen ? { mating_confirmed: true, mating_confirmed_date: data.distribution_date } : {}),
       }))
@@ -774,6 +779,7 @@ export function useGraftDistributions() {
           external_recipient_phone: data.external_recipient_phone,
           external_recipient_location: data.external_recipient_location,
           mating_location: data.mating_location,
+          recipient_is_club_member: data.recipient_is_club_member,
           crm_order_id: data.crm_order_id ?? null,
         }, { count: 'exact' })
         .eq('graft_id', data.graft_id)

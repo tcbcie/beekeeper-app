@@ -117,6 +117,7 @@ export default function DistributeGraftModal({
 
   const today = new Date().toISOString().split('T')[0]
   const [distributionDate, setDistributionDate] = useState(today)
+  const [clubMember, setClubMember] = useState(false)
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const submittingRef = useRef(false)
@@ -288,6 +289,7 @@ export default function DistributeGraftModal({
         external_recipient_phone: isExternal ? (extPhone.trim() || null) : null,
         external_recipient_location: isExternal ? (extLocation.trim() || null) : null,
         mating_location: !isExternal ? (matingLocation.trim() || null) : null,
+        recipient_is_club_member: clubMember,
         crm_order_id: selectedOrderId || null,
       }
       success = await onBulkSave(bulkData)
@@ -308,6 +310,7 @@ export default function DistributeGraftModal({
         external_recipient_phone: isExternal ? (extPhone.trim() || null) : null,
         external_recipient_location: isExternal ? (extLocation.trim() || null) : null,
         mating_location: !isExternal ? (matingLocation.trim() || null) : null,
+        recipient_is_club_member: clubMember,
         crm_order_id: selectedOrderId || null,
       }
       success = await onSave(data)
@@ -643,6 +646,20 @@ export default function DistributeGraftModal({
               </select>
             </div>
           )}
+
+          {/* Club member — captured per distribution (no external list to look up). Affects
+              mated-queen pricing/prizes; independent of the recipient type. */}
+          <div>
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={clubMember}
+                onChange={(e) => setClubMember(e.target.checked)}
+                className="h-5 w-5 min-h-[20px] min-w-[20px] rounded border-border text-forest-600 focus:ring-2 focus:ring-forest-500"
+              />
+              <span className="text-sm font-medium text-text-secondary">Recipient is a club member</span>
+            </label>
+          </div>
 
           {/* Notes */}
           <div>

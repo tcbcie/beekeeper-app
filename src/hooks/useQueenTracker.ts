@@ -34,6 +34,7 @@ export interface TrackedQueen {
   external_recipient_location: string | null
   recipient_hive_number: string | null
   recipient_type: 'group_member' | 'app_user' | 'public'
+  recipient_is_club_member: boolean
   // Cell info
   cell_number: number
   queen_marked: boolean
@@ -196,6 +197,7 @@ export function useQueenTracker() {
           external_recipient_email,
           external_recipient_phone,
           external_recipient_location,
+          recipient_is_club_member,
           batch_grafts(
             cell_number, queen_marked, queen_number,
             queens!batch_grafts_breeder_queen_id_fkey(queen_number, subspecies, marking_color, birth_date)
@@ -421,6 +423,7 @@ export function useQueenTracker() {
           external_recipient_location: d.external_recipient_location as string | null,
           recipient_hive_number: hive?.hive_number ?? null,
           recipient_type: recipientType,
+          recipient_is_club_member: d.recipient_is_club_member === true,
           cell_number: cellNumber,
           queen_marked: graft?.queen_marked ?? false,
           queen_number: graft?.queen_number ?? null,
