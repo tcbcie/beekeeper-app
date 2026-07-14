@@ -167,3 +167,11 @@ For eligible `Pending Mating` rows, the row action area now provides a compact `
 - `src/hooks/useQueenTracker.ts`
 - `src/components/batches/QueenTrackerTab.tsx`
 - `docs/features/queen-tracker.md`
+
+## 9. Queen search filter (added later)
+A **Queen** free-text search sits above the `Group → Member → Batch → Year → Status` filters.
+It matches the tagged queen number (e.g. `38`, `38W`) or the cell number (e.g. `30`, `#30`; a
+leading `#` is ignored), applied after the other filters. Both the ledger rows and the summary
+counts (`N tracked / mated / …`) reflect the search, so filtering to a single queen shows just
+that queen's tracker row. Implemented purely client-side in `QueenTrackerTab.tsx`
+(`queenMatchedDistributions`); no hook or schema change.

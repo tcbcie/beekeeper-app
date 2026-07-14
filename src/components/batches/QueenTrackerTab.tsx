@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Snowflake,
   Tag,
+  Search,
   X,
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
@@ -906,6 +907,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   const [selectedBatchId, setSelectedBatchId] = useState<string>('')
   const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear())
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all')
+  const [queenQuery, setQueenQuery] = useState<string>('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [actionDraft, setActionDraft] = useState<OutcomeActionDraft | null>(null)
@@ -1047,11 +1049,23 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     return filterByBatch(memberScopedDistributions, safeSelectedBatchId || null)
   }, [memberScopedDistributions, safeSelectedBatchId, filterByBatch])
 
+  // Free-text search for a single queen — matches the tagged queen number (e.g. "38"/"38W")
+  // or the cell number (e.g. "30" / "#30"). A leading "#" is ignored.
+  const queenMatchedDistributions = useMemo(() => {
+    const query = queenQuery.trim().toLowerCase().replace(/^#/, '')
+    if (!query) return filteredDistributions
+    return filteredDistributions.filter((distribution) => {
+      const queenNumber = (distribution.queen_number ?? '').toLowerCase()
+      const cellNumber = String(distribution.cell_number ?? '')
+      return queenNumber.includes(query) || cellNumber.includes(query)
+    })
+  }, [filteredDistributions, queenQuery])
+
   const trackerRows = useMemo(() => {
-    return filteredDistributions.map((distribution) =>
+    return queenMatchedDistributions.map((distribution) =>
       buildDerivedRow(distribution, getGroupScopeLabel(distribution, groupNameById.get(distribution.rearing_group_id ?? '') || null))
     )
-  }, [filteredDistributions, groupNameById])
+  }, [queenMatchedDistributions, groupNameById])
 
   useEffect(() => {
     if (!selectedId && !expandedId) return
@@ -1075,7 +1089,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     }
   }, [actionDraft, trackerRows])
 
-  const stats = useMemo(() => calculateStats(filteredDistributions), [filteredDistributions, calculateStats])
+  const stats = useMemo(() => calculateStats(queenMatchedDistributions), [queenMatchedDistributions, calculateStats])
   const summaryLabel = stats.total === 1
     ? '1 queen matches the current filters.'
     : `${stats.total} queens match the current filters.`
@@ -1348,6 +1362,30 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
               <span className="inline-flex items-center gap-1.5 text-text-secondary"><span className="h-2 w-2 rounded-full bg-blue-500" />{stats.overwintered} overwintered</span>
               <span className="inline-flex items-center gap-1.5 text-text-secondary"><span className="h-2 w-2 rounded-full bg-red-500" />{stats.failed} failed</span>
               <span className="inline-flex items-center gap-1.5 text-text-secondary"><span className="h-2 w-2 rounded-full bg-amber-500" />{stats.hybridised} hybridised</span>
+            </div>
+          </div>
+
+          <div className="mb-3">
+            <label className="mb-1.5 block text-sm font-medium text-text-secondary">Queen</label>
+            <div className="relative">
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+              <input
+                type="text"
+                value={queenQuery}
+                onChange={(event) => setQueenQuery(event.target.value)}
+                placeholder="Search by queen number or cell # (e.g. 38W or 30)"
+                className="w-full rounded-xl border border-border bg-surface py-2.5 pl-9 pr-9 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
+              />
+              {queenQuery && (
+                <button
+                  type="button"
+                  onClick={() => setQueenQuery('')}
+                  aria-label="Clear queen search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-text-tertiary hover:text-foreground"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
           </div>
 
