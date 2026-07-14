@@ -97,3 +97,36 @@ mated-queen distributions found no other affected records.
 insert) still defaults `matingLocationOverride` to null, because a single shared field cannot
 represent several nucs sited at different apiaries. Single mated-queen distribution — the reported
 and common case — is fully covered.
+
+## Correction 3 — Mated queens distributed as `active` now get their `mated_date` stamped
+
+**Symptom.** Queen 38W (batch `TQRQB_RZ03`) showed a **blank Mated Date** in the queen form even
+though its mating was confirmed on 2026-07-04 at TBKA Kilcornan.
+
+**Root cause.** `create_queen_for_distribution` inserted the station, eircode, drone source and
+lineage but **never wrote `mated_date`**. The only place that sets `mated_date` is
+`promote_distributed_queen_on_mating`, which updates a queen **only while it is `cell`/`virgin`**.
+A queen distributed as already-mated (`status = 'active'`) skips that promotion path, so its
+`mated_date` was left `NULL` — even though the confirmed date already lived on the distribution row
+(`graft_distributions.mating_confirmed_date`, set to the distribution date for mated queens).
+
+**Fix (`create_queen_for_distribution` RPC).** For an `active` queen created from a graft, the RPC
+now reads the confirmed mating date from the graft's distribution row and stamps it into the
+queen's `mated_date` at insert time. The distribution row is created immediately before the queen
+RPC runs, so the date is always available. No client change was needed.
+
+**Data.** Eight existing queens in this account had the same gap (`11W, 21W, 22, 23W, 25W, 38W,
+3W, 5W`); each was backfilled from its distribution's `mating_confirmed_date`. No other accounts
+were affected.
+
+**Hardening.** While recreating the RPC, the security advisor confirmed both overloads of
+`create_queen_for_distribution` were executable by the `anon` role. `EXECUTE` was revoked from
+`anon`/`PUBLIC` (the function already rejects unauthenticated callers via its `auth.uid()` guard);
+`authenticated` retains access.
+
+### Files changed
+
+| File | Change |
+|------|--------|
+| `create_queen_for_distribution` (RPC) | For `active` queens from a graft, stamp `mated_date` from `graft_distributions.mating_confirmed_date`; revoke `anon`/`PUBLIC` execute |
+| Data backfill | 8 pre-existing queens' `mated_date` set from their distribution's confirmed mating date |
