@@ -175,3 +175,15 @@ leading `#` is ignored), applied after the other filters. Both the ledger rows a
 counts (`N tracked / mated / …`) reflect the search, so filtering to a single queen shows just
 that queen's tracker row. Implemented purely client-side in `QueenTrackerTab.tsx`
 (`queenMatchedDistributions`); no hook or schema change.
+
+## 10. Recipient-type dot recolour (clash fix)
+The DISTRIBUTION column shows a small dot for the **recipient type** (Group Member / App User /
+Public), driven by `getRecipientTypePresentation`. It previously used green / sky / amber — the
+same colours as the lifecycle stats legend (green mated, blue overwintered, amber hybridised) —
+so a mated queen sent to different recipient types looked like it had different statuses.
+
+The dot palette moved to the **indigo / violet / fuchsia** band, which the status legend never
+uses, so a recipient-type dot can no longer be mistaken for a queen status. A small
+"Recipient dot" legend (`RECIPIENT_TYPE_LEGEND`) was added above the ledger table. No data or
+assignment change — `recipient_type` was verified correct (external → public, group member →
+group_member, other app user → app_user).
