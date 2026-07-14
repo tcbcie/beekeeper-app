@@ -15,6 +15,7 @@ interface InspectionFormProps {
   hives: Hive[]
   apiaries: Apiary[]
   previousRightSizedFramesByHive?: Record<string, number | null>
+  previousSuperFullnessByHive?: Record<string, number[] | null>
   selectedApiaryId?: string
   selectedHiveId?: string
   isEditing?: boolean
@@ -117,6 +118,7 @@ export default function InspectionForm({
   hives,
   apiaries,
   previousRightSizedFramesByHive = {},
+  previousSuperFullnessByHive = {},
   selectedApiaryId = '',
   selectedHiveId = '',
   isEditing = false,
@@ -137,6 +139,7 @@ export default function InspectionForm({
   const [submitting, setSubmitting] = useState(false)
   const previousInitialDataRef = useRef<InspectionFormData | null>(initialData)
   const lastRightSizedPrefillKeyRef = useRef<string | null>(null)
+  const lastSuperFullnessPrefillKeyRef = useRef<string | null>(null)
 
   // Collapsible section states
   const [queenCellsExpanded, setQueenCellsExpanded] = useState(false)
@@ -278,6 +281,14 @@ export default function InspectionForm({
     const previousValue = previousRightSizedFramesByHive[hiveId]
     return typeof previousValue === 'number' && previousValue > 0 ? previousValue : null
   }, [previousRightSizedFramesByHive])
+
+  // Most recent inspection's per-super fullness for a hive, so a new inspection starts
+  // from where the supers were last left rather than resetting every gauge to 0.
+  const getPreviousSuperFullness = useCallback((hiveId: string): number[] | null => {
+    if (!hiveId) return null
+    const previousValue = previousSuperFullnessByHive[hiveId]
+    return Array.isArray(previousValue) && previousValue.length > 0 ? previousValue : null
+  }, [previousSuperFullnessByHive])
 
   // Number of honey supers on the selected hive drives how many fullness sliders show.
   // When editing an older inspection whose stored array is longer, keep every recorded value.
@@ -431,6 +442,44 @@ export default function InspectionForm({
         : prev
     ))
   }, [formData.hive_id, getPreviousRightSizedFrames, isEditing])
+
+  // Pre-fill Super Fullness from the hive's most recent inspection when starting a new
+  // inspection (supers don't empty between visits, so 0 is a misleading default). Skipped
+  // in edit mode so historical values are never overwritten.
+  useEffect(() => {
+    if (isEditing) {
+      const previousValue = formData.hive_id ? getPreviousSuperFullness(formData.hive_id) : null
+      lastSuperFullnessPrefillKeyRef.current = formData.hive_id
+        ? `${formData.hive_id}:${previousValue ? previousValue.join(',') : 'null'}`
+        : null
+      return
+    }
+
+    const currentHiveId = formData.hive_id
+
+    if (!currentHiveId) {
+      if (lastSuperFullnessPrefillKeyRef.current !== null) {
+        lastSuperFullnessPrefillKeyRef.current = null
+        setFormData(prev => prev.honey_super_fullness !== null ? { ...prev, honey_super_fullness: null } : prev)
+      }
+      return
+    }
+
+    const previousValue = getPreviousSuperFullness(currentHiveId)
+    const nextPrefillKey = `${currentHiveId}:${previousValue ? previousValue.join(',') : 'null'}`
+
+    if (lastSuperFullnessPrefillKeyRef.current === nextPrefillKey) {
+      return
+    }
+
+    lastSuperFullnessPrefillKeyRef.current = nextPrefillKey
+
+    setFormData(prev => (
+      prev.hive_id === currentHiveId
+        ? { ...prev, honey_super_fullness: previousValue }
+        : prev
+    ))
+  }, [formData.hive_id, getPreviousSuperFullness, isEditing])
 
   // Auto-fill the Weight (kg) field from a connected scale when starting a new
   // inspection. Skipped in edit mode so historical readings are never overwritten.
