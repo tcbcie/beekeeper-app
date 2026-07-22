@@ -390,7 +390,7 @@ export default function UserManagement() {
   }
 
   const handleImpersonateUser = async (targetUserId: string, targetUserEmail: string) => {
-    if (targetUserId === userId) {
+    if (!userId || targetUserId === userId) {
       toast.warning('You cannot impersonate yourself.')
       return
     }
@@ -539,7 +539,7 @@ export default function UserManagement() {
   }
 
   const handleRoleChange = async (targetUserId: string, newRole: 'User' | 'Power User' | 'Admin') => {
-    if (targetUserId === userId) {
+    if (!userId || targetUserId === userId) {
       toast.warning('You cannot change your own role.')
       return
     }
@@ -610,7 +610,7 @@ export default function UserManagement() {
   }
 
   const handleDeleteUser = async (targetUserId: string, userEmail: string) => {
-    if (targetUserId === userId) {
+    if (!userId || targetUserId === userId) {
       toast.warning('You cannot delete your own account.')
       return
     }
@@ -646,7 +646,7 @@ export default function UserManagement() {
   }
 
   const handleHardDeleteUser = async (targetUserId: string, userEmail: string) => {
-    if (targetUserId === userId) {
+    if (!userId || targetUserId === userId) {
       toast.warning('You cannot delete your own account.')
       return
     }
@@ -710,7 +710,7 @@ export default function UserManagement() {
 
   // User Account Toggle Function
   const handleToggleUserAccount = async (targetUserId: string, currentStatus: boolean, userEmail: string) => {
-    if (targetUserId === userId) {
+    if (!userId || targetUserId === userId) {
       toast.warning('You cannot disable your own account.')
       return
     }
