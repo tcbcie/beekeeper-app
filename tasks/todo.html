@@ -89,7 +89,7 @@
     <li>☑ 6.1 Profile export dedupe done: <code>USER_EXPORT_TABLES</code> (table + CSV label) and <code>fetchUserExportData()</code> added to <code>src/lib/database-export.ts</code>; JSON and CSV exports are now thin serialisers over the same fetch (~210 lines removed from the profile page). Two behaviour improvements: the export now includes <strong>11 user-scoped tables that were silently missing</strong> (CRM customers/orders/items/credit, queen assignments, queen weights, key events, DCA confirmations, batch breeder queens, tool suggestions, apiary map benches), and a failing table now aborts with an error instead of silently writing an incomplete backup.</li>
     <li>☑ 6.2 Dead libs deleted (<code>push-notifications.ts</code>, <code>location-obfuscation.ts</code>, <code>db-schema.ts</code> — zero importers confirmed across src/ and public/); <code>.claude/CLAUDE.md</code> core-library list corrected (now mentions <code>team-access.ts</code> instead).</li>
     <li>☑ 6.3 Hives page decomposed: 1,938 → 511 lines. <code>src/hooks/useHivesList.ts</code> (533 lines — fetching, enrichment, ownership/archive filters, init/refetch effects) + <code>src/components/hive/HiveFormSection.tsx</code> (967 lines — form state, validation, multi-step save with history seed and queenless queen-status sync). All code moved verbatim with assertion-guarded line surgery; the page keeps list rendering, client-side filters, bulk move/clone, delete/unarchive. Cards were already extracted (<code>HiveListCard</code>).</li>
-    <li>☐ 6.4 Queens page decomposition (same pattern).</li>
+    <li>☑ 6.4 Queens page decomposed: 1,740 → 927 lines. <code>src/hooks/useQueensList.ts</code> (267 lines — queens with batched hive/parent enrichment, dropdown option lists, rearing batches, breeder context) + <code>src/components/queens/QueenFormSection.tsx</code> (630 lines — form state, lineage derivation helpers, auto marking-colour, distributed-queen field locking, embedded lineage tree). Page keeps card/table views, filters, sort, compare selection, CSV export, delete flow.</li>
     <li>☐ 6.5 Batches page decomposition.</li>
     <li>☐ 6.6 Settings: extract admin <code>UserManagement</code> component + <code>useAdminUsers</code> hook (impersonation/hard-delete out of the page component).</li>
     <li>☐ 6.7 TraceabilityTool split (containers / batch runs / feedback hooks + tab components).</li>
@@ -105,6 +105,17 @@
   </ul>
 
   <h2>Review</h2>
+
+  <h3>Phase 6, iteration 3 (item 6.4, queens decomposition) — completed 22 July 2026</h3>
+  <p>Queens page 1,740 → 927 lines; data layer in <code>useQueensList</code>, add/edit form + lineage tree in
+  <code>QueenFormSection</code>. All logic moved verbatim (lineage derivation, self/descendant parent guard, Eircode
+  validation, distributed-queen locked-field update path, batch-mother auto-link). Wiring changes only:
+  <code>onSaved</code>/<code>onClose</code> props, and the form's lineage-tree toggle state now lives in the component.
+  <code>tsc</code> 0 src errors, lint clean. Not yet committed.</p>
+  <p><strong>User test requested:</strong> queens page — add a queen (marking colour auto-fills from birth year,
+  lineage preview updates), edit a queen (fields pre-filled; for a distributed queen the locked fields still save
+  correctly), try setting a queen's own daughter as her mother (must be blocked), lineage tree toggle inside the
+  edit form, arrive via a queen detail "edit" link (form opens pre-filled), CSV export, compare selection.</p>
 
   <h3>Phase 6, iteration 2 (item 6.3, hives decomposition) — completed 22 July 2026</h3>
   <p>Hives page 1,938 → 511 lines; data layer in <code>useHivesList</code>, add/edit form in <code>HiveFormSection</code>.
