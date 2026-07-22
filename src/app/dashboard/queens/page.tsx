@@ -12,18 +12,43 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import { useToast } from '@/components/ui/Toast'
 import QueenLineageTree from '@/components/QueenLineageTree'
-import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge, QUEEN_ROLE_OPTIONS, isProductionQueen } from '@/types/queen'
+import { Queen, QueenFormData, Batch, getQueenColorFromYear, calculateQueenAge, QUEEN_ROLE_OPTIONS, isProductionQueen, queenStatusBadgeClass } from '@/types/queen'
 import QueenRoleBadge from '@/components/queens/QueenRoleBadge'
 import Button from '@/components/ui/Button'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import { queenToLabelDatum } from '@/components/labels/queenMapping'
 import { useLabelPrinting } from '@/hooks/useLabelPrinting'
 import { usePersistentState } from '@/hooks/usePersistentState'
+import { getTeamAccess } from '@/lib/team-access'
 
 // Module-level so the identity is stable across renders and the limit lives
 // in one place. Selection persistence key kept alongside for the same reason.
 const COMPARE_MAX = 4
 const COMPARE_SELECTION_STORAGE_KEY = 'queen-compare-selection'
+
+// Shared by the mobile card list and the desktop table so the two views can
+// never drift apart. Status colours come from the canonical
+// queenStatusBadgeClass in @/types/queen.
+const queenStatusLabel = (status: string): string => {
+ switch (status) {
+ case 'cell': return 'Cell'
+ case 'virgin': return 'Virgin'
+ case 'swarmed': return 'Swarmed'
+ case 'superseded': return 'Superseded'
+ case 'distributed': return 'Distributed'
+ default: return status
+ }
+}
+
+const markingColorChipClass = (color?: string | null): string => {
+ switch (color) {
+ case 'Yellow': return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-800'
+ case 'Red': return 'bg-red-100 dark:bg-red-900/30 text-red-900 dark:text-red-300 border border-red-300 dark:border-red-800'
+ case 'Green': return 'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-300 border border-green-300 dark:border-green-800'
+ case 'Blue': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
+ default: return 'bg-surface-secondary text-text-secondary border border-border'
+ }
+}
 
 // Column keys the queens table supports sorting on. Actions, Colour, and Hive
 // are intentionally omitted — they either carry no natural order (actions) or
@@ -136,6 +161,7 @@ export default function QueensPage() {
  const highlightedQueenId = searchParams.get('id')
  const editParam = searchParams.get('edit')
  const queenRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
+ const queenCardRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
  const [queens, setQueens] = useState<Queen[]>([])
  const [showForm, setShowForm] = useState(false)
@@ -276,40 +302,9 @@ export default function QueensPage() {
  const currentUserId = userIdParam || userId
  if (!currentUserId) return
 
- // Get shared apiary IDs
- const { data: teamMemberships } = await supabase
- .from('team_members')
- .select('team_id')
- .eq('user_id', currentUserId)
-
- const teamIds = teamMemberships?.map(tm => tm.team_id) || []
-
- // Update isTeamMember state based on whether user has any team memberships
- setIsTeamMember(teamIds.length > 0)
-
- let sharedApiaryIds: string[] = []
- if (teamIds.length > 0) {
- const { data: sharedApiaries } = await supabase
- .from('team_apiaries')
- .select('apiary_id')
- .in('team_id', teamIds)
-
- sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
- }
-
- // Get user IDs who share apiaries with me (owners of shared apiaries)
- let sharedUserIds: string[] = []
- if (sharedApiaryIds.length > 0) {
- const { data: sharedApiaries } = await supabase
- .from('apiaries')
- .select('user_id')
- .in('id', sharedApiaryIds)
- .neq('user_id', currentUserId)
-
- sharedUserIds = sharedApiaries
- ? [...new Set(sharedApiaries.map(a => a.user_id).filter(Boolean) as string[])]
- : []
- }
+ // One memoised round trip for team membership + shared apiary owners
+ const { isTeamMember: hasTeams, sharedOwnerIds: sharedUserIds } = await getTeamAccess(currentUserId)
+ setIsTeamMember(hasTeams)
 
  // Fetch my queens + queens from users who share apiaries with me
  // Note: Self-referencing joins (mother/father) are handled separately due to Supabase limitations
@@ -335,82 +330,71 @@ export default function QueensPage() {
  return
  }
 
- // Then enrich with hive, mother, and father data
+ // Then enrich with hive, mother, and father data using two batched queries
+ // (previously one hive query + up to two parent queries PER QUEEN)
  if (queensData && queensData.length > 0) {
  // Create a map of all queens for quick lookup of mother/father
  const queensMap = new Map(queensData.map(q => [q.id, q]))
+ const queenIds = queensData.map(q => q.id).filter(Boolean)
 
- const enrichedQueens = await Promise.all(
- queensData.map(async (queen) => {
- if (!queen.id) return queen
-
- // Find hive that has this queen (either my hive or shared hive)
- // Include all hives regardless of status (Active, Weak, Queenless, etc.)
- const { data: hiveData, error: hiveError } = await supabase
+ // Find hives housing these queens (mine or shared), any status,
+ // in a single query
+ const { data: hivesData, error: hivesError } = await supabase
  .from('hives')
  .select(`
  id,
  hive_number,
+ queen_id,
  apiaries (
  id,
  name
  )
  `)
- .eq('queen_id', queen.id)
- .maybeSingle()
+ .in('queen_id', queenIds)
 
- if (hiveError) {
- console.error(`Error fetching hive for queen ${queen.queen_number}:`, hiveError)
- }
-
- // Get mother from map or fetch if not in current results
- let mother = null
- if (queen.mother_id) {
- const motherFromMap = queensMap.get(queen.mother_id)
- if (motherFromMap) {
- mother = {
- id: motherFromMap.id,
- queen_number: motherFromMap.queen_number,
- marking_color: motherFromMap.marking_color,
- }
- } else {
- const { data: motherData } = await supabase
- .from('queens')
- .select('id, queen_number, marking_color')
- .eq('id', queen.mother_id)
- .maybeSingle()
- mother = motherData
- }
+ if (hivesError) {
+ console.error('Error fetching hives for queens:', hivesError)
  }
 
- // Get father from map or fetch if not in current results
- let father = null
- if (queen.father_id) {
- const fatherFromMap = queensMap.get(queen.father_id)
- if (fatherFromMap) {
- father = {
- id: fatherFromMap.id,
- queen_number: fatherFromMap.queen_number,
- marking_color: fatherFromMap.marking_color,
- }
- } else {
- const { data: fatherData } = await supabase
- .from('queens')
- .select('id, queen_number, marking_color')
- .eq('id', queen.father_id)
- .maybeSingle()
- father = fatherData
- }
- }
-
- return {
- ...queen,
- hives: hiveData || undefined,
- mother,
- father,
- }
- })
+ const hivesByQueenId = new Map(
+ (hivesData || []).map(h => [h.queen_id, h])
  )
+
+ // Fetch any mother/father not already in the current results,
+ // batched (never embed queens->queens self-joins)
+ const missingParentIds = [...new Set(
+ queensData
+ .flatMap(q => [q.mother_id, q.father_id])
+ .filter((id): id is string => Boolean(id) && !queensMap.has(id))
+ )]
+
+ if (missingParentIds.length > 0) {
+ const { data: parentsData } = await supabase
+ .from('queens')
+ .select('id, queen_number, marking_color')
+ .in('id', missingParentIds)
+ for (const parent of parentsData || []) {
+ queensMap.set(parent.id, parent)
+ }
+ }
+
+ const toParentRef = (parentId: string | null) => {
+ if (!parentId) return null
+ const parent = queensMap.get(parentId)
+ if (!parent) return null
+ return {
+ id: parent.id,
+ queen_number: parent.queen_number,
+ marking_color: parent.marking_color,
+ }
+ }
+
+ const enrichedQueens = queensData.map(queen => ({
+ ...queen,
+ hives: hivesByQueenId.get(queen.id) || undefined,
+ mother: toParentRef(queen.mother_id),
+ father: toParentRef(queen.father_id),
+ }))
  setQueens(enrichedQueens as Queen[])
  } else {
  setQueens([])
@@ -542,12 +526,14 @@ export default function QueensPage() {
  // Scroll to highlighted queen when data loads
  useEffect(() => {
  if (highlightedQueenId && queens.length > 0) {
- const queenElement = queenRefs.current[highlightedQueenId]
- if (queenElement) {
  setTimeout(() => {
- queenElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+ // Prefer whichever view is actually visible at this breakpoint:
+ // mobile cards or the desktop table row.
+ const cardEl = queenCardRefs.current[highlightedQueenId]
+ const tableEl = queenRefs.current[highlightedQueenId]
+ const queenElement = cardEl && cardEl.offsetParent !== null ? cardEl : tableEl
+ queenElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })
  }, 100)
- }
  }
  }, [highlightedQueenId, queens])
 
@@ -1460,7 +1446,132 @@ export default function QueensPage() {
  </select>
  </div>
 
- <div className="overflow-x-auto">
+ {/* Mobile card list — the table below is desktop-only */}
+ <div className="md:hidden space-y-3">
+ {sortedQueens.map((queen) => (
+ <div
+ key={queen.id}
+ ref={(el) => {
+ queenCardRefs.current[queen.id] = el
+ }}
+ className={`rounded-lg border p-4 transition-all duration-500 ${
+ highlightedQueenId === queen.id
+ ? 'bg-forest-100 dark:bg-forest-900/30 border-l-4 border-forest-600 dark:border-forest-500'
+ : 'bg-surface dark:bg-surface-elevated border-border'
+ }`}
+ >
+ <div className="flex items-start justify-between gap-2">
+ <div className="min-w-0">
+ <span className="inline-flex items-center gap-1.5 flex-wrap">
+ <Link
+ href={`/dashboard/queens/${queen.id}`}
+ className="text-lg font-semibold text-forest-600 dark:text-forest-400 hover:text-forest-700 dark:hover:text-forest-300 hover:underline"
+ >
+ {queen.queen_number}
+ </Link>
+ <QueenRoleBadge role={queen.queen_role} />
+ </span>
+ {(() => {
+ const code = queenCodeFor(queen, queen.user_id === userId ? breederContext : null)
+ return code ? <div className="text-xs font-mono text-text-tertiary mt-0.5">{code}</div> : null
+ })()}
+ </div>
+ <span className={`shrink-0 px-2.5 py-1 rounded text-sm font-medium ${queenStatusBadgeClass(queen.status)}`}>
+ {queenStatusLabel(queen.status)}
+ </span>
+ </div>
+ <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+ <div>
+ <span className="text-text-tertiary">Mother: </span>
+ {queen.mother ? (
+ <span className="text-forest-600 dark:text-forest-400 font-medium">{queen.mother.queen_number}</span>
+ ) : queen.distributed_mother_queen ? (
+ <span className="font-medium text-text-secondary" title={queen.distributed_mother_queen}>
+ {queen.distributed_mother_queen.split(' (')[0]}
+ </span>
+ ) : (
+ <span className="text-text-secondary">N/A</span>
+ )}
+ </div>
+ <div className="text-text-primary">
+ <span className="text-text-tertiary">Age: </span>
+ {calculateQueenAge(queen.birth_date)}
+ </div>
+ <div>
+ <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${markingColorChipClass(queen.marking_color)}`}>
+ {queen.marking_color || 'No colour'}
+ </span>
+ </div>
+ <div>
+ <span className="text-text-tertiary">Hive: </span>
+ {queen.hives?.id ? (
+ <Link
+ href={`/dashboard/hives/${queen.hives.id}`}
+ className="text-forest-600 dark:text-forest-400 font-medium hover:underline"
+ >
+ {queen.hives.hive_number}
+ </Link>
+ ) : (
+ <span className="text-text-secondary">N/A</span>
+ )}
+ </div>
+ {queen.hives?.apiaries?.name && (
+ <div className="col-span-2 text-text-secondary">
+ <span className="text-text-tertiary">Apiary: </span>
+ {queen.hives.apiaries.name}
+ </div>
+ )}
+ {queen.status === 'active' && queen.birth_date && (Date.now() - new Date(queen.birth_date).getTime()) > 2 * 365 * 24 * 60 * 60 * 1000 && (
+ <div className="col-span-2">
+ <span className="inline-block px-2 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded border border-amber-300 dark:border-amber-700">
+ Over 2 years old — replace soon
+ </span>
+ </div>
+ )}
+ </div>
+ <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+ <label className="flex items-center gap-2 min-h-[44px] px-1 text-sm text-text-secondary cursor-pointer">
+ <input
+ type="checkbox"
+ checked={selectedIds.has(queen.id)}
+ onChange={() => toggleSelect(queen.id)}
+ aria-label={`Select queen ${queen.queen_number} for comparison`}
+ className="w-5 h-5 rounded border-border text-forest-600 focus:ring-2 focus:ring-forest-500 cursor-pointer"
+ />
+ Compare
+ </label>
+ {labelPrintingEnabled && (
+ <Button
+ unstyled
+ onClick={() => setPrintQueens([queen])}
+ className="min-h-[44px] px-3 rounded-lg border border-border text-text-secondary hover:text-foreground hover:bg-surface-secondary flex items-center gap-1.5 text-sm font-semibold"
+ >
+ <Printer size={18} />
+ Label
+ </Button>
+ )}
+ <Button
+ unstyled
+ onClick={() => handleEdit(queen)}
+ className="flex-1 min-h-[44px] rounded-lg text-sm font-semibold border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 flex items-center justify-center gap-1.5"
+ >
+ <Edit2 size={16} />
+ Edit
+ </Button>
+ <Button
+ unstyled
+ onClick={() => handleDelete(queen.id)}
+ className="min-h-[44px] px-4 rounded-lg text-sm font-semibold border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 flex items-center justify-center gap-1.5"
+ >
+ <Trash2 size={16} />
+ Delete
+ </Button>
+ </div>
+ </div>
+ ))}
+ </div>
+
+ <div className="hidden md:block overflow-x-auto">
  <table className="min-w-full divide-y divide-border">
  <thead className="bg-surface-secondary">
  <tr>
@@ -1572,19 +1683,7 @@ export default function QueensPage() {
  </span>
  </td>
  <td className="px-3 py-4 whitespace-nowrap">
- <span
- className={`px-2 py-1 rounded text-xs font-medium ${
- queen.marking_color === 'Yellow'
- ? 'bg-yellow-100 dark:bg-yellow-900/30 text-foreground dark:text-yellow-300 border border-yellow-300 dark:border-yellow-800'
- : queen.marking_color === 'Red'
- ? 'bg-red-100 dark:bg-red-900/30 text-foreground dark:text-red-300 border border-red-300 dark:border-red-800'
- : queen.marking_color === 'Green'
- ? 'bg-green-100 dark:bg-green-900/30 text-foreground dark:text-green-300 border border-green-300 dark:border-green-800'
- : queen.marking_color === 'Blue'
- ? 'bg-blue-100 dark:bg-blue-900/30 text-foreground dark:text-blue-300 border border-blue-300 dark:border-blue-800'
- : 'bg-surface-secondary text-text-secondary border border-border'
- }`}
- >
+ <span className={`px-2 py-1 rounded text-xs font-medium ${markingColorChipClass(queen.marking_color)}`}>
  {queen.marking_color || 'None'}
  </span>
  </td>
@@ -1605,40 +1704,15 @@ export default function QueensPage() {
  {queen.hives?.apiaries?.name || 'N/A'}
  </td>
  <td className="px-3 py-4 whitespace-nowrap">
- <span
- className={`px-2 py-1 rounded text-xs font-medium ${
- queen.status === 'active'
- ? 'bg-green-100 dark:bg-green-900/30 text-foreground dark:text-green-300 border border-green-300 dark:border-green-800'
- : queen.status === 'virgin'
- ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700'
- : queen.status === 'cell'
- ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
- : queen.status === 'swarmed'
- ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border border-orange-300 dark:border-orange-700'
- : queen.status === 'superseded'
- ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700'
- : queen.status === 'distributed'
- ? 'bg-slate-100 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600'
- : 'bg-surface-secondary text-text-secondary border border-border'
- }`}
- >
- {queen.status === 'cell'
- ? 'Cell'
- : queen.status === 'virgin'
- ? 'Virgin'
- : queen.status === 'swarmed'
- ? 'Swarmed'
- : queen.status === 'superseded'
- ? 'Superseded'
- : queen.status === 'distributed'
- ? 'Distributed'
- : queen.status}
+ <span className={`px-2 py-1 rounded text-xs font-medium ${queenStatusBadgeClass(queen.status)}`}>
+ {queenStatusLabel(queen.status)}
  </span>
  </td>
  </tr>
  ))}
  </tbody>
  </table>
+ </div>
  {filteredQueens.length === 0 && (
  <div className="py-4">
  <EmptyState
@@ -1650,7 +1724,6 @@ export default function QueensPage() {
  />
  </div>
  )}
- </div>
  </div>
 
  <PrintLabelsModal

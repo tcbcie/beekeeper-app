@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
+import { getTeamAccess } from '@/lib/team-access'
 
 // Helper to compare string arrays (avoids unnecessary state updates)
 function arraysEqual(a: string[], b: string[]): boolean {
@@ -63,81 +64,32 @@ interface UseRecordsDataReturn {
   fetchAllData: (userId: string, ownershipFilter: OwnershipFilter) => Promise<void>
 }
 
-// Helper to extract team hive IDs from nested Supabase response
-type TeamData = {
-  teams?: {
-    team_apiaries?: Array<{
-      apiaries?: {
-        hives?: Array<{ id: string; user_id?: string }>
-      }
-    }>
-  }
-}
-
-function extractTeamHiveIds(sharedHiveData: TeamData[] | null, currentUserId?: string): {
-  teamHiveIds: string[]
-  allTeamHiveIds: string[]
-} {
-  const teamHiveIds: string[] = []
-  const allTeamHiveIds: string[] = []
-
-  if (sharedHiveData) {
-    sharedHiveData.forEach(tm => {
-      if (tm.teams?.team_apiaries) {
-        tm.teams.team_apiaries.forEach(ta => {
-          if (ta.apiaries?.hives) {
-            ta.apiaries.hives.forEach(h => {
-              if (h.id) {
-                allTeamHiveIds.push(h.id)
-                if (currentUserId && h.user_id !== currentUserId) {
-                  teamHiveIds.push(h.id)
-                } else if (!currentUserId) {
-                  teamHiveIds.push(h.id)
-                }
-              }
-            })
-          }
-        })
-      }
-    })
-  }
-
-  return { teamHiveIds, allTeamHiveIds }
-}
-
 async function getAccessibleHiveIds(userId: string): Promise<{
   ownHiveIds: string[]
   teamHiveIds: string[]
   allTeamHiveIds: string[]
 }> {
-  // Fetch user's own hive IDs
-  const { data: ownHivesData } = await supabase
-    .from('hives')
-    .select('id')
-    .eq('user_id', userId)
+  // Own hive IDs and team access resolved in parallel (one memoised RPC)
+  const [{ data: ownHivesData }, { sharedApiaryIds }] = await Promise.all([
+    supabase.from('hives').select('id').eq('user_id', userId),
+    getTeamAccess(userId),
+  ])
 
   const ownHiveIds = ownHivesData?.map(h => h.id) || []
 
-  // Get shared hive IDs (hives in team apiaries)
-  const { data: sharedHiveData } = await supabase
-    .from('team_members')
-    .select(`
-      team_id,
-      teams!inner(
-        team_apiaries!inner(
-          apiary_id,
-          apiaries!inner(
-            hives!inner(id, user_id)
-          )
-        )
-      )
-    `)
-    .eq('user_id', userId)
+  let teamHiveIds: string[] = []
+  let allTeamHiveIds: string[] = []
+  if (sharedApiaryIds.length > 0) {
+    const { data: teamHivesData } = await supabase
+      .from('hives')
+      .select('id, user_id')
+      .in('apiary_id', sharedApiaryIds)
 
-  const { teamHiveIds, allTeamHiveIds } = extractTeamHiveIds(
-    sharedHiveData as TeamData[] | null,
-    userId
-  )
+    allTeamHiveIds = (teamHivesData || []).map(h => h.id)
+    teamHiveIds = (teamHivesData || [])
+      .filter(h => h.user_id !== userId)
+      .map(h => h.id)
+  }
 
   return { ownHiveIds, teamHiveIds, allTeamHiveIds }
 }
@@ -420,33 +372,19 @@ export function useRecordsData(): UseRecordsDataReturn {
       .eq('user_id', userId)
       .order('hive_number')
 
-    // Fetch team memberships
-    const { data: teamMemberships } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', userId)
-
-    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
-    setIsTeamMember(teamIds.length > 0)
+    // One memoised round trip for team membership + shared apiary access
+    const { isTeamMember: hasTeams, sharedApiaryIds } = await getTeamAccess(userId)
+    setIsTeamMember(hasTeams)
 
     let sharedHives: Hive[] = []
-    if (teamIds.length > 0) {
-      const { data: teamApiaryData } = await supabase
-        .from('team_apiaries')
-        .select('apiary_id')
-        .in('team_id', teamIds)
+    if (sharedApiaryIds.length > 0) {
+      const { data: sharedHivesData } = await supabase
+        .from('hives')
+        .select('*')
+        .in('apiary_id', sharedApiaryIds)
+        .order('hive_number')
 
-      const sharedApiaryIds = teamApiaryData?.map(ta => ta.apiary_id) || []
-
-      if (sharedApiaryIds.length > 0) {
-        const { data: sharedHivesData } = await supabase
-          .from('hives')
-          .select('*')
-          .in('apiary_id', sharedApiaryIds)
-          .order('hive_number')
-
-        sharedHives = sharedHivesData || []
-      }
+      sharedHives = sharedHivesData || []
     }
 
     // Combine and deduplicate
@@ -490,34 +428,22 @@ export function useRecordsData(): UseRecordsDataReturn {
       .eq('user_id', userId)
       .order('name')
 
-    // Fetch team memberships
-    const { data: teamMemberships } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', userId)
-
-    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+    // One memoised round trip for shared apiary access
+    const { sharedApiaryIds } = await getTeamAccess(userId)
 
     let sharedApiaries: Apiary[] = []
-    if (teamIds.length > 0) {
-      const { data: teamApiaryData } = await supabase
-        .from('team_apiaries')
-        .select('apiary_id, apiaries(id, name, user_id)')
-        .in('team_id', teamIds)
+    if (sharedApiaryIds.length > 0) {
+      const { data: sharedApiaryData } = await supabase
+        .from('apiaries')
+        .select('id, name, user_id')
+        .in('id', sharedApiaryIds)
+        .neq('user_id', userId)
 
-      if (teamApiaryData) {
-        sharedApiaries = teamApiaryData
-          .filter(ta => ta.apiaries)
-          .map(ta => {
-            const apiary = Array.isArray(ta.apiaries) ? ta.apiaries[0] : ta.apiaries
-            return {
-              id: apiary!.id,
-              name: apiary!.name,
-              is_shared: apiary!.user_id !== userId
-            }
-          })
-          .filter(apiary => apiary.is_shared)
-      }
+      sharedApiaries = (sharedApiaryData || []).map(apiary => ({
+        id: apiary.id,
+        name: apiary.name,
+        is_shared: true
+      }))
     }
 
     const allApiaries = [

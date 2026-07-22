@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
+import { clearTeamAccessCache } from '@/lib/team-access'
 import { User, Mail, Edit2, Users, Plus, X, Trash2, UserPlus, Clock, Send, MapPin, Share2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -215,6 +216,7 @@ export default function ApiaryTeamPage() {
 
       if (error) throw error
 
+      clearTeamAccessCache()
       toast.success('Apiary shared with team successfully!')
       setSelectedApiaryId('')
       setShowShareApiaryModal(false)
@@ -240,6 +242,7 @@ export default function ApiaryTeamPage() {
 
       if (error) throw error
 
+      clearTeamAccessCache()
       toast.success('Apiary removed from team successfully!')
       if (selectedTeam) {
         fetchTeamApiaries(selectedTeam.id)

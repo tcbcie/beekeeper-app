@@ -20,6 +20,7 @@ import QueenTrackerTab from '@/components/batches/QueenTrackerTab'
 import QueenRearingPlanningTab from '@/components/batches/QueenRearingPlanningTab'
 import NucReportsTab from '@/components/batches/NucReportsTab'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
+import { getTeamAccess } from '@/lib/team-access'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
 
 interface Queen {
@@ -395,23 +396,8 @@ export default function BatchesPage() {
  const currentUserId = userIdParam || userId
  if (!currentUserId) return
 
- // Fetch team memberships to include shared apiaries
- const { data: teamMemberships } = await supabase
- .from('team_members')
- .select('team_id')
- .eq('user_id', currentUserId)
-
- const teamIds = teamMemberships?.map(tm => tm.team_id) || []
-
- let sharedApiaryIds: string[] = []
- if (teamIds.length > 0) {
- const { data: sharedApiaries } = await supabase
- .from('team_apiaries')
- .select('apiary_id')
- .in('team_id', teamIds)
-
- sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
- }
+ // One memoised round trip for shared apiary access
+ const { sharedApiaryIds } = await getTeamAccess(currentUserId)
 
  let query = supabase.from('apiaries').select('id, name')
  if (sharedApiaryIds.length > 0) {

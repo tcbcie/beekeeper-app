@@ -99,8 +99,8 @@ src/
 
 ### Core Libraries
 - `src/lib/supabase.ts` - Supabase client
-- `src/lib/push-notifications.ts` - Web push notification manager
 - `src/lib/notifications.ts` - Browser notification utilities
+- `src/lib/team-access.ts` - Cached team/shared-apiary access lookup (use instead of querying team_members/team_apiaries)
 
 ### Service Worker
 - `public/service-worker.js` - PWA service worker with caching and push notifications
@@ -235,7 +235,10 @@ For any new or existing feature, create/update the documentation in docs/feature
 
 Use British English for everything.
 
-For the exploration task, always use multiple agents.
+For the exploration task, always use multiple agents and consult existing documentation in the features folder.
+
+DO not change the version number by running the existing scripts. This will remain a manually triggered task.
+
 
 
 
