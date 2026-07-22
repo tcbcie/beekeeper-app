@@ -90,7 +90,7 @@
     <li>☑ 6.2 Dead libs deleted (<code>push-notifications.ts</code>, <code>location-obfuscation.ts</code>, <code>db-schema.ts</code> — zero importers confirmed across src/ and public/); <code>.claude/CLAUDE.md</code> core-library list corrected (now mentions <code>team-access.ts</code> instead).</li>
     <li>☑ 6.3 Hives page decomposed: 1,938 → 511 lines. <code>src/hooks/useHivesList.ts</code> (533 lines — fetching, enrichment, ownership/archive filters, init/refetch effects) + <code>src/components/hive/HiveFormSection.tsx</code> (967 lines — form state, validation, multi-step save with history seed and queenless queen-status sync). All code moved verbatim with assertion-guarded line surgery; the page keeps list rendering, client-side filters, bulk move/clone, delete/unarchive. Cards were already extracted (<code>HiveListCard</code>).</li>
     <li>☑ 6.4 Queens page decomposed: 1,740 → 927 lines. <code>src/hooks/useQueensList.ts</code> (267 lines — queens with batched hive/parent enrichment, dropdown option lists, rearing batches, breeder context) + <code>src/components/queens/QueenFormSection.tsx</code> (630 lines — form state, lineage derivation helpers, auto marking-colour, distributed-queen field locking, embedded lineage tree). Page keeps card/table views, filters, sort, compare selection, CSV export, delete flow.</li>
-    <li>☐ 6.5 Batches page decomposition.</li>
+    <li>☑ 6.5 Batches page decomposed: 2,486 → 1,065 lines. <code>src/hooks/useBatchesList.ts</code> (365 lines — batches with sealed-cell counts + breeder names, queen/apiary/hive options, subscription flag, shared interfaces/date helpers now exported from here) + <code>src/components/batches/BatchFormSection.tsx</code> (1,151 lines — form state, timeline auto-calc, name-uniqueness pre-check, multi-breeder RPC, voice notes, async edit population with stale-fetch guard, grafts section). Page keeps tabs, deep-link handling, hive-score engine, list cards/tables, filters.</li>
     <li>☐ 6.6 Settings: extract admin <code>UserManagement</code> component + <code>useAdminUsers</code> hook (impersonation/hard-delete out of the page component).</li>
     <li>☐ 6.7 TraceabilityTool split (containers / batch runs / feedback hooks + tab components).</li>
     <li>☐ 6.8 Consolidate date formatting into <code>src/lib/date-utils.ts</code>; remove the four <code>formatDateIrish</code> copies and local <code>formatDate</code> helpers.</li>
@@ -105,6 +105,18 @@
   </ul>
 
   <h2>Review</h2>
+
+  <h3>Phase 6, iteration 4 (item 6.5, batches decomposition) — completed 22 July 2026</h3>
+  <p>Batches page 2,486 → 1,065 lines. All logic verbatim; wiring changes: <code>onSaved</code>/<code>onClose</code> props,
+  the async edit-population (breeder set + grafts lock, stale-fetch guard) now runs inside the form component when
+  <code>editingBatch</code> changes, rearing groups are fetched via the hook's <code>onUserReady</code> callback, and the
+  "New Batch" button resets by remount instead of an explicit resetForm. <code>tsc</code> 0 src errors, lint clean.
+  Not yet committed.</p>
+  <p><strong>User test requested (highest-risk page):</strong> create a batch (timeline dates auto-fill from graft date,
+  duplicate name rejected), edit a batch with grafts (breeder inputs locked), edit a multi-breeder batch (breeder set
+  pre-selected and preserved on save), record a voice note into the form, open a batch via a queen's "View Batch"
+  deep link (form opens on the grafting tab), group batch requires mating apiary, notifications toggles persist,
+  and the other tabs (nucs, tracker, planning, reports) still load.</p>
 
   <h3>Phase 6, iteration 3 (item 6.4, queens decomposition) — completed 22 July 2026</h3>
   <p>Queens page 1,740 → 927 lines; data layer in <code>useQueensList</code>, add/edit form + lineage tree in
