@@ -92,7 +92,7 @@
     <li>☑ 6.4 Queens page decomposed: 1,740 → 927 lines. <code>src/hooks/useQueensList.ts</code> (267 lines — queens with batched hive/parent enrichment, dropdown option lists, rearing batches, breeder context) + <code>src/components/queens/QueenFormSection.tsx</code> (630 lines — form state, lineage derivation helpers, auto marking-colour, distributed-queen field locking, embedded lineage tree). Page keeps card/table views, filters, sort, compare selection, CSV export, delete flow.</li>
     <li>☑ 6.5 Batches page decomposed: 2,486 → 1,065 lines. <code>src/hooks/useBatchesList.ts</code> (365 lines — batches with sealed-cell counts + breeder names, queen/apiary/hive options, subscription flag, shared interfaces/date helpers now exported from here) + <code>src/components/batches/BatchFormSection.tsx</code> (1,151 lines — form state, timeline auto-calc, name-uniqueness pre-check, multi-breeder RPC, voice notes, async edit population with stale-fetch guard, grafts section). Page keeps tabs, deep-link handling, hive-score engine, list cards/tables, filters.</li>
     <li>☑ 6.6 Settings decomposed: 1,880 → 223 lines. The entire admin surface (user list + filters + pagination, role/expiry changes, enable/disable, soft/hard delete + restore, reactivation requests, impersonation, apiary ownership transfer + its modal) moved verbatim into <code>src/components/settings/UserManagement.tsx</code> (1,693 lines), mirroring the existing <code>TicketManagement</code> pattern. The component is self-contained (resolves the admin's own id internally for the self-guards); the page is now a thin section router. Note: leaving and re-entering the Users tab now refetches the list (state lives in the component) — fresher data, one extra request.</li>
-    <li>☐ 6.7 TraceabilityTool split (containers / batch runs / feedback hooks + tab components).</li>
+    <li>☑ 6.7 TraceabilityTool split: 2,384-line monolith → 315-line shell + <code>traceability/ContainersTab.tsx</code> (655 — container CRUD, harvest linking, label selection) + <code>traceability/BatchesTab.tsx</code> (1,515 — batch runs, jar config, story templates, QR/trace codes, public preview, consumer feedback). The shell owns the shared containers list (the batch form links to containers), producer context and the print modal; coordination state (active tab, forms-open, selection) threads down as props. Each tab now fetches its own domain data on mount.</li>
     <li>☐ 6.8 Consolidate date formatting into <code>src/lib/date-utils.ts</code>; remove the four <code>formatDateIrish</code> copies and local <code>formatDate</code> helpers.</li>
   </ul>
 
@@ -105,6 +105,17 @@
   </ul>
 
   <h2>Review</h2>
+
+  <h3>Phase 6, iteration 6 (item 6.7, TraceabilityTool split) — completed 22 July 2026</h3>
+  <p>2,384 lines → shell (315) + ContainersTab (655) + BatchesTab (1,515). Logic verbatim; the redundant
+  <code>activeTab</code> guards inside each tab's JSX were dropped (a tab only renders when active), and harvest
+  options now refresh when the edited container changes (previously only on tab switch). <code>tsc</code> 0 src errors,
+  lint clean. Not yet committed.</p>
+  <p><strong>User test requested (traceability tool):</strong> Bulk Honey tab — create/edit/delete a container with
+  linked harvests, exclusion reason, select containers and print labels (producer block populated); Batches tab —
+  create a batch from containers (total weight auto-tallies), jar configuration, story template with placeholders,
+  QR code view/download, public page preview, feedback summary/details; switch tabs repeatedly and confirm both
+  lists stay correct.</p>
 
   <h3>Phase 6, iteration 5 (item 6.6, settings admin extraction) — completed 22 July 2026</h3>
   <p>Settings page 1,880 → 223 lines; admin User Management (the most dangerous code in the app — impersonation,
