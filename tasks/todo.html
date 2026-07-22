@@ -93,7 +93,7 @@
     <li>☑ 6.5 Batches page decomposed: 2,486 → 1,065 lines. <code>src/hooks/useBatchesList.ts</code> (365 lines — batches with sealed-cell counts + breeder names, queen/apiary/hive options, subscription flag, shared interfaces/date helpers now exported from here) + <code>src/components/batches/BatchFormSection.tsx</code> (1,151 lines — form state, timeline auto-calc, name-uniqueness pre-check, multi-breeder RPC, voice notes, async edit population with stale-fetch guard, grafts section). Page keeps tabs, deep-link handling, hive-score engine, list cards/tables, filters.</li>
     <li>☑ 6.6 Settings decomposed: 1,880 → 223 lines. The entire admin surface (user list + filters + pagination, role/expiry changes, enable/disable, soft/hard delete + restore, reactivation requests, impersonation, apiary ownership transfer + its modal) moved verbatim into <code>src/components/settings/UserManagement.tsx</code> (1,693 lines), mirroring the existing <code>TicketManagement</code> pattern. The component is self-contained (resolves the admin's own id internally for the self-guards); the page is now a thin section router. Note: leaving and re-entering the Users tab now refetches the list (state lives in the component) — fresher data, one extra request.</li>
     <li>☑ 6.7 TraceabilityTool split: 2,384-line monolith → 315-line shell + <code>traceability/ContainersTab.tsx</code> (655 — container CRUD, harvest linking, label selection) + <code>traceability/BatchesTab.tsx</code> (1,515 — batch runs, jar config, story templates, QR/trace codes, public preview, consumer feedback). The shell owns the shared containers list (the batch form links to containers), producer context and the print modal; coordination state (active tab, forms-open, selection) threads down as props. Each tab now fetches its own domain data on mount.</li>
-    <li>☐ 6.8 Consolidate date formatting into <code>src/lib/date-utils.ts</code>; remove the four <code>formatDateIrish</code> copies and local <code>formatDate</code> helpers.</li>
+    <li>☑ 6.8 Date helpers consolidated into <code>src/lib/date-utils.ts</code>: <code>formatDateIrish</code> (was defined 4×), <code>formatDateForInput</code> (was 4×), <code>toLocalDateString</code> (was 3×) each now have exactly one definition. <code>graftConstants</code>, <code>traceability-utils</code> and <code>useBatchesList</code> re-export for compatibility; MatingNucsTab, QueenRearingPlanningTab and the three scale-chart components import the canonical versions. The wider sweep of 130 raw <code>toLocaleDateString</code> call sites is deferred (cosmetic, large blast radius).</li>
   </ul>
 
   <h2>Deferred / decisions needed later (not in scope yet)</h2>
@@ -105,6 +105,29 @@
   </ul>
 
   <h2>Review</h2>
+
+  <h3>Programme complete — 22 July 2026</h3>
+  <p>All six phases of the audit follow-up are done. Headline numbers:</p>
+  <table>
+    <tr><th>Area</th><th>Before</th><th>After</th></tr>
+    <tr><td>Security advisor findings</td><td>230 (incl. 3 critical anon holes)</td><td>81, all intentional or dashboard-only</td></tr>
+    <tr><td>Performance advisor findings</td><td>366</td><td>188 (initplan 143→0, unindexed FKs 33→0)</td></tr>
+    <tr><td>Queens page load (100 queens)</td><td>100-300 requests</td><td>2-3 requests</td></tr>
+    <tr><td>Team-access lookups</td><td>2-3 serial requests × N fetchers per page</td><td>1 cached RPC</td></tr>
+    <tr><td>Five god files (hives/queens/batches/settings/traceability)</td><td>10,626 lines in 5 files</td><td>3,041-line pages + 8 focused hooks/components</td></tr>
+    <tr><td>User data export</td><td>2 duplicated 35-table fetches, 11 tables missing</td><td>1 shared list/fetcher, 46 tables</td></tr>
+    <tr><td>Duplicate date helpers</td><td>11 definitions of 3 functions</td><td>3 definitions in date-utils</td></tr>
+  </table>
+  <p><strong>Still open (deliberately):</strong> leaked-password protection + storage bucket listing (Supabase dashboard,
+  user action); unused-index drops (revisit after a season of stats); SWR/stale-while-revalidate cache;
+  <code>colonies</code> model decision; the 130 raw <code>toLocaleDateString</code> call sites; remaining low-traffic
+  permissive-policy pairs; pre-existing type errors in <code>tests/</code> and the broken vitest PostCSS config.</p>
+
+  <h3>Phase 6, iteration 7 (item 6.8, date consolidation) — completed 22 July 2026</h3>
+  <p>Nine files touched; behaviour identical (all implementations were output-equivalent; canonical versions chosen to
+  preserve each call site's exact semantics, including the deliberately UTC-based <code>formatDateForInput</code>).
+  <code>tsc</code> 0 src errors, lint clean. Not yet committed.
+  <strong>User test:</strong> batch/nuc/planning date displays (DD/MM/YYYY), scale chart date pickers.</p>
 
   <h3>Phase 6, iteration 6 (item 6.7, TraceabilityTool split) — completed 22 July 2026</h3>
   <p>2,384 lines → shell (315) + ContainersTab (655) + BatchesTab (1,515). Logic verbatim; the redundant

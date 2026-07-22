@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getTeamAccess } from '@/lib/team-access'
+import { formatDateIrish } from '@/lib/date-utils'
 import { Plus, Edit2, Archive, Trash2, X, ClipboardList, ChevronDown, ChevronUp, History, Eye, EyeOff, Send, Search } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
@@ -114,13 +115,6 @@ const NUC_STATUSES = [
 ]
 
 // Format date to Irish format (DD/MM/YYYY) - uses string splitting to avoid timezone drift
-const formatDateIrish = (dateString: string | null): string => {
- if (!dateString) return '-'
- const parts = dateString.split('T')[0].split('-')
- if (parts.length !== 3) return dateString
- return `${parts[2]}/${parts[1]}/${parts[0]}`
-}
-
 const NUC_DISTRIBUTABLE_STATUSES = ['virgin', 'mating', 'laying']
 const NUC_ACTION_BUTTON_CLASS = 'inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface-secondary text-text-tertiary transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-surface-elevated'
 const BULK_MODES: { value: MatingNucBulkMode; label: string }[] = [

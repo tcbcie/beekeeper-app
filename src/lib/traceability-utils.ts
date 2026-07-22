@@ -117,6 +117,4 @@ export function calculateBestBeforeDate(batchDate: Date, yearsAhead: number = 2)
 /**
  * Format date as YYYY-MM-DD for input fields
  */
-export function formatDateForInput(date: Date): string {
-  return date.toISOString().split('T')[0]
-}
+export { formatDateForInput } from './date-utils'

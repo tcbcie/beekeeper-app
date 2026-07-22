@@ -124,9 +124,4 @@ export const COLOUR_DOTS: Record<string, string> = {
 }
 
 // Format date to Irish format (DD/MM/YYYY)
-export const formatDateIrish = (dateString: string | null): string => {
-  if (!dateString) return '-'
-  const parts = dateString.split('T')[0].split('-')
-  if (parts.length !== 3) return dateString
-  return `${parts[2]}/${parts[1]}/${parts[0]}`
-}
+export { formatDateIrish } from '@/lib/date-utils'

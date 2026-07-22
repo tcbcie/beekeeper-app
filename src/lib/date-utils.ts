@@ -175,3 +175,24 @@ export function formatLocalDate(
 ): string {
   return parseLocalDate(dateString).toLocaleDateString(locale, options)
 }
+
+/**
+ * Format an ISO date (or timestamp) as Irish DD/MM/YYYY. Returns '-' for
+ * empty values and the raw input when it is not a parseable date.
+ * Single source of truth — previously duplicated in four batch components.
+ */
+export const formatDateIrish = (dateString: string | null): string => {
+  if (!dateString) return '-'
+  const parts = dateString.split('T')[0].split('-')
+  if (parts.length !== 3) return dateString
+  return `${parts[2]}/${parts[1]}/${parts[0]}`
+}
+
+/**
+ * Format a Date as YYYY-MM-DD for date input fields. Note: UTC-based
+ * (toISOString), kept as-is to preserve existing input behaviour; use
+ * toLocalDateString when the local calendar date is required.
+ */
+export function formatDateForInput(date: Date): string {
+  return date.toISOString().split('T')[0]
+}

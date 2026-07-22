@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import { formatDateIrish, toLocalDateString } from '@/lib/date-utils'
 import { useMemo, useState } from 'react'
 import { AlertTriangle, Bug, Calendar, Clock3, Egg } from 'lucide-react'
 
@@ -95,13 +96,6 @@ const PLANNER_TONES: Record<PlannerTone, { accentBorderClass: string; badgeClass
   },
 }
 
-const toLocalDateString = (date: Date): string => {
-  const year = date.getFullYear()
-  const month = (date.getMonth() + 1).toString().padStart(2, '0')
-  const day = date.getDate().toString().padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
 const parseLocalDate = (dateString: string): Date | null => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return null
 
@@ -131,15 +125,6 @@ const addDays = (dateString: string, days: number): string => {
   const parsed = parseLocalDate(dateString)
   if (!parsed) return ''
   return toLocalDateString(addDaysToDate(parsed, days))
-}
-
-const formatDateIrish = (dateString: string): string => {
-  const parsed = parseLocalDate(dateString)
-  if (!parsed) return '-'
-  const day = parsed.getDate().toString().padStart(2, '0')
-  const month = (parsed.getMonth() + 1).toString().padStart(2, '0')
-  const year = parsed.getFullYear()
-  return `${day}/${month}/${year}`
 }
 
 const getDayName = (dateString: string): string => {
