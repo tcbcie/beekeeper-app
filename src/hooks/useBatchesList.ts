@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId, hasActiveSubscription } from '@/lib/auth'
 import { getTeamAccess } from '@/lib/team-access'
+export { toLocalDateString, formatDateIrish } from '@/lib/date-utils'
 
 // Shared interfaces and date helpers for the batches page, its data hook and
 // the batch form. Moved verbatim from src/app/dashboard/batches/page.tsx
@@ -148,22 +149,8 @@ export const getDayName = (dateString: string): string => {
 }
 
 // Format a local Date object to YYYY-MM-DD string without timezone shift
-export const toLocalDateString = (date: Date): string => {
- const year = date.getFullYear()
- const month = (date.getMonth() + 1).toString().padStart(2, '0')
- const day = date.getDate().toString().padStart(2, '0')
- return `${year}-${month}-${day}`
-}
 
 // Format date to Irish format (DD/MM/YYYY)
-export const formatDateIrish = (dateString: string | null): string => {
- if (!dateString) return '-'
- const date = new Date(dateString + 'T00:00:00')
- const day = date.getDate().toString().padStart(2, '0')
- const month = (date.getMonth() + 1).toString().padStart(2, '0')
- const year = date.getFullYear()
- return `${day}/${month}/${year}`
-}
 
 
 /**

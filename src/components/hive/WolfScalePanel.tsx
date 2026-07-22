@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import { formatDateForInput } from '@/lib/date-utils'
 import { supabase } from '@/lib/supabase'
 import { Scale, Thermometer, Droplets, RefreshCw, Clock, TrendingUp, TrendingDown, Flame, BatteryLow, BatteryMedium, BatteryFull, CloudRain, Wind, Compass, AlertCircle, Calendar } from 'lucide-react'
 import {
@@ -50,9 +51,6 @@ const PERIODS: { value: Period; label: string }[] = [
 ]
 
 // Get date string in YYYY-MM-DD format for input[type="date"]
-const formatDateForInput = (date: Date): string => {
-  return date.toISOString().split('T')[0]
-}
 
 // Convert wind direction degrees to cardinal direction
 const getCardinalDirection = (degrees: number): string => {

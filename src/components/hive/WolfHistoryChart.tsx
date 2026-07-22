@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { formatDateForInput } from '@/lib/date-utils'
 import { supabase } from '@/lib/supabase'
 import { RefreshCw, AlertCircle, Calendar } from 'lucide-react'
 import {
@@ -50,9 +51,6 @@ const PERIODS: { value: Period; label: string }[] = [
 ]
 
 // Get date string in YYYY-MM-DD format for input[type="date"]
-const formatDateForInput = (date: Date): string => {
-  return date.toISOString().split('T')[0]
-}
 
 export default function WolfHistoryChart({ scaleId, scaleName, hiveId }: WolfHistoryChartProps) {
   const [period, setPeriod] = useState<Period>('day')
