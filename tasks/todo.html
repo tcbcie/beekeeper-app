@@ -91,7 +91,7 @@
     <li>☑ 6.3 Hives page decomposed: 1,938 → 511 lines. <code>src/hooks/useHivesList.ts</code> (533 lines — fetching, enrichment, ownership/archive filters, init/refetch effects) + <code>src/components/hive/HiveFormSection.tsx</code> (967 lines — form state, validation, multi-step save with history seed and queenless queen-status sync). All code moved verbatim with assertion-guarded line surgery; the page keeps list rendering, client-side filters, bulk move/clone, delete/unarchive. Cards were already extracted (<code>HiveListCard</code>).</li>
     <li>☑ 6.4 Queens page decomposed: 1,740 → 927 lines. <code>src/hooks/useQueensList.ts</code> (267 lines — queens with batched hive/parent enrichment, dropdown option lists, rearing batches, breeder context) + <code>src/components/queens/QueenFormSection.tsx</code> (630 lines — form state, lineage derivation helpers, auto marking-colour, distributed-queen field locking, embedded lineage tree). Page keeps card/table views, filters, sort, compare selection, CSV export, delete flow.</li>
     <li>☑ 6.5 Batches page decomposed: 2,486 → 1,065 lines. <code>src/hooks/useBatchesList.ts</code> (365 lines — batches with sealed-cell counts + breeder names, queen/apiary/hive options, subscription flag, shared interfaces/date helpers now exported from here) + <code>src/components/batches/BatchFormSection.tsx</code> (1,151 lines — form state, timeline auto-calc, name-uniqueness pre-check, multi-breeder RPC, voice notes, async edit population with stale-fetch guard, grafts section). Page keeps tabs, deep-link handling, hive-score engine, list cards/tables, filters.</li>
-    <li>☐ 6.6 Settings: extract admin <code>UserManagement</code> component + <code>useAdminUsers</code> hook (impersonation/hard-delete out of the page component).</li>
+    <li>☑ 6.6 Settings decomposed: 1,880 → 223 lines. The entire admin surface (user list + filters + pagination, role/expiry changes, enable/disable, soft/hard delete + restore, reactivation requests, impersonation, apiary ownership transfer + its modal) moved verbatim into <code>src/components/settings/UserManagement.tsx</code> (1,693 lines), mirroring the existing <code>TicketManagement</code> pattern. The component is self-contained (resolves the admin's own id internally for the self-guards); the page is now a thin section router. Note: leaving and re-entering the Users tab now refetches the list (state lives in the component) — fresher data, one extra request.</li>
     <li>☐ 6.7 TraceabilityTool split (containers / batch runs / feedback hooks + tab components).</li>
     <li>☐ 6.8 Consolidate date formatting into <code>src/lib/date-utils.ts</code>; remove the four <code>formatDateIrish</code> copies and local <code>formatDate</code> helpers.</li>
   </ul>
@@ -105,6 +105,16 @@
   </ul>
 
   <h2>Review</h2>
+
+  <h3>Phase 6, iteration 5 (item 6.6, settings admin extraction) — completed 22 July 2026</h3>
+  <p>Settings page 1,880 → 223 lines; admin User Management (the most dangerous code in the app — impersonation,
+  hard delete, role changes) now lives in its own component next to TicketManagement, no longer sharing a file with
+  theme toggles. Zero props — it resolves the signed-in admin id itself for the self-guards. <code>tsc</code> 0 src
+  errors, lint clean. Not yet committed.</p>
+  <p><strong>User test requested (as admin):</strong> Settings → Users: list loads with filters/pagination/search,
+  expand a user, change role (blocked for yourself), set expiry, disable/enable an account, soft delete + restore,
+  reactivation requests view, transfer an apiary between users (modal), impersonate a user and exit impersonation.
+  Also confirm the other settings sections (profile, tickets, dropdowns, registration codes…) still render.</p>
 
   <h3>Phase 6, iteration 4 (item 6.5, batches decomposition) — completed 22 July 2026</h3>
   <p>Batches page 2,486 → 1,065 lines. All logic verbatim; wiring changes: <code>onSaved</code>/<code>onClose</code> props,
