@@ -165,7 +165,7 @@ export default function SettingsPage() {
       )}
 
       {/* User Management Section */}
-      {activeSection === 'users' && <UserManagement />}
+      {activeSection === 'users' && userIsAdmin && <UserManagement />}
 
       {/* Subscription Codes Section */}
       {activeSection === 'registration' && userId && (
