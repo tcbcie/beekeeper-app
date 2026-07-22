@@ -925,14 +925,14 @@ function QuickActionsGrid({ hiveId, isOwner, isArchived, onUnarchive }: QuickAct
       </Link>
       <Link
         href={`/dashboard/records?hive=${hiveId}&type=feeding`}
-        className="bg-orange-600 text-white p-4 rounded-lg hover:bg-orange-700 text-center"
+        className="bg-orange-700 text-white p-4 rounded-lg hover:bg-orange-800 text-center"
       >
         <Wheat className="mx-auto mb-2" size={24} />
         <div className="font-medium text-sm">Feeding</div>
       </Link>
       <Link
         href={`/dashboard/records?hive=${hiveId}&type=harvest`}
-        className="bg-yellow-600 text-white p-4 rounded-lg hover:bg-yellow-700 text-center"
+        className="bg-yellow-700 text-white p-4 rounded-lg hover:bg-yellow-800 text-center"
       >
         <Droplet className="mx-auto mb-2" size={24} />
         <div className="font-medium text-sm">Harvest</div>

@@ -14,6 +14,7 @@ import MoveHivesModal from '@/components/hive/MoveHivesModal'
 import Button from '@/components/ui/Button'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { usePersistentState } from '@/hooks/usePersistentState'
+import { getTeamAccess } from '@/lib/team-access'
 import { useSelection } from '@/contexts/SelectionContext'
 
 interface HiveListApiary {
@@ -106,27 +107,9 @@ export default function HivesPage() {
  const currentUserId = userIdParam || userId
  if (!currentUserId) return
 
- // Fetch team memberships first
- const { data: teamMemberships } = await supabase
- .from('team_members')
- .select('team_id')
- .eq('user_id', currentUserId)
-
- const teamIds = teamMemberships?.map(tm => tm.team_id) || []
-
- // Update isTeamMember state based on whether user has any team memberships
- setIsTeamMember(teamIds.length > 0)
-
- // Fetch shared apiaries if user is in any teams
- let sharedApiaryIds: string[] = []
- if (teamIds.length > 0) {
- const { data: sharedApiaries } = await supabase
- .from('team_apiaries')
- .select('apiary_id')
- .in('team_id', teamIds)
-
- sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
- }
+ // One memoised round trip for team membership + shared apiary access
+ const { sharedApiaryIds, isTeamMember: hasTeams } = await getTeamAccess(currentUserId)
+ setIsTeamMember(hasTeams)
 
  // Build base query with archive filter applied first (important for PostgREST)
  let query = supabase
@@ -297,19 +280,16 @@ export default function HivesPage() {
  //     per-hive cap. With the limit set, hives whose latest record is older
  //     than the global top N would silently disappear from the dedupe map.
  //     We rely on the dedupe-first-hit loop below to keep one row per hive.
+ // Last inspection per hive is derived from allInspections (already
+ // fetched newest-first above) instead of re-fetching the inspections table.
+ const lastInspections = allInspections
  const [
- { data: lastInspections },
  { data: lastTreatments },
  { data: lastChecks },
  { data: lastFeedings },
  { data: lastHarvests },
  { data: activeTasks }
  ] = await Promise.all([
- supabase
- .from('inspections')
- .select('hive_id, inspection_date')
- .in('hive_id', hiveIds)
- .order('inspection_date', { ascending: false }),
  supabase
  .from('varroa_treatments')
  .select('hive_id, treatment_date')
@@ -452,24 +432,10 @@ export default function HivesPage() {
  return
  }
 
- // Fetch team memberships to get shared apiaries
- const { data: teamMemberships } = await supabase
- .from('team_members')
- .select('team_id')
- .eq('user_id', currentUserId)
-
- const teamIds = teamMemberships?.map(tm => tm.team_id) || []
+ // One memoised round trip for shared apiary access
+ const { sharedApiaryIds } = await getTeamAccess(currentUserId)
 
  let sharedApiaries: HiveListApiary[] = []
- if (teamIds.length > 0) {
- // Get shared apiary IDs
- const { data: teamApiaries } = await supabase
- .from('team_apiaries')
- .select('apiary_id')
- .in('team_id', teamIds)
-
- const sharedApiaryIds = teamApiaries?.map(ta => ta.apiary_id) || []
-
  if (sharedApiaryIds.length > 0) {
  // Fetch the actual apiary details for shared apiaries (excluding user's own)
  const { data: sharedApiaryData } = await supabase
@@ -486,7 +452,6 @@ export default function HivesPage() {
  }))
  }
  }
- }
 
  // Combine own apiaries and shared apiaries
  const allApiaries = [
@@ -501,37 +466,8 @@ export default function HivesPage() {
  const currentUserId = userIdParam || userId
  if (!currentUserId) return
 
- // Get shared apiary IDs
- const { data: teamMemberships } = await supabase
- .from('team_members')
- .select('team_id')
- .eq('user_id', currentUserId)
-
- const teamIds = teamMemberships?.map(tm => tm.team_id) || []
-
- let sharedApiaryIds: string[] = []
- if (teamIds.length > 0) {
- const { data: sharedApiaries } = await supabase
- .from('team_apiaries')
- .select('apiary_id')
- .in('team_id', teamIds)
-
- sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
- }
-
- // Get user IDs who share apiaries with me (owners of shared apiaries)
- let sharedUserIds: string[] = []
- if (sharedApiaryIds.length > 0) {
- const { data: sharedApiaries } = await supabase
- .from('apiaries')
- .select('user_id')
- .in('id', sharedApiaryIds)
- .neq('user_id', currentUserId)
-
- sharedUserIds = sharedApiaries
- ? [...new Set(sharedApiaries.map(a => a.user_id).filter(Boolean) as string[])]
- : []
- }
+ // One memoised round trip: shared apiary owners come from the same RPC
+ const { sharedOwnerIds: sharedUserIds } = await getTeamAccess(currentUserId)
 
  // Fetch my queens + queens from users who share apiaries with me
  let queensQuery = supabase
@@ -608,11 +544,23 @@ export default function HivesPage() {
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [router])
 
- // Refetch hives when ownership or archive filter changes
+ // Refetch hives when ownership or archive filter changes. initUser already
+ // fetched with the hydrated persisted filter values, so when filtersLoaded
+ // first flips true with unchanged filters the fetch chain must not run again
+ // (it previously loaded the whole page twice on every visit).
+ const initialFetchFilters = useRef<{ ownership: typeof ownershipFilter; archive: typeof archiveFilter } | null>(
+ { ownership: ownershipFilter, archive: archiveFilter }
+ )
  useEffect(() => {
- if (userId && filtersLoaded) {
- fetchHives(userId)
+ if (!userId || !filtersLoaded) return
+ const initial = initialFetchFilters.current
+ if (initial) {
+ initialFetchFilters.current = null
+ if (initial.ownership === ownershipFilter && initial.archive === archiveFilter) {
+ return
  }
+ }
+ fetchHives(userId)
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [ownershipFilter, archiveFilter, userId, filtersLoaded])
 

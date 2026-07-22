@@ -2,6 +2,8 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getCurrentUserId } from '@/lib/auth'
+import { getTeamAccess } from '@/lib/team-access'
 import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, Filter, ClipboardList, Printer } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -139,25 +141,32 @@ export default function TasksEventsPage() {
     equipment_needed: ''
   })
 
-  // Get user ID
+  // Get user ID from the local session (getUser() is a network round trip)
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setUserId(user.id)
+      const id = await getCurrentUserId()
+      if (id) {
+        setUserId(id)
       }
     }
     getUser()
   }, [])
 
-  // Fetch tasks/events (RLS handles permissions - both own and team tasks)
+  // Fetch tasks/events (RLS handles permissions - both own and team tasks).
+  // Bounded to the last 12 months (plus everything in the future) so multi-year
+  // accounts do not download their entire task history on every visit.
   const fetchTasks = useCallback(async () => {
     if (!userId) return
+
+    const oneYearAgo = new Date()
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
 
     const { data, error } = await supabase
       .from('tasks_events')
       .select('*')
+      .gte('start_date', toLocalDateString(oneYearAgo))
       .order('start_date', { ascending: true })
+      .limit(1000)
 
     if (error) {
       console.error('Error fetching tasks:', error)
@@ -215,64 +224,40 @@ export default function TasksEventsPage() {
     const ownHives = (ownHivesRes.data || []) as Hive[]
     const ownApiaries = (ownApiariesRes.data || []) as Apiary[]
 
-    // Fetch team memberships
-    const { data: teamMemberships, error: teamError } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', userId)
-
-    if (teamError) {
-      console.error('Error fetching team memberships:', teamError)
-    }
-
-    const teamIds = (teamMemberships || []).map(tm => tm.team_id)
-
-    // Set team member status
-    setIsTeamMember(teamIds.length > 0)
+    // One memoised round trip for team membership + shared apiary access
+    const { isTeamMember: hasTeams, sharedApiaryIds } = await getTeamAccess(userId)
+    setIsTeamMember(hasTeams)
 
     // Fetch shared hives and apiaries if user is in any teams
     let sharedHives: Hive[] = []
     let sharedApiaries: Apiary[] = []
 
-    if (teamIds.length > 0) {
-      // Fetch shared apiaries via team_apiaries
-      const { data: teamApiariesData, error: teamApiariesError } = await supabase
-        .from('team_apiaries')
-        .select('apiaries(id, name)')
-        .in('team_id', teamIds)
-
-      if (teamApiariesError) {
-        console.error('Error fetching team apiaries:', teamApiariesError)
-      }
-
-      if (teamApiariesData) {
-        const extractedApiaries = teamApiariesData
-          .map(ta => ta.apiaries)
-          .filter(Boolean)
-          .flat()
-
-        sharedApiaries = extractedApiaries.map(a => ({
-          id: a.id,
-          name: a.name,
-          is_shared: true
-        }))
-      }
-
-      // Fetch shared hives from those apiaries
-      const sharedApiaryIds = sharedApiaries.map(a => a.id)
-      if (sharedApiaryIds.length > 0) {
-        const { data: sharedHivesData, error: sharedHivesError } = await supabase
+    if (sharedApiaryIds.length > 0) {
+      const [sharedApiariesRes, sharedHivesRes] = await Promise.all([
+        supabase
+          .from('apiaries')
+          .select('id, name')
+          .in('id', sharedApiaryIds),
+        supabase
           .from('hives')
           .select('id, hive_number, apiary_id, user_id')
           .in('apiary_id', sharedApiaryIds)
           .is('archived_at', null)
+      ])
 
-        if (sharedHivesError) {
-          console.error('Error fetching shared hives:', sharedHivesError)
-        }
-
-        sharedHives = (sharedHivesData || []).map(h => ({ ...h, is_shared: true }))
+      if (sharedApiariesRes.error) {
+        console.error('Error fetching team apiaries:', sharedApiariesRes.error)
       }
+      if (sharedHivesRes.error) {
+        console.error('Error fetching shared hives:', sharedHivesRes.error)
+      }
+
+      sharedApiaries = (sharedApiariesRes.data || []).map(a => ({
+        id: a.id,
+        name: a.name,
+        is_shared: true
+      }))
+      sharedHives = (sharedHivesRes.data || []).map(h => ({ ...h, is_shared: true }))
     }
 
     // Combine own and shared resources, deduplicating by id

@@ -314,26 +314,26 @@ export default function DashboardPage() {
  </div>
  <div className="flex flex-wrap gap-3">
  {alerts.overdueInspections > 0 && (
- <Link href="/dashboard/hives" className="fj-chip fj-chip-xs fj-chip-amber font-semibold">
- <ClipboardList size={12} />
+ <Link href="/dashboard/hives" className="fj-chip fj-chip-amber font-semibold min-h-[44px] w-full sm:w-auto text-sm">
+ <ClipboardList size={16} />
  {alerts.overdueInspections} hive{alerts.overdueInspections !== 1 ? 's' : ''} overdue inspection (14+ days)
  </Link>
  )}
  {alerts.oldQueens > 0 && (
- <Link href="/dashboard/queens" className="fj-chip fj-chip-xs fj-chip-amber font-semibold">
- <Crown size={12} />
+ <Link href="/dashboard/queens" className="fj-chip fj-chip-amber font-semibold min-h-[44px] w-full sm:w-auto text-sm">
+ <Crown size={16} />
  {alerts.oldQueens} queen{alerts.oldQueens !== 1 ? 's' : ''} over 2 years old
  </Link>
  )}
  {alerts.highVarroa > 0 && (
- <Link href="/dashboard/records?type=varroa_check" className="fj-chip fj-chip-xs fj-chip-amber font-semibold">
- <Bug size={12} />
+ <Link href="/dashboard/records?type=varroa_check" className="fj-chip fj-chip-amber font-semibold min-h-[44px] w-full sm:w-auto text-sm">
+ <Bug size={16} />
  {alerts.highVarroa} high varroa check{alerts.highVarroa !== 1 ? 's' : ''} (&gt;3%)
  </Link>
  )}
  {alerts.todayTasks > 0 && (
- <Link href="/dashboard/tasks" className="fj-chip fj-chip-xs fj-chip-amber font-semibold">
- <ListChecks size={12} />
+ <Link href="/dashboard/tasks" className="fj-chip fj-chip-amber font-semibold min-h-[44px] w-full sm:w-auto text-sm">
+ <ListChecks size={16} />
  {alerts.todayTasks} task{alerts.todayTasks !== 1 ? 's' : ''} due today
  </Link>
  )}

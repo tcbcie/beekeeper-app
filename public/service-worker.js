@@ -93,6 +93,30 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // Cache-first strategy for Next.js build assets: files under /_next/static/
+  // are content-hashed and immutable, so once cached they never need the
+  // network again. This is what makes the app open fast on poor connections
+  // in the field. Old entries are purged when CACHE_NAME is bumped.
+  const requestPath = new URL(event.request.url).pathname
+  if (requestPath.startsWith('/_next/static/')) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        return cache.match(event.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse
+          }
+          return fetch(event.request).then((response) => {
+            if (response && response.status === 200) {
+              cache.put(event.request, response.clone()).catch(() => { /* best-effort */ })
+            }
+            return response
+          })
+        })
+      })
+    )
+    return
+  }
+
   // Cache-first strategy for Mapbox tiles, styles, fonts, and sprites
   if (event.request.url.includes('api.mapbox.com') || event.request.url.includes('tiles.mapbox.com')) {
     event.respondWith(

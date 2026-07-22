@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { fetchUserExportData, USER_EXPORT_TABLES } from '@/lib/database-export'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { User, Calendar, Edit2, Save, Download, Trash2, Phone, Palette, Scale, Users, Crown, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
@@ -312,80 +313,8 @@ export default function ProfilePage() {
 
  setExportingMyData(true)
  try {
- // Fetch all user data
- const [
- { data: apiaries },
- { data: hives },
- { data: queens },
- { data: inspections },
- { data: varroaChecks },
- { data: varroaTreatments },
- { data: feedings },
- { data: harvests },
- { data: rearingBatches },
- { data: tasksEvents },
- { data: colonies },
- { data: colonyMovements },
- { data: gddRecords },
- { data: financialRecords },
- { data: batchGrafts },
- { data: graftDistributions },
- { data: matingNucs },
- { data: matingNucInspections },
- { data: matingNucBatches },
- { data: wildColonies },
- { data: wildColonyInspections },
- { data: diagnosisImages },
- { data: diagnosisImageComments },
- { data: qrTags },
- { data: logbookEntries },
- { data: conservationAreas },
- { data: bulkContainers },
- { data: purchaseItems },
- { data: batchRuns },
- { data: pushSubscriptions },
- { data: supportTickets },
- { data: reactivationRequests },
- { data: subscriptionHistory },
- { data: rearingGroupMembers },
- { data: teamMembers },
- ] = await Promise.all([
- supabase.from('apiaries').select('*').eq('user_id', userId),
- supabase.from('hives').select('*').eq('user_id', userId),
- supabase.from('queens').select('*').eq('user_id', userId),
- supabase.from('inspections').select('*').eq('user_id', userId),
- supabase.from('varroa_checks').select('*').eq('user_id', userId),
- supabase.from('varroa_treatments').select('*').eq('user_id', userId),
- supabase.from('feedings').select('*').eq('user_id', userId),
- supabase.from('harvests').select('*').eq('user_id', userId),
- supabase.from('rearing_batches').select('*').eq('user_id', userId),
- supabase.from('tasks_events').select('*').eq('user_id', userId),
- supabase.from('colonies').select('*').eq('user_id', userId),
- supabase.from('colony_movements').select('*').eq('user_id', userId),
- supabase.from('gdd_records').select('*').eq('user_id', userId),
- supabase.from('financial_records').select('*').eq('user_id', userId),
- supabase.from('batch_grafts').select('*').eq('user_id', userId),
- supabase.from('graft_distributions').select('*').eq('user_id', userId),
- supabase.from('mating_nucs').select('*').eq('user_id', userId),
- supabase.from('mating_nuc_inspections').select('*').eq('user_id', userId),
- supabase.from('mating_nuc_batches').select('*').eq('user_id', userId),
- supabase.from('wild_colonies').select('*').eq('user_id', userId),
- supabase.from('wild_colony_inspections').select('*').eq('user_id', userId),
- supabase.from('diagnosis_images').select('*').eq('user_id', userId),
- supabase.from('diagnosis_image_comments').select('*').eq('user_id', userId),
- supabase.from('qr_tags').select('*').eq('user_id', userId),
- supabase.from('logbook_entries').select('*').eq('user_id', userId),
- supabase.from('conservation_areas').select('*').eq('user_id', userId),
- supabase.from('bulk_containers').select('*').eq('user_id', userId),
- supabase.from('purchase_items').select('*').eq('user_id', userId),
- supabase.from('batch_runs').select('*').eq('user_id', userId),
- supabase.from('push_subscriptions').select('*').eq('user_id', userId),
- supabase.from('support_tickets').select('*').eq('user_id', userId),
- supabase.from('reactivation_requests').select('*').eq('user_id', userId),
- supabase.from('subscription_history').select('*').eq('user_id', userId),
- supabase.from('rearing_group_members').select('*').eq('user_id', userId),
- supabase.from('team_members').select('*').eq('user_id', userId),
- ])
+ // One shared fetch for every user-scoped table (see USER_EXPORT_TABLES)
+ const tables = await fetchUserExportData(supabase, userId)
 
  const exportData = {
  export_info: {
@@ -393,41 +322,7 @@ export default function ProfilePage() {
  user_id: userId,
  format: 'JSON',
  },
- apiaries: apiaries || [],
- hives: hives || [],
- queens: queens || [],
- inspections: inspections || [],
- varroa_checks: varroaChecks || [],
- varroa_treatments: varroaTreatments || [],
- feedings: feedings || [],
- harvests: harvests || [],
- rearing_batches: rearingBatches || [],
- tasks_events: tasksEvents || [],
- colonies: colonies || [],
- colony_movements: colonyMovements || [],
- gdd_records: gddRecords || [],
- financial_records: financialRecords || [],
- batch_grafts: batchGrafts || [],
- graft_distributions: graftDistributions || [],
- mating_nucs: matingNucs || [],
- mating_nuc_inspections: matingNucInspections || [],
- mating_nuc_batches: matingNucBatches || [],
- wild_colonies: wildColonies || [],
- wild_colony_inspections: wildColonyInspections || [],
- diagnosis_images: diagnosisImages || [],
- diagnosis_image_comments: diagnosisImageComments || [],
- qr_tags: qrTags || [],
- logbook_entries: logbookEntries || [],
- conservation_areas: conservationAreas || [],
- bulk_containers: bulkContainers || [],
- purchase_items: purchaseItems || [],
- batch_runs: batchRuns || [],
- push_subscriptions: pushSubscriptions || [],
- support_tickets: supportTickets || [],
- reactivation_requests: reactivationRequests || [],
- subscription_history: subscriptionHistory || [],
- rearing_group_members: rearingGroupMembers || [],
- team_members: teamMembers || [],
+ ...tables,
  }
 
  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
@@ -455,80 +350,8 @@ export default function ProfilePage() {
 
  setExportingMyData(true)
  try {
- // Fetch all user data
- const [
- { data: apiaries },
- { data: hives },
- { data: queens },
- { data: inspections },
- { data: varroaChecks },
- { data: varroaTreatments },
- { data: feedings },
- { data: harvests },
- { data: rearingBatches },
- { data: tasksEvents },
- { data: colonies },
- { data: colonyMovements },
- { data: gddRecords },
- { data: financialRecords },
- { data: batchGrafts },
- { data: graftDistributions },
- { data: matingNucs },
- { data: matingNucInspections },
- { data: matingNucBatches },
- { data: wildColonies },
- { data: wildColonyInspections },
- { data: diagnosisImages },
- { data: diagnosisImageComments },
- { data: qrTags },
- { data: logbookEntries },
- { data: conservationAreas },
- { data: bulkContainers },
- { data: purchaseItems },
- { data: batchRuns },
- { data: pushSubscriptions },
- { data: supportTickets },
- { data: reactivationRequests },
- { data: subscriptionHistory },
- { data: rearingGroupMembers },
- { data: teamMembers },
- ] = await Promise.all([
- supabase.from('apiaries').select('*').eq('user_id', userId),
- supabase.from('hives').select('*').eq('user_id', userId),
- supabase.from('queens').select('*').eq('user_id', userId),
- supabase.from('inspections').select('*').eq('user_id', userId),
- supabase.from('varroa_checks').select('*').eq('user_id', userId),
- supabase.from('varroa_treatments').select('*').eq('user_id', userId),
- supabase.from('feedings').select('*').eq('user_id', userId),
- supabase.from('harvests').select('*').eq('user_id', userId),
- supabase.from('rearing_batches').select('*').eq('user_id', userId),
- supabase.from('tasks_events').select('*').eq('user_id', userId),
- supabase.from('colonies').select('*').eq('user_id', userId),
- supabase.from('colony_movements').select('*').eq('user_id', userId),
- supabase.from('gdd_records').select('*').eq('user_id', userId),
- supabase.from('financial_records').select('*').eq('user_id', userId),
- supabase.from('batch_grafts').select('*').eq('user_id', userId),
- supabase.from('graft_distributions').select('*').eq('user_id', userId),
- supabase.from('mating_nucs').select('*').eq('user_id', userId),
- supabase.from('mating_nuc_inspections').select('*').eq('user_id', userId),
- supabase.from('mating_nuc_batches').select('*').eq('user_id', userId),
- supabase.from('wild_colonies').select('*').eq('user_id', userId),
- supabase.from('wild_colony_inspections').select('*').eq('user_id', userId),
- supabase.from('diagnosis_images').select('*').eq('user_id', userId),
- supabase.from('diagnosis_image_comments').select('*').eq('user_id', userId),
- supabase.from('qr_tags').select('*').eq('user_id', userId),
- supabase.from('logbook_entries').select('*').eq('user_id', userId),
- supabase.from('conservation_areas').select('*').eq('user_id', userId),
- supabase.from('bulk_containers').select('*').eq('user_id', userId),
- supabase.from('purchase_items').select('*').eq('user_id', userId),
- supabase.from('batch_runs').select('*').eq('user_id', userId),
- supabase.from('push_subscriptions').select('*').eq('user_id', userId),
- supabase.from('support_tickets').select('*').eq('user_id', userId),
- supabase.from('reactivation_requests').select('*').eq('user_id', userId),
- supabase.from('subscription_history').select('*').eq('user_id', userId),
- supabase.from('rearing_group_members').select('*').eq('user_id', userId),
- supabase.from('team_members').select('*').eq('user_id', userId),
- ])
+ // Same shared fetch as the JSON export; only the serialisation differs
+ const tables = await fetchUserExportData(supabase, userId)
 
  const convertToCSV = (data: Record<string, unknown>[], tableName: string) => {
  if (!data || data.length === 0) return `${tableName}\nNo data\n\n`
@@ -547,41 +370,9 @@ export default function ProfilePage() {
  }
 
  let csvContent = `Beekeeping Data Export\nExported on: ${new Date().toISOString()}\n\n`
- csvContent += convertToCSV(apiaries || [], 'Apiaries')
- csvContent += convertToCSV(hives || [], 'Hives')
- csvContent += convertToCSV(queens || [], 'Queens')
- csvContent += convertToCSV(inspections || [], 'Inspections')
- csvContent += convertToCSV(varroaChecks || [], 'Varroa Checks')
- csvContent += convertToCSV(varroaTreatments || [], 'Varroa Treatments')
- csvContent += convertToCSV(feedings || [], 'Feedings')
- csvContent += convertToCSV(harvests || [], 'Harvests')
- csvContent += convertToCSV(rearingBatches || [], 'Rearing Batches')
- csvContent += convertToCSV(tasksEvents || [], 'Tasks and Events')
- csvContent += convertToCSV(colonies || [], 'Colonies')
- csvContent += convertToCSV(colonyMovements || [], 'Colony Movements')
- csvContent += convertToCSV(gddRecords || [], 'GDD Records')
- csvContent += convertToCSV(financialRecords || [], 'Financial Records')
- csvContent += convertToCSV(batchGrafts || [], 'Batch Grafts')
- csvContent += convertToCSV(graftDistributions || [], 'Graft Distributions')
- csvContent += convertToCSV(matingNucs || [], 'Mating Nucs')
- csvContent += convertToCSV(matingNucInspections || [], 'Mating Nuc Inspections')
- csvContent += convertToCSV(matingNucBatches || [], 'Mating Nuc Batches')
- csvContent += convertToCSV(wildColonies || [], 'Wild Colonies')
- csvContent += convertToCSV(wildColonyInspections || [], 'Wild Colony Inspections')
- csvContent += convertToCSV(diagnosisImages || [], 'Diagnosis Images')
- csvContent += convertToCSV(diagnosisImageComments || [], 'Diagnosis Image Comments')
- csvContent += convertToCSV(qrTags || [], 'QR Tags')
- csvContent += convertToCSV(logbookEntries || [], 'Logbook Entries')
- csvContent += convertToCSV(conservationAreas || [], 'Conservation Areas')
- csvContent += convertToCSV(bulkContainers || [], 'Bulk Containers')
- csvContent += convertToCSV(purchaseItems || [], 'Purchase Items')
- csvContent += convertToCSV(batchRuns || [], 'Batch Runs')
- csvContent += convertToCSV(pushSubscriptions || [], 'Push Subscriptions')
- csvContent += convertToCSV(supportTickets || [], 'Support Tickets')
- csvContent += convertToCSV(reactivationRequests || [], 'Reactivation Requests')
- csvContent += convertToCSV(subscriptionHistory || [], 'Subscription History')
- csvContent += convertToCSV(rearingGroupMembers || [], 'Rearing Group Members')
- csvContent += convertToCSV(teamMembers || [], 'Team Members')
+ for (const { table, label } of USER_EXPORT_TABLES) {
+ csvContent += convertToCSV(tables[table], label)
+ }
 
  const blob = new Blob([csvContent], { type: 'text/csv' })
  const url = URL.createObjectURL(blob)

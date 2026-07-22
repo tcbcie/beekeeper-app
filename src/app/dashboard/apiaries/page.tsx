@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
+import { getTeamAccess } from '@/lib/team-access'
 import { isValidEircode } from '@/lib/eircode'
 import { Plus, X, MapPin, Loader2, Map, UserPlus, Camera, MapPinOff } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -248,25 +249,9 @@ export default function ApiariesPage() {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
 
-    // Fetch team memberships (same pattern as hives page)
-    const { data: teamMemberships } = await supabase
-      .from('team_members')
-      .select('team_id')
-      .eq('user_id', currentUserId)
-
-    const teamIds = teamMemberships?.map(tm => tm.team_id) || []
-    setIsTeamMember(teamIds.length > 0)
-
-    // Fetch shared apiary IDs if user is in any teams
-    let sharedApiaryIds: string[] = []
-    if (teamIds.length > 0) {
-      const { data: sharedApiaries } = await supabase
-        .from('team_apiaries')
-        .select('apiary_id')
-        .in('team_id', teamIds)
-
-      sharedApiaryIds = sharedApiaries?.map(sa => sa.apiary_id) || []
-    }
+    // One memoised round trip for team membership + shared apiary access
+    const { isTeamMember: hasTeams, sharedApiaryIds } = await getTeamAccess(currentUserId)
+    setIsTeamMember(hasTeams)
 
     // Fetch own + shared apiaries
     let query = supabase.from('apiaries').select('*')

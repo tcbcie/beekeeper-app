@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { getTeamAccess } from '@/lib/team-access'
 import { Plus, Edit2, Archive, Trash2, X, ClipboardList, ChevronDown, ChevronUp, History, Eye, EyeOff, Send, Search } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
@@ -387,36 +388,24 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  if (ownApiariesError) throw ownApiariesError
 
- const { data: teamMemberships, error: teamMembershipsError } = await supabase
- .from('team_members')
- .select('team_id')
- .eq('user_id', userId)
-
- if (teamMembershipsError) throw teamMembershipsError
-
- const teamIds = (teamMemberships || []).map((membership) => membership.team_id)
+ // One memoised round trip for shared apiary access
+ const { sharedApiaryIds } = await getTeamAccess(userId)
  let sharedApiaries: MatingLocationOption[] = []
 
- if (teamIds.length > 0) {
- const { data: teamApiaryData, error: teamApiaryError } = await supabase
- .from('team_apiaries')
- .select('apiary_id, apiaries(id, name, user_id)')
- .in('team_id', teamIds)
+ if (sharedApiaryIds.length > 0) {
+ const { data: sharedApiaryData, error: sharedApiaryError } = await supabase
+ .from('apiaries')
+ .select('id, name, user_id')
+ .in('id', sharedApiaryIds)
+ .neq('user_id', userId)
 
- if (teamApiaryError) throw teamApiaryError
+ if (sharedApiaryError) throw sharedApiaryError
 
- sharedApiaries = (teamApiaryData || [])
- .map((entry) => {
- const relatedApiary = Array.isArray(entry.apiaries) ? entry.apiaries[0] : entry.apiaries
- if (!relatedApiary) return null
-
- return {
- id: relatedApiary.id as string,
- name: relatedApiary.name as string,
- is_shared: (relatedApiary.user_id as string) !== userId,
- }
- })
- .filter((apiary): apiary is MatingLocationOption => Boolean(apiary && apiary.is_shared))
+ sharedApiaries = (sharedApiaryData || []).map((apiary) => ({
+ id: apiary.id as string,
+ name: apiary.name as string,
+ is_shared: true,
+ }))
  }
 
  const ownApiaryOptions: MatingLocationOption[] = (ownApiaries || []).map((apiary) => ({

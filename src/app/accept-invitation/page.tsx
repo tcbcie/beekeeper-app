@@ -3,6 +3,7 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
+import { clearTeamAccessCache } from '@/lib/team-access'
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { InvitationLoadingShell, InvitationResponseShell } from '@/components/invitations/InvitationResponseShell'
 import Button from '@/components/ui/Button'
@@ -147,6 +148,9 @@ function AcceptInvitationContent() {
             throw memberError
           }
         } else {
+          // New membership changes which apiaries this user can access
+          clearTeamAccessCache()
+
           // Only update invitation status AFTER successfully adding to team
           const { error: updateError } = await supabase
             .from('team_invitations')

@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Plan — Team-member hive setup editing &amp; super auto-sync</title>
+  <title>Plan — Repository improvement programme (security first)</title>
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.55; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
     h1 { font-size: 1.5rem; } h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 2px solid #f2c94c; padding-bottom: .25rem; }
+    h3 { font-size: 1.05rem; margin-top: 1.25rem; }
     code { background: #f4f4f4; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
     pre { background: #f7f7f7; padding: .75rem 1rem; border-radius: 8px; overflow-x: auto; border-left: 4px solid #f2c94c; }
     .box { background: #fff8e1; border: 1px solid #f2c94c; border-radius: 8px; padding: .75rem 1rem; margin: 1rem 0; }
@@ -16,80 +17,169 @@
     table { border-collapse: collapse; width: 100%; margin: .5rem 0; }
     th, td { border: 1px solid #ddd; padding: .4rem .6rem; text-align: left; font-size: .92em; }
     th { background: #faf5e6; }
+    .phase-tag { display: inline-block; background: #faf5e6; border: 1px solid #f2c94c; border-radius: 4px; padding: 0 .4rem; font-size: .8em; margin-right: .4rem; }
   </style>
 </head>
 <body>
-  <h1>Team members editing hive setup &amp; inspection super auto-sync</h1>
+  <h1>Repository improvement programme — audit follow-up (July 2026)</h1>
 
   <div class="box">
-    <strong>Decision confirmed:</strong> Full config edit + super sync. Loosen the <code>hives</code> UPDATE RLS so any
-    team member with access to the shared apiary can edit a hive's setup; un-hide the Edit button for shared hives.
-    <strong>DELETE stays owner-only.</strong>
+    <strong>Source:</strong> full repository + database audit (three exploration agents + live Supabase advisor review, 22&nbsp;July&nbsp;2026).
+    Phases are ordered by risk and user payoff. Each phase is small, self-contained, and independently shippable.
+    <strong>Phase&nbsp;1 is a live security issue and goes first.</strong>
   </div>
 
-  <h2>Root cause (one rule, both symptoms)</h2>
   <div class="root">
-    Team members cannot <code>UPDATE</code> a hive they don't own.
+    <strong>Why Phase 1 cannot wait:</strong> three SECURITY DEFINER functions are executable by the <em>anonymous</em> role today:
     <ul>
-      <li><strong>RLS:</strong> <code>hives_update_policy</code> is <code>USING (user_id = auth.uid())</code> — owner-only.</li>
-      <li><strong>UI:</strong> <code>HiveListCard.tsx:386</code> renders Edit/Delete only when <code>hive.user_id === userId</code>, so the Edit option is hidden for Hive 2 (owned by a different member).</li>
-      <li><strong>Super not reflected:</strong> the auto-sync RPC <code>adjust_hive_honey_supers</code> is <code>SECURITY INVOKER</code>. When a team member saves the inspection, its <code>UPDATE</code> runs as them, is filtered to 0 rows by the owner-only policy, and changes nothing. A 0-row RLS-filtered update returns no error, so even the warning toast stayed silent.</li>
+      <li><code>hard_delete_user(uuid)</code> — no admin check in the body; anyone with a user UUID can permanently delete that user and all their data.</li>
+      <li><code>get_users_with_email()</code> / <code>get_user_email()</code> — no caller check; dumps every user's email, name, mobile number, subscription details.</li>
+      <li><code>execute_safe_query(text)</code> — runs arbitrary <code>SELECT</code> as definer: a full read bypass of RLS across all 77 tables.</li>
     </ul>
-    Confirmed on live DB: Hive 2 (TBKA Kilcornan) owner = <code>806e7ce4…</code>; yesterday's inspection recorded by rico = <code>08e38bd9…</code> (a different member). Stored <code>honey_supers</code> still = 1.
+    In total 66 SECURITY DEFINER functions are anon-executable and 10 views are flagged <code>security_definer_view</code> at ERROR level.
   </div>
 
-  <h2>Todo</h2>
+  <h2>Phase 1 — Security migration (do first)</h2>
+  <p>One migration applied via the Supabase MCP (per project convention — no SQL files to run manually). Frontend impact: none expected for normal users; the admin Settings page calls these functions as an authenticated admin, which keeps working.</p>
   <ul class="todo">
-    <li>☑ <strong>1. RLS.</strong> Replace <code>hives_update_policy</code> so UPDATE is allowed for the owner <em>or</em> a team member with apiary access. Keep DELETE owner-only (unchanged). Applied via Supabase MCP migration.
-      <pre>USING      ( user_id = auth.uid()
-             OR (apiary_id IS NOT NULL AND can_access_apiary(apiary_id, auth.uid())) )
-WITH CHECK ( user_id = auth.uid()
-             OR (apiary_id IS NOT NULL AND can_access_apiary(apiary_id, auth.uid())) )</pre>
-      <em>Effect:</em> owner keeps full rights (incl. moving a hive to no apiary); a team member can edit a hive only while it stays in an apiary they can access — they cannot orphan it. The edit path spreads only <code>formData</code> (no <code>user_id</code>), so ownership is never reassigned.
-    </li>
-    <li>☑ <strong>2. UI — show Edit for shared hives.</strong> In <code>HiveListCard.tsx</code>, split the owner-only block: render <strong>Edit</strong> when <code>hive.user_id === userId || hive.is_shared</code>; render <strong>Delete</strong> only when <code>hive.user_id === userId</code>. Update the comment.</li>
-    <li>☑ <strong>3. Super auto-sync — verify, no code change.</strong> Once RLS allows it, the existing <code>SECURITY INVOKER</code> RPC succeeds for team members automatically. Confirm a fresh inspection super +1 by a team member moves the stored count.</li>
-    <li>☑ <strong>4. One-off data correction (needs your confirm).</strong> Set Hive 2 (TBKA Kilcornan) stored <code>honey_supers</code> from 1 → 2, as you stated it physically has two. Historical inspections are not auto-backfilled, so this is a manual correction. <em>I will do this only after you confirm 2 is the right number</em> — once step 2 ships you could also just tap Edit and set it yourself.</li>
-    <li>☑ <strong>5. Docs.</strong> Update <code>team-member-hive-placement.md</code> (UPDATE now team-scoped, DELETE still owner-only) and <code>honey-supers-auto-sync.md</code> (sync now works for team members).</li>
-    <li>☑ <strong>6. Review section.</strong> Summarise changes below.</li>
+    <li>☑ 1.1 Inventory all 66 anon-executable SECURITY DEFINER functions and classify each — done: 13 trigger-only, 7 service-role-only, 31 authenticated-only, 3 genuinely public RPCs, 19 RLS helper predicates (kept callable — <code>TO public</code> policies evaluate them on anonymous requests, e.g. invitation links).</li>
+    <li>☑ 1.2 Migration <code>phase1_security_hardening_guards_and_revokes</code> applied via MCP: revokes + explicit grants per class, plus <code>ALTER DEFAULT PRIVILEGES … REVOKE EXECUTE … FROM PUBLIC</code> so future functions are locked by default.</li>
+    <li>☑ 1.3 Internal admin checks added to <code>hard_delete_user</code>, <code>soft_delete_user</code>, <code>restore_deleted_user</code>, <code>get_users_with_email</code> (now returns empty for non-admins). <code>get_user_email</code> stays authenticated-only (needed by team pages); anon revoked.</li>
+    <li>☑ 1.4 <code>execute_safe_query</code> is called by the admin export API route (service-role client) — locked to <code>service_role</code> only instead of dropping.</li>
+    <li>☑ 1.5 <code>search_path = public, extensions</code> pinned on every remaining public function without one (advisor count 70 → 0).</li>
+    <li>☑ 1.6 Six views flipped to <code>security_invoker</code> (<code>active_profiles</code>, <code>deleted_profiles</code>, <code>users_with_registration_codes</code>, <code>users_needing_subscription_reminder</code>, <code>crm_customer_summary</code>, <code>hive_configuration_history_with_location</code>) — admin UI keeps working via the "Admins can view any profile" policy. Four kept definer by design: <code>shared_apiaries_obfuscated</code>, <code>wild_colonies_obfuscated</code>, <code>shared_gdd_records_community</code>, <code>public_galway_gdd</code>.</li>
+    <li>☑ 1.7 Dropped always-true policies: anonymous INSERT on <code>profiles</code>, open INSERT on <code>subscription_history</code> and <code>batch_feedback</code> (all writes go through SECURITY DEFINER functions / service role). Dropdown category/value writes now admin-only. No-policy RLS on <code>crm_invoice_email_log</code> / <code>stripe_webhook_events</code> confirmed intentional (service-role-only tables).</li>
+    <li>☐ 1.8 Enable leaked-password protection — <strong>needs the Supabase dashboard</strong> (Authentication → Settings), cannot be set via SQL. User action.</li>
+    <li>☑ 1.9 Advisors re-run: security findings 230 → 81; remaining items are the intentional public/authenticated RPC surface, the 4 intentional definer views, 1.8 above, and public storage bucket listing (see review). <strong>User regression test requested:</strong> login, admin user management (settings), invitation acceptance by link, public trace page, CRM customers list, dropdown management.</li>
   </ul>
 
-  <h2>Files touched</h2>
-  <table>
-    <tr><th>File / object</th><th>Change</th></tr>
-    <tr><td>DB migration (Supabase MCP)</td><td>Replace <code>hives_update_policy</code> (owner or team-with-access)</td></tr>
-    <tr><td><code>src/components/hive/HiveListCard.tsx</code></td><td>Show Edit for shared hives; keep Delete owner-only</td></tr>
-    <tr><td><code>docs/features/team-member-hive-placement.md</code></td><td>Reflect new UPDATE scope</td></tr>
-    <tr><td><code>docs/features/honey-supers-auto-sync.md</code></td><td>Note team-member sync now works</td></tr>
-    <tr><td>Hive 2 config (data)</td><td>One-off <code>honey_supers</code> 1 → 2 (on confirm)</td></tr>
-  </table>
+  <h2>Phase 2 — Quick speed wins (small diffs, felt immediately in the field)</h2>
+  <ul class="todo">
+    <li>☑ 2.1 Queens page N+1 fixed: per-queen hive query and per-parent queen queries replaced by one batched <code>.in('queen_id', …)</code> hives query and one batched missing-parents query. A 100-queen account now loads with 2-3 requests instead of 100-300.</li>
+    <li>☑ 2.2 Hives page: duplicate full-<code>inspections</code> fetch removed (last-inspection dates now derived from the already-fetched newest-first set); <code>initialFetchFilters</code> ref stops the filter effect re-running the entire ~12-query chain when <code>filtersLoaded</code> first flips — the page previously loaded twice on every visit.</li>
+    <li>☑ 2.3 Service worker: cache-first branch for <code>/_next/static/*</code> (content-hashed, immutable). Old entries purged on <code>CACHE_NAME</code> bump as before; API/HTML behaviour unchanged.</li>
+    <li>☑ 2.4 Tasks page: <code>tasks_events</code> fetch now bounded to the last 12 months + future with <code>.limit(1000)</code>; user ID resolved from the local session (<code>getCurrentUserId</code>) instead of a network <code>auth.getUser()</code> round trip.</li>
+  </ul>
 
-  <h2>Not doing (kept simple)</h2>
+  <h2>Phase 3 — Quick usability wins (50+ outdoor audience)</h2>
+  <ul class="todo">
+    <li>☑ 3.1 Queens list: <code>md:hidden</code> card view added (queen number + status prominent, labelled 44px Edit/Delete/Label buttons, compare checkbox, mother/age/colour/hive/apiary details, "replace soon" warning); table now <code>hidden md:block</code>; empty state shared by both views; highlight-scroll picks whichever view is visible. Drifted inline status/marking colour maps replaced by canonical <code>queenStatusBadgeClass</code> + shared local helpers in both views — active queens read green again.</li>
+    <li>☑ 3.2 InspectionForm: stars 36px → 48px (gap-2), the three Clear buttons 36/32px → 44/36px with 12px text (was 11px), queen-cell YES/NO toggles, ± steppers and count input 36px → 48px mobile / 40px desktop. Mobile is now never smaller than desktop.</li>
+    <li>☑ 3.3 Dashboard "Attention Needed": all four alert chips promoted from <code>fj-chip-xs</code> to full chips, <code>min-h-[44px]</code>, full-width on phones, icons 12px → 16px.</li>
+    <li>☑ 3.4 Contrast: harvest/feeding tiles → <code>bg-yellow-700</code>/<code>bg-orange-700</code> (white text ≈4.9:1/4.6:1, AA pass) on hive detail AND the QR hive-scan tag page (same tiles, most sunlight-exposed screen).</li>
+  </ul>
+
+  <h2>Phase 4 — Shared team-access helper (unlocks perf + DRY together)</h2>
+  <ul class="todo">
+    <li>☑ 4.1 RPC <code>get_accessible_apiary_ids()</code> created (STABLE, SECURITY DEFINER, <code>auth.uid()</code>-scoped, explicit grants per the new model) returning team ids + shared apiary ids + shared owner ids in one round trip. Wrapper <code>src/lib/team-access.ts</code>: <code>getTeamAccess(userId)</code> with a 30s per-user promise cache (parallel fetchers on one page share a single request) and <code>clearTeamAccessCache()</code>.</li>
+    <li>☑ 4.2 Waterfall replaced at 10 call sites in 7 files: hives page ×3, queens page, batches page, tasks page (also parallelised its shared apiaries+hives fetch), apiaries page, MatingNucsTab, useRecordsData ×3 (including the deep 4-level embed, now removed with its helper). Cache invalidation wired into apiary share/unshare (apiary-team) and invitation acceptance. <em>Not replaced by design:</em> qr-tags (needs team names, already a single embed query) and the team-management queries in useTeams/apiary-team (they need member/profile data, not access ids).</li>
+  </ul>
+
+  <h2>Phase 5 — Database performance migration</h2>
+  <ul class="todo">
+    <li>☑ 5.1 Migration <code>rls_initplan_wrap_auth_calls</code>: generated rewrite of every policy calling bare <code>auth.uid()/role()/jwt()/email()</code> or the zero-arg admin helpers into initplan form. Advisor count 143 → <strong>0</strong>.</li>
+    <li>☑ 5.2 Migration <code>consolidate_permissive_select_policies</code>: the busiest CRUD tables (inspections, hives, queens, tasks_events) turned out to already be single-policy; the real duplication was on lookup/embed tables. Merged same-role SELECT pairs on <code>profiles</code> (4 public policies → 1 — evaluated in embeds on nearly every page), <code>apiaries</code>, <code>batch_grafts</code>, <code>batch_breeder_queens</code>, <code>rearing_batches</code>, <code>gdd_records</code>, <code>subscription_history</code>. Warnings 155 → 119; the remainder are role-split or admin/owner pairs on small, low-traffic tables (wild_colonies, conservation_areas, support_tickets…) left for clarity.</li>
+    <li>☑ 5.3 Migration <code>add_covering_indexes_for_unindexed_fks</code>: generated covering index for every FK not already prefix-covered. Unindexed FKs 33 → <strong>0</strong>. Dropping the 34 pre-existing unused indexes <em>deferred</em> — cannot rule out seasonal usage (harvest/treatment queries peak in summer/autumn); revisit with a full year of <code>pg_stat_user_indexes</code> data.</li>
+    <li>☑ 5.4 Advisors re-run: performance findings 366 → 188 (the 68 "unused index" INFOs now include the 33 brand-new FK indexes, which naturally start at zero scans).</li>
+  </ul>
+
+  <h2>Phase 6 — Structural refactors (one per iteration, using the batch-grafts recipe)</h2>
+  <p>Recipe on record: <code>docs/features/batch-grafts-modularisation.md</code> (hook + sub-components). Order by churn: hives → queens → batches → settings (extract admin UserManagement) → TraceabilityTool → team pages. Fold in per page as each is rebuilt: content skeleton (records pattern), <code>ConfirmDialog</code> instead of native <code>confirm()</code>, filter-bar collapse behind a "Filters (n active)" button, shared date helper from <code>src/lib/date-utils.ts</code>, types from <code>src/types</code>.</p>
+  <ul class="todo">
+    <li>☑ 6.1 Profile export dedupe done: <code>USER_EXPORT_TABLES</code> (table + CSV label) and <code>fetchUserExportData()</code> added to <code>src/lib/database-export.ts</code>; JSON and CSV exports are now thin serialisers over the same fetch (~210 lines removed from the profile page). Two behaviour improvements: the export now includes <strong>11 user-scoped tables that were silently missing</strong> (CRM customers/orders/items/credit, queen assignments, queen weights, key events, DCA confirmations, batch breeder queens, tool suggestions, apiary map benches), and a failing table now aborts with an error instead of silently writing an incomplete backup.</li>
+    <li>☑ 6.2 Dead libs deleted (<code>push-notifications.ts</code>, <code>location-obfuscation.ts</code>, <code>db-schema.ts</code> — zero importers confirmed across src/ and public/); <code>.claude/CLAUDE.md</code> core-library list corrected (now mentions <code>team-access.ts</code> instead).</li>
+    <li>☐ 6.3 Hives page decomposition (<code>useHivesPage</code> hook + form modal + cards/table components).</li>
+    <li>☐ 6.4 Queens page decomposition (same pattern).</li>
+    <li>☐ 6.5 Batches page decomposition.</li>
+    <li>☐ 6.6 Settings: extract admin <code>UserManagement</code> component + <code>useAdminUsers</code> hook (impersonation/hard-delete out of the page component).</li>
+    <li>☐ 6.7 TraceabilityTool split (containers / batch runs / feedback hooks + tab components).</li>
+    <li>☐ 6.8 Consolidate date formatting into <code>src/lib/date-utils.ts</code>; remove the four <code>formatDateIrish</code> copies and local <code>formatDate</code> helpers.</li>
+  </ul>
+
+  <h2>Deferred / decisions needed later (not in scope yet)</h2>
   <ul>
-    <li>No change to the RPC — it works as-is once RLS permits.</li>
-    <li>No column-level WITH CHECK guards (queen assignment etc.) — full config edit per your decision.</li>
-    <li>No bulk retroactive backfill of past inspections — only the one Hive 2 correction you asked for.</li>
+    <li>Client-side stale-while-revalidate cache (or SWR on hives/queens/records) — after Phase 6 decompositions so it lands in hooks, not god pages.</li>
+    <li><code>colonies</code>/<code>colony_movements</code> (22 rows): adopt properly or drop — product decision.</li>
+    <li>Three parallel inspection tables — leave as-is unless a unifying feature demands it.</li>
+    <li>Server-component first paint for read-heavy pages — pair with Phase 6, page by page.</li>
   </ul>
 
   <h2>Review</h2>
-  <p>All steps complete. One root cause fixed two symptoms.</p>
-  <table>
-    <tr><th>Change</th><th>Detail</th></tr>
-    <tr><td>DB migration <code>hives_update_policy_team_edit</code></td><td>Replaced the owner-only <code>hives_update_policy</code>. UPDATE is now allowed for the owner <em>or</em> a team member with apiary access (<code>can_access_apiary</code>), with a <code>WITH CHECK</code> that keeps the hive in an accessible apiary (members cannot orphan it; only the owner may move it to no apiary). DELETE unchanged (owner-only).</td></tr>
-    <tr><td><code>HiveListCard.tsx</code></td><td>Edit button now shows for the owner <em>or</em> a shared hive (<code>hive.user_id === userId || hive.is_shared</code>). Delete button wrapped in its own owner-only guard, so team members see Edit but not Delete. Sole edit entry point for the hive list — no other view to change.</td></tr>
-    <tr><td>Super auto-sync</td><td>No code change needed. The existing <code>SECURITY INVOKER</code> RPC <code>adjust_hive_honey_supers</code> now succeeds for team members because the loosened UPDATE policy lets their inspection-driven update through.</td></tr>
-    <tr><td>Hive 2 (TBKA Kilcornan) data</td><td>Stored <code>honey_supers</code> corrected 1 → 2 (only the <code>honey_supers</code> key touched; audit fields updated, attributed to the inspecting member). Verified: now returns 2.</td></tr>
-    <tr><td>Docs</td><td><code>team-member-hive-placement.md</code> (UPDATE now team-scoped, DELETE owner-only) and <code>honey-supers-auto-sync.md</code> (team-member sync explanation) updated.</td></tr>
-  </table>
-  <p><strong>Security check:</strong> <code>get_advisors(security)</code> showed only pre-existing, unrelated findings (search_path / SECURITY DEFINER notes on <code>get_recipient_hives</code>, <code>set_hives_user_id</code>). The new policy mirrors the existing SELECT policy shape and introduced no new advisory.</p>
 
-  <h2>QA audit (post-implementation)</h2>
+  <h3>Phase 6, iteration 1 (items 6.1 + 6.2) — completed 22 July 2026</h3>
+  <p>Files: <code>src/lib/database-export.ts</code> (+list/+fetcher), <code>profile/page.tsx</code> (1,592 → 1,383 lines),
+  three dead libs deleted, <code>.claude/CLAUDE.md</code> corrected. <code>tsc</code> 0 src errors, lint clean.</p>
+  <p><strong>User test requested:</strong> Profile → export both JSON and CSV; confirm the download completes, opens, and
+  now contains the CRM / queen-assignment / key-event sections. Remaining iterations: 6.3 hives decomposition,
+  6.4 queens, 6.5 batches, 6.6 settings admin extraction, 6.7 TraceabilityTool, 6.8 date-format consolidation — one per session as planned.</p>
+
+  <h3>Phase 5 — completed 22 July 2026</h3>
+  <p>Three migrations, no app code changes: <code>rls_initplan_wrap_auth_calls</code>,
+  <code>add_covering_indexes_for_unindexed_fks</code>, <code>consolidate_permissive_select_policies</code>.</p>
   <table>
-    <tr><th>Severity</th><th>Finding</th><th>Fix</th></tr>
-    <tr><td>🔴 Critical</td><td><code>handleEdit</code> (<code>hives/page.tsx:866</code>) began with <code>if (hive.user_id !== userId) return</code>. Since <code>onEdit={handleEdit}</code>, the Edit button newly exposed for shared hives was a <strong>dead no-op</strong> — a team member clicked Edit and nothing happened. The RLS + button gate were changed but this handler guard was missed.</td><td>Guard loosened to <code>hive.user_id !== userId &amp;&amp; !hive.is_shared</code> (mirrors the card + RLS); stale comment refreshed. RLS remains the real boundary on save.</td></tr>
-    <tr><td>🟡 Medium</td><td>DRY: the edit block repeated <code>hive.user_id === userId</code> inline twice, though the component already defines <code>isOwner</code> (line 29) as the canonical owner check.</td><td>Both new conditions now use <code>isOwner</code>.</td></tr>
+    <tr><th>Advisor metric</th><th>Before</th><th>After</th></tr>
+    <tr><td><code>auth_rls_initplan</code> (per-row auth calls)</td><td>143</td><td>0</td></tr>
+    <tr><td><code>unindexed_foreign_keys</code></td><td>33</td><td>0</td></tr>
+    <tr><td><code>multiple_permissive_policies</code></td><td>155</td><td>119 (rest low-traffic, by design)</td></tr>
+    <tr><td>Total performance findings</td><td>366</td><td>188</td></tr>
   </table>
-  <p>Verified: <code>npx tsc --noEmit</code> — no type errors in the changed files; <code>npx eslint</code> on both files — clean.</p>
-  <p><strong>Please test:</strong> as a team member (not the hive owner), open the Hives list for a shared apiary — the Edit button should now appear (Delete should not). Editing a hive's supers should save. Recording an inspection with a Given/Taken super as a team member should now move the hive's stored super count.</p>
+  <p>Effect: every RLS-filtered query now evaluates <code>auth.uid()</code> once per statement instead of once per row
+  (biggest effect on inspections, knowledge_base, batch_grafts, changelog scans), profile embeds evaluate one merged
+  policy instead of four, and FK joins/cascades (graft_distributions, queen_assignments, varroa_treatments…) use indexes.
+  Policy quals were regenerated from <code>pg_policies</code> verbatim with only the initplan wrapping/OR-merge applied, so
+  semantics are unchanged. <strong>User test requested:</strong> a normal pass through the app (dashboard, hives, queens,
+  batches incl. grafts tab, records, profiles/team pages) plus the admin subscription-history view — everything should
+  show the same data as before, just a bit quicker on the larger lists.</p>
+
+  <h3>Phase 4 — completed 22 July 2026</h3>
+  <p>New: migration <code>add_get_accessible_apiary_ids_rpc</code> + <code>src/lib/team-access.ts</code>.
+  Changed: hives, queens, batches, tasks, apiaries pages; MatingNucsTab; useRecordsData; apiary-team + accept-invitation (cache invalidation).
+  The permission model now lives in ONE place: any future change (new role, revised sharing) is one RPC edit instead of a dozen page edits.</p>
+  <p>Request maths per page load: previously 2-3 serial team-lookup requests <em>per fetcher</em> (the hives page ran it three times ≈ 6-9 requests); now one RPC shared by all fetchers on the page, cached for 30s across navigations.
+  Lint clean; <code>tsc --noEmit</code>: 0 errors in <code>src/</code> (96 pre-existing type errors in <code>tests/</code> confirmed present on HEAD before these changes; the vitest runner itself currently fails to boot on a PostCSS config error — also pre-existing).</p>
+  <p><strong>User test requested (ideally with the team account):</strong> hives/queens/batches/tasks/records/apiaries pages still show shared (team) items with correct ownership filters and "shared" badges; mating nuc apiary options include shared apiaries; share + unshare an apiary on the Apiary Team page and confirm the hives list reflects it immediately; accept a fresh invitation and confirm shared apiaries appear.</p>
+
+  <h3>Phase 3 — completed 22 July 2026</h3>
+  <p>Files touched: <code>queens/page.tsx</code> (mobile cards + canonical badges),
+  <code>InspectionForm.tsx</code> (touch targets), <code>dashboard/page.tsx</code> (alert chips),
+  <code>hives/[id]/page.tsx</code> + <code>hive-scan/tag/[code]/page.tsx</code> (tile contrast).
+  Lint clean. Desktop queens table unchanged apart from the corrected status/colour badge classes.</p>
+  <p><strong>User test requested (on a phone or 375px viewport):</strong> queens page shows cards
+  (no horizontal scrolling), Edit/Delete/Label/Compare work from a card, tapping a queen number opens
+  the detail page, arriving from a queen detail link scrolls to and highlights the right card; desktop
+  table unchanged and "active" status now shows green text; inspection form star rows and queen-cell
+  counters are comfortably tappable with gloves; dashboard attention alerts are large tappable rows;
+  harvest/feeding tiles readable in bright light.</p>
+
+  <h3>Phase 2 — completed 22 July 2026</h3>
+  <p>Four small, isolated diffs; no schema changes. Files touched:
+  <code>src/app/dashboard/queens/page.tsx</code> (batched enrichment),
+  <code>src/app/dashboard/hives/page.tsx</code> (deduped inspections fetch + double-load guard),
+  <code>public/service-worker.js</code> (cache-first static assets),
+  <code>src/app/dashboard/tasks/page.tsx</code> (bounded fetch + local session).</p>
+  <table>
+    <tr><th>Page</th><th>Before</th><th>After</th></tr>
+    <tr><td>Queens list (100 queens)</td><td>~100-300 requests, serial</td><td>2-3 requests</td></tr>
+    <tr><td>Hives list</td><td>~12-query chain run twice + inspections table fetched twice</td><td>chain runs once, inspections fetched once</td></tr>
+    <tr><td>App start (revisit, slow signal)</td><td>every JS/CSS chunk re-fetched over network</td><td>immutable chunks served from cache</td></tr>
+    <tr><td>Tasks</td><td>entire task history, unbounded</td><td>last 12 months + future, capped at 1,000</td></tr>
+  </table>
+  <p>Lint clean on all three TSX files (three pre-existing <code>exhaustive-deps</code> warnings in tasks-page filter effects untouched by this change).
+  Behaviour notes: tasks older than 12 months are no longer listed (deliberate); a queen referenced by two hives now shows one of them instead of erroring.
+  <strong>User test requested:</strong> queens list (incl. mother/father columns and hive assignment), hives list numbers unchanged (last inspection date, "last record" badges, supers), changing ownership/archive filters still refetches, tasks page shows current tasks, and after deploy: open the app, then reload it with network throttled — it should start noticeably faster. Service-worker change requires the new SW to activate (update prompt).</strong></p>
+
+  <h3>Phase 1 — completed 22 July 2026</h3>
+  <p>One migration (<code>phase1_security_hardening_guards_and_revokes</code>) applied via the Supabase MCP. No frontend code changed.</p>
+  <table>
+    <tr><th>Metric</th><th>Before</th><th>After</th></tr>
+    <tr><td>Security advisor findings</td><td>230</td><td>81 (all remaining are the intentional RPC surface or user actions below)</td></tr>
+    <tr><td>Anon-executable SECURITY DEFINER functions</td><td>66</td><td>20 (boolean predicates + 3 public flows, by design)</td></tr>
+    <tr><td><code>function_search_path_mutable</code></td><td>70</td><td>0</td></tr>
+    <tr><td><code>rls_policy_always_true</code></td><td>9</td><td>0</td></tr>
+    <tr><td><code>security_definer_view</code> errors</td><td>10</td><td>4 (intentional, documented in the migration header)</td></tr>
+  </table>
+  <p><strong>Closed vulnerabilities:</strong> anonymous permanent account deletion (<code>hard_delete_user</code>), anonymous full user PII dump (<code>get_users_with_email</code>/<code>get_user_email</code>), anonymous arbitrary-SELECT RLS bypass (<code>execute_safe_query</code>), anonymous INSERT into <code>profiles</code>, any-user INSERT into <code>subscription_history</code>, any-user edits to shared dropdown reference data, cross-tenant reads via 6 definer views (incl. <code>crm_customer_summary</code>).</p>
+  <p><strong>Behavioural rule going forward:</strong> new DB functions get <em>no</em> client EXECUTE by default — every new RPC migration must include an explicit <code>GRANT EXECUTE</code>. Recorded in project memory.</p>
+  <p><strong>Outstanding user actions:</strong> (a) enable leaked-password protection in the Supabase dashboard (Authentication → Settings); (b) optionally disable public listing on the <code>apiary-images</code>/<code>inspection-images</code> storage buckets (Storage → bucket settings — verify the app only builds direct URLs before flipping); (c) regression-test: login/signup, admin Settings user management, dropdown management, team + rearing-group invitation links (send/accept), public trace page + feedback form, CRM customers page, community map, hive detail configuration history.</p>
 </body>
 </html>
