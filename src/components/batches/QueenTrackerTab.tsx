@@ -8,7 +8,6 @@ import {
   GitMerge,
   CalendarDays,
   Snowflake,
-  Tag,
   Search,
   X,
 } from 'lucide-react'
@@ -32,6 +31,7 @@ type DerivedTrackerRow = TrackedQueen & {
   group_name: string
   queen_display_name: string
   queen_secondary_label: string
+  breeder_summary_label: string
   recipient_display_name: string
   recipient_type_label: string
   recipient_type_class: string
@@ -842,7 +842,18 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
   const motherQueenMarkingColour = distribution.mother_queen_marking_color || (
     distribution.mother_queen_birth_date ? getQueenColorFromYear(distribution.mother_queen_birth_date) : ''
   )
-  const queenDisplayName = `Cell #${distribution.cell_number}`
+  // Cell numbers only count within a batch, so they aren't a unique handle. Lead with the
+  // tagged queen number when present (unique per account); otherwise scope the cell to its batch.
+  const queenTag = distribution.queen_number?.trim().replace(/^#/, '') || ''
+  const queenDisplayName = queenTag
+    ? `Queen ${queenTag}`
+    : `${distribution.batch_name} · Cell ${distribution.cell_number}`
+  // Breeder (mother) queen gives lineage at a glance; omit entirely when unknown.
+  const breederSummaryLabel = distribution.mother_queen_number
+    ? [distribution.mother_queen_number, distribution.mother_queen_subspecies]
+        .filter(Boolean)
+        .join(' · ')
+    : ''
   const markingStatusLabel = distribution.queen_marked
     ? markingColour
       ? `Marked (${markingColour})`
@@ -870,6 +881,7 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
     group_name: groupName,
     queen_display_name: queenDisplayName,
     queen_secondary_label: queenSecondaryLabel,
+    breeder_summary_label: breederSummaryLabel,
     recipient_display_name: getRecipientName(distribution),
     recipient_type_label: recipientTypeInfo.label,
     recipient_type_class: recipientTypeInfo.className,
@@ -1555,7 +1567,6 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                   const outcomeDisabled = isUpdating || isReadOnly || distribution.queen_failed
                   const ownerDisplayName = distribution.batch_owner_name
                     || (distribution.batch_owner_id === userId ? 'You' : '-')
-                  const queenTaggedValue = formatQueenTaggedValue(distribution.queen_number)
                   const cellHighlightClass = isSelected
                     ? 'bg-emerald-50/95 dark:bg-emerald-950/30'
                     : isReadOnly
@@ -1616,16 +1627,10 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                                 <X size={11} />
                               )}
                             </span>
-                            {queenTaggedValue && (
-                              <span
-                                title={`Tagged ${queenTaggedValue}`}
-                                className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-[11px] font-medium text-text-secondary dark:bg-surface-elevated"
-                              >
-                                <Tag size={10} />
-                                <span>{queenTaggedValue}</span>
-                              </span>
-                            )}
                           </div>
+                          {distribution.breeder_summary_label && (
+                            <p className="mt-0.5 pl-5 text-xs text-text-secondary">Breeder {distribution.breeder_summary_label}</p>
+                          )}
                           {distribution.queen_secondary_label && (
                             <p className="mt-0.5 pl-5 text-xs text-text-secondary">{distribution.queen_secondary_label}</p>
                           )}
