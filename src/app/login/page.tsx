@@ -321,7 +321,7 @@ function LoginForm() {
                 v1.11.1
               </span>
               <span aria-hidden="true">-</span>
-              <span>9th July 2026</span>
+              <span>24th July 2026</span>
             </div>
           </div>
         </Panel>

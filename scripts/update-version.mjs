@@ -65,6 +65,20 @@ const newDate = positionalArgs[1] || new Date().toLocaleDateString('en-US', {
   day: 'numeric'
 });
 
+// British-formatted date (e.g. "24th July 2026") for pages that follow UK conventions.
+// Falls back to the original string if the date can't be parsed.
+function toBritishDate(dateStr) {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  const day = d.getDate();
+  const suffixes = ['th', 'st', 'nd', 'rd'];
+  const v = day % 100;
+  const ordinal = day + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
+  const month = d.toLocaleDateString('en-GB', { month: 'long' });
+  return `${ordinal} ${month} ${d.getFullYear()}`;
+}
+const newDateBritish = toBritishDate(newDate);
+
 // Validate version format
 const versionRegex = /^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$/;
 if (!versionRegex.test(newVersion)) {
@@ -153,8 +167,8 @@ const files = [
         description: 'Version badge'
       },
       {
-        search: /(<span>)[A-Za-z]+ \d{1,2}, \d{4}(<\/span>)/,
-        replace: `$1${newDate}$2`,
+        search: /(<span>)\d{1,2}(?:st|nd|rd|th) [A-Za-z]+ \d{4}(<\/span>)/,
+        replace: `$1${newDateBritish}$2`,
         description: 'Release date'
       }
     ]
@@ -164,8 +178,8 @@ const files = [
     path: join(ROOT_DIR, 'src/app/dashboard/page.tsx'),
     updates: [
       {
-        search: /(HiveCraic )v[\d.]+(-[a-zA-Z0-9.]+)?( &middot; )[A-Za-z]+ \d{1,2}, \d{4}( &middot;)/,
-        replace: `$1v${newVersion}$3${newDate}$4`,
+        search: /(HiveCraic )v[\d.]+(-[a-zA-Z0-9.]+)?( &middot; )\d{1,2}(?:st|nd|rd|th) [A-Za-z]+ \d{4}( &middot;)/,
+        replace: `$1v${newVersion}$3${newDateBritish}$4`,
         description: 'Version and date display'
       }
     ]
@@ -175,12 +189,8 @@ const files = [
     path: join(ROOT_DIR, 'src/app/dashboard/about/page.tsx'),
     updates: [
       {
-        search: /(<strong>Current Version:<\/strong> )[\d.]+(-[a-zA-Z0-9.]+)?( \()([A-Za-z]+)( \d{4}\))/,
-        replace: (_match, p1, _p2, p3, _p4, p5) => {
-          const month = newDate.split(' ')[0];
-          const year = newDate.split(' ').pop();
-          return `${p1}${newVersion}${p3}${month}${p5.replace(/\d{4}/, year)}`;
-        },
+        search: /(<strong>Current Version:<\/strong> )[\d.]+(-[a-zA-Z0-9.]+)?( \()\d{1,2}(?:st|nd|rd|th) [A-Za-z]+ \d{4}(\))/,
+        replace: `$1${newVersion}$3${newDateBritish}$4`,
         description: 'Current version and date'
       }
     ]
