@@ -1608,19 +1608,19 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                               title={distribution.marking_status_label}
                               className={`inline-flex h-6 w-6 items-center justify-center rounded-full border ${
                                 distribution.queen_marked
-                                  ? 'border-green-200 bg-green-100 text-green-700 dark:border-green-800 dark:bg-green-900/35 dark:text-green-300'
-                                  : 'border-border bg-surface text-text-tertiary dark:bg-surface-elevated'
+                                  ? 'border-green-700 bg-green-600 text-white dark:border-green-500 dark:bg-green-700 dark:text-white'
+                                  : 'border-slate-400 bg-surface text-text-secondary dark:border-slate-500 dark:bg-surface-elevated'
                               }`}
                             >
                               {distribution.queen_marked ? (
                                 <span className="flex items-center gap-0.5">
                                   {markingColourDotClass && (
-                                    <span className={`inline-block h-2 w-2 rounded-full ${markingColourDotClass}`} />
+                                    <span className={`inline-block h-2 w-2 rounded-full ring-1 ring-white ${markingColourDotClass}`} />
                                   )}
-                                  <Check size={11} />
+                                  <Check size={13} strokeWidth={3} />
                                 </span>
                               ) : (
-                                <X size={11} />
+                                <X size={13} strokeWidth={3} />
                               )}
                             </span>
                           </div>
