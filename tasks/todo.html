@@ -2,261 +2,91 @@
 <html lang="en-GB">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Plan — Repository improvement programme (security first)</title>
+  <title>Reports — Queen Failures report</title>
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; line-height: 1.55; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
-    h1 { font-size: 1.5rem; } h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 2px solid #f2c94c; padding-bottom: .25rem; }
-    h3 { font-size: 1.05rem; margin-top: 1.25rem; }
-    code { background: #f4f4f4; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
-    pre { background: #f7f7f7; padding: .75rem 1rem; border-radius: 8px; overflow-x: auto; border-left: 4px solid #f2c94c; }
-    .box { background: #fff8e1; border: 1px solid #f2c94c; border-radius: 8px; padding: .75rem 1rem; margin: 1rem 0; }
-    .root { background: #fdecea; border: 1px solid #e57373; border-radius: 8px; padding: .75rem 1rem; }
-    ul.todo { list-style: none; padding-left: 0; }
-    ul.todo li { margin: .4rem 0; }
-    table { border-collapse: collapse; width: 100%; margin: .5rem 0; }
-    th, td { border: 1px solid #ddd; padding: .4rem .6rem; text-align: left; font-size: .92em; }
-    th { background: #faf5e6; }
-    .phase-tag { display: inline-block; background: #faf5e6; border: 1px solid #f2c94c; border-radius: 4px; padding: 0 .4rem; font-size: .8em; margin-right: .4rem; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.55; max-width: 940px; margin: 2rem auto; padding: 0 1.25rem; color: #1f2937; }
+    h1 { font-size: 1.5rem; border-bottom: 2px solid #b45309; padding-bottom: .4rem; }
+    h2 { font-size: 1.15rem; margin-top: 1.8rem; color: #92400e; }
+    code { background: #f1f5f9; padding: .1rem .35rem; border-radius: .25rem; font-size: .9em; }
+    .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: .6rem; padding: .85rem 1.1rem; margin: .8rem 0; }
+    .mock { background: #fff; border: 1px solid #cbd5e1; border-radius: .5rem; padding: .7rem .9rem; font-size: .82rem; font-family: ui-monospace, monospace; white-space: pre; overflow-x: auto; }
+    ul { padding-left: 1.2rem; }
+    li { margin: .3rem 0; }
+    .todo { list-style: none; padding-left: 0; }
+    .todo li::before { content: "\2610 "; color: #b45309; font-weight: bold; }
+    .note { font-size: .88rem; color: #475569; }
+    .warn { background: #fffbeb; border: 1px solid #fde68a; border-radius: .5rem; padding: .6rem .9rem; font-size: .9rem; }
   </style>
 </head>
 <body>
-  <h1>Repository improvement programme — audit follow-up (July 2026)</h1>
+  <h1>Reports &mdash; new "Queen Failures" report</h1>
 
-  <div class="box">
-    <strong>Source:</strong> full repository + database audit (three exploration agents + live Supabase advisor review, 22&nbsp;July&nbsp;2026).
-    Phases are ordered by risk and user payoff. Each phase is small, self-contained, and independently shippable.
-    <strong>Phase&nbsp;1 is a live security issue and goes first.</strong>
-  </div>
+  <h2>Goal</h2>
+  <p>A standalone <strong>Queen Failures</strong> tab on <code>/dashboard/reports</code>, mirroring the Archived Hives
+  report: a <strong>breakdown by failure reason</strong> plus a table of failed queens, with CSV export and print/PDF.
+  Scoped to the current user's own distributed queens.</p>
 
-  <div class="root">
-    <strong>Why Phase 1 cannot wait:</strong> three SECURITY DEFINER functions are executable by the <em>anonymous</em> role today:
-    <ul>
-      <li><code>hard_delete_user(uuid)</code> — no admin check in the body; anyone with a user UUID can permanently delete that user and all their data.</li>
-      <li><code>get_users_with_email()</code> / <code>get_user_email()</code> — no caller check; dumps every user's email, name, mobile number, subscription details.</li>
-      <li><code>execute_safe_query(text)</code> — runs arbitrary <code>SELECT</code> as definer: a full read bypass of RLS across all 77 tables.</li>
-    </ul>
-    In total 66 SECURITY DEFINER functions are anon-executable and 10 views are flagged <code>security_definer_view</code> at ERROR level.
-  </div>
+  <h2>Layout</h2>
+  <div class="box"><div class="mock">Queen Failures
+  Time period: [All] [3M] [6M] [1 Year] [Custom]      (no apiary/hive filter)
 
-  <h2>Phase 1 — Security migration (do first)</h2>
-  <p>One migration applied via the Supabase MCP (per project convention — no SQL files to run manually). Frontend impact: none expected for normal users; the admin Settings page calls these functions as an authenticated admin, which keeps working.</p>
-  <ul class="todo">
-    <li>☑ 1.1 Inventory all 66 anon-executable SECURITY DEFINER functions and classify each — done: 13 trigger-only, 7 service-role-only, 31 authenticated-only, 3 genuinely public RPCs, 19 RLS helper predicates (kept callable — <code>TO public</code> policies evaluate them on anonymous requests, e.g. invitation links).</li>
-    <li>☑ 1.2 Migration <code>phase1_security_hardening_guards_and_revokes</code> applied via MCP: revokes + explicit grants per class, plus <code>ALTER DEFAULT PRIVILEGES … REVOKE EXECUTE … FROM PUBLIC</code> so future functions are locked by default.</li>
-    <li>☑ 1.3 Internal admin checks added to <code>hard_delete_user</code>, <code>soft_delete_user</code>, <code>restore_deleted_user</code>, <code>get_users_with_email</code> (now returns empty for non-admins). <code>get_user_email</code> stays authenticated-only (needed by team pages); anon revoked.</li>
-    <li>☑ 1.4 <code>execute_safe_query</code> is called by the admin export API route (service-role client) — locked to <code>service_role</code> only instead of dropping.</li>
-    <li>☑ 1.5 <code>search_path = public, extensions</code> pinned on every remaining public function without one (advisor count 70 → 0).</li>
-    <li>☑ 1.6 Six views flipped to <code>security_invoker</code> (<code>active_profiles</code>, <code>deleted_profiles</code>, <code>users_with_registration_codes</code>, <code>users_needing_subscription_reminder</code>, <code>crm_customer_summary</code>, <code>hive_configuration_history_with_location</code>) — admin UI keeps working via the "Admins can view any profile" policy. Four kept definer by design: <code>shared_apiaries_obfuscated</code>, <code>wild_colonies_obfuscated</code>, <code>shared_gdd_records_community</code>, <code>public_galway_gdd</code>.</li>
-    <li>☑ 1.7 Dropped always-true policies: anonymous INSERT on <code>profiles</code>, open INSERT on <code>subscription_history</code> and <code>batch_feedback</code> (all writes go through SECURITY DEFINER functions / service role). Dropdown category/value writes now admin-only. No-policy RLS on <code>crm_invoice_email_log</code> / <code>stripe_webhook_events</code> confirmed intentional (service-role-only tables).</li>
-    <li>☐ 1.8 Enable leaked-password protection — <strong>needs the Supabase dashboard</strong> (Authentication → Settings), cannot be set via SQL. User action.</li>
-    <li>☑ 1.9 Advisors re-run: security findings 230 → 81; remaining items are the intentional public/authenticated RPC surface, the 4 intentional definer views, 1.8 above, and public storage bucket listing (see review). <strong>User regression test requested:</strong> login, admin user management (settings), invitation acceptance by link, public trace page, CRM customers list, dropdown management.</li>
-  </ul>
+  [ Total failed 12 ] [ Drone layer 4 ] [ Died 3 ] [ Superseded 2 ] [ Lost 2 ] [ No reason 1 ]
 
-  <h2>Phase 2 — Quick speed wins (small diffs, felt immediately in the field)</h2>
-  <ul class="todo">
-    <li>☑ 2.1 Queens page N+1 fixed: per-queen hive query and per-parent queen queries replaced by one batched <code>.in('queen_id', …)</code> hives query and one batched missing-parents query. A 100-queen account now loads with 2-3 requests instead of 100-300.</li>
-    <li>☑ 2.2 Hives page: duplicate full-<code>inspections</code> fetch removed (last-inspection dates now derived from the already-fetched newest-first set); <code>initialFetchFilters</code> ref stops the filter effect re-running the entire ~12-query chain when <code>filtersLoaded</code> first flips — the page previously loaded twice on every visit.</li>
-    <li>☑ 2.3 Service worker: cache-first branch for <code>/_next/static/*</code> (content-hashed, immutable). Old entries purged on <code>CACHE_NAME</code> bump as before; API/HTML behaviour unchanged.</li>
-    <li>☑ 2.4 Tasks page: <code>tasks_events</code> fetch now bounded to the last 12 months + future with <code>.limit(1000)</code>; user ID resolved from the local session (<code>getCurrentUserId</code>) instead of a network <code>auth.getUser()</code> round trip.</li>
-  </ul>
+  Date        Queen            Batch          Reason        Comment
+  12/07/2026  Queen 38         Spring A       Drone layer   supersedure cells seen
+  05/07/2026  Batch B · Cell 4 Summer B       Died          &mdash;
+  &hellip;
+  [Export CSV]  [Print / PDF]</div></div>
 
-  <h2>Phase 3 — Quick usability wins (50+ outdoor audience)</h2>
-  <ul class="todo">
-    <li>☑ 3.1 Queens list: <code>md:hidden</code> card view added (queen number + status prominent, labelled 44px Edit/Delete/Label buttons, compare checkbox, mother/age/colour/hive/apiary details, "replace soon" warning); table now <code>hidden md:block</code>; empty state shared by both views; highlight-scroll picks whichever view is visible. Drifted inline status/marking colour maps replaced by canonical <code>queenStatusBadgeClass</code> + shared local helpers in both views — active queens read green again.</li>
-    <li>☑ 3.2 InspectionForm: stars 36px → 48px (gap-2), the three Clear buttons 36/32px → 44/36px with 12px text (was 11px), queen-cell YES/NO toggles, ± steppers and count input 36px → 48px mobile / 40px desktop. Mobile is now never smaller than desktop.</li>
-    <li>☑ 3.3 Dashboard "Attention Needed": all four alert chips promoted from <code>fj-chip-xs</code> to full chips, <code>min-h-[44px]</code>, full-width on phones, icons 12px → 16px.</li>
-    <li>☑ 3.4 Contrast: harvest/feeding tiles → <code>bg-yellow-700</code>/<code>bg-orange-700</code> (white text ≈4.9:1/4.6:1, AA pass) on hive detail AND the QR hive-scan tag page (same tiles, most sunlight-exposed screen).</li>
-  </ul>
-
-  <h2>Phase 4 — Shared team-access helper (unlocks perf + DRY together)</h2>
-  <ul class="todo">
-    <li>☑ 4.1 RPC <code>get_accessible_apiary_ids()</code> created (STABLE, SECURITY DEFINER, <code>auth.uid()</code>-scoped, explicit grants per the new model) returning team ids + shared apiary ids + shared owner ids in one round trip. Wrapper <code>src/lib/team-access.ts</code>: <code>getTeamAccess(userId)</code> with a 30s per-user promise cache (parallel fetchers on one page share a single request) and <code>clearTeamAccessCache()</code>.</li>
-    <li>☑ 4.2 Waterfall replaced at 10 call sites in 7 files: hives page ×3, queens page, batches page, tasks page (also parallelised its shared apiaries+hives fetch), apiaries page, MatingNucsTab, useRecordsData ×3 (including the deep 4-level embed, now removed with its helper). Cache invalidation wired into apiary share/unshare (apiary-team) and invitation acceptance. <em>Not replaced by design:</em> qr-tags (needs team names, already a single embed query) and the team-management queries in useTeams/apiary-team (they need member/profile data, not access ids).</li>
-  </ul>
-
-  <h2>Phase 5 — Database performance migration</h2>
-  <ul class="todo">
-    <li>☑ 5.1 Migration <code>rls_initplan_wrap_auth_calls</code>: generated rewrite of every policy calling bare <code>auth.uid()/role()/jwt()/email()</code> or the zero-arg admin helpers into initplan form. Advisor count 143 → <strong>0</strong>.</li>
-    <li>☑ 5.2 Migration <code>consolidate_permissive_select_policies</code>: the busiest CRUD tables (inspections, hives, queens, tasks_events) turned out to already be single-policy; the real duplication was on lookup/embed tables. Merged same-role SELECT pairs on <code>profiles</code> (4 public policies → 1 — evaluated in embeds on nearly every page), <code>apiaries</code>, <code>batch_grafts</code>, <code>batch_breeder_queens</code>, <code>rearing_batches</code>, <code>gdd_records</code>, <code>subscription_history</code>. Warnings 155 → 119; the remainder are role-split or admin/owner pairs on small, low-traffic tables (wild_colonies, conservation_areas, support_tickets…) left for clarity.</li>
-    <li>☑ 5.3 Migration <code>add_covering_indexes_for_unindexed_fks</code>: generated covering index for every FK not already prefix-covered. Unindexed FKs 33 → <strong>0</strong>. Dropping the 34 pre-existing unused indexes <em>deferred</em> — cannot rule out seasonal usage (harvest/treatment queries peak in summer/autumn); revisit with a full year of <code>pg_stat_user_indexes</code> data.</li>
-    <li>☑ 5.4 Advisors re-run: performance findings 366 → 188 (the 68 "unused index" INFOs now include the 33 brand-new FK indexes, which naturally start at zero scans).</li>
-  </ul>
-
-  <h2>Phase 6 — Structural refactors (one per iteration, using the batch-grafts recipe)</h2>
-  <p>Recipe on record: <code>docs/features/batch-grafts-modularisation.md</code> (hook + sub-components). Order by churn: hives → queens → batches → settings (extract admin UserManagement) → TraceabilityTool → team pages. Fold in per page as each is rebuilt: content skeleton (records pattern), <code>ConfirmDialog</code> instead of native <code>confirm()</code>, filter-bar collapse behind a "Filters (n active)" button, shared date helper from <code>src/lib/date-utils.ts</code>, types from <code>src/types</code>.</p>
-  <ul class="todo">
-    <li>☑ 6.1 Profile export dedupe done: <code>USER_EXPORT_TABLES</code> (table + CSV label) and <code>fetchUserExportData()</code> added to <code>src/lib/database-export.ts</code>; JSON and CSV exports are now thin serialisers over the same fetch (~210 lines removed from the profile page). Two behaviour improvements: the export now includes <strong>11 user-scoped tables that were silently missing</strong> (CRM customers/orders/items/credit, queen assignments, queen weights, key events, DCA confirmations, batch breeder queens, tool suggestions, apiary map benches), and a failing table now aborts with an error instead of silently writing an incomplete backup.</li>
-    <li>☑ 6.2 Dead libs deleted (<code>push-notifications.ts</code>, <code>location-obfuscation.ts</code>, <code>db-schema.ts</code> — zero importers confirmed across src/ and public/); <code>.claude/CLAUDE.md</code> core-library list corrected (now mentions <code>team-access.ts</code> instead).</li>
-    <li>☑ 6.3 Hives page decomposed: 1,938 → 511 lines. <code>src/hooks/useHivesList.ts</code> (533 lines — fetching, enrichment, ownership/archive filters, init/refetch effects) + <code>src/components/hive/HiveFormSection.tsx</code> (967 lines — form state, validation, multi-step save with history seed and queenless queen-status sync). All code moved verbatim with assertion-guarded line surgery; the page keeps list rendering, client-side filters, bulk move/clone, delete/unarchive. Cards were already extracted (<code>HiveListCard</code>).</li>
-    <li>☑ 6.4 Queens page decomposed: 1,740 → 927 lines. <code>src/hooks/useQueensList.ts</code> (267 lines — queens with batched hive/parent enrichment, dropdown option lists, rearing batches, breeder context) + <code>src/components/queens/QueenFormSection.tsx</code> (630 lines — form state, lineage derivation helpers, auto marking-colour, distributed-queen field locking, embedded lineage tree). Page keeps card/table views, filters, sort, compare selection, CSV export, delete flow.</li>
-    <li>☑ 6.5 Batches page decomposed: 2,486 → 1,065 lines. <code>src/hooks/useBatchesList.ts</code> (365 lines — batches with sealed-cell counts + breeder names, queen/apiary/hive options, subscription flag, shared interfaces/date helpers now exported from here) + <code>src/components/batches/BatchFormSection.tsx</code> (1,151 lines — form state, timeline auto-calc, name-uniqueness pre-check, multi-breeder RPC, voice notes, async edit population with stale-fetch guard, grafts section). Page keeps tabs, deep-link handling, hive-score engine, list cards/tables, filters.</li>
-    <li>☑ 6.6 Settings decomposed: 1,880 → 223 lines. The entire admin surface (user list + filters + pagination, role/expiry changes, enable/disable, soft/hard delete + restore, reactivation requests, impersonation, apiary ownership transfer + its modal) moved verbatim into <code>src/components/settings/UserManagement.tsx</code> (1,693 lines), mirroring the existing <code>TicketManagement</code> pattern. The component is self-contained (resolves the admin's own id internally for the self-guards); the page is now a thin section router. Note: leaving and re-entering the Users tab now refetches the list (state lives in the component) — fresher data, one extra request.</li>
-    <li>☑ 6.7 TraceabilityTool split: 2,384-line monolith → 315-line shell + <code>traceability/ContainersTab.tsx</code> (655 — container CRUD, harvest linking, label selection) + <code>traceability/BatchesTab.tsx</code> (1,515 — batch runs, jar config, story templates, QR/trace codes, public preview, consumer feedback). The shell owns the shared containers list (the batch form links to containers), producer context and the print modal; coordination state (active tab, forms-open, selection) threads down as props. Each tab now fetches its own domain data on mount.</li>
-    <li>☑ 6.8 Date helpers consolidated into <code>src/lib/date-utils.ts</code>: <code>formatDateIrish</code> (was defined 4×), <code>formatDateForInput</code> (was 4×), <code>toLocalDateString</code> (was 3×) each now have exactly one definition. <code>graftConstants</code>, <code>traceability-utils</code> and <code>useBatchesList</code> re-export for compatibility; MatingNucsTab, QueenRearingPlanningTab and the three scale-chart components import the canonical versions. The wider sweep of 130 raw <code>toLocaleDateString</code> call sites is deferred (cosmetic, large blast radius).</li>
-  </ul>
-
-  <h2>Deferred / decisions needed later (not in scope yet)</h2>
+  <h2>Data</h2>
+  <div class="warn">No schema change. Source is <code>graft_distributions</code> where <code>user_id = current</code>
+  and <code>queen_failed = true</code>, joined to <code>batch_grafts</code> (cell/queen number) and
+  <code>rearing_batches</code> (batch name), with the recipient from <code>profiles</code>/external fields.</div>
   <ul>
-    <li>Client-side stale-while-revalidate cache (or SWR on hives/queens/records) — after Phase 6 decompositions so it lands in hooks, not god pages.</li>
-    <li><code>colonies</code>/<code>colony_movements</code> (22 rows): adopt properly or drop — product decision.</li>
-    <li>Three parallel inspection tables — leave as-is unless a unifying feature demands it.</li>
-    <li>Server-component first paint for read-heavy pages — pair with Phase 6, page by page.</li>
+    <li><strong>Date used:</strong> <code>queen_failed_date</code>, falling back to <code>distribution_date</code> when the
+    failure date is null (older/backfilled rows). Period filtering is applied on this effective date.</li>
+    <li><strong>Queen label:</strong> same rule as the tracker &mdash; <code>Queen {tag}</code> when tagged, else
+    <code>{batch} &middot; Cell {N}</code>.</li>
+    <li><strong>Reason breakdown:</strong> counts every reason present (null &rarr; "No reason recorded"), sorted by count
+    descending. (Archived Hives caps at top 4; failures show all present reasons.)</li>
+  </ul>
+
+  <h2>Files</h2>
+  <ul>
+    <li><strong><code>src/types/reports.ts</code></strong> &mdash; add <code>QueenFailureRecord</code>.</li>
+    <li><strong><code>src/hooks/useReportsData.ts</code></strong> &mdash; add <code>fetchQueenFailures(userId, startDate, endDate)</code> to the hook + its interface + return.</li>
+    <li><strong><code>src/components/reports/QueenFailuresReport.tsx</code></strong> &mdash; new component (clone of <code>ArchivedHivesReport</code>: filters &rarr; export bar &rarr; <code>PrintableReport</code> with breakdown cards + <code>ReportTable</code>).</li>
+    <li><strong><code>src/components/reports/index.ts</code></strong> &mdash; export the new report.</li>
+    <li><strong><code>src/components/reports/ReportFilters.tsx</code></strong> &mdash; add optional <code>showApiaryFilter</code> (default true); hide the location row when both apiary and hive filters are off.</li>
+    <li><strong><code>src/app/dashboard/reports/page.tsx</code></strong> &mdash; add <code>'queen-failures'</code> to the section type, the tab list (icon), the URL-sync allow-list, and the content switch. Available to all users (like DAFM/Harvest), not gated on rearing groups.</li>
+    <li><strong><code>docs/features/reports.md</code></strong> &mdash; document the new report.</li>
+  </ul>
+
+  <h2>Out of scope</h2>
+  <p class="note">No group-owner cross-member view (this is the user's own failures only, consistent with the other
+  main-page reports). No new column on <code>graft_distributions</code>.</p>
+
+  <h2>Todo</h2>
+  <ul class="todo">
+    <li>Type: <code>QueenFailureRecord</code>.</li>
+    <li>Hook: <code>fetchQueenFailures</code>.</li>
+    <li>Component: <code>QueenFailuresReport.tsx</code> + barrel export.</li>
+    <li><code>ReportFilters</code>: optional <code>showApiaryFilter</code>.</li>
+    <li>Reports page: register the tab.</li>
+    <li>Docs.</li>
+    <li>Prompt user to build &amp; verify.</li>
   </ul>
 
   <h2>Review</h2>
-
-  <h3>Programme complete — 22 July 2026</h3>
-  <p>All six phases of the audit follow-up are done. Headline numbers:</p>
-  <table>
-    <tr><th>Area</th><th>Before</th><th>After</th></tr>
-    <tr><td>Security advisor findings</td><td>230 (incl. 3 critical anon holes)</td><td>81, all intentional or dashboard-only</td></tr>
-    <tr><td>Performance advisor findings</td><td>366</td><td>188 (initplan 143→0, unindexed FKs 33→0)</td></tr>
-    <tr><td>Queens page load (100 queens)</td><td>100-300 requests</td><td>2-3 requests</td></tr>
-    <tr><td>Team-access lookups</td><td>2-3 serial requests × N fetchers per page</td><td>1 cached RPC</td></tr>
-    <tr><td>Five god files (hives/queens/batches/settings/traceability)</td><td>10,626 lines in 5 files</td><td>3,041-line pages + 8 focused hooks/components</td></tr>
-    <tr><td>User data export</td><td>2 duplicated 35-table fetches, 11 tables missing</td><td>1 shared list/fetcher, 46 tables</td></tr>
-    <tr><td>Duplicate date helpers</td><td>11 definitions of 3 functions</td><td>3 definitions in date-utils</td></tr>
-  </table>
-  <p><strong>Still open (deliberately):</strong> leaked-password protection + storage bucket listing (Supabase dashboard,
-  user action); unused-index drops (revisit after a season of stats); SWR/stale-while-revalidate cache;
-  <code>colonies</code> model decision; the 130 raw <code>toLocaleDateString</code> call sites; remaining low-traffic
-  permissive-policy pairs; pre-existing type errors in <code>tests/</code> and the broken vitest PostCSS config.</p>
-
-  <h3>Phase 6, iteration 7 (item 6.8, date consolidation) — completed 22 July 2026</h3>
-  <p>Nine files touched; behaviour identical (all implementations were output-equivalent; canonical versions chosen to
-  preserve each call site's exact semantics, including the deliberately UTC-based <code>formatDateForInput</code>).
-  <code>tsc</code> 0 src errors, lint clean. Not yet committed.
-  <strong>User test:</strong> batch/nuc/planning date displays (DD/MM/YYYY), scale chart date pickers.</p>
-
-  <h3>Phase 6, iteration 6 (item 6.7, TraceabilityTool split) — completed 22 July 2026</h3>
-  <p>2,384 lines → shell (315) + ContainersTab (655) + BatchesTab (1,515). Logic verbatim; the redundant
-  <code>activeTab</code> guards inside each tab's JSX were dropped (a tab only renders when active), and harvest
-  options now refresh when the edited container changes (previously only on tab switch). <code>tsc</code> 0 src errors,
-  lint clean. Not yet committed.</p>
-  <p><strong>User test requested (traceability tool):</strong> Bulk Honey tab — create/edit/delete a container with
-  linked harvests, exclusion reason, select containers and print labels (producer block populated); Batches tab —
-  create a batch from containers (total weight auto-tallies), jar configuration, story template with placeholders,
-  QR code view/download, public page preview, feedback summary/details; switch tabs repeatedly and confirm both
-  lists stay correct.</p>
-
-  <h3>Phase 6, iteration 5 (item 6.6, settings admin extraction) — completed 22 July 2026</h3>
-  <p>Settings page 1,880 → 223 lines; admin User Management (the most dangerous code in the app — impersonation,
-  hard delete, role changes) now lives in its own component next to TicketManagement, no longer sharing a file with
-  theme toggles. Zero props — it resolves the signed-in admin id itself for the self-guards. <code>tsc</code> 0 src
-  errors, lint clean. Not yet committed.</p>
-  <p><strong>User test requested (as admin):</strong> Settings → Users: list loads with filters/pagination/search,
-  expand a user, change role (blocked for yourself), set expiry, disable/enable an account, soft delete + restore,
-  reactivation requests view, transfer an apiary between users (modal), impersonate a user and exit impersonation.
-  Also confirm the other settings sections (profile, tickets, dropdowns, registration codes…) still render.</p>
-
-  <h3>Phase 6, iteration 4 (item 6.5, batches decomposition) — completed 22 July 2026</h3>
-  <p>Batches page 2,486 → 1,065 lines. All logic verbatim; wiring changes: <code>onSaved</code>/<code>onClose</code> props,
-  the async edit-population (breeder set + grafts lock, stale-fetch guard) now runs inside the form component when
-  <code>editingBatch</code> changes, rearing groups are fetched via the hook's <code>onUserReady</code> callback, and the
-  "New Batch" button resets by remount instead of an explicit resetForm. <code>tsc</code> 0 src errors, lint clean.
-  Not yet committed.</p>
-  <p><strong>User test requested (highest-risk page):</strong> create a batch (timeline dates auto-fill from graft date,
-  duplicate name rejected), edit a batch with grafts (breeder inputs locked), edit a multi-breeder batch (breeder set
-  pre-selected and preserved on save), record a voice note into the form, open a batch via a queen's "View Batch"
-  deep link (form opens on the grafting tab), group batch requires mating apiary, notifications toggles persist,
-  and the other tabs (nucs, tracker, planning, reports) still load.</p>
-
-  <h3>Phase 6, iteration 3 (item 6.4, queens decomposition) — completed 22 July 2026</h3>
-  <p>Queens page 1,740 → 927 lines; data layer in <code>useQueensList</code>, add/edit form + lineage tree in
-  <code>QueenFormSection</code>. All logic moved verbatim (lineage derivation, self/descendant parent guard, Eircode
-  validation, distributed-queen locked-field update path, batch-mother auto-link). Wiring changes only:
-  <code>onSaved</code>/<code>onClose</code> props, and the form's lineage-tree toggle state now lives in the component.
-  <code>tsc</code> 0 src errors, lint clean. Not yet committed.</p>
-  <p><strong>User test requested:</strong> queens page — add a queen (marking colour auto-fills from birth year,
-  lineage preview updates), edit a queen (fields pre-filled; for a distributed queen the locked fields still save
-  correctly), try setting a queen's own daughter as her mother (must be blocked), lineage tree toggle inside the
-  edit form, arrive via a queen detail "edit" link (form opens pre-filled), CSV export, compare selection.</p>
-
-  <h3>Phase 6, iteration 2 (item 6.3, hives decomposition) — completed 22 July 2026</h3>
-  <p>Hives page 1,938 → 511 lines; data layer in <code>useHivesList</code>, add/edit form in <code>HiveFormSection</code>.
-  Code moved verbatim (fetching, validation RPC, insert/update + history seed, queenless queen sync all unchanged);
-  the only wiring changes are <code>onSaved</code>/<code>onClose</code> props replacing direct <code>fetchHives</code>/<code>resetForm</code> calls,
-  and the Cancel toggle now also clearing the editing state. <code>tsc</code> 0 src errors, lint clean. Not yet committed.</p>
-  <p><strong>User test requested:</strong> hives page — add a new hive (with configuration + queen), edit an existing
-  hive (form scrolls into view, pre-filled), cancel mid-edit then click Add Hive (form must be empty, not showing the
-  old hive), try assigning an already-assigned queen (warning must appear), archive filter + ownership filter still
-  refetch, bulk move/clone still work.</p>
-
-  <h3>Phase 6, iteration 1 (items 6.1 + 6.2) — completed 22 July 2026</h3>
-  <p>Files: <code>src/lib/database-export.ts</code> (+list/+fetcher), <code>profile/page.tsx</code> (1,592 → 1,383 lines),
-  three dead libs deleted, <code>.claude/CLAUDE.md</code> corrected. <code>tsc</code> 0 src errors, lint clean.</p>
-  <p><strong>User test requested:</strong> Profile → export both JSON and CSV; confirm the download completes, opens, and
-  now contains the CRM / queen-assignment / key-event sections. Remaining iterations: 6.3 hives decomposition,
-  6.4 queens, 6.5 batches, 6.6 settings admin extraction, 6.7 TraceabilityTool, 6.8 date-format consolidation — one per session as planned.</p>
-
-  <h3>Phase 5 — completed 22 July 2026</h3>
-  <p>Three migrations, no app code changes: <code>rls_initplan_wrap_auth_calls</code>,
-  <code>add_covering_indexes_for_unindexed_fks</code>, <code>consolidate_permissive_select_policies</code>.</p>
-  <table>
-    <tr><th>Advisor metric</th><th>Before</th><th>After</th></tr>
-    <tr><td><code>auth_rls_initplan</code> (per-row auth calls)</td><td>143</td><td>0</td></tr>
-    <tr><td><code>unindexed_foreign_keys</code></td><td>33</td><td>0</td></tr>
-    <tr><td><code>multiple_permissive_policies</code></td><td>155</td><td>119 (rest low-traffic, by design)</td></tr>
-    <tr><td>Total performance findings</td><td>366</td><td>188</td></tr>
-  </table>
-  <p>Effect: every RLS-filtered query now evaluates <code>auth.uid()</code> once per statement instead of once per row
-  (biggest effect on inspections, knowledge_base, batch_grafts, changelog scans), profile embeds evaluate one merged
-  policy instead of four, and FK joins/cascades (graft_distributions, queen_assignments, varroa_treatments…) use indexes.
-  Policy quals were regenerated from <code>pg_policies</code> verbatim with only the initplan wrapping/OR-merge applied, so
-  semantics are unchanged. <strong>User test requested:</strong> a normal pass through the app (dashboard, hives, queens,
-  batches incl. grafts tab, records, profiles/team pages) plus the admin subscription-history view — everything should
-  show the same data as before, just a bit quicker on the larger lists.</p>
-
-  <h3>Phase 4 — completed 22 July 2026</h3>
-  <p>New: migration <code>add_get_accessible_apiary_ids_rpc</code> + <code>src/lib/team-access.ts</code>.
-  Changed: hives, queens, batches, tasks, apiaries pages; MatingNucsTab; useRecordsData; apiary-team + accept-invitation (cache invalidation).
-  The permission model now lives in ONE place: any future change (new role, revised sharing) is one RPC edit instead of a dozen page edits.</p>
-  <p>Request maths per page load: previously 2-3 serial team-lookup requests <em>per fetcher</em> (the hives page ran it three times ≈ 6-9 requests); now one RPC shared by all fetchers on the page, cached for 30s across navigations.
-  Lint clean; <code>tsc --noEmit</code>: 0 errors in <code>src/</code> (96 pre-existing type errors in <code>tests/</code> confirmed present on HEAD before these changes; the vitest runner itself currently fails to boot on a PostCSS config error — also pre-existing).</p>
-  <p><strong>User test requested (ideally with the team account):</strong> hives/queens/batches/tasks/records/apiaries pages still show shared (team) items with correct ownership filters and "shared" badges; mating nuc apiary options include shared apiaries; share + unshare an apiary on the Apiary Team page and confirm the hives list reflects it immediately; accept a fresh invitation and confirm shared apiaries appear.</p>
-
-  <h3>Phase 3 — completed 22 July 2026</h3>
-  <p>Files touched: <code>queens/page.tsx</code> (mobile cards + canonical badges),
-  <code>InspectionForm.tsx</code> (touch targets), <code>dashboard/page.tsx</code> (alert chips),
-  <code>hives/[id]/page.tsx</code> + <code>hive-scan/tag/[code]/page.tsx</code> (tile contrast).
-  Lint clean. Desktop queens table unchanged apart from the corrected status/colour badge classes.</p>
-  <p><strong>User test requested (on a phone or 375px viewport):</strong> queens page shows cards
-  (no horizontal scrolling), Edit/Delete/Label/Compare work from a card, tapping a queen number opens
-  the detail page, arriving from a queen detail link scrolls to and highlights the right card; desktop
-  table unchanged and "active" status now shows green text; inspection form star rows and queen-cell
-  counters are comfortably tappable with gloves; dashboard attention alerts are large tappable rows;
-  harvest/feeding tiles readable in bright light.</p>
-
-  <h3>Phase 2 — completed 22 July 2026</h3>
-  <p>Four small, isolated diffs; no schema changes. Files touched:
-  <code>src/app/dashboard/queens/page.tsx</code> (batched enrichment),
-  <code>src/app/dashboard/hives/page.tsx</code> (deduped inspections fetch + double-load guard),
-  <code>public/service-worker.js</code> (cache-first static assets),
-  <code>src/app/dashboard/tasks/page.tsx</code> (bounded fetch + local session).</p>
-  <table>
-    <tr><th>Page</th><th>Before</th><th>After</th></tr>
-    <tr><td>Queens list (100 queens)</td><td>~100-300 requests, serial</td><td>2-3 requests</td></tr>
-    <tr><td>Hives list</td><td>~12-query chain run twice + inspections table fetched twice</td><td>chain runs once, inspections fetched once</td></tr>
-    <tr><td>App start (revisit, slow signal)</td><td>every JS/CSS chunk re-fetched over network</td><td>immutable chunks served from cache</td></tr>
-    <tr><td>Tasks</td><td>entire task history, unbounded</td><td>last 12 months + future, capped at 1,000</td></tr>
-  </table>
-  <p>Lint clean on all three TSX files (three pre-existing <code>exhaustive-deps</code> warnings in tasks-page filter effects untouched by this change).
-  Behaviour notes: tasks older than 12 months are no longer listed (deliberate); a queen referenced by two hives now shows one of them instead of erroring.
-  <strong>User test requested:</strong> queens list (incl. mother/father columns and hive assignment), hives list numbers unchanged (last inspection date, "last record" badges, supers), changing ownership/archive filters still refetches, tasks page shows current tasks, and after deploy: open the app, then reload it with network throttled — it should start noticeably faster. Service-worker change requires the new SW to activate (update prompt).</strong></p>
-
-  <h3>Phase 1 — completed 22 July 2026</h3>
-  <p>One migration (<code>phase1_security_hardening_guards_and_revokes</code>) applied via the Supabase MCP. No frontend code changed.</p>
-  <table>
-    <tr><th>Metric</th><th>Before</th><th>After</th></tr>
-    <tr><td>Security advisor findings</td><td>230</td><td>81 (all remaining are the intentional RPC surface or user actions below)</td></tr>
-    <tr><td>Anon-executable SECURITY DEFINER functions</td><td>66</td><td>20 (boolean predicates + 3 public flows, by design)</td></tr>
-    <tr><td><code>function_search_path_mutable</code></td><td>70</td><td>0</td></tr>
-    <tr><td><code>rls_policy_always_true</code></td><td>9</td><td>0</td></tr>
-    <tr><td><code>security_definer_view</code> errors</td><td>10</td><td>4 (intentional, documented in the migration header)</td></tr>
-  </table>
-  <p><strong>Closed vulnerabilities:</strong> anonymous permanent account deletion (<code>hard_delete_user</code>), anonymous full user PII dump (<code>get_users_with_email</code>/<code>get_user_email</code>), anonymous arbitrary-SELECT RLS bypass (<code>execute_safe_query</code>), anonymous INSERT into <code>profiles</code>, any-user INSERT into <code>subscription_history</code>, any-user edits to shared dropdown reference data, cross-tenant reads via 6 definer views (incl. <code>crm_customer_summary</code>).</p>
-  <p><strong>Behavioural rule going forward:</strong> new DB functions get <em>no</em> client EXECUTE by default — every new RPC migration must include an explicit <code>GRANT EXECUTE</code>. Recorded in project memory.</p>
-  <p><strong>Outstanding user actions:</strong> (a) enable leaked-password protection in the Supabase dashboard (Authentication → Settings); (b) optionally disable public listing on the <code>apiary-images</code>/<code>inspection-images</code> storage buckets (Storage → bucket settings — verify the app only builds direct URLs before flipping); (c) regression-test: login/signup, admin Settings user management, dropdown management, team + rearing-group invitation links (send/accept), public trace page + feedback form, CRM customers page, community map, hive detail configuration history.</p>
+  <p class="note">Implemented, own-only.</p>
+  <ul>
+    <li><strong>Type:</strong> <code>QueenFailureRecord</code> + <code>'queen-failures'</code> added to <code>ReportType</code>.</li>
+    <li><strong>Hook:</strong> <code>fetchQueenFailures(userId, startDate, endDate)</code> queries <code>graft_distributions</code> (own, <code>queen_failed = true</code>), builds the tag-first queen label, and period-filters on the effective failure date (<code>queen_failed_date</code> ?? <code>distribution_date</code>).</li>
+    <li><strong>Component:</strong> <code>QueenFailuresReport.tsx</code> &mdash; time-period filter only, breakdown cards for every reason present (null &rarr; "No reason recorded", most common first), table (Failed / Queen / Batch / Reason / Comment), CSV + print.</li>
+    <li><strong>ReportFilters:</strong> new optional <code>showApiaryFilter</code>; the location row is hidden when both apiary and hive filters are off.</li>
+    <li><strong>Reports page:</strong> registered the <code>Queen Failures</code> tab (XCircle icon) for all users; barrel export added.</li>
+    <li><strong>Docs:</strong> reports.md report #9 + file structure.</li>
+  </ul>
+  <p class="note">No schema change. Awaiting <code>npm run build</code> + in-app verification.</p>
 </body>
 </html>
