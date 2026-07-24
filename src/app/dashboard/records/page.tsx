@@ -1106,16 +1106,13 @@ export default function RecordsPage() {
     if (!userId || !archiveData.hive_id) return
 
     try {
-      const { error } = await supabase
-        .from('hives')
-        .update({
-          archived_at: new Date().toISOString(),
-          archive_reason_id: archiveData.archive_reason_id || null,
-          archive_notes: archiveData.archive_notes || null,
-          status: 'archived'
-        })
-        .eq('id', archiveData.hive_id)
-        .eq('user_id', userId)
+      // Archiving cascades (disconnect scale, retire the active queen, fail linked tracker
+      // distributions) atomically inside the archive_hive_cascade RPC.
+      const { data: result, error } = await supabase.rpc('archive_hive_cascade', {
+        p_hive_id: archiveData.hive_id,
+        p_archive_reason_id: archiveData.archive_reason_id || null,
+        p_archive_notes: archiveData.archive_notes || null,
+      })
 
       if (error) throw error
 
@@ -1124,7 +1121,19 @@ export default function RecordsPage() {
         fetchArchiveRecords(userId)
       ])
       resetForm()
-      toast.success('Hive archived successfully')
+
+      const cascade = (result ?? {}) as {
+        queen_retired?: boolean
+        scale_disconnected?: boolean
+        distributions_failed?: number
+      }
+      const extras: string[] = []
+      if (cascade.scale_disconnected) extras.push('scale disconnected')
+      if (cascade.queen_retired) extras.push('queen retired')
+      if (cascade.distributions_failed && cascade.distributions_failed > 0) {
+        extras.push(`${cascade.distributions_failed} tracker ${cascade.distributions_failed === 1 ? 'entry' : 'entries'} failed`)
+      }
+      toast.success(extras.length > 0 ? `Hive archived — ${extras.join(', ')}` : 'Hive archived successfully')
     } catch (error) {
       toast.error('Error archiving hive: ' + (error instanceof Error ? error.message : 'Unknown error'))
     }
@@ -1350,6 +1359,9 @@ export default function RecordsPage() {
                     rows={3}
                     placeholder="Optional notes..."
                   />
+                </div>
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+                  Archiving also disconnects any scale on this hive, retires its active queen, and marks any linked queen-tracker distributions as failed — all using the reason above.
                 </div>
                 <FormActionRow>
                   <Button
