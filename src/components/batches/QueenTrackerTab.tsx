@@ -16,7 +16,7 @@ import { useToast } from '@/components/ui/Toast'
 import { NON_GROUP_LEDGER_SCOPE, useQueenTracker, type TrackedQueen, type StatusFilter } from '@/hooks/useQueenTracker'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
-import { COLOUR_DOTS, formatDateIrish } from './graftConstants'
+import { formatDateIrish } from './graftConstants'
 import { calculateQueenAge, getQueenColorFromYear } from '@/types/queen'
 
 interface QueenTrackerTabProps {
@@ -832,6 +832,19 @@ function getGroupScopeLabel(distribution: TrackedQueen, groupName: string | null
   return groupName || 'Unknown group'
 }
 
+// Marked-queen circle styling for the Queen column. The circle is filled with the queen's actual
+// international marking colour; the tick colour flips to stay legible on light vs dark fills.
+const MARKING_COLOUR_CIRCLE: Record<string, { circle: string; tick: string }> = {
+  White: { circle: 'bg-white border-slate-400', tick: 'text-slate-900' },
+  Yellow: { circle: 'bg-yellow-400 border-yellow-500', tick: 'text-slate-900' },
+  Red: { circle: 'bg-red-500 border-red-600', tick: 'text-white' },
+  Green: { circle: 'bg-green-600 border-green-700', tick: 'text-white' },
+  Blue: { circle: 'bg-blue-600 border-blue-700', tick: 'text-white' },
+}
+
+// Fallback for a marked queen whose year-colour can't be resolved (e.g. no emergence date).
+const MARKED_UNKNOWN_CIRCLE = { circle: 'bg-slate-600 border-slate-700', tick: 'text-white' }
+
 function buildDerivedRow(distribution: TrackedQueen, groupName: string): DerivedTrackerRow {
   const typeInfo = formatDistributionType(distribution.distribution_type)
   const lifecycleInfo = formatLifecycle(distribution)
@@ -1552,9 +1565,9 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
               </thead>
               <tbody>
                 {trackerRows.map((distribution) => {
-                  const markingColourDotClass = distribution.queen_marked && distribution.marking_colour_label !== '-'
-                    ? COLOUR_DOTS[distribution.marking_colour_label] || ''
-                    : ''
+                  const markingStyle = distribution.queen_marked
+                    ? MARKING_COLOUR_CIRCLE[distribution.marking_colour_label] ?? MARKED_UNKNOWN_CIRCLE
+                    : null
                   const isExpanded = expandedId === distribution.id
                   const isSelected = selectedId === distribution.id
                   const isUpdating = updatingIds.has(distribution.id)
@@ -1607,18 +1620,13 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             <span
                               title={distribution.marking_status_label}
                               className={`inline-flex h-6 w-6 items-center justify-center rounded-full border ${
-                                distribution.queen_marked
-                                  ? 'border-green-700 bg-green-600 text-white dark:border-green-500 dark:bg-green-700 dark:text-white'
+                                markingStyle
+                                  ? `${markingStyle.circle} ${markingStyle.tick}`
                                   : 'border-slate-400 bg-surface text-text-secondary dark:border-slate-500 dark:bg-surface-elevated'
                               }`}
                             >
-                              {distribution.queen_marked ? (
-                                <span className="flex items-center gap-0.5">
-                                  {markingColourDotClass && (
-                                    <span className={`inline-block h-2 w-2 rounded-full ring-1 ring-white ${markingColourDotClass}`} />
-                                  )}
-                                  <Check size={13} strokeWidth={3} />
-                                </span>
+                              {markingStyle ? (
+                                <Check size={13} strokeWidth={3} />
                               ) : (
                                 <X size={13} strokeWidth={3} />
                               )}
