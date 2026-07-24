@@ -848,12 +848,8 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
   const queenDisplayName = queenTag
     ? `Queen ${queenTag}`
     : `${distribution.batch_name} · Cell ${distribution.cell_number}`
-  // Breeder (mother) queen gives lineage at a glance; omit entirely when unknown.
-  const breederSummaryLabel = distribution.mother_queen_number
-    ? [distribution.mother_queen_number, distribution.mother_queen_subspecies]
-        .filter(Boolean)
-        .join(' · ')
-    : ''
+  // Breeder (mother) queen number gives lineage at a glance; omit entirely when unknown.
+  const breederSummaryLabel = distribution.mother_queen_number?.trim() || ''
   const markingStatusLabel = distribution.queen_marked
     ? markingColour
       ? `Marked (${markingColour})`
