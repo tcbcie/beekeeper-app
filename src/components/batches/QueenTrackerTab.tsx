@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { NON_GROUP_LEDGER_SCOPE, useQueenTracker, type TrackedQueen, type StatusFilter } from '@/hooks/useQueenTracker'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
@@ -1027,6 +1028,7 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
 
 export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   const toast = useToast()
+  const confirm = useConfirm()
   const {
     distributions,
     loading,
@@ -1371,6 +1373,18 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       return
     }
 
+    // Clearing an existing failure discards its recorded reason, comment and date, so guard the
+    // accidental second click behind an explicit confirmation before reinstating the queen.
+    const confirmed = await confirm({
+      title: 'Reinstate this queen?',
+      message: 'This will discard the recorded failure and mark the queen as not failed. Its reason, comment and date will be removed. This cannot be undone.',
+      confirmLabel: 'Discard failure',
+      cancelLabel: 'Keep failure',
+      variant: 'danger',
+    })
+    if (!confirmed) return
+    if (updatingIdsRef.current.has(distribution.id)) return
+
     setUpdatingIds((prev) => new Set(prev).add(distribution.id))
     try {
       const success = await updateFailure(distribution.id, false)
@@ -1387,7 +1401,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         return next
       })
     }
-  }, [openOutcomeActionDraft, updateFailure, toast])
+  }, [openOutcomeActionDraft, updateFailure, toast, confirm])
 
   const handleSaveOutcomeAction = useCallback(async () => {
     if (!actionDraft || updatingIdsRef.current.has(actionDraft.rowId)) return

@@ -150,6 +150,7 @@ For eligible `Pending Mating` rows, the row action area now provides a compact `
 - The reason and comment are both optional — a failure can still be recorded before the cause is known
 - Failure reason, date, and comment stay editable afterwards in the expanded `Outcomes` panel
 - Clearing the failure state clears the reason, comment, and date together
+- Because clearing discards those recorded details, clicking the `Failed` action again on an already-failed queen now asks for confirmation (`useConfirm`, danger variant) before reinstating — guarding against an accidental second click
 - Failure reason, date, and comment writes use dedicated guarded updates (`.eq('queen_failed', true)`), so they cannot recreate a failed state after a concurrent clear
 - The reason is stored as label text in `graft_distributions.queen_failure_reason` (nullable); it is filterable via the dedicated Failure reason filter (shown when Status = `Failed`) but is not yet a report dimension
 - Historic rows previously treated as failed through `overwintered = false` were backfilled into the explicit failure state during migration
