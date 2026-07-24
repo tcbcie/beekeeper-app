@@ -941,6 +941,11 @@ export function useQueenTracker() {
     return data.filter((d) => d.batch_id === batchId)
   }, [])
 
+  const filterByFailureReason = useCallback((data: TrackedQueen[], reason: string | null): TrackedQueen[] => {
+    if (!reason) return data
+    return data.filter((d) => d.queen_failed && d.queen_failure_reason === reason)
+  }, [])
+
   return {
     distributions,
     loading,
@@ -962,5 +967,6 @@ export function useQueenTracker() {
     filterByGroup,
     filterByMember,
     filterByBatch,
+    filterByFailureReason,
   }
 }

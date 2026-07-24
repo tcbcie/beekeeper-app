@@ -83,6 +83,7 @@ The filter hierarchy now uses safe derived selections for Group, Member, and Bat
 - Batch
 - Year
 - Status (`All`, `Pending mating`, `Mated`, `Overwintered`, `Failed`)
+- Failure reason (only shown when Status = `Failed`; options derived from the reasons actually present, ordered as `FAILURE_REASONS`)
 
 The Group filter includes a dedicated non-group scope whenever the user has visible non-group ledger rows. Member and Batch options are derived from the rows that remain after the upstream selections, so owners can drill down through group members while ordinary members only see the member scope available to them.
 The ledger header now drops the descriptive intro copy and keeps a dedicated filter tray so the controls stay focused on actual filtering work across desktop and mobile widths.
@@ -150,7 +151,7 @@ For eligible `Pending Mating` rows, the row action area now provides a compact `
 - Failure reason, date, and comment stay editable afterwards in the expanded `Outcomes` panel
 - Clearing the failure state clears the reason, comment, and date together
 - Failure reason, date, and comment writes use dedicated guarded updates (`.eq('queen_failed', true)`), so they cannot recreate a failed state after a concurrent clear
-- The reason is stored as label text in `graft_distributions.queen_failure_reason` (nullable); it is captured/displayed only and is not yet a filter or report dimension
+- The reason is stored as label text in `graft_distributions.queen_failure_reason` (nullable); it is filterable via the dedicated Failure reason filter (shown when Status = `Failed`) but is not yet a report dimension
 - Historic rows previously treated as failed through `overwintered = false` were backfilled into the explicit failure state during migration
 
 ### Winter Loss
