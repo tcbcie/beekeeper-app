@@ -74,6 +74,7 @@ const FAILURE_REASONS = [
   'Poor laying / performance',
   'Poor temperament (culled)',
   'Rejected / balled on introduction',
+  'Hive archived',
   'Other',
 ] as const
 
