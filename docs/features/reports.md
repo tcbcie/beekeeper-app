@@ -160,6 +160,28 @@ See [nihbs-monthly-returns.md](nihbs-monthly-returns.md) for full documentation.
 
 **Key feature:** Distributed sealed queen cells are tracked separately on row 28 (per-apiary breakdown). No subtraction from rows 13 (hatched) or 19 (mated) — batch values already reflect only queens that actually hatched/mated in possession. Both `virgin_queen` and `mated_queen` external distributions are included in rows 24/26.
 
+### 9. Queen Failures Report
+
+**Purpose:** Review distributed queens that were marked as failed, broken down by reason.
+
+**Visibility:** Available to all users (own data only — the current user's own distributed queens).
+
+**Summary statistics:**
+- Total failed
+- Breakdown by failure reason (every reason present, most common first; a null reason shows as "No reason recorded")
+
+**Columns:**
+- Failed (date)
+- Queen (tagged number `Queen 38`, or `Batch · Cell N` when untagged — same rule as the Queen Tracker)
+- Batch
+- Reason
+- Comment
+
+**Data source:** `graft_distributions` where `queen_failed = true` for the current user, joined to `batch_grafts` and `rearing_batches`. The period filter uses `queen_failed_date`, falling back to `distribution_date` for older rows backfilled into the failure state without a failure date.
+
+**Filters:**
+- Time period only (All time, 3 months, 6 months, 1 year, custom) — no apiary/hive filter, as failures are not apiary-bound
+
 ## Export Options
 
 ### CSV Export
@@ -210,7 +232,8 @@ src/
 │   ├── HiveInspectionSummary.tsx     # Inspection history
 │   ├── ApiaryOverview.tsx            # Apiary snapshot
 │   ├── HarvestReport.tsx             # Harvest tracking
-│   └── ArchivedHivesReport.tsx       # Archived hives overview
+│   ├── ArchivedHivesReport.tsx       # Archived hives overview
+│   └── QueenFailuresReport.tsx       # Distributed queen failures by reason
 ├── components/records/forms/
 │   └── VarroaTreatmentForm.tsx       # Updated with batch_number field
 ├── hooks/

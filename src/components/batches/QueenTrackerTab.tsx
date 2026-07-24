@@ -223,6 +223,9 @@ function OutcomeActionEditor({
               className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
             >
               <option value="">Select a reason…</option>
+              {draft.reason && !FAILURE_REASONS.includes(draft.reason as (typeof FAILURE_REASONS)[number]) && (
+                <option value={draft.reason}>{draft.reason}</option>
+              )}
               {FAILURE_REASONS.map((reason) => (
                 <option key={reason} value={reason}>{reason}</option>
               ))}
@@ -521,6 +524,9 @@ function OutcomeReasonField({
         className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
       >
         <option value="">No reason recorded</option>
+        {reason && !FAILURE_REASONS.includes(reason as (typeof FAILURE_REASONS)[number]) && (
+          <option value={reason}>{reason}</option>
+        )}
         {FAILURE_REASONS.map((option) => (
           <option key={option} value={option}>{option}</option>
         ))}

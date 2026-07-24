@@ -2,7 +2,7 @@
 
 import type { Apiary, Hive } from './records'
 
-export type ReportType = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest' | 'archived-hives'
+export type ReportType = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest' | 'archived-hives' | 'queen-failures'
 
 export type TimePeriod = 'all' | '3months' | '6months' | '1year' | 'custom'
 
@@ -97,6 +97,17 @@ export interface ArchivedHiveRecord {
   archived_at: string
   archive_reason: string | null
   archive_notes: string | null
+}
+
+// Queen Failures Report data (own distributed queens marked failed)
+export interface QueenFailureRecord {
+  id: string
+  failure_date: string | null
+  queen_label: string
+  batch_name: string
+  reason: string | null
+  comment: string | null
+  recipient_name: string | null
 }
 
 // Report data state

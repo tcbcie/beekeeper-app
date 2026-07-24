@@ -13,6 +13,7 @@ interface ReportFiltersProps {
   apiaries: ApiaryWithEircode[]
   hives: Hive[]
   showHiveFilter?: boolean
+  showApiaryFilter?: boolean
   onApiaryChange: (value: string) => void
   onHiveChange: (value: string) => void
   onTimePeriodChange: (value: TimePeriod) => void
@@ -29,6 +30,7 @@ export default function ReportFilters({
   apiaries,
   hives,
   showHiveFilter = true,
+  showApiaryFilter = true,
   onApiaryChange,
   onHiveChange,
   onTimePeriodChange,
@@ -43,7 +45,9 @@ export default function ReportFilters({
   return (
     <div className="space-y-4 no-print">
       {/* Location Filters */}
+      {(showApiaryFilter || showHiveFilter) && (
       <div className="flex flex-wrap gap-3">
+        {showApiaryFilter && (
         <select
           value={apiaryId}
           onChange={(e) => {
@@ -59,6 +63,7 @@ export default function ReportFilters({
             </option>
           ))}
         </select>
+        )}
 
         {showHiveFilter && (
           <select
@@ -75,6 +80,7 @@ export default function ReportFilters({
           </select>
         )}
       </div>
+      )}
 
       {/* Time Period Filters */}
       <div className="flex flex-wrap gap-2">
