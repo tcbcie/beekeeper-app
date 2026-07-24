@@ -41,6 +41,7 @@ The live schema was checked through the MCP server before implementation. An add
 - `queen_failed`
 - `queen_failed_date`
 - `queen_failure_comment`
+- `queen_failure_reason` (added later; nullable label text for the structured failure reason dropdown)
 
 The tracker now uses broader joins and mapping over existing tables:
 - `graft_distributions` for distribution and outcome fields
@@ -144,10 +145,12 @@ For eligible `Pending Mating` rows, the row action area now provides a compact `
 ### Failed
 - Failure is now an explicit queen outcome rather than a derived alias of `overwintered = false`
 - The row action area provides a compact `Failed` control alongside `Overwintered` and `Hybridised`
-- Marking a queen as failed now goes through the same inline date-capture editor before the failure is saved
-- Failure date and a short failure comment are edited in the expanded `Outcomes` panel
-- Clearing the failure state clears the failure date and failure comment
-- Failure date and comment writes now use dedicated guarded updates, so they cannot recreate a failed state after a concurrent clear
+- Marking a queen as failed goes through the inline editor, which now also captures an optional structured **reason** (dropdown, `FAILURE_REASONS`) and an optional free-text **comment** alongside the failure date
+- The reason and comment are both optional — a failure can still be recorded before the cause is known
+- Failure reason, date, and comment stay editable afterwards in the expanded `Outcomes` panel
+- Clearing the failure state clears the reason, comment, and date together
+- Failure reason, date, and comment writes use dedicated guarded updates (`.eq('queen_failed', true)`), so they cannot recreate a failed state after a concurrent clear
+- The reason is stored as label text in `graft_distributions.queen_failure_reason` (nullable); it is captured/displayed only and is not yet a filter or report dimension
 - Historic rows previously treated as failed through `overwintered = false` were backfilled into the explicit failure state during migration
 
 ### Winter Loss
