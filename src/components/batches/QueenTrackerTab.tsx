@@ -845,6 +845,11 @@ const MARKING_COLOUR_CIRCLE: Record<string, { circle: string; tick: string }> = 
 // Fallback for a marked queen whose year-colour can't be resolved (e.g. no emergence date).
 const MARKED_UNKNOWN_CIRCLE = { circle: 'bg-slate-600 border-slate-700', tick: 'text-white' }
 
+// Legend for the marked-queen circle in the Queen column. Derived from the same colour map so the
+// swatches always match the row fills. Ordered as the international queen-marking colour cycle.
+const MARKING_COLOUR_LEGEND: { label: string; circle: string }[] = ['White', 'Yellow', 'Red', 'Green', 'Blue']
+  .map((label) => ({ label, circle: MARKING_COLOUR_CIRCLE[label].circle }))
+
 function buildDerivedRow(distribution: TrackedQueen, groupName: string): DerivedTrackerRow {
   const typeInfo = formatDistributionType(distribution.distribution_type)
   const lifecycleInfo = formatLifecycle(distribution)
@@ -1544,6 +1549,15 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         </div>
       ) : (
         <div className="overflow-hidden rounded-[1.6rem] border border-border bg-surface shadow-sm dark:bg-surface-elevated/95">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2.5 text-xs text-text-secondary">
+            <span className="font-medium text-text-tertiary">Marking colour:</span>
+            {MARKING_COLOUR_LEGEND.map((item) => (
+              <span key={item.label} className="inline-flex items-center gap-1.5">
+                <span className={`inline-block h-2.5 w-2.5 rounded-full border ${item.circle}`} />
+                {item.label}
+              </span>
+            ))}
+          </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2.5 text-xs text-text-secondary">
             <span className="font-medium text-text-tertiary">Recipient dot:</span>
             {RECIPIENT_TYPE_LEGEND.map((item) => (

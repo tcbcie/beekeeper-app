@@ -187,3 +187,11 @@ uses, so a recipient-type dot can no longer be mistaken for a queen status. A sm
 "Recipient dot" legend (`RECIPIENT_TYPE_LEGEND`) was added above the ledger table. No data or
 assignment change — `recipient_type` was verified correct (external → public, group member →
 group_member, other app user → app_user).
+
+## 11. Marked-queen colour circle and legend
+The Queen column's marked indicator is a circle filled with the queen's actual international
+marking colour (`MARKING_COLOUR_CIRCLE`), with the tick colour flipping (dark on White/Yellow,
+white on Red/Green/Blue) so it stays legible on every fill. A marked queen whose year-colour can't
+be resolved falls back to a neutral slate circle; unmarked queens keep the outlined `X`. A
+"Marking colour" legend (`MARKING_COLOUR_LEGEND`, derived from the same colour map so swatches
+always match the row fills) sits above the ledger table alongside the recipient-dot legend.
