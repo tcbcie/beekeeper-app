@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { FileText, ClipboardList, Search, LayoutGrid, Apple, Archive, Crown } from 'lucide-react'
+import { FileText, ClipboardList, Search, LayoutGrid, Apple, Archive, Crown, XCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import {
   DAFMVarroaReport,
@@ -11,14 +11,15 @@ import {
   HiveInspectionSummary,
   ApiaryOverview,
   HarvestReport,
-  ArchivedHivesReport
+  ArchivedHivesReport,
+  QueenFailuresReport
 } from '@/components/reports'
 import RearingGroupReport from '@/components/rearing-groups/RearingGroupReport'
 import NIHBSMonthlyReturn from '@/components/rearing-groups/NIHBSMonthlyReturn'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import Button from '@/components/ui/Button'
 
-type ReportSection = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest' | 'archived-hives' | 'rearing-report' | 'nihbs-returns'
+type ReportSection = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest' | 'archived-hives' | 'queen-failures' | 'rearing-report' | 'nihbs-returns'
 
 export default function ReportsPage() {
   const [userId, setUserId] = useState<string | null>(null)
@@ -30,7 +31,7 @@ export default function ReportsPage() {
   // Sync with URL params
   useEffect(() => {
     const section = searchParams.get('section')
-    if (section && ['dafm-varroa', 'varroa-monitoring', 'hive-inspection', 'apiary-overview', 'harvest', 'archived-hives', 'rearing-report', 'nihbs-returns'].includes(section)) {
+    if (section && ['dafm-varroa', 'varroa-monitoring', 'hive-inspection', 'apiary-overview', 'harvest', 'archived-hives', 'queen-failures', 'rearing-report', 'nihbs-returns'].includes(section)) {
       setActiveSection(section as ReportSection)
     }
   }, [searchParams])
@@ -65,6 +66,7 @@ export default function ReportsPage() {
     { id: 'apiary-overview' as const, label: 'Apiary Overview', icon: LayoutGrid },
     { id: 'harvest' as const, label: 'Harvest', icon: Apple },
     { id: 'archived-hives' as const, label: 'Archived Hives', icon: Archive },
+    { id: 'queen-failures' as const, label: 'Queen Failures', icon: XCircle },
     ...(hasRearingGroups ? [
       { id: 'rearing-report' as const, label: 'Rearing Report', icon: Crown },
       { id: 'nihbs-returns' as const, label: 'NIHBS Returns', icon: Crown },
@@ -133,6 +135,10 @@ export default function ReportsPage() {
 
         {effectiveSection === 'archived-hives' && (
           <ArchivedHivesReport userId={userId} />
+        )}
+
+        {effectiveSection === 'queen-failures' && (
+          <QueenFailuresReport userId={userId} />
         )}
 
         {effectiveSection === 'rearing-report' && (

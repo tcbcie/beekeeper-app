@@ -11,7 +11,8 @@ import type {
   InspectionSummaryRecord,
   HiveOverviewRecord,
   HarvestRecord,
-  ArchivedHiveRecord
+  ArchivedHiveRecord,
+  QueenFailureRecord
 } from '@/types/reports'
 
 interface UseReportsDataReturn {
@@ -29,6 +30,7 @@ interface UseReportsDataReturn {
   fetchApiaryOverview: (userId: string, apiaryId: string) => Promise<HiveOverviewRecord[]>
   fetchHarvestData: (userId: string, apiaryId: string, startDate: string, endDate: string) => Promise<HarvestRecord[]>
   fetchArchivedHives: (userId: string, apiaryId: string, startDate: string, endDate: string) => Promise<ArchivedHiveRecord[]>
+  fetchQueenFailures: (userId: string, startDate: string, endDate: string) => Promise<QueenFailureRecord[]>
 }
 
 export function useReportsData(): UseReportsDataReturn {
@@ -375,6 +377,76 @@ export function useReportsData(): UseReportsDataReturn {
     })
   }, [])
 
+  const fetchQueenFailures = useCallback(async (
+    userId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<QueenFailureRecord[]> => {
+    const { data, error } = await supabase
+      .from('graft_distributions')
+      .select(`
+        id,
+        distribution_date,
+        queen_failed_date,
+        queen_failure_reason,
+        queen_failure_comment,
+        external_recipient_name,
+        batch_grafts(cell_number, queen_number),
+        profiles!graft_distributions_recipient_profile_id_fkey(full_name, first_name, last_name),
+        rearing_batches!inner(batch_name)
+      `)
+      .eq('user_id', userId)
+      .eq('queen_failed', true)
+
+    if (error) {
+      console.error('Error fetching queen failures for report:', error)
+      return []
+    }
+    if (!data) return []
+
+    type GraftJoin = { cell_number: number | null; queen_number: string | null }
+    type BatchJoin = { batch_name: string | null }
+    type ProfileJoin = { full_name: string | null; first_name: string | null; last_name: string | null }
+    const firstJoined = <T,>(value: T | T[] | null | undefined): T | null =>
+      Array.isArray(value) ? value[0] ?? null : value ?? null
+
+    const records: QueenFailureRecord[] = data.map((d) => {
+      const graft = firstJoined(d.batch_grafts as GraftJoin | GraftJoin[] | null)
+      const batch = firstJoined(d.rearing_batches as BatchJoin | BatchJoin[] | null)
+      const recipientProfile = firstJoined(d.profiles as ProfileJoin | ProfileJoin[] | null)
+
+      // Effective failure date: the recorded failure date, or the distribution date for older
+      // rows backfilled into the explicit failure state without a failure date.
+      const failureDate = (d.queen_failed_date as string | null) || (d.distribution_date as string | null)
+      const batchName = batch?.batch_name || ''
+      const tag = (graft?.queen_number ?? '').trim().replace(/^#/, '')
+      const cellNumber = graft?.cell_number
+      const queenLabel = tag
+        ? `Queen ${tag}`
+        : typeof cellNumber === 'number' && cellNumber > 0
+          ? `${batchName || 'Batch'} · Cell ${cellNumber}`
+          : batchName || 'Unknown queen'
+      const recipientName = recipientProfile
+        ? recipientProfile.full_name || `${recipientProfile.first_name || ''} ${recipientProfile.last_name || ''}`.trim() || null
+        : null
+
+      return {
+        id: d.id as string,
+        failure_date: failureDate,
+        queen_label: queenLabel,
+        batch_name: batchName,
+        reason: (d.queen_failure_reason as string | null) || null,
+        comment: (d.queen_failure_comment as string | null) || null,
+        recipient_name: recipientName || (d.external_recipient_name as string | null) || null,
+      }
+    })
+
+    // Period filtering on the effective failure date (ISO strings compare correctly).
+    return records
+      .filter((r) => r.failure_date !== null && r.failure_date >= startDate && r.failure_date <= endDate)
+      .sort((a, b) => (b.failure_date || '').localeCompare(a.failure_date || ''))
+  }, [])
+
   return {
     apiaries,
     hives,
@@ -386,6 +458,7 @@ export function useReportsData(): UseReportsDataReturn {
     fetchInspectionSummary,
     fetchApiaryOverview,
     fetchHarvestData,
-    fetchArchivedHives
+    fetchArchivedHives,
+    fetchQueenFailures
   }
 }
