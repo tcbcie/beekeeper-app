@@ -56,9 +56,25 @@ type OutcomeActionDraft = {
   kind: OutcomeActionKind
   value: boolean | null
   date: string
+  reason: string
+  comment: string
 }
 
 const MAX_FAILURE_COMMENT_LENGTH = 280
+
+// Structured reasons a distributed queen can fail. Single source of truth for the mark-failed
+// editor and the expanded-panel reason dropdown. Stored as the label text.
+const FAILURE_REASONS = [
+  'Failed to mate / poorly mated',
+  'Drone layer',
+  'Superseded',
+  'Lost / absconded',
+  'Died',
+  'Poor laying / performance',
+  'Poor temperament (culled)',
+  'Rejected / balled on introduction',
+  'Other',
+] as const
 
 function getTodayLocalDate(): string {
   return toLocalDateString(new Date())
@@ -94,38 +110,41 @@ function getOutcomeActionTitle(kind: OutcomeActionKind): string {
 }
 
 function createOutcomeActionDraft(distribution: TrackedQueen, kind: OutcomeActionKind): OutcomeActionDraft {
+  const base = { rowId: distribution.id, reason: '', comment: '' }
   switch (kind) {
     case 'mated':
       return {
-        rowId: distribution.id,
+        ...base,
         kind,
         value: true,
         date: distribution.mating_confirmed_date || getTodayLocalDate(),
       }
     case 'failed':
       return {
-        rowId: distribution.id,
+        ...base,
         kind,
         value: true,
         date: distribution.queen_failed_date || getTodayLocalDate(),
+        reason: distribution.queen_failure_reason || '',
+        comment: distribution.queen_failure_comment || '',
       }
     case 'overwintered':
       return {
-        rowId: distribution.id,
+        ...base,
         kind,
         value: distribution.overwintered ?? true,
         date: distribution.overwintered_date || getTodayLocalDate(),
       }
     case 'hybridised':
       return {
-        rowId: distribution.id,
+        ...base,
         kind,
         value: distribution.offspring_hybridised ?? true,
         date: distribution.hybridisation_date || getTodayLocalDate(),
       }
     default:
       return {
-        rowId: distribution.id,
+        ...base,
         kind: 'mated',
         value: true,
         date: getTodayLocalDate(),
@@ -138,6 +157,8 @@ function OutcomeActionEditor({
   disabled,
   onValueChange,
   onDateChange,
+  onReasonChange,
+  onCommentChange,
   onCancel,
   onSave,
 }: {
@@ -145,12 +166,15 @@ function OutcomeActionEditor({
   disabled: boolean
   onValueChange: (value: boolean | null) => void
   onDateChange: (date: string) => void
+  onReasonChange: (reason: string) => void
+  onCommentChange: (comment: string) => void
   onCancel: () => void
   onSave: () => void
 }) {
   const needsDate = outcomeNeedsDate(draft.kind, draft.value)
   const saveDisabled = disabled || (needsDate && draft.date.trim() === '')
   const showStateChoices = draft.kind === 'overwintered' || draft.kind === 'hybridised'
+  const isFailed = draft.kind === 'failed'
 
   return (
     <div className="mt-3 rounded-2xl border border-emerald-200/80 bg-white/90 p-3 shadow-sm dark:border-emerald-900/60 dark:bg-surface-elevated/95">
@@ -183,6 +207,42 @@ function OutcomeActionEditor({
               </button>
             )
           })}
+        </div>
+      )}
+
+      {isFailed && (
+        <div className="mb-3 space-y-3">
+          <div className="space-y-2">
+            <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+              Reason (optional)
+            </label>
+            <select
+              value={draft.reason}
+              onChange={(event) => onReasonChange(event.target.value)}
+              disabled={disabled}
+              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+            >
+              <option value="">Select a reason…</option>
+              {FAILURE_REASONS.map((reason) => (
+                <option key={reason} value={reason}>{reason}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+                Comment (optional)
+              </label>
+              <span className="text-[11px] text-text-tertiary">{draft.comment.length}/{MAX_FAILURE_COMMENT_LENGTH}</span>
+            </div>
+            <textarea
+              value={draft.comment}
+              onChange={(event) => onCommentChange(event.target.value.slice(0, MAX_FAILURE_COMMENT_LENGTH))}
+              disabled={disabled}
+              rows={2}
+              className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+            />
+          </div>
         </div>
       )}
 
@@ -438,6 +498,37 @@ function OutcomeCommentField({
   )
 }
 
+function OutcomeReasonField({
+  id,
+  label,
+  reason,
+  disabled,
+  onReasonChange,
+}: {
+  id: string
+  label: string
+  reason: string | null
+  disabled: boolean
+  onReasonChange: (id: string, reason: string) => Promise<boolean>
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
+      <select
+        value={reason ?? ''}
+        onChange={(event) => void onReasonChange(id, event.target.value)}
+        disabled={disabled}
+        className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
+      >
+        <option value="">No reason recorded</option>
+        {FAILURE_REASONS.map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
 function SectionHeading({ children }: { children: ReactNode }) {
   return (
     <p className="mb-2 border-b border-border pb-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-text-tertiary">
@@ -485,6 +576,7 @@ function ExpandedTrackerRowContent({
   onOverwinteredDateChange,
   onHybridisationDateChange,
   onFailureDateChange,
+  onFailureReasonChange,
   onFailureCommentChange,
 }: {
   distribution: DerivedTrackerRow
@@ -495,6 +587,7 @@ function ExpandedTrackerRowContent({
   onOverwinteredDateChange: (id: string, date: string) => Promise<boolean>
   onHybridisationDateChange: (id: string, date: string) => Promise<boolean>
   onFailureDateChange: (id: string, date: string) => Promise<boolean>
+  onFailureReasonChange: (id: string, reason: string) => Promise<boolean>
   onFailureCommentChange: (id: string, comment: string) => Promise<boolean>
 }) {
   const showMatingDateEditor = distribution.distribution_type !== 'mated_queen'
@@ -573,6 +666,9 @@ function ExpandedTrackerRowContent({
               )}
             </>}
           />
+          {distribution.queen_failed && distribution.queen_failure_reason && (
+            <DetailItem label="Failure reason" value={distribution.queen_failure_reason} />
+          )}
           {distribution.queen_failed && distribution.queen_failure_comment && (
             <DetailItem
               label="Failure comment"
@@ -607,9 +703,18 @@ function ExpandedTrackerRowContent({
         ) && (
           <div className="mt-2 space-y-2 border-t border-border pt-2">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
-              Record dates
+              Record details
             </p>
             <div className="grid gap-2">
+              {distribution.queen_failed && (
+                <OutcomeReasonField
+                  id={distribution.id}
+                  label="Failure reason"
+                  reason={distribution.queen_failure_reason}
+                  disabled={isUpdating}
+                  onReasonChange={onFailureReasonChange}
+                />
+              )}
               {showMatingDateEditor && distribution.mating_confirmed && (
                 <OutcomeDateField
                   id={distribution.id}
@@ -929,6 +1034,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     updateHybridisationDate,
     updateFailure,
     updateFailureDate,
+    updateFailureReason,
     updateFailureComment,
     calculateStats,
     filterByStatus,
@@ -1248,7 +1354,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   const handleSaveOutcomeAction = useCallback(async () => {
     if (!actionDraft || updatingIdsRef.current.has(actionDraft.rowId)) return
 
-    const { rowId, kind, value, date } = actionDraft
+    const { rowId, kind, value, date, reason, comment } = actionDraft
     const requiresDate = outcomeNeedsDate(kind, value)
     const nextDate = date.trim()
     if (requiresDate && nextDate === '') {
@@ -1282,7 +1388,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
           if (success) toast.success('Hybridisation status updated')
           break
         case 'failed':
-          success = await updateFailure(rowId, true, nextDate)
+          success = await updateFailure(rowId, true, nextDate, reason, comment)
           if (success) toast.success('Queen marked as failed')
           break
       }
@@ -1346,6 +1452,27 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       })
     }
   }, [updateFailureDate, toast])
+
+  const handleFailureReasonChange = useCallback(async (id: string, reason: string): Promise<boolean> => {
+    if (updatingIdsRef.current.has(id)) return false
+
+    setUpdatingIds((prev) => new Set(prev).add(id))
+    try {
+      const success = await updateFailureReason(id, reason.trim() === '' ? null : reason)
+      if (success) {
+        toast.success('Failure reason updated')
+      } else {
+        toast.error('Failed to update failure reason')
+      }
+      return success
+    } finally {
+      setUpdatingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }, [updateFailureReason, toast])
 
   const handleFailureCommentChange = useCallback(async (id: string, comment: string): Promise<boolean> => {
     if (updatingIdsRef.current.has(id)) return false
@@ -1687,6 +1814,20 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                                     : current
                                 ))
                               }}
+                              onReasonChange={(reason) => {
+                                setActionDraft((current) => (
+                                  current && current.rowId === distribution.id
+                                    ? { ...current, reason }
+                                    : current
+                                ))
+                              }}
+                              onCommentChange={(comment) => {
+                                setActionDraft((current) => (
+                                  current && current.rowId === distribution.id
+                                    ? { ...current, comment }
+                                    : current
+                                ))
+                              }}
                               onCancel={() => setActionDraft(null)}
                               onSave={() => void handleSaveOutcomeAction()}
                             />
@@ -1733,6 +1874,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                               onOverwinteredDateChange={handleOverwinteredDateChange}
                               onHybridisationDateChange={handleHybridisationDateChange}
                               onFailureDateChange={handleFailureDateChange}
+                              onFailureReasonChange={handleFailureReasonChange}
                               onFailureCommentChange={handleFailureCommentChange}
                             />
                           </td>

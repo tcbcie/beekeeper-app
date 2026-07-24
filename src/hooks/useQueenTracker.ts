@@ -16,6 +16,7 @@ export interface TrackedQueen {
   mating_location: string | null
   queen_failed: boolean
   queen_failed_date: string | null
+  queen_failure_reason: string | null
   queen_failure_comment: string | null
   overwintered: boolean | null
   overwintered_date: string | null
@@ -81,6 +82,7 @@ type TrackedQueenPatch = {
   | 'hybridisation_date'
   | 'queen_failed'
   | 'queen_failed_date'
+  | 'queen_failure_reason'
   | 'queen_failure_comment'
 >>
 
@@ -186,6 +188,7 @@ export function useQueenTracker() {
           mating_location,
           queen_failed,
           queen_failed_date,
+          queen_failure_reason,
           queen_failure_comment,
           overwintered,
           overwintered_date,
@@ -406,6 +409,7 @@ export function useQueenTracker() {
           mating_location: d.mating_location as string | null,
           queen_failed: d.queen_failed === true,
           queen_failed_date: d.queen_failed_date as string | null,
+          queen_failure_reason: d.queen_failure_reason as string | null,
           queen_failure_comment: d.queen_failure_comment as string | null,
           overwintered: d.overwintered as boolean | null,
           overwintered_date: d.overwintered_date as string | null,
@@ -697,7 +701,13 @@ export function useQueenTracker() {
     }
   }, [applyTrackedQueenPatch])
 
-  const updateFailure = useCallback(async (id: string, value: boolean, date?: string | null): Promise<boolean> => {
+  const updateFailure = useCallback(async (
+    id: string,
+    value: boolean,
+    date?: string | null,
+    reason?: string | null,
+    comment?: string | null,
+  ): Promise<boolean> => {
     if (!id || typeof id !== 'string' || id.trim() === '') {
       console.error('Invalid distribution ID for failure update')
       return false
@@ -708,6 +718,13 @@ export function useQueenTracker() {
       console.error('Invalid failure date provided:', normalisedDate)
       return false
     }
+
+    // Reason and comment are only meaningful while the queen is failed; clearing the failure
+    // wipes both alongside the date.
+    const normalisedReason = value && typeof reason === 'string' ? reason.trim() || null : null
+    const normalisedComment = value && typeof comment === 'string'
+      ? comment.trim().slice(0, 280) || null
+      : null
 
     try {
       const today = getTodayLocalDate()
@@ -721,10 +738,11 @@ export function useQueenTracker() {
         .update({
           queen_failed: value,
           queen_failed_date: resolvedDate,
-          queen_failure_comment: null,
+          queen_failure_reason: normalisedReason,
+          queen_failure_comment: normalisedComment,
         })
         .eq('id', id)
-        .select('id, queen_failed, queen_failed_date, queen_failure_comment')
+        .select('id, queen_failed, queen_failed_date, queen_failure_reason, queen_failure_comment')
         .maybeSingle()
 
       if (error) throw error
@@ -737,12 +755,50 @@ export function useQueenTracker() {
         id: data.id,
         queen_failed: data.queen_failed === true,
         queen_failed_date: data.queen_failed_date as string | null,
+        queen_failure_reason: data.queen_failure_reason as string | null,
         queen_failure_comment: data.queen_failure_comment as string | null,
       })
 
       return true
     } catch (err) {
       console.error('Error updating queen failure status:', err)
+      return false
+    }
+  }, [applyTrackedQueenPatch])
+
+  const updateFailureReason = useCallback(async (id: string, reason: string | null): Promise<boolean> => {
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      console.error('Invalid distribution ID for failure reason update')
+      return false
+    }
+
+    const normalisedReason = typeof reason === 'string' ? reason.trim() || null : null
+
+    try {
+      const { data, error } = await supabase
+        .from('graft_distributions')
+        .update({
+          queen_failure_reason: normalisedReason,
+        })
+        .eq('id', id)
+        .eq('queen_failed', true)
+        .select('id, queen_failure_reason')
+        .maybeSingle()
+
+      if (error) throw error
+      if (!data?.id) {
+        console.warn('No permitted distribution row found for failure reason update:', id)
+        return false
+      }
+
+      applyTrackedQueenPatch({
+        id: data.id,
+        queen_failure_reason: data.queen_failure_reason as string | null,
+      })
+
+      return true
+    } catch (err) {
+      console.error('Error updating queen failure reason:', err)
       return false
     }
   }, [applyTrackedQueenPatch])
@@ -898,6 +954,7 @@ export function useQueenTracker() {
     updateHybridisationDate,
     updateFailure,
     updateFailureDate,
+    updateFailureReason,
     updateFailureComment,
     calculateStats,
     filterByStatus,
