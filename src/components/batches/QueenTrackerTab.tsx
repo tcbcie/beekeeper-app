@@ -1042,6 +1042,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     filterByGroup,
     filterByMember,
     filterByBatch,
+    filterByFailureReason,
   } = useQueenTracker()
   const { ownedRearingGroups, memberRearingGroups, fetchRearingGroups } = useRearingGroups()
 
@@ -1050,6 +1051,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   const [selectedBatchId, setSelectedBatchId] = useState<string>('')
   const [selectedYear, setSelectedYear] = useState<number | null>(new Date().getFullYear())
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all')
+  const [selectedReason, setSelectedReason] = useState<string>('')
   const [queenQuery, setQueenQuery] = useState<string>('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -1093,12 +1095,42 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     return Array.from(years).sort((a, b) => b - a)
   }, [distributions])
 
-  const preHierarchyDistributions = useMemo(() => {
+  const statusScopedDistributions = useMemo(() => {
     let result = distributions
     result = filterByYear(result, selectedYear)
     result = filterByStatus(result, selectedStatus)
     return result
   }, [distributions, selectedYear, selectedStatus, filterByYear, filterByStatus])
+
+  // The failure-reason filter is only meaningful within failed rows, so it is exposed only when
+  // Status = Failed. Options are derived from the reasons actually present, ordered canonically.
+  const reasonFilterActive = selectedStatus === 'failed'
+
+  const availableFailureReasons = useMemo(() => {
+    if (!reasonFilterActive) return [] as string[]
+
+    const reasons = new Set<string>()
+    statusScopedDistributions.forEach((distribution) => {
+      if (distribution.queen_failed && distribution.queen_failure_reason) {
+        reasons.add(distribution.queen_failure_reason)
+      }
+    })
+
+    return Array.from(reasons).sort((a, b) => {
+      const indexA = FAILURE_REASONS.indexOf(a as (typeof FAILURE_REASONS)[number])
+      const indexB = FAILURE_REASONS.indexOf(b as (typeof FAILURE_REASONS)[number])
+      return (indexA === -1 ? Number.MAX_SAFE_INTEGER : indexA) - (indexB === -1 ? Number.MAX_SAFE_INTEGER : indexB)
+    })
+  }, [reasonFilterActive, statusScopedDistributions])
+
+  const safeSelectedReason = useMemo(() => {
+    if (!reasonFilterActive || !selectedReason) return ''
+    return availableFailureReasons.includes(selectedReason) ? selectedReason : ''
+  }, [reasonFilterActive, selectedReason, availableFailureReasons])
+
+  const preHierarchyDistributions = useMemo(() => {
+    return filterByFailureReason(statusScopedDistributions, safeSelectedReason || null)
+  }, [statusScopedDistributions, safeSelectedReason, filterByFailureReason])
 
   const availableGroupFilters = useMemo(() => {
     const visibleGroupIds = new Set<string>()
@@ -1651,7 +1683,10 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                 value={selectedStatus}
                 onChange={(event) => {
                   const value = event.target.value as StatusFilter
-                  startTransition(() => setSelectedStatus(value))
+                  startTransition(() => {
+                    setSelectedStatus(value)
+                    setSelectedReason('')
+                  })
                 }}
                 className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
               >
@@ -1662,6 +1697,26 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                 <option value="failed">Failed</option>
               </select>
             </div>
+
+            {reasonFilterActive && (
+              <div className="min-w-0">
+                <label className="mb-1.5 block text-sm font-medium text-text-secondary">Failure reason</label>
+                <select
+                  value={safeSelectedReason}
+                  onChange={(event) => {
+                    const value = event.target.value
+                    startTransition(() => setSelectedReason(value))
+                  }}
+                  disabled={availableFailureReasons.length === 0}
+                  className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+                >
+                  <option value="">All reasons</option>
+                  {availableFailureReasons.map((reason) => (
+                    <option key={reason} value={reason}>{reason}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         </div>
       </section>
