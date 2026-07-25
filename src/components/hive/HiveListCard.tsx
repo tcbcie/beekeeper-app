@@ -21,6 +21,22 @@ interface HiveListCardProps {
  onToggleSelect?: (id: string) => void
 }
 
+// Single source of truth for "did this super's fullness change vs the previous reading?".
+// A super with no valid previous reading never counts as changed; an unrecorded current reading
+// falls back to 0% (matching the gauge). Used by both the per-super note and the caption flag so
+// the two can never disagree.
+function superFullnessChangedAt(
+  current: number[] | null | undefined,
+  previous: number[] | null | undefined,
+  index: number
+): boolean {
+  const rawPrev = previous?.[index]
+  if (typeof rawPrev !== 'number' || !Number.isFinite(rawPrev)) return false
+  const rawCur = current?.[index]
+  const cur = typeof rawCur === 'number' && Number.isFinite(rawCur) ? rawCur : 0
+  return rawPrev !== cur
+}
+
 export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchive, openMenuId, setOpenMenuId, selectionMode = false, selected = false, onToggleSelect }: HiveListCardProps) {
  const router = useRouter()
 
@@ -34,6 +50,12 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  const daysSinceInspection = hive.last_inspection_date
  ? Math.floor((Date.now() - new Date(hive.last_inspection_date).getTime()) / (1000 * 60 * 60 * 24))
  : null
+
+ // Whether any super's fullness changed vs the previous recorded reading — drives the
+ // "Previous readings" caption beneath the setup stack.
+ const anySuperFullnessChanged = Array.from({ length: hive.configuration?.honey_supers || 0 }).some(
+ (_, i) => superFullnessChangedAt(hive.last_super_fullness, hive.previous_super_fullness, i)
+ )
 
  return (
  <div className={`bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border min-h-[280px] ${selected ? 'border-forest-500 ring-2 ring-forest-500' : 'border-border'}`}>
@@ -304,10 +326,18 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  // A configured super with no recorded reading — a newly added super, or a hive not
  // yet inspected — reads as empty (0%) rather than showing no gauge at all.
  const fullness = typeof raw === 'number' && Number.isFinite(raw) ? raw : 0
+ const prevRaw = hive.previous_super_fullness?.[superNumber - 1]
+ const prevFullness = typeof prevRaw === 'number' && Number.isFinite(prevRaw) ? prevRaw : null
+ const fullnessChanged = superFullnessChangedAt(hive.last_super_fullness, hive.previous_super_fullness, superNumber - 1)
  return (
  <div key={`super-${superNumber}`} className="w-full h-8 bg-yellow-300 border-2 border-yellow-500 rounded flex items-center justify-between px-2 text-xs font-semibold">
  <span>🍯 Super {superNumber}</span>
+ <div className="flex items-center gap-1.5">
+ {fullnessChanged && (
+ <span className="text-xs font-normal text-yellow-900/80" title="Previous recorded reading">was {prevFullness}%</span>
+ )}
  <SuperFullnessGauge value={fullness} />
+ </div>
  </div>
  )
  })}
@@ -365,6 +395,13 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </div>
  </div>
  </div>
+
+ {/* Previous super readings — shared prior-inspection date for the "was X%" notes above */}
+ {hive.previous_super_fullness_date && anySuperFullnessChanged && (
+ <p className="mt-1 mb-2 text-xs text-text-tertiary">
+ Previous readings: {new Date(hive.previous_super_fullness_date).toLocaleDateString('en-IE')}
+ </p>
+ )}
 
  {/* Configuration Details */}
  <div className="grid grid-cols-2 gap-2 text-xs text-text-primary">

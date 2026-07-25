@@ -106,6 +106,10 @@ export interface Hive {
   active_tasks_count?: number
   /** Per-super fullness (0-100) from the most recent inspection; null when not recorded. */
   last_super_fullness?: number[] | null
+  /** Per-super fullness from the inspection before the most recent one that recorded it. */
+  previous_super_fullness?: number[] | null
+  /** Date of that previous fullness reading (all supers share the one prior inspection). */
+  previous_super_fullness_date?: string | null
   colonies?: Colony
   archive_reason_value?: {
     value?: string
