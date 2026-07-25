@@ -10,6 +10,7 @@ import ModalShell from '@/components/ui/ModalShell'
 import FormActionRow from '@/components/ui/FormActionRow'
 import FieldLabel from '@/components/ui/FieldLabel'
 import TextInput from '@/components/ui/TextInput'
+import { usePersistentState } from '@/hooks/usePersistentState'
 import SelectField from '@/components/ui/SelectField'
 import Button from '@/components/ui/Button'
 import { generateTagCode } from '@/lib/qr-tags'
@@ -71,8 +72,12 @@ export default function QrTagsPage() {
  const [deletingTagId, setDeletingTagId] = useState<string | null>(null)
 
  // Filter state
- const [tagTypeFilter, setTagTypeFilter] = useState<'all' | 'hive' | 'nuc'>('all')
- const [assignedFilter, setAssignedFilter] = useState<'all' | 'assigned' | 'unassigned'>('all')
+ const [tagTypeFilter, setTagTypeFilter] = usePersistentState<'all' | 'hive' | 'nuc'>(
+ 'qr-tags:type', 'all', (v) => v === 'all' || v === 'hive' || v === 'nuc'
+ )
+ const [assignedFilter, setAssignedFilter] = usePersistentState<'all' | 'assigned' | 'unassigned'>(
+ 'qr-tags:assigned', 'all', (v) => v === 'all' || v === 'assigned' || v === 'unassigned'
+ )
 
  const filteredTags = useMemo(() => tags.filter(tag => {
  if (tagTypeFilter === 'hive' && !tag.code.startsWith('HC-')) return false

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePersistentState } from '@/hooks/usePersistentState'
 import { getCurrentUserId } from '@/lib/auth'
 import { FileText, ClipboardList, Search, LayoutGrid, Apple, Archive, Crown, XCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -21,20 +22,47 @@ import Button from '@/components/ui/Button'
 
 type ReportSection = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest' | 'archived-hives' | 'queen-failures' | 'rearing-report' | 'nihbs-returns'
 
+const REPORT_SECTIONS: ReportSection[] = ['dafm-varroa', 'varroa-monitoring', 'hive-inspection', 'apiary-overview', 'harvest', 'archived-hives', 'queen-failures', 'rearing-report', 'nihbs-returns']
+
+function isReportSection(value: string | null): value is ReportSection {
+  return value !== null && (REPORT_SECTIONS as string[]).includes(value)
+}
+
 export default function ReportsPage() {
   const [userId, setUserId] = useState<string | null>(null)
-  const [activeSection, setActiveSection] = useState<ReportSection>('dafm-varroa')
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const { ownedRearingGroups, fetchRearingGroups } = useRearingGroups()
 
-  // Sync with URL params
+  // The chosen report persists across navigation, and is mirrored to `?section=` so refreshes,
+  // deep links and browser back/forward reopen the same one. Precedence: URL > persisted > default.
+  const [persistedSection, setPersistedSection] = usePersistentState<ReportSection>(
+    'reports:section',
+    'dafm-varroa',
+    (v) => isReportSection(v)
+  )
+  const [activeSection, setActiveSection] = useState<ReportSection>(() => {
+    const fromUrl = searchParams.get('section')
+    return isReportSection(fromUrl) ? fromUrl : persistedSection
+  })
+
+  const changeSection = useCallback((section: ReportSection) => {
+    setActiveSection(section)
+    setPersistedSection(section)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('section', section)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }, [pathname, router, searchParams, setPersistedSection])
+
+  // Sync with URL params (deep links, back/forward)
   useEffect(() => {
     const section = searchParams.get('section')
-    if (section && ['dafm-varroa', 'varroa-monitoring', 'hive-inspection', 'apiary-overview', 'harvest', 'archived-hives', 'queen-failures', 'rearing-report', 'nihbs-returns'].includes(section)) {
-      setActiveSection(section as ReportSection)
+    if (isReportSection(section) && section !== activeSection) {
+      setActiveSection(section)
+      setPersistedSection(section)
     }
-  }, [searchParams])
+  }, [searchParams, activeSection, setPersistedSection])
 
   useEffect(() => {
     const initUser = async () => {
@@ -95,7 +123,7 @@ export default function ReportsPage() {
           {sections.map((section) => (
             <Button
               key={section.id}
-              onClick={() => setActiveSection(section.id)}
+              onClick={() => changeSection(section.id)}
               tone={effectiveSection === section.id ? 'success' : 'neutral'}
               size="sm"
               className={`inline-flex items-center gap-2 ${

@@ -12,6 +12,7 @@ import TextInput from '@/components/ui/TextInput'
 import TextAreaField from '@/components/ui/TextAreaField'
 import SelectField from '@/components/ui/SelectField'
 import Button from '@/components/ui/Button'
+import { usePersistentState } from '@/hooks/usePersistentState'
 import Panel from '@/components/ui/Panel'
 import { useToast } from '@/components/ui/Toast'
 import { formatMoney, currencyCode } from '@/lib/crm-currency'
@@ -38,8 +39,13 @@ export default function CustomersPage() {
   const [editing, setEditing] = useState<Customer | null>(null)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<CustomerFormData>(EMPTY_FORM)
+  // Free-text search stays ephemeral by convention; the sort choice persists.
   const [search, setSearch] = useState('')
-  const [sortBy, setSortBy] = useState<SortKey>('name')
+  const [sortBy, setSortBy] = usePersistentState<SortKey>(
+    'crm-customers:sort',
+    'name',
+    (v) => v === 'name' || v === 'orders' || v === 'total' || v === 'recent'
+  )
 
   const fetchCustomers = useCallback(async (uid: string) => {
     const { data, error } = await supabase
@@ -113,7 +119,6 @@ export default function CustomersPage() {
       handledEditParam.current = true
       handleEdit(target)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customers])
 
   const handleSubmit = async (e: React.FormEvent) => {
