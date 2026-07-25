@@ -177,6 +177,14 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  e.preventDefault()
  if (!userId) return
 
+ // Pure validation runs first: promoting a reared queen below inserts a register record,
+ // so no input may be rejected after that point or a stray record would be left behind.
+ // Eircode is optional, but reject malformed values rather than storing junk.
+ if (formData.mated_at_eircode.trim() && !isValidEircode(formData.mated_at_eircode)) {
+ toast.error('Enter a valid Eircode (e.g. H91 E6K2) or leave it blank.')
+ return
+ }
+
  // A reared-queen candidate (dropdown value "graft:<id>") is promoted to a real register
  // record on save so mother_id links a traversable lineage node.
  let resolvedMotherId = formData.mother_id
@@ -214,14 +222,10 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  (parentId): parentId is string => Boolean(parentId)
  )
 
+ // Checked against the *resolved* mother id, so an already-promoted reared queen that is a
+ // descendant of this queen is still rejected.
  if (selectedParentIds.some((parentId) => invalidParentIds.has(parentId))) {
  toast.error('A queen cannot use herself or one of her descendants as a parent.')
- return
- }
-
- // Eircode is optional, but reject malformed values rather than storing junk.
- if (formData.mated_at_eircode.trim() && !isValidEircode(formData.mated_at_eircode)) {
- toast.error('Enter a valid Eircode (e.g. H91 E6K2) or leave it blank.')
  return
  }
 

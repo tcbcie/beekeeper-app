@@ -123,3 +123,19 @@ create automatically on save; candidate scope = distributed reared queens only.
 Known minor: the auto-lineage string on the daughter may omit the dam label on the very first save
 (the just-created mother isn't in the local `queens` list yet); `mother_id` is linked correctly, and
 re-saving regenerates the lineage string.
+
+### Post-implementation QA hardening
+
+- **Side effect before validation (High).** The promotion RPC ran *before* the Eircode check, so an
+  invalid Eircode aborted the save **after** a breeder record had already been inserted, leaving a
+  stray register entry. Pure validation now runs first; the lineage-cycle guard deliberately stays
+  *after* resolution so an already-promoted reared queen that is a descendant is still rejected.
+- **Candidate/RPC ownership mismatch (Medium).** The candidate query filtered only on
+  `graft_distributions.user_id`, while the RPC requires the *batch* to be owned by the caller — a
+  distribution from another user's batch would have been offered but always errored. The query now
+  also filters `rearing_batches.user_id`, mirroring the RPC exactly.
+- **Malformed graft candidates (Medium).** A graft with neither queen number nor cell number would
+  have produced a `Queen ?` option whose promotion violates the `queen_number` NOT NULL constraint;
+  such rows are now skipped (matching the tracker's existing skip-malformed-rows convention).
+- **Silent candidate-fetch failure (Low).** Query errors are now logged and leave the existing list
+  intact rather than silently emptying the dropdown.
