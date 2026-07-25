@@ -13,9 +13,13 @@ interface ApiaryCardProps {
   onDelete: (id: string) => void
   onImageClick: (url: string) => void
   isReadOnly?: boolean
+  /** Briefly ringed after the list scrolls back to this apiary. */
+  highlighted?: boolean
+  /** Called just before navigating to the apiary, so the list can remember this position. */
+  onOpen?: (id: string) => void
 }
 
-export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isReadOnly }: ApiaryCardProps) {
+export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isReadOnly, highlighted = false, onOpen }: ApiaryCardProps) {
   const router = useRouter()
   const normalisedImageUrl = normaliseStoragePublicUrl(apiary.image_url)
 
@@ -24,14 +28,22 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
     : null
 
   return (
-    <div className={`bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border border-border ${
+    <div
+      id={`apiary-card-${apiary.id}`}
+      className={`bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border ${
+      highlighted ? 'border-forest-500 ring-2 ring-forest-500/70' : 'border-border'
+    } ${
       apiary.is_shared ? 'border-l-4 border-l-blue-500' :
       apiary.team_name ? 'border-l-4 border-l-purple-500' :
       apiary.is_mating_apiary ? 'border-l-4 border-l-purple-500' : ''
     }`}>
       <div className="flex justify-between items-start mb-4 gap-4">
         <div className="flex-1 min-w-0">
-          <Link href={`/dashboard/apiaries/${apiary.id}`} className="hover:underline">
+          <Link
+            href={`/dashboard/apiaries/${apiary.id}`}
+            onClick={() => onOpen?.(apiary.id)}
+            className="hover:underline"
+          >
             <h3 className="text-2xl font-bold text-foreground">{apiary.name}</h3>
           </Link>
           <p className="text-sm text-text-secondary mt-1">

@@ -13,6 +13,7 @@ import Button from '@/components/ui/Button'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useHivesList } from '@/hooks/useHivesList'
+import { useListPositionMemory } from '@/hooks/useListPositionMemory'
 
 export default function HivesPage() {
 
@@ -269,11 +270,6 @@ export default function HivesPage() {
  fetchHives(userId)
  }
 
- const closeForm = () => {
- setShowForm(false)
- setEditingHive(null)
- }
-
  // Check if any hives have scales configured
  const hasAnyScales = hives.some(h => h.beep_device_id || h.wolf_scale_id)
 
@@ -314,6 +310,24 @@ export default function HivesPage() {
  }
  }
  })
+
+ // Puts the user back on the hive they were just working on (returning from its detail page,
+ // or closing its edit form) instead of at the top of the list.
+ const { remember: rememberHivePosition, highlightedId } = useListPositionMemory({
+ scope: 'hives',
+ items: filteredHives,
+ ready: !loading,
+ elementIdPrefix: 'hive-card-',
+ })
+
+ const closeForm = () => {
+ // Saving refetches the list behind a spinner, so the card cannot be scrolled to directly —
+ // remembering it lets the restore run once the list is rendered again.
+ const returnToHiveId = editingHive?.id
+ setShowForm(false)
+ setEditingHive(null)
+ if (returnToHiveId) rememberHivePosition(returnToHiveId)
+ }
 
  // Summary stats
  const activeCount = filteredHives.filter(h => !h.archived_at).length
@@ -450,6 +464,8 @@ export default function HivesPage() {
  selectionMode={selectionMode}
  selected={selectedIds.includes(hive.id)}
  onToggleSelect={toggleSelect}
+ highlighted={highlightedId === hive.id}
+ onOpen={rememberHivePosition}
  />
  ))}
  </div>

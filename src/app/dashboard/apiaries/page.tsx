@@ -28,6 +28,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import { usePersistentState } from '@/hooks/usePersistentState'
+import { useListPositionMemory } from '@/hooks/useListPositionMemory'
 import { Apiary, ApiaryFormData, UserOption } from '@/types/apiary'
 import ApiaryCard from '@/components/apiaries/ApiaryCard'
 import { fetchElevation } from '@/lib/elevation'
@@ -626,6 +627,14 @@ export default function ApiariesPage() {
     return true // 'all'
   }), [apiaries, categoryFilter])
 
+  // Puts the user back on the apiary they just visited instead of at the top of the list.
+  const { remember: rememberApiaryPosition, highlightedId } = useListPositionMemory({
+    scope: 'apiaries',
+    items: filteredApiaries,
+    ready: !loading,
+    elementIdPrefix: 'apiary-card-',
+  })
+
   if (loading) return <LoadingSpinner text="Loading apiaries..." />
 
   return (
@@ -1074,6 +1083,8 @@ export default function ApiariesPage() {
             onDelete={handleDelete}
             onImageClick={handleImageClick}
             isReadOnly={apiary.is_shared === true}
+            highlighted={highlightedId === apiary.id}
+            onOpen={rememberApiaryPosition}
           />
         ))}
       </div>

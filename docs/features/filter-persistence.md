@@ -82,6 +82,41 @@ route to the shared store, the rest to the persisted store, and `filters` is a
 memoised composition of the two (memoised so downstream filtering memos keep a
 stable dependency).
 
+## List position memory (added later)
+
+Filters surviving navigation was only half the problem: returning from a hive's detail page (or
+closing its edit form) still dumped the user at the **top** of the list. On a large apiary that meant
+a lot of scrolling to get back to where they were.
+
+`src/hooks/useListPositionMemory.ts` remembers **which item** the user was last working on, rather
+than a pixel offset — the list remounts, refetches behind a spinner (collapsing the document to ~0
+height, which discards any native scroll restoration) and can reorder under filters/sorting, so an
+offset is not durable.
+
+```ts
+const { remember, highlightedId } = useListPositionMemory({
+  scope: 'hives',            // → hivecraic:filters:hives:pendingRestore
+  items: filteredHives,      // the *filtered* list actually rendered
+  ready: !loading,
+  elementIdPrefix: 'hive-card-',
+})
+```
+
+Behaviour and guarantees:
+
+- **Only restores when returning from that item.** The marker is written by `remember(id)` when
+  opening the detail view or closing the edit form, is **consumed on first use**, and **expires after
+  30 minutes** — so arriving at the list fresh from the navigation behaves exactly as before.
+- **Never widens filters to reveal the target.** If the remembered item is not in the current
+  filtered list, nothing happens. (Quietly unhiding records to reveal a deep-link target caused a
+  past regression.)
+- Scrolls with `block: 'center'` and applies a brief ring highlight, so the landing spot is obvious.
+- The highlight timer lives in its own effect so unrelated re-renders cannot cancel it.
+
+Applied to **Hives** and **Apiaries** (cards carry `id="hive-card-<id>"` / `id="apiary-card-<id>"`).
+**Queens** already had a `?id=` → scroll-into-view effect, so its detail page simply returns to
+`/dashboard/queens?id=<id>` and reuses that existing machinery rather than duplicating it.
+
 ## Manual testing checklist
 
 - [ ] On Hives, pick an apiary + change ownership/sort; navigate away and back —
@@ -98,3 +133,16 @@ stable dependency).
       another report section and back — the date window is remembered and the
       apiary/hive is shared across reports.
 - [ ] Pick an apiary on Hives, then open a report — the same apiary is applied.
+
+### List position memory
+
+- [ ] Scroll down the Hives list, open a hive, then come back — the list lands on that hive,
+      briefly highlighted, instead of at the top.
+- [ ] Edit a hive from the list and hit Update — after saving you are returned to that hive's card,
+      not the top of the page.
+- [ ] Cancel an edit — same return behaviour.
+- [ ] Open Hives fresh from the sidebar — the list starts at the top (no surprise jump).
+- [ ] Open a hive, come back, then leave it 30+ minutes and revisit Hives — starts at the top.
+- [ ] Open a hive, come back, then change the apiary filter so it is hidden — no jump, no filter
+      is silently changed.
+- [ ] Repeat the first check on Apiaries, and on Queens (via the back arrow on a queen).

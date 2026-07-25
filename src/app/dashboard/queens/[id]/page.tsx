@@ -294,8 +294,9 @@ export default function QueenDetailPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
+        {/* Carry the id back so the list scrolls to this queen rather than jumping to the top. */}
         <IconButton
-          onClick={() => router.push('/dashboard/queens')}
+          onClick={() => router.push(`/dashboard/queens?id=${queen.id}`)}
           className="hover:bg-surface-secondary"
           aria-label="Back to queens"
         >
