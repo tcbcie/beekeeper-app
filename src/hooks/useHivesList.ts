@@ -322,10 +322,14 @@ export function useHivesList() {
  // Last *recorded* per-super fullness: the newest inspection that actually
  // recorded it (fullness is optional, so most inspections leave it null).
  // inspections are ordered newest-first, so find() returns the latest match.
- const fullnessInspection = inspections.find(i => Array.isArray(i.honey_super_fullness))
- const latestSuperFullness = fullnessInspection
- ? (fullnessInspection.honey_super_fullness as number[])
+ const fullnessInspections = inspections.filter(i => Array.isArray(i.honey_super_fullness))
+ const latestSuperFullness = fullnessInspections[0]
+ ? (fullnessInspections[0].honey_super_fullness as number[])
  : null
+ const previousSuperFullness = fullnessInspections[1]
+ ? (fullnessInspections[1].honey_super_fullness as number[])
+ : null
+ const previousSuperFullnessDate = fullnessInspections[1]?.inspection_date ?? null
 
  // Determine team info for shared hives
  const isShared = hive.user_id !== currentUserId
@@ -352,6 +356,8 @@ export function useHivesList() {
  active_tasks_count: activeTasksByHive.get(hive.id) || 0,
  qr_tag_code: qrTagByHive.get(hive.id) ?? null,
  last_super_fullness: latestSuperFullness,
+ previous_super_fullness: previousSuperFullness,
+ previous_super_fullness_date: previousSuperFullnessDate,
  }
  })
 

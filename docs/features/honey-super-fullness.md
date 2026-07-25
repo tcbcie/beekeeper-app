@@ -65,3 +65,17 @@ blank. A configured super with no recorded reading now reads **0%** (empty) inst
 matching the mental model that a freshly added / not-yet-inspected super is empty. The 3D yard
 view (`Hive3D.tsx`) was updated to match: an unrecorded super now reads 0% in the camera-side
 gauge column (and renders with no fill overlay, since the fill is only drawn for fullness > 0).
+
+## Previous-reading trend note on the Hive Setup card (added later)
+
+To show a trend at a glance, each super box now shows a small **`was X%`** note beside its gauge
+**only when the value changed** from the previous recorded reading. The shared previous-reading
+date is shown once as a `Previous readings: DD/MM/YYYY` caption beneath the stack (all supers'
+previous values come from the same prior inspection, so the date is not repeated per super).
+
+- `useHivesList` derives `previous_super_fullness` (the second inspection that recorded fullness,
+  since inspections are newest-first) and `previous_super_fullness_date`, added to the `Hive` type.
+- `HiveListCard` renders the per-super `was X%` note (only when changed) and the shared caption
+  (shown only when at least one super changed and a previous date exists).
+- Scope: the Hive Setup card only (`HiveListCard`, fed by `useHivesList`); the 3D/map views are
+  unchanged.
