@@ -43,8 +43,12 @@ Provided in `src/app/dashboard/layout.tsx` so every dashboard page can consume i
 | **Tasks** | Shared (`SelectionContext`, mapping `'all'` ↔ `''`) | `type`, `category`, `status`, `ownership` persisted per-page |
 | **Records** | Shared (`SelectionContext`) | Other record filters (period, ownership, type, archived) persisted per-page; stale shared hive/apiary cleared once data loads |
 | **Apiaries** | — | `category` persisted per-page |
-| **Queens** | — | `ownership`, `assignment`, `status`, `role` persisted per-page (free-text search stays ephemeral) |
-| **Reports** (sub-reports) | Shared (`SelectionContext`) | Date window (`timePeriod`/`startDate`/`endDate`) persisted per-report |
+| **Queens** | — | `ownership`, `assignment`, `status`, `role`, `apiary`, plus table `sortKey`/`sortDir` persisted per-page (free-text search stays ephemeral) |
+| **Reports** (sub-reports) | Shared (`SelectionContext`) | Date window (`timePeriod`/`startDate`/`endDate`) persisted per-report; the chosen report `section` persisted **and** mirrored to `?section=` |
+| **Batches / Queen Rearing** | — | `status`, `year`, `apiary`, `period` (+ custom start/end dates) persisted per-page; the active tab continues to live in `?tab=` |
+| **CRM Customers** | — | `sort` persisted per-page (search ephemeral) |
+| **CRM Orders** | — | `status`, `product` persisted per-page (search ephemeral) |
+| **QR tags** | — | `type`, `assigned` persisted per-page |
 
 ### Reports — `useReportFilters` hook (`src/hooks/useReportFilters.ts`)
 
@@ -146,3 +150,20 @@ Applied to **Hives** and **Apiaries** (cards carry `id="hive-card-<id>"` / `id="
 - [ ] Open a hive, come back, then change the apiary filter so it is hidden — no jump, no filter
       is silently changed.
 - [ ] Repeat the first check on Apiaries, and on Queens (via the back arrow on a queen).
+
+### Gap-fill round
+
+- [ ] On Batches, set status/year/apiary/period; navigate away and back — remembered.
+- [ ] On Reports, open a non-default report (e.g. Queen Failures); navigate away and back — the
+      same report reopens. Refresh the page — still the same. Browser back/forward moves between
+      reports (the URL carries `?section=`).
+- [ ] On CRM Customers change the sort, and on CRM Orders the status/product filters; navigate away
+      and back — remembered. Typed search text is **not** remembered (by design).
+- [ ] On QR tags change both filters; navigate away and back — remembered.
+- [ ] On Queens sort a column, navigate away and back — the sort column and direction are kept.
+- [ ] From an apiary's detail page use "View hives" — the Hives list opens filtered to that apiary,
+      and the `?apiary=` parameter is stripped from the URL so changing the filter afterwards sticks.
+- [ ] Sign out and back in as another account — none of the above are inherited.
+- [ ] On Batches select a specific year, then delete the last batch for that year — the year filter
+      falls back to "All Years" rather than showing an empty list behind a blank dropdown. Same for
+      a persisted apiary that is later deleted.

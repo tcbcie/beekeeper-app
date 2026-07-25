@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Plus, X, Scale, Archive, CheckSquare, Copy, FolderInput } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -42,6 +43,29 @@ export default function HivesPage() {
  const [scaleFilter, setScaleFilter] = usePersistentState<boolean>('hives:scales', false, (v) => typeof v === 'boolean')
  const [sortOption, setSortOption] = usePersistentState<string>('hives:sort', 'default')
  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+
+ // An apiary deep link (e.g. "View hives" on an apiary) selects that apiary, then the parameter
+ // is stripped so it cannot re-apply and override a later manual change to the filter.
+ const router = useRouter()
+ const pathname = usePathname()
+ const searchParams = useSearchParams()
+ const apiaryParamAppliedRef = useRef(false)
+
+ useEffect(() => {
+ if (apiaryParamAppliedRef.current) return
+ const apiaryParam = searchParams.get('apiary')
+ if (!apiaryParam) return
+
+ apiaryParamAppliedRef.current = true
+ setFilterApiaryId(apiaryParam)
+
+ // Strip only this parameter, so any other query state on the URL survives. An id that no
+ // longer exists is cleared by the stale-selection check in useHivesList once apiaries load.
+ const params = new URLSearchParams(searchParams.toString())
+ params.delete('apiary')
+ const nextSearch = params.toString()
+ router.replace(nextSearch ? `${pathname}?${nextSearch}` : pathname, { scroll: false })
+ }, [searchParams, pathname, router, setFilterApiaryId])
 
  // Close context menu when clicking outside
  useEffect(() => {

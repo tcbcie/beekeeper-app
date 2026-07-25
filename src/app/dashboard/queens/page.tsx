@@ -141,8 +141,14 @@ export default function QueensPage() {
  const { enabled: labelPrintingEnabled } = useLabelPrinting()
  const [printQueens, setPrintQueens] = useState<Queen[] | null>(null)
  // Table sorting — null key means "natural order from the fetch query".
- const [sortKey, setSortKey] = useState<SortKey | null>(null)
- const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+ const [sortKey, setSortKey] = usePersistentState<SortKey | null>(
+ 'queens:sortKey',
+ null,
+ (v) => v === null || (typeof v === 'string' && ['queen_number', 'mother', 'age', 'apiary', 'status'].includes(v))
+ )
+ const [sortDir, setSortDir] = usePersistentState<'asc' | 'desc'>(
+ 'queens:sortDir', 'asc', (v) => v === 'asc' || v === 'desc'
+ )
  // Comparison selection — persisted in sessionStorage so it survives
  // back-navigation from the compare page without leaking across tabs.
  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => {
@@ -218,7 +224,8 @@ export default function QueensPage() {
    setSortDir('asc')
    return key
   })
- }, [])
+  // Both setters are stable state dispatchers; listed so the rule can verify it.
+ }, [setSortKey, setSortDir])
 
 
  // Scroll to highlighted queen when data loads

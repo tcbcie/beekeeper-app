@@ -22,6 +22,7 @@ import { orderBalance, isPartiallyPaid, isOverdue } from '@/lib/crm-orders'
 import { toCsv, downloadCsv } from '@/lib/csv'
 import Badge from '@/components/ui/Badge'
 import { PRODUCT_TYPE_LABELS } from '@/types/crm'
+import { usePersistentState } from '@/hooks/usePersistentState'
 import type { Customer, Order, OrderItemFormData, OrderStatus, ProductType } from '@/types/crm'
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -49,8 +50,18 @@ export default function OrdersPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isUkNi, setIsUkNi] = useState(false)
   const [production, setProduction] = useState({ activeQueens: 0, matingNucs: 0 })
-  const [statusFilter, setStatusFilter] = useState<'all' | OrderStatus>('all')
-  const [productFilter, setProductFilter] = useState<'all' | ProductType>('all')
+  // Filters persist; free-text search stays ephemeral by convention. Product validation reads
+  // PRODUCT_TYPE_LABELS so a removed product type is rejected without a second list to maintain.
+  const [statusFilter, setStatusFilter] = usePersistentState<'all' | OrderStatus>(
+    'crm-orders:status',
+    'all',
+    (v) => v === 'all' || v === 'pending' || v === 'fulfilled' || v === 'cancelled'
+  )
+  const [productFilter, setProductFilter] = usePersistentState<'all' | ProductType>(
+    'crm-orders:product',
+    'all',
+    (v) => v === 'all' || Object.prototype.hasOwnProperty.call(PRODUCT_TYPE_LABELS, v)
+  )
   const [search, setSearch] = useState('')
 
   const [rowBusy, setRowBusy] = useState<string | null>(null)

@@ -16,6 +16,7 @@ import QueenTrackerTab from '@/components/batches/QueenTrackerTab'
 import QueenRearingPlanningTab from '@/components/batches/QueenRearingPlanningTab'
 import NucReportsTab from '@/components/batches/NucReportsTab'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
+import { usePersistentState } from '@/hooks/usePersistentState'
 import { useBatchesList, Batch, HiveWithInspections, HiveScore, formatDateIrish } from '@/hooks/useBatchesList'
 import BatchFormSection from '@/components/batches/BatchFormSection'
 
@@ -49,8 +50,12 @@ export default function BatchesPage() {
  } = useBatchesList(fetchRearingGroups)
  const [showForm, setShowForm] = useState(false)
  const [editingBatch, setEditingBatch] = useState<Batch | null>(null)
- const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'completed'>('active')
- const [filterYear, setFilterYear] = useState<string>('all')
+ const [filterStatus, setFilterStatus] = usePersistentState<'all' | 'active' | 'completed'>(
+ 'batches:status', 'active', (v) => v === 'all' || v === 'active' || v === 'completed'
+ )
+ const [filterYear, setFilterYear] = usePersistentState<string>(
+ 'batches:year', 'all', (v) => typeof v === 'string'
+ )
 
  const availableYears = useMemo(() => {
  const years = [...new Set(batches.map(b => b.graft_date?.split('-')[0]).filter(Boolean))]
@@ -91,11 +96,35 @@ export default function BatchesPage() {
  }
  }, [activeTab, pathname, router, searchParams])
 
- // Selection tab states
- const [selectedApiary, setSelectedApiary] = useState<string>('all')
- const [timePeriod, setTimePeriod] = useState<string>('all')
- const [customStartDate, setCustomStartDate] = useState<string>('')
- const [customEndDate, setCustomEndDate] = useState<string>('')
+ // Selection tab states. Persisted so the tab is not reset every time the page is revisited;
+ // the custom dates travel with timePeriod because 'custom' is meaningless without them.
+ const [selectedApiary, setSelectedApiary] = usePersistentState<string>(
+ 'batches:apiary', 'all', (v) => typeof v === 'string'
+ )
+ const [timePeriod, setTimePeriod] = usePersistentState<string>(
+ 'batches:period', 'all', (v) => typeof v === 'string'
+ )
+ const [customStartDate, setCustomStartDate] = usePersistentState<string>(
+ 'batches:customStart', '', (v) => typeof v === 'string'
+ )
+ const [customEndDate, setCustomEndDate] = usePersistentState<string>(
+ 'batches:customEnd', '', (v) => typeof v === 'string'
+ )
+
+ // A persisted year or apiary can point at data that no longer exists (the last batch for that
+ // year deleted, the apiary removed). Left alone it silently filters everything out while the
+ // dropdown shows no matching option, so clear it once the data it validates against has loaded.
+ useEffect(() => {
+ if (batches.length > 0 && filterYear !== 'all' && !availableYears.includes(filterYear)) {
+ setFilterYear('all')
+ }
+ }, [batches.length, availableYears, filterYear, setFilterYear])
+
+ useEffect(() => {
+ if (apiaries.length > 0 && selectedApiary !== 'all' && !apiaries.some(a => a.id === selectedApiary)) {
+ setSelectedApiary('all')
+ }
+ }, [apiaries, selectedApiary, setSelectedApiary])
  const [weights, setWeights] = useState({
  brood_pattern: 3,
  population: 3,
