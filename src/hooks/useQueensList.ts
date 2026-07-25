@@ -236,12 +236,18 @@ export function useQueensList() {
  const currentUserId = userIdParam || userId
  if (!currentUserId) return
 
- // Reared queens the user distributed (own batches) that are not yet in the register.
- const [{ data: distRows }, { data: promotedRows }] = await Promise.all([
+ // Reared queens the user distributed that are not yet in the register. The batch-owner
+ // filter mirrors ensure_reared_queen_record's ownership rule, so the list can never offer
+ // a candidate the RPC would reject.
+ const [
+ { data: distRows, error: distError },
+ { data: promotedRows, error: promotedError },
+ ] = await Promise.all([
  supabase
  .from('graft_distributions')
- .select('graft_id, distribution_type, batch_grafts!inner(queen_number, cell_number)')
+ .select('graft_id, distribution_type, batch_grafts!inner(queen_number, cell_number), rearing_batches!inner(user_id)')
  .eq('user_id', currentUserId)
+ .eq('rearing_batches.user_id', currentUserId)
  .order('distribution_date', { ascending: false }),
  supabase
  .from('queens')
@@ -250,16 +256,25 @@ export function useQueensList() {
  .not('source_graft_id', 'is', null),
  ])
 
+ if (distError || promotedError) {
+ // Leave the list untouched rather than silently emptying an already-populated dropdown.
+ console.error('Error fetching reared queen candidates:', distError || promotedError)
+ return
+ }
+
  const promoted = new Set((promotedRows || []).map((r) => r.source_graft_id as string))
  const seen = new Set<string>()
  const candidates: RearedQueenCandidate[] = []
  for (const row of distRows || []) {
  const graftId = typeof row.graft_id === 'string' ? row.graft_id : null
  if (!graftId || seen.has(graftId) || promoted.has(graftId)) continue
- seen.add(graftId)
  const graft = (Array.isArray(row.batch_grafts) ? row.batch_grafts[0] : row.batch_grafts) as
  { queen_number: string | null; cell_number: number | null } | null | undefined
- const number = graft?.queen_number?.trim() || (graft?.cell_number != null ? `#${graft.cell_number}` : '?')
+ // A graft with neither a queen number nor a cell number cannot name a register record
+ // (queen_number is NOT NULL), so skip it instead of offering a candidate that must fail.
+ const number = graft?.queen_number?.trim() || (graft?.cell_number != null ? `#${graft.cell_number}` : '')
+ if (!number) continue
+ seen.add(graftId)
  const type = row.distribution_type === 'mated_queen' ? 'mated' : row.distribution_type === 'virgin_queen' ? 'virgin' : 'cell'
  candidates.push({ graft_id: graftId, label: `Queen ${number} (${type})` })
  }
