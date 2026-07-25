@@ -30,6 +30,23 @@ export function clearPersistedFilters(): void {
   }
 }
 
+/**
+ * Write a value into the persisted namespace immediately, outside React's effect cycle.
+ *
+ * `usePersistentState` normally persists via an effect, which is fine while the component stays
+ * mounted. Use this instead when the value must survive an unmount occurring in the same tick —
+ * e.g. recording a list position just before navigating away — where relying on the passive
+ * effect to flush first would be an implementation detail rather than a guarantee.
+ */
+export function writePersistedValue<T>(key: string, value: T): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(buildKey(key), JSON.stringify(value))
+  } catch {
+    // Storage unavailable or full -- the in-memory value still applies for this session.
+  }
+}
+
 function readStored<T>(storageKey: string, fallback: T, validate?: Validator<T>): T {
   if (typeof window === 'undefined') return fallback
   try {

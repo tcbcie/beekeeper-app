@@ -19,6 +19,10 @@ interface HiveListCardProps {
  selectionMode?: boolean
  selected?: boolean
  onToggleSelect?: (id: string) => void
+ /** Briefly ringed after the list scrolls back to this hive. */
+ highlighted?: boolean
+ /** Called just before navigating to the hive, so the list can remember this position. */
+ onOpen?: (id: string) => void
 }
 
 // Single source of truth for "did this super's fullness change vs the previous reading?".
@@ -37,7 +41,7 @@ function superFullnessChangedAt(
   return rawPrev !== cur
 }
 
-export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchive, openMenuId, setOpenMenuId, selectionMode = false, selected = false, onToggleSelect }: HiveListCardProps) {
+export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchive, openMenuId, setOpenMenuId, selectionMode = false, selected = false, onToggleSelect, highlighted = false, onOpen }: HiveListCardProps) {
  const router = useRouter()
 
  // Bulk actions only ever write to the user's own hives (RLS rejects others'),
@@ -58,7 +62,16 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  )
 
  return (
- <div className={`bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border min-h-[280px] ${selected ? 'border-forest-500 ring-2 ring-forest-500' : 'border-border'}`}>
+ <div
+ id={`hive-card-${hive.id}`}
+ className={`bg-surface dark:bg-surface rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow border min-h-[280px] ${
+ selected
+ ? 'border-forest-500 ring-2 ring-forest-500'
+ : highlighted
+ ? 'border-forest-500 ring-2 ring-forest-500/70'
+ : 'border-border'
+ }`}
+ >
  {/* Selection checkbox (owner-only) - shown while in selection mode */}
  {selectionMode && isOwner && (
  <label className="flex items-center gap-3 mb-4 p-3 rounded-lg border border-border bg-surface-secondary cursor-pointer min-h-[48px]">
@@ -76,7 +89,10 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
 
  {/* Overview & Records Button - Top of Card */}
  <Button
- onClick={() => router.push(`/dashboard/hives/${hive.id}`)}
+ onClick={() => {
+ onOpen?.(hive.id)
+ router.push(`/dashboard/hives/${hive.id}`)
+ }}
  className="w-full px-4 py-3 mb-4 text-sm bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 font-semibold shadow-sm min-h-[48px]"
  >
  Overview & Records
