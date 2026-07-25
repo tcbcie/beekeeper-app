@@ -8,6 +8,7 @@ import QueenLineageTree from '@/components/QueenLineageTree'
 import { Queen, QueenFormData, Batch, getQueenColorFromYear, QUEEN_ROLE_OPTIONS } from '@/types/queen'
 import { isValidEircode } from '@/lib/eircode'
 import { buildLineageString, damLabelFromQueen, damLabelFromSnapshot, lineageYear, DRONE_SOURCE_OPTIONS, type DroneSourceType } from '@/lib/lineage'
+import type { RearedQueenCandidate } from '@/hooks/useQueensList'
 
 interface QueenFormSectionProps {
  userId: string | null
@@ -16,6 +17,8 @@ interface QueenFormSectionProps {
  subspeciesOptions: string[]
  sourceOptions: string[]
  matingStationOptions: string[]
+ /** Reared-and-distributed queens not yet in the register, selectable as a mother. */
+ rearedCandidates: RearedQueenCandidate[]
  /** Queen being edited, or null when adding a new queen. */
  editingQueen: Queen | null
  /** Called after a successful save so the parent can refresh the list. */
@@ -140,7 +143,7 @@ const formDataFromQueen = (queen: Queen, queens: Queen[], batches: Batch[]): Que
  * edited. Extracted verbatim from src/app/dashboard/queens/page.tsx
  * (Phase 6.4 decomposition).
  */
-export default function QueenFormSection({ userId, queens, batches, subspeciesOptions, sourceOptions, matingStationOptions, editingQueen, onSaved, onClose }: QueenFormSectionProps) {
+export default function QueenFormSection({ userId, queens, batches, subspeciesOptions, sourceOptions, matingStationOptions, rearedCandidates, editingQueen, onSaved, onClose }: QueenFormSectionProps) {
  const toast = useToast()
  const [showLineage, setShowLineage] = useState(false)
  const [formData, setFormData] = useState<QueenFormData>(() =>
@@ -174,15 +177,28 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  e.preventDefault()
  if (!userId) return
 
+ // A reared-queen candidate (dropdown value "graft:<id>") is promoted to a real register
+ // record on save so mother_id links a traversable lineage node.
+ let resolvedMotherId = formData.mother_id
+ if (resolvedMotherId.startsWith('graft:')) {
+ const graftId = resolvedMotherId.slice('graft:'.length)
+ const { data: promotedId, error: promoteError } = await supabase.rpc('ensure_reared_queen_record', { p_graft_id: graftId })
+ if (promoteError || !promotedId) {
+ toast.error(promoteError?.message || 'Could not add the reared queen to your register.')
+ return
+ }
+ resolvedMotherId = promotedId as string
+ }
+
  // Lineage is derived from the structured fields unless the user has overridden it.
  const lineageToSave = formData.lineage_overridden
  ? formData.lineage
- : deriveLineage(formData, editingQueen, queens)
+ : deriveLineage({ ...formData, mother_id: resolvedMotherId }, editingQueen, queens)
 
  // Convert empty strings to null for optional UUID fields
  const dataToSubmit = {
  ...formData,
- mother_id: formData.mother_id || null,
+ mother_id: resolvedMotherId || null,
  father_id: formData.father_id || null,
  batch_id: formData.batch_id || null,
  mated_date: formData.mated_date || null,
@@ -446,7 +462,19 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  {q.queen_number} {q.marking_color ? `(${q.marking_color})` : ''}
  </option>
  ))}
+ {rearedCandidates.length > 0 && (
+ <optgroup label="Reared (from tracker)">
+ {rearedCandidates.map((c) => (
+ <option key={c.graft_id} value={`graft:${c.graft_id}`}>
+ {c.label}
+ </option>
+ ))}
+ </optgroup>
+ )}
  </select>
+ <p className="mt-1 text-xs text-text-tertiary">
+ A reared queen you distributed can be chosen here; she is added to your register as a breeder record on save so her line is traceable.
+ </p>
  </div>
 
  {/* Father (drone-source) queen only applies to instrumental insemination; for open or

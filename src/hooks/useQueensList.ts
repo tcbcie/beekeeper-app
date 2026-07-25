@@ -8,6 +8,13 @@ import { getTeamAccess } from '@/lib/team-access'
 import { Queen, Batch } from '@/types/queen'
 import type { BreederContext } from '@/lib/queen-code'
 
+/** A queen the user reared and distributed that is not yet in the register — selectable as a
+ *  mother, which promotes it to a register node on save (see ensure_reared_queen_record). */
+export interface RearedQueenCandidate {
+ graft_id: string
+ label: string
+}
+
 /**
  * Data layer for the queens list page: the user's own + shared queens
  * (enriched with hive assignment and parents via batched lookups), the
@@ -25,6 +32,7 @@ export function useQueensList() {
  const [batches, setBatches] = useState<Batch[]>([])
  const [matingStationOptions, setMatingStationOptions] = useState<string[]>([])
  const [breederContext, setBreederContext] = useState<BreederContext | null>(null)
+ const [rearedCandidates, setRearedCandidates] = useState<RearedQueenCandidate[]>([])
  const router = useRouter()
 
  const fetchQueens = useCallback(async (userIdParam?: string) => {
@@ -224,6 +232,41 @@ export function useQueensList() {
  setMatingStationOptions(Array.from(names))
  }, [userId])
 
+ const fetchRearedCandidates = useCallback(async (userIdParam?: string) => {
+ const currentUserId = userIdParam || userId
+ if (!currentUserId) return
+
+ // Reared queens the user distributed (own batches) that are not yet in the register.
+ const [{ data: distRows }, { data: promotedRows }] = await Promise.all([
+ supabase
+ .from('graft_distributions')
+ .select('graft_id, distribution_type, batch_grafts!inner(queen_number, cell_number)')
+ .eq('user_id', currentUserId)
+ .order('distribution_date', { ascending: false }),
+ supabase
+ .from('queens')
+ .select('source_graft_id')
+ .eq('user_id', currentUserId)
+ .not('source_graft_id', 'is', null),
+ ])
+
+ const promoted = new Set((promotedRows || []).map((r) => r.source_graft_id as string))
+ const seen = new Set<string>()
+ const candidates: RearedQueenCandidate[] = []
+ for (const row of distRows || []) {
+ const graftId = typeof row.graft_id === 'string' ? row.graft_id : null
+ if (!graftId || seen.has(graftId) || promoted.has(graftId)) continue
+ seen.add(graftId)
+ const graft = (Array.isArray(row.batch_grafts) ? row.batch_grafts[0] : row.batch_grafts) as
+ { queen_number: string | null; cell_number: number | null } | null | undefined
+ const number = graft?.queen_number?.trim() || (graft?.cell_number != null ? `#${graft.cell_number}` : '?')
+ const type = row.distribution_type === 'mated_queen' ? 'mated' : row.distribution_type === 'virgin_queen' ? 'virgin' : 'cell'
+ candidates.push({ graft_id: graftId, label: `Queen ${number} (${type})` })
+ }
+ candidates.sort((a, b) => a.label.localeCompare(b.label))
+ setRearedCandidates(candidates)
+ }, [userId])
+
  useEffect(() => {
  const initUser = async () => {
  const id = await getCurrentUserId()
@@ -237,6 +280,7 @@ export function useQueensList() {
  fetchSourceOptions()
  fetchBatches(id)
  fetchMatingStations(id)
+ fetchRearedCandidates(id)
  // Breeder context for the composite queen code (list + labels).
  supabase
  .from('profiles')
@@ -250,7 +294,7 @@ export function useQueensList() {
  })
  }
  initUser()
- }, [router, fetchQueens, fetchSubspeciesOptions, fetchSourceOptions, fetchBatches, fetchMatingStations])
+ }, [router, fetchQueens, fetchSubspeciesOptions, fetchSourceOptions, fetchBatches, fetchMatingStations, fetchRearedCandidates])
 
  return {
  queens,
@@ -262,6 +306,8 @@ export function useQueensList() {
  batches,
  matingStationOptions,
  breederContext,
+ rearedCandidates,
  fetchQueens,
+ fetchRearedCandidates,
  }
 }

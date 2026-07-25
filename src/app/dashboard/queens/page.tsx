@@ -136,7 +136,7 @@ export default function QueensPage() {
  const {
   queens, loading, userId, isTeamMember,
   subspeciesOptions, sourceOptions, batches, matingStationOptions,
-  breederContext, fetchQueens,
+  breederContext, rearedCandidates, fetchQueens, fetchRearedCandidates,
  } = useQueensList()
  const { enabled: labelPrintingEnabled } = useLabelPrinting()
  const [printQueens, setPrintQueens] = useState<Queen[] | null>(null)
@@ -548,8 +548,9 @@ export default function QueensPage() {
  subspeciesOptions={subspeciesOptions}
  sourceOptions={sourceOptions}
  matingStationOptions={matingStationOptions}
+ rearedCandidates={rearedCandidates}
  editingQueen={editingQueen}
- onSaved={() => fetchQueens()}
+ onSaved={() => { fetchQueens(); fetchRearedCandidates() }}
  onClose={closeForm}
  />
  )}

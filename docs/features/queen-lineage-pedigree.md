@@ -103,6 +103,23 @@ guarantees no two accounts share a code (NULLs allowed). The profile save pre-ch
 despite profiles RLS) for a friendly message, and also handles the `23505` unique violation
 as a race fallback.
 
+## Reared queens as lineage mothers (added later)
+
+A queen reared and distributed **externally** (public/non-app recipient) never gets a `queens`
+register record — it lives only in the queen tracker — so it could not be chosen as a **Mother
+Queen**, breaking the maternal line for any daughter kept locally.
+
+The Mother Queen dropdown in the queen form now offers a **"Reared (from tracker)"** optgroup listing
+the user's distributed reared queens that are not yet in the register (option value `graft:<id>`).
+Selecting one and saving calls the **`ensure_reared_queen_record(p_graft_id)`** RPC, which idempotently
+(on `user_id, source_graft_id`) creates a **breeder** register record (`status='distributed'`) for that
+queen — deriving her number, marking colour, subspecies, birth date, and **her own mother** (the cell
+breeder: `batch_grafts.breeder_queen_id` ?? `rearing_batches.mother_queen_id`) from the graft — and
+links the daughter's `mother_id` to it, restoring full ancestor traversal. See
+[queen-lineage-reared-mother-plan.md](../feature/queen-lineage-reared-mother-plan.md). The RPC is
+`SECURITY DEFINER`, self-scoped via `auth.uid()`, and exists **only in Supabase** (MCP migration,
+no SQL file).
+
 ## Out of scope (future)
 
 - Association-assigned breeder registry numbers (the code is currently user-chosen).
