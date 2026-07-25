@@ -400,15 +400,42 @@ export default function ApiariesPage() {
         imageUrl = null
       }
 
+      // Coordinates drive the elevation and Irish Grid square, both of which are reported on the
+      // NIHBS return for a mating site. Resolve anything missing here rather than silently saving
+      // an apiary with no location data (the existing backfill only repairs rows that already
+      // have coordinates, so a postcode-only apiary would never be picked up).
+      let latitude = formData.latitude
+      let longitude = formData.longitude
+      let elevation = formData.elevation
+      let gridReference = formData.grid_reference
+
+      if ((!latitude || !longitude) && (formData.eircode || formData.city)) {
+        const coords = await geocodeAddress(formData.eircode, formData.city, formData.is_uk_ni)
+        if (coords) {
+          latitude = coords.lat
+          longitude = coords.lon
+        }
+      }
+
+      const latNum = parseFloat(latitude)
+      const lngNum = parseFloat(longitude)
+      if (!Number.isNaN(latNum) && !Number.isNaN(lngNum)) {
+        if (!gridReference) gridReference = toIrishGridRef(latNum, lngNum) || ''
+        if (!elevation) {
+          const elev = await fetchElevation(latNum, lngNum)
+          if (elev !== null) elevation = String(Math.round(elev))
+        }
+      }
+
       const dataToSave = {
         name: formData.name,
         location: formData.location || null,
         city: formData.city || null,
         eircode: formData.eircode || null,
-        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-        elevation: formData.elevation ? parseFloat(formData.elevation) : null,
-        grid_reference: formData.grid_reference || null,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+        elevation: elevation ? parseFloat(elevation) : null,
+        grid_reference: gridReference || null,
         notes: formData.notes || null,
         is_uk_ni: formData.is_uk_ni,
         share_location: formData.share_location,
@@ -860,6 +887,15 @@ export default function ApiariesPage() {
                     readOnly
                     className="w-32 rounded-md text-sm cursor-default"
                   />
+                </div>
+              )}
+              {(!formData.latitude || !formData.longitude) && (
+                <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
+                  No coordinates set, so elevation and the Irish Grid square cannot be worked out.
+                  {formData.is_mating_apiary
+                    ? ' Both appear on the NIHBS return for a mating site, so they would be submitted blank.'
+                    : ''}
+                  {' '}Saving will try to derive them from the Eircode — use &quot;Pick on Map&quot; for an exact position.
                 </div>
               )}
               <p className="text-xs text-text-tertiary mt-2">Used for GDD calculations, weather data on inspections, and identifying potential drone congregation areas. Use &quot;Pick on Map&quot; for exact positioning, or &quot;Get Coordinates&quot; for approximate location from Eircode/postcode.</p>

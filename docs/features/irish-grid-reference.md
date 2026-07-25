@@ -29,8 +29,20 @@ Each apiary with coordinates on the island of Ireland automatically receives an 
 
 - **Auto-computed** when coordinates are set via geocoding or map picker
 - **Auto-backfilled** on page load for existing apiaries that have coordinates but no grid reference
+- **Auto-resolved on save** when an apiary has no coordinates but does have an Eircode/city: the save
+  geocodes first, then derives the grid square and elevation. The page-load backfill only repairs
+  rows that *already* have coordinates, so a postcode-only apiary would otherwise never be filled in.
 - **Read-only** — users cannot manually edit the value
 - **Null for non-Irish locations** — UK mainland and other locations outside the Irish Grid bounds show nothing
+
+### Missing-coordinates warning (added later)
+
+The elevation and Irish Grid fields render only when they hold a value, so an apiary with no
+coordinates showed neither and gave no clue why. The GPS section now shows an inline amber warning
+whenever latitude/longitude are empty, and for an apiary flagged as a **mating location** it states
+that both values appear on the **NIHBS return** and would be submitted blank. This was reported as
+"elevation and Irish Grid are missing for mating apiaries" — the fields were never gated on
+`is_mating_apiary`; the apiary in question simply had an Eircode and no coordinates.
 
 ## Dependencies
 
