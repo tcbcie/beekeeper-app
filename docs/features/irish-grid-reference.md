@@ -50,6 +50,13 @@ route whenever a save would otherwise store an apiary with no position:
 The Eircode lookup is still attempted first on save, since it succeeds often enough to be worth it —
 it is simply no longer treated as sufficient.
 
+Two ordering/wording details matter here:
+
+- Coordinate resolution runs **before the apiary image is uploaded**. The prompt can abort the save,
+  and uploading first would leave an orphaned file in storage on every attempt.
+- The prompt distinguishes *"could not be determined from the Eircode"* from *"no coordinates have
+  been set"*, since the lookup is skipped entirely when there is no Eircode or city to try.
+
 ### Missing-coordinates warning (added later)
 
 The elevation and Irish Grid fields render only when they hold a value, so an apiary with no

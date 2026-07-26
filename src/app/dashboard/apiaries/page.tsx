@@ -391,28 +391,22 @@ export default function ApiariesPage() {
     }
 
     try {
-      // Upload image if a new file was selected
-      let imageUrl: string | null = editingApiary?.image_url || null
-      if (imageFile) {
-        const uploadedUrl = await uploadImage(imageFile)
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl
-        }
-      } else if (!imagePreview) {
-        // Image was removed
-        imageUrl = null
-      }
-
       // Coordinates drive the elevation and Irish Grid square, both of which are reported on the
       // NIHBS return for a mating site. Resolve anything missing here rather than silently saving
       // an apiary with no location data (the existing backfill only repairs rows that already
       // have coordinates, so a postcode-only apiary would never be picked up).
+      //
+      // Deliberately resolved BEFORE the image upload: this step can abort the save when the user
+      // opts to drop a pin instead, and an upload done first would leave an orphaned file in
+      // storage on every attempt.
       let latitude = formData.latitude
       let longitude = formData.longitude
       let elevation = formData.elevation
       let gridReference = formData.grid_reference
 
+      let geocodeAttempted = false
       if ((!latitude || !longitude) && (formData.eircode || formData.city)) {
+        geocodeAttempted = true
         const coords = await geocodeAddress(formData.eircode, formData.city, formData.is_uk_ni)
         if (coords) {
           latitude = coords.lat
@@ -431,12 +425,18 @@ export default function ApiariesPage() {
       } else {
         // Eircode geocoding is approximate and does not resolve every postcode. Rather than
         // saving an apiary that quietly reports blank elevation and grid reference, offer the
-        // map picker — the only reliable way to set the position.
+        // map picker — the only reliable way to set the position. The wording reflects whether a
+        // lookup was actually attempted, so it never claims a failure that did not happen.
+        const cause = geocodeAttempted
+          ? 'Coordinates could not be determined from the Eircode, so the'
+          : 'No coordinates have been set, so the'
+        const consequence = formData.is_mating_apiary
+          ? 'elevation and Irish Grid square will stay blank. Both are reported for a mating site on the NIHBS return.'
+          : 'elevation and Irish Grid square will stay blank, and inspections here will not record weather automatically.'
+
         const saveAnyway = await confirmDialog({
           title: 'No location set for this apiary',
-          message: formData.is_mating_apiary
-            ? 'Coordinates could not be determined from the Eircode, so the elevation and Irish Grid square will stay blank. Both are reported for a mating site on the NIHBS return. Set the location on the map instead?'
-            : 'Coordinates could not be determined from the Eircode, so the elevation and Irish Grid square will stay blank, and inspections here will not record weather automatically. Set the location on the map instead?',
+          message: `${cause} ${consequence} Set the location on the map instead?`,
           confirmLabel: 'Save without a location',
           cancelLabel: 'Set on map',
           variant: 'warning',
@@ -446,6 +446,18 @@ export default function ApiariesPage() {
           setShowMapPicker(true)
           return
         }
+      }
+
+      // Upload image if a new file was selected
+      let imageUrl: string | null = editingApiary?.image_url || null
+      if (imageFile) {
+        const uploadedUrl = await uploadImage(imageFile)
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl
+        }
+      } else if (!imagePreview) {
+        // Image was removed
+        imageUrl = null
       }
 
       const dataToSave = {
