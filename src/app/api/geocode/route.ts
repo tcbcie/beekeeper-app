@@ -25,6 +25,9 @@ const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 type GeocodeFailure = 'not-configured' | 'denied' | 'not-found'
 
+const MAX_ADDRESS_LENGTH = 200
+const REQUEST_TIMEOUT_MS = 10_000
+
 function failure(reason: GeocodeFailure, detail?: string) {
   return NextResponse.json({ ok: false, reason, detail: detail ?? null })
 }
@@ -43,7 +46,9 @@ export async function GET(request: NextRequest) {
 
   const address = request.nextUrl.searchParams.get('address')?.trim()
   const country = request.nextUrl.searchParams.get('country') === 'GB' ? 'GB' : 'IE'
-  if (!address) {
+  // A postcode or town name is short; anything longer is not a real lookup and should not be
+  // forwarded to a metered upstream service.
+  if (!address || address.length > MAX_ADDRESS_LENGTH) {
     return failure('not-found')
   }
 
@@ -52,16 +57,16 @@ export async function GET(request: NextRequest) {
     return failure('not-configured', 'No Google Maps API key is configured on the server.')
   }
 
-  try {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10_000)
+  // Declared outside the try so the timer is always cleared, including when fetch itself rejects.
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
+  try {
     const response = await fetch(
       'https://maps.googleapis.com/maps/api/geocode/json' +
       `?address=${encodeURIComponent(address)}&components=country:${country}&key=${apiKey}`,
       { signal: controller.signal }
     )
-    clearTimeout(timeoutId)
 
     const data = await response.json()
     const location = data?.results?.[0]?.geometry?.location
@@ -84,5 +89,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Geocoding request failed:', error)
     return failure('not-found')
+  } finally {
+    clearTimeout(timeoutId)
   }
 }
