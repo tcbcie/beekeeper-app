@@ -35,6 +35,21 @@ Each apiary with coordinates on the island of Ireland automatically receives an 
 - **Read-only** — users cannot manually edit the value
 - **Null for non-Irish locations** — UK mainland and other locations outside the Irish Grid bounds show nothing
 
+### Map pin is the reliable path (added later)
+
+Eircode geocoding proved unreliable in practice — a valid Eircode (`H91ADP9`, a Galway mating site)
+could not be resolved to coordinates at all. So the map pin, not the Eircode, is now the prompted
+route whenever a save would otherwise store an apiary with no position:
+
+- Saving without resolvable coordinates opens a confirmation offering **"Set on map"** (which cancels
+  the save and opens the picker) or **"Save without a location"**. For a mating apiary the message
+  names the NIHBS return explicitly.
+- The inline warning carries a **"Pick on Map"** button rather than only advising it, and hides itself
+  while the picker is open.
+
+The Eircode lookup is still attempted first on save, since it succeeds often enough to be worth it —
+it is simply no longer treated as sufficient.
+
 ### Missing-coordinates warning (added later)
 
 The elevation and Irish Grid fields render only when they hold a value, so an apiary with no
