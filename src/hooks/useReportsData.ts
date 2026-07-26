@@ -393,7 +393,8 @@ export function useReportsData(): UseReportsDataReturn {
         external_recipient_name,
         batch_grafts(cell_number, queen_number),
         profiles!graft_distributions_recipient_profile_id_fkey(full_name, first_name, last_name),
-        rearing_batches!inner(batch_name)
+        queens!graft_distributions_source_queen_id_fkey(queen_number),
+        rearing_batches(batch_name)
       `)
       .eq('user_id', userId)
       .eq('queen_failed', true)
@@ -405,6 +406,7 @@ export function useReportsData(): UseReportsDataReturn {
     if (!data) return []
 
     type GraftJoin = { cell_number: number | null; queen_number: string | null }
+    type SourceQueenJoin = { queen_number: string | null }
     type BatchJoin = { batch_name: string | null }
     type ProfileJoin = { full_name: string | null; first_name: string | null; last_name: string | null }
     const firstJoined = <T,>(value: T | T[] | null | undefined): T | null =>
@@ -419,7 +421,9 @@ export function useReportsData(): UseReportsDataReturn {
       // rows backfilled into the explicit failure state without a failure date.
       const failureDate = (d.queen_failed_date as string | null) || (d.distribution_date as string | null)
       const batchName = batch?.batch_name || ''
-      const tag = (graft?.queen_number ?? '').trim().replace(/^#/, '')
+      // Registry-queen distributions have no graft, so their number comes from the donor queen.
+      const sourceQueen = firstJoined(d.queens as SourceQueenJoin | SourceQueenJoin[] | null)
+      const tag = ((graft?.queen_number ?? sourceQueen?.queen_number) ?? '').trim().replace(/^#/, '')
       const cellNumber = graft?.cell_number
       const queenLabel = tag
         ? `Queen ${tag}`

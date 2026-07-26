@@ -8,10 +8,15 @@ import { TYPE_LABELS } from './graftConstants'
 import Button from '@/components/ui/Button'
 
 interface DistributeGraftModalProps {
-  graftId: string
-  batchId: string
-  cellNumber: number
-  graftStatus: string
+  // A distribution is sourced EITHER from a batch graft (graftId + batchId) OR from a queen
+  // in the register that was added by hand and has no graft behind it (sourceQueenId).
+  // Exactly one of the two must be supplied.
+  graftId?: string
+  batchId?: string
+  sourceQueenId?: string
+  /** Graft-sourced only — used for the default "Distribute Cell #N" title. */
+  cellNumber?: number
+  graftStatus?: string
   userId: string
   groupMemberIds?: string[]
   searchUsers: (text: string) => Promise<RecipientUser[]>
@@ -57,6 +62,7 @@ interface OpenOrder {
 export default function DistributeGraftModal({
   graftId,
   batchId,
+  sourceQueenId,
   cellNumber,
   graftStatus,
   userId,
@@ -77,7 +83,7 @@ export default function DistributeGraftModal({
     ? bulkGrafts.reduce((best, g) => {
         return STATUS_ORDER.indexOf(g.status) > STATUS_ORDER.indexOf(best) ? g.status : best
       }, bulkGrafts[0].status)
-    : graftStatus
+    : (graftStatus ?? '')
   const distributionType = distributionTypeOverride || TYPE_FROM_GRAFT_STATUS[effectiveStatus] || 'queen_cell'
   const typeInfo = TYPE_LABELS[distributionType] || { label: 'Queen Cell', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' }
 
@@ -261,6 +267,13 @@ export default function DistributeGraftModal({
   const handleSubmit = async () => {
     if (!canSubmit || saving || submittingRef.current) return
 
+    // Every distribution needs exactly one source. Without one the insert would fail the
+    // graft_distributions source CHECK anyway — fail fast with a message instead.
+    if (!isBulk && !graftId && !sourceQueenId) {
+      setLocationError('Missing distribution source — please reopen and try again')
+      return
+    }
+
     // An unmated queen (cell/virgin) needs a destination where it will mate, so require an
     // apiary or mating location. A mated queen already carries its recorded mating data, so
     // the location is historical and must not be mandatory here.
@@ -274,6 +287,14 @@ export default function DistributeGraftModal({
 
     let success: boolean | null
     if (isBulk && onBulkSave) {
+      // Bulk distribution is always batch-scoped. A missing batch is a wiring bug, not user
+      // error, so refuse rather than write rows that violate the source CHECK constraint.
+      if (!batchId) {
+        setSaving(false)
+        submittingRef.current = false
+        setLocationError('Missing batch for bulk distribution')
+        return
+      }
       const bulkData: BulkDistributionData = {
         batch_id: batchId,
         distribution_type: distributionType,
@@ -295,8 +316,10 @@ export default function DistributeGraftModal({
       success = await onBulkSave(bulkData)
     } else {
       const data: CreateDistributionData = {
-        graft_id: graftId,
-        batch_id: batchId,
+        // Mutually exclusive sources — the DB enforces the same rule with a CHECK constraint.
+        graft_id: graftId ?? null,
+        batch_id: graftId ? (batchId ?? null) : null,
+        source_queen_id: graftId ? null : (sourceQueenId ?? null),
         distribution_type: distributionType,
         recipient_user_id: isExternal ? null : selectedUser!.id,
         recipient_apiary_id: isExternal ? null : (selectedApiaryId || null),
@@ -304,7 +327,7 @@ export default function DistributeGraftModal({
         distribution_date: distributionDate,
         notes: notes || null,
         user_id: userId,
-        previous_graft_status: graftStatus,
+        previous_graft_status: graftId ? (graftStatus ?? null) : null,
         external_recipient_name: isExternal ? (extName.trim() || null) : null,
         external_recipient_email: isExternal ? (extEmail.trim() || null) : null,
         external_recipient_phone: isExternal ? (extPhone.trim() || null) : null,
@@ -328,7 +351,9 @@ export default function DistributeGraftModal({
       <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
         <div className="p-4 border-b border-border flex justify-between items-center">
           <h3 className="text-lg font-semibold text-foreground">
-            {titleOverride ?? (isBulk ? `Distribute ${bulkGrafts.length} Grafts` : `Distribute Cell #${cellNumber}`)}
+            {titleOverride ?? (isBulk
+              ? `Distribute ${bulkGrafts.length} Grafts`
+              : cellNumber != null ? `Distribute Cell #${cellNumber}` : 'Distribute Queen')}
           </h3>
           <Button onClick={onClose} className="p-2 text-text-secondary hover:text-foreground rounded">
             <X size={20} />

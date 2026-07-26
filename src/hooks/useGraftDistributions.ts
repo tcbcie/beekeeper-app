@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getQueenColorFromYear, formatQueenSnapshot } from '@/types/queen'
-import { buildLineageString, damLabelFromSnapshot, lineageYear } from '@/lib/lineage'
+import { buildLineageString, damLabelFromSnapshot, lineageYear, type DroneSourceType } from '@/lib/lineage'
 import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
 
 export interface GraftDistribution {
@@ -60,8 +60,12 @@ export interface RecipientHive {
 }
 
 export interface CreateDistributionData {
-  graft_id: string
-  batch_id: string
+  // A distribution is sourced EITHER from a batch graft (graft_id + batch_id) OR from a
+  // registry queen (source_queen_id) — never both. Enforced by a CHECK constraint on
+  // graft_distributions; the client mirrors it by branching on graft_id.
+  graft_id: string | null
+  batch_id: string | null
+  source_queen_id?: string | null
   distribution_type: 'queen_cell' | 'virgin_queen' | 'mated_queen'
   recipient_user_id: string | null
   recipient_apiary_id: string | null
@@ -69,7 +73,8 @@ export interface CreateDistributionData {
   distribution_date: string
   notes: string | null
   user_id: string
-  previous_graft_status: string
+  /** Graft status to restore if the distribution is removed. Null for registry queens. */
+  previous_graft_status: string | null
   external_recipient_name: string | null
   external_recipient_email: string | null
   external_recipient_phone: string | null
@@ -496,6 +501,152 @@ async function createQueensForRecipient(
   }
 }
 
+/**
+ * Mint the recipient's queen for a registry-queen distribution (no graft, no batch).
+ *
+ * Mirrors createQueensForRecipient, but derives provenance from the donor QUEEN rather than
+ * from a rearing batch. Non-blocking: a failure here must never fail the distribution itself,
+ * which is already committed by the time this runs.
+ */
+async function createQueenForRecipientFromQueen(
+  recipientUserId: string,
+  sourceQueenId: string,
+  distributionId: string,
+  distributionType: 'queen_cell' | 'virgin_queen' | 'mated_queen',
+  recipientHiveId: string | null = null,
+  installedDate: string | null = null,
+  recipientApiaryId: string | null = null,
+  matingLocationOverride: string | null = null
+): Promise<void> {
+  try {
+    const { data: authData } = await supabase.auth.getUser()
+    const callerId = authData?.user?.id ?? ''
+
+    if (!callerId) {
+      console.error('Non-blocking: no authenticated user for queen creation')
+      return
+    }
+
+    const [queenRes, profileRes] = await Promise.all([
+      supabase
+        .from('queens')
+        .select('id, queen_number, birth_date, marking_color, subspecies, mating_station, mated_at_eircode, drone_source_type, mother_id, user_id')
+        .eq('id', sourceQueenId)
+        // Explicitly scope to the caller: queens RLS may widen to team-shared records, and a
+        // donor must only ever hand on a queen they actually own.
+        .eq('user_id', callerId)
+        .single(),
+      supabase.from('profiles').select('full_name, first_name, last_name, email').eq('id', callerId).single(),
+    ])
+
+    if (queenRes.error || !queenRes.data) {
+      console.error('Non-blocking: failed to fetch source queen for queen creation:', queenRes.error)
+      return
+    }
+
+    const donor = queenRes.data as {
+      id: string
+      queen_number: string
+      birth_date: string | null
+      marking_color: string | null
+      subspecies: string | null
+      mating_station: string | null
+      mated_at_eircode: string | null
+      drone_source_type: string | null
+      mother_id: string | null
+      user_id: string
+    }
+
+    if (profileRes.error) {
+      console.error('Non-blocking: failed to fetch breeder profile:', profileRes.error)
+    }
+    const profile = profileRes.data as { full_name: string | null; first_name: string | null; last_name: string | null; email: string | null } | null
+    const displayName = profile?.full_name || [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || profile?.email || 'Unknown breeder'
+
+    // Resolve the donor's own mother for the provenance snapshot. The recipient cannot read the
+    // donor's queens, so this is stored as text; the mother FK is only linked on self-distribution.
+    let motherSnapshot: string | null = null
+    if (donor.mother_id) {
+      const { data: motherRow } = await supabase
+        .from('queens')
+        .select('queen_number, marking_color, birth_date, subspecies')
+        .eq('id', donor.mother_id)
+        .eq('user_id', callerId)
+        .maybeSingle()
+      const mother = motherRow as { queen_number: string; marking_color: string | null; birth_date: string | null; subspecies: string | null } | null
+      if (mother) {
+        motherSnapshot = formatQueenSnapshot(mother.queen_number, mother.marking_color, mother.birth_date, mother.subspecies)
+      }
+    }
+
+    // A mated queen carries its real mating site with it. A cell/virgin has not mated yet, so it
+    // takes the destination apiary instead — resolved server-side in the RPC, which is why only
+    // the station name is sent here (the donor cannot read a recipient's eircode).
+    const isMated = distributionType === 'mated_queen'
+    const matingStation = isMated
+      ? (matingLocationOverride?.trim() || donor.mating_station || null)
+      : null
+    const eircode = isMated ? (donor.mated_at_eircode || null) : null
+
+    // The column is free-form text; only the four known values are meaningful downstream.
+    const droneSourceType: DroneSourceType =
+      donor.drone_source_type === 'station' || donor.drone_source_type === 'ii' || donor.drone_source_type === 'unknown'
+        ? donor.drone_source_type
+        : 'open'
+    const droneSource = matingStation
+      ? `Open-mated at ${matingStation}${eircode ? ` (${eircode})` : ''}`
+      : eircode ? `Open-mated at ${eircode}` : null
+
+    const lineage = buildLineageString({
+      damLabel: damLabelFromSnapshot(motherSnapshot),
+      droneSourceType,
+      matingStation,
+      eircode,
+      year: lineageYear(null, donor.birth_date),
+      subspecies: donor.subspecies,
+      breeder: displayName,
+    }) || null
+
+    const isSelfDistribution = !!callerId && recipientUserId === callerId
+
+    await supabase.rpc('create_queen_for_distribution', {
+      p_recipient_user_id: recipientUserId,
+      p_queen_number: donor.queen_number,
+      p_birth_date: donor.birth_date,
+      // Recompute from birth year so the recipient's colour follows the standard convention
+      // even if the donor left it blank; fall back to the donor's own marking.
+      p_marking_color: (donor.birth_date ? getQueenColorFromYear(donor.birth_date) : null) || donor.marking_color,
+      p_source: 'Bred',
+      p_status: distributionType === 'queen_cell'
+        ? 'cell'
+        : distributionType === 'virgin_queen'
+          ? 'virgin'
+          : 'active',
+      p_mated_at_eircode: eircode,
+      // A registry queen has no rearing batch behind it.
+      p_batch_id: null,
+      p_distributed_by_name: displayName,
+      p_distributed_batch_name: null,
+      p_distributed_mother_queen: motherSnapshot,
+      p_distributed_drone_source: droneSource,
+      p_subspecies: donor.subspecies,
+      p_lineage: lineage,
+      p_drone_source_type: droneSourceType,
+      p_mating_station: matingStation,
+      // Only link the real mother FK for self-distributions; the RPC re-checks ownership.
+      p_mother_id: isSelfDistribution ? donor.mother_id : null,
+      p_recipient_hive_id: recipientHiveId,
+      p_installed_date: installedDate,
+      // No graft: the distribution row itself is the recipient-side idempotency key.
+      p_source_graft_id: null,
+      p_recipient_apiary_id: recipientApiaryId,
+      p_source_distribution_id: distributionId,
+    })
+  } catch (err) {
+    console.error('Non-blocking: failed to create queen for recipient from registry queen:', err)
+  }
+}
+
 export function useGraftDistributions() {
   const toast = useToast()
   const [distributions, setDistributions] = useState<GraftDistribution[]>([])
@@ -584,42 +735,62 @@ export function useGraftDistributions() {
       const insertData = data.distribution_type === 'mated_queen'
         ? { ...data, mating_confirmed: true, mating_confirmed_date: data.distribution_date }
         : data
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('graft_distributions')
         .insert(insertData)
+        .select('id')
+        .single()
 
       if (error) throw error
 
-      // Update graft status to 'sold'
-      const today = new Date().toISOString().split('T')[0]
-      const { error: graftError } = await supabase
-        .from('batch_grafts')
-        .update({ status: 'sold', status_date: today })
-        .eq('id', data.graft_id)
+      const distributionId = (inserted as { id: string } | null)?.id ?? null
 
-      if (graftError) {
-        const { error: rollbackError } = await supabase.from('graft_distributions').delete().eq('graft_id', data.graft_id)
-        if (rollbackError) {
-          console.error('Rollback failed — orphaned distribution for graft:', data.graft_id, rollbackError)
-        } else {
-          console.error('Error updating graft status, distribution rolled back:', graftError)
+      // Graft-sourced distributions mark the graft sold; registry-queen distributions have no
+      // graft to update (the donor queen is marked distributed by the calling page instead).
+      if (data.graft_id) {
+        const today = new Date().toISOString().split('T')[0]
+        const { error: graftError } = await supabase
+          .from('batch_grafts')
+          .update({ status: 'sold', status_date: today })
+          .eq('id', data.graft_id)
+
+        if (graftError) {
+          const { error: rollbackError } = await supabase.from('graft_distributions').delete().eq('graft_id', data.graft_id)
+          if (rollbackError) {
+            console.error('Rollback failed — orphaned distribution for graft:', data.graft_id, rollbackError)
+          } else {
+            console.error('Error updating graft status, distribution rolled back:', graftError)
+          }
+          throw graftError
         }
-        throw graftError
       }
 
       // Create queen record for recipient (non-blocking). When a destination hive was chosen,
       // the queen is also placed into it (installed on the distribution date).
       if (data.recipient_user_id) {
-        createQueensForRecipient(
-          data.recipient_user_id,
-          data.batch_id,
-          [data.graft_id],
-          data.distribution_type,
-          data.recipient_hive_id,
-          data.distribution_date,
-          data.recipient_apiary_id,
-          data.mating_location,
-        )
+        if (data.graft_id && data.batch_id) {
+          createQueensForRecipient(
+            data.recipient_user_id,
+            data.batch_id,
+            [data.graft_id],
+            data.distribution_type,
+            data.recipient_hive_id,
+            data.distribution_date,
+            data.recipient_apiary_id,
+            data.mating_location,
+          )
+        } else if (data.source_queen_id && distributionId) {
+          createQueenForRecipientFromQueen(
+            data.recipient_user_id,
+            data.source_queen_id,
+            distributionId,
+            data.distribution_type,
+            data.recipient_hive_id,
+            data.distribution_date,
+            data.recipient_apiary_id,
+            data.mating_location,
+          )
+        }
       }
 
       return true
@@ -703,7 +874,7 @@ export function useGraftDistributions() {
     }
   }, [])
 
-  const deleteDistribution = useCallback(async (id: string, graftId: string, previousStatus: string): Promise<boolean> => {
+  const deleteDistribution = useCallback(async (id: string, graftId: string | null, previousStatus: string): Promise<boolean> => {
     try {
       const { error } = await supabase
         .from('graft_distributions')
@@ -711,6 +882,9 @@ export function useGraftDistributions() {
         .eq('id', id)
 
       if (error) throw error
+
+      // Registry-queen distributions have no graft whose status needs reverting.
+      if (!graftId) return true
 
       // Revert graft status
       const { error: revertError } = await supabase
@@ -758,14 +932,21 @@ export function useGraftDistributions() {
     return Boolean(result?.id)
   }, [])
 
-  // Re-point an existing queen's distribution to a new recipient. Because
-  // graft_distributions is UNIQUE on graft_id, redistribution UPDATEs the single row
-  // rather than inserting a second. mating_confirmed / mating_confirmed_date are left
+  // Re-point an existing queen's distribution to a new recipient. Because graft_distributions
+  // is UNIQUE on graft_id (and on source_queen_id), redistribution UPDATEs the single existing
+  // row rather than inserting a second. mating_confirmed / mating_confirmed_date are left
   // untouched so the recipient's minted queen inherits the original mated date
   // (create_queen_for_distribution reads mated_date from this row).
   const redistributeQueen = useCallback(async (data: CreateDistributionData): Promise<boolean | null> => {
+    // The row is identified by whichever source it was created from. Without one of these we
+    // would fall back to an unkeyed UPDATE, so refuse rather than risk touching other rows.
+    if (!data.graft_id && !data.source_queen_id) {
+      console.error('Cannot redistribute: distribution has neither a graft nor a source queen')
+      return null
+    }
+
     try {
-      const { error, count } = await supabase
+      const query = supabase
         .from('graft_distributions')
         .update({
           distribution_type: data.distribution_type,
@@ -782,27 +963,46 @@ export function useGraftDistributions() {
           recipient_is_club_member: data.recipient_is_club_member,
           crm_order_id: data.crm_order_id ?? null,
         }, { count: 'exact' })
-        .eq('graft_id', data.graft_id)
         .eq('user_id', data.user_id)
+
+      const { data: updated, error, count } = data.graft_id
+        ? await query.eq('graft_id', data.graft_id).select('id')
+        : await query.eq('source_queen_id', data.source_queen_id as string).select('id')
 
       if (error) throw error
       if (!count) {
-        console.error('No distribution row found to redistribute for graft:', data.graft_id)
+        console.error('No distribution row found to redistribute for:', data.graft_id ?? data.source_queen_id)
         return false
       }
 
       // Mint the queen in an app-user recipient's account (external recipients are record-only).
       if (data.recipient_user_id) {
-        createQueensForRecipient(
-          data.recipient_user_id,
-          data.batch_id,
-          [data.graft_id],
-          data.distribution_type,
-          data.recipient_hive_id,
-          data.distribution_date,
-          data.recipient_apiary_id,
-          data.mating_location,
-        )
+        if (data.graft_id && data.batch_id) {
+          createQueensForRecipient(
+            data.recipient_user_id,
+            data.batch_id,
+            [data.graft_id],
+            data.distribution_type,
+            data.recipient_hive_id,
+            data.distribution_date,
+            data.recipient_apiary_id,
+            data.mating_location,
+          )
+        } else if (data.source_queen_id) {
+          const distributionId = (updated as { id: string }[] | null)?.[0]?.id ?? null
+          if (distributionId) {
+            createQueenForRecipientFromQueen(
+              data.recipient_user_id,
+              data.source_queen_id,
+              distributionId,
+              data.distribution_type,
+              data.recipient_hive_id,
+              data.distribution_date,
+              data.recipient_apiary_id,
+              data.mating_location,
+            )
+          }
+        }
       }
 
       return true

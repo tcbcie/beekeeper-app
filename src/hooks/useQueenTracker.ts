@@ -5,8 +5,12 @@ import { setDistributionMatingConfirmation, updateDistributionMatingDate } from 
 
 export interface TrackedQueen {
   id: string
-  graft_id: string
-  batch_id: string
+  // Graft-sourced rows carry graft_id + batch_id; registry-queen distributions (queens added
+  // by hand, with no rearing batch behind them) carry source_queen_id instead. Exactly one set
+  // is populated, so every batch-derived field below is nullable.
+  graft_id: string | null
+  batch_id: string | null
+  source_queen_id: string | null
   can_edit: boolean
   is_group_batch: boolean
   distribution_type: 'queen_cell' | 'virgin_queen' | 'mated_queen'
@@ -36,18 +40,18 @@ export interface TrackedQueen {
   recipient_hive_number: string | null
   recipient_type: 'group_member' | 'app_user' | 'public'
   recipient_is_club_member: boolean
-  // Cell info
-  cell_number: number
+  // Cell info — null for registry-queen distributions (no graft, so no cell).
+  cell_number: number | null
   queen_marked: boolean
   queen_number: string | null
   latest_weight_mg: number | null
   latest_weight_date: string | null
-  // Batch info
-  batch_name: string
-  graft_date: string
+  // Batch info — null for registry-queen distributions.
+  batch_name: string | null
+  graft_date: string | null
   emergence_date: string | null
   rearing_group_id: string | null
-  batch_owner_id: string
+  batch_owner_id: string | null
   batch_owner_name: string | null
   mating_apiary_name: string | null
   mating_apiary_eircode: string | null
@@ -109,6 +113,74 @@ type BatchJoinRow = {
     marking_color: string | null
     birth_date: string | null
   }>
+}
+
+type MotherQueenRow = {
+  id: string
+  queen_number: string | null
+  subspecies: string | null
+  marking_color: string | null
+  birth_date: string | null
+}
+
+type SourceQueenRow = MotherQueenRow & { mother_id: string | null }
+
+type BreederQueenJoinRow = {
+  queen_number: string | null
+  subspecies: string | null
+  marking_color: string | null
+  birth_date: string | null
+}
+
+type GraftJoinRow = {
+  cell_number: number | null
+  queen_marked: boolean | null
+  queen_number: string | null
+  queens: JoinedRecord<BreederQueenJoinRow>
+}
+
+/**
+ * Shape of a graft_distributions row as selected below. The Supabase client is untyped (no
+ * generated Database types), so rows arrive loosely typed; declaring the shape here keeps the
+ * select string free to vary (LEFT vs INNER join on rearing_batches) without losing type safety.
+ */
+type DistributionQueryRow = {
+  id: string | null
+  user_id: string | null
+  graft_id: string | null
+  batch_id: string | null
+  source_queen_id: string | null
+  // Constrained by graft_distributions_distribution_type_check.
+  distribution_type: 'queen_cell' | 'virgin_queen' | 'mated_queen' | null
+  distribution_date: string | null
+  mating_confirmed: boolean | null
+  mating_confirmed_date: string | null
+  mating_location: string | null
+  queen_failed: boolean | null
+  queen_failed_date: string | null
+  queen_failure_reason: string | null
+  queen_failure_comment: string | null
+  overwintered: boolean | null
+  overwintered_date: string | null
+  offspring_hybridised: boolean | null
+  hybridisation_date: string | null
+  notes: string | null
+  recipient_user_id: string | null
+  external_recipient_name: string | null
+  external_recipient_email: string | null
+  external_recipient_phone: string | null
+  external_recipient_location: string | null
+  recipient_is_club_member: boolean | null
+  batch_grafts: JoinedRecord<GraftJoinRow>
+  profiles: JoinedRecord<{
+    full_name: string | null
+    first_name: string | null
+    last_name: string | null
+    email: string | null
+  }>
+  apiaries: JoinedRecord<{ name: string | null; eircode: string | null }>
+  hives: JoinedRecord<{ hive_number: string | null }>
+  rearing_batches: JoinedRecord<BatchJoinRow>
 }
 
 function firstJoinedRecord<T>(value: JoinedRecord<T>): T | null {
@@ -176,11 +248,18 @@ export function useQueenTracker() {
         .map((group) => group.id)
         .filter((groupId): groupId is string => typeof groupId === 'string' && groupId.trim().length > 0)
 
-      const distributionSelect = `
+      // Registry-queen distributions have no rearing batch, so the own-rows query must LEFT join
+      // rearing_batches or they would be filtered out. The owned-group query keeps `!inner`: it
+      // filters on an embedded column (rearing_group_id), which PostgREST only allows on an inner
+      // join, and group distributions are always graft-sourced anyway. Filtering that query by a
+      // pre-resolved list of batch ids instead would grow the request URL without bound and
+      // eventually exceed the server's URL limit.
+      const distributionSelect = (innerBatch: boolean) => `
           id,
           user_id,
           graft_id,
           batch_id,
+          source_queen_id,
           distribution_type,
           distribution_date,
           mating_confirmed,
@@ -208,7 +287,7 @@ export function useQueenTracker() {
           profiles!graft_distributions_recipient_profile_id_fkey(full_name, first_name, last_name, email),
           apiaries!graft_distributions_recipient_apiary_id_fkey(name, eircode),
           hives!graft_distributions_recipient_hive_id_fkey(hive_number),
-          rearing_batches!inner(
+          rearing_batches${innerBatch ? '!inner' : ''}(
             id, batch_name, graft_date, emergence_date, rearing_group_id, user_id,
             profiles!rearing_batches_user_id_profiles_fkey(first_name, last_name),
             apiaries!mating_apiary_id(name, eircode),
@@ -216,17 +295,17 @@ export function useQueenTracker() {
           )
         `
 
-      const buildDistributionQuery = () =>
+      const buildDistributionQuery = (innerBatch: boolean) =>
         supabase
           .from('graft_distributions')
-          .select(distributionSelect)
+          .select(distributionSelect(innerBatch))
           .in('distribution_type', ['queen_cell', 'virgin_queen', 'mated_queen'])
           .order('distribution_date', { ascending: false })
 
       const [ownResult, ownedGroupResult] = await Promise.all([
-        buildDistributionQuery().eq('user_id', userId),
+        buildDistributionQuery(false).eq('user_id', userId),
         ownedGroupIds.length > 0
-          ? buildDistributionQuery()
+          ? buildDistributionQuery(true)
               .in('rearing_batches.rearing_group_id', ownedGroupIds)
               .neq('user_id', userId)
           : Promise.resolve({ data: [], error: null }),
@@ -237,7 +316,10 @@ export function useQueenTracker() {
 
       if (requestId !== fetchCounter.current) return
 
-      const rows = [...(ownResult.data || []), ...(ownedGroupResult.data || [])]
+      const rows: DistributionQueryRow[] = [
+        ...((ownResult.data ?? []) as unknown as DistributionQueryRow[]),
+        ...((ownedGroupResult.data ?? []) as unknown as DistributionQueryRow[]),
+      ]
       const groupIds = Array.from(new Set(
         rows
           .map((row) => {
@@ -253,10 +335,19 @@ export function useQueenTracker() {
           .map((row) => (typeof row.graft_id === 'string' && row.graft_id.trim() ? row.graft_id : null))
           .filter((graftId): graftId is string => graftId !== null)
       ))
+      // Registry-queen distributions have no graft to describe them, so pull the donor queen's
+      // own details to give the ledger row an identity (number, subspecies, colour).
+      const sourceQueenIds = Array.from(new Set(
+        rows
+          .map((row) => (typeof row.source_queen_id === 'string' && row.source_queen_id.trim() ? row.source_queen_id : null))
+          .filter((queenId): queenId is string => queenId !== null)
+      ))
       const groupMemberIdsByGroupId = new Map<string, Set<string>>()
       const latestWeights = new Map<string, { weight_mg: number; weighed_at: string }>()
+      const sourceQueensById = new Map<string, SourceQueenRow>()
+      const motherQueensById = new Map<string, MotherQueenRow>()
 
-      const [groupMembersResult, weightsResult] = await Promise.all([
+      const [groupMembersResult, weightsResult, sourceQueensResult] = await Promise.all([
         groupIds.length > 0
           ? supabase
               .from('rearing_group_members')
@@ -270,7 +361,46 @@ export function useQueenTracker() {
               .in('graft_id', graftIds)
               .order('weighed_at', { ascending: false })
           : Promise.resolve({ data: [] as { graft_id: string; weight_mg: number; weighed_at: string }[], error: null }),
+        sourceQueenIds.length > 0
+          ? supabase
+              .from('queens')
+              .select('id, queen_number, subspecies, marking_color, birth_date, mother_id')
+              .in('id', sourceQueenIds)
+              // Registry-queen rows only ever come from your own distributions, so the donor is
+              // always you. Scope explicitly rather than relying on RLS alone.
+              .eq('user_id', userId)
+          : Promise.resolve({ data: [] as SourceQueenRow[], error: null }),
       ])
+
+      if (sourceQueensResult.error) {
+        console.error('Error fetching source queens for tracker:', sourceQueensResult.error)
+      } else {
+        for (const q of (sourceQueensResult.data || []) as SourceQueenRow[]) {
+          if (typeof q?.id === 'string') sourceQueensById.set(q.id, q)
+        }
+      }
+
+      // Resolve the donor queens' mothers with a second batched lookup. A queens→queens embed
+      // is ambiguous in PostgREST (the direction cannot be inferred), so never join it inline.
+      const motherIds = Array.from(new Set(
+        Array.from(sourceQueensById.values())
+          .map((q) => (typeof q.mother_id === 'string' && q.mother_id.trim() ? q.mother_id : null))
+          .filter((motherId): motherId is string => motherId !== null)
+      ))
+      if (motherIds.length > 0) {
+        const { data: motherRows, error: motherError } = await supabase
+          .from('queens')
+          .select('id, queen_number, subspecies, marking_color, birth_date')
+          .in('id', motherIds)
+          .eq('user_id', userId)
+        if (motherError) {
+          console.error('Error fetching mother queens for tracker:', motherError)
+        } else {
+          for (const m of (motherRows || []) as MotherQueenRow[]) {
+            if (typeof m?.id === 'string') motherQueensById.set(m.id, m)
+          }
+        }
+      }
 
       if (groupMembersResult.error) {
         console.error('Error fetching rearing group members for tracker:', groupMembersResult.error)
@@ -306,8 +436,12 @@ export function useQueenTracker() {
 
       for (const d of rows) {
         const batch = firstJoinedRecord(d.rearing_batches as JoinedRecord<BatchJoinRow>)
+        const sourceQueenId = typeof d.source_queen_id === 'string' && d.source_queen_id.trim().length > 0
+          ? d.source_queen_id
+          : null
 
-        if (!batch?.id || !batch.user_id || !batch.batch_name) continue
+        // A row is either graft-sourced (and must carry a usable batch) or queen-sourced.
+        if (!sourceQueenId && (!batch?.id || !batch.user_id || !batch.batch_name)) continue
 
         const distributionType = d.distribution_type
         if (
@@ -317,18 +451,20 @@ export function useQueenTracker() {
         ) continue
 
         const distributionId = typeof d.id === 'string' ? d.id : ''
-        const graftId = typeof d.graft_id === 'string' ? d.graft_id : ''
-        const batchId = typeof d.batch_id === 'string' ? d.batch_id : ''
+        const graftId = typeof d.graft_id === 'string' ? d.graft_id : null
+        const batchId = typeof d.batch_id === 'string' ? d.batch_id : null
         const distributionDate = typeof d.distribution_date === 'string' ? d.distribution_date : ''
         const recipientUserId = typeof d.recipient_user_id === 'string' && d.recipient_user_id.trim().length > 0
           ? d.recipient_user_id
           : null
 
-        if (!distributionId || !graftId || !batchId || !distributionDate) continue
+        if (!distributionId || !distributionDate) continue
+        // Graft-sourced rows need both ids; queen-sourced rows need neither.
+        if (!sourceQueenId && (!graftId || !batchId)) continue
 
         // Visibility check: user sees their own distributions OR is a group owner
         const isOwnDistribution = d.user_id === userId
-        const groupId = typeof batch.rearing_group_id === 'string'
+        const groupId = typeof batch?.rearing_group_id === 'string'
           ? batch.rearing_group_id.trim() || null
           : null
         const isGroupBatch = groupId !== null
@@ -354,29 +490,37 @@ export function useQueenTracker() {
         }>)
         const apiary = firstJoinedRecord(d.apiaries as JoinedRecord<{ name: string | null; eircode: string | null }>)
         const hive = firstJoinedRecord(d.hives as JoinedRecord<{ hive_number: string | null }>)
-        const batchOwnerProfile = firstJoinedRecord(batch.profiles as JoinedRecord<{
+        const batchOwnerProfile = firstJoinedRecord((batch?.profiles ?? null) as JoinedRecord<{
           first_name: string | null
           last_name: string | null
         }>)
-        const batchMatingApiary = firstJoinedRecord(batch.apiaries as JoinedRecord<{ name: string | null; eircode: string | null }>)
+        const batchMatingApiary = firstJoinedRecord((batch?.apiaries ?? null) as JoinedRecord<{ name: string | null; eircode: string | null }>)
+        // Registry-queen rows describe themselves from the donor queen record instead of a graft.
+        const sourceQueen = sourceQueenId ? sourceQueensById.get(sourceQueenId) ?? null : null
         // Per-cell breeder queen (multi-breeder batches) takes precedence; fall back to the
-        // batch-level mother queen for single-breeder/legacy batches.
+        // batch-level mother queen for single-breeder/legacy batches. A registry queen uses its
+        // own mother, resolved via the batched lookup above.
         const cellBreederQueen = firstJoinedRecord(graft?.queens ?? null)
-        const batchMotherQueen = firstJoinedRecord(batch.queens as JoinedRecord<{
+        const batchMotherQueen = firstJoinedRecord((batch?.queens ?? null) as JoinedRecord<{
           queen_number: string | null
           subspecies: string | null
           marking_color: string | null
           birth_date: string | null
         }>)
-        const motherQueen = cellBreederQueen ?? batchMotherQueen
-        const latestWeight = latestWeights.get(graftId)
+        const registryMotherQueen = sourceQueen?.mother_id
+          ? motherQueensById.get(sourceQueen.mother_id) ?? null
+          : null
+        const motherQueen = registryMotherQueen ?? cellBreederQueen ?? batchMotherQueen
+        const latestWeight = graftId ? latestWeights.get(graftId) : undefined
         const cellNumber = typeof graft?.cell_number === 'number'
           && Number.isFinite(graft.cell_number)
           && graft.cell_number > 0
           ? graft.cell_number
           : null
 
-        if (cellNumber === null) {
+        // A graft-sourced row without a cell number is corrupt data. A registry queen legitimately
+        // has no cell, so only enforce this for graft-sourced rows.
+        if (cellNumber === null && !sourceQueenId) {
           console.warn('Skipping queen tracker row without a valid cell number', { distributionId, graftId })
           continue
         }
@@ -400,6 +544,7 @@ export function useQueenTracker() {
           id: distributionId,
           graft_id: graftId,
           batch_id: batchId,
+          source_queen_id: sourceQueenId,
           can_edit: isOwnDistribution,
           is_group_batch: isGroupBatch,
           distribution_type: distributionType,
@@ -430,14 +575,14 @@ export function useQueenTracker() {
           recipient_is_club_member: d.recipient_is_club_member === true,
           cell_number: cellNumber,
           queen_marked: graft?.queen_marked ?? false,
-          queen_number: graft?.queen_number ?? null,
+          queen_number: graft?.queen_number ?? sourceQueen?.queen_number ?? null,
           latest_weight_mg: latestWeight?.weight_mg ?? null,
           latest_weight_date: latestWeight?.weighed_at ?? null,
-          batch_name: batch.batch_name,
-          graft_date: batch.graft_date,
-          emergence_date: batch.emergence_date ?? null,
+          batch_name: batch?.batch_name ?? null,
+          graft_date: batch?.graft_date ?? null,
+          emergence_date: batch?.emergence_date ?? null,
           rearing_group_id: groupId,
-          batch_owner_id: batch.user_id,
+          batch_owner_id: batch?.user_id ?? null,
           batch_owner_name: batchOwnerName,
           mating_apiary_name: batchMatingApiary?.name ?? null,
           mating_apiary_eircode: batchMatingApiary?.eircode ?? null,
