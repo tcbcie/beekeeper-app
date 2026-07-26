@@ -59,6 +59,27 @@ Only displayed if the apiary has hives with connected scales (BEEP or Wolf Waage
 - Scale API failures are skipped per hive; successful scale readings remain visible and `No data` is shown only if no scale readings can be rendered
 - Apiaries without scales omit the scale row entirely
 
+## Inspection weather now uses apiary coordinates (added later)
+
+Inspection weather was the one weather consumer in the app that did **not** use the apiary's
+coordinates. It geocoded the apiary's **Eircode** through Nominatim on every fetch, and:
+
+- an apiary with **no Eircode** got **no weather at all**, even when it had an exact map position;
+- when Eircode geocoding failed it fell back to **Dublin/Belfast city centre**, silently recording
+  weather for the wrong place — and Eircode geocoding is demonstrably unreliable
+  (see [irish-grid-reference.md](./irish-grid-reference.md)).
+
+`records/page.tsx` now resolves weather via `fetchWeatherForApiary(apiaryId)`, which selects
+`latitude, longitude, eircode, is_uk_ni` and prefers the stored coordinates — exact, no lookup
+round-trip, and works without a postcode. The Eircode path remains as a fallback for apiaries
+recorded before coordinates were captured. Null/empty coordinates are guarded explicitly, since
+`Number(null)` is `0` and would otherwise request weather for 0°,0° in the Atlantic.
+
+This also removed a duplicated apiary lookup: `handleFetchWeatherForHive` and the inspection save
+path both fetched the apiary and called the Eircode helper; both now share the one function. It
+brings inspections into line with `ApiaryWeatherRow`, `VarroaWeather` and the other consumers, which
+already query Open-Meteo by coordinates.
+
 ## Files
 - `src/types/dashboard.ts` - `DashboardApiary`, `DashboardApiaryScale`, and dashboard inspection typing
 - `src/hooks/useDashboardStats.ts` - dashboard apiary fetch, per-hive signal roll-up, and defensive error bubbling
