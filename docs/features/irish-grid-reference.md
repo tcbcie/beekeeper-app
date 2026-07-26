@@ -57,6 +57,24 @@ Two ordering/wording details matter here:
 - The prompt distinguishes *"could not be determined from the Eircode"* from *"no coordinates have
   been set"*, since the lookup is skipped entirely when there is no Eircode or city to try.
 
+### One prompt, not two (added later)
+
+Saving previously produced **two consecutive dialogs** when an apiary had neither a postcode nor
+coordinates: a native `confirm()` about weather, then the location dialog. They are now merged into
+a single confirmation that lists only what is actually missing:
+
+- **No coordinates** → elevation and Irish Grid stay blank (plus the NIHBS note for a mating site).
+- **No Eircode** → weather is not recorded automatically on inspections.
+
+The actions adapt to the situation: where the position is unknown the dialog offers **"Set on map"**
+(cancels the save and opens the picker) against **"Save without a location"**; where only the postcode
+is missing there is nothing to pin, so it is a plain **"Go back" / "Save anyway"**. Eircode *format*
+validation is unchanged and still rejects a malformed postcode outright — only the *missing*-postcode
+case was folded in.
+
+Weather genuinely depends on the Eircode: `records/page.tsx` selects only `eircode, is_uk_ni` for the
+apiary and skips the weather fetch when it is absent — the apiary's own coordinates are never used.
+
 ### Missing-coordinates warning (added later)
 
 The elevation and Irish Grid fields render only when they hold a value, so an apiary with no

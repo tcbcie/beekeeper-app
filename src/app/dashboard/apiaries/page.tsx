@@ -374,18 +374,11 @@ export default function ApiariesPage() {
     e.preventDefault()
     if (!userId) return
 
-    // Check if Eircode/Postcode is empty and show confirmation
-    if (!formData.eircode || formData.eircode.trim() === '') {
-      const confirmed = confirm(
-        'You haven\'t entered an Eircode or Postcode.\n\n' +
-        'Without a postcode (or an adjacent one), weather information will not be automatically recorded for inspections at this apiary.\n\n' +
-        'Do you want to continue without a postcode?'
-      )
-      if (!confirmed) {
-        return // User chose to go back and add postcode
-      }
-    } else if (!formData.is_uk_ni && !isValidEircode(formData.eircode)) {
-      // Only validate Irish Eircodes; UK/NI postcodes use a different format.
+    // Only validate Irish Eircodes; UK/NI postcodes use a different format. A *missing* postcode
+    // is not rejected here — it is folded into the single address check below, so the user is
+    // never asked two consecutive questions about the same incomplete address.
+    const eircodeProvided = Boolean(formData.eircode && formData.eircode.trim() !== '')
+    if (eircodeProvided && !formData.is_uk_ni && !isValidEircode(formData.eircode)) {
       toast.error('Enter a valid Eircode (e.g. D02 XY45), tick "UK/NI Postcode", or leave it blank.')
       return
     }
@@ -416,34 +409,45 @@ export default function ApiariesPage() {
 
       const latNum = parseFloat(latitude)
       const lngNum = parseFloat(longitude)
-      if (!Number.isNaN(latNum) && !Number.isNaN(lngNum)) {
+      const hasCoordinates = !Number.isNaN(latNum) && !Number.isNaN(lngNum)
+
+      if (hasCoordinates) {
         if (!gridReference) gridReference = toIrishGridRef(latNum, lngNum) || ''
         if (!elevation) {
           const elev = await fetchElevation(latNum, lngNum)
           if (elev !== null) elevation = String(Math.round(elev))
         }
-      } else {
-        // Eircode geocoding is approximate and does not resolve every postcode. Rather than
-        // saving an apiary that quietly reports blank elevation and grid reference, offer the
-        // map picker — the only reliable way to set the position. The wording reflects whether a
-        // lookup was actually attempted, so it never claims a failure that did not happen.
-        const cause = geocodeAttempted
-          ? 'Coordinates could not be determined from the Eircode, so the'
-          : 'No coordinates have been set, so the'
-        const consequence = formData.is_mating_apiary
-          ? 'elevation and Irish Grid square will stay blank. Both are reported for a mating site on the NIHBS return.'
-          : 'elevation and Irish Grid square will stay blank, and inspections here will not record weather automatically.'
+      }
 
-        const saveAnyway = await confirmDialog({
-          title: 'No location set for this apiary',
-          message: `${cause} ${consequence} Set the location on the map instead?`,
-          confirmLabel: 'Save without a location',
-          cancelLabel: 'Set on map',
+      // A single prompt covering everything missing from this apiary's address. Eircode geocoding
+      // is approximate and does not resolve every postcode, so where the position is unknown the
+      // map picker is offered as the reliable alternative. The wording reflects what is actually
+      // missing, and whether a lookup was attempted at all.
+      if (!hasCoordinates || !eircodeProvided) {
+        const issues: string[] = []
+        if (!hasCoordinates) {
+          issues.push(geocodeAttempted
+            ? 'Coordinates could not be determined from the Eircode, so the elevation and Irish Grid square will stay blank.'
+            : 'No coordinates have been set, so the elevation and Irish Grid square will stay blank.')
+          if (formData.is_mating_apiary) {
+            issues.push('Both are reported for a mating site on the NIHBS return.')
+          }
+        }
+        if (!eircodeProvided) {
+          issues.push('Without an Eircode or postcode, weather is not recorded automatically on inspections here.')
+        }
+
+        const proceed = await confirmDialog({
+          title: hasCoordinates ? 'No Eircode or postcode' : 'No location set for this apiary',
+          message: `${issues.join(' ')} ${hasCoordinates ? 'Save anyway?' : 'Set the location on the map instead?'}`,
+          confirmLabel: hasCoordinates ? 'Save anyway' : 'Save without a location',
+          cancelLabel: hasCoordinates ? 'Go back' : 'Set on map',
           variant: 'warning',
         })
 
-        if (!saveAnyway) {
-          setShowMapPicker(true)
+        if (!proceed) {
+          // Only the missing-position case has a remedy to open; otherwise just return to the form.
+          if (!hasCoordinates) setShowMapPicker(true)
           return
         }
       }
