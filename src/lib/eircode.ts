@@ -18,3 +18,18 @@ export function isValidEircode(value: string | null | undefined): boolean {
   if (trimmed.length === 0) return false
   return EIRCODE_REGEX.test(trimmed)
 }
+
+/**
+ * Canonical form: routing key, single space, unique identifier (e.g. "H91ADP9" → "H91 ADP9").
+ *
+ * Geocoders resolve Eircodes far more reliably in this spaced form than in the run-together form
+ * people typically type, so use this whenever an Eircode is sent to an external lookup. Values that
+ * are not structurally valid Eircodes are returned trimmed but otherwise untouched.
+ */
+export function formatEircode(value: string | null | undefined): string {
+  if (typeof value !== 'string') return ''
+  const trimmed = value.trim()
+  if (!isValidEircode(trimmed)) return trimmed
+  const compact = normaliseEircode(trimmed)
+  return `${compact.slice(0, 3)} ${compact.slice(3)}`
+}
