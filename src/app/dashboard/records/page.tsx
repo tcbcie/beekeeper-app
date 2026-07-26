@@ -578,19 +578,50 @@ export default function RecordsPage() {
     }
   }
 
+  /**
+   * Weather for an apiary, preferring its stored coordinates.
+   *
+   * The Eircode path only exists to approximate a position, and Eircode geocoding does not resolve
+   * every postcode (see docs/features/irish-grid-reference.md) — falling back to a city centre when
+   * it fails. Where the apiary already has coordinates they are exact, need no lookup, and work for
+   * apiaries with no postcode at all. The Eircode remains the fallback for older records.
+   */
+  const fetchWeatherForApiary = async (apiaryId: string) => {
+    const { data: apiaryData, error } = await supabase
+      .from('apiaries')
+      .select('latitude, longitude, eircode, is_uk_ni')
+      .eq('id', apiaryId)
+      .single()
+
+    if (error) {
+      console.error('Failed to fetch apiary weather metadata:', error)
+      return null
+    }
+    if (!apiaryData) return null
+
+    // Guard explicitly against null/'' — Number(null) is 0, which would silently request
+    // weather for the Atlantic at 0°,0°.
+    const rawLat = apiaryData.latitude
+    const rawLon = apiaryData.longitude
+    const lat = rawLat == null || rawLat === '' ? NaN : Number(rawLat)
+    const lon = rawLon == null || rawLon === '' ? NaN : Number(rawLon)
+
+    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+      return await getWeatherFromCoordinates(String(lat), String(lon))
+    }
+
+    if (apiaryData.eircode) {
+      return await fetchWeatherData(apiaryData.eircode, apiaryData.is_uk_ni || false)
+    }
+
+    return null
+  }
+
   const handleFetchWeatherForHive = async (hiveId: string) => {
     const selectedHive = hives.find(h => h.id === hiveId)
     if (!selectedHive?.apiary_id) return null
 
-    const { data: apiaryData } = await supabase
-      .from('apiaries')
-      .select('eircode, is_uk_ni')
-      .eq('id', selectedHive.apiary_id)
-      .single()
-
-    if (!apiaryData?.eircode) return null
-
-    return await fetchWeatherData(apiaryData.eircode, apiaryData.is_uk_ni || false)
+    return await fetchWeatherForApiary(selectedHive.apiary_id)
   }
 
   // Image upload helper
@@ -673,17 +704,7 @@ export default function RecordsPage() {
       try {
         const selectedHive = hives.find(h => h.id === formData.hive_id)
         if (selectedHive?.apiary_id) {
-          const { data: apiaryData, error: apiaryError } = await supabase
-            .from('apiaries')
-            .select('eircode, is_uk_ni')
-            .eq('id', selectedHive.apiary_id)
-            .single()
-
-          if (apiaryError) {
-            console.error('Failed to fetch apiary weather metadata:', apiaryError)
-          } else if (apiaryData?.eircode) {
-            weatherData = await fetchWeatherData(apiaryData.eircode, apiaryData.is_uk_ni || false)
-          }
+          weatherData = await fetchWeatherForApiary(selectedHive.apiary_id)
         }
       } finally {
         setFetchingWeather(false)
