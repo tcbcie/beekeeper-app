@@ -35,6 +35,51 @@ Each apiary with coordinates on the island of Ireland automatically receives an 
 - **Read-only** — users cannot manually edit the value
 - **Null for non-Irish locations** — UK mainland and other locations outside the Irish Grid bounds show nothing
 
+### Why "Get Coordinates" failed — and what geocoding can/cannot do (added later)
+
+`H91ADP9` was investigated directly against the geocoders. The findings contradicted the initial
+assumption that Eircode formatting was at fault:
+
+- **Google resolves it correctly**, in every form tried — `H91ADP9`, `H91 ADP9`, and with the country
+  appended — returning *Spiddle West, Co. Galway, H91 ADP9* at `53.2566925, -9.2993932`
+  (`partial_match: false`). Formatting was **not** the problem.
+- **Nominatim must never be used for Eircodes.** Queried with `H91 ADP9, Ireland` it confidently
+  returns the **National Gallery of Ireland, Dublin** — about 200 km from the real location. The
+  existing code deliberately restricts the Nominatim fallback to *city* lookups for Ireland, and that
+  restriction is load-bearing: a wrong coordinate silently corrupts elevation, the Irish Grid square
+  and inspection weather. Failing is better than guessing.
+
+The key **is** configured in Vercel (all environments), and Google's endpoint returns
+`access-control-allow-origin: *`, so neither a missing key nor CORS explains it. Tested with a
+deployed-domain `Origin`/`Referer`, the local key still resolves the Eircode correctly.
+
+That leaves the deployed key itself. The most likely cause is a documented restriction: **the
+Geocoding web service rejects API keys carrying HTTP-referrer restrictions** —
+*"API keys with referer restrictions cannot be used with this API"* — which is precisely how a
+browser-exposed `NEXT_PUBLIC_` key would normally be locked down.
+
+**Fix: geocoding moved server-side** (`src/app/api/geocode/route.ts`). The browser no longer calls
+Google at all; it calls our own authenticated route, which:
+
+- sidesteps referrer restrictions entirely (a server key can be unrestricted or IP-restricted);
+- keeps the key out of the client bundle, where it was previously readable by anyone;
+- prefers a server-only `GOOGLE_MAPS_API_KEY`, falling back to the existing
+  `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` so no new configuration is required to keep working;
+- requires an authenticated Supabase user, since it spends a metered quota;
+- returns Google's own `error_message`, which the UI now shows — so the next failure states the
+  actual cause rather than a generic "could not find".
+
+So `geocodeAddress` now returns *why* it failed rather than a bare `null`, and the message reflects it:
+
+| Reason | Message |
+| --- | --- |
+| `not-configured` (no API key, Irish Eircode only) | "Eircode lookup is not available on this deployment." |
+| `denied` (`REQUEST_DENIED` / `OVER_QUERY_LIMIT`) | "The coordinate lookup service refused the request (API key or quota)." |
+| `not-found` (`ZERO_RESULTS` or nothing to try) | "Could not find coordinates for that Eircode." |
+
+Every case now also opens the map picker. **If the message says "not available on this deployment"
+or mentions the API key, the fix is in Vercel's environment variables, not in the app.**
+
 ### Map pin is the reliable path (added later)
 
 Eircode geocoding proved unreliable in practice — a valid Eircode (`H91ADP9`, a Galway mating site)

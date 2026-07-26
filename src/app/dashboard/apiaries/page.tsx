@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { getTeamAccess } from '@/lib/team-access'
-import { isValidEircode } from '@/lib/eircode'
+import { isValidEircode, formatEircode } from '@/lib/eircode'
 import { Plus, X, MapPin, Loader2, Map, UserPlus, Camera, MapPinOff } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -35,6 +35,14 @@ import ApiaryCard from '@/components/apiaries/ApiaryCard'
 import { fetchElevation } from '@/lib/elevation'
 import { toIrishGridRef } from '@/lib/irish-grid'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
+
+/**
+ * Outcome of a coordinate lookup. The failure reason is carried so the UI can tell a deployment
+ * problem ('not-configured', 'denied') apart from a postcode that genuinely cannot be found.
+ */
+type GeocodeOutcome =
+  | { ok: true; lat: string; lon: string }
+  | { ok: false; reason: 'not-configured' | 'denied' | 'not-found'; detail?: string }
 
 export default function ApiariesPage() {
   const toast = useToast()
@@ -104,43 +112,66 @@ export default function ApiariesPage() {
     onError: (message) => toast.error(message)
   })
 
-  // Geocode eircode/postcode to get coordinates
-  const geocodeAddress = async (eircode: string, city: string, isUkNi: boolean) => {
-    if (!eircode && !city) return null
+  /**
+   * Geocode an Eircode/postcode to coordinates.
+   *
+   * Returns *why* it failed, not just null: a missing API key and a genuinely unknown postcode need
+   * very different messages, and previously both surfaced as "could not find this location", which
+   * made a deployment configuration problem look like bad user input.
+   *
+   * Note there is deliberately no keyless fallback for Irish Eircodes. Nominatim does not index
+   * them and answers confidently wrong — "H91 ADP9" (Spiddal, Co. Galway) resolves to the National
+   * Gallery in Dublin, ~200 km away. Guessing is worse than failing here, because the result feeds
+   * elevation, the Irish Grid square and inspection weather.
+   */
+  const geocodeAddress = async (
+    eircode: string,
+    city: string,
+    isUkNi: boolean
+  ): Promise<GeocodeOutcome> => {
+    if (!eircode && !city) return { ok: false, reason: 'not-found' }
 
     setGeocoding(true)
     try {
       // UK/NI: Use Postcodes.io (free, no API key, very accurate)
       if (isUkNi && eircode) {
-        const cleanPostcode = eircode.trim().replace(/\s+/g, '%20')
+        const cleanPostcode = encodeURIComponent(eircode.trim().replace(/\s+/g, ' '))
         const response = await fetch(`https://api.postcodes.io/postcodes/${cleanPostcode}`)
         const data = await response.json()
 
         if (data.status === 200 && data.result) {
-          return { lat: String(data.result.latitude), lon: String(data.result.longitude) }
+          return { ok: true, lat: String(data.result.latitude), lon: String(data.result.longitude) }
         }
       }
 
-      // Ireland: Use Google Maps Geocoding API (10,000 free/month)
-      const googleApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-      if (googleApiKey) {
-        // Build search query - prefer eircode, fallback to city
-        const searchAddress = eircode
-          ? `${eircode}, ${isUkNi ? 'United Kingdom' : 'Ireland'}`
-          : `${city}, ${isUkNi ? 'United Kingdom' : 'Ireland'}`
+      // Ireland: geocode via our own server route rather than calling Google from the browser.
+      // The Geocoding web service refuses referrer-restricted keys, which is how a NEXT_PUBLIC_ key
+      // would normally be locked down, and this keeps the key out of the client bundle entirely.
+      const searchAddress = eircode ? formatEircode(eircode) : city
+      const { data: { session } } = await supabase.auth.getSession()
 
+      if (session && searchAddress) {
         const response = await fetch(
-          `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchAddress)}&key=${googleApiKey}`
+          `/api/geocode?address=${encodeURIComponent(searchAddress)}&country=${isUkNi ? 'GB' : 'IE'}`,
+          { headers: { Authorization: `Bearer ${session.access_token}` } }
         )
         const data = await response.json()
 
-        if (data.status === 'OK' && data.results?.[0]?.geometry?.location) {
-          const { lat, lng } = data.results[0].geometry.location
-          return { lat: String(lat), lon: String(lng) }
+        if (data?.ok && data.lat && data.lon) {
+          return { ok: true, lat: String(data.lat), lon: String(data.lon) }
         }
-        if (data.status !== 'OK') {
-          console.error('Google Geocoding API error:', data.status, data.error_message)
+        // Configuration problems are reported as-is; only fall through to the city-level lookup
+        // when the address genuinely could not be found.
+        if (data?.reason === 'denied' || data?.reason === 'not-configured') {
+          if (data.detail) console.error('Geocoding unavailable:', data.reason, data.detail)
+          return { ok: false, reason: data.reason, detail: data.detail ?? undefined }
         }
+      }
+
+      if (!isUkNi && !city) {
+        // An Irish Eircode is the only thing to go on and it did not resolve — nothing safe left
+        // to try, since Nominatim answers confidently wrong for Eircodes.
+        return { ok: false, reason: 'not-found' }
       }
 
       // Fallback: Nominatim with city only (Nominatim cannot handle Irish eircodes)
@@ -150,7 +181,7 @@ export default function ApiariesPage() {
         : isUkNi
           ? `${eircode}, ${country}`
           : null
-      if (!searchQuery) return null
+      if (!searchQuery) return { ok: false, reason: 'not-found' }
 
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=1&countrycodes=${isUkNi ? 'gb' : 'ie'}`,
@@ -159,11 +190,11 @@ export default function ApiariesPage() {
       const data = await response.json()
 
       if (data && data.length > 0) {
-        return { lat: data[0].lat, lon: data[0].lon }
+        return { ok: true, lat: data[0].lat, lon: data[0].lon }
       }
-      return null
+      return { ok: false, reason: 'not-found' }
     } catch {
-      return null
+      return { ok: false, reason: 'not-found' }
     } finally {
       setGeocoding(false)
     }
@@ -171,20 +202,30 @@ export default function ApiariesPage() {
 
   // Lookup coordinates when eircode or city changes
   const handleLookupCoordinates = async () => {
-    const coords = await geocodeAddress(formData.eircode, formData.city, formData.is_uk_ni)
-    if (coords) {
+    const result = await geocodeAddress(formData.eircode, formData.city, formData.is_uk_ni)
+    if (result.ok) {
       setFormData(prev => ({
         ...prev,
-        latitude: coords.lat,
-        longitude: coords.lon
+        latitude: result.lat,
+        longitude: result.lon
       }))
-      lookupElevation(coords.lat, coords.lon)
-      lookupGridReference(coords.lat, coords.lon)
+      lookupElevation(result.lat, result.lon)
+      lookupGridReference(result.lat, result.lon)
       // Show warning that coordinates are approximate
       toast.info('Coordinates are approximate. Use "Pick on Map" to verify exact location.')
-    } else {
-      toast.warning('Could not find coordinates for this location. Please enter them manually.')
+      return
     }
+
+    // Opening the picker is more useful than asking for raw latitude/longitude by hand.
+    const detail = result.detail ? ` (${result.detail})` : ''
+    toast.warning(
+      result.reason === 'not-configured'
+        ? `Eircode lookup is not configured on this deployment${detail}. Drop a pin on the map instead.`
+        : result.reason === 'denied'
+          ? `The map service refused the coordinate lookup${detail}. Drop a pin on the map instead.`
+          : 'Could not find coordinates for that Eircode. Drop a pin on the map instead.'
+    )
+    setShowMapPicker(true)
   }
 
   // Handle location change from map picker
@@ -400,10 +441,10 @@ export default function ApiariesPage() {
       let geocodeAttempted = false
       if ((!latitude || !longitude) && (formData.eircode || formData.city)) {
         geocodeAttempted = true
-        const coords = await geocodeAddress(formData.eircode, formData.city, formData.is_uk_ni)
-        if (coords) {
-          latitude = coords.lat
-          longitude = coords.lon
+        const result = await geocodeAddress(formData.eircode, formData.city, formData.is_uk_ni)
+        if (result.ok) {
+          latitude = result.lat
+          longitude = result.lon
         }
       }
 
