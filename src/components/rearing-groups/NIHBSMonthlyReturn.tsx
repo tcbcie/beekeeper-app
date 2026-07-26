@@ -1,9 +1,9 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNIHBSReport } from '@/hooks/useNIHBSReport'
 import type { ManualFields } from '@/hooks/useNIHBSReport'
 import type { RearingGroup } from '@/hooks/useRearingGroups'
-import { Download, Save } from 'lucide-react'
+import { Download, Save, AlertTriangle } from 'lucide-react'
 import Button from '@/components/ui/Button'
 
 interface NIHBSMonthlyReturnProps {
@@ -82,6 +82,21 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
   useEffect(() => {
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current) }
   }, [])
+
+  // The Mating Apiary Details sheet reports a 10 km grid reference and altitude per apiary. Both
+  // come from the apiary's coordinates, so a site saved without them exports blank cells — surface
+  // that here rather than letting an incomplete return be submitted unnoticed.
+  const incompleteMatingApiaries = useMemo(() => {
+    if (!reportData) return []
+    return reportData.mating_apiaries
+      .map((ma) => {
+        const missing: string[] = []
+        if (!ma.grid_reference) missing.push('grid reference')
+        if (ma.elevation === null || ma.elevation === undefined) missing.push('elevation')
+        return { id: ma.id, name: ma.apiary_name, missing }
+      })
+      .filter((ma) => ma.missing.length > 0)
+  }, [reportData])
 
   const handleSaveMonth = async (month: number) => {
     const fields = manualEdits.get(month)
@@ -463,6 +478,33 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
               </div>
             </div>
           </div>
+
+          {/* Mating apiaries with no grid reference / altitude — these export as blank cells */}
+          {incompleteMatingApiaries.length > 0 && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-900/20">
+              <div className="flex items-start gap-3">
+                <AlertTriangle size={20} className="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <div className="text-sm text-amber-800 dark:text-amber-200">
+                  <p className="font-semibold">
+                    {incompleteMatingApiaries.length === 1
+                      ? '1 mating apiary is missing location details'
+                      : `${incompleteMatingApiaries.length} mating apiaries are missing location details`}
+                  </p>
+                  <ul className="mt-2 list-disc space-y-1 pl-5">
+                    {incompleteMatingApiaries.map((ma) => (
+                      <li key={ma.id}>
+                        <span className="font-medium">{ma.name}</span> — no {ma.missing.join(' or ')}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2">
+                    These export as blank cells on the Mating Apiary Details sheet. Open each apiary and
+                    save it to derive the values from its Eircode, or set the position with &quot;Pick on Map&quot;.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Monthly breakdown */}
           {reportData.months.map((md) => (

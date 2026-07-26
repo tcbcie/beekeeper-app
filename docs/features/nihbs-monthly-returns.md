@@ -146,6 +146,19 @@ Row 21 ("Number of newly mated queens showing hybridised offspring") is auto-cal
 
 NIHBS report figures are aggregated **per batch** (sealed cells, hatched, mated, distributions). Multi-breeder batches — where a batch's cells were grafted from more than one breeder queen, tracked via `batch_breeder_queens` and `batch_grafts.breeder_queen_id` (see [multi-breeder-queens-per-batch.md](./multi-breeder-queens-per-batch.md)) — do **not** split the figures by breeder. They contribute to the same per-batch totals as before. Per-breeder reporting is out of scope for this iteration.
 
+## Incomplete Mating Apiary Warning
+
+The Mating Apiary Details sheet reports a **10 km grid reference** and **altitude** for each mating
+apiary. Both are derived from the apiary's coordinates, so a mating site saved without coordinates
+(for example with only an Eircode) exports **blank cells** — an incomplete return that was easy to
+submit unnoticed.
+
+The on-screen return now lists any mating apiary missing a grid reference or elevation in an amber
+warning above the monthly breakdown, naming each apiary and exactly which value is absent. The fix
+is to open that apiary and save it: the apiary form resolves coordinates from the Eircode and derives
+both values (see [irish-grid-reference.md](./irish-grid-reference.md)), or the position can be set
+with "Pick on Map".
+
 ## RLS Policies
 
 - `nihbs_monthly_returns`: Group owners only (SELECT/INSERT/UPDATE).
