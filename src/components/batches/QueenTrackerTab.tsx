@@ -608,7 +608,7 @@ function ExpandedTrackerRowContent({
         <div className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
           <DetailItem label="Queen tagged" value={formatQueenTaggedValue(distribution.queen_number) || 'Not tagged'} />
           <DetailItem label="Marking" value={distribution.marking_status_label} />
-          <DetailItem label="Batch" value={distribution.batch_name} />
+          <DetailItem label="Batch" value={distribution.batch_name || 'Registry queen (no batch)'} />
           <DetailItem label="Group / Member" value={`${distribution.group_name} / ${ownerDisplayName}`} />
           <DetailItem label="Distributed" value={formatOptionalDate(distribution.distribution_date)} />
           <DetailItem label="Emergence date" value={formatOptionalDate(distribution.emergence_date)} />
@@ -976,9 +976,12 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
   // Cell numbers only count within a batch, so they aren't a unique handle. Lead with the
   // tagged queen number when present (unique per account); otherwise scope the cell to its batch.
   const queenTag = distribution.queen_number?.trim().replace(/^#/, '') || ''
+  // A registry queen (distributed straight from the register) has neither batch nor cell.
   const queenDisplayName = queenTag
     ? `Queen ${queenTag}`
-    : `${distribution.batch_name} · Cell ${distribution.cell_number}`
+    : distribution.batch_name && distribution.cell_number != null
+      ? `${distribution.batch_name} · Cell ${distribution.cell_number}`
+      : 'Registry queen'
   // Breeder (mother) queen number gives lineage at a glance; omit entirely when unknown.
   const breederSummaryLabel = distribution.mother_queen_number?.trim() || ''
   const markingStatusLabel = distribution.queen_marked
@@ -1181,14 +1184,16 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     const membersById = new Map<string, string>()
 
     groupScopedDistributions.forEach((distribution) => {
-      if (membersById.has(distribution.batch_owner_id)) return
+      // Registry-queen rows have no batch, so no batch owner to filter by.
+      const ownerId = distribution.batch_owner_id
+      if (!ownerId || membersById.has(ownerId)) return
 
       const ownerName = distribution.batch_owner_name?.trim()
-      const label = distribution.batch_owner_id === userId
+      const label = ownerId === userId
         ? 'You'
         : ownerName || 'Unknown member'
 
-      membersById.set(distribution.batch_owner_id, label)
+      membersById.set(ownerId, label)
     })
 
     return Array.from(membersById.entries())
@@ -1212,6 +1217,8 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     const batchesById = new Map<string, string>()
 
     memberScopedDistributions.forEach((distribution) => {
+      // Registry-queen rows belong to no batch, so they never appear in the batch filter.
+      if (!distribution.batch_id || !distribution.batch_name) return
       if (batchesById.has(distribution.batch_id)) return
       batchesById.set(distribution.batch_id, distribution.batch_name)
     })
@@ -1791,8 +1798,12 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                   const isReadOnly = !distribution.can_edit
                   const activeActionDraft = actionDraft?.rowId === distribution.id ? actionDraft : null
                   const outcomeDisabled = isUpdating || isReadOnly || distribution.queen_failed
+                  // Registry-queen rows have no batch owner; they are always your own records,
+                  // which can_edit already tells us.
                   const ownerDisplayName = distribution.batch_owner_name
-                    || (distribution.batch_owner_id === userId ? 'You' : '-')
+                    || ((distribution.batch_owner_id ?? null) === null
+                      ? (distribution.can_edit ? 'You' : '-')
+                      : distribution.batch_owner_id === userId ? 'You' : '-')
                   const cellHighlightClass = isSelected
                     ? 'bg-emerald-50/95 dark:bg-emerald-950/30'
                     : isReadOnly

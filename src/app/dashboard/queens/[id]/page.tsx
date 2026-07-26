@@ -42,7 +42,7 @@ export default function QueenDetailPage() {
   const [printOpen, setPrintOpen] = useState(false)
   const [showRedistribute, setShowRedistribute] = useState(false)
   const { enabled: labelPrintingEnabled } = useLabelPrinting()
-  const { searchUsers, fetchRecipientApiaries, fetchRecipientHives, redistributeQueen } = useGraftDistributions()
+  const { searchUsers, fetchRecipientApiaries, fetchRecipientHives, redistributeQueen, createDistribution } = useGraftDistributions()
 
   const {
     queen,
@@ -234,14 +234,16 @@ export default function QueenDetailPage() {
     }
   }
 
-  // Redistribute an existing (graft-sourced) queen to another beekeeper. Re-points the graft's
-  // distribution row (via redistributeQueen), then marks this account's copy as distributed-out
-  // and detaches it from its hive.
+  // Send a queen on to another beekeeper, then mark this account's copy as distributed-out and
+  // detach it from its hive. Two source shapes, one post-action:
+  //  - graft-sourced: a distribution row already exists (UNIQUE on graft_id), so re-point it.
+  //  - registry queen (added by hand, no graft): insert a new queen-sourced distribution row.
   const handleRedistribute = async (data: CreateDistributionData): Promise<boolean | null> => {
     if (!currentUserId) return null
-    const ok = await redistributeQueen(data)
+    const isGraftSourced = !!data.graft_id
+    const ok = isGraftSourced ? await redistributeQueen(data) : await createDistribution(data)
     if (!ok) {
-      toast.error('Failed to redistribute queen')
+      toast.error(isGraftSourced ? 'Failed to redistribute queen' : 'Failed to distribute queen')
       return ok
     }
     const { error: qErr } = await supabase
@@ -258,16 +260,22 @@ export default function QueenDetailPage() {
         .eq('user_id', currentUserId)
       if (hErr) console.error('Non-blocking: failed to detach queen from hive:', hErr)
     }
-    toast.success('Queen redistributed')
+    toast.success(isGraftSourced ? 'Queen redistributed' : 'Queen distributed')
     fetchQueenData(currentUserId)
     return ok
   }
 
-  // Only graft-sourced live queens can be redistributed (they have a distribution row to re-point).
+  // A queen is sendable while it is still alive and un-sent. Two routes reach the same modal:
+  // graft-sourced queens re-point their existing distribution row, registry queens (added by
+  // hand, no graft) create a queen-sourced one.
+  const isGraftSourced = !!queen.source_graft_id && !!queen.batch_id
+  const isSendableStatus = queen.status === 'active' || queen.status === 'virgin' || queen.status === 'cell'
+  // Graft-sourced redistribution has always excluded cells (their row is keyed to a sold graft).
   const canRedistribute = isOwner
-    && !!queen.source_graft_id
-    && !!queen.batch_id
+    && isGraftSourced
     && (queen.status === 'active' || queen.status === 'virgin')
+  const canDistribute = isOwner && !isGraftSourced && isSendableStatus
+  const canSendOn = canRedistribute || canDistribute
 
   const markingColor = getQueenColorFromYear(queen.birth_date)
   const age = calculateQueenAge(queen.birth_date)
@@ -356,12 +364,14 @@ export default function QueenDetailPage() {
             <Printer size={18} className="text-text-secondary" />
           </button>
         )}
-        {canRedistribute && (
+        {canSendOn && (
           <button
             type="button"
             onClick={() => setShowRedistribute(true)}
             className="p-2 hover:bg-surface-secondary rounded-lg transition-colors"
-            title="Redistribute queen to another beekeeper"
+            title={canRedistribute
+              ? 'Redistribute queen to another beekeeper'
+              : 'Distribute queen to another beekeeper'}
           >
             <Send size={18} className="text-text-secondary" />
           </button>
@@ -748,20 +758,34 @@ export default function QueenDetailPage() {
         title={`Print label — ${queen.queen_number}`}
       />
 
-      {showRedistribute && canRedistribute && currentUserId && (
+      {showRedistribute && canSendOn && currentUserId && (
         <DistributeGraftModal
-          graftId={queen.source_graft_id as string}
-          batchId={queen.batch_id as string}
-          cellNumber={0}
-          graftStatus="mated"
+          // Graft-sourced queens pass their graft; registry queens pass themselves as the source.
+          graftId={canRedistribute ? (queen.source_graft_id as string) : undefined}
+          batchId={canRedistribute ? (queen.batch_id as string) : undefined}
+          sourceQueenId={canRedistribute ? undefined : queen.id}
+          cellNumber={canRedistribute ? 0 : undefined}
+          graftStatus={canRedistribute ? 'mated' : undefined}
           userId={currentUserId}
           searchUsers={searchUsers}
           fetchRecipientApiaries={fetchRecipientApiaries}
           fetchRecipientHives={fetchRecipientHives}
           onSave={handleRedistribute}
           onClose={() => setShowRedistribute(false)}
-          distributionTypeOverride={queen.status === 'active' ? 'mated_queen' : 'virgin_queen'}
-          titleOverride={`Redistribute Queen ${queen.queen_number}`}
+          // The queen's own lifecycle stage decides what is being handed over.
+          distributionTypeOverride={queen.status === 'cell'
+            ? 'queen_cell'
+            : queen.status === 'virgin' ? 'virgin_queen' : 'mated_queen'}
+          // Only an already-mated queen carries its mating site with it. Pre-filling this for a
+          // cell or virgin would stamp the donor's station on a queen that has not mated yet —
+          // and would silently satisfy the modal's "apiary or mating location" check, so the
+          // user would never be asked where it is actually going to mate.
+          defaultMatingLocation={!canRedistribute && queen.status === 'active'
+            ? (queen.mating_station || queen.mated_at_eircode || undefined)
+            : undefined}
+          titleOverride={canRedistribute
+            ? `Redistribute Queen ${queen.queen_number}`
+            : `Distribute Queen ${queen.queen_number}`}
         />
       )}
     </div>
