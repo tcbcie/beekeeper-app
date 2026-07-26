@@ -29,6 +29,7 @@ import { useRouter } from 'next/navigation'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useListPositionMemory } from '@/hooks/useListPositionMemory'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { Apiary, ApiaryFormData, UserOption } from '@/types/apiary'
 import ApiaryCard from '@/components/apiaries/ApiaryCard'
 import { fetchElevation } from '@/lib/elevation'
@@ -61,6 +62,8 @@ export default function ApiariesPage() {
   })
   const [geocoding, setGeocoding] = useState(false)
   const [showMapPicker, setShowMapPicker] = useState(false)
+  // Named confirmDialog so it never shadows the native window.confirm() used elsewhere on this page.
+  const confirmDialog = useConfirm()
 
   // Transfer ownership state
   const [showTransferModal, setShowTransferModal] = useState(false)
@@ -424,6 +427,24 @@ export default function ApiariesPage() {
         if (!elevation) {
           const elev = await fetchElevation(latNum, lngNum)
           if (elev !== null) elevation = String(Math.round(elev))
+        }
+      } else {
+        // Eircode geocoding is approximate and does not resolve every postcode. Rather than
+        // saving an apiary that quietly reports blank elevation and grid reference, offer the
+        // map picker — the only reliable way to set the position.
+        const saveAnyway = await confirmDialog({
+          title: 'No location set for this apiary',
+          message: formData.is_mating_apiary
+            ? 'Coordinates could not be determined from the Eircode, so the elevation and Irish Grid square will stay blank. Both are reported for a mating site on the NIHBS return. Set the location on the map instead?'
+            : 'Coordinates could not be determined from the Eircode, so the elevation and Irish Grid square will stay blank, and inspections here will not record weather automatically. Set the location on the map instead?',
+          confirmLabel: 'Save without a location',
+          cancelLabel: 'Set on map',
+          variant: 'warning',
+        })
+
+        if (!saveAnyway) {
+          setShowMapPicker(true)
+          return
         }
       }
 
@@ -889,13 +910,25 @@ export default function ApiariesPage() {
                   />
                 </div>
               )}
-              {(!formData.latitude || !formData.longitude) && (
+              {(!formData.latitude || !formData.longitude) && !showMapPicker && (
                 <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
-                  No coordinates set, so elevation and the Irish Grid square cannot be worked out.
-                  {formData.is_mating_apiary
-                    ? ' Both appear on the NIHBS return for a mating site, so they would be submitted blank.'
-                    : ''}
-                  {' '}Saving will try to derive them from the Eircode — use &quot;Pick on Map&quot; for an exact position.
+                  <p>
+                    No coordinates set, so elevation and the Irish Grid square cannot be worked out.
+                    {formData.is_mating_apiary
+                      ? ' Both appear on the NIHBS return for a mating site, so they would be submitted blank.'
+                      : ''}
+                  </p>
+                  <p className="mt-1">
+                    Eircode lookup is approximate and does not resolve every postcode, so dropping a pin is the reliable way to set this.
+                  </p>
+                  <Button
+                    type="button"
+                    onClick={() => setShowMapPicker(true)}
+                    className="fj-btn fj-btn-blue fj-btn-sm mt-2"
+                  >
+                    <Map size={14} />
+                    Pick on Map
+                  </Button>
                 </div>
               )}
               <p className="text-xs text-text-tertiary mt-2">Used for GDD calculations, weather data on inspections, and identifying potential drone congregation areas. Use &quot;Pick on Map&quot; for exact positioning, or &quot;Get Coordinates&quot; for approximate location from Eircode/postcode.</p>
