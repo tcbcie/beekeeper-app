@@ -143,10 +143,15 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  : null
 
  try {
- type HiveSubmitData = Omit<typeof formData, 'apiary_id' | 'queen_id' | 'queenless_reason'> & {
+ type HiveSubmitData = Omit<
+ typeof formData,
+ 'apiary_id' | 'queen_id' | 'queenless_reason' | 'colony_established_date' | 'queen_installed_date'
+ > & {
  apiary_id: string | null
  queen_id: string | null
  queenless_reason: string | null
+ colony_established_date: string | null
+ queen_installed_date: string | null
  configuration_changed_at?: string
  configuration_changed_by?: string
  }
@@ -162,6 +167,12 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  // Reason only persists when queenless; null it out otherwise so the
  // column never carries a stale value from a prior queenless period.
  queenless_reason: formData.is_queenless ? formData.queenless_reason : null,
+ // A date input represents "not set" as '', and loading a hive maps a NULL
+ // column to '' for the input. Postgres rejects '' for a `date` column, so an
+ // unset date must go back as NULL — otherwise any hive with no queen
+ // installed date (every clone, since queens are not copied) cannot be saved.
+ colony_established_date: formData.colony_established_date || null,
+ queen_installed_date: formData.queen_installed_date || null,
  }
 
  // Check if configuration has changed (for existing hives)
