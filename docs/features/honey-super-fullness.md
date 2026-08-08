@@ -26,7 +26,24 @@ small array, `NULL` when not recorded.
 | `inspections.honey_super_fullness` | `jsonb` | yes (default NULL) | `number[]`, one 0–100 integer per super; index 0 = bottom super |
 
 - `NULL` = section never opened (not recorded), distinct from a recorded `0%`.
-- On save the array is trimmed to the hive's current super count.
+- On save the array is trimmed to the hive's current super count, and an array trimmed to nothing
+  collapses back to `NULL`. When **editing** an existing inspection the originally recorded length
+  is preserved instead, so readings taken before supers were removed are never destroyed.
+
+### Carry-forward and removed supers
+
+A new inspection pre-fills fullness from the hive's most recent inspection (supers don't empty
+between visits, so `0%` would be a misleading default). That carry-forward is **bounded by the
+hive's current super count** — supers removed since the last visit are dropped rather than carried.
+
+This matters because the slider count is `max(configured, recorded)`, where the `recorded` term
+exists so that editing an older inspection still shows every historical reading. If the carried
+array kept its old length, it would outvote a now-smaller configured count and every future
+inspection would keep offering sliders for supers that are no longer on the hive — a state that
+never self-corrects, because each inspection carries the stale length forward again.
+
+The invariant is enforced in two places: the carry-forward slices to the configured count
+(`InspectionForm.tsx`), and the save path trims before persisting (`records/page.tsx`).
 
 ## Files touched
 

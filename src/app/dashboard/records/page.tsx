@@ -710,11 +710,28 @@ export default function RecordsPage() {
         setFetchingWeather(false)
       }
 
-      // Only persist valid 0-100 integers; NULL stays NULL ("not recorded").
-      const sanitisedSuperFullness = Array.isArray(formData.honey_super_fullness)
-        ? formData.honey_super_fullness.map(v =>
+      // The hive's current super count is the authority for how many readings may be stored.
+      // Trimming here is the last line of defence: without it a stale carry-forward can persist
+      // readings for supers that no longer exist, which the next inspection then carries forward
+      // again, and the next — the value never self-corrects. When editing, keep the originally
+      // recorded length so readings taken before supers were removed are never destroyed.
+      const configuredSuperCount = Math.max(0, Math.trunc(
+        hives.find(h => h.id === formData.hive_id)?.configuration?.honey_supers ?? 0
+      ))
+      const recordedSuperCount = Array.isArray(editingInspection?.honey_super_fullness)
+        ? editingInspection.honey_super_fullness.length
+        : 0
+      const maxSuperReadings = Math.max(configuredSuperCount, recordedSuperCount)
+
+      // Only persist valid 0-100 integers; NULL stays NULL ("not recorded"). An array trimmed
+      // to nothing means there is nothing to record, so it collapses back to NULL.
+      const trimmedSuperFullness = Array.isArray(formData.honey_super_fullness)
+        ? formData.honey_super_fullness.slice(0, maxSuperReadings).map(v =>
             Number.isFinite(v) ? Math.min(100, Math.max(0, Math.trunc(v))) : 0
           )
+        : null
+      const sanitisedSuperFullness = trimmedSuperFullness && trimmedSuperFullness.length > 0
+        ? trimmedSuperFullness
         : null
 
       const submitData = {
