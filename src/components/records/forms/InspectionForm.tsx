@@ -290,13 +290,21 @@ export default function InspectionForm({
     return Array.isArray(previousValue) && previousValue.length > 0 ? previousValue : null
   }, [previousSuperFullnessByHive])
 
+  // Honey supers currently on a hive. This is the authority for how many sliders a NEW
+  // inspection offers — supers removed since the last visit no longer exist to be filled.
+  const getConfiguredSuperCount = useCallback((hiveId: string): number => {
+    const configured = hives.find(hive => hive.id === hiveId)?.configuration?.honey_supers ?? 0
+    return Math.max(0, Math.trunc(configured))
+  }, [hives])
+
   // Number of honey supers on the selected hive drives how many fullness sliders show.
-  // When editing an older inspection whose stored array is longer, keep every recorded value.
+  // When editing an older inspection whose stored array is longer, keep every recorded value
+  // so historical readings taken before supers were removed stay visible and editable.
   const honeySuperSliderCount = useMemo(() => {
-    const configuredSupers = hives.find(hive => hive.id === formData.hive_id)?.configuration?.honey_supers ?? 0
+    const configuredSupers = formData.hive_id ? getConfiguredSuperCount(formData.hive_id) : 0
     const recorded = formData.honey_super_fullness?.length ?? 0
-    return Math.max(Math.max(0, Math.trunc(configuredSupers)), recorded)
-  }, [hives, formData.hive_id, formData.honey_super_fullness])
+    return Math.max(configuredSupers, recorded)
+  }, [getConfiguredSuperCount, formData.hive_id, formData.honey_super_fullness])
 
   // Clamp a slider value to a whole 0-100 percentage.
   const clampFullness = (value: number): number => {
@@ -448,9 +456,16 @@ export default function InspectionForm({
   // in edit mode so historical values are never overwritten.
   useEffect(() => {
     if (isEditing) {
-      const previousValue = formData.hive_id ? getPreviousSuperFullness(formData.hive_id) : null
+      // Prime the ref with the key this hive would produce, so that if the form ever leaves
+      // edit mode it does not immediately overwrite what is already on screen. Must use the
+      // same key format as the prefill branch below or the guard silently stops matching.
+      const configuredSupers = formData.hive_id ? getConfiguredSuperCount(formData.hive_id) : 0
+      const carriedValue = formData.hive_id ? getPreviousSuperFullness(formData.hive_id) : null
+      const previousValue = carriedValue && configuredSupers > 0
+        ? carriedValue.slice(0, configuredSupers)
+        : null
       lastSuperFullnessPrefillKeyRef.current = formData.hive_id
-        ? `${formData.hive_id}:${previousValue ? previousValue.join(',') : 'null'}`
+        ? `${formData.hive_id}:${configuredSupers}:${previousValue ? previousValue.join(',') : 'null'}`
         : null
       return
     }
@@ -465,8 +480,16 @@ export default function InspectionForm({
       return
     }
 
-    const previousValue = getPreviousSuperFullness(currentHiveId)
-    const nextPrefillKey = `${currentHiveId}:${previousValue ? previousValue.join(',') : 'null'}`
+    // Only carry fullness for supers the hive still has. Without this bound, removing supers
+    // (e.g. 3 -> 0 after extraction) would keep every later inspection offering sliders for
+    // supers that are no longer on the hive, because the carried array's length feeds
+    // honeySuperSliderCount and would outvote the now-smaller configured count.
+    const configuredSupers = getConfiguredSuperCount(currentHiveId)
+    const carriedValue = getPreviousSuperFullness(currentHiveId)
+    const previousValue = carriedValue && configuredSupers > 0
+      ? carriedValue.slice(0, configuredSupers)
+      : null
+    const nextPrefillKey = `${currentHiveId}:${configuredSupers}:${previousValue ? previousValue.join(',') : 'null'}`
 
     if (lastSuperFullnessPrefillKeyRef.current === nextPrefillKey) {
       return
@@ -487,7 +510,7 @@ export default function InspectionForm({
     if (previousValue) {
       setSuperFullnessExpanded(true)
     }
-  }, [formData.hive_id, getPreviousSuperFullness, isEditing])
+  }, [formData.hive_id, getPreviousSuperFullness, getConfiguredSuperCount, isEditing])
 
   // Auto-fill the Weight (kg) field from a connected scale when starting a new
   // inspection. Skipped in edit mode so historical readings are never overwritten.
