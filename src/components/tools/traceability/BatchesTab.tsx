@@ -1284,6 +1284,12 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
               const containerCount = batch.containers?.length || 0
               const feedback = feedbackSummary.get(batch.id)
               const bottled = bottledTotals(batch)
+              // total_weight_kg is the one numeric (not integer) column here, so
+              // coerce before arithmetic rather than trusting the wire format.
+              const totalKg = batch.total_weight_kg != null ? Number(batch.total_weight_kg) : null
+              const unbottledKg = totalKg != null && Number.isFinite(totalKg)
+                ? totalKg - bottled.kg
+                : null
 
               return (
                 <div
@@ -1364,6 +1370,24 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                           </ul>
                         )}
                       </div>
+                    )}
+                    {/* Honey from this batch not yet in jars. Only meaningful once
+                        something has been bottled — before that it just repeats Total.
+                        A negative figure means more was jarred than the recorded
+                        intake, which is a data problem worth surfacing, not hiding.
+                        The 5g tolerance stops rounding noise reading as over-bottling. */}
+                    {unbottledKg != null && bottled.kg > 0 && (
+                      unbottledKg < -0.005 ? (
+                        <div className="col-span-2 text-amber-600 dark:text-amber-400">
+                          <span className="font-medium">Unbottled:</span>{' '}
+                          none — {Math.abs(unbottledKg).toFixed(2)} kg more bottled than the recorded total
+                        </div>
+                      ) : (
+                        <div className="col-span-2">
+                          <span className="font-medium">Unbottled:</span>{' '}
+                          {Math.max(unbottledKg, 0).toFixed(2)} kg
+                        </div>
+                      )
                     )}
                     {feedback && (
                       <div className="col-span-2 flex items-center gap-2">

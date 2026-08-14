@@ -58,16 +58,21 @@ Each batch card in the Batches list shows two weight figures side by side:
 |------|---------|
 | **Total** | Raw honey that went *into* the batch — the `total_weight_kg` tallied from the linked bulk honey containers |
 | **Bottled** | Honey already jarred *out of* the batch — Σ(net weight × jar count) across the jar rows, shown in kg with the total jar count |
+| **Unbottled** | Total − Bottled: honey from this batch not yet in jars |
 
 When a batch was filled into **more than one jar size**, the Bottled line is followed by an indented breakdown attributing the weight to each size:
 
 ```
+Total: 187.52 kg        Bulk Honey: 12
 Bottled: 9.16 kg (28 jars)
   • 212ml · 245g × 11 = 2.70 kg
   • 320ml · 380g × 17 = 6.46 kg
+Unbottled: 178.36 kg
 ```
 
 The breakdown is suppressed on single-size batches, where it would only repeat the total.
+
+**Unbottled** appears only once something has been bottled (before that it would just repeat Total) and only when the batch has a total weight. If more honey was jarred than the recorded intake, the line reports the overshoot in amber — `Unbottled: none — 2.40 kg more bottled than the recorded total` — rather than clamping to zero, since that gap signals a data problem (usually a Total that was overridden or bulk sources not linked). A 5 g tolerance keeps floating-point rounding from reading as over-bottling.
 
 The Bottled figure is derived on the client from the batch's jar rows (no extra query, no stored column), falling back to the legacy `jar_weight_g` × `jar_count` columns for batches with no `batch_jars` rows. It is hidden when no jar row carries both a net weight and a count. The gap between Total and Bottled is the honey from that batch not yet in jars. The batch form shows the same figure live as **Proposed bottled output** while jar rows are being edited.
 

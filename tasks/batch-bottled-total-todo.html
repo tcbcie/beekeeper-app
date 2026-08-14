@@ -135,6 +135,7 @@ const bottledKg = (batch: BatchRun) => {
     <li>212ml · 245g × 11 = 2.70 kg</li>
     <li>320ml · 380g × 17 = 6.46 kg</li>
   </ul>
+  <p><strong>Unbottled: 178.36 kg</strong></p>
 </div>
 
 <h3>Follow-up: per-size breakdown</h3>
@@ -148,6 +149,37 @@ const bottledKg = (batch: BatchRun) => {
   <li>The breakdown is <strong>suppressed on single-size batches</strong>, where it would only repeat the total.</li>
   <li>The same weight/count guards apply, so a size missing a net weight appears in neither the breakdown nor the total.</li>
   <li>The legacy fallback yields exactly one size, so it never renders a breakdown.</li>
+  <li>Re-verified: <code>npx tsc --noEmit</code> still 96 errors, all in <code>tests/</code>, none new;
+      <code>npx eslint</code> clean.</li>
+</ul>
+
+<h3>Follow-up: remaining unbottled honey</h3>
+<p>
+  Added an <strong>Unbottled</strong> line — <code>Total − Bottled</code> — closing the loop between honey in
+  and honey out. It appears only when the batch has a total weight <em>and</em> something has been bottled;
+  before that it would simply repeat Total.
+</p>
+<table>
+  <tr><th>Edge case</th><th>Handling</th></tr>
+  <tr>
+    <td>More jarred than the recorded intake (negative remainder)</td>
+    <td>Reported in amber as <code>Unbottled: none — 2.40 kg more bottled than the recorded total</code>.
+        Deliberately <strong>not</strong> clamped silently to zero: the gap means the Total was overridden or
+        bulk sources were not all linked, and hiding it would hide a data problem.</td>
+  </tr>
+  <tr>
+    <td>Floating-point rounding on an exactly-fully-bottled batch</td>
+    <td>A 5 g tolerance (<code>&lt; -0.005</code>) prevents a spurious “over-bottled by 0.00 kg” warning;
+        anything inside the tolerance displays as <code>0.00 kg</code>.</td>
+  </tr>
+  <tr>
+    <td><code>total_weight_kg</code> wire format</td>
+    <td>The only <code>numeric</code> (rather than <code>integer</code>) column involved, so it is coerced with
+        <code>Number()</code> and checked with <code>Number.isFinite</code> before arithmetic instead of trusting
+        the wire format.</td>
+  </tr>
+</table>
+<ul>
   <li>Re-verified: <code>npx tsc --noEmit</code> still 96 errors, all in <code>tests/</code>, none new;
       <code>npx eslint</code> clean.</li>
 </ul>
