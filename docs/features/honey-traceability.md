@@ -64,13 +64,15 @@ When a batch was filled into **more than one jar size**, the Bottled line is fol
 
 ```
 Total: 187.52 kg        Bulk Honey: 12
-Bottled: 9.16 kg (28 jars)
+Bottled: 9.16 kg (5% · 28 jars)
   • 212ml · 245g × 11 = 2.70 kg
   • 320ml · 380g × 17 = 6.46 kg
-Unbottled: 178.36 kg
+Unbottled: 178.36 kg (95%)
 ```
 
 The breakdown is suppressed on single-size batches, where it would only repeat the total.
+
+Both lines also carry their **share of the batch's recorded intake**. The unbottled share is derived as `100 − bottled%` rather than computed independently, so the two always sum to 100% however each would have rounded. A real but very small share renders as `<1%` instead of `0%`, which would otherwise look like nothing had been bottled. Percentages are omitted when the batch has no total weight, or a total of zero, since there is nothing to divide by.
 
 **Unbottled** appears only once something has been bottled (before that it would just repeat Total) and only when the batch has a total weight. If more honey was jarred than the recorded intake, the line reports the overshoot in amber — `Unbottled: none — 2.40 kg more bottled than the recorded total` — rather than clamping to zero, since that gap signals a data problem (usually a Total that was overridden or bulk sources not linked). A 5 g tolerance keeps floating-point rounding from reading as over-bottling.
 
