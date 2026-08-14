@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Batch Card — Bottled Weight Line</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #1f2937; }
+  h1 { color: #b45309; border-bottom: 3px solid #f59e0b; padding-bottom: .4rem; }
+  h2 { color: #92400e; margin-top: 2rem; }
+  code { background: #fef3c7; padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+  pre { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 1rem; overflow-x: auto; }
+  .card { background: #f5f1e8; border: 1px solid #e0d9c8; border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0; }
+  .todo { list-style: none; padding-left: 0; }
+  .todo li { margin: .5rem 0; }
+  .todo li::before { content: "☐ "; color: #b45309; font-weight: bold; }
+  .todo li.done::before { content: "☑ "; color: #15803d; }
+  .note { background: #fef3c7; border-left: 4px solid #f59e0b; padding: .75rem 1rem; border-radius: 0 8px 8px 0; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #e5e7eb; padding: .5rem .75rem; text-align: left; }
+  th { background: #fef3c7; }
+</style>
+</head>
+<body>
+
+<h1>Batch Card — “Bottled” Weight Line</h1>
+
+<h2>Goal</h2>
+<p>
+On each batch card in <strong>Honey Provenance → Batches</strong>, show — directly below
+<code>Total</code> — how much of the batch has already been bottled into jars, so the beekeeper
+can see at a glance how much of the bulk honey is still unbottled.
+</p>
+
+<h2>Current state</h2>
+<div class="card">
+  <p><strong>L-2026-08-002</strong> · Public</p>
+  <p>Bottled: 14/8/2026 &nbsp;&nbsp; Best Before: 31/12/2029<br>
+  Jars: 212ml · 245g × 11, 320ml · 380g × 17<br>
+  Total: 187.52 kg &nbsp;&nbsp; Bulk Honey: 12</p>
+</div>
+<ul>
+  <li><code>Total</code> = sum of the linked bulk honey containers (raw honey <em>into</em> the batch).</li>
+  <li>Jar rows already carry net weight (g) and count — the bottled figure is simply
+      Σ(net weight × count), which the app <em>already</em> computes inside the batch form as
+      “Proposed bottled output”, but never shows on the card.</li>
+</ul>
+
+<h2>Proposed change</h2>
+<p>Add one derived line to the batch card details grid, immediately after <code>Total</code>:</p>
+<div class="card">
+  <p>Total: 187.52 kg &nbsp;&nbsp; <strong>Bottled: 9.16 kg (28 jars)</strong></p>
+</div>
+
+<p>Computation (no schema change, no extra query — the jar rows are already fetched):</p>
+<pre>// Honey already jarred from this batch: Σ(net weight × jar count).
+// Falls back to the legacy scalar columns when a batch has no batch_jars rows.
+const bottledKg = (batch: BatchRun) => {
+  const rows = batch.jars?.length
+    ? batch.jars
+    : [{ jar_weight_g: batch.jar_weight_g, jar_count: batch.jar_count }]
+  const grams = rows.reduce((sum, j) =&gt; sum + (j.jar_weight_g ?? 0) * (j.jar_count ?? 0), 0)
+  return grams / 1000
+}</pre>
+
+<div class="note">
+  <strong>Label clash to resolve:</strong> the card already uses the label <code>Bottled:</code>
+  for the batch <em>date</em> (14/8/2026). Two rows both labelled “Bottled” in the same grid would be
+  confusing. <strong>Recommendation:</strong> rename the date row to <code>Bottled On:</code> and use
+  <code>Bottled:</code> for the new weight line. (Alternative: leave the date as “Bottled” and label
+  the new line “Bottled Weight”.)
+</div>
+
+<h2>Scope</h2>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr>
+    <td><code>src/components/tools/traceability/BatchesTab.tsx</code></td>
+    <td>Add small <code>bottledKg()</code> helper + one new grid row after <code>Total</code>; rename the date label.</td>
+  </tr>
+  <tr>
+    <td><code>docs/features/honey-traceability.md</code></td>
+    <td>Document the new derived field on the batch card.</td>
+  </tr>
+</table>
+<p>No database change, no new query, no change to the public trace page.</p>
+
+<h2>To do</h2>
+<ul class="todo">
+  <li class="done">Confirm the label wording with the user (Bottled On / Bottled)</li>
+  <li class="done">Add <code>bottledTotals()</code> helper in <code>BatchesTab.tsx</code></li>
+  <li class="done">Render the “Bottled” line under “Total” in the batch card grid</li>
+  <li class="done">Rename the batch-date label to avoid the clash</li>
+  <li class="done">Update <code>docs/features/honey-traceability.md</code></li>
+  <li class="done">Run the <code>qa-engineer</code> audit on the change</li>
+  <li class="done">Add review section below</li>
+  <li>Ask the user to test in the browser</li>
+</ul>
+
+<h2>Review</h2>
+
+<h3>Decisions taken</h3>
+<ul>
+  <li>Label wording: batch date becomes <strong>Bottled On</strong>; the new weight line is <strong>Bottled</strong>.</li>
+  <li>Detail shown: <strong>kg + jar count</strong>, e.g. <code>Bottled: 9.16 kg (28 jars)</code>.</li>
+</ul>
+
+<h3>Changes made</h3>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr>
+    <td><code>src/components/tools/traceability/BatchesTab.tsx</code></td>
+    <td>
+      Added the <code>bottledTotals(batch)</code> helper (returns <code>{ kg, jars }</code>) beside the
+      existing <code>jarsWithWeight</code> helper; computed it once per card in the batch map;
+      rendered a full-width <code>Bottled</code> row after <code>Bulk Honey</code>; renamed the batch-date
+      label to <code>Bottled On:</code>.
+    </td>
+  </tr>
+  <tr>
+    <td><code>docs/features/honey-traceability.md</code></td>
+    <td>New “Batch Card Summary” section contrasting Total (honey in) with Bottled (honey out), including the derivation and fallback rules.</td>
+  </tr>
+</table>
+
+<p>No database change, no new query, no change to the public trace page. The jar rows were already fetched by <code>fetchBatches()</code>, so the figure is derived client-side from data on hand.</p>
+
+<h3>Resulting card</h3>
+<div class="card">
+  <p><strong>L-2026-08-002</strong> · Public</p>
+  <p>Bottled On: 14/8/2026 &nbsp;&nbsp; Best Before: 31/12/2029<br>
+  Jars: 212ml · 245g × 11, 320ml · 380g × 17<br>
+  Total: 187.52 kg &nbsp;&nbsp; Bulk Honey: 12<br>
+  <strong>Bottled: 9.16 kg (28 jars)</strong></p>
+</div>
+
+<h3>QA audit (Principal Quality Architect review)</h3>
+<p><strong>No Critical or High findings.</strong> The change is a pure client-side derivation over data
+already in memory — no new I/O, no new state, no effect dependencies, so no race, leak or stale-closure surface.</p>
+
+<table>
+  <tr><th>Severity</th><th>Finding</th><th>Resolution</th></tr>
+  <tr>
+    <td>🟡 Medium</td>
+    <td><strong>Falsy-zero render on the adjacent Total line.</strong> <code>{batch.total_weight_kg &amp;&amp; (…)}</code>
+        renders a bare <code>0</code> text node into the grid when the total is exactly 0, because <code>0</code>
+        is falsy but still a valid React child. Pre-existing, and directly adjacent to the new line.</td>
+    <td>Fixed — changed to <code>!= null</code>, so a zero total renders “Total: 0 kg” rather than a stray “0”.</td>
+  </tr>
+  <tr>
+    <td>🟡 Medium</td>
+    <td><strong>Legacy fallback could be misread as overcounting.</strong> <code>batch_runs.jar_weight_g</code> holds the
+        <em>first</em> size's weight while <code>jar_count</code> holds the total across sizes, so multiplying them looks
+        unsafe. It is in fact safe — the fallback only fires when a batch has no <code>batch_jars</code> rows, which by
+        definition means a single jar size — but nothing recorded that invariant.</td>
+    <td>Documented in the helper's comment so a future reader does not "fix" it into a bug.</td>
+  </tr>
+  <tr>
+    <td>🟡 Medium</td>
+    <td><strong>Jar rows without a net weight.</strong> Such rows are skipped from the kg sum; if they were still counted
+        in the jar total, the line would imply un-weighed jars contributed weight.</td>
+    <td>Kept skipping them from <em>both</em> totals, so kg and jar count always describe the same set of weighed jars —
+        and documented that this is deliberate.</td>
+  </tr>
+  <tr>
+    <td>🟢 Verified</td>
+    <td><strong>No NaN / string-coercion risk.</strong> Queried the live schema: <code>batch_jars.jar_weight_g</code>,
+        <code>jar_count</code>, <code>jar_size_ml</code> and the <code>batch_runs</code> equivalents are all
+        <code>integer</code>, so PostgREST returns JSON numbers, never strings. The existing
+        <code>null</code> / <code>&lt;= 0</code> guards are sufficient; no extra <code>Number.isFinite</code> wrapper needed.</td>
+    <td>No change — guard confirmed adequate rather than padded.</td>
+  </tr>
+  <tr>
+    <td>⚪ Low</td>
+    <td><strong>Sub-10 g batches.</strong> A batch totalling under 5 g would display “0.00 kg”. Left as-is: real jars are
+        ≥ 100 g and EU labelling requires a net weight, so guarding this would add branching for an unreachable case.</td>
+    <td>Noted, not changed (simplicity over speculative hardening).</td>
+  </tr>
+  <tr>
+    <td>⚪ Low</td>
+    <td><strong>Accessibility.</strong> New row reuses the sibling rows' <code>text-sm text-text-secondary</code> with a
+        <code>font-medium</code> label, matching the existing grid — no new small-text or low-contrast surface for the
+        50+ audience.</td>
+    <td>No change needed.</td>
+  </tr>
+</table>
+
+<h3>Verification</h3>
+<ul>
+  <li><code>npx tsc --noEmit</code> — 96 errors, <strong>all</strong> in <code>tests/</code> (the known pre-existing mock-typing
+      errors across 8 test files). <strong>Zero</strong> in <code>src/</code>.</li>
+  <li><code>npx eslint src/components/tools/traceability/BatchesTab.tsx</code> — <strong>clean</strong>, no warnings.</li>
+  <li>Build deliberately not run — please test in the browser.</li>
+</ul>
+
+<div class="note">
+  <strong>Please test:</strong> open Honey Provenance → Batches and confirm L-2026-08-002 shows
+  <code>Bottled: 9.16 kg (28 jars)</code> below Total, and that the date row now reads <code>Bottled On</code>.
+</div>
+
+</body>
+</html>

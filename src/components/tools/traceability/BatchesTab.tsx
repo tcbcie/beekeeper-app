@@ -613,6 +613,33 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
   const jarsWithWeight = (batch: BatchRun): BatchJar[] =>
     (batch.jars || []).filter(j => j.jar_weight_g != null)
 
+  // Honey already jarred from this batch: Σ(net weight × jar count), so the card
+  // can show bottled output against the raw honey that went in (Total).
+  //
+  // Batches with no batch_jars rows fall back to the legacy scalar columns. That
+  // cannot overcount: legacy jar_weight_g holds the *first* size's weight while
+  // jar_count holds the total across sizes, but a batch without jar rows is by
+  // definition single-size, so the two describe the same jars.
+  //
+  // Rows missing a net weight are skipped from *both* totals, so the kg figure
+  // and the jar count always describe the same set of weighed jars.
+  const bottledTotals = (batch: BatchRun): { kg: number; jars: number } => {
+    const rows = (batch.jars && batch.jars.length > 0)
+      ? batch.jars
+      : [{ jar_weight_g: batch.jar_weight_g, jar_count: batch.jar_count }]
+
+    let grams = 0
+    let jars = 0
+    for (const row of rows) {
+      const weight = row.jar_weight_g
+      const count = row.jar_count
+      if (weight == null || count == null || weight <= 0 || count <= 0) continue
+      grams += weight * count
+      jars += count
+    }
+    return { kg: grams / 1000, jars }
+  }
+
   // Download a QR code SVG (by element id) as a PNG.
   const downloadQrCode = (elementId: string, filename: string) => {
     const svg = document.getElementById(elementId)
@@ -1246,6 +1273,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
             batches.map(batch => {
               const containerCount = batch.containers?.length || 0
               const feedback = feedbackSummary.get(batch.id)
+              const bottled = bottledTotals(batch)
 
               return (
                 <div
@@ -1271,7 +1299,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                   {/* Details grid */}
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-text-secondary mb-3">
                     <div>
-                      <span className="font-medium">Bottled:</span>{' '}
+                      <span className="font-medium">Bottled On:</span>{' '}
                       {new Date(batch.batch_date).toLocaleDateString()}
                     </div>
                     {batch.best_before_date && (
@@ -1300,7 +1328,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                         {batch.jar_count != null && ` × ${batch.jar_count}`}
                       </div>
                     )}
-                    {batch.total_weight_kg && (
+                    {batch.total_weight_kg != null && (
                       <div>
                         <span className="font-medium">Total:</span>{' '}
                         {batch.total_weight_kg} kg
@@ -1309,6 +1337,12 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                     <div>
                       <span className="font-medium">Bulk Honey:</span> {containerCount}
                     </div>
+                    {bottled.kg > 0 && (
+                      <div className="col-span-2">
+                        <span className="font-medium">Bottled:</span>{' '}
+                        {bottled.kg.toFixed(2)} kg ({bottled.jars} jar{bottled.jars === 1 ? '' : 's'})
+                      </div>
+                    )}
                     {feedback && (
                       <div className="col-span-2 flex items-center gap-2">
                         <span className="font-medium">Feedback:</span>
