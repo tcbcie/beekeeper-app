@@ -131,7 +131,26 @@ const bottledKg = (batch: BatchRun) => {
   Jars: 212ml · 245g × 11, 320ml · 380g × 17<br>
   Total: 187.52 kg &nbsp;&nbsp; Bulk Honey: 12<br>
   <strong>Bottled: 9.16 kg (28 jars)</strong></p>
+  <ul style="margin:0 0 0 1rem">
+    <li>212ml · 245g × 11 = 2.70 kg</li>
+    <li>320ml · 380g × 17 = 6.46 kg</li>
+  </ul>
 </div>
+
+<h3>Follow-up: per-size breakdown</h3>
+<p>
+  After first review the breakdown by jar size was added. <code>bottledTotals()</code> now also returns a
+  <code>sizes[]</code> array (one entry per weighed jar size, each with its own kg), rendered as an indented
+  list under the Bottled total. Chosen over folding kg into the existing Jars line so the Bottled figure stays
+  self-contained and auditable.
+</p>
+<ul>
+  <li>The breakdown is <strong>suppressed on single-size batches</strong>, where it would only repeat the total.</li>
+  <li>The same weight/count guards apply, so a size missing a net weight appears in neither the breakdown nor the total.</li>
+  <li>The legacy fallback yields exactly one size, so it never renders a breakdown.</li>
+  <li>Re-verified: <code>npx tsc --noEmit</code> still 96 errors, all in <code>tests/</code>, none new;
+      <code>npx eslint</code> clean.</li>
+</ul>
 
 <h3>QA audit (Principal Quality Architect review)</h3>
 <p><strong>No Critical or High findings.</strong> The change is a pure client-side derivation over data
