@@ -135,8 +135,11 @@ const bottledKg = (batch: BatchRun) => {
     <li>212ml · 245g × 11 = 2.70 kg</li>
     <li>320ml · 380g × 17 = 6.46 kg</li>
   </ul>
-  <p><strong>Unbottled: 178.36 kg</strong></p>
+  <p><strong>Unbottled: 178.36 kg (95%)</strong></p>
 </div>
+<p style="font-size:.9em;color:#6b7280">
+  (The Bottled line reads <code>Bottled: 9.16 kg (5% · 28 jars)</code> once percentages are shown.)
+</p>
 
 <h3>Follow-up: per-size breakdown</h3>
 <p>
@@ -177,6 +180,35 @@ const bottledKg = (batch: BatchRun) => {
     <td>The only <code>numeric</code> (rather than <code>integer</code>) column involved, so it is coerced with
         <code>Number()</code> and checked with <code>Number.isFinite</code> before arithmetic instead of trusting
         the wire format.</td>
+  </tr>
+</table>
+<ul>
+  <li>Re-verified: <code>npx tsc --noEmit</code> still 96 errors, all in <code>tests/</code>, none new;
+      <code>npx eslint</code> clean.</li>
+</ul>
+
+<h3>Follow-up: percentages</h3>
+<p>
+  Both lines now carry their share of the batch's recorded intake —
+  <code>Bottled: 9.16 kg (5% · 28 jars)</code> and <code>Unbottled: 178.36 kg (95%)</code>. The share was folded
+  into the Bottled line's existing parenthetical rather than added as a second bracket, keeping the line readable.
+</p>
+<table>
+  <tr><th>Edge case</th><th>Handling</th></tr>
+  <tr>
+    <td>Rounding making the two shares sum to 101%</td>
+    <td>The unbottled share is derived as <code>100 − bottled%</code>, not computed independently, so the pair always
+        sums to 100% whichever way each would have rounded on its own.</td>
+  </tr>
+  <tr>
+    <td>A real but tiny share rounding to “0%”</td>
+    <td><code>formatShare()</code> renders <code>&lt;1%</code> whenever the rounded share is 0 but the weight is not,
+        so a genuinely bottled batch never reads as 0%.</td>
+  </tr>
+  <tr>
+    <td>Batch with no total weight, or a total of zero</td>
+    <td>Percentages are omitted entirely — there is nothing to divide by, and the guard also rules out
+        <code>Infinity</code>/<code>NaN</code> reaching the UI.</td>
   </tr>
 </table>
 <ul>

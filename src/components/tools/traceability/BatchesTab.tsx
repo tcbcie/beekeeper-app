@@ -650,6 +650,12 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
     return { kg: grams / 1000, jars, sizes }
   }
 
+  // Share of a batch's recorded intake, for the Bottled/Unbottled lines. A real
+  // but tiny share must never read as "0%" — that would look like nothing was
+  // bottled at all.
+  const formatShare = (pct: number, kg: number): string =>
+    (pct === 0 && kg > 0 ? '<1%' : `${pct}%`)
+
   // Download a QR code SVG (by element id) as a PNG.
   const downloadQrCode = (elementId: string, filename: string) => {
     const svg = document.getElementById(elementId)
@@ -1290,6 +1296,12 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
               const unbottledKg = totalKg != null && Number.isFinite(totalKg)
                 ? totalKg - bottled.kg
                 : null
+              // Percentages need a positive total to divide by. The unbottled share
+              // is derived from the bottled one rather than computed separately, so
+              // the two always sum to 100% however each would have rounded.
+              const bottledPct = totalKg != null && Number.isFinite(totalKg) && totalKg > 0
+                ? Math.round((bottled.kg / totalKg) * 100)
+                : null
 
               return (
                 <div
@@ -1356,7 +1368,8 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                     {bottled.kg > 0 && (
                       <div className="col-span-2">
                         <span className="font-medium">Bottled:</span>{' '}
-                        {bottled.kg.toFixed(2)} kg ({bottled.jars} jar{bottled.jars === 1 ? '' : 's'})
+                        {bottled.kg.toFixed(2)} kg ({bottledPct != null && `${formatShare(bottledPct, bottled.kg)} · `}
+                        {bottled.jars} jar{bottled.jars === 1 ? '' : 's'})
                         {/* Per-size breakdown only earns its space on multi-size
                             batches — on a single size it just repeats the total. */}
                         {bottled.sizes.length > 1 && (
@@ -1386,6 +1399,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                         <div className="col-span-2">
                           <span className="font-medium">Unbottled:</span>{' '}
                           {Math.max(unbottledKg, 0).toFixed(2)} kg
+                          {bottledPct != null && ` (${formatShare(100 - bottledPct, Math.max(unbottledKg, 0))})`}
                         </div>
                       )
                     )}
