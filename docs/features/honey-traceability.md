@@ -59,6 +59,16 @@ Each batch card in the Batches list shows two weight figures side by side:
 | **Total** | Raw honey that went *into* the batch — the `total_weight_kg` tallied from the linked bulk honey containers |
 | **Bottled** | Honey already jarred *out of* the batch — Σ(net weight × jar count) across the jar rows, shown in kg with the total jar count |
 
+When a batch was filled into **more than one jar size**, the Bottled line is followed by an indented breakdown attributing the weight to each size:
+
+```
+Bottled: 9.16 kg (28 jars)
+  • 212ml · 245g × 11 = 2.70 kg
+  • 320ml · 380g × 17 = 6.46 kg
+```
+
+The breakdown is suppressed on single-size batches, where it would only repeat the total.
+
 The Bottled figure is derived on the client from the batch's jar rows (no extra query, no stored column), falling back to the legacy `jar_weight_g` × `jar_count` columns for batches with no `batch_jars` rows. It is hidden when no jar row carries both a net weight and a count. The gap between Total and Bottled is the honey from that batch not yet in jars. The batch form shows the same figure live as **Proposed bottled output** while jar rows are being edited.
 
 The batch date is labelled **Bottled On** to distinguish it from the Bottled weight.

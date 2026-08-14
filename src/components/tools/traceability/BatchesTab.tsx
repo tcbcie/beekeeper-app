@@ -623,21 +623,31 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
   //
   // Rows missing a net weight are skipped from *both* totals, so the kg figure
   // and the jar count always describe the same set of weighed jars.
-  const bottledTotals = (batch: BatchRun): { kg: number; jars: number } => {
+  interface BottledSize {
+    key: string
+    sizeMl: number | null
+    weightG: number
+    count: number
+    kg: number
+  }
+
+  const bottledTotals = (batch: BatchRun): { kg: number; jars: number; sizes: BottledSize[] } => {
     const rows = (batch.jars && batch.jars.length > 0)
       ? batch.jars
-      : [{ jar_weight_g: batch.jar_weight_g, jar_count: batch.jar_count }]
+      : [{ id: 'legacy', jar_size_ml: batch.jar_size_ml, jar_weight_g: batch.jar_weight_g, jar_count: batch.jar_count }]
 
+    const sizes: BottledSize[] = []
     let grams = 0
     let jars = 0
     for (const row of rows) {
       const weight = row.jar_weight_g
       const count = row.jar_count
       if (weight == null || count == null || weight <= 0 || count <= 0) continue
+      sizes.push({ key: row.id, sizeMl: row.jar_size_ml, weightG: weight, count, kg: (weight * count) / 1000 })
       grams += weight * count
       jars += count
     }
-    return { kg: grams / 1000, jars }
+    return { kg: grams / 1000, jars, sizes }
   }
 
   // Download a QR code SVG (by element id) as a PNG.
@@ -1341,6 +1351,18 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                       <div className="col-span-2">
                         <span className="font-medium">Bottled:</span>{' '}
                         {bottled.kg.toFixed(2)} kg ({bottled.jars} jar{bottled.jars === 1 ? '' : 's'})
+                        {/* Per-size breakdown only earns its space on multi-size
+                            batches — on a single size it just repeats the total. */}
+                        {bottled.sizes.length > 1 && (
+                          <ul className="mt-1 ml-4 list-disc space-y-0.5">
+                            {bottled.sizes.map(size => (
+                              <li key={size.key}>
+                                {size.sizeMl != null && `${size.sizeMl}ml · `}
+                                {size.weightG}g × {size.count} = {size.kg.toFixed(2)} kg
+                              </li>
+                            ))}
+                          </ul>
+                        )}
                       </div>
                     )}
                     {feedback && (
