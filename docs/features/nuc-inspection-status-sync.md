@@ -19,11 +19,11 @@ evidence on the same inspection:
 
 | Evidence recorded | Derived queen_status |
 |-------------------|----------------------|
-| Eggs present **or** larvae present | `laying` |
+| Eggs present **or** larvae present | `mated` |
 | Neither | *(none — no status change)* |
 
-Eggs or larvae in a mating nuc are proof the queen mated and is laying, so the nuc no longer shows
-as a virgin queen and the linked graft advances to `mated`. This matters downstream: the graft
+Eggs or larvae in a mating nuc are proof the queen is mated, so the nuc no longer shows as a
+virgin queen and the linked graft advances to `mated`. This matters downstream: the graft
 status is what `DistributeGraftModal` uses to pick `distribution_type`, so without it a laying
 queen was being distributed as a `virgin_queen` and created as a virgin in the recipient's records.
 

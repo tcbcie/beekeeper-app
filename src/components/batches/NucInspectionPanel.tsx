@@ -53,14 +53,14 @@ interface NucInspectionPanelProps {
 
 const QUEEN_STATUSES = ['virgin', 'mated', 'laying', 'missing', 'dead']
 
-// Eggs or larvae in a mating nuc prove the queen mated and is laying. Only applied when the
-// beekeeper left the Queen Status dropdown blank — an explicit choice always wins.
+// Eggs or larvae in a mating nuc prove the queen is mated. Only applied when the beekeeper
+// left the Queen Status dropdown blank — an explicit choice always wins.
 // Capped brood is excluded: a nuc is often seeded with a frame of capped brood at setup.
 // Unrecognised stored values are treated as "no explicit choice" so they cannot silently
 // suppress the evidence-based fallback, and the result is always a known status.
 const deriveQueenStatus = (status: string | null, eggs: boolean, larvae: boolean): string | null => {
   if (status && QUEEN_STATUSES.includes(status)) return status
-  return eggs || larvae ? 'laying' : null
+  return eggs || larvae ? 'mated' : null
 }
 
 interface QueenWeight {

@@ -42,7 +42,7 @@
 <div class="flow">nuc inspection (eggs, no dropdown status)
       |  status sync ignores brood evidence
       v
-mating_nucs.status        = 'virgin'          (should be 'laying')
+mating_nucs.status        = 'virgin'          (should be 'mating' / "Mated")
 batch_grafts.status       = 'in_nuc'/'emerged' (should be 'mated')
       |  DistributeGraftModal: TYPE_FROM_GRAFT_STATUS[graft status]
       v
@@ -57,14 +57,14 @@ queens.status = 'virgin', queens.mated_date = null   -->  "Virgin" badge on the 
 
 <h2>3. Proposed fix</h2>
 <div class="box info">
-  <strong>Rule:</strong> eggs or larvae in a mating nuc are proof the queen mated and is laying. When an inspection records them and the beekeeper leaves the <em>Queen Status</em> dropdown blank, treat the inspection as <code>laying</code>.
+  <strong>Rule:</strong> eggs or larvae in a mating nuc are proof the queen is mated. When an inspection records them and the beekeeper leaves the <em>Queen Status</em> dropdown blank, treat the inspection as <code>mated</code> &mdash; the nuc badge becomes <strong>Mated</strong>. No new status is introduced.
   <br><br>
   An <strong>explicit</strong> dropdown choice always wins &mdash; the derivation only fills the gap when the dropdown is empty. This fixes the reported case without ever overriding what the beekeeper deliberately selected.
 </div>
 
 <h3>Change 1 &mdash; derive the status (2 call sites, ~6 new lines)</h3>
 <p>Add one small helper in <code>NucInspectionPanel.tsx</code>:</p>
-<pre>// Eggs or larvae in a mating nuc prove the queen mated and is laying.
+<pre>// Eggs or larvae in a mating nuc prove the queen is mated.
 // Only used when the beekeeper left the Queen Status dropdown blank.
 const deriveQueenStatus = (
   status: string | null,
@@ -72,13 +72,13 @@ const deriveQueenStatus = (
   larvae: boolean
 ): string | null =&gt; {
   if (status) return status
-  return eggs || larvae ? 'laying' : null
+  return eggs || larvae ? 'mated' : null
 }</pre>
 <ul class="todo">
   <li>&#9744; Use it in <code>handleSubmit</code> where <code>const qs = formData.queen_status</code> is read (line 177).</li>
   <li>&#9744; Use it in <code>handleDelete</code>&rsquo;s recalculation loop (line 272), so deleting an inspection recomputes the nuc from the same rule. This requires adding <code>eggs_present, larvae_present</code> to the <code>select</code> on line 254.</li>
 </ul>
-<p>Existing behaviour is untouched: <code>laying</code> already maps to nuc status <code>laying</code>, <code>mating_confirmed_at</code> = inspection date, and graft status <code>mated</code>.</p>
+<p>Existing behaviour is untouched: <code>mated</code> already maps to nuc status <code>mating</code> (badge &ldquo;Mated&rdquo;), <code>mating_confirmed_at</code> = inspection date, and graft status <code>mated</code>.</p>
 
 <h3>Change 2 &mdash; fix the distribution-type fallback (1 line)</h3>
 <pre>const getNucDistributionType = (status: string): 'virgin_queen' | 'mated_queen' =&gt; {
@@ -90,7 +90,7 @@ const deriveQueenStatus = (
 <p>A code fix only helps future inspections. These rows are already wrong and need a one-off correction (applied via the Supabase MCP connection, not a stored SQL file):</p>
 <table>
   <tr><th>What</th><th>Rows</th><th>Correction</th></tr>
-  <tr><td>Nucs stuck on <code>virgin</code> with brood recorded</td><td>5 &mdash; <code>138</code>, <code>A2</code>, <code>A5</code>, <code>A8</code>, <code>Mini&nbsp;-&nbsp;Nuc&nbsp;1</code></td><td>status &rarr; <code>laying</code>, <code>mating_confirmed_at</code> &rarr; brood inspection date</td></tr>
+  <tr><td>Nucs stuck on <code>virgin</code> with brood recorded</td><td>5 &mdash; <code>138</code>, <code>A2</code>, <code>A5</code>, <code>A8</code>, <code>Mini&nbsp;-&nbsp;Nuc&nbsp;1</code></td><td>status &rarr; <code>mating</code>, <code>mating_confirmed_at</code> &rarr; brood inspection date</td></tr>
   <tr><td>Their linked grafts (only nuc 138 has one)</td><td>1</td><td>status <code>in_nuc</code> &rarr; <code>mated</code></td></tr>
   <tr><td>Distributions sent as <code>virgin_queen</code> from a nuc that had brood</td><td>2 &mdash; from nucs <code>172</code>, <code>199</code></td><td><code>distribution_type</code> &rarr; <code>mated_queen</code>, <code>mating_confirmed</code> &rarr; true, <code>mating_confirmed_date</code> &rarr; brood date</td></tr>
   <tr><td>Recipient queen records</td><td>2 &mdash; queens <code>41</code>, <code>47</code></td><td>status <code>virgin</code> &rarr; <code>active</code>, <code>mated_date</code> &rarr; brood date</td></tr>
@@ -126,20 +126,23 @@ const deriveQueenStatus = (
 
 <h2 id="review">6. Review</h2>
 <p><strong>Completed 16 August 2026.</strong> Decisions taken: brood rule = <em>eggs or larvae</em> (capped brood excluded); full backfill approved.</p>
+<div class="box info">
+  <strong>Revision after first review.</strong> The first pass derived <code>laying</code>. On feedback this was changed to <code>mated</code>: all we need to know from brood evidence is that the queen <em>is mated</em>, so the nuc shows the existing <strong>Mated</strong> badge and no extra status is brought into play. The three backfilled nucs were moved from <code>laying</code> to <code>mating</code> to match. Downstream behaviour is identical either way &mdash; both stamp <code>mating_confirmed_at</code> and advance the graft to <code>mated</code>.
+</div>
 
 <h3>Code changes</h3>
 <p><code>src/components/batches/NucInspectionPanel.tsx</code> — new helper, applied at both sync points:</p>
-<pre>// Eggs or larvae in a mating nuc prove the queen mated and is laying. Only applied when the
-// beekeeper left the Queen Status dropdown blank — an explicit choice always wins.
+<pre>// Eggs or larvae in a mating nuc prove the queen is mated. Only applied when the beekeeper
+// left the Queen Status dropdown blank — an explicit choice always wins.
 // Capped brood is excluded: a nuc is often seeded with a frame of capped brood at setup.
 // Unrecognised stored values are treated as "no explicit choice" so they cannot silently
 // suppress the evidence-based fallback, and the result is always a known status.
 const deriveQueenStatus = (status: string | null, eggs: boolean, larvae: boolean): string | null =&gt; {
   if (status &amp;&amp; QUEEN_STATUSES.includes(status)) return status
-  return eggs || larvae ? 'laying' : null
+  return eggs || larvae ? 'mated' : null
 }</pre>
 <ul>
-  <li><code>handleSubmit</code> — <code>const qs = deriveQueenStatus(formData.queen_status || null, formData.eggs_present, formData.larvae_present)</code>. Everything downstream is unchanged: <code>laying</code> already sets nuc status <code>laying</code>, stamps <code>mating_confirmed_at</code>, and advances the graft to <code>mated</code>.</li>
+  <li><code>handleSubmit</code> — <code>const qs = deriveQueenStatus(formData.queen_status || null, formData.eggs_present, formData.larvae_present)</code>. Everything downstream is unchanged: <code>mated</code> already sets nuc status <code>mating</code> (badge &ldquo;Mated&rdquo;), stamps <code>mating_confirmed_at</code>, and advances the graft to <code>mated</code>. No new status is introduced.</li>
   <li><code>handleDelete</code> — same helper inside the replay loop, and the select widened to fetch <code>eggs_present, larvae_present</code> so deleting an inspection recomputes the nuc by the identical rule.</li>
 </ul>
 <p><code>src/components/batches/MatingNucsTab.tsx</code> — <code>getNucDistributionType</code> now returns <code>mated_queen</code> for <code>mating</code> as well as <code>laying</code>, matching the &ldquo;Mated&rdquo; label the UI already shows.</p>
@@ -149,9 +152,9 @@ const deriveQueenStatus = (status: string | null, eggs: boolean, larvae: boolean
 <p>Rather than pattern-match blindly, each affected nuc&rsquo;s full inspection history was replayed chronologically under the new rule, exactly as the app would:</p>
 <table>
   <tr><th>Record</th><th>Before</th><th>After</th></tr>
-  <tr class="good"><td>Nuc <strong>138</strong></td><td><code>virgin</code>, no mating date</td><td><code>laying</code>, mated 16/08/2026</td></tr>
-  <tr class="good"><td>Nuc <strong>A2</strong></td><td><code>virgin</code></td><td><code>laying</code>, mated 25/06/2026</td></tr>
-  <tr class="good"><td>Nuc <strong>A8</strong></td><td><code>virgin</code></td><td><code>laying</code>, mated 25/06/2026</td></tr>
+  <tr class="good"><td>Nuc <strong>138</strong></td><td><code>virgin</code>, no mating date</td><td><code>mating</code> (&ldquo;Mated&rdquo;), mated 16/08/2026</td></tr>
+  <tr class="good"><td>Nuc <strong>A2</strong></td><td><code>virgin</code></td><td><code>mating</code> (&ldquo;Mated&rdquo;), mated 25/06/2026</td></tr>
+  <tr class="good"><td>Nuc <strong>A8</strong></td><td><code>virgin</code></td><td><code>mating</code> (&ldquo;Mated&rdquo;), mated 25/06/2026</td></tr>
   <tr class="good"><td>Nuc <strong>Mini - Nuc 1</strong></td><td><code>virgin</code></td><td><code>mating</code> (&ldquo;Mated&rdquo;)</td></tr>
   <tr class="good"><td>Graft cell <strong>#26</strong> (nuc 138)</td><td><code>in_nuc</code></td><td><code>mated</code>, 16/08/2026</td></tr>
   <tr class="good"><td>2 distributions (nucs 172, 199)</td><td><code>virgin_queen</code>, unconfirmed</td><td><code>mated_queen</code>, confirmed 16/08/2026</td></tr>
@@ -191,9 +194,9 @@ const deriveQueenStatus = (status: string | null, eggs: boolean, larvae: boolean
 
 <h3>What to check in the app</h3>
 <ol>
-  <li>Nuc <strong>138</strong> should now show the green <strong>Laying</strong> badge instead of <strong>Virgin Queen</strong>.</li>
+  <li>Nuc <strong>138</strong> should now show the amber <strong>Mated</strong> badge instead of <strong>Virgin Queen</strong>.</li>
   <li>Hive <strong>65-HMN+</strong> &mdash; queen <strong>41</strong> should no longer carry the &ldquo;Virgin&rdquo; badge; same for queen <strong>47</strong> on hive <strong>64-DA</strong>.</li>
-  <li>Add a new nuc inspection with <em>Eggs Present</em> ticked and the <em>Queen Status</em> dropdown left blank &mdash; the nuc should move straight to <strong>Laying</strong>.</li>
+  <li>Add a new nuc inspection with <em>Eggs Present</em> ticked and the <em>Queen Status</em> dropdown left blank &mdash; the nuc should move straight to <strong>Mated</strong>.</li>
   <li>Add one with the dropdown set to <em>Virgin</em> and eggs ticked &mdash; it should stay <strong>Virgin Queen</strong> (explicit choice wins).</li>
-  <li>Distribute a nuc showing <strong>Laying</strong> or <strong>Mated</strong> &mdash; the modal should read <em>Mated Queen</em>, not <em>Virgin Queen</em>.</li>
+  <li>Distribute a nuc showing <strong>Mated</strong> or <strong>Laying</strong> &mdash; the modal should read <em>Mated Queen</em>, not <em>Virgin Queen</em>.</li>
 </ol>
