@@ -53,6 +53,16 @@ interface NucInspectionPanelProps {
 
 const QUEEN_STATUSES = ['virgin', 'mated', 'laying', 'missing', 'dead']
 
+// Eggs or larvae in a mating nuc prove the queen mated and is laying. Only applied when the
+// beekeeper left the Queen Status dropdown blank — an explicit choice always wins.
+// Capped brood is excluded: a nuc is often seeded with a frame of capped brood at setup.
+// Unrecognised stored values are treated as "no explicit choice" so they cannot silently
+// suppress the evidence-based fallback, and the result is always a known status.
+const deriveQueenStatus = (status: string | null, eggs: boolean, larvae: boolean): string | null => {
+  if (status && QUEEN_STATUSES.includes(status)) return status
+  return eggs || larvae ? 'laying' : null
+}
+
 interface QueenWeight {
   id: string
   weight_mg: number
@@ -174,7 +184,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       }
 
       // Auto-update nuc status and linked graft status based on queen status
-      const qs = formData.queen_status
+      const qs = deriveQueenStatus(formData.queen_status || null, formData.eggs_present, formData.larvae_present)
       const nucUpdate: Record<string, string> = {}
       let syncGraftStatus: string | null = null
 
@@ -251,7 +261,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
     // Recalculate nuc derived fields from remaining inspections
     const { data: remaining } = await supabase
       .from('mating_nuc_inspections')
-      .select('inspection_date, queen_seen, queen_status')
+      .select('inspection_date, queen_seen, queen_status, eggs_present, larvae_present')
       .eq('nuc_id', nucId)
       .order('inspection_date', { ascending: true })
 
@@ -269,7 +279,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
         if (insp.queen_seen) {
           nucReset.queen_last_seen_at = insp.inspection_date
         }
-        const qs = insp.queen_status
+        const qs = deriveQueenStatus(insp.queen_status, insp.eggs_present ?? false, insp.larvae_present ?? false)
         if (qs === 'virgin') {
           nucReset.status = 'virgin'
           nucReset.queen_emerged_at = nucReset.queen_emerged_at || insp.inspection_date
