@@ -123,7 +123,8 @@ const BULK_MODES: { value: MatingNucBulkMode; label: string }[] = [
 ]
 
 const getNucDistributionType = (status: string): 'virgin_queen' | 'mated_queen' => {
- if (status === 'laying') return 'mated_queen'
+ // 'mating' is labelled "Mated" in NUC_STATUSES — both it and 'laying' are past the virgin stage.
+ if (status === 'laying' || status === 'mating') return 'mated_queen'
  return 'virgin_queen'
 }
 

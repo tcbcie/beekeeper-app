@@ -1,92 +1,199 @@
-<!DOCTYPE html>
-<html lang="en-GB">
-<head>
-  <meta charset="utf-8">
-  <title>Reports — Queen Failures report</title>
-  <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.55; max-width: 940px; margin: 2rem auto; padding: 0 1.25rem; color: #1f2937; }
-    h1 { font-size: 1.5rem; border-bottom: 2px solid #b45309; padding-bottom: .4rem; }
-    h2 { font-size: 1.15rem; margin-top: 1.8rem; color: #92400e; }
-    code { background: #f1f5f9; padding: .1rem .35rem; border-radius: .25rem; font-size: .9em; }
-    .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: .6rem; padding: .85rem 1.1rem; margin: .8rem 0; }
-    .mock { background: #fff; border: 1px solid #cbd5e1; border-radius: .5rem; padding: .7rem .9rem; font-size: .82rem; font-family: ui-monospace, monospace; white-space: pre; overflow-x: auto; }
-    ul { padding-left: 1.2rem; }
-    li { margin: .3rem 0; }
-    .todo { list-style: none; padding-left: 0; }
-    .todo li::before { content: "\2610 "; color: #b45309; font-weight: bold; }
-    .note { font-size: .88rem; color: #475569; }
-    .warn { background: #fffbeb; border: 1px solid #fde68a; border-radius: .5rem; padding: .6rem .9rem; font-size: .9rem; }
-  </style>
-</head>
-<body>
-  <h1>Reports &mdash; new "Queen Failures" report</h1>
+<meta charset="utf-8">
+<title>Plan — Nuc brood evidence does not clear "Virgin Queen"</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 17px; line-height: 1.6; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; color: #1c1c1c; }
+  h1 { font-size: 1.9rem; border-bottom: 3px solid #16a34a; padding-bottom: .4rem; }
+  h2 { font-size: 1.4rem; margin-top: 2.2rem; color: #14532d; }
+  h3 { font-size: 1.15rem; margin-top: 1.5rem; }
+  code { background: #f1f5f9; padding: .1rem .35rem; border-radius: 4px; font-size: .93em; }
+  pre { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #16a34a; padding: .9rem; overflow-x: auto; border-radius: 6px; font-size: .9rem; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .95rem; }
+  th, td { border: 1px solid #d4d4d8; padding: .5rem .7rem; text-align: left; }
+  th { background: #f1f5f9; }
+  .bad { background: #fef2f2; }
+  .good { background: #f0fdf4; }
+  .box { border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem 1.25rem; margin: 1.2rem 0; background: #fafafa; }
+  .warn { border-left: 5px solid #f59e0b; background: #fffbeb; }
+  .info { border-left: 5px solid #3b82f6; background: #eff6ff; }
+  ul.todo { list-style: none; padding-left: 0; }
+  ul.todo li { margin: .45rem 0; }
+  .flow { font-family: ui-monospace, monospace; font-size: .9rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1rem; white-space: pre; overflow-x: auto; }
+</style>
 
-  <h2>Goal</h2>
-  <p>A standalone <strong>Queen Failures</strong> tab on <code>/dashboard/reports</code>, mirroring the Archived Hives
-  report: a <strong>breakdown by failure reason</strong> plus a table of failed queens, with CSV export and print/PDF.
-  Scoped to the current user's own distributed queens.</p>
+<h1>Nuc brood evidence does not clear the &ldquo;Virgin Queen&rdquo; status</h1>
+<p><strong>Reported:</strong> 16 August 2026 &middot; <strong>Status:</strong> awaiting approval</p>
 
-  <h2>Layout</h2>
-  <div class="box"><div class="mock">Queen Failures
-  Time period: [All] [3M] [6M] [1 Year] [Custom]      (no apiary/hive filter)
+<h2>1. Symptom</h2>
+<p>Mating nuc <strong>138</strong> has an inspection dated <strong>16/08/2026</strong> recording <em>Queen Seen</em> and <em>Eggs</em>, yet the nuc card still shows the purple <strong>Virgin Queen</strong> badge. The same queen, once distributed, is written into the recipient&rsquo;s records as a <strong>virgin queen</strong> (see queen <code>41</code> on hive <code>65-HMN+</code>, badge &ldquo;Virgin&rdquo;).</p>
 
-  [ Total failed 12 ] [ Drone layer 4 ] [ Died 3 ] [ Superseded 2 ] [ Lost 2 ] [ No reason 1 ]
+<h2>2. Root cause (confirmed against the live database)</h2>
+<p>The nuc status auto-sync in <code>src/components/batches/NucInspectionPanel.tsx</code> (<code>handleSubmit</code>, lines 176&ndash;223) branches <strong>only</strong> on the explicit <em>Queen Status</em> dropdown (<code>formData.queen_status</code>). The brood-evidence checkboxes &mdash; <em>Eggs Present</em>, <em>Larvae Present</em>, <em>Capped Brood</em> &mdash; are saved to the row but never influence the status.</p>
+<p>When the beekeeper ticks &ldquo;Queen Seen&rdquo; + &ldquo;Eggs Present&rdquo; and leaves the dropdown on &ldquo;Select status&rdquo;, <code>queen_status</code> is <code>null</code>, no branch fires, and the nuc keeps whatever status it had &mdash; <code>virgin</code>.</p>
 
-  Date        Queen            Batch          Reason        Comment
-  12/07/2026  Queen 38         Spring A       Drone layer   supersedure cells seen
-  05/07/2026  Batch B · Cell 4 Summer B       Died          &mdash;
-  &hellip;
-  [Export CSV]  [Print / PDF]</div></div>
+<h3>Live data for nuc 138</h3>
+<table>
+  <tr><th>Inspection date</th><th>queen_seen</th><th>queen_status</th><th>eggs_present</th><th>Resulting nuc status</th></tr>
+  <tr><td>31/07/2026</td><td>false</td><td><code>virgin</code></td><td>false</td><td><code>virgin</code> &larr; set here</td></tr>
+  <tr class="bad"><td>16/08/2026</td><td><strong>true</strong></td><td><code>null</code></td><td><strong>true</strong></td><td><code>virgin</code> &larr; <strong>unchanged</strong></td></tr>
+</table>
+<p><code>mating_confirmed_at</code> is still <code>null</code> and the linked graft is still <code>in_nuc</code>.</p>
 
-  <h2>Data</h2>
-  <div class="warn">No schema change. Source is <code>graft_distributions</code> where <code>user_id = current</code>
-  and <code>queen_failed = true</code>, joined to <code>batch_grafts</code> (cell/queen number) and
-  <code>rearing_batches</code> (batch name), with the recipient from <code>profiles</code>/external fields.</div>
+<h3>How that leaks into distribution and the recipient&rsquo;s queen record</h3>
+<div class="flow">nuc inspection (eggs, no dropdown status)
+      |  status sync ignores brood evidence
+      v
+mating_nucs.status        = 'virgin'          (should be 'laying')
+batch_grafts.status       = 'in_nuc'/'emerged' (should be 'mated')
+      |  DistributeGraftModal: TYPE_FROM_GRAFT_STATUS[graft status]
+      v
+graft_distributions.distribution_type = 'virgin_queen'   (should be 'mated_queen')
+      |  createQueensForRecipient(...)
+      v
+queens.status = 'virgin', queens.mated_date = null   -->  "Virgin" badge on the hive card</div>
+<p>This is exactly what happened to queen <code>41</code>: source nuc <strong>172</strong>, inspection 16/08/2026 with eggs and a blank dropdown, distributed the same day as <code>virgin_queen</code>.</p>
+
+<h3>Secondary defect found</h3>
+<p><code>getNucDistributionType()</code> in <code>MatingNucsTab.tsx:125</code> returns <code>virgin_queen</code> for a nuc whose status is <code>mating</code> &mdash; but the UI labels <code>mating</code> as <strong>&ldquo;Mated&rdquo;</strong> (<code>NUC_STATUSES</code>, line 110). Only <code>laying</code> maps to <code>mated_queen</code>. This is the fallback used when the graft row is missing, so a nuc shown as &ldquo;Mated&rdquo; can still be distributed as a virgin.</p>
+
+<h2>3. Proposed fix</h2>
+<div class="box info">
+  <strong>Rule:</strong> eggs or larvae in a mating nuc are proof the queen mated and is laying. When an inspection records them and the beekeeper leaves the <em>Queen Status</em> dropdown blank, treat the inspection as <code>laying</code>.
+  <br><br>
+  An <strong>explicit</strong> dropdown choice always wins &mdash; the derivation only fills the gap when the dropdown is empty. This fixes the reported case without ever overriding what the beekeeper deliberately selected.
+</div>
+
+<h3>Change 1 &mdash; derive the status (2 call sites, ~6 new lines)</h3>
+<p>Add one small helper in <code>NucInspectionPanel.tsx</code>:</p>
+<pre>// Eggs or larvae in a mating nuc prove the queen mated and is laying.
+// Only used when the beekeeper left the Queen Status dropdown blank.
+const deriveQueenStatus = (
+  status: string | null,
+  eggs: boolean,
+  larvae: boolean
+): string | null =&gt; {
+  if (status) return status
+  return eggs || larvae ? 'laying' : null
+}</pre>
+<ul class="todo">
+  <li>&#9744; Use it in <code>handleSubmit</code> where <code>const qs = formData.queen_status</code> is read (line 177).</li>
+  <li>&#9744; Use it in <code>handleDelete</code>&rsquo;s recalculation loop (line 272), so deleting an inspection recomputes the nuc from the same rule. This requires adding <code>eggs_present, larvae_present</code> to the <code>select</code> on line 254.</li>
+</ul>
+<p>Existing behaviour is untouched: <code>laying</code> already maps to nuc status <code>laying</code>, <code>mating_confirmed_at</code> = inspection date, and graft status <code>mated</code>.</p>
+
+<h3>Change 2 &mdash; fix the distribution-type fallback (1 line)</h3>
+<pre>const getNucDistributionType = (status: string): 'virgin_queen' | 'mated_queen' =&gt; {
+  if (status === 'laying' || status === 'mating') return 'mated_queen'
+  return 'virgin_queen'
+}</pre>
+
+<h3>Change 3 &mdash; backfill the existing records</h3>
+<p>A code fix only helps future inspections. These rows are already wrong and need a one-off correction (applied via the Supabase MCP connection, not a stored SQL file):</p>
+<table>
+  <tr><th>What</th><th>Rows</th><th>Correction</th></tr>
+  <tr><td>Nucs stuck on <code>virgin</code> with brood recorded</td><td>5 &mdash; <code>138</code>, <code>A2</code>, <code>A5</code>, <code>A8</code>, <code>Mini&nbsp;-&nbsp;Nuc&nbsp;1</code></td><td>status &rarr; <code>laying</code>, <code>mating_confirmed_at</code> &rarr; brood inspection date</td></tr>
+  <tr><td>Their linked grafts (only nuc 138 has one)</td><td>1</td><td>status <code>in_nuc</code> &rarr; <code>mated</code></td></tr>
+  <tr><td>Distributions sent as <code>virgin_queen</code> from a nuc that had brood</td><td>2 &mdash; from nucs <code>172</code>, <code>199</code></td><td><code>distribution_type</code> &rarr; <code>mated_queen</code>, <code>mating_confirmed</code> &rarr; true, <code>mating_confirmed_date</code> &rarr; brood date</td></tr>
+  <tr><td>Recipient queen records</td><td>2 &mdash; queens <code>41</code>, <code>47</code></td><td>status <code>virgin</code> &rarr; <code>active</code>, <code>mated_date</code> &rarr; brood date</td></tr>
+</table>
+<div class="box warn">
+  <strong>Decision needed &mdash; capped brood.</strong> The rule above uses <em>eggs or larvae</em> only. Capped brood is deliberately excluded because a mating nuc is often seeded with a frame of capped brood at setup, so capped brood alone is not proof of <em>this</em> queen laying. Confirm you agree, or say the word and I will include it.
+  <br><br>
+  <strong>Decision needed &mdash; backfill scope.</strong> Change 3 rewrites 10 existing records including two already-distributed queens belonging to recipients. Confirm before I run it. The code fix (changes 1 and 2) can go in on its own if you would rather correct the history by hand.
+</div>
+
+<h2>4. Todo list</h2>
+<ul class="todo">
+  <li>&#9745; Add <code>deriveQueenStatus</code> helper to <code>NucInspectionPanel.tsx</code></li>
+  <li>&#9745; Apply it in <code>handleSubmit</code></li>
+  <li>&#9745; Apply it in <code>handleDelete</code> (plus widen the select)</li>
+  <li>&#9745; Fix <code>getNucDistributionType</code> for <code>mating</code></li>
+  <li>&#9745; Backfill nucs + graft</li>
+  <li>&#9745; Backfill 2 distributions + 2 queen records + 2 hive flags</li>
+  <li>&#9745; Update <code>docs/features/nuc-inspection-status-sync.md</code> with the new derivation rule</li>
+  <li>&#9745; Run the <code>qa-engineer</code> audit over the change</li>
+  <li>&#9745; Add a review section to this file</li>
+</ul>
+
+<h2>5. Files touched</h2>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><code>src/components/batches/NucInspectionPanel.tsx</code></td><td>helper + 2 call sites + 1 widened select</td></tr>
+  <tr><td><code>src/components/batches/MatingNucsTab.tsx</code></td><td>1 line in <code>getNucDistributionType</code></td></tr>
+  <tr><td><code>docs/features/nuc-inspection-status-sync.md</code></td><td>document the derivation</td></tr>
+  <tr><td>Supabase (live)</td><td>one-off backfill, no schema change</td></tr>
+</table>
+<p>No database migration, no new columns, no new components.</p>
+
+<h2 id="review">6. Review</h2>
+<p><strong>Completed 16 August 2026.</strong> Decisions taken: brood rule = <em>eggs or larvae</em> (capped brood excluded); full backfill approved.</p>
+
+<h3>Code changes</h3>
+<p><code>src/components/batches/NucInspectionPanel.tsx</code> — new helper, applied at both sync points:</p>
+<pre>// Eggs or larvae in a mating nuc prove the queen mated and is laying. Only applied when the
+// beekeeper left the Queen Status dropdown blank — an explicit choice always wins.
+// Capped brood is excluded: a nuc is often seeded with a frame of capped brood at setup.
+// Unrecognised stored values are treated as "no explicit choice" so they cannot silently
+// suppress the evidence-based fallback, and the result is always a known status.
+const deriveQueenStatus = (status: string | null, eggs: boolean, larvae: boolean): string | null =&gt; {
+  if (status &amp;&amp; QUEEN_STATUSES.includes(status)) return status
+  return eggs || larvae ? 'laying' : null
+}</pre>
+<ul>
+  <li><code>handleSubmit</code> — <code>const qs = deriveQueenStatus(formData.queen_status || null, formData.eggs_present, formData.larvae_present)</code>. Everything downstream is unchanged: <code>laying</code> already sets nuc status <code>laying</code>, stamps <code>mating_confirmed_at</code>, and advances the graft to <code>mated</code>.</li>
+  <li><code>handleDelete</code> — same helper inside the replay loop, and the select widened to fetch <code>eggs_present, larvae_present</code> so deleting an inspection recomputes the nuc by the identical rule.</li>
+</ul>
+<p><code>src/components/batches/MatingNucsTab.tsx</code> — <code>getNucDistributionType</code> now returns <code>mated_queen</code> for <code>mating</code> as well as <code>laying</code>, matching the &ldquo;Mated&rdquo; label the UI already shows.</p>
+<p><strong>Four production lines changed in total.</strong> No schema change, no new component, no new dependency.</p>
+
+<h3>Data backfill (applied live via Supabase MCP)</h3>
+<p>Rather than pattern-match blindly, each affected nuc&rsquo;s full inspection history was replayed chronologically under the new rule, exactly as the app would:</p>
+<table>
+  <tr><th>Record</th><th>Before</th><th>After</th></tr>
+  <tr class="good"><td>Nuc <strong>138</strong></td><td><code>virgin</code>, no mating date</td><td><code>laying</code>, mated 16/08/2026</td></tr>
+  <tr class="good"><td>Nuc <strong>A2</strong></td><td><code>virgin</code></td><td><code>laying</code>, mated 25/06/2026</td></tr>
+  <tr class="good"><td>Nuc <strong>A8</strong></td><td><code>virgin</code></td><td><code>laying</code>, mated 25/06/2026</td></tr>
+  <tr class="good"><td>Nuc <strong>Mini - Nuc 1</strong></td><td><code>virgin</code></td><td><code>mating</code> (&ldquo;Mated&rdquo;)</td></tr>
+  <tr class="good"><td>Graft cell <strong>#26</strong> (nuc 138)</td><td><code>in_nuc</code></td><td><code>mated</code>, 16/08/2026</td></tr>
+  <tr class="good"><td>2 distributions (nucs 172, 199)</td><td><code>virgin_queen</code>, unconfirmed</td><td><code>mated_queen</code>, confirmed 16/08/2026</td></tr>
+  <tr class="good"><td>Queen <strong>41</strong> (hive 65-HMN+)</td><td><code>virgin</code>, no mated date</td><td><code>active</code>, mated 16/08/2026</td></tr>
+  <tr class="good"><td>Queen <strong>47</strong> (hive 64-DA)</td><td><code>virgin</code>, no mated date</td><td><code>active</code>, mated 16/08/2026</td></tr>
+  <tr class="good"><td>Hives 65-HMN+ and 64-DA</td><td><code>queen_mated = false</code></td><td><code>queen_mated = true</code></td></tr>
+</table>
+<div class="box">
+  <strong>Two deviations from the original plan, both deliberate:</strong>
   <ul>
-    <li><strong>Date used:</strong> <code>queen_failed_date</code>, falling back to <code>distribution_date</code> when the
-    failure date is null (older/backfilled rows). Period filtering is applied on this effective date.</li>
-    <li><strong>Queen label:</strong> same rule as the tracker &mdash; <code>Queen {tag}</code> when tagged, else
-    <code>{batch} &middot; Cell {N}</code>.</li>
-    <li><strong>Reason breakdown:</strong> counts every reason present (null &rarr; "No reason recorded"), sorted by count
-    descending. (Archived Hives caps at top 4; failures show all present reasons.)</li>
+    <li><strong>Nuc A5 was left as <code>virgin</code> — correctly.</strong> It had brood in June/July, but its <em>latest</em> inspection (25/07/2026) explicitly selects &ldquo;Virgin&rdquo; and re-stamps <code>queen_emerged_at</code> — a supersedure. The new rule never overrides an explicit choice, so <code>virgin</code> is the right answer and the record was not touched.</li>
+    <li><strong>Nuc &ldquo;Mini - Nuc 1&rdquo; was added.</strong> Its last inspection explicitly says &ldquo;Mated&rdquo; with eggs and <code>mating_confirmed_at</code> was already stamped, yet the status had been left on <code>virgin</code> — a stale status from a separate cause. Corrected to <code>mating</code>.</li>
+    <li>The <code>mated_at_eircode</code> on queens 41 and 47 was left as the real eircode. The existing <code>promote_distributed_queen_on_mating</code> RPC would have overwritten it with the distribution&rsquo;s <code>mating_location</code> (&ldquo;AP03 - Stephen&rdquo;, an apiary name rather than an eircode) — that quirk was not replicated.</li>
   </ul>
+</div>
+<p><strong>Verification queries after the backfill returned zero rows</strong> for both &ldquo;nucs whose latest inspection derives to mated/laying but are still pre-mated&rdquo; and &ldquo;queens still marked virgin&rdquo;.</p>
 
-  <h2>Files</h2>
-  <ul>
-    <li><strong><code>src/types/reports.ts</code></strong> &mdash; add <code>QueenFailureRecord</code>.</li>
-    <li><strong><code>src/hooks/useReportsData.ts</code></strong> &mdash; add <code>fetchQueenFailures(userId, startDate, endDate)</code> to the hook + its interface + return.</li>
-    <li><strong><code>src/components/reports/QueenFailuresReport.tsx</code></strong> &mdash; new component (clone of <code>ArchivedHivesReport</code>: filters &rarr; export bar &rarr; <code>PrintableReport</code> with breakdown cards + <code>ReportTable</code>).</li>
-    <li><strong><code>src/components/reports/index.ts</code></strong> &mdash; export the new report.</li>
-    <li><strong><code>src/components/reports/ReportFilters.tsx</code></strong> &mdash; add optional <code>showApiaryFilter</code> (default true); hide the location row when both apiary and hive filters are off.</li>
-    <li><strong><code>src/app/dashboard/reports/page.tsx</code></strong> &mdash; add <code>'queen-failures'</code> to the section type, the tab list (icon), the URL-sync allow-list, and the content switch. Available to all users (like DAFM/Harvest), not gated on rearing groups.</li>
-    <li><strong><code>docs/features/reports.md</code></strong> &mdash; document the new report.</li>
-  </ul>
+<h3>QA audit (<code>qa-engineer</code>)</h3>
+<table>
+  <tr><th>Severity</th><th>Finding</th><th>Action</th></tr>
+  <tr><td>&#128308; Critical</td><td>None.</td><td>&mdash;</td></tr>
+  <tr><td>&#128992; High</td><td>None introduced.</td><td>&mdash;</td></tr>
+  <tr><td>&#128993; Medium</td><td>An unrecognised or legacy <code>queen_status</code> value read back from the database would be treated as an explicit choice, silently suppressing the brood fallback while matching no branch &mdash; a silent no-op.</td><td><strong>Fixed:</strong> whitelisted against <code>QUEEN_STATUSES</code>, so <code>qs</code> is provably a known status.</td></tr>
+  <tr><td>&#128993; Medium</td><td><code>docs/features/nuc-inspection-status-sync.md</code> stated the sync &ldquo;only triggers on new inspections (not edits)&rdquo;. The code has always run it on edits too.</td><td><strong>Fixed:</strong> documentation corrected.</td></tr>
+  <tr><td>&#128994; Low</td><td>Null-safety on the replayed rows.</td><td>Already guarded with <code>?? false</code> on both brood columns.</td></tr>
+</table>
+<div class="box warn">
+  <strong>Pre-existing issue noted, deliberately not changed.</strong> <code>handleSubmit</code> applies only the inspection just saved; it does not replay the full history the way <code>handleDelete</code> does. So editing and re-saving an <em>old</em> inspection can stamp its status over a nuc that has since moved on. This predates the change and applies equally to explicit statuses; fixing it means restructuring <code>handleSubmit</code> into a full replay, which is well beyond the scope of this bug. Flagging it for a future decision rather than widening this change.
+</div>
 
-  <h2>Out of scope</h2>
-  <p class="note">No group-owner cross-member view (this is the user's own failures only, consistent with the other
-  main-page reports). No new column on <code>graft_distributions</code>.</p>
+<h3>Verification</h3>
+<ul>
+  <li><code>npx tsc --noEmit</code> &mdash; no errors in either changed file. The only errors reported are the pre-existing mock-typing failures under <code>tests/</code>.</li>
+  <li><code>npx eslint src/components/batches/NucInspectionPanel.tsx src/components/batches/MatingNucsTab.tsx</code> &mdash; clean.</li>
+  <li>Build not run, per project convention &mdash; <strong>please test in the browser.</strong></li>
+</ul>
 
-  <h2>Todo</h2>
-  <ul class="todo">
-    <li>Type: <code>QueenFailureRecord</code>.</li>
-    <li>Hook: <code>fetchQueenFailures</code>.</li>
-    <li>Component: <code>QueenFailuresReport.tsx</code> + barrel export.</li>
-    <li><code>ReportFilters</code>: optional <code>showApiaryFilter</code>.</li>
-    <li>Reports page: register the tab.</li>
-    <li>Docs.</li>
-    <li>Prompt user to build &amp; verify.</li>
-  </ul>
-
-  <h2>Review</h2>
-  <p class="note">Implemented, own-only.</p>
-  <ul>
-    <li><strong>Type:</strong> <code>QueenFailureRecord</code> + <code>'queen-failures'</code> added to <code>ReportType</code>.</li>
-    <li><strong>Hook:</strong> <code>fetchQueenFailures(userId, startDate, endDate)</code> queries <code>graft_distributions</code> (own, <code>queen_failed = true</code>), builds the tag-first queen label, and period-filters on the effective failure date (<code>queen_failed_date</code> ?? <code>distribution_date</code>).</li>
-    <li><strong>Component:</strong> <code>QueenFailuresReport.tsx</code> &mdash; time-period filter only, breakdown cards for every reason present (null &rarr; "No reason recorded", most common first), table (Failed / Queen / Batch / Reason / Comment), CSV + print.</li>
-    <li><strong>ReportFilters:</strong> new optional <code>showApiaryFilter</code>; the location row is hidden when both apiary and hive filters are off.</li>
-    <li><strong>Reports page:</strong> registered the <code>Queen Failures</code> tab (XCircle icon) for all users; barrel export added.</li>
-    <li><strong>Docs:</strong> reports.md report #9 + file structure.</li>
-  </ul>
-  <p class="note">No schema change. Awaiting <code>npm run build</code> + in-app verification.</p>
-</body>
-</html>
+<h3>What to check in the app</h3>
+<ol>
+  <li>Nuc <strong>138</strong> should now show the green <strong>Laying</strong> badge instead of <strong>Virgin Queen</strong>.</li>
+  <li>Hive <strong>65-HMN+</strong> &mdash; queen <strong>41</strong> should no longer carry the &ldquo;Virgin&rdquo; badge; same for queen <strong>47</strong> on hive <strong>64-DA</strong>.</li>
+  <li>Add a new nuc inspection with <em>Eggs Present</em> ticked and the <em>Queen Status</em> dropdown left blank &mdash; the nuc should move straight to <strong>Laying</strong>.</li>
+  <li>Add one with the dropdown set to <em>Virgin</em> and eggs ticked &mdash; it should stay <strong>Virgin Queen</strong> (explicit choice wins).</li>
+  <li>Distribute a nuc showing <strong>Laying</strong> or <strong>Mated</strong> &mdash; the modal should read <em>Mated Queen</em>, not <em>Virgin Queen</em>.</li>
+</ol>
