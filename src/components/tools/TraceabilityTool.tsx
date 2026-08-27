@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Package, Milk, Plus, Printer } from 'lucide-react'
-import type { BulkContainer } from '@/types/traceability'
+import { Package, Milk, Plus, Printer, Tag } from 'lucide-react'
+import type { BulkContainer, BatchLabelPointer } from '@/types/traceability'
 import Button from '@/components/ui/Button'
 import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import type { LabelDatum } from '@/components/labels/types'
@@ -11,8 +11,9 @@ import { formatDateGB } from '@/components/labels/dateFormat'
 import { useLabelPrinting } from '@/hooks/useLabelPrinting'
 import ContainersTab from './traceability/ContainersTab'
 import BatchesTab from './traceability/BatchesTab'
+import JarLabelsTab from './traceability/JarLabelsTab'
 
-type TabType = 'containers' | 'batches'
+type TabType = 'containers' | 'batches' | 'labels'
 
 interface TraceabilityToolProps {
   userId: string
@@ -177,6 +178,30 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
   }, [containers])
   const [showContainerForm, setShowContainerForm] = useState(false)
   const [showBatchForm, setShowBatchForm] = useState(false)
+  const [showLabelForm, setShowLabelForm] = useState(false)
+
+  // Which printed jar labels point at which batch. Held here rather than in
+  // JarLabelsTab because the batch form needs it too: editing a batch that a
+  // live label points at changes what customers see when they scan.
+  const [labelPointers, setLabelPointers] = useState<BatchLabelPointer[]>([])
+
+  const fetchLabelPointers = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('trace_labels')
+      .select('id, name, code, current_batch_id, is_active')
+      .eq('user_id', userId)
+      .not('current_batch_id', 'is', null)
+
+    if (error) {
+      console.error('Error fetching jar label pointers:', error)
+      return
+    }
+    setLabelPointers((data || []) as BatchLabelPointer[])
+  }, [userId])
+
+  useEffect(() => {
+    fetchLabelPointers()
+  }, [fetchLabelPointers])
 
   const fetchContainers = useCallback(async () => {
     const { data, error } = await supabase
@@ -243,12 +268,16 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
             </Button>
           )}
           <Button
-            onClick={() => activeTab === 'containers' ? setShowContainerForm(true) : setShowBatchForm(true)}
+            onClick={() => {
+              if (activeTab === 'containers') setShowContainerForm(true)
+              else if (activeTab === 'batches') setShowBatchForm(true)
+              else setShowLabelForm(true)
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
           >
             <Plus size={20} />
             <span className="hidden sm:inline">
-              {activeTab === 'containers' ? 'New Bulk Honey' : 'New Batch'}
+              {activeTab === 'containers' ? 'New Bulk Honey' : activeTab === 'batches' ? 'New Batch' : 'New Jar Label'}
             </span>
           </Button>
         </div>
@@ -278,10 +307,28 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           <Milk size={18} />
           <span>Batches</span>
         </Button>
+        <Button
+          onClick={() => setActiveTab('labels')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+            activeTab === 'labels'
+              ? 'bg-amber-600 text-white'
+              : 'bg-surface-elevated text-text-secondary hover:bg-surface-elevated/80'
+          }`}
+        >
+          <Tag size={18} />
+          <span>Jar Labels</span>
+        </Button>
       </div>
 
 
-      {activeTab === 'containers' ? (
+      {activeTab === 'labels' ? (
+        <JarLabelsTab
+          userId={userId}
+          showLabelForm={showLabelForm}
+          setShowLabelForm={setShowLabelForm}
+          onLabelsChanged={fetchLabelPointers}
+        />
+      ) : activeTab === 'containers' ? (
         <ContainersTab
           userId={userId}
           containers={containers}
@@ -299,6 +346,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
           containers={containers}
           showBatchForm={showBatchForm}
           setShowBatchForm={setShowBatchForm}
+          labelPointers={labelPointers}
         />
       )}
       <PrintLabelsModal
