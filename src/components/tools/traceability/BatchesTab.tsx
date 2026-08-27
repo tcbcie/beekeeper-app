@@ -3,14 +3,14 @@
 import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
-import { Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download, MapPin, AlertCircle, Star, MessageSquare } from 'lucide-react'
+import { Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download, MapPin, AlertCircle, Star, MessageSquare, Tag } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useToast } from '@/components/ui/Toast'
 import { generateBatchCode } from '@/lib/batch-code'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import { calculateBestBeforeDate, formatDateForInput } from '@/lib/traceability-utils'
 import { storyTemplates, replacePlaceholders, hasUnfilledPlaceholders, getUnfilledPlaceholders, stripMarkers } from '@/lib/story-templates'
-import type { BulkContainer, BatchRun, BatchJar, BatchFormData, JarConfig } from '@/types/traceability'
+import type { BulkContainer, BatchRun, BatchJar, BatchFormData, JarConfig, BatchLabelPointer } from '@/types/traceability'
 import Button from '@/components/ui/Button'
 
 interface BatchesTabProps {
@@ -18,6 +18,8 @@ interface BatchesTabProps {
  containers: BulkContainer[]
  showBatchForm: boolean
  setShowBatchForm: (open: boolean) => void
+ /** Printed jar labels currently pointed at a batch, so edits can warn. */
+ labelPointers?: BatchLabelPointer[]
 }
 
 /**
@@ -26,7 +28,7 @@ interface BatchesTabProps {
  * and consumer feedback. Extracted verbatim from TraceabilityTool.tsx
  * (Phase 6.7 decomposition).
  */
-export default function BatchesTab({ userId, containers, showBatchForm, setShowBatchForm }: BatchesTabProps) {
+export default function BatchesTab({ userId, containers, showBatchForm, setShowBatchForm, labelPointers = [] }: BatchesTabProps) {
  const toast = useToast()
 
   // Batch state
@@ -701,6 +703,28 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
               <X size={20} />
             </Button>
           </div>
+
+          {/* Printed jar labels pointing here. Their QR codes are already on
+              jars, so a change to this batch changes what those scans resolve
+              to — worth saying out loud before the user edits or unpublishes. */}
+          {editingBatch && (() => {
+            const pointing = labelPointers.filter(l => l.current_batch_id === editingBatch.id && l.is_active)
+            if (pointing.length === 0) return null
+            return (
+              <div className="mb-4 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 p-3">
+                <p className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-300">
+                  <Tag size={16} className="flex-shrink-0" />
+                  {pointing.length === 1
+                    ? 'A printed jar label points at this batch'
+                    : `${pointing.length} printed jar labels point at this batch`}
+                </p>
+                <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
+                  {pointing.map(l => l.name).join(', ')} — scanning those jars shows this batch.
+                  {!batchForm.is_public && ' While this batch is not public, those scans show no batch information.'}
+                </p>
+              </div>
+            )
+          })()}
 
           {/* QR Code Preview for existing public batches */}
           {editingBatch && editingBatch.trace_code && editingBatch.is_public && (() => {
