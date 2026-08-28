@@ -48,41 +48,48 @@ export default function CollapsibleSection({
       padding="none"
       className={danger ? 'border border-red-300 dark:border-red-800' : ''}
     >
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        aria-expanded={open}
-        // Only while open: the content is unmounted when closed, and
-        // aria-controls must reference an element that actually exists.
-        aria-controls={open ? contentId : undefined}
-        className={`flex w-full items-center justify-between gap-3 px-6 py-4 text-left transition-colors hover:bg-surface-secondary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-600 ${
-          open ? 'rounded-t-xl' : 'rounded-xl'
-        }`}
-      >
-        <span className="min-w-0">
-          <span
-            className={`block text-xl font-semibold ${
-              danger ? 'text-red-900 dark:text-red-100' : 'text-foreground'
-            }`}
-          >
-            {title}
+      {/* The button is wrapped in a real heading so screen-reader users can
+          reach the sections with heading navigation. Without it a settings page
+          made entirely of these has one h1 and nothing else to jump to.
+          Tailwind's preflight zeroes the h2's margin and font-size, so the
+          button keeps its own styling. */}
+      <h2>
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-expanded={open}
+          // Only while open: the content is unmounted when closed, and
+          // aria-controls must reference an element that actually exists.
+          aria-controls={open ? contentId : undefined}
+          className={`flex w-full items-center justify-between gap-3 px-4 sm:px-6 py-4 text-left transition-colors hover:bg-surface-secondary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-600 ${
+            open ? 'rounded-t-xl' : 'rounded-xl'
+          }`}
+        >
+          <span className="min-w-0">
+            <span
+              className={`block text-xl font-semibold ${
+                danger ? 'text-red-900 dark:text-red-100' : 'text-foreground'
+              }`}
+            >
+              {title}
+            </span>
+            {/* text-secondary, not tertiary: this reports real state ("Revolut
+                connected", "Active") and is what people scan for, so it must not
+                sit at the weakest contrast on the row. */}
+            {!open && summary && (
+              <span className="mt-1 block text-sm text-text-secondary">{summary}</span>
+            )}
           </span>
-          {/* text-secondary, not tertiary: this reports real state ("Revolut
-              connected", "Active") and is what people scan for, so it must not
-              sit at the weakest contrast on the row. */}
-          {!open && summary && (
-            <span className="mt-1 block text-sm text-text-secondary">{summary}</span>
-          )}
-        </span>
-        <ChevronDown
-          size={22}
-          className={`flex-shrink-0 text-text-secondary transition-transform ${open ? 'rotate-180' : ''}`}
-          aria-hidden="true"
-        />
-      </button>
+          <ChevronDown
+            size={22}
+            className={`flex-shrink-0 text-text-secondary transition-transform ${open ? 'rotate-180' : ''}`}
+            aria-hidden="true"
+          />
+        </button>
+      </h2>
 
       {open && (
-        <div id={contentId} className="px-6 pb-6">
+        <div id={contentId} className="px-4 sm:px-6 pb-6">
           {children}
         </div>
       )}

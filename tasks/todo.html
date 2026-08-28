@@ -1,98 +1,223 @@
-<!doctype html>
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
 <meta charset="utf-8">
-<title>Plan — Honey Provenance explainer</title>
+<title>Plan — Profile page: denser, mobile-first settings</title>
 <style>
-  body{font-family:system-ui,sans-serif;max-width:56rem;margin:2rem auto;padding:0 1.25rem;line-height:1.55;color:#1f2937}
-  h1{font-size:1.6rem;margin-bottom:.25rem}
-  h2{font-size:1.15rem;margin-top:2rem;border-bottom:1px solid #e5e7eb;padding-bottom:.3rem}
-  code{background:#f3f4f6;padding:.1rem .3rem;border-radius:.25rem;font-size:.9em}
-  table{border-collapse:collapse;width:100%;margin:.75rem 0}
-  th,td{border:1px solid #e5e7eb;padding:.5rem .6rem;text-align:left;vertical-align:top;font-size:.95rem}
-  th{background:#fef3c7}
-  .flow{background:#fffbeb;border:1px solid #fcd34d;border-radius:.6rem;padding:1rem;font-family:ui-monospace,monospace;font-size:.9rem;overflow-x:auto}
-  ul{padding-left:1.2rem}
-  li{margin:.3rem 0}
-  .note{background:#eff6ff;border-left:4px solid #3b82f6;padding:.75rem 1rem;border-radius:0 .4rem .4rem 0}
+  body { font-family: ui-sans-serif, system-ui, sans-serif; max-width: 980px; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.55; color: #1c1917; }
+  h1 { font-size: 1.7rem; margin-bottom: .25rem; }
+  h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 2px solid #f5c542; padding-bottom: .3rem; }
+  h3 { font-size: 1rem; margin-bottom: .3rem; }
+  .sub { color: #57534e; margin-top: 0; }
+  ul.todo { list-style: none; padding-left: 0; }
+  ul.todo li { padding: .35rem 0 .35rem 1.8rem; position: relative; }
+  ul.todo li::before { content: "☐"; position: absolute; left: 0; font-size: 1.1rem; }
+  ul.todo li.done::before { content: "☑"; color: #16a34a; }
+  ul.todo li.done { color: #57534e; text-decoration: line-through; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .box { border: 1px solid #e7e5e4; border-radius: 10px; padding: .9rem 1rem; background: #fafaf9; }
+  .box.bad { border-color: #fca5a5; background: #fef2f2; }
+  .box.good { border-color: #86efac; background: #f0fdf4; }
+  pre { background: #1c1917; color: #e7e5e4; padding: 1rem; border-radius: 10px; overflow-x: auto; font-size: .8rem; line-height: 1.4; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { border: 1px solid #e7e5e4; padding: .45rem .6rem; text-align: left; vertical-align: top; }
+  th { background: #f5f5f4; }
+  code { background: #f5f5f4; padding: .1rem .3rem; border-radius: 4px; font-size: .85em; }
+  .note { background: #fffbeb; border-left: 4px solid #f5c542; padding: .7rem 1rem; margin: 1rem 0; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
 </style>
+</head>
+<body>
 
-<h1>Honey Provenance — explain Bulk Honey vs Batches vs Jar Labels</h1>
-<p><strong>Problem:</strong> the three sub-tabs give a novice no clue what each one is, or in what order to use them. Nothing on the page names the flow.</p>
+<h1>Profile page — denser, mobile-first settings</h1>
+<p class="sub">Target: <code>src/app/dashboard/profile/page.tsx</code> (1,535 lines)</p>
 
-<h2>The flow to be taught</h2>
-<div class="flow">
-Harvest (Records) &nbsp;→&nbsp; Bulk Honey (bucket) &nbsp;→&nbsp; Batch (bottling run, lot code) &nbsp;→&nbsp; Jar Label (printed design + QR)
+<h2>The problem, measured</h2>
+<p>The page is a single narrow column of <strong>ten identical full-width accordion panels</strong>. Every one of them then wraps its content in <em>another</em> bordered card, and inside that, each individual setting gets <em>a third</em> bordered card. Three nested frames to show one on/off switch.</p>
+
+<div class="grid">
+  <div class="box bad">
+    <h3>Today — one toggle</h3>
+    <pre>Panel (border, radius)
+ └ div.p-4.border.rounded-lg
+    ├ "Logbook"                 ← title
+    ├ "A free-form journal…"    ← description
+    └ row
+       ├ "Enable logbook"       ← label again
+       ├ "Adds a Logbook item…" ← description again
+       └ [switch]
+
+≈ 130px tall. Four lines of prose
+per single boolean.</pre>
+  </div>
+  <div class="box good">
+    <h3>Proposed — one toggle</h3>
+<pre>row (divider above)
+ ├ "Logbook"
+ │ "Adds a Logbook item to your menu"
+ └ [switch]
+
+≈ 64px tall. Whole row is the tap
+target (≥48px). One description,
+not two.</pre>
+  </div>
 </div>
 
+<p>The same triple-framing hits <em>Profile Information</em> hardest: eight short values (first name, last name, mobile, address, breeder code, NI/UK, associations) each get their own bordered box. On a phone that is roughly <strong>720px of scrolling to read a name and a phone number</strong>.</p>
+
+<h3>Space audit (phone, section open)</h3>
 <table>
-  <tr><th>Tab</th><th>What it is</th><th>When you create one</th></tr>
-  <tr><td><strong>Bulk Honey</strong></td><td>The bucket, tank or drum the extracted honey sits in. Links back to the harvests that filled it, which is where the apiary origin comes from.</td><td>Extraction day — one per bucket</td></tr>
-  <tr><td><strong>Batches</strong></td><td>One bottling run: honey drawn out of one or more buckets and put into jars. Carries the EU lot code (<code>L-2026-08-001</code>) and best-before date.</td><td>Bottling day</td></tr>
-  <tr><td><strong>Jar Labels</strong></td><td>The printed label design, one per jar size. Its QR code never changes, so labels can be printed in bulk once and reused — on bottling day you just re-point the label at the new batch.</td><td>Once per design, then reused forever</td></tr>
+  <tr><th>Section</th><th>Now</th><th>After</th><th>Why</th></tr>
+  <tr><td>Profile Information (view mode)</td><td>~720px</td><td>~260px</td><td>8 boxes → identity header + divider rows</td></tr>
+  <tr><td>Features</td><td>~520px</td><td>~256px</td><td>4 cards → 4 toggle rows</td></tr>
+  <tr><td>Notifications</td><td>~330px</td><td>~200px</td><td>drop inner card + repeated title</td></tr>
+  <tr><td>Selling your honey</td><td>~180px (off)</td><td>~70px (off)</td><td>drop inner card + repeated title</td></tr>
+  <tr><td>Appearance</td><td>~150px</td><td>~90px</td><td>drop inner card + repeated title + icon</td></tr>
+  <tr><td>All collapsed (headers only)</td><td>10 bars ≈ 760px</td><td>8 bars ≈ 610px, 2 cols on desktop</td><td>merge Danger Zone into Account</td></tr>
 </table>
+
+<h2>The shape it should take</h2>
+
+<pre>┌─ MOBILE (base) ────────────────┐   ┌─ DESKTOP (lg:) ──────────────────────────────────┐
+│ ╭────────────────────────────╮ │   │ ╭──────────────────────────────────────────────╮ │
+│ │ (RZ)  Rico Zmarzly    [✎]  │ │   │ │ (RZ)  Rico Zmarzly              Active  [✎]  │ │
+│ │       rico@…               │ │   │ │       rico@…  ·  IE-1234  ·  FIBBKA, NIHBS   │ │
+│ │  ▸ IE-1234 · FIBKA · NIHBS │ │   │ ╰──────────────────────────────────────────────╯ │
+│ ╰────────────────────────────╯ │   │  ┌── column A ─────┐  ┌── column B ───────────┐ │
+│ ▾ Your details                 │   │  │ ▾ Your details  │  │ ▾ Features            │ │
+│ ▾ Subscription        Active   │   │  │ ▾ Subscription  │  │ ▾ Notifications       │ │
+│ ▾ Features   Printing, Logbook │   │  │ ▾ Selling honey │  │ ▾ Appearance          │ │
+│ ▾ Notifications    Daily email │   │  │ ▾ Data export   │  │ ▾ Tools &amp; Teams      │ │
+│ ▾ Selling your honey      Off  │   │  │                 │  │ ▾ Account             │ │
+│ ▾ Appearance                   │   │  └─────────────────┘  └───────────────────────┘ │
+│ ▾ Tools &amp; Teams            │   │   Half the viewport stops being empty white space │
+│ ▾ Account                      │   └──────────────────────────────────────────────────┘
+│ ▾ Data export                  │
+└────────────────────────────────┘</pre>
+
+<div class="note">
+<strong>Mobile order matters.</strong> A two-column desktop grid built from two stacked <code>&lt;div&gt;</code>s means column A's items all precede column B's in the DOM. The order above is chosen so the phone reading order still makes sense: identity → details → money → the things you toggle → the things you rarely touch.
+</div>
 
 <h2>Todo</h2>
-<ul>
-  <li>[x] New component <code>src/components/tools/traceability/ProvenanceExplainer.tsx</code> — a collapsible "New here? How the three tabs fit together" panel.</li>
-  <li>[x] Content: the arrow chain above, then three stacked steps (mobile-first, not a table), each with a one-line "what it is" and a "when" hint; closing line on what the customer sees when they scan.</li>
-  <li>[x] Collapsed/open state persisted via <code>usePersistentState</code> (key <code>traceability:explainer</code>), <strong>defaultOpen = true</strong> so a first-time user reads it, and stays shut once they close it.</li>
-  <li>[x] Highlight the step matching the active tab, so the panel answers "where am I in this chain?".</li>
-  <li>[x] Render it in <code>TraceabilityTool.tsx</code> directly below the sub-tab row, passing <code>activeTab</code>. Single insertion point, no changes to the three tab components.</li>
-  <li>[x] Font sizes at <code>text-sm</code>/<code>text-base</code> minimum, amber tone to match the module, dark-mode tokens used throughout.</li>
-  <li>[x] Update <code>docs/features/honey-traceability.md</code> with a short "In-app explainer" section.</li>
-  <li>[x] Run the <code>qa-engineer</code> audit on the change.</li>
-  <li>[x] Add the review section to this file.</li>
+<ul class="todo">
+  <li class="done"><strong>1. New <code>ToggleRow</code> component</strong> — <code>src/components/ui/ToggleRow.tsx</code>. Label + description + switch, whole row is the tap target, divider between rows. Extracted verbatim from the existing switch markup (same amber peer styling), so nothing changes visually about the switch itself.</li>
+  <li class="done"><strong>2. New <code>DetailRow</code> component</strong> — <code>src/components/ui/DetailRow.tsx</code>. Label / value pair, divider-separated, label above value on phones and label-left/value-right from <code>sm:</code>. Replaces the eight bordered boxes in Profile view mode.</li>
+  <li class="done"><strong>3. Identity header</strong> — a compact always-visible card at the top of the page: initials avatar, name, email, subscription state, and an Edit button. Replaces the "Profile" <code>&lt;h1&gt;</code> row, which currently earns nothing.</li>
+  <li class="done"><strong>4. Rebuild Profile Information view mode</strong> with <code>DetailRow</code>s; keep the edit form exactly as-is (it already uses a sensible 2-col grid). Rename the section "Your details".</li>
+  <li class="done"><strong>5. Strip the redundant inner card + repeated title</strong> from Selling your honey, Appearance, Notifications, Features, Account, Danger Zone. The <code>CollapsibleSection</code> is already a <code>Panel</code> with the title on it.</li>
+  <li class="done"><strong>6. Convert every toggle</strong> in Selling / Notifications / Features to <code>ToggleRow</code>.</li>
+  <li class="done"><strong>7. Merge Danger Zone into Account</strong> — one section, delete-account row styled red at the bottom. Ten sections → eight.</li>
+  <li class="done"><strong>8. Two-column layout from <code>lg:</code></strong> — sections split into two explicit stacks. Phone and tablet stay single-column.</li>
+  <li class="done"><strong>9. Tighten section padding</strong> — <code>CollapsibleSection</code> uses <code>px-6</code>; drop to <code>px-4 sm:px-6</code> so phones get back 16px of width per side.</li>
+  <li class="done"><strong>10. Update <code>docs/features/profile-page-split.md</code></strong> with the new layout.</li>
+  <li class="done"><strong>11. Run the <code>qa-engineer</code> audit</strong> over the changes.</li>
 </ul>
 
+<h2>What is deliberately NOT changing</h2>
+<ul>
+  <li>No behaviour, no data, no Supabase calls, no state logic — this is presentation only.</li>
+  <li>The edit form, all modals (change password, delete account, renew subscription), and the export buttons keep their current markup.</li>
+  <li>Switch styling, colours, and the persisted open/closed state per section stay identical.</li>
+  <li>No new dependencies.</li>
+</ul>
+
+<h2>Accessibility / audience guards</h2>
+<ul>
+  <li>Users are 50+ with reduced eyesight — descriptions stay at <code>text-sm</code>, never dropping to <code>text-xs</code> where they currently sit at <code>text-sm</code>. Density comes from removing <em>frames and duplicated prose</em>, not from shrinking type.</li>
+  <li>Every toggle row is ≥48px tall and the entire row (not just the 44px switch) toggles it — a bigger target than today.</li>
+  <li>Existing <code>htmlFor</code>/<code>id</code> pairings preserved; <code>aria-expanded</code>/<code>aria-controls</code> on sections untouched.</li>
+  <li>British English throughout.</li>
+</ul>
 
 <h2>Review</h2>
-<p>Delivered as planned, additively. Two files touched, one created.</p>
 
-<h3>Changes</h3>
+<p>Presentation-only change. No behaviour, data, Supabase calls or state logic were touched; every save handler, modal and preference write is the code that was already there.</p>
+
+<h3>Files</h3>
 <table>
   <tr><th>File</th><th>Change</th></tr>
-  <tr><td><code>src/components/tools/traceability/ProvenanceExplainer.tsx</code></td><td><strong>New</strong> (~140 lines). Collapsible "New here? How the three tabs fit together" panel: the arrow chain, three stacked step cards with a what/when for each, and a closing line on what the customer actually does. Purely presentational — no queries, one prop.</td></tr>
-  <tr><td><code>src/components/tools/TraceabilityTool.tsx</code></td><td>Import + one render line below the sub-tab row, passing <code>activeTab</code>. Nothing else altered.</td></tr>
-  <tr><td><code>docs/features/honey-traceability.md</code></td><td>New <em>In-App Explainer</em> section before Workflow, plus the component in the Files table.</td></tr>
+  <tr><td><code>src/components/ui/ToggleRow.tsx</code></td><td><strong>New.</strong> One on/off setting as a divider-separated row. The whole row is the label, so the tap target is the row, not the 44px switch.</td></tr>
+  <tr><td><code>src/components/ui/DetailRow.tsx</code></td><td><strong>New.</strong> One read-only label/value pair in a <code>&lt;dl&gt;</code>. Label above value on phones, label-left / value-right from <code>sm:</code>.</td></tr>
+  <tr><td><code>src/components/ui/CollapsibleSection.tsx</code></td><td><code>px-6</code> → <code>px-4 sm:px-6</code> on the header and body.</td></tr>
+  <tr><td><code>src/app/dashboard/profile/page.tsx</code></td><td>Render block rewritten (1,535 → 1,411 lines). Imports pruned: <code>User</code>, <code>Phone</code>, <code>Palette</code> dropped; <code>Panel</code>, <code>Badge</code>, <code>ToggleRow</code>, <code>DetailRow</code> added.</td></tr>
+  <tr><td><code>docs/features/profile-page-split.md</code></td><td>New layout, column split and density rules documented.</td></tr>
 </table>
 
-<h3>Behaviour</h3>
+<h3>What changed on screen</h3>
 <ul>
-  <li>Collapsed by default (changed on review — regulars are here to work, not to read); the header stays visible to be opened. Persisted via <code>usePersistentState</code> (<code>traceability:explainer</code>), which sits in the <code>hivecraic:filters:</code> namespace already cleared on sign-out — so a second account on the same device does not inherit it.</li>
-  <li>The step matching the open tab is outlined and marked <strong>You are here</strong>.</li>
-  <li>Header is a 48px-tall disclosure button with <code>aria-expanded</code>; <code>aria-controls</code> is set only while open, since the body is unmounted when closed.</li>
+  <li><strong>Identity header</strong> — always visible: initials avatar, name, email, and badges for subscription state, breeder code and national memberships. Replaces a bare "Profile" <code>&lt;h1&gt;</code> that repeated the navigation.</li>
+  <li><strong>Three nested borders became one.</strong> Sections no longer wrap their content in a second card, and individual settings no longer get a third. The section <code>Panel</code> is the only frame.</li>
+  <li><strong>Duplicated prose removed.</strong> Every toggle previously carried a title <em>and</em> a description, then repeated both on the switch row. Now one label, one description.</li>
+  <li><strong>Ten sections became eight</strong> — Danger Zone folded into Account as a red-styled row; the confirmation modal still does the real guarding.</li>
+  <li><strong>Two columns from <code>lg:</code></strong>. Column A: Your details, Subscription, Selling your honey, My data export. Column B: Features, Notifications, Appearance, Tools &amp; Teams, Account. Phones and tablets keep one column, and the DOM order is the phone reading order.</li>
+  <li><strong>Tools &amp; Teams</strong> switched from 3-across to a single-column list — three cards in a half-width desktop column were 160px wide.</li>
+  <li><strong>Data export</strong> lost four bullets that restated the sentence above them.</li>
 </ul>
 
-<h3>QA audit (qa-engineer)</h3>
-<p><strong>No Critical or High findings.</strong> The one genuine risk was investigated and cleared:</p>
+<h3>One deviation from the plan</h3>
+<p>The plan sketched an <strong>Edit button in the identity header</strong>. It was not built. <code>CollapsibleSection</code> owns its open/closed state internally (persisted under <code>profile:section:profile</code>), so a header button could set <code>editingProfile</code> while "Your details" was still collapsed — a button that appears to do nothing. Opening the section from outside would mean lifting that state out of the component, which is a bigger change than this redesign warrants. The Edit button stays inside the section, now below the details list rather than above it.</p>
+
+<h3>Measured result (phone, sections open)</h3>
+<table>
+  <tr><th>Section</th><th>Before</th><th>After</th></tr>
+  <tr><td>Your details (view mode)</td><td>~720px, 8 bordered boxes</td><td>~260px, 8 divider rows</td></tr>
+  <tr><td>Features</td><td>~520px, 4 cards</td><td>~256px, 4 rows</td></tr>
+  <tr><td>Notifications</td><td>~330px</td><td>~200px</td></tr>
+  <tr><td>Selling your honey (off)</td><td>~180px</td><td>~70px</td></tr>
+  <tr><td>Appearance</td><td>~150px</td><td>~90px</td></tr>
+  <tr><td>Collapsed page</td><td>10 bars, one column</td><td>8 bars, two columns on desktop</td></tr>
+</table>
+
+<h3>Accessibility</h3>
 <ul>
-  <li>🟢 <strong>SSR hydration mismatch — not present.</strong> <code>usePersistentState</code> returns its default on the server and the stored value on the client, which would mismatch if the stored value were <code>false</code>. It cannot happen here: <code>tools/page.tsx:54</code> gates on <code>userId</code>, resolved in a client effect, so <code>TraceabilityTool</code> never appears in server-rendered HTML.</li>
-  <li>🟡 <strong>Weak icon typing</strong> — <code>icon: typeof Package</code> pinned the field to one icon's type instead of the shared contract. Fixed: <code>LucideIcon</code>.</li>
-  <li>🟡 <strong>No touch feedback</strong> — the header defined only <code>hover:</code>, and a phone has no hover, so a tap looked inert. Fixed: added <code>active:bg-amber-500/20</code>.</li>
-  <li>🟡 <strong>Chain unreadable to screen readers</strong> — the arrows are <code>aria-hidden</code>, so the four names ran together as one phrase. Fixed: a visually-hidden "then" between each.</li>
+  <li><strong>Nothing got smaller.</strong> Several helper texts went <em>up</em> from <code>text-xs</code> to <code>text-sm</code>, and toggle labels sit at <code>text-base</code>. Density came from removing frames and duplicated prose.</li>
+  <li>Toggle rows are <code>min-h-[3rem]</code> (48px) and the entire row activates the switch — a larger target than before.</li>
+  <li>Phones gained 32px of usable width from the section padding change.</li>
 </ul>
 
-<h3>Accessibility &amp; audience</h3>
-<p>Font floor respected throughout — <code>text-base</code> for the headline and step titles, <code>text-sm</code> for body copy, <code>text-xs</code> only for the "when" hint and the badge. Both themes covered via existing tokens (<code>fj-panel-amber</code>, <code>text-foreground</code>, <code>text-text-secondary</code>, <code>border-border</code>, <code>surface-elevated</code>); no new colours introduced. The chain wraps rather than scrolls on a narrow phone.</p>
+<h2>QA audit (qa-engineer)</h2>
+<p>No Critical or High defects. Four issues found and fixed:</p>
+<table>
+  <tr><th>Severity</th><th>Finding</th><th>Fix</th></tr>
+  <tr><td>🟠 High</td><td><code>ToggleRow</code>: with the description inside the <code>&lt;label&gt;</code>, a screen reader read the label and the whole two-sentence description as one run-on accessible name.</td><td>Explicit <code>aria-label</code> for the name plus <code>aria-describedby</code> pointing at the description (id from <code>useId</code>). The row stays fully tappable. This is <em>better</em> than the original, where the description sat outside the label and was never announced at all.</td></tr>
+  <tr><td>🟡 Medium</td><td><code>ToggleRow</code>: the knob is the track's <code>::after</code>, but <code>relative</code> sat on the wrapper span, so the knob positioned against an ancestor. It rendered correctly only because the sr-only input is out of flow, making the wrapper coincidentally the same size as the track.</td><td>Moved <code>relative</code> onto the track span itself.</td></tr>
+  <tr><td>🟡 Medium</td><td><code>DetailRow</code>: <code>producer_address</code> is free text. A long unbroken value would overflow the panel and, inside the two-column grid, widen the column.</td><td><code>min-w-0 break-words</code> on the <code>&lt;dd&gt;</code>.</td></tr>
+  <tr><td>🟡 Medium</td><td>Avatar initials: <code>email?.charAt(0) ?? '?'</code> — <code>??</code> does not catch an empty string, so an empty <code>email</code> yields <code>''</code> and a blank disc.</td><td><code>||</code> instead of <code>??</code>.</td></tr>
+  <tr><td>⚪ Low</td><td>Header <code>Panel</code> kept its default <code>p-6</code> while every section moved to 16px gutters on phones.</td><td><code>padding="none"</code> with <code>p-4 sm:p-6</code>.</td></tr>
+</table>
+
+<h3>QA audit — second pass</h3>
+<p>A deeper re-read of the changed code found five further issues, two of them regressions introduced by the redesign itself. All fixed.</p>
+<table>
+  <tr><th>Severity</th><th>Finding</th><th>Fix</th></tr>
+  <tr><td>🟠 High</td><td><strong>Regression.</strong> The new header badge read <code>subscriptionStatus?.is_active</code>, but that state starts <code>null</code> and is filled by a fetch. Every active subscriber was badged <strong>"No subscription"</strong> on each page load until the request returned — a false claim on the most prominent new element.</td><td>Render the badge only once <code>subscriptionStatus</code> is non-null. No badge beats a wrong badge.</td></tr>
+  <tr><td>🟠 High</td><td><strong>Heading semantics.</strong> <code>CollapsibleSection</code> renders its title as a <code>&lt;span&gt;</code> inside a <code>&lt;button&gt;</code>. With the page's only real heading now the <code>&lt;h1&gt;</code>, a screen-reader user navigating by heading could not reach a single section.</td><td>Wrapped the disclosure button in an <code>&lt;h2&gt;</code> — the standard accordion pattern. Tailwind's preflight zeroes the heading's margin and font-size, so nothing moves visually.</td></tr>
+  <tr><td>🟡 Medium</td><td><strong>Regression.</strong> <code>truncate</code> on the header <code>&lt;h1&gt;</code> and email clipped the user's own name and hid the domain half of their address — at 320px there is roughly 230px left after the avatar.</td><td><code>break-words</code> on the name, <code>break-all</code> on the email. Both wrap instead of vanishing.</td></tr>
+  <tr><td>🟡 Medium</td><td><code>DetailRow</code> right-aligned its value against the label. Short values were fine, but a wrapped producer address became ragged down its <em>left</em> edge — the hard direction to read, and worse for the audience.</td><td>Two left-aligned grid columns (<code>sm:grid-cols-[minmax(0,10rem)_1fr]</code>) instead of <code>justify-between</code> + <code>text-right</code>.</td></tr>
+  <tr><td>⚪ Low</td><td>The associations fetch catches and logs its errors, leaving <code>associations</code> empty. "Local association" then reported <strong>"Unknown"</strong> — a positive claim about data we simply had not loaded.</td><td>Only claim "Unknown" once the list is non-empty; otherwise "Not available".</td></tr>
+</table>
+
+<h4>Checked and found sound</h4>
+<ul>
+  <li><strong>Stale draft in the header.</strong> The header reads <code>profileFormData</code>, so an abandoned edit could have stuck. <code>handleCancelProfileEdit</code> (page.tsx:264) fully resets the form from <code>userProfile</code> — no leak.</li>
+  <li><strong>Switch knob positioning.</strong> Verified the <code>::after</code> now resolves against the track, and <code>peer-checked:after:translate-x-full</code> lands it at 22px in a 44px track with a 2px gutter.</li>
+  <li><strong>Panel padding override.</strong> <code>cn()</code> in this repo is a plain <code>join(' ')</code>, <em>not</em> tailwind-merge — conflicting utilities are decided by stylesheet order, not string order. The header passes <code>padding="none"</code> so no <code>p-*</code> conflict is emitted at all.</li>
+  <li><strong>Toggle id collisions.</strong> All seven ids are unique, and <code>CollapsibleSection</code> unmounts closed content anyway.</li>
+  <li><strong>Blast radius.</strong> <code>WildColonyInspectionForm</code> declares its own local <code>CollapsibleSection</code> (line 80) and does not import the shared one. Both shared-component changes are scoped to this page.</li>
+</ul>
 
 <h3>Verification</h3>
 <ul>
-  <li><code>npx tsc --noEmit</code> — no errors under <code>src/</code>. (Pre-existing Supabase-mock typing errors under <code>tests/</code> are untouched and unrelated.)</li>
-  <li><code>npx next lint</code> on both changed files — clean.</li>
-  <li>Build not run, per project instruction — <strong>please check it in the browser</strong>: Tools → Honey Provenance.</li>
-</ul>
-
-<h3>Follow-ups applied after review</h3>
-<ul>
-  <li><strong>Payment link named.</strong> The Jar Labels step explained the QR indirection but not the other thing a design can carry, so a novice could not learn a jar can be paid for by scanning it. Added the honesty-box case.</li>
-  <li><strong>Stale hint corrected.</strong> The payment toggle in <code>JarLabelsTab.tsx</code> still promised the panel &quot;at the top of the scan page&quot;, untrue since <code>7a46161</code> demoted it below the provenance card.</li>
-  <li><strong>Default flipped to collapsed.</strong> Expanded-on-arrival taxed every repeat visit to serve the first one.</li>
+  <li><code>npx tsc --noEmit</code> — no errors in <code>src/</code>. (Pre-existing mock-typing errors under <code>tests/</code> are unrelated and untouched.)</li>
+  <li><code>npx next lint</code> on all four changed files — no warnings or errors.</li>
+  <li>Build not run, per project convention — <strong>please check it in the browser</strong>.</li>
 </ul>
 
 <div class="note">
-  <strong>When you test:</strong> Tools &rarr; Honey Provenance. The panel now starts closed &mdash; open it once and it stays open. If you had already loaded the page before this change, your browser has remembered it as open; closing it once settles it.
+<strong>Worth a look when you test:</strong> the two-column split at desktop width, the toggle rows in Features (tap anywhere on the row), and the Your details list in view mode — that is where the biggest space saving landed.
 </div>
 
-<h2>Scope guard</h2>
-<div class="note">
-  Additive only: one new presentational component plus roughly six lines in <code>TraceabilityTool.tsx</code>. No data fetching, no schema change, no edits to <code>ContainersTab</code>, <code>BatchesTab</code> or <code>JarLabelsTab</code>.
-</div>
+
+</body>
+</html>

@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { fetchUserExportData, USER_EXPORT_TABLES } from '@/lib/database-export'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
-import { User, Edit2, Save, Download, Trash2, Phone, Palette, Scale, Users, Crown, ChevronRight } from 'lucide-react'
+import { Edit2, Save, Download, Trash2, Scale, Users, Crown, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
 import RenewSubscriptionModal from '@/components/RenewSubscriptionModal'
@@ -18,6 +18,10 @@ import { notifyLogbookPrefChanged } from '@/hooks/useLogbookEnabled'
 import { notifyYardMapPrefChanged } from '@/hooks/useYardMapEnabled'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import CollapsibleSection from '@/components/ui/CollapsibleSection'
+import Panel from '@/components/ui/Panel'
+import Badge from '@/components/ui/Badge'
+import ToggleRow from '@/components/ui/ToggleRow'
+import DetailRow from '@/components/ui/DetailRow'
 import ModalShell from '@/components/ui/ModalShell'
 import FormActionRow from '@/components/ui/FormActionRow'
 import FieldLabel from '@/components/ui/FieldLabel'
@@ -606,736 +610,624 @@ export default function ProfilePage() {
  )
  }
 
- return (
- <div className="space-y-6">
- <div className="flex items-center gap-3">
- <User size={32} className="text-text-tertiary" />
- <h1 className="text-3xl font-bold text-foreground">Profile</h1>
- </div>
+  const displayName = [profileFormData.first_name, profileFormData.last_name]
+    .filter(Boolean)
+    .join(' ')
 
- {/* Profile Information */}
- <CollapsibleSection
- title="Profile Information"
- storageKey="profile"
- defaultOpen
- summary={[profileFormData.first_name, profileFormData.last_name].filter(Boolean).join(' ') || userProfile?.email}
- >
- {/* Only rendered when not editing — an empty row would still occupy its
- bottom margin and leave a gap above the form. */}
- {!editingProfile && (
- <div className="flex items-center justify-end mb-6">
- <Button
- onClick={() => setEditingProfile(true)}
- tone="success"
- size="sm"
- >
- <Edit2 size={16} />
- Edit Profile
- </Button>
- </div>
- )}
+  // Initials for the header avatar, falling back to the email's first letter so
+  // an unfilled profile still gets a mark rather than an empty disc.
+  const initials =
+    [profileFormData.first_name, profileFormData.last_name]
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('') || userProfile?.email?.charAt(0).toUpperCase() || '?'
 
- {editingProfile ? (
- /* Edit Mode */
- <div className="space-y-4">
- <p className="text-sm text-text-tertiary mb-4">
- Update your personal information. All fields are optional.
- </p>
+  const nationalMemberships = [
+    userProfile?.member_fibka ? 'FIBKA' : null,
+    userProfile?.member_iba ? 'IBA' : null,
+    userProfile?.member_nihbs ? 'NIHBS' : null,
+  ].filter((name): name is string => name !== null)
 
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- <div>
- <FieldLabel>First Name</FieldLabel>
- <TextInput
- type="text"
- value={profileFormData.first_name}
- onChange={(e) =>
- setProfileFormData({ ...profileFormData, first_name: e.target.value })
- }
- placeholder="Enter your first name"
- />
- </div>
+  // "Unknown" is a claim about the data, so only make it once the list has
+  // actually loaded — a failed or in-flight associations fetch leaves
+  // `associations` empty and would otherwise libel every member's association.
+  const localAssociation = !userProfile?.association_id
+    ? undefined
+    : associations.length === 0
+    ? 'Not available'
+    : associations.find((a) => a.id === userProfile.association_id)?.name ?? 'Unknown'
 
- <div>
- <FieldLabel>Last Name</FieldLabel>
- <TextInput
- type="text"
- value={profileFormData.last_name}
- onChange={(e) =>
- setProfileFormData({ ...profileFormData, last_name: e.target.value })
- }
- placeholder="Enter your last name"
- />
- </div>
+  const remindersOff =
+    !profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders
 
- <div className="md:col-span-2">
- <FieldLabel>Mobile Number</FieldLabel>
- <TextInput
- type="tel"
- value={profileFormData.mobile_number}
- onChange={(e) =>
- setProfileFormData({ ...profileFormData, mobile_number: e.target.value })
- }
- placeholder="Enter your mobile number"
- />
- </div>
-
- <div className="md:col-span-2">
- <FieldLabel>Producer Address</FieldLabel>
- <TextInput
- type="text"
- value={profileFormData.producer_address}
- onChange={(e) =>
- setProfileFormData({ ...profileFormData, producer_address: e.target.value })
- }
- placeholder="e.g. Mossfield Apiary, Athenry, Co. Galway"
- />
- <p className="mt-1 text-xs text-text-tertiary">
- Printed on retail honey labels alongside your name (EU Honey Directive requires the producer&apos;s name and address). Leave blank if you don&apos;t sell.
- </p>
- </div>
-
- <div>
- <FieldLabel>Breeder Code</FieldLabel>
- <TextInput
- type="text"
- value={profileFormData.breeder_code}
- onChange={(e) =>
- setProfileFormData({ ...profileFormData, breeder_code: e.target.value.toUpperCase() })
- }
- placeholder="e.g. RZ"
- maxLength={10}
- className="uppercase"
- />
- <p className="mt-1 text-xs text-text-tertiary">
- Used in the composite queen code (e.g. IE-RZ-7W-2026). Unique across HiveCraic. If blank, your initials are used.
- </p>
- </div>
-
- {/* Location */}
- <div className="md:col-span-2 pt-4 border-t">
- <h3 className="text-md font-medium text-foreground mb-3">Location</h3>
- <label className="flex items-center gap-3 cursor-pointer">
- <input
- type="checkbox"
- checked={profileFormData.is_uk_ni_resident}
- onChange={(e) =>
- setProfileFormData({ ...profileFormData, is_uk_ni_resident: e.target.checked })
- }
- className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
- />
- <span className="text-sm text-foreground">Resident in NI/UK</span>
- </label>
- <p className="text-xs text-text-tertiary mt-1 ml-7">Sets currency to GBP and pre-selects UK-authorised varroa treatments</p>
- </div>
-
- {/* Association Membership */}
- <div className="md:col-span-2 pt-4 border-t">
- <h3 className="text-md font-medium text-foreground mb-3">Association Membership</h3>
-
- <div className="space-y-4">
- <div>
- <FieldLabel className="mb-1">
- Local Beekeeping Association
- <span className="ml-2 text-xs text-text-tertiary font-normal">
- (If you are a member of a local association, select from list below)
- </span>
- </FieldLabel>
- <SelectField
- value={profileFormData.association_id || ''}
- onChange={(e) =>
- setProfileFormData({ ...profileFormData, association_id: e.target.value || null })
- }
- disabled={loadingAssociations}
- >
- <option value="">Not a member of any local association</option>
- {associations.map((assoc) => (
- <option key={assoc.id} value={assoc.id}>
- {assoc.name} - {assoc.county_area} ({assoc.jurisdiction})
- </option>
- ))}
- </SelectField>
- </div>
-
- <div>
- <label className="block text-sm font-medium text-text-secondary mb-2">
- National Organization Memberships
- </label>
- <div className="space-y-2">
- <label className="flex items-center gap-2">
- <input
- type="checkbox"
- checked={profileFormData.member_fibka}
- onChange={(e) =>
- setProfileFormData({ ...profileFormData, member_fibka: e.target.checked })
- }
- className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
- />
- <span className="text-sm text-text-secondary">
- FIBKA (Federation of Irish Beekeepers Associations)
- </span>
- </label>
-
- <label className="flex items-center gap-2">
- <input
- type="checkbox"
- checked={profileFormData.member_iba}
- onChange={(e) =>
- setProfileFormData({ ...profileFormData, member_iba: e.target.checked })
- }
- className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
- />
- <span className="text-sm text-text-secondary">
- IBA (Irish Beekeepers Association)
- </span>
- </label>
-
- <label className="flex items-center gap-2">
- <input
- type="checkbox"
- checked={profileFormData.member_nihbs}
- onChange={(e) =>
- setProfileFormData({ ...profileFormData, member_nihbs: e.target.checked })
- }
- className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
- />
- <span className="text-sm text-text-secondary">
- NIHBS (Native Irish Honey Bee Society)
- </span>
- </label>
- </div>
- </div>
- </div>
- </div>
- </div>
-
- <div className="flex gap-3 pt-4">
- <Button
- onClick={updateUserProfile}
- disabled={savingProfile}
- tone="success"
- className="disabled:cursor-not-allowed disabled:opacity-50"
- >
- {savingProfile ? (
- <>
- <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
- Saving...
- </>
- ) : (
- <>
- <Save size={16} />
- Save Changes
- </>
- )}
- </Button>
- <Button
- onClick={handleCancelProfileEdit}
- disabled={savingProfile}
- tone="neutral"
- className="disabled:opacity-50"
- >
- Cancel
- </Button>
- </div>
- </div>
- ) : (
- /* Display Mode */
- <div className="space-y-4">
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- <div className="flex items-start gap-3 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <User size={20} className="text-text-tertiary mt-1" />
- <div className="flex-1">
- <div className="text-sm font-medium text-text-secondary mb-1">First Name</div>
- <div className="text-foreground">
- {userProfile?.first_name || <span className="text-text-tertiary italic">Not set</span>}
- </div>
- </div>
- </div>
-
- <div className="flex items-start gap-3 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <User size={20} className="text-text-tertiary mt-1" />
- <div className="flex-1">
- <div className="text-sm font-medium text-text-secondary mb-1">Last Name</div>
- <div className="text-foreground">
- {userProfile?.last_name || <span className="text-text-tertiary italic">Not set</span>}
- </div>
- </div>
- </div>
-
- <div className="md:col-span-2 flex items-start gap-3 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <Phone size={20} className="text-text-tertiary mt-1" />
- <div className="flex-1">
- <div className="text-sm font-medium text-text-secondary mb-1">Mobile Number</div>
- <div className="text-foreground">
- {userProfile?.mobile_number || <span className="text-text-tertiary italic">Not set</span>}
- </div>
- </div>
- </div>
-
- <div className="md:col-span-2 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="text-sm font-medium text-text-secondary mb-1">Producer Address</div>
- <div className="text-foreground">
- {userProfile?.producer_address || <span className="text-text-tertiary italic">Not set</span>}
- </div>
- </div>
-
- <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="text-sm font-medium text-text-secondary mb-1">Breeder Code</div>
- <div className="text-foreground font-mono">
- {userProfile?.breeder_code || <span className="font-sans text-text-tertiary italic">Not set</span>}
- </div>
- </div>
-
- {/* Location Display */}
- <div className="md:col-span-2 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="text-sm font-semibold text-foreground mb-1">Resident in NI/UK</div>
- <div className="text-sm text-foreground">{userProfile?.is_uk_ni_resident ? 'Yes' : 'No'}</div>
- </div>
-
- {/* Association Membership Display */}
- {(userProfile?.association_id || userProfile?.member_fibka || userProfile?.member_iba || userProfile?.member_nihbs) && (
- <div className="md:col-span-2 p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="text-sm font-semibold text-foreground mb-2">Association Memberships</div>
- <div className="space-y-2">
- {userProfile?.association_id && (
- <div className="text-sm text-foreground">
- <span className="font-medium">Local Association:</span>{' '}
- {associations.find(a => a.id === userProfile.association_id)?.name || 'Unknown'}
- </div>
- )}
- {(userProfile?.member_fibka || userProfile?.member_iba || userProfile?.member_nihbs) && (
- <div className="text-sm text-foreground">
- <span className="font-medium">National Organizations:</span>{' '}
- {[
- userProfile?.member_fibka && 'FIBKA',
- userProfile?.member_iba && 'IBA',
- userProfile?.member_nihbs && 'NIHBS'
- ].filter(Boolean).join(', ')}
- </div>
- )}
- </div>
- </div>
- )}
-
- </div>
- </div>
- )}
- </CollapsibleSection>
-
- {/* Subscription Management */}
- <CollapsibleSection
- title="Subscription"
- storageKey="subscription"
- defaultOpen
- summary={subscriptionStatus?.is_active ? 'Active' : 'Not active'}
- >
- <div className="space-y-6">
-
- <SubscriptionStatusCard
- key={subscriptionRefreshKey}
- onRenewClick={() => setShowRenewSubscriptionModal(true)}
- />
-
- <SubscriptionHistoryTable key={subscriptionRefreshKey} />
- </div>
- </CollapsibleSection>
-
- {/* Data Export - Only visible for users with active subscription */}
- {subscriptionStatus?.is_active && (
- <CollapsibleSection title="My data export" storageKey="export">
- <p className="text-sm text-text-tertiary mb-4">
- Export all your personal beekeeping data including apiaries, hives, queens, inspections, and varroa management records.
- </p>
- <ul className="text-sm text-text-tertiary space-y-1 mb-4">
- <li>• Includes all your personal beekeeping records</li>
- <li>• Choose between JSON or CSV format</li>
- <li>• Use for backup, analysis, or migration purposes</li>
- <li>• Only includes data you own and have created</li>
- </ul>
- <div className="flex gap-3">
- <Button
- onClick={exportMyDataAsJSON}
- disabled={exportingMyData}
- tone="success"
- className="disabled:cursor-not-allowed disabled:opacity-50"
- >
- {exportingMyData ? (
- <>
- <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
- Exporting...
- </>
- ) : (
- <>
- <Download size={16} />
- Export as JSON
- </>
- )}
- </Button>
- <Button
- onClick={exportMyDataAsCSV}
- disabled={exportingMyData}
- tone="success"
- className="disabled:cursor-not-allowed disabled:opacity-50"
- >
- {exportingMyData ? (
- <>
- <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
- Exporting...
- </>
- ) : (
- <>
- <Download size={16} />
- Export as CSV
- </>
- )}
- </Button>
- </div>
- </CollapsibleSection>
- )}
-
-      {/* Selling your honey — promoted out of Preferences: payment settings are
-          not a "preference", and burying them here made them unfindable. */}
-      <CollapsibleSection
-        title="Selling your honey"
-        storageKey="selling"
-        summary={!profileFormData.enable_jar_payments
-         ? 'Off'
-         : profileFormData.sales_revolut_url
-         ? `Revolut connected \u00b7 ${profileFormData.sales_currency}`
-         : 'On \u2014 add your Revolut link'}
-      >
- <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="mb-4">
- <div className="font-medium text-foreground mb-1">Selling your honey</div>
- <div className="text-sm text-text-tertiary">Let customers pay you when they scan the QR code on a jar. Set up once here and every jar label can use it.</div>
- </div>
-
- <div className="flex items-center justify-between">
- <div>
- <label htmlFor="jar-payments" className="text-sm font-medium text-foreground">Accept payments on jar labels</label>
- <div className="text-xs text-text-tertiary">Shows a price and a payment button when someone scans a jar</div>
- </div>
- <label className="relative inline-flex items-center cursor-pointer">
- <input
- type="checkbox"
- id="jar-payments"
- checked={profileFormData.enable_jar_payments}
- onChange={(e) => updatePreference('enable_jar_payments', e.target.checked)}
- className="sr-only peer"
- />
- <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
- </label>
- </div>
-
- {profileFormData.enable_jar_payments && (
- <div className="mt-4 space-y-4">
- <div>
- <label htmlFor="sales-revolut" className="block text-sm font-medium text-foreground mb-1">Your Revolut link</label>
- <input
- type="url"
- inputMode="url"
- id="sales-revolut"
- value={profileFormData.sales_revolut_url}
- onChange={(e) => setProfileFormData(prev => ({ ...prev, sales_revolut_url: e.target.value }))}
- onBlur={(e) => saveSalesRevolutUrl(e.target.value)}
- placeholder="https://revolut.me/yourname"
- className="fj-control w-full"
- />
- <div className="mt-1 text-xs text-text-tertiary">
- Copy this from the Revolut app: Profile &rarr; your @username. Customers type the amount themselves, so each jar label carries its own price.
- </div>
- </div>
-
- <div>
- <label htmlFor="sales-currency" className="block text-sm font-medium text-foreground mb-1">Currency</label>
- <input
- type="text"
- id="sales-currency"
- value={profileFormData.sales_currency}
- maxLength={3}
- onChange={(e) => setProfileFormData(prev => ({ ...prev, sales_currency: e.target.value.toUpperCase() }))}
- onBlur={(e) => saveSalesCurrency(e.target.value)}
- className="fj-control w-32 font-mono"
- />
- </div>
-
- <div className="text-xs text-text-tertiary">
- Customers pay inside Revolut, so HiveCraic never sees payment details &mdash; and never learns whether a payment went through. Check your Revolut app to confirm a sale.
- </div>
- </div>
- )}
- </div>
-      </CollapsibleSection>
-
-      {/* Appearance */}
-      <CollapsibleSection title="Appearance" storageKey="appearance">
- <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="flex items-center gap-3 mb-3">
- <Palette size={20} className="text-forest-600 dark:text-forest-400" />
- <div className="font-medium text-foreground">Appearance</div>
- </div>
- <p className="text-sm text-text-tertiary mb-4">Light mode is optimised for outdoor field work; dark mode suits evening planning.</p>
- <ThemeSwitcher />
- </div>
-      </CollapsibleSection>
-
-      {/* Notifications */}
-      <CollapsibleSection
-        title="Notifications"
-        storageKey="notifications"
-        summary={!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders
-         ? 'Email reminders off'
-         : `${profileFormData.task_reminder_frequency.charAt(0).toUpperCase()}${profileFormData.task_reminder_frequency.slice(1)} email reminders`}
-      >
- <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="mb-4">
- <div className="font-medium text-foreground mb-1">Email Notifications</div>
- <div className="text-sm text-text-tertiary">Manage your email reminder preferences for tasks and events</div>
- </div>
-
- <div className="space-y-3">
- {/* Task Email Reminders Toggle */}
- <div className="flex items-center justify-between">
- <div>
- <label htmlFor="task-reminders" className="text-sm font-medium text-foreground">Task Reminders</label>
- <div className="text-xs text-text-tertiary">Receive email reminders for upcoming tasks</div>
- </div>
- <label className="relative inline-flex items-center cursor-pointer">
- <input
- type="checkbox"
- id="task-reminders"
- checked={profileFormData.enable_task_email_reminders}
- onChange={(e) => updatePreference('enable_task_email_reminders', e.target.checked)}
- className="sr-only peer"
- />
- <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
- </label>
- </div>
-
- {/* Event Email Reminders Toggle */}
- <div className="flex items-center justify-between">
- <div>
- <label htmlFor="event-reminders" className="text-sm font-medium text-foreground">Event Reminders</label>
- <div className="text-xs text-text-tertiary">Receive email reminders for upcoming events</div>
- </div>
- <label className="relative inline-flex items-center cursor-pointer">
- <input
- type="checkbox"
- id="event-reminders"
- checked={profileFormData.enable_event_email_reminders}
- onChange={(e) => updatePreference('enable_event_email_reminders', e.target.checked)}
- className="sr-only peer"
- />
- <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
- </label>
- </div>
-
- {/* Reminder Frequency Dropdown */}
- <div className="pt-2 border-t border-border">
- <label htmlFor="reminder-frequency" className="block text-sm font-medium text-foreground mb-2">
- Reminder Frequency
- </label>
- <select
- id="reminder-frequency"
- value={profileFormData.task_reminder_frequency}
- onChange={(e) => updatePreference('task_reminder_frequency', e.target.value)}
- disabled={!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders}
- className="w-full px-3 py-2 bg-surface dark:bg-surface-elevated border border-border rounded-lg text-sm text-foreground focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
- >
- <option value="realtime">Realtime (Hourly check)</option>
- <option value="daily">Daily (Once per day)</option>
- <option value="weekly">Weekly (Once per week)</option>
- <option value="disabled">Disabled (No emails)</option>
- </select>
- <div className="mt-1 text-xs text-text-tertiary">
- {!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders ? (
- 'Enable task or event reminders above to set frequency'
- ) : (
- <>
- {profileFormData.task_reminder_frequency === 'realtime' && 'Checks every hour for reminders in next 24 hours'}
- {profileFormData.task_reminder_frequency === 'daily' && 'Sends once per day for tasks/events in next 2 days'}
- {profileFormData.task_reminder_frequency === 'weekly' && 'Sends once per week for tasks/events in next 7 days'}
- {profileFormData.task_reminder_frequency === 'disabled' && 'No email reminders will be sent'}
- </>
- )}
- </div>
- </div>
- </div>
- </div>
-      </CollapsibleSection>
-
-      {/* Features — the on/off switches for optional parts of the app. */}
-      <CollapsibleSection
-        title="Features"
-        storageKey="features"
-        summary={[
-         profileFormData.enable_label_printing && 'Printing',
-         profileFormData.enable_logbook && 'Logbook',
-         subscriptionStatus?.is_active && profileFormData.enable_crm && 'Sales / CRM',
-         subscriptionStatus?.is_active && profileFormData.enable_yard_map && 'Apiary Map',
-       ].filter(Boolean).join(', ') || 'None enabled'}
-      >
-        <div className="space-y-3">
- <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="mb-4">
- <div className="font-medium text-foreground mb-1">Printing</div>
- <div className="text-sm text-text-tertiary">Print thermal labels for queens and bulk honey containers (Brother QL-820 / DK-22251).</div>
- </div>
-
- <div className="flex items-center justify-between">
- <div>
- <label htmlFor="label-printing" className="text-sm font-medium text-foreground">Enable label printing</label>
- <div className="text-xs text-text-tertiary">Adds print buttons in the Queens and Traceability sections</div>
- </div>
- <label className="relative inline-flex items-center cursor-pointer">
- <input
- type="checkbox"
- id="label-printing"
- checked={profileFormData.enable_label_printing}
- onChange={(e) => updatePreference('enable_label_printing', e.target.checked)}
- className="sr-only peer"
- />
- <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
- </label>
- </div>
- </div>
-
- <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="mb-4">
- <div className="font-medium text-foreground mb-1">Logbook</div>
- <div className="text-sm text-text-tertiary">A free-form journal for notes, observations and reminders that don&apos;t fit a structured record.</div>
- </div>
-
- <div className="flex items-center justify-between">
- <div>
- <label htmlFor="enable-logbook" className="text-sm font-medium text-foreground">Enable logbook</label>
- <div className="text-xs text-text-tertiary">Adds a Logbook item to your menu</div>
- </div>
- <label className="relative inline-flex items-center cursor-pointer">
- <input
- type="checkbox"
- id="enable-logbook"
- checked={profileFormData.enable_logbook}
- onChange={(e) => updatePreference('enable_logbook', e.target.checked, () => notifyLogbookPrefChanged(e.target.checked))}
- className="sr-only peer"
- />
- <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
- </label>
- </div>
- </div>
-
- {subscriptionStatus?.is_active && (
- <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="mb-4">
- <div className="font-medium text-foreground mb-1">Sales / CRM</div>
- <div className="text-sm text-text-tertiary">Manage customers and orders. Sales you mark as paid are recognised in your income records automatically.</div>
- </div>
-
- <div className="flex items-center justify-between">
- <div>
- <label htmlFor="enable-crm" className="text-sm font-medium text-foreground">Enable CRM</label>
- <div className="text-xs text-text-tertiary">Adds a Sales section (Customers, Orders) to your menu</div>
- </div>
- <label className="relative inline-flex items-center cursor-pointer">
- <input
- type="checkbox"
- id="enable-crm"
- checked={profileFormData.enable_crm}
- onChange={(e) => updatePreference('enable_crm', e.target.checked, () => notifyCrmPrefChanged(e.target.checked))}
- className="sr-only peer"
- />
- <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
- </label>
- </div>
- </div>
- )}
-
- {subscriptionStatus?.is_active && (
- <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="mb-4">
- <div className="font-medium text-foreground mb-1">Apiary Map</div>
- <div className="text-sm text-text-tertiary">Arrange your hives on a visual apiary map and view the apiary in 3D, built from each hive&apos;s configuration.</div>
- </div>
-
- <div className="flex items-center justify-between">
- <div>
- <label htmlFor="enable-yard-map" className="text-sm font-medium text-foreground">Enable apiary map</label>
- <div className="text-xs text-text-tertiary">Adds an Apiary Map action to each apiary</div>
- </div>
- <label className="relative inline-flex items-center cursor-pointer">
- <input
- type="checkbox"
- id="enable-yard-map"
- checked={profileFormData.enable_yard_map}
- onChange={(e) => updatePreference('enable_yard_map', e.target.checked, () => notifyYardMapPrefChanged(e.target.checked))}
- className="sr-only peer"
- />
- <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
- </label>
- </div>
- </div>
- )}
+  return (
+    <div className="space-y-6">
+      {/* Identity header — always visible, and reports the things worth knowing
+          at a glance. It replaces a bare "Profile" heading that said nothing the
+          navigation had not already said. */}
+      <Panel padding="none" className="flex items-start gap-4 p-4 sm:p-6">
+        <div
+          aria-hidden="true"
+          className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-amber-100 text-lg font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+        >
+          {initials}
         </div>
-      </CollapsibleSection>
+        <div className="min-w-0 flex-1">
+          {/* break-words, not truncate: clipping someone's own name or the
+              domain half of their email helps nobody, least of all the older
+              eyes this app is built for. */}
+          <h1 className="break-words text-2xl font-bold text-foreground">
+            {displayName || 'Your profile'}
+          </h1>
+          {userProfile?.email && (
+            <p className="break-all text-sm text-text-secondary">{userProfile.email}</p>
+          )}
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {/* Rendered only once the status is known: `subscriptionStatus`
+                starts null, so a truthiness check would badge every active
+                subscriber "No subscription" until the fetch returned. */}
+            {subscriptionStatus && (
+              <Badge tone={subscriptionStatus.is_active ? 'green' : 'neutral'}>
+                {subscriptionStatus.is_active ? 'Subscription active' : 'No subscription'}
+              </Badge>
+            )}
+            {userProfile?.breeder_code && (
+              <Badge tone="amber">Breeder {userProfile.breeder_code}</Badge>
+            )}
+            {nationalMemberships.map((name) => (
+              <Badge key={name} tone="blue">
+                {name}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      </Panel>
 
+      {/* Two columns from lg: a settings page is a set of independent sections,
+          and stacking them in one narrow column left half the desktop viewport
+          empty. Phones and tablets keep the single column, so the DOM order below
+          is also the phone reading order: who you are and money first, then the
+          switches, then the things you rarely touch. */}
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+        <div className="space-y-6">
+          {/* Your details */}
+          <CollapsibleSection
+            title="Your details"
+            storageKey="profile"
+            defaultOpen
+            summary={displayName || userProfile?.email}
+          >
+            {editingProfile ? (
+              /* Edit Mode */
+              <div className="space-y-4">
+                <p className="text-sm text-text-tertiary mb-4">
+                  Update your personal information. All fields are optional.
+                </p>
 
- {/* Tools & Teams */}
- <CollapsibleSection title="Tools &amp; Teams" storageKey="tools">
- <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
- {[
- { href: '/dashboard/scales', label: 'Scales', description: 'BEEP & Wolf Waagen integrations', icon: Scale, colour: 'text-blue-600 dark:text-blue-400' },
- { href: '/dashboard/apiary-team', label: 'Apiary Team', description: 'Team-based apiary sharing', icon: Users, colour: 'text-green-600 dark:text-green-400' },
- { href: '/dashboard/rearing-team', label: 'Rearing Team', description: 'Queen rearing groups', icon: Crown, colour: 'text-amber-600 dark:text-amber-400' },
- ].map((item) => (
- <Link
- key={item.href}
- href={item.href}
- className="flex items-center gap-3 p-4 border border-border rounded-lg hover:border-forest-500 dark:hover:border-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 transition-colors"
- >
- <item.icon size={20} className={item.colour} />
- <div className="flex-1 min-w-0">
- <h3 className="font-medium text-foreground text-sm">{item.label}</h3>
- <p className="text-xs text-text-secondary truncate">{item.description}</p>
- </div>
- <ChevronRight size={16} className="text-text-tertiary flex-shrink-0" />
- </Link>
- ))}
- </div>
- </CollapsibleSection>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <FieldLabel>First Name</FieldLabel>
+                    <TextInput
+                      type="text"
+                      value={profileFormData.first_name}
+                      onChange={(e) =>
+                        setProfileFormData({ ...profileFormData, first_name: e.target.value })
+                      }
+                      placeholder="Enter your first name"
+                    />
+                  </div>
 
- {/* Account */}
- <CollapsibleSection title="Account" storageKey="account">
- <div className="flex items-center justify-between p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div>
- <div className="font-medium text-foreground">Change Password</div>
- <div className="text-sm text-text-tertiary">Update your account password</div>
- </div>
- <Button
- onClick={() => setShowChangePasswordModal(true)}
- tone="success"
- size="sm"
- >
- Change Password
- </Button>
- </div>
- </CollapsibleSection>
+                  <div>
+                    <FieldLabel>Last Name</FieldLabel>
+                    <TextInput
+                      type="text"
+                      value={profileFormData.last_name}
+                      onChange={(e) =>
+                        setProfileFormData({ ...profileFormData, last_name: e.target.value })
+                      }
+                      placeholder="Enter your last name"
+                    />
+                  </div>
 
- {/* Danger Zone */}
- <CollapsibleSection title="Danger Zone" storageKey="danger" danger>
- <div className="flex items-center justify-between p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div>
- <div className="font-medium text-red-900 dark:text-red-100">Delete Account</div>
- <div className="text-sm text-red-700 dark:text-red-300">Delete your account - data retained for 12 months</div>
- </div>
- <Button
- onClick={() => setShowDeleteAccountModal(true)}
- tone="danger"
- size="sm"
- >
- <Trash2 size={16} />
- Delete Account
- </Button>
- </div>
- </CollapsibleSection>
+                  <div className="md:col-span-2">
+                    <FieldLabel>Mobile Number</FieldLabel>
+                    <TextInput
+                      type="tel"
+                      value={profileFormData.mobile_number}
+                      onChange={(e) =>
+                        setProfileFormData({ ...profileFormData, mobile_number: e.target.value })
+                      }
+                      placeholder="Enter your mobile number"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <FieldLabel>Producer Address</FieldLabel>
+                    <TextInput
+                      type="text"
+                      value={profileFormData.producer_address}
+                      onChange={(e) =>
+                        setProfileFormData({ ...profileFormData, producer_address: e.target.value })
+                      }
+                      placeholder="e.g. Mossfield Apiary, Athenry, Co. Galway"
+                    />
+                    <p className="mt-1 text-sm text-text-tertiary">
+                      Printed on retail honey labels alongside your name (EU Honey Directive requires the producer&apos;s name and address). Leave blank if you don&apos;t sell.
+                    </p>
+                  </div>
+
+                  <div>
+                    <FieldLabel>Breeder Code</FieldLabel>
+                    <TextInput
+                      type="text"
+                      value={profileFormData.breeder_code}
+                      onChange={(e) =>
+                        setProfileFormData({ ...profileFormData, breeder_code: e.target.value.toUpperCase() })
+                      }
+                      placeholder="e.g. RZ"
+                      maxLength={10}
+                      className="uppercase"
+                    />
+                    <p className="mt-1 text-sm text-text-tertiary">
+                      Used in the composite queen code (e.g. IE-RZ-7W-2026). Unique across HiveCraic. If blank, your initials are used.
+                    </p>
+                  </div>
+
+                  {/* Location */}
+                  <div className="md:col-span-2 pt-4 border-t border-border">
+                    <h3 className="text-md font-medium text-foreground mb-3">Location</h3>
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={profileFormData.is_uk_ni_resident}
+                        onChange={(e) =>
+                          setProfileFormData({ ...profileFormData, is_uk_ni_resident: e.target.checked })
+                        }
+                        className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
+                      />
+                      <span className="text-sm text-foreground">Resident in NI/UK</span>
+                    </label>
+                    <p className="text-sm text-text-tertiary mt-1 ml-7">Sets currency to GBP and pre-selects UK-authorised varroa treatments</p>
+                  </div>
+
+                  {/* Association Membership */}
+                  <div className="md:col-span-2 pt-4 border-t border-border">
+                    <h3 className="text-md font-medium text-foreground mb-3">Association Membership</h3>
+
+                    <div className="space-y-4">
+                      <div>
+                        <FieldLabel className="mb-1">
+                          Local Beekeeping Association
+                          <span className="ml-2 text-xs text-text-tertiary font-normal">
+                            (If you are a member of a local association, select from list below)
+                          </span>
+                        </FieldLabel>
+                        <SelectField
+                          value={profileFormData.association_id || ''}
+                          onChange={(e) =>
+                            setProfileFormData({ ...profileFormData, association_id: e.target.value || null })
+                          }
+                          disabled={loadingAssociations}
+                        >
+                          <option value="">Not a member of any local association</option>
+                          {associations.map((assoc) => (
+                            <option key={assoc.id} value={assoc.id}>
+                              {assoc.name} - {assoc.county_area} ({assoc.jurisdiction})
+                            </option>
+                          ))}
+                        </SelectField>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-text-secondary mb-2">
+                          National Organization Memberships
+                        </label>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={profileFormData.member_fibka}
+                              onChange={(e) =>
+                                setProfileFormData({ ...profileFormData, member_fibka: e.target.checked })
+                              }
+                              className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
+                            />
+                            <span className="text-sm text-text-secondary">
+                              FIBKA (Federation of Irish Beekeepers Associations)
+                            </span>
+                          </label>
+
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={profileFormData.member_iba}
+                              onChange={(e) =>
+                                setProfileFormData({ ...profileFormData, member_iba: e.target.checked })
+                              }
+                              className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
+                            />
+                            <span className="text-sm text-text-secondary">
+                              IBA (Irish Beekeepers Association)
+                            </span>
+                          </label>
+
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={profileFormData.member_nihbs}
+                              onChange={(e) =>
+                                setProfileFormData({ ...profileFormData, member_nihbs: e.target.checked })
+                              }
+                              className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
+                            />
+                            <span className="text-sm text-text-secondary">
+                              NIHBS (Native Irish Honey Bee Society)
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    onClick={updateUserProfile}
+                    disabled={savingProfile}
+                    tone="success"
+                    className="disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {savingProfile ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={16} />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleCancelProfileEdit}
+                    disabled={savingProfile}
+                    tone="neutral"
+                    className="disabled:opacity-50"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* Display Mode — a list, not eight bordered boxes. Each value is
+                 one short line; the framing used to cost more height than the
+                 values themselves. */
+              <>
+                <dl>
+                  <DetailRow label="First name" value={userProfile?.first_name} />
+                  <DetailRow label="Last name" value={userProfile?.last_name} />
+                  <DetailRow label="Mobile number" value={userProfile?.mobile_number} />
+                  <DetailRow label="Producer address" value={userProfile?.producer_address} />
+                  <DetailRow label="Breeder code" value={userProfile?.breeder_code} mono />
+                  <DetailRow
+                    label="Resident in NI/UK"
+                    value={userProfile?.is_uk_ni_resident ? 'Yes' : 'No'}
+                  />
+                  <DetailRow label="Local association" value={localAssociation} />
+                  <DetailRow label="National memberships" value={nationalMemberships.join(', ')} />
+                </dl>
+
+                <div className="mt-4">
+                  <Button onClick={() => setEditingProfile(true)} tone="success" size="sm">
+                    <Edit2 size={16} />
+                    Edit details
+                  </Button>
+                </div>
+              </>
+            )}
+          </CollapsibleSection>
+
+          {/* Subscription Management */}
+          <CollapsibleSection
+            title="Subscription"
+            storageKey="subscription"
+            defaultOpen
+            summary={subscriptionStatus?.is_active ? 'Active' : 'Not active'}
+          >
+            <div className="space-y-6">
+              <SubscriptionStatusCard
+                key={subscriptionRefreshKey}
+                onRenewClick={() => setShowRenewSubscriptionModal(true)}
+              />
+
+              <SubscriptionHistoryTable key={subscriptionRefreshKey} />
+            </div>
+          </CollapsibleSection>
+
+          {/* Selling your honey — payment settings are not a "preference", and
+              burying them under one made them unfindable. */}
+          <CollapsibleSection
+            title="Selling your honey"
+            storageKey="selling"
+            summary={!profileFormData.enable_jar_payments
+              ? 'Off'
+              : profileFormData.sales_revolut_url
+              ? `Revolut connected · ${profileFormData.sales_currency}`
+              : 'On — add your Revolut link'}
+          >
+            <p className="mb-2 text-sm text-text-secondary">
+              Let customers pay you when they scan the QR code on a jar. Set up once here and every jar label can use it.
+            </p>
+
+            <ToggleRow
+              id="jar-payments"
+              label="Accept payments on jar labels"
+              description="Shows a price and a payment button when someone scans a jar"
+              checked={profileFormData.enable_jar_payments}
+              onChange={(checked) => updatePreference('enable_jar_payments', checked)}
+            >
+              <div>
+                <FieldLabel htmlFor="sales-revolut">Your Revolut link</FieldLabel>
+                <input
+                  type="url"
+                  inputMode="url"
+                  id="sales-revolut"
+                  value={profileFormData.sales_revolut_url}
+                  onChange={(e) => setProfileFormData(prev => ({ ...prev, sales_revolut_url: e.target.value }))}
+                  onBlur={(e) => saveSalesRevolutUrl(e.target.value)}
+                  placeholder="https://revolut.me/yourname"
+                  className="fj-control w-full"
+                />
+                <p className="mt-1 text-sm text-text-tertiary">
+                  Copy this from the Revolut app: Profile &rarr; your @username. Customers type the amount themselves, so each jar label carries its own price.
+                </p>
+              </div>
+
+              <div>
+                <FieldLabel htmlFor="sales-currency">Currency</FieldLabel>
+                <input
+                  type="text"
+                  id="sales-currency"
+                  value={profileFormData.sales_currency}
+                  maxLength={3}
+                  onChange={(e) => setProfileFormData(prev => ({ ...prev, sales_currency: e.target.value.toUpperCase() }))}
+                  onBlur={(e) => saveSalesCurrency(e.target.value)}
+                  className="fj-control w-32 font-mono"
+                />
+              </div>
+
+              <p className="text-sm text-text-tertiary">
+                Customers pay inside Revolut, so HiveCraic never sees payment details &mdash; and never learns whether a payment went through. Check your Revolut app to confirm a sale.
+              </p>
+            </ToggleRow>
+          </CollapsibleSection>
+
+          {/* Data Export - Only visible for users with active subscription */}
+          {subscriptionStatus?.is_active && (
+            <CollapsibleSection title="My data export" storageKey="export">
+              <p className="mb-4 text-sm text-text-secondary">
+                Download everything you own &mdash; apiaries, hives, queens, inspections and varroa records &mdash; for backup, analysis or migration.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={exportMyDataAsJSON}
+                  disabled={exportingMyData}
+                  tone="success"
+                  className="disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {exportingMyData ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} />
+                      Export as JSON
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={exportMyDataAsCSV}
+                  disabled={exportingMyData}
+                  tone="success"
+                  className="disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {exportingMyData ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} />
+                      Export as CSV
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CollapsibleSection>
+          )}
+        </div>
+
+        <div className="space-y-6">
+          {/* Features — the on/off switches for optional parts of the app. */}
+          <CollapsibleSection
+            title="Features"
+            storageKey="features"
+            summary={[
+              profileFormData.enable_label_printing && 'Printing',
+              profileFormData.enable_logbook && 'Logbook',
+              subscriptionStatus?.is_active && profileFormData.enable_crm && 'Sales / CRM',
+              subscriptionStatus?.is_active && profileFormData.enable_yard_map && 'Apiary Map',
+            ].filter(Boolean).join(', ') || 'None enabled'}
+          >
+            <ToggleRow
+              id="label-printing"
+              label="Printing"
+              description="Thermal labels for queens and bulk honey containers (Brother QL-820 / DK-22251). Adds print buttons in Queens and Traceability."
+              checked={profileFormData.enable_label_printing}
+              onChange={(checked) => updatePreference('enable_label_printing', checked)}
+            />
+
+            <ToggleRow
+              id="enable-logbook"
+              label="Logbook"
+              description="A free-form journal for notes that don't fit a structured record. Adds a Logbook item to your menu."
+              checked={profileFormData.enable_logbook}
+              onChange={(checked) =>
+                updatePreference('enable_logbook', checked, () => notifyLogbookPrefChanged(checked))
+              }
+            />
+
+            {subscriptionStatus?.is_active && (
+              <ToggleRow
+                id="enable-crm"
+                label="Sales / CRM"
+                description="Customers and orders, with paid sales recognised in your income records. Adds a Sales section to your menu."
+                checked={profileFormData.enable_crm}
+                onChange={(checked) =>
+                  updatePreference('enable_crm', checked, () => notifyCrmPrefChanged(checked))
+                }
+              />
+            )}
+
+            {subscriptionStatus?.is_active && (
+              <ToggleRow
+                id="enable-yard-map"
+                label="Apiary map"
+                description="Arrange your hives on a visual map and view the apiary in 3D. Adds an Apiary Map action to each apiary."
+                checked={profileFormData.enable_yard_map}
+                onChange={(checked) =>
+                  updatePreference('enable_yard_map', checked, () => notifyYardMapPrefChanged(checked))
+                }
+              />
+            )}
+          </CollapsibleSection>
+
+          {/* Notifications */}
+          <CollapsibleSection
+            title="Notifications"
+            storageKey="notifications"
+            summary={remindersOff
+              ? 'Email reminders off'
+              : `${profileFormData.task_reminder_frequency.charAt(0).toUpperCase()}${profileFormData.task_reminder_frequency.slice(1)} email reminders`}
+          >
+            <ToggleRow
+              id="task-reminders"
+              label="Task reminders"
+              description="Email reminders for upcoming tasks"
+              checked={profileFormData.enable_task_email_reminders}
+              onChange={(checked) => updatePreference('enable_task_email_reminders', checked)}
+            />
+
+            <ToggleRow
+              id="event-reminders"
+              label="Event reminders"
+              description="Email reminders for upcoming events"
+              checked={profileFormData.enable_event_email_reminders}
+              onChange={(checked) => updatePreference('enable_event_email_reminders', checked)}
+            />
+
+            <div className="border-t border-border pt-3">
+              <FieldLabel htmlFor="reminder-frequency">Reminder frequency</FieldLabel>
+              <SelectField
+                id="reminder-frequency"
+                value={profileFormData.task_reminder_frequency}
+                onChange={(e) => updatePreference('task_reminder_frequency', e.target.value)}
+                disabled={remindersOff}
+                className="disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="realtime">Realtime (Hourly check)</option>
+                <option value="daily">Daily (Once per day)</option>
+                <option value="weekly">Weekly (Once per week)</option>
+                <option value="disabled">Disabled (No emails)</option>
+              </SelectField>
+              <p className="mt-1 text-sm text-text-tertiary">
+                {remindersOff ? (
+                  'Turn on task or event reminders above to set a frequency'
+                ) : (
+                  <>
+                    {profileFormData.task_reminder_frequency === 'realtime' && 'Checks every hour for reminders in next 24 hours'}
+                    {profileFormData.task_reminder_frequency === 'daily' && 'Sends once per day for tasks/events in next 2 days'}
+                    {profileFormData.task_reminder_frequency === 'weekly' && 'Sends once per week for tasks/events in next 7 days'}
+                    {profileFormData.task_reminder_frequency === 'disabled' && 'No email reminders will be sent'}
+                  </>
+                )}
+              </p>
+            </div>
+          </CollapsibleSection>
+
+          {/* Appearance */}
+          <CollapsibleSection title="Appearance" storageKey="appearance">
+            <p className="mb-4 text-sm text-text-secondary">
+              Light mode is optimised for outdoor field work; dark mode suits evening planning.
+            </p>
+            <ThemeSwitcher />
+          </CollapsibleSection>
+
+          {/* Tools & Teams */}
+          <CollapsibleSection title="Tools &amp; Teams" storageKey="tools">
+            <div className="space-y-3">
+              {[
+                { href: '/dashboard/scales', label: 'Scales', description: 'BEEP & Wolf Waagen integrations', icon: Scale, colour: 'text-blue-600 dark:text-blue-400' },
+                { href: '/dashboard/apiary-team', label: 'Apiary Team', description: 'Team-based apiary sharing', icon: Users, colour: 'text-green-600 dark:text-green-400' },
+                { href: '/dashboard/rearing-team', label: 'Rearing Team', description: 'Queen rearing groups', icon: Crown, colour: 'text-amber-600 dark:text-amber-400' },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center gap-3 p-4 border border-border rounded-lg hover:border-forest-500 dark:hover:border-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 transition-colors"
+                >
+                  <item.icon size={20} className={item.colour} />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-foreground">{item.label}</h3>
+                    <p className="text-sm text-text-secondary truncate">{item.description}</p>
+                  </div>
+                  <ChevronRight size={16} className="text-text-tertiary flex-shrink-0" />
+                </Link>
+              ))}
+            </div>
+          </CollapsibleSection>
+
+          {/* Account — including deleting it, which no longer needs a section of
+              its own: the row is red and the confirmation modal does the real
+              guarding. */}
+          <CollapsibleSection title="Account" storageKey="account">
+            <div className="flex items-center justify-between gap-4 py-3">
+              <div className="min-w-0">
+                <div className="text-base font-medium text-foreground">Change password</div>
+                <div className="text-sm text-text-secondary">Update your account password</div>
+              </div>
+              <Button
+                onClick={() => setShowChangePasswordModal(true)}
+                tone="success"
+                size="sm"
+                className="flex-shrink-0"
+              >
+                Change
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 border-t border-border py-3">
+              <div className="min-w-0">
+                <div className="text-base font-medium text-red-900 dark:text-red-100">Delete account</div>
+                <div className="text-sm text-red-700 dark:text-red-300">Data retained for 12 months</div>
+              </div>
+              <Button
+                onClick={() => setShowDeleteAccountModal(true)}
+                tone="danger"
+                size="sm"
+                className="flex-shrink-0"
+              >
+                <Trash2 size={16} />
+                Delete
+              </Button>
+            </div>
+          </CollapsibleSection>
+        </div>
+      </div>
  {/* Change Password Modal */}
  {showChangePasswordModal && (
  <ModalShell
