@@ -3,7 +3,7 @@ import { Metadata } from 'next'
 import { Package, SearchX } from 'lucide-react'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import FeedbackForm from '@/components/trace/FeedbackForm'
-import TraceCard from '@/components/trace/TraceCard'
+import TraceCard, { resolveDisplayTitle } from '@/components/trace/TraceCard'
 import LotFinder from '@/components/trace/LotFinder'
 import PaymentPanel from '@/components/trace/PaymentPanel'
 import type { PublicBatchInfo, PublicJarLabelInfo, PublicLabelLot } from '@/types/traceability'
@@ -114,11 +114,6 @@ export default async function JarLabelPage({ params, searchParams }: PageProps) 
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-      {/* Above the provenance card deliberately: at a stall, paying is why they
-          scanned. The story is what they read afterwards. Renders nothing unless
-          the label carries a link that passes the host allowlist. */}
-      {info.payment && <PaymentPanel payment={info.payment} labelName={label.name} />}
-
       {batch ? (
         <TraceCard
           batch={batch}
@@ -156,6 +151,18 @@ export default async function JarLabelPage({ params, searchParams }: PageProps) 
             </div>
           )}
         </div>
+      )}
+
+      {/* Below the provenance, not above it: most people scanning a jar have
+          already paid for it, so leading with a price reads as a demand rather
+          than the story they came for. This is here for the ones who have not —
+          an honesty box, an unattended stall. Renders nothing unless the label
+          carries a link that passes the host allowlist. */}
+      {info.payment && (
+        <PaymentPanel
+          payment={info.payment}
+          productName={resolveDisplayTitle(label.public_title, batch?.public_title)}
+        />
       )}
 
       {showLotFinder && (

@@ -56,6 +56,21 @@ function formatDate(dateStr: string): string {
   })
 }
 
+/**
+ * The product name a customer sees: the jar label's own wording wins, then the
+ * batch's, then a default. Exported so anything else on the page (the payment
+ * panel) names the product identically instead of resolving it again.
+ *
+ * Note this is deliberately NOT the label's `name` — that is the producer's
+ * internal reference ("Summer all Apiary Batch") and must never reach a customer.
+ */
+export function resolveDisplayTitle(
+  overrideTitle: string | null | undefined,
+  batchTitle: string | null | undefined,
+): string {
+  return overrideTitle || batchTitle || 'Pure Irish Honey'
+}
+
 function getPrimaryOrigin(origins: PublicBatchInfo['origins']): { city: string | null; country: string } {
   if (!origins || origins.length === 0) return { city: null, country: 'Ireland' }
   const primary = origins[0]
@@ -135,7 +150,7 @@ export default function TraceCard({
   const primaryOrigin = getPrimaryOrigin(batch.origins)
   const mapOrigin = opts.showOriginMap ? getMapOrigin(batch.origins) : null
 
-  const displayTitle = overrideTitle || batch.public_title || 'Pure Irish Honey'
+  const displayTitle = resolveDisplayTitle(overrideTitle, batch.public_title)
   const displayOrigin =
     overrideOrigin ||
     batch.public_origin ||
