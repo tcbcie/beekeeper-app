@@ -4,20 +4,28 @@ import type { PublicLabelPayment } from '@/types/traceability'
 
 interface PaymentPanelProps {
   payment: PublicLabelPayment
-  /** Product name for the subheading, e.g. "Wildflower 340 g". */
-  labelName: string
+  /**
+   * The public product name, resolved the same way the provenance card resolves
+   * it. NEVER the jar label's `name` — that is the producer's internal reference
+   * ("Summer all Apiary Batch") and is not for customers.
+   */
+  productName: string
 }
 
 /**
- * Point-of-sale panel: the customer is at the stall holding the jar, and this is
- * why they scanned. Sits above the provenance card for that reason.
+ * Payment panel for a jar that has not been paid for yet — an honesty box, a
+ * stall with nobody attending it.
+ *
+ * Sits BELOW the provenance card: most people scanning a jar have already paid
+ * for it, and leading with a demand for money reads badly when the thing they
+ * actually came for is the story. This is a fallback, not the headline.
  *
  * We show a link and nothing more. No payment field ever appears on a HiveCraic
  * page — Revolut takes the payment on its own domain, which keeps our PCI scope
  * at zero. It also means we never learn whether the customer paid, so this
  * component must never imply confirmation: no tick, no "paid", no receipt.
  */
-export default function PaymentPanel({ payment, labelName }: PaymentPanelProps) {
+export default function PaymentPanel({ payment, productName }: PaymentPanelProps) {
   // Re-validated here, not trusted from the database: profiles is writable
   // directly through PostgREST, so a row can carry a URL the form never saw.
   const link = resolvePaymentLink(payment)
@@ -30,7 +38,7 @@ export default function PaymentPanel({ payment, labelName }: PaymentPanelProps) 
     <section className="bg-surface-elevated rounded-2xl border-2 border-amber-300 dark:border-amber-800/60 shadow-lg overflow-hidden">
       <div className="px-6 pt-6 pb-4 text-center">
         <h2 className="text-xl font-bold text-foreground">Pay for this jar</h2>
-        <p className="mt-1 text-text-secondary">{labelName}</p>
+        <p className="mt-1 text-text-secondary">{productName}</p>
 
         {showAmount && (
           <>
