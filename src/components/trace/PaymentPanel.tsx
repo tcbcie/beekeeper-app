@@ -37,7 +37,10 @@ export default function PaymentPanel({ payment, productName }: PaymentPanelProps
   return (
     <section className="bg-surface-elevated rounded-2xl border-2 border-amber-300 dark:border-amber-800/60 shadow-lg overflow-hidden">
       <div className="px-6 pt-6 pb-4 text-center">
-        <h2 className="text-xl font-bold text-foreground">Pay for this jar</h2>
+        {/* Not "Pay for this jar": most people scanning have already paid, and
+            this sits below the provenance as a fallback. Phrased as a question
+            so it reads past harmlessly for anyone it does not apply to. */}
+        <h2 className="text-xl font-bold text-foreground">Not paid yet?</h2>
         <p className="mt-1 text-text-secondary">{productName}</p>
 
         {showAmount && (

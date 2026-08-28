@@ -98,9 +98,9 @@ The jar size and net weight are printed on the label beside the QR, so repeating
 
 ## Payment links
 
-A jar label can show a **Pay for this jar** panel **below** the provenance card. It replaces the separate payment sticker that used to go on the jar.
+A jar label can show a **Not paid yet?** panel **below** the provenance card. It replaces the separate payment sticker that used to go on the jar.
 
-**Placement was corrected after testing.** It was originally put above the provenance on the reasoning that at a stall, paying is why you scanned. In practice most people scanning a jar have *already* paid for it, and leading with a price reads as a demand rather than the story they came for. The panel is a fallback for the ones who have not paid — an honesty box, an unattended stall — so it sits after the provenance.
+**Placement and wording were corrected after testing.** The panel originally sat above the provenance and was headed *"Pay for this jar"*, on the reasoning that at a stall, paying is why you scanned. In practice most people scanning a jar have *already* paid for it, and opening with a price reads as a demand rather than the story they came for. It now sits after the provenance and is headed *"Not paid yet?"* — a question, so it reads past harmlessly for the majority it does not apply to, while still being findable for an honesty box or an unattended stall.
 
 The panel names the product using the same public title as the provenance card. It never shows the jar label's internal **name**: that is the producer's own reference ("Summer all Apiary Batch") and is not for customers.
 
