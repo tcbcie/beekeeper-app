@@ -279,13 +279,21 @@ show_floral       &#9745;   show_feedback     &#9744;</div>
   <tr><td>&#128994; Low</td><td>Local <code>NotFound()</code> shadowed the name of Next&rsquo;s own <code>notFound()</code> helper</td><td>Renamed <code>LabelNotFound</code></td></tr>
   <tr><td>&#9898; Checked, no defect</td><td><code>/trace</code> parity after the extraction</td><td><code>ALL_TRACE_DISPLAY</code> is all-true and the trace page passes no <code>display</code> and no overrides, so every branch resolves exactly as before</td></tr>
 </table>
-<h3>Phase 4 &mdash; wrap-up</h3>
+<h3>Phase 4 &mdash; wrap-up <span style="color:#16a34a">&#10004; done 27 August 2026</span></h3>
 <ul class="todo">
-  <li>[ ] Producer-default copy fields on <code>profiles</code> (layer 3)</li>
-  <li>[ ] Update <code>docs/features/honey-traceability.md</code> and add <code>docs/features/jar-label-qr-codes.md</code></li>
-  <li>[ ] <code>qa-engineer</code> audit pass</li>
-  <li>[ ] Manual test: mobile scan, dark mode, unassigned label, private batch, unknown lot, legacy <code>/trace/</code> QR</li>
+  <li>[&#10004;] Added <code>docs/features/jar-label-qr-codes.md</code> &mdash; concepts, resolution rules, schema, RPCs, privacy, printing guidance, limitations</li>
+  <li>[&#10004;] Updated <code>docs/features/honey-traceability.md</code> &mdash; cross-reference, a pointer from the per-batch QR section, and a changelog entry</li>
+  <li>[&#10004;] <code>qa-engineer</code> &mdash; already run after Phases 2 and 3; Phase 4 changed no application code, so there is nothing new to audit</li>
+  <li>[&ndash;] <strong>Producer-default copy fields on <code>profiles</code> &mdash; recommend dropping.</strong> See below</li>
+  <li>[ ] <em>Yours:</em> manual test &mdash; mobile scan, dark mode, unassigned label, private batch, unknown lot, legacy <code>/trace/</code> QR</li>
 </ul>
+
+<div class="box warn">
+  <strong>Layer 3 would be dead UI &mdash; the same trap as &sect;4b.</strong><br>
+  Producer defaults only fire when a field is blank on the label <em>and</em> blank on the batch. All 8 public batches already carry a <code>public_title</code> and a story, so in practice the third layer would almost never render.<br><br>
+  It was designed to stop copy being retyped per batch &mdash; but the <strong>label layer already solves that</strong>, set once per design. A third layer only saves retyping <em>per label</em>, and with two designs that is not a problem worth another resolution rule, another form section and another thing to explain.<br><br>
+  <strong>Recommendation: drop it.</strong> Say the word if you would rather have it &mdash; it is a small addition, just one that earns nothing at this scale. Recorded as a limitation in the feature doc either way.
+</div>
 <h3>Explicitly deferred</h3>
 <ul class="todo">
   <li>[&ndash;] <code>pick</code> and <code>landing</code> render paths &mdash; column and CHECK exist, so no migration needed to add them</li>
@@ -300,6 +308,343 @@ show_floral       &#9745;   show_feedback     &#9744;</div>
   <tr><td>Default resolve mode?</td><td><strong><code>current</code></strong></td><td>One render path in v1; <code>pick</code> and <code>landing</code> deferred behind the CHECK constraint</td></tr>
   <tr><td>Repeat the jar size on the page?</td><td><strong>No</strong></td><td>No Net Weight row, no <code>?w=</code>. Columns retained to key the lot chooser</td></tr>
 </table>
+
+<hr style="margin:3rem 0 2rem;border:0;border-top:2px solid #d4d4d8">
+
+<h1 style="border-color:#0891b2">Addendum &mdash; payment links on the scan page</h1>
+<p><strong>Raised:</strong> 27 August 2026 &middot; <strong>Status:</strong> decisions locked (A1) &mdash; awaiting go-ahead, nothing built</p>
+
+<p>The customer already has their phone out and is on your page. The second sticker was solving a problem the QR has now made unnecessary, so folding payment into the scan is the right instinct.</p>
+
+<div class="box good">
+  <strong>Decisions taken 27 August 2026.</strong>
+  <ul style="margin:.5rem 0 0">
+    <li><strong>Pay for <em>this</em> jar</strong> &mdash; honesty box / farm gate / market stall. Panel sits <strong>above</strong> the provenance with the price shown large.</li>
+    <li><strong>Direct sales only</strong>, no shops &mdash; so there is no retailer to undercut, and new labels can default to payment on.</li>
+    <li><strong>Jar labels only</strong> &mdash; <code>/trace/</code> is untouched. No producer-level payment config needed.</li>
+  </ul>
+</div>
+
+<h2>A1. What this is, and what follows from it</h2>
+<p>This is a <strong>point-of-sale</strong> feature, not a reorder feature. The customer is standing at the stall holding the jar. That drives three things:</p>
+<ul>
+  <li><strong>Placement is top</strong>, above the provenance card &mdash; paying is why they scanned; the story is a bonus they read afterwards.</li>
+  <li><strong>The amount must be on screen.</strong> Not optional: with a Revolut link the payer types the amount themselves, so the displayed price is the <em>only</em> thing telling them what to send. Getting this wrong means underpayment, silently.</li>
+  <li><strong>It has to work outdoors on a phone in sunlight</strong> &mdash; large amount, large buttons, high contrast. The 50+ eyesight rule applies with a stall-in-a-field multiplier.</li>
+</ul>
+<p>Because only one mode is wanted, <strong>no <code>payment_mode</code> column is needed</strong> &mdash; one fewer thing to build and explain.</p>
+
+<h2>A2. Do not construct the provider URLs &mdash; store the ones you paste</h2>
+<p class="rec">This is the single most important implementation decision.</p>
+<p>It is tempting to store a Revolut username and build <code>revolut.me/&lt;name&gt;/&lt;amount&gt;</code>. Don&rsquo;t. Each provider has its own link format, they change them, and amount syntax differs per provider. Storing the finished link you generated in their own app means:</p>
+<ul>
+  <li>Stripe and SumUp links already carry the <strong>price, currency and product name</strong> &mdash; no duplication of your pricing in two places</li>
+  <li>A provider changing its URL format cannot break your printed labels</li>
+  <li>Adding a fourth provider later is a config change, not a code change</li>
+</ul>
+<div class="box info">
+  <strong>The three behave differently, and that is fine:</strong>
+  <ul style="margin:.4rem 0 0">
+    <li><strong>Stripe</strong> &mdash; a Payment Link is per price, so you generate <em>one per jar size</em>. Fixed amount, card + wallets.</li>
+    <li><strong>SumUp</strong> &mdash; same shape: a payment link per amount.</li>
+    <li><strong>Revolut</strong> &mdash; a personal <code>revolut.me</code> link is per <em>person</em>, not per price; the payer types the amount. This is why the display price in A4 matters: with Revolut it is the only thing telling them what to send.</li>
+  </ul>
+  Exact hostnames should be taken from your <em>real</em> links when you paste them, not guessed here.
+</div>
+
+<h2>A3. Where the configuration lives</h2>
+<p><strong>On the jar label</strong>, because a label already <em>is</em> one jar size &mdash; and one jar size is one price. A 227&nbsp;g and a 454&nbsp;g label want different Stripe links and different displayed amounts, which falls out for free.</p>
+<p>Producer-level defaults were considered and rejected for v1: with two label designs, pasting a Revolut link twice is not a problem worth a second layer of resolution to solve. Add it later if the repetition ever bites.</p>
+
+<h2>A4. Schema &mdash; five columns on <code>trace_labels</code></h2>
+<pre>ALTER TABLE trace_labels
+  ADD COLUMN show_payment      BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN payment_revolut_url TEXT,
+  ADD COLUMN payment_stripe_url  TEXT,
+  ADD COLUMN payment_sumup_url   TEXT,
+  ADD COLUMN payment_amount    NUMERIC(10,2),   -- display only, never enforced
+  ADD COLUMN payment_currency  TEXT NOT NULL DEFAULT 'EUR',
+  ADD COLUMN payment_note      TEXT;            -- "Collection from Athenry"</pre>
+<p><strong>The column default stays <code>false</code></strong> so nothing created outside the form can start asking for money by accident; the <em>form</em> defaults a new label to on, since there is no retail channel to protect. The panel is hidden anyway until a valid link exists, so an on-by-default toggle changes nothing visible until it is configured.</p>
+<p><strong><code>payment_amount</code> is required whenever <code>show_payment</code> is on</strong> &mdash; enforced in the form, for the Revolut reason in A1. It stays display-only in the database: Stripe and SumUp enforce their own amounts, and we must never imply we have verified a payment.</p>
+<div class="box warn">
+  <strong>Naming matters here.</strong> <code>profiles.stripe_customer_id</code> already exists and is <em>HiveCraic&rsquo;s own subscription billing</em> &mdash; you paying for the app. The beekeeper&rsquo;s Stripe account for selling honey is an unrelated thing. Keeping every new column under a <code>payment_*</code> prefix on <code>trace_labels</code> keeps the two from ever being wired together by mistake.
+</div>
+
+<h2>A5. Security &mdash; the part that is not optional</h2>
+<div class="box warn">
+  <strong>&#128308; An unvalidated URL here turns HiveCraic into a phishing redirect.</strong><br>
+  <code>trace_labels</code> is user-editable and <code>/j/</code> is public and unauthenticated. Without validation, any user could paste any URL and use a page on <em>your</em> domain &mdash; carrying your trust badge and a producer&rsquo;s name &mdash; to lend credibility to a fake payment page. That is a reputational problem for HiveCraic, not just for the one account.
+</div>
+<p><strong>Mitigations, all cheap:</strong></p>
+<ol>
+  <li><strong>Hostname allowlist</strong>, enforced in a DB <code>CHECK</code> <em>and</em> in the form. Only known payment domains accepted; anything else is rejected at save time with a clear message. Derive the exact list from your real links.</li>
+  <li><strong>HTTPS only</strong> &mdash; reject any <code>http://</code> link.</li>
+  <li><strong>Never collect card details on our page.</strong> We render a link out to the provider&rsquo;s own domain and nothing more. No iframes, no embedded fields, no payment data touching HiveCraic. This also keeps PCI scope at zero.</li>
+  <li><code>rel="noopener noreferrer"</code> on the outbound link.</li>
+  <li><strong>Show the destination</strong> &mdash; a small &ldquo;you will be taken to Stripe to pay securely&rdquo; line. A payment button appearing after a QR scan is exactly the shape of a scam, so naming the destination is what separates yours from one.</li>
+</ol>
+
+<h2>A6. Retail channel &mdash; not a concern here</h2>
+<p>Confirmed <strong>direct sales only</strong>, so there is no retailer to undercut and payment can be on for every design. The per-label toggle is kept anyway: it costs one boolean, and the day a shop does take stock, turning payment off for that design is the whole fix.</p>
+
+<h2>A6b. What we must never imply</h2>
+<div class="box warn">
+  We are showing a <em>link</em>, not taking a payment. HiveCraic never learns whether the customer actually paid &mdash; Revolut, Stripe and SumUp all settle outside the app.<br><br>
+  So the page must never say &ldquo;paid&rdquo;, show a tick, or otherwise imply confirmation, and the Jar Labels UI must not grow a &ldquo;payments received&rdquo; view that looks like a ledger it cannot honestly keep. If you ever want reconciliation, that is a Stripe/SumUp webhook feature and a much bigger piece of work &mdash; worth naming now so it is not half-built by accident.
+</div>
+
+<h2>A7. What it looks like</h2>
+<div class="mock">┌──────────────────────────────────┐
+│  Pay for this jar                │
+│  Wildflower Honey · 340 g        │
+│                                  │
+│         &euro; 8.00                   │
+│                                  │
+│  [  Pay by card  ]  [ Revolut ]  │
+│                                  │
+│  Collection from Athenry.        │
+│  You'll be taken to Stripe to    │
+│  pay securely.                   │
+└──────────────────────────────────┘</div>
+<ul>
+  <li>One button per configured provider &mdash; label them by what the customer recognises (&ldquo;Pay by card&rdquo; for Stripe/SumUp, &ldquo;Revolut&rdquo; for Revolut), not by our column names.</li>
+  <li>Large touch targets and a large amount &mdash; the same reduced-eyesight audience applies, often outdoors in sunlight.</li>
+  <li>Whole panel hidden unless <code>show_payment</code> is on <em>and</em> at least one valid link is set.</li>
+</ul>
+
+<h2>A8. Todo <span style="color:#16a34a">&#10004; done 27 August 2026</span></h2>
+<ul class="todo">
+  <li>[&#10004;] Migration <code>add_payment_links_to_trace_labels</code> &mdash; seven columns + <code>CHECK</code>s for HTTPS, length, positive amount and a 3-letter currency</li>
+  <li>[&#10004;] Migration <code>fix_trace_labels_payment_url_checks</code> &mdash; Postgres caps a bounded regex repetition at 255, so the original <code>{1,480}</code> was invalid; length moved to <code>char_length</code></li>
+  <li>[&#10004;] Migration <code>jar_label_info_payment_block</code> &mdash; <code>get_public_jar_label_info</code> returns a <code>payment</code> block, emitted only when <code>show_payment</code> is on</li>
+  <li>[&#10004;] Migration <code>restrict_trace_labels_select_to_owner</code> &mdash; see the QA finding below</li>
+  <li>[&#10004;] <code>src/lib/payment-links.ts</code> &mdash; provider allowlist + validation, shared by the form and the public page</li>
+  <li>[&#10004;] Types: <code>TraceLabel</code>, <code>TraceLabelFormData</code>, <code>PublicLabelPayment</code>, <code>PublicJarLabelInfo</code></li>
+  <li>[&#10004;] Jar Labels form: payment section with inline allowlist validation and a required price</li>
+  <li>[&#10004;] <code>PaymentPanel</code> rendered <strong>above</strong> <code>TraceCard</code> on <code>/j/</code></li>
+  <li>[&#10004;] <code>qa-engineer</code> pass; <code>tsc</code> 0 errors in <code>src/</code>; ESLint clean; advisors unchanged (84 lints, none on <code>trace_labels</code>)</li>
+  <li>[&#10004;] Documented in <code>docs/features/jar-label-qr-codes.md</code></li>
+</ul>
+
+<div class="box good">
+  <strong>Allowlist verified against attack cases</strong> &mdash; 20 checks, all passing:
+  <table style="margin-top:.6rem">
+    <tr><th>Input</th><th>Result</th></tr>
+    <tr><td><code>https://buy.stripe.com/&hellip;</code>, <code>https://checkout.stripe.com/&hellip;</code>, <code>https://revolut.me/&hellip;</code>, <code>https://pay.sumup.com/&hellip;</code></td><td>Accepted &#10004;</td></tr>
+    <tr><td><code>https://evilstripe.com/pay</code></td><td>Rejected &mdash; suffixes match on a dot boundary &#10004;</td></tr>
+    <tr><td><code>https://stripe.com.evil.io/pay</code></td><td>Rejected &mdash; host prefix trick &#10004;</td></tr>
+    <tr><td><code>https://buy.stripe.com@evil.example/x</code></td><td>Rejected &mdash; credentials disguising the host &#10004;</td></tr>
+    <tr><td><code>http://buy.stripe.com/x</code></td><td>Rejected &mdash; HTTPS only &#10004;</td></tr>
+    <tr><td><code>https://evil.example/buy.stripe.com</code></td><td>Rejected &mdash; allowed host only in the path &#10004;</td></tr>
+    <tr><td><code>javascript:alert(1)</code></td><td>Rejected &#10004;</td></tr>
+    <tr><td>Stripe link in the Revolut slot</td><td>Rejected &mdash; validated per provider &#10004;</td></tr>
+    <tr><td>A row written directly via PostgREST with hostile URLs</td><td>Renders 0 buttons &#10004;</td></tr>
+  </table>
+</div>
+
+<h3>QA audit findings &mdash; fixed in place</h3>
+<table>
+  <tr><th>Severity</th><th>Finding</th><th>Fix</th></tr>
+  <tr><td>&#128992; High</td><td><code>trace_labels</code> had <code>SELECT USING (true)</code>, copied from <code>qr_tags</code>. But <code>qr_tags</code> needs it because its scan page reads the table directly &mdash; <strong>ours does not</strong>. <code>/j/</code> goes only through <code>SECURITY DEFINER</code> RPCs and the management tab reads as the owner, so the policy bought nothing while letting anyone <code>GET /trace_labels?select=*</code> and enumerate every producer&rsquo;s payment links, internal label names and batch pointers</td><td>Replaced with an owner-only SELECT policy. Verified: both RPCs still serve <code>anon</code>, and <code>anon</code> now reads 0 rows from the table</td></tr>
+  <tr><td>&#128993; Medium</td><td>Stripe and SumUp both label as &ldquo;Pay by card&rdquo;. With both configured the customer saw two visually identical buttons &mdash; bad for anyone, worse outdoors on a phone</td><td>Labels disambiguate only when they would collide: one card provider stays &ldquo;Pay by card&rdquo;, two become &ldquo;Pay by card (Stripe)&rdquo; and &ldquo;Pay by card (SumUp)&rdquo;</td></tr>
+  <tr><td>&#9898; By design</td><td>Hostname allowlist is not a DB <code>CHECK</code></td><td>Providers add domains over time; a constraint would mean a migration each time. The DB enforces only what never changes (HTTPS, length), and the allowlist is enforced at save <em>and</em> at render</td></tr>
+</table>
+
+<h2>A9. Still to confirm</h2>
+<ol>
+  <li><strong>Paste one real link from each provider you use</strong> and I will check it against the allowlist. The starter list is built from documented formats, but <strong>SumUp&rsquo;s exact hostname is not publicly documented</strong> &mdash; if your real link is rejected, that is why, and it is a one-line addition.</li>
+  <li><strong>Stripe custom domains are deliberately not accepted.</strong> A merchant&rsquo;s own checkout subdomain is indistinguishable from any other website, so it has to be added by name &mdash; a conscious act rather than something a paste can do. Say if you use one.</li>
+  <li><strong>Currency</strong> &mdash; defaults to EUR; any three-letter code is accepted.</li>
+</ol>
+
+<hr style="margin:3rem 0 2rem;border:0;border-top:2px solid #d4d4d8">
+
+<h1 style="border-color:#7c3aed">Addendum B &mdash; payment methods on the profile</h1>
+<p><strong>Raised:</strong> 27 August 2026 &middot; <strong>Status:</strong> proposal, awaiting go-ahead</p>
+
+<p>Right now the three links are pasted per jar label. With two designs that means pasting the same Revolut link twice, and it puts an account-level fact in a product-level place. Moving the accounts to the profile is right.</p>
+
+<h2>B1. What moves, and what does not</h2>
+<table>
+  <tr><th>Lives on</th><th>Holds</th><th>Why there</th></tr>
+  <tr><td><strong>Profile</strong></td><td>The three account links, an enable switch, default currency</td><td>These are <em>who you are paid as</em>. They do not vary by jar</td></tr>
+  <tr><td><strong>Jar label</strong></td><td><code>show_payment</code>, <code>payment_amount</code>, note, and optional per-size link overrides</td><td>The <em>price</em> is per jar size, so it cannot live on the profile</td></tr>
+</table>
+<div class="box info">
+  <strong>Why the override still has to exist.</strong> A <strong>Stripe Payment Link is per price</strong> — a 227&nbsp;g and a 454&nbsp;g jar need different links, so a single profile-level Stripe link cannot serve both. Revolut is the opposite: one <code>revolut.me</code> link per person, with the payer typing the amount.<br><br>
+  So: the profile holds the default, and a label may override it. Resolution is <code>label link ?? profile link</code> — the same override idiom already used for the copy fields, not a new concept to learn. In practice you would set Revolut once on the profile and never touch it, and set a Stripe link per label.
+</div>
+
+<h2>B2. Naming &mdash; keep well clear of the app&rsquo;s own billing</h2>
+<div class="box warn">
+  <code>profiles</code> already carries <code>stripe_customer_id</code>, and <code>/api/stripe/webhook</code> already exists — both for <strong>HiveCraic&rsquo;s own subscription billing</strong>, on HiveCraic&rsquo;s Stripe account. Your honey-selling Stripe account is a completely different thing.<br><br>
+  New profile columns therefore use a <code>sales_</code> prefix, not <code>payment_</code> or <code>stripe_</code>, so nobody can ever wire honey income into the app&rsquo;s subscription plumbing by autocomplete.
+</div>
+<pre>ALTER TABLE profiles
+  ADD COLUMN enable_jar_payments BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN sales_revolut_url   TEXT,
+  ADD COLUMN sales_stripe_url    TEXT,
+  ADD COLUMN sales_sumup_url     TEXT,
+  ADD COLUMN sales_currency      TEXT NOT NULL DEFAULT 'EUR';</pre>
+<p>Same shape and same place in the UI as the existing <code>enable_label_printing</code> opt-in, so it will feel like a setting you already know.</p>
+
+<h2>B3. What changes in the Jar Labels form</h2>
+<p>The three link boxes are replaced by a short summary of what the profile provides, plus tick boxes for which to offer on this design, the price, and a collapsed &ldquo;use a different link for this jar size&rdquo; override.</p>
+<div class="mock">Let customers pay for this jar          [x]
+
+  Price customers pay   [ 8.00 ]  EUR
+
+  Offer:  [x] Revolut     (from your profile)
+          [x] Card - Stripe (from your profile)
+          [ ] Card - SumUp  (not set up)
+
+  &gt; Use a different link for this jar size
+
+  No payment methods set up yet - Set them up in your profile</div>
+<p>The allowlist validation, the render-time re-check and everything in Addendum A5 are unchanged &mdash; they simply now also run against the profile-level links.</p>
+
+<h2>B4. Todo <span style="color:#16a34a">&#10004; done 27 August 2026 &mdash; Revolut only</span></h2>
+
+<div class="box good">
+  <strong>Revolut-only made this simpler than planned.</strong> Because a <code>revolut.me</code> link is per <em>person</em>, there is no per-jar-size variation &mdash; so the per-label link override that Stripe would have forced <strong>is not needed at all</strong>. Three columns were dropped from <code>trace_labels</code> rather than added to. The label now carries only what genuinely varies by jar size: whether to offer payment, the price, and a note.
+</div>
+
+<ul class="todo">
+  <li>[&#10004;] Migration <code>jar_payments_revolut_only_on_profile</code> &mdash; <code>enable_jar_payments</code>, <code>sales_revolut_url</code>, <code>sales_currency</code> on <code>profiles</code> with HTTPS/currency <code>CHECK</code>s; dropped <code>payment_revolut_url</code>, <code>payment_stripe_url</code>, <code>payment_sumup_url</code>, <code>payment_currency</code> from <code>trace_labels</code> (never populated)</li>
+  <li>[&#10004;] Migration <code>jar_label_payment_from_profile</code> &mdash; the RPC joins <code>profiles</code> and emits the payment block only behind three gates</li>
+  <li>[&#10004;] Profile page: &ldquo;Selling your honey&rdquo; section beside the label-printing opt-in, link validated on blur before saving</li>
+  <li>[&#10004;] <code>payment-links.ts</code> reduced to a single <code>resolvePaymentLink()</code>; Stripe/SumUp specs kept as ready config since the validation is provider-generic</li>
+  <li>[&#10004;] Jar Labels form: link boxes replaced by profile status + a link to set it up; price and note remain per label</li>
+  <li>[&#10004;] <code>tsc</code> 0 errors in <code>src/</code>; ESLint clean; feature doc updated</li>
+</ul>
+
+<div class="box info">
+  <strong>Three gates verified against live data</strong> (all inside rolled-back transactions &mdash; nothing left behind):
+  <table style="margin-top:.6rem">
+    <tr><th>State</th><th><code>payment</code> block</th></tr>
+    <tr><td>Producer enabled + link set + label toggle on</td><td>Returned with link, amount, currency and note &#10004;</td></tr>
+    <tr><td>Label toggle off</td><td><code>null</code> &#10004;</td></tr>
+    <tr><td>Producer switch off</td><td><code>null</code> &#10004;</td></tr>
+    <tr><td>No link configured</td><td><code>null</code> &#10004;</td></tr>
+  </table>
+  Any gate missing means no payment data leaves the database at all &mdash; not a block of nulls. Switching off at the profile disables payment across every label at once.
+</div>
+
+<h3>QA audit findings &mdash; fixed in place</h3>
+<table>
+  <tr><th>Severity</th><th>Finding</th><th>Fix</th></tr>
+  <tr><td>&#128992; High</td><td><strong>Clearing the Revolut link would have failed outright.</strong> The clear path wrote <code>''</code>, but the column&rsquo;s <code>CHECK</code> accepts only NULL or a valid https URL &mdash; so removing your link would have produced &ldquo;Could not save your setting&rdquo; and silently left the old link live on every jar</td><td><code>updatePreference</code> widened to accept <code>null</code> for clearing a nullable column; the form still keeps <code>''</code> locally so inputs stay controlled</td></tr>
+  <tr><td>&#128992; High</td><td>The price was only required when the profile was <em>already</em> set up. A label saved before configuring the profile could therefore start rendering a <strong>priceless</strong> payment panel the moment payments were switched on &mdash; the exact underpayment risk the requirement exists to prevent</td><td>Price is now required whenever <code>show_payment</code> is on, regardless of profile state</td></tr>
+  <tr><td>&#128993; Medium</td><td>A rejected link or currency left the field showing a value that was never saved, so the form implied a setting that did not exist</td><td>Both blur handlers revert to the stored value on rejection</td></tr>
+  <tr><td>&#9898; Defence in depth</td><td>RPC gate 2 used <code>IS NOT NULL</code>, which a blank string would pass</td><td>Guarded on the trimmed value instead. In practice the column <code>CHECK</code> already made a blank value unstorable &mdash; this is belt-and-braces, not a live hole that was open</td></tr>
+</table>
+
+<div class="box warn">
+  <strong>Consequence of Revolut-only for Addendum C:</strong> a <code>revolut.me</code> link has no API and no webhook, so there is now <strong>no automated path to confirming a payment, ever</strong> &mdash; not now, not later. Layer 2 of C3 (webhook auto-confirm) is off the table entirely. That materially strengthens the case for <strong>C6</strong>: if every sale needs a human tick regardless, intent tracking buys a pre-filled worklist at the cost of a public endpoint, a table, rate limiting and expiry. See C7.
+</div>
+
+<hr style="margin:3rem 0 2rem;border:0;border-top:2px solid #d4d4d8">
+
+<h1 style="border-color:#b91c1c">Addendum C &mdash; payments into the P&amp;L</h1>
+<p><strong>Raised:</strong> 27 August 2026 &middot; <strong>Status:</strong> proposal &mdash; <strong>needs a decision before any code</strong></p>
+
+<div class="box warn">
+  <strong>&#128308; Read this first: HiveCraic cannot currently know that a payment happened.</strong><br><br>
+  We render a link. The customer pays on Revolut, Stripe or SumUp, and all three settle <em>entirely outside this app</em>. Nothing reports back. So if we book an income row when someone <em>taps</em> the button, we are writing <strong>revenue that may never have been received</strong> into your accounts — money that then flows into your tax return.<br><br>
+  People tap and abandon constantly: the card is in the other coat, the signal drops, they change their mind. Taps will always exceed payments. <strong>Booking a tap as income is fabricating a financial record</strong>, and that is not something to build.
+</div>
+
+<h2>C1. What each provider can actually tell us</h2>
+<table>
+  <tr><th>Provider</th><th>Can it confirm a payment?</th><th>What it would take</th></tr>
+  <tr><td><strong>Stripe</strong></td><td><strong>Yes</strong>, reliably</td><td>A <code>checkout.session.completed</code> webhook from <em>your</em> Stripe account. But see C2 — this is not as simple as it sounds</td></tr>
+  <tr><td><strong>SumUp</strong></td><td><strong>Probably</strong></td><td>Their API supports webhooks; the payment-link event shape needs verifying against a real account before promising it</td></tr>
+  <tr><td><strong>Revolut</strong> (<code>revolut.me</code>)</td><td><strong>No</strong></td><td>A personal Revolut link has no API and no webhook. Revolut <em>Business</em> has an API, but that is a different account type. There is no automated path here at all</td></tr>
+</table>
+
+<h2>C2. Why the Stripe webhook is not a small job</h2>
+<p><code>/api/stripe/webhook</code> already exists — but it is bound to <strong>HiveCraic&rsquo;s own</strong> Stripe account through a single <code>STRIPE_SECRET_KEY</code> / <code>STRIPE_WEBHOOK_SECRET</code> pair, for app subscriptions. Your honey sales land in <em>your</em> Stripe account, which HiveCraic holds no keys for. Bridging that needs one of:</p>
+<ul>
+  <li><strong>Stripe Connect</strong> — the correct multi-tenant answer, and a substantial piece of work with its own onboarding flow.</li>
+  <li><strong>Per-user webhook secrets</strong> — each beekeeper adds a webhook in their own Stripe dashboard and pastes the signing secret to us. That means <strong>storing a credential per user</strong>, with all the handling that implies, and a dashboard configuration step that most of this app&rsquo;s audience will not complete.</li>
+</ul>
+<p>Neither belongs in a first version.</p>
+
+<h2>C3. Recommendation &mdash; record the tap, book only on confirmation</h2>
+<p class="rec">Two layers. Layer 1 is honest, works for all three providers, needs no keys or webhooks, and still saves you the typing.</p>
+<div class="mock">Customer taps "Pay by card"
+        &darr;
+/j/{code}/pay/stripe        &larr; records an INTENT, then redirects
+        &darr;
+Stripe / SumUp / Revolut    &larr; the money moves here, outside HiveCraic
+        &darr;
+Jar sales - to confirm (3)  &larr; you check your banking app and tick
+        &darr;
+financial_records (income)  &larr; ONLY now does it reach the P&amp;L</div>
+<p>An intent is <strong>never</strong> income. It is a prompt: a pre-filled list of what someone tried to pay for, so confirming a day&rsquo;s stall takes three taps instead of typing three records. You reconcile against your Revolut or Stripe app, which is the only place the truth actually lives.</p>
+
+<h3>Layer 2, later</h3>
+<p>Once Stripe Connect or per-user secrets exist, a verified <code>checkout.session.completed</code> can auto-confirm its own intent, and card sales stop needing the manual tick. Revolut will always need it.</p>
+
+<h2>C4. Schema</h2>
+<pre>CREATE TABLE jar_payment_intents (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id             UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  trace_label_id      UUID NOT NULL REFERENCES trace_labels(id) ON DELETE CASCADE,
+  batch_id            UUID REFERENCES batch_runs(id) ON DELETE SET NULL,  -- what it pointed at then
+  provider            TEXT NOT NULL CHECK (provider IN ('revolut','stripe','sumup')),
+  amount              NUMERIC(10,2),
+  currency            TEXT NOT NULL DEFAULT 'EUR',
+  status              TEXT NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending','confirmed','dismissed')),
+  financial_record_id UUID REFERENCES financial_records(id) ON DELETE SET NULL,
+  confirmed_at        TIMESTAMPTZ,
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);</pre>
+<p><code>financial_records</code> needs no change: it already carries a <code>crm_order_id</code> FK, so linking a booked row back to its source is an established pattern. Confirmed intents post as <strong>income</strong> under the existing <strong>Honey Sales</strong> category (<code>income_category</code>, already in <code>dropdown_values</code>), described as e.g. <em>&ldquo;Wildflower 340 g &mdash; L-2026-08-001&rdquo;</em>.</p>
+<p><strong>No personal data is captured</strong> — no name, no email, no IP. An intent is a label, a provider, an amount and a timestamp.</p>
+
+<h2>C5. Things that will go wrong, and what to do about them</h2>
+<table>
+  <tr><th>Risk</th><th>Handling</th></tr>
+  <tr><td><strong>Taps always exceed payments</strong></td><td>The list is called &ldquo;to confirm&rdquo;, never &ldquo;sales&rdquo;. Unconfirmed rows never touch the P&amp;L, and there is a one-tap <em>Dismiss</em></td></tr>
+  <tr><td><strong>The endpoint is public and unauthenticated</strong> — anyone can hit it repeatedly and fill your list with noise</td><td>Nothing financial is at stake, but the list needs to stay usable: rate-limit per label, and cap what one label can accrue in a day. Old pending rows auto-expire</td></tr>
+  <tr><td><strong>An extra redirect between tap and payment</strong></td><td>A server redirect, so it costs one hop. Worth measuring &mdash; anything that adds friction at the moment of payment is a bad trade, and if it feels slow the honest answer is to drop intent tracking and keep a pre-filled manual entry</td></tr>
+  <tr><td><strong>Double counting</strong> against a record you also enter by hand</td><td>Confirming links the intent to the record it created, so it cannot be confirmed twice</td></tr>
+  <tr><td><strong>Refunds</strong></td><td>Out of scope. Adjust in the P&amp;L as you would today</td></tr>
+</table>
+
+<h2>C6. The honest alternative, if the above is more than you want</h2>
+<p>Skip intents entirely. Add a <strong>&ldquo;Record a jar sale&rdquo;</strong> button on the Jar Labels card that opens the P&amp;L form pre-filled with the label&rsquo;s price, today&rsquo;s date, Honey Sales, and a description naming the label and its current lot. One tap per sale, no tracking, no new table, no public endpoint, nothing that can ever be wrong.</p>
+<p>It is a fraction of the work and carries none of the risk. Worth considering before committing to C3 &mdash; if a stall sells fifteen jars, fifteen taps on a list is not obviously better than one summary entry.</p>
+
+<h2>C7. Decision &mdash; C6 <span style="color:#16a34a">&#10004; built 27 August 2026</span></h2>
+<p><strong>C6 chosen: pre-filled manual entry.</strong> No intent tracking, no public endpoint, no new table, and no redirect hop between tapping and paying. Nothing can ever be recorded that did not happen.</p>
+
+<ul class="todo">
+  <li>[&#10004;] <code>RecordJarSaleModal</code> &mdash; a <strong>Record a jar sale</strong> button (wallet icon) on each label card</li>
+  <li>[&#10004;] Pre-filled from the label: price per jar, today&rsquo;s date, quantity 1</li>
+  <li>[&#10004;] Writes one <strong>income</strong> row to <code>financial_records</code> under <strong>Honey Sales</strong>, described as e.g. <code>Wildflower 340 g &times; 5 (L-2026-08-001)</code></li>
+  <li>[&#10004;] Insert shape and owner-scoped RLS verified against the live table in a rolled-back transaction</li>
+  <li>[&#10004;] <code>tsc</code> 0 errors in <code>src/</code>; ESLint clean; documented in the feature doc</li>
+</ul>
+
+<div class="box good">
+  <strong>Quantity was added beyond the original C6 sketch.</strong> A stall selling five jars should produce <em>one</em> record of &euro;40, not five of &euro;8 &mdash; so the form takes a jar count and multiplies. The total is rounded to the penny before it is displayed, so the figure on screen is exactly the figure stored.
+</div>
+
+<h3>Points worth knowing</h3>
+<table>
+  <tr><th>Point</th><th>Handling</th></tr>
+  <tr><td><code>financial_records.category_id</code> is <strong>NOT NULL</strong></td><td>Honey Sales is resolved by name before saving. If it is missing the form says so and refuses to save, rather than writing a broken row or inventing a category</td></tr>
+  <tr><td>The P&amp;L records in <strong>euro</strong>; there is no currency column</td><td>If the selling currency is not EUR the form says so and asks for the euro value actually received. No conversion &mdash; we have no rate worth trusting</td></tr>
+  <tr><td>Nothing is ever recorded automatically</td><td>Stated in the modal itself: check Revolut, then record what actually arrived</td></tr>
+  <tr><td>No &ldquo;payments received&rdquo; view</td><td>Deliberate. It would look like a ledger the app cannot honestly keep</td></tr>
+</table>
+
+<h3>Still open, if you ever want it</h3>
+<p>Automatic reconciliation needs a provider that can report back. A <code>revolut.me</code> link cannot &mdash; no API, no webhook, now or later. If reconciliation ever matters more than simplicity, that is the argument for revisiting Stripe, together with the Stripe Connect work described in C2.</p>
 
 <h2>Review</h2>
 <p><em>To be completed once the plan is approved and implemented.</em></p>

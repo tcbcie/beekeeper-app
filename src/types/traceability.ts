@@ -176,6 +176,11 @@ export interface TraceLabel {
   show_floral: boolean
   show_lot_details: boolean
   show_feedback: boolean
+  // Point of sale. The Revolut link itself lives on the profile — it is an
+  // account, not a product — so the label carries only what varies by jar size.
+  show_payment: boolean
+  payment_amount: number | null
+  payment_note: string | null
   created_at: string
   updated_at: string
   assigned_at: string | null
@@ -198,6 +203,25 @@ export interface TraceLabelFormData {
   show_floral: boolean
   show_lot_details: boolean
   show_feedback: boolean
+  show_payment: boolean
+  payment_amount: string
+  payment_note: string
+}
+
+/**
+ * The payment block from get_public_jar_label_info. Null unless the producer has
+ * enabled selling, this label has payment on, AND a link is configured — so a
+ * label without payment carries no payment data at all.
+ *
+ * `revolut_url` arrives as stored and MUST be passed through
+ * `resolvePaymentLink()` before rendering: profiles is writable directly through
+ * PostgREST, so form validation alone does not guarantee it.
+ */
+export interface PublicLabelPayment {
+  revolut_url: string | null
+  amount: number | null
+  currency: string
+  note: string | null
 }
 
 // The consumer-safe batch payload returned by get_public_batch_info, and
@@ -269,6 +293,8 @@ export interface PublicLabelLot {
 // rather than silently showing a different one.
 export interface PublicJarLabelInfo<TBatch = unknown> {
   label: PublicTraceLabel
+  /** Null unless the label has payment switched on. */
+  payment: PublicLabelPayment | null
   batch: TBatch | null
   requested_lot: string | null
   lot_found: boolean

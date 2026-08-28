@@ -12,6 +12,7 @@ import SubscriptionHistoryTable from '@/components/SubscriptionHistoryTable'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import type { SubscriptionStatusResponse } from '@/types/subscription'
 import { useToast } from '@/components/ui/Toast'
+import { isAllowedPaymentUrl, allowedHostsDescription } from '@/lib/payment-links'
 import { notifyCrmPrefChanged } from '@/hooks/useCrmEnabled'
 import { notifyLogbookPrefChanged } from '@/hooks/useLogbookEnabled'
 import { notifyYardMapPrefChanged } from '@/hooks/useYardMapEnabled'
@@ -45,6 +46,9 @@ interface UserProfile {
  enable_event_email_reminders?: boolean
  task_reminder_frequency?: 'realtime' | 'daily' | 'weekly' | 'disabled'
  enable_label_printing?: boolean
+ enable_jar_payments?: boolean
+ sales_revolut_url?: string
+ sales_currency?: string
  enable_crm?: boolean
  enable_logbook?: boolean
  enable_yard_map?: boolean
@@ -86,6 +90,9 @@ export default function ProfilePage() {
  enable_event_email_reminders: true,
  task_reminder_frequency: 'daily' as 'realtime' | 'daily' | 'weekly' | 'disabled',
  enable_label_printing: false,
+ enable_jar_payments: false,
+ sales_revolut_url: '',
+ sales_currency: 'EUR',
  enable_crm: false,
  enable_logbook: false,
  enable_yard_map: false,
@@ -173,6 +180,9 @@ export default function ProfilePage() {
  enable_event_email_reminders: data.enable_event_email_reminders !== undefined ? data.enable_event_email_reminders : true,
  task_reminder_frequency: data.task_reminder_frequency || 'daily',
  enable_label_printing: data.enable_label_printing === true,
+ enable_jar_payments: data.enable_jar_payments === true,
+ sales_revolut_url: data.sales_revolut_url || '',
+ sales_currency: data.sales_currency || 'EUR',
  enable_crm: data.enable_crm === true,
  enable_logbook: data.enable_logbook === true,
  enable_yard_map: data.enable_yard_map === true,
@@ -266,6 +276,9 @@ export default function ProfilePage() {
  enable_event_email_reminders: userProfile.enable_event_email_reminders !== undefined ? userProfile.enable_event_email_reminders : true,
  task_reminder_frequency: userProfile.task_reminder_frequency || 'daily',
  enable_label_printing: userProfile.enable_label_printing === true,
+ enable_jar_payments: userProfile.enable_jar_payments === true,
+ sales_revolut_url: userProfile.sales_revolut_url || '',
+ sales_currency: userProfile.sales_currency || 'EUR',
  enable_crm: userProfile.enable_crm === true,
  enable_logbook: userProfile.enable_logbook === true,
  enable_yard_map: userProfile.enable_yard_map === true,
@@ -279,11 +292,14 @@ export default function ProfilePage() {
  const updatePreference = useCallback(
  async (
  key: keyof typeof profileFormData,
- value: string | boolean,
+ value: string | boolean | null,
  onSuccess?: () => void,
  ) => {
  const previous = profileFormData[key]
- setProfileFormData(prev => ({ ...prev, [key]: value }))
+ // `null` clears a column. The form keeps '' locally so inputs stay
+ // controlled, but a nullable column with a format CHECK must receive NULL —
+ // an empty string would fail the constraint.
+ setProfileFormData(prev => ({ ...prev, [key]: value ?? '' }))
 
  if (!userId) {
  setProfileFormData(prev => ({ ...prev, [key]: previous }))
@@ -306,6 +322,43 @@ export default function ProfilePage() {
  onSuccess?.()
  },
  [profileFormData, userId, toast],
+ )
+
+ // Validated before saving, and validated again on the public page before the
+ // link is ever rendered — this row is writable directly through PostgREST, so a
+ // check here alone would not guarantee what a customer is shown.
+ const saveSalesRevolutUrl = useCallback(
+ (raw: string) => {
+ const trimmed = raw.trim()
+ if (!trimmed) {
+ // NULL, not '': the column's CHECK accepts only NULL or a valid https URL,
+ // so writing an empty string would be rejected outright.
+ updatePreference('sales_revolut_url', null)
+ return
+ }
+ if (!isAllowedPaymentUrl(trimmed, 'revolut')) {
+ toast.error(`That does not look like a Revolut link. It must be an https:// link on: ${allowedHostsDescription('revolut')}`)
+ // Put the saved value back, so the field never shows something that was
+ // rejected as though it had been stored.
+ setProfileFormData(prev => ({ ...prev, sales_revolut_url: userProfile?.sales_revolut_url || '' }))
+ return
+ }
+ updatePreference('sales_revolut_url', trimmed)
+ },
+ [updatePreference, toast, userProfile],
+ )
+
+ const saveSalesCurrency = useCallback(
+ (raw: string) => {
+ const code = raw.trim().toUpperCase()
+ if (!/^[A-Z]{3}$/.test(code)) {
+ toast.error('Currency must be a three-letter code, e.g. EUR')
+ setProfileFormData(prev => ({ ...prev, sales_currency: userProfile?.sales_currency || 'EUR' }))
+ return
+ }
+ updatePreference('sales_currency', code)
+ },
+ [updatePreference, toast, userProfile],
  )
 
  const exportMyDataAsJSON = async () => {
@@ -1041,6 +1094,68 @@ export default function ProfilePage() {
  <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
  </label>
  </div>
+ </div>
+
+ <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+ <div className="mb-4">
+ <div className="font-medium text-foreground mb-1">Selling your honey</div>
+ <div className="text-sm text-text-tertiary">Let customers pay you when they scan the QR code on a jar. Set up once here and every jar label can use it.</div>
+ </div>
+
+ <div className="flex items-center justify-between">
+ <div>
+ <label htmlFor="jar-payments" className="text-sm font-medium text-foreground">Accept payments on jar labels</label>
+ <div className="text-xs text-text-tertiary">Shows a price and a payment button when someone scans a jar</div>
+ </div>
+ <label className="relative inline-flex items-center cursor-pointer">
+ <input
+ type="checkbox"
+ id="jar-payments"
+ checked={profileFormData.enable_jar_payments}
+ onChange={(e) => updatePreference('enable_jar_payments', e.target.checked)}
+ className="sr-only peer"
+ />
+ <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+ </label>
+ </div>
+
+ {profileFormData.enable_jar_payments && (
+ <div className="mt-4 space-y-4">
+ <div>
+ <label htmlFor="sales-revolut" className="block text-sm font-medium text-foreground mb-1">Your Revolut link</label>
+ <input
+ type="url"
+ inputMode="url"
+ id="sales-revolut"
+ value={profileFormData.sales_revolut_url}
+ onChange={(e) => setProfileFormData(prev => ({ ...prev, sales_revolut_url: e.target.value }))}
+ onBlur={(e) => saveSalesRevolutUrl(e.target.value)}
+ placeholder="https://revolut.me/yourname"
+ className="fj-control w-full"
+ />
+ <div className="mt-1 text-xs text-text-tertiary">
+ Copy this from the Revolut app: Profile &rarr; your @username. Customers type the amount themselves, so each jar label carries its own price.
+ </div>
+ </div>
+
+ <div>
+ <label htmlFor="sales-currency" className="block text-sm font-medium text-foreground mb-1">Currency</label>
+ <input
+ type="text"
+ id="sales-currency"
+ value={profileFormData.sales_currency}
+ maxLength={3}
+ onChange={(e) => setProfileFormData(prev => ({ ...prev, sales_currency: e.target.value.toUpperCase() }))}
+ onBlur={(e) => saveSalesCurrency(e.target.value)}
+ className="fj-control w-32 font-mono"
+ />
+ </div>
+
+ <div className="text-xs text-text-tertiary">
+ Customers pay inside Revolut, so HiveCraic never sees payment details &mdash; and never learns whether a payment went through. Check your Revolut app to confirm a sale.
+ </div>
+ </div>
+ )}
  </div>
 
  <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { QrCode, X, Edit2, Trash2, Tag, Download, AlertCircle } from 'lucide-react'
+import { QrCode, X, Edit2, Trash2, Tag, Download, AlertCircle, Wallet } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useToast } from '@/components/ui/Toast'
 import { generateTagCode } from '@/lib/qr-tags'
@@ -14,6 +14,9 @@ import TextAreaField from '@/components/ui/TextAreaField'
 import SelectField from '@/components/ui/SelectField'
 import CheckboxInput from '@/components/ui/CheckboxInput'
 import EmptyState from '@/components/ui/EmptyState'
+import RecordJarSaleModal from './RecordJarSaleModal'
+import Link from 'next/link'
+import { isAllowedPaymentUrl } from '@/lib/payment-links'
 import type { TraceLabel, TraceLabelFormData } from '@/types/traceability'
 
 /** Batches offered by the "point at batch" selector. */
@@ -47,6 +50,12 @@ const emptyForm: TraceLabelFormData = {
   show_floral: true,
   show_lot_details: true,
   show_feedback: true,
+  // On by default: these are direct sales, so there is no retailer to undercut.
+  // The panel stays invisible until a valid link is added, so this shows nothing
+  // to a customer until it is configured.
+  show_payment: true,
+  payment_amount: '',
+  payment_note: '',
 }
 
 // Only the boolean fields of the form are switchable. Deriving the key type
@@ -87,10 +96,15 @@ export default function JarLabelsTab({
   const [editingLabel, setEditingLabel] = useState<TraceLabel | null>(null)
   const [qrLabel, setQrLabel] = useState<TraceLabel | null>(null)
   const [repointingId, setRepointingId] = useState<string | null>(null)
+  const [saleLabel, setSaleLabel] = useState<TraceLabel | null>(null)
   const [form, setForm] = useState<TraceLabelFormData>(emptyForm)
   // Held separately from `form`: the pointer is the one field that is also
   // editable straight from a card, without opening the form.
   const [formBatchId, setFormBatchId] = useState<string>('')
+  // Whether the producer has a usable payment method on their profile. The label
+  // form needs it to explain why a payment panel would or would not appear.
+  const [paymentsReady, setPaymentsReady] = useState(false)
+  const [paymentCurrency, setPaymentCurrency] = useState<string>('')
 
   const fetchLabels = useCallback(async () => {
     const { data, error } = await supabase
@@ -148,10 +162,25 @@ export default function JarLabelsTab({
     }))
   }, [userId])
 
+  const fetchPaymentSetup = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('enable_jar_payments, sales_revolut_url, sales_currency')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (error || !data) return
+    setPaymentsReady(
+      data.enable_jar_payments === true && isAllowedPaymentUrl(data.sales_revolut_url, 'revolut')
+    )
+    setPaymentCurrency(data.sales_currency || 'EUR')
+  }, [userId])
+
   useEffect(() => {
     fetchLabels()
     fetchBatchOptions()
-  }, [fetchLabels, fetchBatchOptions])
+    fetchPaymentSetup()
+  }, [fetchLabels, fetchBatchOptions, fetchPaymentSetup])
 
   const resetForm = () => {
     setForm(emptyForm)
@@ -177,6 +206,9 @@ export default function JarLabelsTab({
       show_floral: label.show_floral,
       show_lot_details: label.show_lot_details,
       show_feedback: label.show_feedback,
+      show_payment: label.show_payment,
+      payment_amount: label.payment_amount != null ? String(label.payment_amount) : '',
+      payment_note: label.payment_note || '',
     })
     setFormBatchId(label.current_batch_id || '')
     setShowLabelForm(true)
@@ -220,6 +252,25 @@ export default function JarLabelsTab({
       return
     }
 
+    const amountRaw = form.payment_amount.trim()
+    const amount = amountRaw ? Number(amountRaw) : null
+    if (amount !== null && (!Number.isFinite(amount) || amount <= 0)) {
+      toast.error('Price must be a positive amount')
+      return
+    }
+
+    // With a Revolut link the payer types the amount themselves, so the shown
+    // price is the only thing telling them what to send. Missing it means quiet
+    // underpayment, which is why this is a hard stop rather than a warning.
+    //
+    // Required whenever payment is switched on, NOT only when the profile is
+    // already set up: otherwise a label saved before the profile is configured
+    // would start rendering a priceless panel the moment it is.
+    if (form.show_payment && amount === null) {
+      toast.error('Add the price customers should pay — without it they will not know what to send')
+      return
+    }
+
     const batchId = formBatchId || null
     const payload: Record<string, unknown> = {
       user_id: userId,
@@ -238,6 +289,9 @@ export default function JarLabelsTab({
       show_floral: form.show_floral,
       show_lot_details: form.show_lot_details,
       show_feedback: form.show_feedback,
+      show_payment: form.show_payment,
+      payment_amount: amount,
+      payment_note: form.payment_note.trim() || null,
     }
 
     setSaving(true)
@@ -510,6 +564,87 @@ export default function JarLabelsTab({
               </div>
             </div>
 
+            <div className="rounded-lg border border-border p-3">
+              <label className="flex cursor-pointer items-start gap-2">
+                <CheckboxInput
+                  checked={form.show_payment}
+                  onChange={e => setForm(p => ({ ...p, show_payment: e.target.checked }))}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="block text-sm font-medium text-foreground">
+                    Let customers pay for the jar
+                  </span>
+                  <span className="block text-sm text-text-tertiary">
+                    Shows the price and a payment button at the top of the scan page, replacing
+                    a separate payment sticker.
+                  </span>
+                </span>
+              </label>
+
+              {form.show_payment && (
+                <div className="mt-4 space-y-3">
+                  {!paymentsReady && (
+                    <p className="flex items-start gap-2 rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-800 dark:text-amber-300">
+                      <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                      <span>
+                        No payment method set up yet, so nothing will show on the scan page.{' '}
+                        <Link href="/dashboard/profile" className="font-medium underline">
+                          Add your Revolut link in your profile
+                        </Link>
+                        {' '}— it is shared by all your labels.
+                      </span>
+                    </p>
+                  )}
+
+                  {paymentsReady && (
+                    <p className="text-sm text-text-tertiary">
+                      Using the Revolut link from{' '}
+                      <Link href="/dashboard/profile" className="font-medium underline">your profile</Link>
+                      {paymentCurrency ? `, in ${paymentCurrency}.` : '.'}
+                    </p>
+                  )}
+
+                  <div>
+                    <FieldLabel htmlFor="jl-amount">Price customers pay</FieldLabel>
+                    <TextInput
+                      id="jl-amount"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={form.payment_amount}
+                      onChange={e => setForm(p => ({ ...p, payment_amount: e.target.value }))}
+                      placeholder="8.00"
+                    />
+                    <p className="mt-1 text-sm text-text-tertiary">
+                      Revolut does not carry the amount in the link — the customer types it. This
+                      price is the only thing telling them what to send.
+                    </p>
+                  </div>
+
+                  <div>
+                    <FieldLabel htmlFor="jl-paynote">Note under the button</FieldLabel>
+                    <TextInput
+                      id="jl-paynote"
+                      value={form.payment_note}
+                      onChange={e => setForm(p => ({ ...p, payment_note: e.target.value }))}
+                      placeholder="Collection from Athenry"
+                      maxLength={300}
+                    />
+                  </div>
+
+                  <p className="flex items-start gap-2 text-sm text-text-tertiary">
+                    <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                    <span>
+                      Customers pay in Revolut, so HiveCraic never sees payment details — and
+                      never learns whether a payment went through. Check your Revolut app to
+                      confirm.
+                    </span>
+                  </p>
+                </div>
+              )}
+            </div>
+
             <label className="flex cursor-pointer items-start gap-2">
               <CheckboxInput
                 checked={form.is_active}
@@ -612,6 +747,15 @@ export default function JarLabelsTab({
                   >
                     <QrCode size={18} />
                   </Button>
+                  <Button
+                    onClick={() => setSaleLabel(label)}
+                    className="rounded-lg p-2 text-green-700 dark:text-green-400 transition-colors hover:bg-green-100 dark:hover:bg-green-900/30"
+                    title={`Record a sale of ${label.name}`}
+                    aria-label={`Record a sale of ${label.name}`}
+                    unstyled
+                  >
+                    <Wallet size={18} />
+                  </Button>
                   <div className="flex-1" />
                   <Button
                     onClick={() => handleEdit(label)}
@@ -636,6 +780,15 @@ export default function JarLabelsTab({
             )
           })}
         </div>
+      )}
+
+      {saleLabel && (
+        <RecordJarSaleModal
+          userId={userId}
+          label={saleLabel}
+          salesCurrency={paymentCurrency}
+          onClose={() => setSaleLabel(null)}
+        />
       )}
 
       {qrLabel && (
