@@ -39,16 +39,52 @@ Manages queen rearing groups:
 
 ## Remaining Profile Page
 
-**File:** `src/app/dashboard/profile/page.tsx` (1,267 lines)
+**File:** `src/app/dashboard/profile/page.tsx`
 
-Retains:
-- Profile Information (display/edit name, phone, association memberships)
-- **Manage section** — 3 link cards to Scales, Apiary Team, and Rearing Team sub-pages
-- Theme Preferences (ThemeSwitcher component)
-- Subscription Management (status card, history, renewal modal)
-- Data Export (JSON download)
-- Additional Settings (change password, email notification preferences)
-- Danger Zone (delete account)
+### Layout (redesigned)
+
+The page opens with an **always-visible identity header** — initials avatar, name,
+email, and badges for subscription state, breeder code and national memberships —
+followed by eight collapsible sections. From `lg:` the sections split into **two
+columns**; phones and tablets keep a single column, and the DOM order is the phone
+reading order.
+
+| Column A | Column B |
+|---|---|
+| Your details | Features |
+| Subscription | Notifications |
+| Selling your honey | Appearance |
+| My data export *(active subscription only)* | Tools & Teams |
+| | Account *(includes Delete account)* |
+
+### Density rules
+
+The page previously nested three borders around every setting: the section
+`Panel`, an inner card, and a card per individual control. Two shared components
+removed that, and neither shrinks any text — the audience is 50+ with reduced
+eyesight, so density comes from dropping frames and duplicated prose:
+
+- **`src/components/ui/ToggleRow.tsx`** — one on/off setting as a divider-separated
+  row. The whole row is the label, so the tap target is the row rather than the
+  44px switch. Optional `children` are revealed beneath the row while the toggle is
+  on (used by *Selling your honey* for the Revolut link and currency).
+- **`src/components/ui/DetailRow.tsx`** — one read-only label/value pair in a `<dl>`.
+  Label above value on phones, label-left / value-right from `sm:`. Renders
+  *Not set* for empty values.
+
+`CollapsibleSection` uses `px-4 sm:px-6`, giving phones back 32px of width.
+
+**Sections retained:**
+- Your details (display via `DetailRow`s; the edit form is unchanged)
+- Subscription (status card, history, renewal modal)
+- Selling your honey (jar payments, Revolut link, currency)
+- My data export (JSON / CSV)
+- Features (label printing, logbook, CRM, apiary map — `ToggleRow`s)
+- Notifications (task/event email reminders + frequency)
+- Appearance (`ThemeSwitcher`)
+- Tools & Teams — 3 link cards to the Scales, Apiary Team and Rearing Team sub-pages
+- Account — change password, and delete account (formerly its own *Danger Zone*
+  section; the row is red-styled and the confirmation modal does the real guarding)
 
 ## Navigation
 
