@@ -646,5 +646,109 @@ financial_records (income)  &larr; ONLY now does it reach the P&amp;L</div>
 <h3>Still open, if you ever want it</h3>
 <p>Automatic reconciliation needs a provider that can report back. A <code>revolut.me</code> link cannot &mdash; no API, no webhook, now or later. If reconciliation ever matters more than simplicity, that is the argument for revisiting Stripe, together with the Stripe Connect work described in C2.</p>
 
+<hr style="margin:3rem 0 2rem;border:0;border-top:2px solid #d4d4d8">
+
+<h1 style="border-color:#4f46e5">Addendum D &mdash; make the profile page navigable</h1>
+<p><strong>Raised:</strong> 27 August 2026 &middot; <strong>Status:</strong> proposal, awaiting go-ahead</p>
+
+<h2>D1. What it looks like today</h2>
+<p><code>src/app/dashboard/profile/page.tsx</code> is <strong>1,498 lines</strong> rendering <strong>seven</strong> stacked panels, everything expanded, all the time:</p>
+<table>
+  <tr><th>Panel</th><th>Lines</th><th>Contains</th></tr>
+  <tr><td>Profile Information</td><td>616&ndash;916 (<strong>300</strong>)</td><td>Name, contact, location, association membership, breeder code</td></tr>
+  <tr><td>Subscription</td><td>918&ndash;932</td><td>Status card</td></tr>
+  <tr><td>My Data Export</td><td>935&ndash;984</td><td>JSON / CSV export</td></tr>
+  <tr><td><strong>Preferences</strong></td><td>987&ndash;1237 (<strong>250</strong>)</td><td><strong>Six</strong> unrelated blocks: Email Notifications, Printing, Selling your honey, Logbook, Sales/CRM, Apiary Map</td></tr>
+  <tr><td>Tools &amp; Teams</td><td>1240&ndash;1264</td><td>Links out</td></tr>
+  <tr><td>Account</td><td>1267&ndash;1282</td><td>Change password</td></tr>
+  <tr><td>Danger Zone</td><td>1285&ndash;1301</td><td>Delete account</td></tr>
+</table>
+<p>Two things make it hard to use, and they are different problems:</p>
+<ol>
+  <li><strong>Nothing collapses</strong>, so finding anything means scrolling past everything.</li>
+  <li><strong>&ldquo;Preferences&rdquo; is a junk drawer.</strong> Email reminders, a printer opt-in, payment details and four feature switches share one heading. This is exactly why &ldquo;Selling your honey&rdquo; could not be found &mdash; it is buried 500 lines down inside a heading that does not suggest it.</li>
+</ol>
+<div class="box info">
+  Collapsing alone fixes (1) but not (2): a collapsed &ldquo;Preferences&rdquo; still hides payment settings behind a word that does not mean payments.
+</div>
+
+<h2>D2. Proposed structure</h2>
+<p>Nine collapsible sections, so the page opens as a short scannable list of headings rather than a wall:</p>
+<div class="mock">▼ Profile Information            (open by default)
+▼ Subscription                   (open by default)
+▶ Selling your honey             &larr; promoted out of Preferences
+▶ Notifications
+▶ Features           Printing · Logbook · Sales/CRM · Apiary Map
+▶ Tools &amp; Teams
+▶ My data export
+▶ Account
+▶ Danger Zone</div>
+<ul>
+  <li><strong>Preferences is split three ways</strong> &mdash; Notifications, Features, and Selling your honey &mdash; so each heading says what is under it.</li>
+  <li><strong>Open/closed is remembered</strong> per section via the existing <code>usePersistentState</code> hook, so it survives navigation and a browser restart.</li>
+  <li><strong>Profile Information and Subscription open by default</strong>; the rest closed. Those two are what people come for.</li>
+  <li><strong>Danger Zone stays last</strong> and closed, keeping delete-account behind a deliberate click.</li>
+</ul>
+
+<h2>D3. How</h2>
+<p>One new component, <code>src/components/ui/CollapsibleSection.tsx</code>. There is <strong>no shared collapsible in the codebase today</strong> &mdash; several screens roll their own with <code>ChevronDown</code>/<code>ChevronUp</code> and local state, so this is worth extracting properly and reusing later.</p>
+<ul>
+  <li>Header is a real <code>&lt;button&gt;</code> with <code>aria-expanded</code> and <code>aria-controls</code>, full-width and large-target for the 50+ audience.</li>
+  <li>Content is unmounted when closed &mdash; keeps the DOM small and stops hidden form fields being tab-reachable.</li>
+  <li>Optional <code>summary</code> line on the header (e.g. &ldquo;Revolut connected&rdquo;) so a closed section can still say whether it is set up.</li>
+</ul>
+<div class="box warn">
+  <strong>Risk to manage:</strong> the change is mostly <em>moving JSX</em> in a 1,498-line file &mdash; low intellectual risk, real fat-finger risk. Mitigation: move blocks verbatim, change no field logic, and verify with <code>tsc</code> + ESLint. Content edits are explicitly out of scope for this pass.
+</div>
+
+<h2>D4. Todo <span style="color:#16a34a">&#10004; done 27 August 2026</span></h2>
+<ul class="todo">
+  <li>[&#10004;] <code>src/components/ui/CollapsibleSection.tsx</code> &mdash; persisted open/closed via <code>usePersistentState</code>, real <code>&lt;button&gt;</code> header with <code>aria-expanded</code>/<code>aria-controls</code>, children unmounted when closed</li>
+  <li>[&#10004;] All panels wrapped &mdash; <strong>10 sections, 10 closers, zero <code>&lt;Panel&gt;</code> left</strong> on the page</li>
+  <li>[&#10004;] Preferences split into <strong>Selling your honey / Appearance / Notifications / Features</strong></li>
+  <li>[&#10004;] Profile Information and Subscription open by default; Danger Zone closed and red-framed</li>
+  <li>[&#10004;] Status summaries on every closed section that has state to report</li>
+  <li>[&#10004;] <code>tsc</code> 0 errors in <code>src/</code>; ESLint clean</li>
+  <li>[ ] <em>Yours:</em> check on a phone &mdash; this is a mobile-first page</li>
+</ul>
+
+<div class="box info">
+  <strong>Preferences held <em>seven</em> blocks, not six.</strong> The original survey missed <strong>Appearance</strong> (the theme switcher). Rather than fold it into &ldquo;Features&rdquo; &mdash; which is about switching optional modules on and off, not display &mdash; it became its own short section. That makes ten sections rather than the nine in the approved sketch.
+</div>
+
+<h3>Final order</h3>
+<div class="mock">▼ Profile Information     Rico Zmarzly
+▼ Subscription            Active
+▶ Selling your honey      Revolut connected · EUR
+▶ Appearance
+▶ Notifications           Daily email reminders
+▶ Features                Printing, Logbook, Apiary Map
+▶ Tools &amp; Teams
+▶ My data export
+▶ Account
+▶ Danger Zone</div>
+
+<h3>Things handled along the way</h3>
+<table>
+  <tr><th>Issue</th><th>Handling</th></tr>
+  <tr><td><strong>Two blocks are subscription-gated.</strong> Sales/CRM and Apiary Map sit inside <code>{subscriptionStatus?.is_active &amp;&amp; (</code></td><td>Moved with their conditionals intact, and the script asserted each still contained its gate and closed cleanly before writing</td></tr>
+  <tr><td><strong>Profile Information had an Edit button in its header row.</strong> A section header is itself a <code>&lt;button&gt;</code>, and nesting buttons is invalid</td><td>The Edit control moved into the section body; the duplicate inner <code>&lt;h2&gt;</code> was dropped</td></tr>
+  <tr><td>That row then rendered empty while editing, still holding its bottom margin</td><td>Row is now only rendered when not editing, so no phantom gap above the form</td></tr>
+  <tr><td><code>Panel</code> and <code>Calendar</code> imports became unused</td><td>Removed &mdash; ESLint caught both</td></tr>
+  <tr><td>Risk of fat-fingering a 1,500-line file</td><td>Blocks extracted by line range with assertions on their contents, a backup taken first, and balance verified (10 opens / 10 closes) before typechecking</td></tr>
+</table>
+
+<h3>QA audit findings &mdash; fixed in place</h3>
+<p><strong>No Critical or High issues.</strong> The two genuinely risky parts &mdash; the <code>subscriptionStatus?.is_active</code> gates and the invalid nested button in the Profile header &mdash; were caught during implementation. Four findings remained, all in the new component.</p>
+<table>
+  <tr><th>Severity</th><th>Finding</th><th>Fix</th></tr>
+  <tr><td>&#128993; Medium</td><td><code>aria-controls</code> referenced the content id unconditionally, but the content is <em>unmounted</em> when closed. ARIA requires the target to exist, so a screen reader following that relationship on a collapsed section found nothing</td><td>Set only while open</td></tr>
+  <tr><td>&#128993; Medium</td><td>No visible focus indicator. The header is a bare <code>&lt;button&gt;</code> rather than <code>fj-btn</code>, so it inherited no focus styling &mdash; and there are now ten of them, all primary tab stops</td><td>Added an inset <code>focus-visible</code> ring</td></tr>
+  <tr><td>&#128993; Medium</td><td>The summary sat at <code>text-text-tertiary</code>, the weakest contrast token, despite carrying the real state a reduced-eyesight user is scanning for</td><td>Raised to <code>text-text-secondary</code></td></tr>
+  <tr><td>&#128994; Low</td><td>Hover highlight kept <code>rounded-xl</code> while expanded, rounding its bottom corners mid-panel</td><td><code>rounded-t-xl</code> when open</td></tr>
+  <tr><td>&#9898; Checked, no defect</td><td><code>usePersistentState</code> supports a functional updater and a validator; the Data Export subscription gate survived the move; collapsing mid-edit does not lose form state, since that lives on the page rather than in the section</td><td>&mdash;</td></tr>
+</table>
+<p><em>Note, not a defect:</em> unmounting means <code>SubscriptionStatusCard</code> and <code>SubscriptionHistoryTable</code> refetch each time that section is reopened. Acceptable &mdash; it defaults to open, and the alternative keeps a hidden subtree alive on every settings visit.</p>
+
 <h2>Review</h2>
 <p><em>To be completed once the plan is approved and implemented.</em></p>
