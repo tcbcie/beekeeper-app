@@ -576,8 +576,8 @@ export default function JarLabelsTab({
                     Let customers pay for the jar
                   </span>
                   <span className="block text-sm text-text-tertiary">
-                    Shows the price and a payment button at the top of the scan page, replacing
-                    a separate payment sticker.
+                    Shows the price and a payment button beneath the provenance on the scan
+                    page, replacing a separate payment sticker.
                   </span>
                 </span>
               </label>

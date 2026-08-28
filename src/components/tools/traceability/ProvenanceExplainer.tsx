@@ -38,7 +38,7 @@ const STEPS: {
     icon: Tag,
     title: 'Jar Labels',
     what:
-      'The printed label design itself, one per jar size. Its QR code never changes, so you can order labels in bulk once and simply re-point the design at your newest batch each time you bottle.',
+      'The printed label design itself, one per jar size. Its QR code never changes, so you can order labels in bulk once and simply re-point the design at your newest batch each time you bottle. A design can also carry a payment link, so someone who has taken a jar from an honesty box can pay by scanning it.',
     when: 'One entry per label design, then reused for good',
   },
 ]
