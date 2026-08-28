@@ -623,14 +623,18 @@ export default function JarLabelsTab({
                   </div>
 
                   <div>
-                    <FieldLabel htmlFor="jl-paynote">Note under the button</FieldLabel>
+                    <FieldLabel htmlFor="jl-paynote">Message under the button</FieldLabel>
                     <TextInput
                       id="jl-paynote"
                       value={form.payment_note}
                       onChange={e => setForm(p => ({ ...p, payment_note: e.target.value }))}
-                      placeholder="Collection from Athenry"
+                      placeholder="Raw and unfiltered, straight from our hives"
                       maxLength={300}
                     />
+                    <p className="mt-1 text-sm text-text-tertiary">
+                      A line about your honey, or anything practical the customer needs to know
+                      &mdash; where to collect, or that jars can be refilled.
+                    </p>
                   </div>
 
                   <p className="flex items-start gap-2 text-sm text-text-tertiary">
