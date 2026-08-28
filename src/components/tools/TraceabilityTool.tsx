@@ -12,6 +12,7 @@ import { useLabelPrinting } from '@/hooks/useLabelPrinting'
 import ContainersTab from './traceability/ContainersTab'
 import BatchesTab from './traceability/BatchesTab'
 import JarLabelsTab from './traceability/JarLabelsTab'
+import ProvenanceExplainer from './traceability/ProvenanceExplainer'
 
 type TabType = 'containers' | 'batches' | 'labels'
 
@@ -320,6 +321,9 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         </Button>
       </div>
 
+      {/* Names the Bulk Honey -> Batch -> Jar Label chain, which none of the
+          three tab labels conveys on its own. */}
+      <ProvenanceExplainer activeTab={activeTab} />
 
       {activeTab === 'labels' ? (
         <JarLabelsTab
