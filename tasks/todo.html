@@ -57,7 +57,7 @@ Harvest (Records) &nbsp;→&nbsp; Bulk Honey (bucket) &nbsp;→&nbsp; Batch (bot
 
 <h3>Behaviour</h3>
 <ul>
-  <li>Open on a first visit so a newcomer reads it; stays shut once closed. Persisted via <code>usePersistentState</code> (<code>traceability:explainer</code>), which sits in the <code>hivecraic:filters:</code> namespace already cleared on sign-out — so a second account on the same device does not inherit it.</li>
+  <li>Collapsed by default (changed on review — regulars are here to work, not to read); the header stays visible to be opened. Persisted via <code>usePersistentState</code> (<code>traceability:explainer</code>), which sits in the <code>hivecraic:filters:</code> namespace already cleared on sign-out — so a second account on the same device does not inherit it.</li>
   <li>The step matching the open tab is outlined and marked <strong>You are here</strong>.</li>
   <li>Header is a 48px-tall disclosure button with <code>aria-expanded</code>; <code>aria-controls</code> is set only while open, since the body is unmounted when closed.</li>
 </ul>
@@ -81,8 +81,15 @@ Harvest (Records) &nbsp;→&nbsp; Bulk Honey (bucket) &nbsp;→&nbsp; Batch (bot
   <li>Build not run, per project instruction — <strong>please check it in the browser</strong>: Tools → Honey Provenance.</li>
 </ul>
 
+<h3>Follow-ups applied after review</h3>
+<ul>
+  <li><strong>Payment link named.</strong> The Jar Labels step explained the QR indirection but not the other thing a design can carry, so a novice could not learn a jar can be paid for by scanning it. Added the honesty-box case.</li>
+  <li><strong>Stale hint corrected.</strong> The payment toggle in <code>JarLabelsTab.tsx</code> still promised the panel &quot;at the top of the scan page&quot;, untrue since <code>7a46161</code> demoted it below the provenance card.</li>
+  <li><strong>Default flipped to collapsed.</strong> Expanded-on-arrival taxed every repeat visit to serve the first one.</li>
+</ul>
+
 <div class="note">
-  <strong>Worth a look when you test:</strong> the panel is expanded on first load, so it pushes the container list down until you collapse it once. If that feels heavy on arrival, say so and I will flip the default to collapsed.
+  <strong>When you test:</strong> Tools &rarr; Honey Provenance. The panel now starts closed &mdash; open it once and it stays open. If you had already loaded the page before this change, your browser has remembered it as open; closing it once settles it.
 </div>
 
 <h2>Scope guard</h2>
