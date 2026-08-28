@@ -5,6 +5,7 @@ import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import FeedbackForm from '@/components/trace/FeedbackForm'
 import TraceCard from '@/components/trace/TraceCard'
 import LotFinder from '@/components/trace/LotFinder'
+import PaymentPanel from '@/components/trace/PaymentPanel'
 import type { PublicBatchInfo, PublicJarLabelInfo, PublicLabelLot } from '@/types/traceability'
 
 const supabase = createClient(
@@ -113,6 +114,11 @@ export default async function JarLabelPage({ params, searchParams }: PageProps) 
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+      {/* Above the provenance card deliberately: at a stall, paying is why they
+          scanned. The story is what they read afterwards. Renders nothing unless
+          the label carries a link that passes the host allowlist. */}
+      {info.payment && <PaymentPanel payment={info.payment} labelName={label.name} />}
+
       {batch ? (
         <TraceCard
           batch={batch}

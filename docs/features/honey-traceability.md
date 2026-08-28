@@ -375,6 +375,8 @@ To use:
 
 **Note:** The QR code links to the unique `trace_code` URL, while your jar label can display the `batch_code` as the EU lot number.
 
+> **Printing labels in bulk?** These per-batch QR codes assume one print run per batch. For commercially printed labels — one design per jar size, applied across many batches — use [Jar Label QR Codes](./jar-label-qr-codes.md) instead: a permanent code you point at whichever batch you are currently bottling. Existing `/trace/` QR codes keep working unchanged.
+
 #### Per-Jar-Size QR Codes
 
 When a batch has **two or more jar sizes** (each with a net weight), the QR modal and the edit-form trace box render **one QR per jar size**. Each links to `/trace/{trace_code}?w={net_weight_g}` and the public page then shows **only that jar's net weight** as the hero figure, so a consumer scanning a 227 g jar isn't shown the 454 g figure too.
@@ -395,9 +397,15 @@ When editing an existing public batch, a QR code preview is shown at the top of 
 
 ## Related Documentation
 
+- [Jar Label QR Codes](./jar-label-qr-codes.md) — permanent QR codes for commercially printed jar labels, one design per jar size, pointed at whichever batch is currently being bottled.
 - [Printable Labels](./print-labels.md) — opt-in thermal printing for balkani (bulk container) labels via Brother QL-820NWB.
 
 ## Changelog
+
+### August 27, 2026
+- Added [Jar Label QR Codes](./jar-label-qr-codes.md) — a permanent per-design code (`trace_labels`) that resolves to the batch currently being bottled, so labels can be printed in bulk ahead of the batches they carry
+- The public trace card moved to a shared `TraceCard` component used by both `/trace/` and the new `/j/` route; per-batch trace pages are unchanged
+- Map coordinate fuzzing is now derived from a stable per-apiary hash rather than re-randomised per request, so repeated page loads can no longer be averaged to recover the true apiary location. This also applies to the per-batch trace page
 
 ### January 25, 2026
 - Added optional apiary image display on public trace page (shown below the map when enabled)
