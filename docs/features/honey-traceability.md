@@ -131,7 +131,7 @@ It then gives each stage a plain-language "what it is" and a "when you create on
 |---|---|---|
 | **Bulk Honey** | The bucket, tank or drum the extracted honey sits in. Linking the harvests that filled it is what supplies the apiary origin | One entry per bucket, on extraction day |
 | **Batches** | One bottling run: honey drawn out of one or more buckets and put into jars. Carries the EU lot code and best-before date | One entry per bottling run |
-| **Jar Labels** | The printed label design, one per jar size. Its QR code never changes, so labels are ordered in bulk once and re-pointed at the newest batch each bottling | One entry per label design, then reused for good |
+| **Jar Labels** | The printed label design, one per jar size. Its QR code never changes, so labels are ordered in bulk once and re-pointed at the newest batch each bottling. A design can also carry a payment link for honesty-box sales | One entry per label design, then reused for good |
 
 The step matching the tab currently open is outlined and marked **You are here**, so the panel also
 answers "where am I in this chain?". A closing line explains what a customer actually does — scan
