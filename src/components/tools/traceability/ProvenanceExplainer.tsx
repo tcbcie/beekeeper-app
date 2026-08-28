@@ -47,13 +47,18 @@ const CHAIN = ['Harvest', 'Bulk Honey', 'Batch', 'Jar Label']
 
 /**
  * Teaches the Bulk Honey → Batch → Jar Label chain, which none of the three
- * tab names explains on its own. Open on a first visit so a newcomer reads it,
- * and shut for good once they close it.
+ * tab names explains on its own.
+ *
+ * Collapsed by default: the people here every week are working, not reading,
+ * and an explainer that pushes the list down on every visit costs them more
+ * than it ever gives a newcomer. The header stays visible and self-describing,
+ * so it is there to be opened rather than dismissed. Once opened or closed the
+ * choice persists.
  */
 export default function ProvenanceExplainer({ activeTab }: ProvenanceExplainerProps) {
   const [open, setOpen] = usePersistentState<boolean>(
     'traceability:explainer',
-    true,
+    false,
     (v) => typeof v === 'boolean',
   )
   const contentId = useId()

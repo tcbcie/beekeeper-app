@@ -137,10 +137,11 @@ The step matching the tab currently open is outlined and marked **You are here**
 answers "where am I in this chain?". A closing line explains what a customer actually does — scan
 the QR, type the lot code beside it — since that is the payoff the three stages exist to serve.
 
-The panel is **open on a first visit** so a newcomer reads it, and stays shut once closed. The state
-is persisted per browser via `usePersistentState` under the key `traceability:explainer`, so it does
-not reappear on every navigation. It is purely presentational: no queries, no props beyond the
-active tab.
+The panel is **collapsed by default** — regulars are here to work, not to read, and an explainer
+that pushes the list down on every visit costs them more than it gives a newcomer. The header row
+stays visible and self-describing, so it is there to be opened rather than dismissed. Once opened
+or closed the choice persists per browser via `usePersistentState` under the key
+`traceability:explainer`. It is purely presentational: no queries, no props beyond the active tab.
 
 ## Workflow
 
