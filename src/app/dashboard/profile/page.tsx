@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { fetchUserExportData, USER_EXPORT_TABLES } from '@/lib/database-export'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
-import { User, Calendar, Edit2, Save, Download, Trash2, Phone, Palette, Scale, Users, Crown, ChevronRight } from 'lucide-react'
+import { User, Edit2, Save, Download, Trash2, Phone, Palette, Scale, Users, Crown, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
 import RenewSubscriptionModal from '@/components/RenewSubscriptionModal'
@@ -17,7 +17,7 @@ import { notifyCrmPrefChanged } from '@/hooks/useCrmEnabled'
 import { notifyLogbookPrefChanged } from '@/hooks/useLogbookEnabled'
 import { notifyYardMapPrefChanged } from '@/hooks/useYardMapEnabled'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import Panel from '@/components/ui/Panel'
+import CollapsibleSection from '@/components/ui/CollapsibleSection'
 import ModalShell from '@/components/ui/ModalShell'
 import FormActionRow from '@/components/ui/FormActionRow'
 import FieldLabel from '@/components/ui/FieldLabel'
@@ -614,10 +614,16 @@ export default function ProfilePage() {
  </div>
 
  {/* Profile Information */}
- <Panel padding="lg">
- <div className="flex items-center justify-between mb-6">
- <h2 className="text-xl font-semibold text-foreground">Profile Information</h2>
+ <CollapsibleSection
+ title="Profile Information"
+ storageKey="profile"
+ defaultOpen
+ summary={[profileFormData.first_name, profileFormData.last_name].filter(Boolean).join(' ') || userProfile?.email}
+ >
+ {/* Only rendered when not editing — an empty row would still occupy its
+ bottom margin and leave a gap above the form. */}
  {!editingProfile && (
+ <div className="flex items-center justify-end mb-6">
  <Button
  onClick={() => setEditingProfile(true)}
  tone="success"
@@ -626,8 +632,8 @@ export default function ProfilePage() {
  <Edit2 size={16} />
  Edit Profile
  </Button>
- )}
  </div>
+ )}
 
  {editingProfile ? (
  /* Edit Mode */
@@ -913,14 +919,16 @@ export default function ProfilePage() {
  </div>
  </div>
  )}
- </Panel>
+ </CollapsibleSection>
 
  {/* Subscription Management */}
+ <CollapsibleSection
+ title="Subscription"
+ storageKey="subscription"
+ defaultOpen
+ summary={subscriptionStatus?.is_active ? 'Active' : 'Not active'}
+ >
  <div className="space-y-6">
- <div className="flex items-center gap-3">
- <Calendar size={28} className="text-amber-600" />
- <h2 className="text-2xl font-semibold text-foreground">Subscription</h2>
- </div>
 
  <SubscriptionStatusCard
  key={subscriptionRefreshKey}
@@ -929,11 +937,11 @@ export default function ProfilePage() {
 
  <SubscriptionHistoryTable key={subscriptionRefreshKey} />
  </div>
+ </CollapsibleSection>
 
  {/* Data Export - Only visible for users with active subscription */}
  {subscriptionStatus?.is_active && (
- <Panel>
- <h2 className="text-xl font-semibold text-foreground mb-4">My Data Export</h2>
+ <CollapsibleSection title="My data export" storageKey="export">
  <p className="text-sm text-text-tertiary mb-4">
  Export all your personal beekeeping data including apiaries, hives, queens, inspections, and varroa management records.
  </p>
@@ -981,12 +989,85 @@ export default function ProfilePage() {
  )}
  </Button>
  </div>
- </Panel>
+ </CollapsibleSection>
  )}
- {/* Preferences */}
- <Panel>
- <h2 className="text-xl font-semibold text-foreground mb-4">Preferences</h2>
- <div className="space-y-3">
+
+      {/* Selling your honey — promoted out of Preferences: payment settings are
+          not a "preference", and burying them here made them unfindable. */}
+      <CollapsibleSection
+        title="Selling your honey"
+        storageKey="selling"
+        summary={!profileFormData.enable_jar_payments
+         ? 'Off'
+         : profileFormData.sales_revolut_url
+         ? `Revolut connected \u00b7 ${profileFormData.sales_currency}`
+         : 'On \u2014 add your Revolut link'}
+      >
+ <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
+ <div className="mb-4">
+ <div className="font-medium text-foreground mb-1">Selling your honey</div>
+ <div className="text-sm text-text-tertiary">Let customers pay you when they scan the QR code on a jar. Set up once here and every jar label can use it.</div>
+ </div>
+
+ <div className="flex items-center justify-between">
+ <div>
+ <label htmlFor="jar-payments" className="text-sm font-medium text-foreground">Accept payments on jar labels</label>
+ <div className="text-xs text-text-tertiary">Shows a price and a payment button when someone scans a jar</div>
+ </div>
+ <label className="relative inline-flex items-center cursor-pointer">
+ <input
+ type="checkbox"
+ id="jar-payments"
+ checked={profileFormData.enable_jar_payments}
+ onChange={(e) => updatePreference('enable_jar_payments', e.target.checked)}
+ className="sr-only peer"
+ />
+ <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+ </label>
+ </div>
+
+ {profileFormData.enable_jar_payments && (
+ <div className="mt-4 space-y-4">
+ <div>
+ <label htmlFor="sales-revolut" className="block text-sm font-medium text-foreground mb-1">Your Revolut link</label>
+ <input
+ type="url"
+ inputMode="url"
+ id="sales-revolut"
+ value={profileFormData.sales_revolut_url}
+ onChange={(e) => setProfileFormData(prev => ({ ...prev, sales_revolut_url: e.target.value }))}
+ onBlur={(e) => saveSalesRevolutUrl(e.target.value)}
+ placeholder="https://revolut.me/yourname"
+ className="fj-control w-full"
+ />
+ <div className="mt-1 text-xs text-text-tertiary">
+ Copy this from the Revolut app: Profile &rarr; your @username. Customers type the amount themselves, so each jar label carries its own price.
+ </div>
+ </div>
+
+ <div>
+ <label htmlFor="sales-currency" className="block text-sm font-medium text-foreground mb-1">Currency</label>
+ <input
+ type="text"
+ id="sales-currency"
+ value={profileFormData.sales_currency}
+ maxLength={3}
+ onChange={(e) => setProfileFormData(prev => ({ ...prev, sales_currency: e.target.value.toUpperCase() }))}
+ onBlur={(e) => saveSalesCurrency(e.target.value)}
+ className="fj-control w-32 font-mono"
+ />
+ </div>
+
+ <div className="text-xs text-text-tertiary">
+ Customers pay inside Revolut, so HiveCraic never sees payment details &mdash; and never learns whether a payment went through. Check your Revolut app to confirm a sale.
+ </div>
+ </div>
+ )}
+ </div>
+      </CollapsibleSection>
+
+      {/* Appearance */}
+      <CollapsibleSection title="Appearance" storageKey="appearance">
  <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
  <div className="flex items-center gap-3 mb-3">
  <Palette size={20} className="text-forest-600 dark:text-forest-400" />
@@ -995,7 +1076,16 @@ export default function ProfilePage() {
  <p className="text-sm text-text-tertiary mb-4">Light mode is optimised for outdoor field work; dark mode suits evening planning.</p>
  <ThemeSwitcher />
  </div>
+      </CollapsibleSection>
 
+      {/* Notifications */}
+      <CollapsibleSection
+        title="Notifications"
+        storageKey="notifications"
+        summary={!profileFormData.enable_task_email_reminders && !profileFormData.enable_event_email_reminders
+         ? 'Email reminders off'
+         : `${profileFormData.task_reminder_frequency.charAt(0).toUpperCase()}${profileFormData.task_reminder_frequency.slice(1)} email reminders`}
+      >
  <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
  <div className="mb-4">
  <div className="font-medium text-foreground mb-1">Email Notifications</div>
@@ -1071,7 +1161,20 @@ export default function ProfilePage() {
  </div>
  </div>
  </div>
+      </CollapsibleSection>
 
+      {/* Features — the on/off switches for optional parts of the app. */}
+      <CollapsibleSection
+        title="Features"
+        storageKey="features"
+        summary={[
+         profileFormData.enable_label_printing && 'Printing',
+         profileFormData.enable_logbook && 'Logbook',
+         subscriptionStatus?.is_active && profileFormData.enable_crm && 'Sales / CRM',
+         subscriptionStatus?.is_active && profileFormData.enable_yard_map && 'Apiary Map',
+       ].filter(Boolean).join(', ') || 'None enabled'}
+      >
+        <div className="space-y-3">
  <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
  <div className="mb-4">
  <div className="font-medium text-foreground mb-1">Printing</div>
@@ -1094,68 +1197,6 @@ export default function ProfilePage() {
  <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
  </label>
  </div>
- </div>
-
- <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
- <div className="mb-4">
- <div className="font-medium text-foreground mb-1">Selling your honey</div>
- <div className="text-sm text-text-tertiary">Let customers pay you when they scan the QR code on a jar. Set up once here and every jar label can use it.</div>
- </div>
-
- <div className="flex items-center justify-between">
- <div>
- <label htmlFor="jar-payments" className="text-sm font-medium text-foreground">Accept payments on jar labels</label>
- <div className="text-xs text-text-tertiary">Shows a price and a payment button when someone scans a jar</div>
- </div>
- <label className="relative inline-flex items-center cursor-pointer">
- <input
- type="checkbox"
- id="jar-payments"
- checked={profileFormData.enable_jar_payments}
- onChange={(e) => updatePreference('enable_jar_payments', e.target.checked)}
- className="sr-only peer"
- />
- <div className="w-11 h-6 bg-surface-secondary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-border after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
- </label>
- </div>
-
- {profileFormData.enable_jar_payments && (
- <div className="mt-4 space-y-4">
- <div>
- <label htmlFor="sales-revolut" className="block text-sm font-medium text-foreground mb-1">Your Revolut link</label>
- <input
- type="url"
- inputMode="url"
- id="sales-revolut"
- value={profileFormData.sales_revolut_url}
- onChange={(e) => setProfileFormData(prev => ({ ...prev, sales_revolut_url: e.target.value }))}
- onBlur={(e) => saveSalesRevolutUrl(e.target.value)}
- placeholder="https://revolut.me/yourname"
- className="fj-control w-full"
- />
- <div className="mt-1 text-xs text-text-tertiary">
- Copy this from the Revolut app: Profile &rarr; your @username. Customers type the amount themselves, so each jar label carries its own price.
- </div>
- </div>
-
- <div>
- <label htmlFor="sales-currency" className="block text-sm font-medium text-foreground mb-1">Currency</label>
- <input
- type="text"
- id="sales-currency"
- value={profileFormData.sales_currency}
- maxLength={3}
- onChange={(e) => setProfileFormData(prev => ({ ...prev, sales_currency: e.target.value.toUpperCase() }))}
- onBlur={(e) => saveSalesCurrency(e.target.value)}
- className="fj-control w-32 font-mono"
- />
- </div>
-
- <div className="text-xs text-text-tertiary">
- Customers pay inside Revolut, so HiveCraic never sees payment details &mdash; and never learns whether a payment went through. Check your Revolut app to confirm a sale.
- </div>
- </div>
- )}
  </div>
 
  <div className="p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
@@ -1233,14 +1274,12 @@ export default function ProfilePage() {
  </div>
  </div>
  )}
- </div>
- </Panel>
+        </div>
+      </CollapsibleSection>
+
 
  {/* Tools & Teams */}
- <Panel>
- <div className="flex items-center gap-3 mb-4">
- <h2 className="text-xl font-semibold text-foreground">Tools &amp; Teams</h2>
- </div>
+ <CollapsibleSection title="Tools &amp; Teams" storageKey="tools">
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
  {[
  { href: '/dashboard/scales', label: 'Scales', description: 'BEEP & Wolf Waagen integrations', icon: Scale, colour: 'text-blue-600 dark:text-blue-400' },
@@ -1261,11 +1300,10 @@ export default function ProfilePage() {
  </Link>
  ))}
  </div>
- </Panel>
+ </CollapsibleSection>
 
  {/* Account */}
- <Panel>
- <h2 className="text-xl font-semibold text-foreground mb-4">Account</h2>
+ <CollapsibleSection title="Account" storageKey="account">
  <div className="flex items-center justify-between p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
  <div>
  <div className="font-medium text-foreground">Change Password</div>
@@ -1279,11 +1317,10 @@ export default function ProfilePage() {
  Change Password
  </Button>
  </div>
- </Panel>
+ </CollapsibleSection>
 
  {/* Danger Zone */}
- <Panel className="border border-red-300 dark:border-red-800">
- <h2 className="text-xl font-semibold text-red-900 dark:text-red-100 mb-4">Danger Zone</h2>
+ <CollapsibleSection title="Danger Zone" storageKey="danger" danger>
  <div className="flex items-center justify-between p-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
  <div>
  <div className="font-medium text-red-900 dark:text-red-100">Delete Account</div>
@@ -1298,7 +1335,7 @@ export default function ProfilePage() {
  Delete Account
  </Button>
  </div>
- </Panel>
+ </CollapsibleSection>
  {/* Change Password Modal */}
  {showChangePasswordModal && (
  <ModalShell
