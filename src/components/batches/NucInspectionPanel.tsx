@@ -41,6 +41,8 @@ interface NucInspectionPanelProps {
   nucNumber: string
   userId: string
   graftId?: string | null
+  /** Nuc lifecycle status — lets a graft-less nuc mint and mark its own reared queen. */
+  nucStatus?: string | null
   emergenceDate?: string | null
   onInspectionChange?: () => void
   readOnly?: boolean
@@ -52,6 +54,10 @@ interface NucInspectionPanelProps {
 }
 
 const QUEEN_STATUSES = ['virgin', 'mated', 'laying', 'missing', 'dead']
+
+// Nuc statuses where a queen physically exists in the box, so she can be marked/numbered
+// and a queens record can be minted for her. Mirrors the DB guard in ensure_nuc_reared_queen().
+const NUC_QUEEN_PRESENT_STATUSES = ['virgin', 'mating', 'laying']
 
 // Eggs or larvae in a mating nuc prove the queen is mated. Only applied when the beekeeper
 // left the Queen Status dropdown blank — an explicit choice always wins.
@@ -71,7 +77,7 @@ interface QueenWeight {
   created_at: string
 }
 
-export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, emergenceDate, onInspectionChange, readOnly, existingQueenMarkedAt, existingQueenMarked, existingQueenNumber, autoOpenForm, graftStatus }: NucInspectionPanelProps) {
+export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, nucStatus, emergenceDate, onInspectionChange, readOnly, existingQueenMarkedAt, existingQueenMarked, existingQueenNumber, autoOpenForm, graftStatus }: NucInspectionPanelProps) {
   const toast = useToast()
   const [inspections, setInspections] = useState<NucInspection[]>([])
   const [loading, setLoading] = useState(true)
@@ -321,6 +327,10 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
 
   const markColour = emergenceDate ? getQueenColorFromYear(emergenceDate) : ''
 
+  // A nuc that reared its own queen (direct graft, no batch cell) can still be marked:
+  // the queen record is minted on demand. Before a virgin emerges there is nothing to mark.
+  const canMarkRearedQueen = !!nucStatus && NUC_QUEEN_PRESENT_STATUSES.includes(nucStatus)
+
   const [markSaving, setMarkSaving] = useState(false)
 
   // Weight Queen state
@@ -406,15 +416,26 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
           .eq('user_id', userId)
 
         if (graftError) throw graftError
+
+        const { error: nucError } = await supabase
+          .from('mating_nucs')
+          .update({ queen_marked_at: markDate })
+          .eq('id', nucId)
+          .eq('user_id', userId)
+
+        if (nucError) throw nucError
+      } else {
+        // No graft cell to hold the number, so mint/update the nuc's own reared queen
+        // record instead. The RPC also stamps mating_nucs.queen_marked_at.
+        const { error: rpcError } = await supabase.rpc('ensure_nuc_reared_queen', {
+          p_nuc_id: nucId,
+          p_queen_number: markQueenNumber || null,
+          p_marking_colour: markColour || null,
+          p_marked_date: markDate,
+        })
+
+        if (rpcError) throw rpcError
       }
-
-      const { error: nucError } = await supabase
-        .from('mating_nucs')
-        .update({ queen_marked_at: markDate })
-        .eq('id', nucId)
-        .eq('user_id', userId)
-
-      if (nucError) throw nucError
 
       toast.success('Queen marked successfully')
       setShowMarkForm(false)
@@ -423,7 +444,13 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       onInspectionChange?.()
     } catch (error) {
       console.error('Error marking queen:', error)
-      toast.error('Failed to mark queen')
+      // Surface the real reason (e.g. a duplicate queen number) rather than a generic failure.
+      // Supabase rejects with a PostgrestError plain object, not an Error instance.
+      const message =
+        typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as { message: unknown }).message)
+          : ''
+      toast.error(message || 'Failed to mark queen')
     } finally {
       setMarkSaving(false)
     }
@@ -452,7 +479,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
             Add Inspection
           </Button>
         )}
-        {!readOnly && graftId && !showForm && !showMarkForm && !showWeightForm && (
+        {!readOnly && (graftId || canMarkRearedQueen) && !showForm && !showMarkForm && !showWeightForm && (
           <Button
             onClick={() => {
               setMarkDate(existingQueenMarkedAt ? existingQueenMarkedAt.split('T')[0] : new Date().toISOString().split('T')[0])

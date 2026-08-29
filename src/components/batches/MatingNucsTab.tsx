@@ -57,6 +57,7 @@ interface MatingNuc {
  graft_id: string | null
  batch_id: string | null
  queen_id: string | null
+ reared_queen_id: string | null
  mating_location: string | null
  status: string
  setup_date: string
@@ -79,7 +80,12 @@ interface MatingNuc {
  batch_name: string
  emergence_date: string | null
  } | null
+ // The breeder/mother queen (the "Grafted from" field), via mating_nucs.queen_id.
  queens?: {
+ queen_number: string
+ } | null
+ // The queen reared in this nuc, via mating_nucs.reared_queen_id. Minted on demand.
+ reared_queen?: {
  queen_number: string
  } | null
  mating_nuc_inspections?: { count: number }[]
@@ -153,6 +159,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [historyNucNumber, setHistoryNucNumber] = useState<string | null>(null)
  const [historyData, setHistoryData] = useState<MatingNuc[]>([])
  const [distributeNuc, setDistributeNuc] = useState<MatingNuc | null>(null)
+ const [distributeQueenId, setDistributeQueenId] = useState<string | null>(null)
+ const [mintingNucId, setMintingNucId] = useState<string | null>(null)
  const [distributeGroupMemberIds, setDistributeGroupMemberIds] = useState<string[]>([])
  const [showBulkForm, setShowBulkForm] = useState(false)
  const [bulkLoading, setBulkLoading] = useState(false)
@@ -219,7 +227,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const gen = ++fetchNucsGenRef.current
  let query = supabase
  .from('mating_nucs')
- .select('*, batch_grafts(cell_number, status, queen_marked, queen_number), rearing_batches(batch_name, emergence_date), queens(queen_number), mating_nuc_inspections(count)')
+ .select('*, batch_grafts(cell_number, status, queen_marked, queen_number), rearing_batches(batch_name, emergence_date), queens!mating_nucs_queen_id_fkey(queen_number), reared_queen:queens!mating_nucs_reared_queen_id_fkey(queen_number), mating_nuc_inspections(count)')
  .eq('user_id', userId)
  .eq('is_inventory', false)
 
@@ -865,7 +873,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const fetchHistory = async (nucNumber: string) => {
  const { data, error } = await supabase
  .from('mating_nucs')
- .select('*, batch_grafts(cell_number, status, queen_marked, queen_number), rearing_batches(batch_name, emergence_date), queens(queen_number), mating_nuc_inspections(count)')
+ .select('*, batch_grafts(cell_number, status, queen_marked, queen_number), rearing_batches(batch_name, emergence_date), queens!mating_nucs_queen_id_fkey(queen_number), reared_queen:queens!mating_nucs_reared_queen_id_fkey(queen_number), mating_nuc_inspections(count)')
  .eq('user_id', userId)
  .eq('nuc_number', nucNumber)
  .order('setup_date', { ascending: false })
@@ -877,6 +885,31 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  setHistoryData(data || [])
  setHistoryNucNumber(nucNumber)
  }
+ }
+
+ // A graft-linked nuc distributes through the graft. A nuc that reared its own queen
+ // (direct graft, no batch) mints that queen first, then distributes her as a registry queen.
+ // Marking is never required — an unmarked virgin is minted as "Nuc 198".
+ const openDistribute = async (nuc: MatingNuc) => {
+ if (nuc.graft_id && nuc.batch_id) {
+ setDistributeQueenId(null)
+ setDistributeNuc(nuc)
+ return
+ }
+
+ setMintingNucId(nuc.id)
+ const { data, error } = await supabase.rpc('ensure_nuc_reared_queen', { p_nuc_id: nuc.id })
+ setMintingNucId(null)
+
+ if (error || !data) {
+ console.error('Error preparing nuc queen for distribution:', error)
+ toast.error(error?.message || 'Could not prepare this queen for distribution')
+ return
+ }
+
+ setDistributeQueenId(data as string)
+ setDistributeNuc(nuc)
+ fetchNucs()
  }
 
  const handleDistributeSave = async (data: CreateDistributionData) => {
@@ -895,11 +928,22 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  toast.error('Distribution saved but nuc status could not be updated to sold. Please update manually.')
  }
  }
+ // A nuc-reared queen lives in the owner's register, so retire her from it once sent —
+ // mirrors the queen detail page's registry-queen distribution.
+ if (distributeQueenId) {
+ const { error: queenError } = await supabase
+ .from('queens')
+ .update({ status: 'distributed' })
+ .eq('id', distributeQueenId)
+ .eq('user_id', userId)
+
+ if (queenError) console.error('Non-blocking: failed to mark queen distributed:', queenError)
+ }
  toast.success('Distribution recorded')
  fetchNucs()
  fetchGrafts()
  } else if (success === false) {
- toast.error('This graft has already been distributed')
+ toast.error(distributeQueenId ? 'This queen has already been distributed' : 'This graft has already been distributed')
  } else {
  toast.error('Failed to record distribution')
  }
@@ -1579,11 +1623,15 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const isHighlighted = highlightNucId === nuc.id || highlightNucNumber === nuc.nuc_number
  const statusInfo = NUC_STATUSES.find(s => s.value === nuc.status)
  const inspectionCount = nuc.mating_nuc_inspections?.[0]?.count || 0
- const markingColour = nuc.rearing_batches?.emergence_date ? getQueenColorFromYear(nuc.rearing_batches.emergence_date) : ''
+ // A direct-graft nuc has no batch, so fall back to its own emergence date for the colour.
+ const markingDate = nuc.rearing_batches?.emergence_date || nuc.queen_emerged_at
+ const markingColour = markingDate ? getQueenColorFromYear(markingDate) : ''
+ // The number lives on the graft cell for batch-reared queens, or on the nuc's own reared queen.
+ const queenNumber = nuc.batch_grafts?.queen_number || nuc.reared_queen?.queen_number || null
  // Once a queen is marked, show its marking (colour + number) instead of the cell it came from.
  const queenMarked = !!(nuc.queen_marked_at || nuc.batch_grafts?.queen_marked)
  const cellOrMarking = queenMarked
- ? ` · Marked${markingColour ? ` ${markingColour}` : ''}${nuc.batch_grafts?.queen_number ? ` #${nuc.batch_grafts.queen_number}` : ''}`
+ ? ` · Marked${markingColour ? ` ${markingColour}` : ''}${queenNumber ? ` #${queenNumber}` : ''}`
  : (nuc.batch_grafts ? ` · Cell #${nuc.batch_grafts.cell_number}` : '')
 
  return (
@@ -1641,8 +1689,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </span>
  {!nuc.retired_at && (
  <>
- {nuc.graft_id && NUC_DISTRIBUTABLE_STATUSES.includes(nuc.status) && (
- <button type="button" onClick={() => setDistributeNuc(nuc)} className={`${NUC_ACTION_BUTTON_CLASS} text-indigo-600`} title="Distribute">
+ {/* No graft required: a nuc that reared its own queen mints her on demand. Marking is optional. */}
+ {NUC_DISTRIBUTABLE_STATUSES.includes(nuc.status) && (
+ <button type="button" onClick={() => openDistribute(nuc)} disabled={mintingNucId === nuc.id} className={`${NUC_ACTION_BUTTON_CLASS} text-indigo-600`} title="Distribute">
  <Send size={13} />
  </button>
  )}
@@ -1701,7 +1750,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <span className="text-text-tertiary">Marked: <span className="inline-flex items-center gap-1 font-medium text-foreground">
  {markingColour && COLOUR_DOTS[markingColour] && <span className={`inline-block h-2 w-2 rounded-full ${COLOUR_DOTS[markingColour]}`} />}
  {nuc.queen_marked_at ? formatDateIrish(nuc.queen_marked_at) : 'Recorded'}
- {nuc.batch_grafts?.queen_number && ` (#${nuc.batch_grafts.queen_number})`}
+ {queenNumber && ` (#${queenNumber})`}
  </span></span>
  )}
  {nucWeights[nuc.id] && (
@@ -1715,12 +1764,15 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  nucNumber={nuc.nuc_number || nuc.reference_code || 'Unnumbered Nuc'}
  userId={userId}
  graftId={nuc.graft_id}
- emergenceDate={nuc.rearing_batches?.emergence_date || null}
+ nucStatus={nuc.status}
+ // A direct-graft nuc has no batch, so fall back to the nuc's own emergence date —
+ // otherwise the marking colour would render as "Unknown".
+ emergenceDate={nuc.rearing_batches?.emergence_date || nuc.queen_emerged_at || nuc.setup_date || null}
  onInspectionChange={fetchNucs}
  readOnly={nuc.status === 'sold' || !!nuc.retired_at}
  existingQueenMarkedAt={nuc.queen_marked_at}
- existingQueenMarked={nuc.batch_grafts?.queen_marked ?? false}
- existingQueenNumber={nuc.batch_grafts?.queen_number ?? null}
+ existingQueenMarked={(nuc.batch_grafts?.queen_marked ?? false) || !!nuc.queen_marked_at}
+ existingQueenNumber={nuc.batch_grafts?.queen_number ?? nuc.reared_queen?.queen_number ?? null}
  autoOpenForm={!!(highlightNucNumber === nuc.nuc_number || highlightNucId === nuc.id)}
  graftStatus={nuc.batch_grafts?.status || null}
  />
@@ -1790,7 +1842,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  )}
 
  {/* Distribute Modal */}
- {distributeNuc && distributeNuc.graft_id && distributeNuc.batch_id && (
+ {distributeNuc && (distributeNuc.graft_id && distributeNuc.batch_id ? (
  <DistributeGraftModal
  graftId={distributeNuc.graft_id}
  batchId={distributeNuc.batch_id}
@@ -1805,7 +1857,21 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  onClose={() => setDistributeNuc(null)}
  defaultMatingLocation={distributeNuc.mating_location || undefined}
  />
- )}
+ ) : distributeQueenId ? (
+ <DistributeGraftModal
+ sourceQueenId={distributeQueenId}
+ distributionTypeOverride={getNucDistributionType(distributeNuc.status)}
+ titleOverride={`Distribute Queen from ${distributeNuc.nuc_number || distributeNuc.reference_code || 'Nuc'}`}
+ userId={userId}
+ groupMemberIds={distributeGroupMemberIds}
+ searchUsers={searchUsers}
+ fetchRecipientApiaries={fetchRecipientApiaries}
+ fetchRecipientHives={fetchRecipientHives}
+ onSave={handleDistributeSave}
+ onClose={() => { setDistributeNuc(null); setDistributeQueenId(null) }}
+ defaultMatingLocation={distributeNuc.mating_location || undefined}
+ />
+ ) : null)}
 
  {/* Bulk Change Mating Site Modal */}
  {showBulkSiteModal && (
