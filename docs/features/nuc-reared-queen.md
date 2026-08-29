@@ -169,3 +169,47 @@ The collapsed card's marking line and the expanded date strip now read the queen
 - `src/lib/ai/tools/nucs.ts` — three disambiguated `queens` embeds.
 
 Database objects were applied via the Supabase MCP connection and have **no SQL file** in the repo.
+
+## Follow-up: queen location tracking and the self-distribution dead end
+
+### `nuc_queen_assignment` tracked the wrong queen
+
+`trg_nuc_queen_assignment` opened a `queen_assignments` row from `mating_nucs.queen_id` — the
+**breeder**. Every nuc therefore claimed its breeder was parked inside it. Because
+`queen_assignment_open()` closes *all* open assignments for a queen before inserting the new one,
+creating a nuc also **terminated that breeder's real hive assignment**.
+
+All 24 `location_type = 'nuc'` rows named a non-resident; 8 were still open, including
+"UGX1.4 is in nuc 198" from 28/07/2026.
+
+Two changes were needed, not one:
+
+```sql
+-- the function now reads reared_queen_id
+CREATE OR REPLACE FUNCTION trg_nuc_queen_assignment() ...
+
+-- and the trigger had to be rebound: it fired on UPDATE OF queen_id, so a
+-- function reading reared_queen_id would never have run.
+DROP TRIGGER nuc_queen_assignment ON mating_nucs;
+CREATE TRIGGER nuc_queen_assignment
+AFTER INSERT OR DELETE OR UPDATE OF reared_queen_id ON mating_nucs ...
+```
+
+Verified: linking a reared queen opens one nuc assignment, clearing it closes hers, and changing
+the breeder creates nothing.
+
+### You cannot distribute a queen to yourself, and should not want to
+
+`search_users_for_distribution` filters `AND p.id != auth.uid()`, so the App User tab never returns
+you, nothing gets selected, and `canSubmit` (`!!selectedUser`) stays false — the button is disabled
+with no explanation.
+
+That exclusion is correct here. Distribution mints a queen for the *recipient*; the donor is set to
+`status = 'distributed'`. Distributing to yourself would leave **two records for one bee** — the
+donor, plus a copy renamed by `next_free_queen_number` (for queen "53" it returns `53-2`).
+
+Since minting now happens at the nuc, the queen is already in your register and there is nothing to
+distribute. To take her out of the nuc: assign her to one of your hives (Hives → edit → Queen), then
+retire the nuc. `reared_queen_id` stays behind as provenance.
+
+The modal's empty search state now says so, distinguishing a self-search from a genuine miss.

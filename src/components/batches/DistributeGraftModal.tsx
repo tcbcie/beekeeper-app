@@ -97,6 +97,7 @@ export default function DistributeGraftModal({
   const [searchText, setSearchText] = useState('')
   const [searchResults, setSearchResults] = useState<RecipientUser[]>([])
   const [searching, setSearching] = useState(false)
+  const [ownIdentity, setOwnIdentity] = useState<{ full_name: string | null; email: string | null } | null>(null)
   const [selectedUser, setSelectedUser] = useState<RecipientUser | null>(null)
   const [groupMembers, setGroupMembers] = useState<RecipientUser[]>([])
   const searchCounter = useRef(0)
@@ -178,6 +179,21 @@ export default function DistributeGraftModal({
     }, 300)
     return () => clearTimeout(timer)
   }, [searchText, searchUsers, recipientMode])
+
+  // search_users_for_distribution excludes auth.uid(), so searching for yourself always returns
+  // nothing. Knowing your own name/email lets the empty state say why instead of looking broken.
+  useEffect(() => {
+    let cancelled = false
+    supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', userId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled && data) setOwnIdentity({ full_name: data.full_name, email: data.email })
+      })
+    return () => { cancelled = true }
+  }, [userId])
 
   // Fetch apiaries when user selected
   useEffect(() => {
@@ -263,6 +279,15 @@ export default function DistributeGraftModal({
   const externalHasData = extName.trim() || extEmail.trim() || extPhone.trim() || extLocation.trim()
   const externalLocationRequired = isExternal && !extLocation.trim()
   const canSubmit = isExternal ? (!!externalHasData && !externalLocationRequired) : !!selectedUser
+
+  // Mirrors the ILIKE the search RPC uses, so the hint only shows when the empty result really
+  // is the self-exclusion rather than a genuine miss.
+  const isSearchingForSelf = useMemo(() => {
+    const needle = searchText.trim().toLowerCase()
+    if (needle.length < 2 || !ownIdentity) return false
+    return [ownIdentity.email, ownIdentity.full_name]
+      .some((field) => !!field && field.toLowerCase().includes(needle))
+  }, [searchText, ownIdentity])
 
   const handleSubmit = async () => {
     if (!canSubmit || saving || submittingRef.current) return
@@ -492,6 +517,13 @@ export default function DistributeGraftModal({
                     autoFocus
                   />
                 </div>
+                {searchText.trim().length >= 2 && !searching && searchResults.length === 0 && (
+                  <p className="mt-2 text-xs text-text-secondary">
+                    {isSearchingForSelf
+                      ? 'You cannot distribute a queen to yourself — she is already in your Queen Register. To take her out of the nuc, assign her to one of your hives, then retire the nuc.'
+                      : 'No HiveCraic user found. If they are not on the app, use the Other Beekeeper tab.'}
+                  </p>
+                )}
                 {(searchResults.length > 0 || searching) && (
                   <div className="absolute z-10 w-full mt-1 bg-surface dark:bg-surface border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     {searching ? (
