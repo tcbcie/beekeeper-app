@@ -1717,7 +1717,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  {/* Line 3: context */}
  <p className="mt-0.5 pl-5 text-xs text-text-secondary">
  {[
- nuc.rearing_batches && `${nuc.rearing_batches.batch_name}${cellOrMarking}`,
+ // The marking normally trails the batch name. A nuc that reared its own queen has no
+ // batch, so it stands alone rather than disappearing with the batch segment.
+ nuc.rearing_batches ? `${nuc.rearing_batches.batch_name}${cellOrMarking}` : cellOrMarking.replace(/^ · /, ''),
  nuc.queens && `Breeder Queen: ${nuc.queens.queen_number}`,
  nuc.mating_location && `Mating Site: ${nuc.mating_location}`,
  ].filter(Boolean).join(' · ') || 'No batch assigned'}
