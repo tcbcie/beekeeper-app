@@ -27,3 +27,18 @@ When a queen has been marked, the nuc card row shows:
 ## Files Changed
 - `src/components/batches/MatingNucsTab.tsx` — expanded interface, queries, props, and nuc card display.
 - `src/components/batches/NucInspectionPanel.tsx` — added Mark Queen button, inline form, and save handler.
+
+## Update — nucs with no linked graft
+
+The gate on this button was `graftId`, so a nuc set up without a batch (a graft placed straight into
+the nuc) could never be marked, and the number had nowhere to live because it was written to
+`batch_grafts.queen_number`.
+
+The button now also shows when the nuc has reached `virgin`/`mating`/`laying`. With no graft the save
+handler calls `ensure_nuc_reared_queen` instead, which mints the queen into the Queen Register and
+stamps `mating_nucs.queen_marked_at` itself. The colour also falls back to the nuc's own
+`queen_emerged_at` when there is no batch emergence date, instead of rendering "Unknown".
+
+Marking remains **optional** and is not a prerequisite for distributing the queen.
+
+See [`nuc-reared-queen.md`](nuc-reared-queen.md) for the full design.

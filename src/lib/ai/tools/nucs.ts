@@ -20,7 +20,7 @@ export const getMatingNucs: Tool = {
         nuc_number, status, setup_date, mating_location, updated_at, retired_at,
         batch_grafts(cell_number, status),
         rearing_batches(batch_name),
-        queens(queen_number),
+        queens!mating_nucs_queen_id_fkey(queen_number),
         mating_nuc_inspections(count)
       `)
       .eq('user_id', userId)
@@ -107,7 +107,7 @@ export const getNucDetails: Tool = {
         id, nuc_number, status, setup_date, mating_location, notes, updated_at,
         batch_grafts(cell_number, status),
         rearing_batches(batch_name),
-        queens(queen_number)
+        queens!mating_nucs_queen_id_fkey(queen_number)
       `)
       .eq('user_id', userId)
       .ilike('nuc_number', `%${args.nucNumber}%`)
@@ -166,7 +166,7 @@ export const getNucsReadyForHarvest: Tool = {
       .select(`
         nuc_number, setup_date, mating_location, updated_at,
         rearing_batches(batch_name),
-        queens(queen_number)
+        queens!mating_nucs_queen_id_fkey(queen_number)
       `)
       .eq('user_id', userId)
       .eq('status', 'laying')
