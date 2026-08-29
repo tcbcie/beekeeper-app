@@ -43,28 +43,49 @@ if (!targetVersion) {
   }
 }
 
-// Get latest git tag
-let lastTag;
+// Find the bump commit of the PREVIOUS release — that is where this changelog starts.
+//
+// This used to take the second-most-recent bump commit, assuming the current version's bump
+// was already committed. It is not: bump-version.mjs runs this extractor *before* committing.
+// So the range started one release too early and re-collected commits already published under
+// the previous version — 26 of v1.11.3's 47 entries were duplicates of v1.11.2.
+//
+// Skipping any bump commit that names the target version makes it correct either way, so a
+// manual re-run after the bump has been committed behaves the same. `--all` is also dropped:
+// a bump commit on another branch is not an ancestor of HEAD, which would make the
+// `<commit>..HEAD` range below silently wrong.
+const versionPattern = new RegExp(`v?${targetVersion.replace(/\./g, '\\.')}\\s*$`);
+
+let lastBumpCommit;
 try {
-  lastTag = execSync('git describe --tags --abbrev=0', {
-    encoding: 'utf8',
-    cwd: ROOT_DIR
-  }).trim();
+  const bumpCommits = execSync(
+    'git log --grep="^chore: \\(bump version\\|update\\) to" --format="%H|%s" -n 20',
+    { encoding: 'utf8', cwd: ROOT_DIR }
+  ).trim().split('\n').filter(Boolean);
+
+  const previousRelease = bumpCommits
+    .map((line) => {
+      const separator = line.indexOf('|');
+      return { hash: line.slice(0, separator), subject: line.slice(separator + 1) };
+    })
+    .find(({ subject }) => !versionPattern.test(subject));
+
+  lastBumpCommit = previousRelease ? previousRelease.hash : null;
 } catch (error) {
-  console.log('⚠️  No previous tags found, using all commits from initial commit');
-  lastTag = null;
+  console.log('⚠️  No previous bump commits found, using all commits');
+  lastBumpCommit = null;
 }
 
 console.log('\n╔════════════════════════════════════════╗');
 console.log('║    Git Changelog Extractor             ║');
 console.log('╚════════════════════════════════════════╝\n');
 console.log(`📦 Target Version: v${targetVersion}`);
-console.log(`📌 Last Tag:       ${lastTag || '(none)'}`);
+console.log(`📌 Since commit:   ${lastBumpCommit ? lastBumpCommit.substring(0, 7) : '(all)'}`);
 console.log(`📊 Analyzing commits...\n`);
 
-// Get commits since last tag
-const gitCommand = lastTag
-  ? `git log ${lastTag}..HEAD --pretty=format:"%H|%s|%b" --no-merges`
+// Get commits since last version bump
+const gitCommand = lastBumpCommit
+  ? `git log ${lastBumpCommit}..HEAD --pretty=format:"%H|%s|%b" --no-merges`
   : `git log --pretty=format:"%H|%s|%b" --no-merges`;
 
 let commits;
