@@ -43,17 +43,34 @@ if (!targetVersion) {
   }
 }
 
-// Find the previous version bump commit (more reliable than git tags)
+// Find the bump commit of the PREVIOUS release — that is where this changelog starts.
+//
+// This used to take the second-most-recent bump commit, assuming the current version's bump
+// was already committed. It is not: bump-version.mjs runs this extractor *before* committing.
+// So the range started one release too early and re-collected commits already published under
+// the previous version — 26 of v1.11.3's 47 entries were duplicates of v1.11.2.
+//
+// Skipping any bump commit that names the target version makes it correct either way, so a
+// manual re-run after the bump has been committed behaves the same. `--all` is also dropped:
+// a bump commit on another branch is not an ancestor of HEAD, which would make the
+// `<commit>..HEAD` range below silently wrong.
+const versionPattern = new RegExp(`v?${targetVersion.replace(/\./g, '\\.')}\\s*$`);
+
 let lastBumpCommit;
 try {
-  // Get the second most recent bump commit (skip current version's bump)
   const bumpCommits = execSync(
-    'git log --oneline --all --grep="chore: bump version" --format="%H" -n 2',
+    'git log --grep="^chore: \\(bump version\\|update\\) to" --format="%H|%s" -n 20',
     { encoding: 'utf8', cwd: ROOT_DIR }
   ).trim().split('\n').filter(Boolean);
 
-  // Use the second one (previous version bump), or null if only one exists
-  lastBumpCommit = bumpCommits.length >= 2 ? bumpCommits[1] : null;
+  const previousRelease = bumpCommits
+    .map((line) => {
+      const separator = line.indexOf('|');
+      return { hash: line.slice(0, separator), subject: line.slice(separator + 1) };
+    })
+    .find(({ subject }) => !versionPattern.test(subject));
+
+  lastBumpCommit = previousRelease ? previousRelease.hash : null;
 } catch (error) {
   console.log('⚠️  No previous bump commits found, using all commits');
   lastBumpCommit = null;
