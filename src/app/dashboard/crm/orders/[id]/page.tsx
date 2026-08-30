@@ -19,17 +19,44 @@ import { formatCrmDate } from '@/lib/crm-format'
 import { orderBalance, isPartiallyPaid, isOverdue, summariseCustomerOrders } from '@/lib/crm-orders'
 import { creditBalance, appliedCreditForOrder, overpaymentForOrder } from '@/lib/crm-credit'
 import type { Customer, Order, OrderItem, OrderItemFormData, CustomerCreditEntry } from '@/types/crm'
-import { TYPE_LABELS } from '@/components/batches/graftConstants'
+import { TYPE_LABELS, COLOUR_DOTS, formatDateIrish } from '@/components/batches/graftConstants'
+import { getQueenColorFromYear } from '@/types/queen'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
-// A queen/cell distribution recorded against this order (informational link).
+// A queen/cell distribution recorded against this order (informational link), with the
+// provenance a customer actually cares about: her breeder, where she mated, her marking,
+// her age and her weight. The internal cell number is only a fallback identifier.
 interface LinkedDistribution {
   id: string
   distribution_type: 'queen_cell' | 'virgin_queen' | 'mated_queen'
   distribution_date: string
   cell_number: number | null
   recipient: string | null
+  marked: boolean
+  queen_number: string | null
+  marking_colour: string
+  marked_at: string | null
+  breeder_queen: string | null
+  breeder_birth_date: string | null
+  mated_at: string | null
+  emerged_at: string | null
+  weight_mg: number | null
+  batch_name: string | null
+}
+
+/**
+ * PostgREST returns a to-one embed as a single object at runtime even though the typings
+ * suggest an array, so every embed is funnelled through here rather than trusting a shape.
+ */
+function firstOf<T>(value: unknown): T | null {
+  if (value == null) return null
+  return (Array.isArray(value) ? (value[0] as T | undefined) ?? null : (value as T))
+}
+
+function allOf<T>(value: unknown): T[] {
+  if (value == null) return []
+  return Array.isArray(value) ? (value as T[]) : [value as T]
 }
 
 function toFormItems(items: OrderItem[]): OrderItemFormData[] {
@@ -67,7 +94,15 @@ export default function OrderDetailPage() {
       supabase.from('profiles').select('is_uk_ni_resident').eq('id', uid).maybeSingle(),
       supabase
         .from('graft_distributions')
-        .select('id, distribution_type, distribution_date, external_recipient_name, graft:batch_grafts!graft_distributions_graft_id_fkey(cell_number), recipient:profiles!graft_distributions_recipient_profile_id_fkey(full_name, email)')
+        .select(`id, distribution_type, distribution_date, mating_location, external_recipient_name,
+          graft:batch_grafts!graft_distributions_graft_id_fkey(
+            cell_number, queen_marked, queen_number,
+            breeder:queens!batch_grafts_breeder_queen_id_fkey(queen_number, birth_date),
+            nuc:mating_nucs(mating_location, queen_emerged_at, queen_marked_at),
+            weights:queen_weights(weight_mg, weighed_at)),
+          batch:rearing_batches(batch_name, emergence_date,
+            mother:queens!mother_queen_id(queen_number, birth_date)),
+          recipient:profiles!graft_distributions_recipient_profile_id_fkey(full_name, email)`)
         .eq('crm_order_id', id).eq('user_id', uid)
         .order('distribution_date', { ascending: false }),
     ])
@@ -85,19 +120,45 @@ export default function OrderDetailPage() {
     setItems(toFormItems((itemsRes.data || []) as OrderItem[]))
     setIsUkNi(profileRes.data?.is_uk_ni_resident || false)
 
-    // PostgREST returns embedded relations as arrays for explicit selects.
     setDistributions(((distRes.data || []) as Record<string, unknown>[]).map((d) => {
-      const graft = (Array.isArray(d.graft) ? d.graft[0] : d.graft) as { cell_number?: number } | null
-      const recip = (Array.isArray(d.recipient) ? d.recipient[0] : d.recipient) as { full_name?: string; email?: string } | null
+      const graft = firstOf<Record<string, unknown>>(d.graft)
+      const batch = firstOf<{ batch_name?: string; emergence_date?: string; mother?: unknown }>(d.batch)
+      const recip = firstOf<{ full_name?: string; email?: string }>(d.recipient)
+      const nuc = firstOf<{ mating_location?: string; queen_emerged_at?: string; queen_marked_at?: string }>(graft?.nuc)
+      // Per-cell breeder wins for multi-breeder batches; single-breeder and legacy cells
+      // fall back to the batch mother queen (same rule as useGraftDistributions).
+      const breeder = firstOf<{ queen_number?: string; birth_date?: string }>(graft?.breeder)
+        ?? firstOf<{ queen_number?: string; birth_date?: string }>(batch?.mother)
+      // Most recent weighing, when the queen was ever weighed. Copied before sorting so the
+      // raw response array is never mutated in place.
+      const latestWeight = allOf<{ weight_mg?: number; weighed_at?: string }>(graft?.weights)
+        .slice()
+        .sort((a, b) => (b.weighed_at || '').localeCompare(a.weighed_at || ''))[0]
+      // The marking colour is set by the year she emerged, exactly as on the mating-nuc card,
+      // which also treats a marking date on the nuc as proof she was marked.
+      const colourSource = (batch?.emergence_date || nuc?.queen_emerged_at) ?? null
+      const isMarked = !!(graft?.queen_marked || nuc?.queen_marked_at)
+
       return {
         id: d.id as string,
         distribution_type: d.distribution_type as LinkedDistribution['distribution_type'],
         distribution_date: d.distribution_date as string,
-        cell_number: graft?.cell_number ?? null,
+        cell_number: (graft?.cell_number as number | undefined) ?? null,
         recipient: (d.external_recipient_name as string | null)
           || recip?.full_name
           || recip?.email
           || 'App user',
+        marked: isMarked,
+        queen_number: isMarked ? ((graft?.queen_number as string | null) || null) : null,
+        marking_colour: isMarked && colourSource ? getQueenColorFromYear(colourSource) : '',
+        marked_at: isMarked ? (nuc?.queen_marked_at ?? null) : null,
+        breeder_queen: breeder?.queen_number ?? null,
+        breeder_birth_date: breeder?.birth_date ?? null,
+        // The distribution records where she actually mated; the nuc's site is the fallback.
+        mated_at: (d.mating_location as string | null) || nuc?.mating_location || null,
+        emerged_at: nuc?.queen_emerged_at ?? batch?.emergence_date ?? null,
+        weight_mg: latestWeight?.weight_mg ?? null,
+        batch_name: batch?.batch_name ?? null,
       }
     }))
 
@@ -499,21 +560,71 @@ export default function OrderDetailPage() {
           <h3 className="text-xl font-semibold text-foreground mb-3">Distributions linked to this order</h3>
           <ul className="divide-y divide-border">
             {distributions.map((d) => (
-              <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                <span className="font-medium text-foreground">
-                  {d.cell_number != null ? `Cell #${d.cell_number}` : 'Queen'}
-                  <span className="ml-2 font-normal text-text-secondary">
-                    {TYPE_LABELS[d.distribution_type]?.label || d.distribution_type}
-                  </span>
-                </span>
-                <span className="text-text-secondary">
-                  {d.recipient} · {formatCrmDate(d.distribution_date)}
-                </span>
-              </li>
+              <DistributionRow key={d.id} d={d} />
             ))}
           </ul>
         </Panel>
       )}
     </div>
+  )
+}
+
+/** One labelled detail pair. Renders nothing when the value is missing, so an incomplete
+ *  record simply shows fewer rows rather than a wall of placeholders. */
+function Detail({ label, children }: { label: string; children: React.ReactNode }) {
+  // Falsy covers null, '' and the `false` a short-circuited `&&` expression produces.
+  if (!children) return null
+  return (
+    <div className="flex flex-wrap gap-x-2">
+      <span className="text-text-tertiary">{label}</span>
+      <span className="font-medium text-foreground">{children}</span>
+    </div>
+  )
+}
+
+/** A linked distribution, showing the queen's provenance rather than her internal cell number. */
+function DistributionRow({ d }: { d: LinkedDistribution }) {
+  // Once she is marked, her marking number identifies her; the cell number is only a fallback.
+  const title = d.queen_number
+    ? `Queen #${d.queen_number}`
+    : d.cell_number != null ? `Cell #${d.cell_number}` : 'Queen'
+
+  return (
+    <li className="py-3 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <span className="font-medium text-foreground">
+          {title}
+          <span className="ml-2 font-normal text-text-secondary">
+            {TYPE_LABELS[d.distribution_type]?.label || d.distribution_type}
+          </span>
+        </span>
+        <span className="text-text-secondary">
+          {d.recipient} · {formatCrmDate(d.distribution_date)}
+        </span>
+      </div>
+
+      {/* Gated on the marking itself, not the colour, so an unknown emergence year can never
+          swallow the queen's number. The colour is always named in text beside the dot. */}
+      {d.marked && (
+        <p className="mt-1 flex items-center gap-1.5 text-text-secondary">
+          {COLOUR_DOTS[d.marking_colour] && (
+            <span className={`inline-block h-2.5 w-2.5 rounded-full ${COLOUR_DOTS[d.marking_colour]}`} />
+          )}
+          Marked{d.marking_colour && ` ${d.marking_colour}`}
+          {d.queen_number && ` #${d.queen_number}`}
+          {d.marked_at && ` · ${formatDateIrish(d.marked_at)}`}
+        </p>
+      )}
+
+      <div className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2">
+        <Detail label="Breeder Queen">
+          {d.breeder_queen && `${d.breeder_queen}${d.breeder_birth_date ? ` (b. ${formatDateIrish(d.breeder_birth_date)})` : ''}`}
+        </Detail>
+        <Detail label="Mated at">{d.mated_at}</Detail>
+        <Detail label="Emerged">{d.emerged_at && formatDateIrish(d.emerged_at)}</Detail>
+        <Detail label="Batch">{d.batch_name}</Detail>
+        <Detail label="Weight">{d.weight_mg != null && `${d.weight_mg} mg`}</Detail>
+      </div>
+    </li>
   )
 }
