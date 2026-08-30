@@ -23,7 +23,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -186,7 +186,9 @@ async function main() {
   // Call update-version script
   try {
     console.log('\n🔄 Updating files...\n');
-    execSync(`node --no-deprecation "${join(__dirname, 'update-version.mjs')}" ${newVersion} "${newDate}"`, {
+    // execFileSync, not execSync: arguments are passed straight to the process rather than
+    // through a shell, so nothing in them can be re-interpreted as shell syntax.
+    execFileSync('node', ['--no-deprecation', join(__dirname, 'update-version.mjs'), newVersion, newDate], {
       cwd: ROOT_DIR,
       stdio: 'inherit'
     });
@@ -200,7 +202,7 @@ async function main() {
 
     try {
       // Run git changelog extraction
-      const extractOutput = execSync(`node --no-deprecation "${join(__dirname, 'extract-git-changelog.mjs')}" "${newVersion}"`, {
+      const extractOutput = execFileSync('node', ['--no-deprecation', join(__dirname, 'extract-git-changelog.mjs'), newVersion], {
         cwd: ROOT_DIR,
         encoding: 'utf8'
       });
@@ -218,8 +220,21 @@ async function main() {
           // Add each entry to database
           for (const entry of changelogData.entries) {
             try {
-              const result = execSync(
-                `node --no-deprecation "${join(__dirname, 'add-changelog.mjs')}" "${newVersion}" "${entry.entry_type}" "${entry.title}" "${entry.description}"`,
+              // Titles and descriptions come from commit messages, so they routinely contain
+              // quotes and can contain backticks or $(...). Interpolating them into a shell
+              // string truncated the argument at the first quote — the v1.11.3 entry for
+              // 'head the payment panel "Not paid yet?"' was stored as title "...panel Not",
+              // description "paid" — and would have let a commit message run shell commands.
+              const result = execFileSync(
+                'node',
+                [
+                  '--no-deprecation',
+                  join(__dirname, 'add-changelog.mjs'),
+                  newVersion,
+                  entry.entry_type,
+                  entry.title,
+                  entry.description
+                ],
                 {
                   cwd: ROOT_DIR,
                   encoding: 'utf8',
