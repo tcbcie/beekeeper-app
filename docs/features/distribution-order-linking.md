@@ -46,9 +46,35 @@ The selected order id is passed through `CreateDistributionData` / `BulkDistribu
 
 ### Order detail page (`/dashboard/crm/orders/[id]`)
 
-A read-only **"Distributions linked to this order"** panel lists each linked distribution —
-cell number (or "Queen"), distribution type, recipient, and date. It only renders when at
-least one distribution is linked.
+A read-only **"Distributions linked to this order"** panel lists each linked distribution.
+It only renders when at least one distribution is linked.
+
+Each row shows the queen's **provenance** rather than the internal cell number, since the cell
+number means nothing to a customer or on a sales record:
+
+| Shown | Source | Fallback |
+|-------|--------|----------|
+| Headline | `batch_grafts.queen_number` as "Queen #51" once marked | `Cell #N`, then "Queen" |
+| Marking | colour from the emergence year + `queen_number` + `mating_nucs.queen_marked_at` | — |
+| Breeder Queen | `batch_grafts.breeder_queen_id` → `queens.queen_number` (+ `birth_date`) | `rearing_batches.mother_queen_id` |
+| Mated at | `graft_distributions.mating_location` | `mating_nucs.mating_location` |
+| Emerged | `mating_nucs.queen_emerged_at` | `rearing_batches.emergence_date` |
+| Batch | `rearing_batches.batch_name` | — |
+| Weight | most recent `queen_weights` row for the graft | — |
+
+Conventions:
+
+- **A queen counts as marked** when `batch_grafts.queen_marked` is set *or* the nuc has a
+  `queen_marked_at` date — the same test the mating-nuc list uses, so the two screens agree.
+- **The breeder queen follows the multi-breeder rule** from `useGraftDistributions.ts`: the
+  per-cell breeder wins, and single-breeder or legacy cells fall back to the batch mother queen.
+- **Missing values are omitted entirely** rather than rendered as "Unknown" or a dash, so a
+  queen-cell distribution with no mating nuc simply shows fewer rows.
+- The marking colour is always **named in text** beside the coloured dot; colour never carries
+  meaning on its own.
+
+All embedded relations are read through a `firstOf`/`allOf` normaliser, because PostgREST
+returns a to-one embed as a single object at runtime even though the typings suggest an array.
 
 ## Files
 
@@ -56,7 +82,7 @@ least one distribution is linked.
 |------|------|
 | `src/components/batches/DistributeGraftModal.tsx` | Optional order dropdown + match sorting |
 | `src/hooks/useGraftDistributions.ts` | `crm_order_id` on the two save types + inserts |
-| `src/app/dashboard/crm/orders/[id]/page.tsx` | Linked-distributions panel |
+| `src/app/dashboard/crm/orders/[id]/page.tsx` | Linked-distributions panel, provenance query and `DistributionRow` |
 
 ## Out of scope
 
