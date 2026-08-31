@@ -55,7 +55,7 @@
       "name": "Inspections",
       "short_name": "Inspections",
       "description": "Record new hive inspections",
-      "url": "/dashboard/inspections",
+      "url": "/dashboard/records?create=inspection",
       "icons": [
         {
           "src": "/icon-192x192.png",
