@@ -94,22 +94,28 @@ export default function ImageZoomModal({ isOpen, imageUrl, onClose }: ImageZoomM
         onClick={handleContentClick}
       >
         <button
+          type="button"
           onClick={handleZoomIn}
-          className="p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
+          aria-label="Zoom in"
           title="Zoom In"
         >
           <ZoomIn size={20} />
         </button>
         <button
+          type="button"
           onClick={handleZoomOut}
-          className="p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
+          aria-label="Zoom out"
           title="Zoom Out"
         >
           <ZoomOut size={20} />
         </button>
         <button
+          type="button"
           onClick={onClose}
-          className="p-2 bg-black/70 text-white rounded-full hover:bg-red-900/80 hover:text-red-100 transition-colors border border-white/20 ml-2"
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-red-900/80 hover:text-red-100 transition-colors border border-white/20 ml-2"
+          aria-label="Close image viewer"
           title="Close"
         >
           <X size={20} />

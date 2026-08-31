@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Camera, X } from 'lucide-react'
+import { Camera, X, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import type { VarroaCheck, Hive, Apiary } from '@/types/records'
 import { useImageUpload } from '@/hooks/useImageUpload'
@@ -472,10 +472,12 @@ export default function VarroaCheckForm({
             <div className="flex items-start gap-3">
               {(imagePreview || formData.image_url) && (
                 <div className="relative w-20 h-20 flex-shrink-0 group">
-                  <div
-                    className="relative w-full h-full cursor-pointer"
-                    onDoubleClick={() => onImageClick(imagePreview || formData.image_url || '')}
-                    title="Double-click to enlarge"
+                  <button
+                    type="button"
+                    onClick={() => onImageClick(imagePreview || formData.image_url || '')}
+                    aria-label="View larger varroa check photo"
+                    title="View larger"
+                    className="relative w-full h-full cursor-pointer hover:opacity-80 transition-opacity"
                   >
                     <Image
                       src={imagePreview || formData.image_url || ''}
@@ -484,10 +486,10 @@ export default function VarroaCheckForm({
                       className="object-cover rounded-lg border-2 border-border shadow-sm"
                       sizes="80px"
                     />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg pointer-events-none">
-                      <Camera size={16} className="text-white" />
-                    </div>
-                  </div>
+                    <span className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded bg-black/70 p-0.5 text-white pointer-events-none">
+                      <ZoomIn size={14} aria-hidden="true" />
+                    </span>
+                  </button>
                   <IconButton
                     type="button"
                     onClick={handleRemoveCurrentImage}

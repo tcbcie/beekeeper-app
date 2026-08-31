@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { ChevronDown, ChevronUp, Camera, X, Mic, Square, Loader2, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Camera, X, Mic, Square, Loader2, Plus, Trash2, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import type { Hive, Apiary, InspectionFormData, FollowUpTaskDraft, FollowUpTaskPriority, BroodBoxFrames, BroodBoxType } from '@/types/records'
 import { getDefaultInspectionFormData, getDefaultFollowUpTaskDraft, LEVEL_NOT_RECORDED, getLevelLabel } from '@/types/records'
@@ -2100,10 +2100,12 @@ export default function InspectionForm({
             <div className="flex items-start gap-3">
               {(imagePreview || formData.image_url) && (
                 <div className="relative w-20 h-20 flex-shrink-0 group">
-                  <div
-                    className="relative w-full h-full cursor-pointer"
-                    onDoubleClick={() => onImageClick(imagePreview || formData.image_url || '')}
-                    title="Double-click to enlarge"
+                  <button
+                    type="button"
+                    onClick={() => onImageClick(imagePreview || formData.image_url || '')}
+                    aria-label="View larger inspection photo"
+                    title="View larger"
+                    className="relative w-full h-full cursor-pointer hover:opacity-80 transition-opacity"
                   >
                     <Image
                       src={imagePreview || formData.image_url || ''}
@@ -2112,10 +2114,10 @@ export default function InspectionForm({
                       className="object-cover rounded-lg border-2 border-border shadow-sm"
                       sizes="80px"
                     />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg pointer-events-none">
-                      <Camera size={16} className="text-white" />
-                    </div>
-                  </div>
+                    <span className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded bg-black/70 p-0.5 text-white pointer-events-none">
+                      <ZoomIn size={14} aria-hidden="true" />
+                    </span>
+                  </button>
                   <Button
           unstyled
                     type="button"

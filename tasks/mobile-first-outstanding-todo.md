@@ -144,15 +144,41 @@ What is left of it:
   `fj-control` and `fj-panel-*` families in `:where()`, as `fj-btn` already is.
   Without it a `text-*` passed through `className` is silently ignored.
 
-### C. P2 — image enlargement relies on double-click
+### C. Image enlargement — done
 
-Five call sites still use `onDoubleClick` to open an image: `InspectionCard.tsx:107`,
-`VarroaCheckCard.tsx:50`, `InspectionForm.tsx:2105`, `VarroaCheckForm.tsx:477` and
-`ImageZoomModal.tsx:146`. Double-click is awkward with reduced dexterity and
-unreliable on touch.
+Plan: `docs/features/image-enlargement-affordance-plan.md`.
 
-- [ ] **Step 11:** Make a single tap or click open the image, and add a labelled
-  "View larger" control so the affordance is visible rather than discovered.
+- [x] **Step 11:** Single tap or click opens the image, with a labelled, visible
+  affordance.
+
+**The finding understated the problem.** The four thumbnails were `<div>`s carrying
+`onDoubleClick` and `cursor-pointer` but no `role`, `tabIndex` or accessible name, so
+they were not in the tab order and had no keyboard activation path: **a keyboard or
+screen-reader user could not open a photograph at all.** That is a WCAG 2.1.1 failure
+rather than a P2 convenience issue, and it was the more serious half.
+
+Each is now a `<button type="button">` with `onClick`, an `aria-label` naming the
+record type, and `title="View larger"` in place of copy that instructed a gesture. The
+hover-only Camera overlay became an **always-visible magnifier badge** — hover does
+not exist on touch, so a hover-only affordance was invisible to exactly the users this
+programme serves. `type="button"` is load-bearing: two of the four sit inside a
+`<form>`, where a bare `<button>` defaults to submit, so opening a photograph would
+have filed the record.
+
+The viewer's zoom-in, zoom-out and close controls were ~36px against the 44px floor
+Phase 1 set, and had no `aria-label`. Both fixed.
+
+**`ImageZoomModal.tsx:146` was deliberately left as a double-click.** It toggles zoom
+inside the already-open viewer rather than opening it. Its parent binds
+`onMouseDown`/`onMouseMove`/`onMouseUp` for drag-to-pan, so a single click would fire
+on release and toggle zoom every time a pan finished; and `handleContentClick`
+distinguishes a backdrop click (close) from a content click. The affordance argument
+does not apply either — explicit zoom buttons are already on screen, so double-click
+is a shortcut, not the only route.
+
+- [ ] **Step 11a:** Verify in a browser: single tap opens each of the four; the badge
+  is visible on a dark photograph; Tab reaches each thumbnail and Enter opens it; and
+  opening a photo from inside either form does not submit the form.
 
 ### D. Phase 4 — Hives and Records simplification
 
