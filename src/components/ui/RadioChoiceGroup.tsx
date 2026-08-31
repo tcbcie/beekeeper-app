@@ -66,7 +66,7 @@ export function RadioChoiceOption({
           {icon}
           <span className="text-sm font-medium text-foreground">{title}</span>
         </span>
-        {description && <span className="text-xs text-text-tertiary">{description}</span>}
+        {description && <span className="text-sm text-text-tertiary">{description}</span>}
       </span>
     </label>
   )

@@ -169,7 +169,7 @@ export default function OrderInvoicePage() {
             disabled={sending}
           />
           {!customer?.email && (
-            <p className="text-xs text-text-tertiary mt-2">This customer has no email on file — enter one above.</p>
+            <p className="text-sm text-text-tertiary mt-2">This customer has no email on file — enter one above.</p>
           )}
         </ModalShell>
       )}
@@ -263,7 +263,7 @@ export default function OrderInvoicePage() {
           </div>
         )}
 
-        <p className="mt-8 text-xs text-text-tertiary">
+        <p className="mt-8 text-sm text-text-tertiary">
           {order.payment_status === 'paid' ? 'Paid — thank you for your business.' : 'Payment due. Thank you for your business.'}
         </p>
       </div>

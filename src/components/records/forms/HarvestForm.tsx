@@ -239,7 +239,7 @@ export default function HarvestForm({
             className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="e.g., 18.5"
           />
-          <p className="text-xs text-text-tertiary mt-1">EU limit: 20%</p>
+          <p className="text-sm text-text-tertiary mt-1">EU limit: 20%</p>
         </div>
 
         <div>

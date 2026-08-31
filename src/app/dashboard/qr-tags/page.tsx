@@ -646,7 +646,7 @@ export default function QrTagsPage() {
  <span className="text-text-tertiary italic">Unassigned</span>
  )}
  </p>
- <p className="text-xs text-text-tertiary mt-1">
+ <p className="text-sm text-text-tertiary mt-1">
  Created {new Date(tag.created_at).toLocaleDateString()}
  </p>
  </div>
@@ -794,7 +794,7 @@ export default function QrTagsPage() {
    <span className="text-text-tertiary italic">Unassigned</span>
   )}
   </p>
-  <p className="text-xs text-text-tertiary mt-1">
+  <p className="text-sm text-text-tertiary mt-1">
   Created {new Date(tag.created_at).toLocaleDateString()}
   </p>
  </div>

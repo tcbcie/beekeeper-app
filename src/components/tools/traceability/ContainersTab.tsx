@@ -359,7 +359,7 @@ export default function ContainersTab({ userId, containers, fetchContainers, lab
                     className="w-full px-3 py-2 rounded-lg border border-border bg-surface"
                   />
                   {parseInt(containerForm.bucket_count) > 1 && (
-                    <p className="text-xs text-text-secondary mt-1">
+                    <p className="text-sm text-text-secondary mt-1">
                       Creates {containerForm.bucket_count} containers: {containerForm.container_code || '...'}-1 to {containerForm.container_code || '...'}-{containerForm.bucket_count}
                     </p>
                   )}

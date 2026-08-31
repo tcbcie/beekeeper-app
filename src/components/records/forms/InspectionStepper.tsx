@@ -74,7 +74,7 @@ export default function InspectionStepper({
                 disabled={!reachable}
                 aria-current={isActive ? 'step' : undefined}
                 aria-label={`Step ${step.id}: ${step.title}${step.optional ? ' (optional)' : ''}`}
-                className={`flex min-h-[44px] w-full flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-xs transition-colors touch-manipulation disabled:cursor-not-allowed ${
+                className={`flex min-h-[44px] w-full flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-sm transition-colors touch-manipulation disabled:cursor-not-allowed ${
                   isActive
                     ? 'border-forest-800 bg-forest-800 text-white'
                     : isComplete

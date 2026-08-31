@@ -24,7 +24,7 @@ export function InvitationResponseShell({
                 <Image src="/logo.png" alt="HiveCraic" width={40} height={40} className="h-10 w-10" />
                 <span className="font-serif text-2xl text-forest-700 dark:text-forest-300">HiveCraic</span>
               </div>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.14em] text-text-tertiary">{subtitle}</p>
+              <p className="mb-1 text-sm font-semibold uppercase tracking-[0.14em] text-text-tertiary">{subtitle}</p>
               <h1 className="font-serif text-2xl text-foreground sm:text-3xl">{title}</h1>
             </div>
 

@@ -118,7 +118,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {hive.qr_tag_code && (
  <span
  title={`QR tag ${hive.qr_tag_code}`}
- className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-surface-secondary text-text-primary border border-border max-w-full whitespace-nowrap"
+ className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-sm font-semibold bg-surface-secondary text-text-primary border border-border max-w-full whitespace-nowrap"
  >
  <QrCode size={12} className="flex-shrink-0" />
  <span className="truncate">{hive.qr_tag_code}</span>
@@ -127,25 +127,25 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </div>
  )}
  {hive.is_shared && hive.team_name && (
- <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-xs font-medium rounded flex items-center gap-1 w-fit border border-blue-300 dark:border-blue-800">
+ <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-sm font-medium rounded flex items-center gap-1 w-fit border border-blue-300 dark:border-blue-800">
  <span>👥</span>
  <span>Shared via {hive.team_name}</span>
  </span>
  )}
  {!hive.is_shared && hive.shared_with_team && (
- <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-xs font-medium rounded flex items-center gap-1 w-fit border border-purple-300 dark:border-purple-800">
+ <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-sm font-medium rounded flex items-center gap-1 w-fit border border-purple-300 dark:border-purple-800">
  <span>📤</span>
  <span>Shared with {hive.shared_with_team}</span>
  </span>
  )}
  {hive.archived_at && (
- <span className="px-2 py-0.5 bg-surface dark:bg-surface-elevated text-text-primary text-xs font-medium rounded flex items-center gap-1 w-fit border border-border">
+ <span className="px-2 py-0.5 bg-surface dark:bg-surface-elevated text-text-primary text-sm font-medium rounded flex items-center gap-1 w-fit border border-border">
  <span>📦</span>
  <span>Archived {new Date(hive.archived_at).toLocaleDateString()}</span>
  </span>
  )}
  {hive.active_tasks_count !== undefined && hive.active_tasks_count > 0 && (
- <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded flex items-center gap-1 w-fit border border-amber-400 dark:border-amber-700">
+ <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-sm font-semibold rounded flex items-center gap-1 w-fit border border-amber-400 dark:border-amber-700">
  <span>📋</span>
  <span className="font-bold">{hive.active_tasks_count}</span>
  <span>Active Task{hive.active_tasks_count > 1 ? 's' : ''}</span>
@@ -153,7 +153,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  )}
  </div>
  <div className="flex flex-wrap items-center gap-2">
- <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
+ <span className={`px-2 py-1 rounded text-sm font-medium whitespace-nowrap ${
  hive.status === 'active' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-800' :
  hive.status === 'archived' ? 'bg-surface dark:bg-surface-elevated text-text-primary border border-border' :
  'bg-surface dark:bg-surface-elevated text-text-primary border border-border'
@@ -161,14 +161,14 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {hive.status}
  </span>
  {hive.is_queenless && !hive.archived_at && (
- <span className="px-2 py-1 rounded text-xs font-medium whitespace-nowrap bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800">
+ <span className="px-2 py-1 rounded text-sm font-medium whitespace-nowrap bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800">
  {formatQueenlessLabel(hive.queenless_reason)}
  </span>
  )}
  {/* Days since inspection badge */}
  {!hive.archived_at && (
  daysSinceInspection !== null ? (
- <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border ${
+ <span className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded border ${
  daysSinceInspection < 7
  ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
  : daysSinceInspection < 14
@@ -179,7 +179,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {daysSinceInspection}d
  </span>
  ) : (
- <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border bg-surface-secondary text-text-secondary border-border">
+ <span className="inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded border bg-surface-secondary text-text-secondary border-border">
  <Clock size={10} />
  Never
  </span>
@@ -221,7 +221,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  <span className="text-text-tertiary">📍</span>
  <span className="font-medium text-text-primary">{hive.apiaries?.name || 'No apiary'}</span>
  {(hive.order_in_apiary || hive.row_in_apiary) && (
- <span className="text-xs text-text-tertiary ml-1">
+ <span className="text-sm text-text-tertiary ml-1">
  ({hive.row_in_apiary ? `Row ${hive.row_in_apiary}` : ''}{hive.row_in_apiary && hive.order_in_apiary ? ', ' : ''}{hive.order_in_apiary ? `Hive ${hive.order_in_apiary}` : ''})
  </span>
  )}
@@ -231,7 +231,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {hive.queens?.id ? (
  <span className="flex items-center gap-1">
  {hive.queens.marking_color && (
- <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+ <span className={`px-2 py-0.5 rounded text-sm font-medium ${
  hive.queens.marking_color === 'White' ? 'bg-surface-secondary text-text-primary' :
  hive.queens.marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
  hive.queens.marking_color === 'Red' ? 'bg-red-200 text-red-900' :
@@ -251,7 +251,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  <ExternalLink size={12} />
  </Link>
  {(hive.queens.status === 'cell' || hive.queens.status === 'virgin') && (
- <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${queenStatusBadgeClass(hive.queens.status)}`}>
+ <span className={`px-1.5 py-0.5 rounded text-sm font-medium ${queenStatusBadgeClass(hive.queens.status)}`}>
  {hive.queens.status === 'virgin' ? 'Virgin' : 'Cell'}
  </span>
  )}
@@ -259,7 +259,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  ) : hive.queen_marked ? (
  <span className="flex items-center gap-1">
  {hive.queen_marking_color && (
- <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+ <span className={`px-2 py-0.5 rounded text-sm font-medium ${
  hive.queen_marking_color === 'White' ? 'bg-surface-secondary text-text-primary' :
  hive.queen_marking_color === 'Yellow' ? 'bg-yellow-200 text-yellow-900' :
  hive.queen_marking_color === 'Red' ? 'bg-red-200 text-red-900' :
@@ -279,14 +279,14 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {hive.last_record && (
  <div className="flex items-center gap-2">
  <span className="text-text-tertiary">📋</span>
- <span className="text-xs">
+ <span className="text-sm">
  <span className="font-medium text-text-secondary">{hive.last_record.type}</span>
  <span className="text-text-tertiary"> &bull; {new Date(hive.last_record.date).toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
  </span>
  </div>
  )}
  {hive.notes && (
- <div className="mt-3 p-2 bg-surface dark:bg-surface-elevated rounded text-text-primary text-xs border border-border">
+ <div className="mt-3 p-2 bg-surface dark:bg-surface-elevated rounded text-text-primary text-sm border border-border">
  {hive.notes}
  </div>
  )}
@@ -295,9 +295,9 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {hive.configuration && (
  <div className="mb-4 p-3 bg-surface dark:bg-surface-elevated rounded border border-forest-200 dark:border-forest-900/50">
  <div className="flex items-center justify-between mb-3">
- <div className="text-xs font-semibold text-forest-600 dark:text-forest-400">Hive Setup</div>
+ <div className="text-sm font-semibold text-forest-600 dark:text-forest-400">Hive Setup</div>
  {hive.configuration.hive_size && (
- <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+ <span className={`px-2 py-0.5 rounded text-sm font-medium ${
  hive.configuration.hive_size === 'nuc'
  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
  : 'bg-emerald-900/50 text-emerald-300 border border-emerald-800'
@@ -310,7 +310,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {/* Configuration Change Tracking - Only show for shared hives where user is not the owner */}
  {hive.is_shared && hive.user_id !== userId && hive.configuration_changed_at && (
  <div className="mb-3 pb-2 border-b border-border">
- <div className="text-xs text-text-tertiary">
+ <div className="text-sm text-text-tertiary">
  <span className="font-medium">Last changed:</span>{' '}
  {new Date(hive.configuration_changed_at).toLocaleDateString('en-IE', {
  day: '2-digit',
@@ -346,11 +346,11 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  const prevFullness = typeof prevRaw === 'number' && Number.isFinite(prevRaw) ? prevRaw : null
  const fullnessChanged = superFullnessChangedAt(hive.last_super_fullness, hive.previous_super_fullness, superNumber - 1)
  return (
- <div key={`super-${superNumber}`} className="w-full h-8 bg-yellow-300 border-2 border-yellow-500 rounded flex items-center justify-between px-2 text-xs font-semibold">
+ <div key={`super-${superNumber}`} className="w-full h-8 bg-yellow-300 border-2 border-yellow-500 rounded flex items-center justify-between px-2 text-sm font-semibold">
  <span>🍯 Super {superNumber}</span>
  <div className="flex items-center gap-1.5">
  {fullnessChanged && (
- <span className="text-xs font-normal text-yellow-900/80" title="Previous recorded reading">was {prevFullness}%</span>
+ <span className="text-sm font-normal text-yellow-900/80" title="Previous recorded reading">was {prevFullness}%</span>
  )}
  <SuperFullnessGauge value={fullness} />
  </div>
@@ -367,14 +367,14 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
 
  {/* Half-Size Brood Boxes */}
  {Array.from({ length: hive.configuration.brood_boxes_half || 0 }).map((_, i) => (
- <div key={`brood-half-${i}`} className="w-full h-8 bg-amber-300 border-2 border-amber-600 rounded flex items-center justify-center text-xs font-semibold">
+ <div key={`brood-half-${i}`} className="w-full h-8 bg-amber-300 border-2 border-amber-600 rounded flex items-center justify-center text-sm font-semibold">
  🐝 Brood Half {i + 1}
  </div>
  ))}
 
  {/* Full-Size Brood Boxes */}
  {Array.from({ length: hive.configuration.brood_boxes_full || hive.configuration.brood_boxes || 0 }).map((_, i) => (
- <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-xs font-semibold relative">
+ <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-sm font-semibold relative">
  <span className="relative z-10">🐝 Brood Full {i + 1}</span>
  {/* Frame orientation visualization */}
  {i === (hive.configuration?.brood_boxes_full || hive.configuration?.brood_boxes || 1) - 1 && hive.configuration?.frame_orientation && (
@@ -414,13 +414,13 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
 
  {/* Previous super readings — shared prior-inspection date for the "was X%" notes above */}
  {hive.previous_super_fullness_date && anySuperFullnessChanged && (
- <p className="mt-1 mb-2 text-xs text-text-tertiary">
+ <p className="mt-1 mb-2 text-sm text-text-tertiary">
  Previous readings: {new Date(hive.previous_super_fullness_date).toLocaleDateString('en-IE')}
  </p>
  )}
 
  {/* Configuration Details */}
- <div className="grid grid-cols-2 gap-2 text-xs text-text-primary">
+ <div className="grid grid-cols-2 gap-2 text-sm text-text-primary">
  {hive.configuration.feeder_type && (
  <div className="flex items-center gap-1">
  <span>🍯</span>

@@ -118,7 +118,7 @@ export default function InstallPrompt() {
           <h3 className="text-white font-semibold text-sm">
             Install HiveCraic
           </h3>
-          <p className="text-white/80 text-xs">
+          <p className="text-white/80 text-sm">
             Add to your home screen for quick access
           </p>
         </div>

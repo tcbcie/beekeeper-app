@@ -68,7 +68,7 @@ const HeaderCell = ({ col }: { col: CompareColumn }) => {
     return (
       <th className="px-4 py-3 text-left min-w-[180px] align-top">
         <div className="text-sm font-semibold text-red-700 dark:text-red-400">Unavailable</div>
-        <div className="text-xs text-text-tertiary mt-0.5">{col.error}</div>
+        <div className="text-sm text-text-tertiary mt-0.5">{col.error}</div>
       </th>
     )
   }
@@ -80,10 +80,10 @@ const HeaderCell = ({ col }: { col: CompareColumn }) => {
         <ExternalLink size={12} />
       </Link>
       <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-        <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colorBadgeClass(q.marking_color)}`}>
+        <span className={`px-2 py-0.5 text-sm font-medium rounded border ${colorBadgeClass(q.marking_color)}`}>
           {q.marking_color || 'None'}
         </span>
-        <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+        <span className={`px-2 py-0.5 text-sm font-medium rounded ${
           q.status === 'active'
             ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
             : q.status === 'cell'
@@ -115,7 +115,7 @@ const SectionHeading = ({ label, colCount }: { label: string; colCount: number }
   <tr>
     <td
       colSpan={colCount + 1}
-      className="px-4 py-2 bg-surface-secondary/60 dark:bg-surface-elevated text-xs font-semibold text-text-tertiary uppercase tracking-wide"
+      className="px-4 py-2 bg-surface-secondary/60 dark:bg-surface-elevated text-sm font-semibold text-text-tertiary uppercase tracking-wide"
     >
       {label}
     </td>
@@ -265,7 +265,7 @@ export default function QueenCompareTable({ columns }: QueenCompareTableProps) {
                 <AttrLabel>
                   {trait.label}
                   {trait.bestIs === 'low' && (
-                    <span className="block text-[10px] normal-case text-text-tertiary font-normal">lower is better</span>
+                    <span className="block text-sm normal-case text-text-tertiary font-normal">lower is better</span>
                   )}
                 </AttrLabel>
                 {columns.map((c, idx) => {
@@ -277,7 +277,7 @@ export default function QueenCompareTable({ columns }: QueenCompareTableProps) {
                       {value == null ? (
                         <div className="text-sm text-text-tertiary">
                           —
-                          <div className="text-[10px]">n = {avg?.n ?? 0}</div>
+                          <div className="text-sm">n = {avg?.n ?? 0}</div>
                         </div>
                       ) : (
                         <div
@@ -293,7 +293,7 @@ export default function QueenCompareTable({ columns }: QueenCompareTableProps) {
                               {formatRating(value)}
                             </span>
                           </div>
-                          <span className="text-[10px] text-text-tertiary">n = {avg?.n ?? 0}</span>
+                          <span className="text-sm text-text-tertiary">n = {avg?.n ?? 0}</span>
                         </div>
                       )}
                     </td>
@@ -337,7 +337,7 @@ export default function QueenCompareTable({ columns }: QueenCompareTableProps) {
               if (flags.length === 0) {
                 return (
                   <td key={c.id} className="px-4 py-3 align-top">
-                    <span className="text-xs text-text-tertiary italic">None</span>
+                    <span className="text-sm text-text-tertiary italic">None</span>
                   </td>
                 )
               }
@@ -345,7 +345,7 @@ export default function QueenCompareTable({ columns }: QueenCompareTableProps) {
                 <td key={c.id} className="px-4 py-3 align-top">
                   <div className="inline-flex items-start gap-1.5 px-2 py-1 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700">
                     <AlertCircle size={14} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-xs text-amber-800 dark:text-amber-300">{flags.join(', ')}</span>
+                    <span className="text-sm text-amber-800 dark:text-amber-300">{flags.join(', ')}</span>
                   </div>
                 </td>
               )

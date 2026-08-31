@@ -1247,7 +1247,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  placeholder="Or enter a custom location"
  className="w-full mt-2 px-3 py-2 border border-border rounded-md bg-surface text-foreground"
  />
- <p className="mt-1 text-xs text-text-tertiary">Choose an apiary from the list or enter a custom location.</p>
+ <p className="mt-1 text-sm text-text-tertiary">Choose an apiary from the list or enter a custom location.</p>
  </div>
 
  <div>
@@ -1410,7 +1410,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  </div>
  <div className="max-h-48 overflow-y-auto border border-border rounded-md p-2 space-y-1">
  {bulkVisibleGrafts.length === 0 ? (
- <p className="text-xs text-text-secondary px-1 py-2">No sealed cells available.</p>
+ <p className="text-sm text-text-secondary px-1 py-2">No sealed cells available.</p>
  ) : bulkVisibleGrafts.map((g) => (
  <label key={g.id} className="flex items-center gap-2 text-sm text-foreground px-1 py-1 rounded hover:bg-surface-secondary">
  <input
@@ -1498,7 +1498,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
    <div className="font-semibold text-foreground">{summary.batch_name}</div>
    <div className="mt-1 flex flex-wrap gap-1">
    {NUC_STATUSES.filter((s) => summary.statusCounts[s.value]).map((s) => (
-   <span key={s.value} className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${s.color}`}>
+   <span key={s.value} className={`rounded-full px-2 py-0.5 text-sm font-medium ${s.color}`}>
    {summary.statusCounts[s.value]} {s.label}
    </span>
    ))}
@@ -1507,7 +1507,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
    <div className="flex items-center gap-3">
    <div className="text-right">
    <div className="text-2xl font-bold leading-none text-foreground">{summary.total}</div>
-   <div className="text-[11px] text-text-tertiary">nucs</div>
+   <div className="text-sm text-text-tertiary">nucs</div>
    </div>
    <Button
    type="button"
@@ -1675,15 +1675,15 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <span>{nuc.nuc_number || nuc.reference_code || 'Unnumbered Nuc'}</span>
  </button>
  {nucTagCodes[nuc.id] && (
- <span className="rounded-full bg-surface-secondary px-1.5 py-0.5 text-[11px] font-medium text-text-secondary dark:bg-surface-elevated">{nucTagCodes[nuc.id]}</span>
+ <span className="rounded-full bg-surface-secondary px-1.5 py-0.5 text-sm font-medium text-text-secondary dark:bg-surface-elevated">{nucTagCodes[nuc.id]}</span>
  )}
  </div>
  {/* Line 2: status + inspections + actions */}
  <div className="mt-0.5 flex flex-wrap items-center gap-1 pl-5">
- <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${getStatusBadge(nuc.status)}`}>
+ <span className={`rounded-full px-2 py-0.5 text-sm font-medium ${getStatusBadge(nuc.status)}`}>
  {statusInfo?.label}
  </span>
- <span className="inline-flex items-center gap-1 text-[11px] text-text-tertiary">
+ <span className="inline-flex items-center gap-1 text-sm text-text-tertiary">
  <ClipboardList size={11} />
  {inspectionCount}
  </span>
@@ -1715,7 +1715,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  )}
  </div>
  {/* Line 3: context */}
- <p className="mt-0.5 pl-5 text-xs text-text-secondary">
+ <p className="mt-0.5 pl-5 text-sm text-text-secondary">
  {[
  // The marking normally trails the batch name. A nuc that reared its own queen has no
  // batch, so it stands alone rather than disappearing with the batch segment.
@@ -1911,7 +1911,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  placeholder="Or enter a custom location"
  className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
  />
- <p className="text-xs text-text-tertiary">This site will be applied to all selected nucs.</p>
+ <p className="text-sm text-text-tertiary">This site will be applied to all selected nucs.</p>
  </div>
  <div className="p-4 border-t border-border flex gap-3 justify-end">
  <Button

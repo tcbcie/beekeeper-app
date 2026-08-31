@@ -267,7 +267,7 @@ export default function DropdownManagement() {
                   required
                   disabled={!!editingCategory}
                 />
-                <p className="text-xs text-text-tertiary mt-1">Lowercase with underscores, cannot be changed after creation</p>
+                <p className="text-sm text-text-tertiary mt-1">Lowercase with underscores, cannot be changed after creation</p>
               </div>
 
               <div>
@@ -513,7 +513,7 @@ export default function DropdownManagement() {
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
                     <h4 className="font-medium text-foreground">{category.category_name}</h4>
-                    <p className="text-xs text-text-tertiary font-mono">{category.category_key}</p>
+                    <p className="text-sm text-text-tertiary font-mono">{category.category_key}</p>
                   </div>
                   <div className="flex gap-1">
                     <IconButton
@@ -535,9 +535,9 @@ export default function DropdownManagement() {
                   </div>
                 </div>
                 {category.description && (
-                  <p className="text-xs text-text-tertiary mt-1">{category.description}</p>
+                  <p className="text-sm text-text-tertiary mt-1">{category.description}</p>
                 )}
-                <p className="text-xs text-text-tertiary mt-2">
+                <p className="text-sm text-text-tertiary mt-2">
                   {category.dropdown_values?.length || 0} value{(category.dropdown_values?.length || 0) !== 1 ? 's' : ''}
                 </p>
               </div>

@@ -289,7 +289,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
         </p>
         <div className="flex items-center gap-2">
           {lastUpdated && (
-            <span className="text-xs text-text-tertiary flex items-center gap-1">
+            <span className="text-sm text-text-tertiary flex items-center gap-1">
               <Clock size={10} />
               {lastUpdated.toLocaleTimeString()}
             </span>
@@ -359,7 +359,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
           {/* Weight Section */}
           {(stats.currentWeight !== undefined || stats.yieldSum !== null) && (
             <div className="p-3 border border-border rounded-lg space-y-2">
-              <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
+              <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {/* Current Weight */}
                 {stats.currentWeight !== undefined && (
@@ -367,8 +367,8 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
                     <div className="flex items-center gap-1.5">
                       <Scale size={14} className="text-blue-600 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] text-blue-600 dark:text-blue-400">Current</p>
-                        <p className="text-sm font-bold text-blue-800 dark:text-blue-200 truncate">
+                        <p className="text-sm text-blue-600 dark:text-blue-400">Current</p>
+                        <p className="text-base font-bold text-blue-800 dark:text-blue-200 truncate">
                           {stats.currentWeight.toFixed(1)} kg
                         </p>
                       </div>
@@ -390,10 +390,10 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
                         <TrendingDown size={14} className="text-red-600 shrink-0" />
                       )}
                       <div className="min-w-0">
-                        <p className={`text-[10px] ${stats.yieldSum >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        <p className={`text-sm ${stats.yieldSum >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                           {periodLabel} Change
                         </p>
-                        <p className={`text-sm font-bold truncate ${stats.yieldSum >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                        <p className={`text-base font-bold truncate ${stats.yieldSum >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
                           {stats.yieldSum >= 0 ? '+' : ''}{stats.yieldSum.toFixed(2)} kg
                         </p>
                       </div>
@@ -407,14 +407,14 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
           {/* Colony Section - Brood Temperature */}
           {stats.avgBroodTemp !== null && (
             <div className="p-3 border border-border rounded-lg space-y-2">
-              <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
+              <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
                   <div className="flex items-center gap-1.5">
                     <Flame size={14} className="text-orange-600 shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-[10px] text-orange-600 dark:text-orange-400">Avg Brood Temp</p>
-                      <p className="text-sm font-bold text-orange-800 dark:text-orange-200 truncate">
+                      <p className="text-sm text-orange-600 dark:text-orange-400">Avg Brood Temp</p>
+                      <p className="text-base font-bold text-orange-800 dark:text-orange-200 truncate">
                         {stats.avgBroodTemp.toFixed(1)}°C
                       </p>
                     </div>
@@ -427,7 +427,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
           {/* Environmental Section */}
           {(stats.avgTemp !== null || stats.avgHumidity !== null || stats.totalRain !== null || stats.avgWind !== null) && (
             <div className="p-3 border border-border rounded-lg space-y-2">
-              <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
+              <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {/* Average Temperature */}
                 {stats.avgTemp !== null && (
@@ -435,8 +435,8 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
                     <div className="flex items-center gap-1.5">
                       <Thermometer size={14} className="text-sky-600 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] text-sky-600 dark:text-sky-400">Avg Temp</p>
-                        <p className="text-sm font-bold text-sky-800 dark:text-sky-200 truncate">
+                        <p className="text-sm text-sky-600 dark:text-sky-400">Avg Temp</p>
+                        <p className="text-base font-bold text-sky-800 dark:text-sky-200 truncate">
                           {stats.avgTemp.toFixed(1)}°C
                         </p>
                       </div>
@@ -450,8 +450,8 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
                     <div className="flex items-center gap-1.5">
                       <Droplets size={14} className="text-cyan-600 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] text-cyan-600 dark:text-cyan-400">Avg Humidity</p>
-                        <p className="text-sm font-bold text-cyan-800 dark:text-cyan-200 truncate">
+                        <p className="text-sm text-cyan-600 dark:text-cyan-400">Avg Humidity</p>
+                        <p className="text-base font-bold text-cyan-800 dark:text-cyan-200 truncate">
                           {stats.avgHumidity.toFixed(0)}%
                         </p>
                       </div>
@@ -465,8 +465,8 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
                     <div className="flex items-center gap-1.5">
                       <CloudRain size={14} className="text-indigo-600 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] text-indigo-600 dark:text-indigo-400">Total Rain</p>
-                        <p className="text-sm font-bold text-indigo-800 dark:text-indigo-200 truncate">
+                        <p className="text-sm text-indigo-600 dark:text-indigo-400">Total Rain</p>
+                        <p className="text-base font-bold text-indigo-800 dark:text-indigo-200 truncate">
                           {stats.totalRain.toFixed(1)} mm
                         </p>
                       </div>
@@ -480,8 +480,8 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
                     <div className="flex items-center gap-1.5">
                       <Wind size={14} className="text-text-secondary shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] text-text-secondary">Avg Wind</p>
-                        <p className="text-sm font-bold text-foreground truncate">
+                        <p className="text-sm text-text-secondary">Avg Wind</p>
+                        <p className="text-base font-bold text-foreground truncate">
                           {stats.avgWind.toFixed(0)} km/h
                         </p>
                       </div>
@@ -495,8 +495,8 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
                     <div className="flex items-center gap-1.5">
                       <Compass size={14} className="text-violet-600 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-[10px] text-violet-600 dark:text-violet-400">Direction</p>
-                        <p className="text-sm font-bold text-violet-800 dark:text-violet-200 truncate">
+                        <p className="text-sm text-violet-600 dark:text-violet-400">Direction</p>
+                        <p className="text-base font-bold text-violet-800 dark:text-violet-200 truncate">
                           {getCardinalDirection(stats.latestWindDirection)}
                         </p>
                       </div>
@@ -512,7 +512,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
             const { Icon, color, percent } = getBatteryInfo(stats.batteryVoltage)
             return (
               <div className="p-3 border border-border rounded-lg space-y-2">
-                <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
+                <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div className={`p-2 rounded border ${
                     color === 'green' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
@@ -526,12 +526,12 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
                         'text-red-600'
                       }`} />
                       <div className="min-w-0">
-                        <p className={`text-[10px] ${
+                        <p className={`text-sm ${
                           color === 'green' ? 'text-green-600 dark:text-green-400' :
                           color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
                           'text-red-600 dark:text-red-400'
                         }`}>Battery</p>
-                        <p className={`text-sm font-bold truncate ${
+                        <p className={`text-base font-bold truncate ${
                           color === 'green' ? 'text-green-800 dark:text-green-200' :
                           color === 'yellow' ? 'text-yellow-800 dark:text-yellow-200' :
                           'text-red-800 dark:text-red-200'

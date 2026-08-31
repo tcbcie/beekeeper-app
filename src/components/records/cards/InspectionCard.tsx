@@ -142,7 +142,7 @@ export default function InspectionCard({
                   <button
                     type="button"
                     onClick={() => setQrModalOpen(true)}
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-surface-secondary text-text-primary border border-border hover:bg-surface-elevated transition-colors max-w-full whitespace-nowrap"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-sm font-semibold bg-surface-secondary text-text-primary border border-border hover:bg-surface-elevated transition-colors max-w-full whitespace-nowrap"
                     title={`QR tag: ${hive.qr_tag_code} — tap to view`}
                     aria-label={`Show QR code ${hive.qr_tag_code}`}
                   >
@@ -151,16 +151,16 @@ export default function InspectionCard({
                   </button>
                 )}
               </h3>
-              <span className="text-xs text-text-tertiary">
+              <span className="text-sm text-text-tertiary">
                 {formattedDate}
                 {inspection.inspection_time && ` at ${inspection.inspection_time.slice(0, 5)}`}
               </span>
               {inspection.weight != null && (
-                <span className="text-xs text-text-tertiary font-medium">{inspection.weight} kg</span>
+                <span className="text-sm text-text-tertiary font-medium">{inspection.weight} kg</span>
               )}
             </div>
             {inspection.profiles && inspection.user_id !== userId && sharedHiveIds.includes(inspection.hive_id) && (
-              <p className="text-xs text-text-tertiary mt-0.5">
+              <p className="text-sm text-text-tertiary mt-0.5">
                 By: <span className="font-medium text-text-secondary">
                   {(inspection.profiles.first_name && inspection.profiles.last_name)
                     ? `${inspection.profiles.first_name} ${inspection.profiles.last_name}`
@@ -228,29 +228,29 @@ export default function InspectionCard({
         {/* Queen Cells */}
         {hasQueenCells && (
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide self-center">Cells:</span>
+            <span className="text-sm font-semibold text-text-tertiary uppercase tracking-wide self-center">Cells:</span>
             {inspection.queen_cups && (
               <span>
                 <span className="text-text-secondary">Cups:</span> <span className="font-medium">{inspection.queen_cups_number || 0}</span>
-                {inspection.queen_cups_removed_all !== null && <span className="text-text-tertiary text-xs"> ({inspection.queen_cups_removed_all ? 'removed' : 'remain'})</span>}
+                {inspection.queen_cups_removed_all !== null && <span className="text-text-tertiary text-sm"> ({inspection.queen_cups_removed_all ? 'removed' : 'remain'})</span>}
               </span>
             )}
             {inspection.swarm_cells && (
               <span>
                 <span className="text-text-secondary">Swarm:</span> <span className="font-medium">{inspection.swarm_cells_number || 0}</span>
-                {inspection.swarm_cells_removed_all !== null && <span className="text-text-tertiary text-xs"> ({inspection.swarm_cells_removed_all ? 'removed' : 'remain'})</span>}
+                {inspection.swarm_cells_removed_all !== null && <span className="text-text-tertiary text-sm"> ({inspection.swarm_cells_removed_all ? 'removed' : 'remain'})</span>}
               </span>
             )}
             {inspection.supercedure_cells && (
               <span>
                 <span className="text-text-secondary">Supercedure:</span> <span className="font-medium">{inspection.supercedure_cells_number || 0}</span>
-                {inspection.supercedure_cells_removed_all !== null && <span className="text-text-tertiary text-xs"> ({inspection.supercedure_cells_removed_all ? 'removed' : 'remain'})</span>}
+                {inspection.supercedure_cells_removed_all !== null && <span className="text-text-tertiary text-sm"> ({inspection.supercedure_cells_removed_all ? 'removed' : 'remain'})</span>}
               </span>
             )}
             {inspection.emergency_cells && (
               <span>
                 <span className="text-text-secondary">Emergency:</span> <span className="font-medium">{inspection.emergency_cells_number || 0}</span>
-                {inspection.emergency_cells_removed_all !== null && <span className="text-text-tertiary text-xs"> ({inspection.emergency_cells_removed_all ? 'removed' : 'remain'})</span>}
+                {inspection.emergency_cells_removed_all !== null && <span className="text-text-tertiary text-sm"> ({inspection.emergency_cells_removed_all ? 'removed' : 'remain'})</span>}
               </span>
             )}
           </div>
@@ -280,7 +280,7 @@ export default function InspectionCard({
         {/* Given/Taken */}
         {givenTakenItems.length > 0 && (
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide self-center">Given/Taken:</span>
+            <span className="text-sm font-semibold text-text-tertiary uppercase tracking-wide self-center">Given/Taken:</span>
             {givenTakenItems.map(item => (
               <span key={item.label}>
                 <span className="text-text-secondary">{item.label}:</span>{' '}
@@ -295,7 +295,7 @@ export default function InspectionCard({
         {/* Honey Super Fullness */}
         {superFullness.length > 0 && (
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide self-center">Super Fullness:</span>
+            <span className="text-sm font-semibold text-text-tertiary uppercase tracking-wide self-center">Super Fullness:</span>
             {superFullness.map((value, i) => (
               <span key={`super-fullness-${i}`}>
                 <span className="text-text-secondary">Super {i + 1}:</span>{' '}
@@ -308,7 +308,7 @@ export default function InspectionCard({
         {/* Hygienic Behaviour */}
         {hasHygienic && (
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide self-center">Hygienic:</span>
+            <span className="text-sm font-semibold text-text-tertiary uppercase tracking-wide self-center">Hygienic:</span>
             {inspection.recapping !== 3 && inspection.recapping !== 0 && (
               <span><span className="text-text-secondary">Recapping:</span> {renderStars(inspection.recapping)}</span>
             )}
@@ -324,7 +324,7 @@ export default function InspectionCard({
         {/* Disease */}
         {hasDisease && (
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-            <span className="text-xs font-semibold text-text-tertiary uppercase tracking-wide self-center">Disease:</span>
+            <span className="text-sm font-semibold text-text-tertiary uppercase tracking-wide self-center">Disease:</span>
             {inspection.afb_disease > 0 && <span><span className="text-text-secondary">AFB:</span> {renderStars(inspection.afb_disease)}</span>}
             {inspection.efb_disease > 0 && <span><span className="text-text-secondary">EFB:</span> {renderStars(inspection.efb_disease)}</span>}
             {inspection.chalkbrood_disease > 0 && <span><span className="text-text-secondary">Chalkbrood:</span> {renderStars(inspection.chalkbrood_disease)}</span>}
@@ -345,7 +345,7 @@ export default function InspectionCard({
 
         {/* Weather — single compact line */}
         {hasWeather && (
-          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-text-tertiary">
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-text-tertiary">
             <span>🌤️</span>
             {inspection.weather_temp !== null && <span>{inspection.weather_temp}°C</span>}
             {inspection.weather_condition && <><span>·</span><span>{inspection.weather_condition}</span></>}

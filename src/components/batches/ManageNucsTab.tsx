@@ -491,7 +491,7 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
                     {/* Delete — hidden for active nucs (assigned in Nuc Setup) */}
                     <div className="pt-2 border-t border-border">
                       {nuc.equipment_status === 'active' ? (
-                        <p className="text-xs text-text-tertiary">This nuc is active in Nuc Setup and cannot be deleted.</p>
+                        <p className="text-sm text-text-tertiary">This nuc is active in Nuc Setup and cannot be deleted.</p>
                       ) : deletingNucId === nuc.id ? (
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-text-secondary">Delete this nuc permanently?</span>

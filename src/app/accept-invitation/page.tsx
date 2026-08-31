@@ -229,7 +229,7 @@ function AcceptInvitationContent() {
                   <li>Return to this invitation link to join the team</li>
                 </ol>
               </div>
-              <p className="text-xs text-text-tertiary mb-4">
+              <p className="text-sm text-text-tertiary mb-4">
                 Important: You must use the email address <strong>{invitedEmail}</strong> when signing up.
               </p>
               <div className="space-y-3">

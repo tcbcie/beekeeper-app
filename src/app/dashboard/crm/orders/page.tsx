@@ -353,7 +353,7 @@ export default function OrdersPage() {
                   min={orderDate}
                   className="rounded-md"
                 />
-                <p className="text-xs text-text-tertiary mt-1">Optional — used to flag overdue orders.</p>
+                <p className="text-sm text-text-tertiary mt-1">Optional — used to flag overdue orders.</p>
               </div>
             </div>
 
@@ -424,7 +424,7 @@ export default function OrdersPage() {
             })}
           </div>
           {(production.activeQueens > 0 || production.matingNucs > 0) && (
-            <p className="text-xs text-text-tertiary mt-2 pt-2 border-t border-border">
+            <p className="text-sm text-text-tertiary mt-2 pt-2 border-t border-border">
               Your production: <span className="font-medium text-foreground tabular-nums">{production.activeQueens}</span> active queen{production.activeQueens !== 1 ? 's' : ''}
               {' · '}
               <span className="font-medium text-foreground tabular-nums">{production.matingNucs}</span> mating nuc{production.matingNucs !== 1 ? 's' : ''}

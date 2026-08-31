@@ -141,7 +141,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
               if (items.length === 0) return null
               return (
                 <div key={group.id} className="mt-4">
-                  <p className="px-4 py-1 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+                  <p className="px-4 py-1 text-sm font-semibold uppercase tracking-wider text-text-tertiary">
                     {group.label}
                   </p>
                   <div className="space-y-2 mt-1">

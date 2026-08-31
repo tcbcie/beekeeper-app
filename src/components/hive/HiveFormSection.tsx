@@ -396,7 +396,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-1">
  Apiary *
- <span className="block text-xs font-normal text-text-tertiary mt-0.5">
+ <span className="block text-sm font-normal text-text-tertiary mt-0.5">
  Required for weather data in inspection records
  </span>
  </label>
@@ -414,7 +414,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  ))}
  </select>
  {apiaries.length === 0 && (
- <p className="mt-1 text-xs text-amber-400">
+ <p className="mt-1 text-sm text-amber-400">
  No apiaries available. Please create an apiary first to enable weather data for inspections.
  </p>
  )}
@@ -423,7 +423,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-1">
  Row in Apiary
- <span className="block text-xs font-normal text-text-tertiary mt-0.5 invisible">Placeholder for alignment</span>
+ <span className="block text-sm font-normal text-text-tertiary mt-0.5 invisible">Placeholder for alignment</span>
  </label>
  <div className="flex gap-2 mb-2 invisible">
  <label className="flex items-center gap-2">
@@ -464,7 +464,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-1">
  Hive in Row
- <span className="block text-xs font-normal text-text-tertiary mt-0.5">
+ <span className="block text-sm font-normal text-text-tertiary mt-0.5">
  For looking left to right choose option
  </span>
  </label>
@@ -620,7 +620,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  <span className="text-lg">{formData.is_queenless ? '✓' : '○'}</span>
  Confirmed Queenless
  </Button>
- <p className="mt-1 text-xs text-text-tertiary">
+ <p className="mt-1 text-sm text-text-tertiary">
  Tick this if the colony has no queen (for example, after a swarm). The hive will display a red Queenless badge.
  </p>
  {formData.is_queenless && (
@@ -641,7 +641,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  ))}
  </select>
  {formData.queen_id && (
- <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+ <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
  The linked queen will be updated to reflect this outcome and removed from this hive on save.
  </p>
  )}
@@ -714,7 +714,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  <option value="Green">Green</option>
  <option value="Blue">Blue</option>
  </select>
- <p className="text-xs text-text-tertiary mt-1">
+ <p className="text-sm text-text-tertiary mt-1">
  International standard: White (1,6) | Yellow (2,7) | Red (3,8) | Green (4,9) | Blue (5,0)
  </p>
  </div>
@@ -915,7 +915,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  <div className="md:col-span-2">
  <label className="block text-sm font-medium text-text-secondary mb-2">
  Frame Orientation
- <span className="ml-2 text-xs text-text-tertiary font-normal">
+ <span className="ml-2 text-sm text-text-tertiary font-normal">
  (Warm way: frames parallel to entrance, Cold way: frames perpendicular to entrance)
  </span>
  </label>

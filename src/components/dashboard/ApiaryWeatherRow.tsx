@@ -158,8 +158,8 @@ function WeightChip({ label, value }: { label: string; value: number }) {
 
   return (
     <div className="flex flex-col items-center">
-      <span className="text-xs font-medium text-text-secondary leading-none mb-0.5">{label}</span>
-      <span className={`flex items-center gap-0.5 text-sm font-bold tabular-nums ${
+      <span className="text-sm font-medium text-text-secondary leading-none mb-0.5">{label}</span>
+      <span className={`flex items-center gap-0.5 text-base font-bold tabular-nums ${
         positive ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
       }`}>
         <Icon size={12} />
@@ -660,7 +660,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
           {hasCoords && weatherLoading && (
             <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white/40 border-t-white" />
           )}
-          {hasCoords && weatherError && <span className="text-xs text-forest-300">--</span>}
+          {hasCoords && weatherError && <span className="text-sm text-forest-300">--</span>}
           {!hasCoords && <CloudOff size={13} className="text-forest-300" />}
         </div>
       </div>
@@ -673,11 +673,11 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setForecastExpanded(!forecastExpanded) } }}
           aria-expanded={forecastExpanded}
           aria-label={forecastExpanded ? 'Hide 7-day forecast' : 'Show 7-day forecast'}
-          className="w-full flex items-center justify-between px-4 py-1 bg-forest-50 dark:bg-surface-elevated text-xs text-forest-700 dark:text-forest-300 hover:bg-forest-100 dark:hover:bg-surface-secondary transition-colors cursor-pointer"
+          className="w-full flex items-center justify-between px-4 py-1 bg-forest-50 dark:bg-surface-elevated text-sm text-forest-700 dark:text-forest-300 hover:bg-forest-100 dark:hover:bg-surface-secondary transition-colors cursor-pointer"
         >
           <span>{weatherLabel(weather.current.weatherCode)}</span>
           <span className="flex items-center gap-1 text-forest-600 dark:text-forest-400">
-            <span className="text-[10px] font-medium">{forecastExpanded ? 'Hide' : '7-day'}</span>
+            <span className="text-sm font-medium">{forecastExpanded ? 'Hide' : '7-day'}</span>
             <ChevronDown size={12} className={`transition-transform ${forecastExpanded ? 'rotate-180' : ''}`} />
           </span>
         </div>
@@ -693,13 +693,13 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
                   index === 0 ? 'bg-forest-50/50 dark:bg-surface-elevated' : ''
                 } ${index < weather.daily.length - 1 ? 'border-r border-border/40' : ''}`}
               >
-                <span className={`text-xs font-semibold leading-none ${
+                <span className={`text-sm font-semibold leading-none ${
                   index === 0 ? 'text-forest-700 dark:text-forest-300' : 'text-text-secondary'
                 }`}>{day.day}</span>
                 <span className="text-sm leading-none my-0.5">{weatherIcon(day.weatherCode)}</span>
-                <span className="text-xs leading-none tabular-nums">
+                <span className="flex flex-col items-center text-sm leading-tight tabular-nums">
                   <span className="font-semibold text-foreground">{day.tempMax}&deg;</span>
-                  <span className="text-text-secondary font-medium"> {day.tempMin}&deg;</span>
+                  <span className="text-text-secondary font-medium">{day.tempMin}&deg;</span>
                 </span>
               </div>
             ))}
@@ -719,7 +719,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
             {bloomingPlants.length > 0 && (
               <>
                 <div className="w-px h-4 bg-border" />
-                <span className="text-xs font-medium text-text-secondary dark:text-gray-300 shrink-0">Forage:</span>
+                <span className="text-sm font-medium text-text-secondary dark:text-gray-300 shrink-0">Forage:</span>
                 <Flower2 size={13} className="text-green-600 dark:text-green-400 shrink-0" />
                 <div className="flex items-center gap-1 min-w-0 flex-wrap">
                   {(bloomExpanded ? bloomingPlants : bloomingPlants.slice(0, 3)).map((plant) => (
@@ -729,7 +729,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
                       tabIndex={0}
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setVegModalPlant({ name: plant.name, typeId: plant.vegetationTypeId }); setVegModalOpen(true) }}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setVegModalPlant({ name: plant.name, typeId: plant.vegetationTypeId }); setVegModalOpen(true) } }}
-                      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-xs font-medium rounded-full whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity ${
+                      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-sm font-medium rounded-full whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity ${
                         plant.confirmed
                           ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200'
                           : 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200'
@@ -745,7 +745,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
                       tabIndex={0}
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setBloomExpanded(!bloomExpanded) }}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setBloomExpanded(!bloomExpanded) } }}
-                      className="text-xs font-medium text-forest-600 dark:text-forest-400 whitespace-nowrap cursor-pointer hover:underline"
+                      className="text-sm font-medium text-forest-600 dark:text-forest-400 whitespace-nowrap cursor-pointer hover:underline"
                     >
                       {bloomExpanded ? 'less' : `+${bloomingPlants.length - 3} more`}
                     </span>
@@ -757,8 +757,8 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
           <div className="flex items-center gap-3 mt-1">
             {nectarCondition && (
               <div className="flex items-center gap-1">
-                <span className="text-xs font-medium text-text-secondary dark:text-gray-300">Nectar:</span>
-                <span className={`text-xs font-bold ${
+                <span className="text-sm font-medium text-text-secondary dark:text-gray-300">Nectar:</span>
+                <span className={`text-sm font-bold ${
                   nectarCondition === 'good'
                     ? 'text-green-700 dark:text-green-400'
                     : nectarCondition === 'fair'
@@ -773,8 +773,8 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
               <>
                 {nectarCondition && <div className="w-px h-3 bg-border" />}
                 <div className="flex items-center gap-1">
-                  <span className="text-xs font-medium text-text-secondary dark:text-gray-300">Pollen:</span>
-                  <span className={`text-xs font-bold ${
+                  <span className="text-sm font-medium text-text-secondary dark:text-gray-300">Pollen:</span>
+                  <span className={`text-sm font-bold ${
                     pollenCondition === 'good'
                       ? 'text-green-700 dark:text-green-400'
                       : pollenCondition === 'fair'
@@ -790,8 +790,8 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
               <>
                 {(nectarCondition || pollenCondition) && <div className="w-px h-3 bg-border" />}
                 <div className="flex items-center gap-1">
-                  <span className="text-xs font-medium text-text-secondary dark:text-gray-300">Foraging window:</span>
-                  <span className="text-xs font-bold tabular-nums text-foreground">
+                  <span className="text-sm font-medium text-text-secondary dark:text-gray-300">Foraging window:</span>
+                  <span className="text-sm font-bold tabular-nums text-foreground">
                     {foragingHours.yesterday !== null && <span className="text-text-secondary dark:text-gray-300 font-medium">(-1d) {foragingHours.yesterday}h</span>}
                     {foragingHours.yesterday !== null && foragingHours.today !== null && <span className="text-text-tertiary dark:text-gray-400"> · </span>}
                     {foragingHours.today !== null && <span className={foragingHours.today >= 4 ? 'text-green-700 dark:text-green-400' : foragingHours.today >= 2 ? 'text-amber-700 dark:text-amber-400' : 'text-text-tertiary dark:text-gray-400'}>Today {foragingHours.today}h</span>}
@@ -807,12 +807,12 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
 
       <div className="px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border dark:border-border/70">
         <div className="flex flex-col min-w-0">
-          <span className="text-xs font-medium text-text-secondary leading-none mb-0.5">Hives</span>
+          <span className="text-sm font-medium text-text-secondary leading-none mb-0.5">Hives</span>
           <span className="text-base font-bold text-foreground tabular-nums">{apiary.hiveCount}</span>
         </div>
         <div className="w-px h-5 bg-border" />
         <div className="flex flex-col min-w-0">
-          <span className="text-xs font-medium text-text-secondary leading-none mb-0.5">Last Inspected</span>
+          <span className="text-sm font-medium text-text-secondary leading-none mb-0.5">Last Inspected</span>
           {daysSinceInspection !== null ? (
             <span className={`text-base font-bold tabular-nums ${
               daysSinceInspection < 7
@@ -829,23 +829,23 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
         </div>
         <div className="w-px h-5 bg-border" />
         <div className="flex flex-col min-w-0">
-          <span className="text-xs font-medium text-text-secondary leading-none mb-0.5">Queen Status</span>
+          <span className="text-sm font-medium text-text-secondary leading-none mb-0.5">Queen Status</span>
           {apiary.hiveCount === 0 ? (
             <span className="text-base font-medium text-text-tertiary">&mdash;</span>
           ) : hasQueenIssue ? (
             <>
-              <span className="flex items-center gap-1 text-sm font-bold text-amber-700 dark:text-amber-400 leading-none">
+              <span className="flex items-center gap-1 text-base font-bold text-amber-700 dark:text-amber-400 leading-none">
                 <AlertTriangle size={14} className="shrink-0" />
                 Possible issue
               </span>
-              <span className="text-xs font-medium text-amber-700/90 dark:text-amber-300 leading-none mt-0.5">
+              <span className="text-sm font-medium text-amber-700/90 dark:text-amber-300 leading-none mt-0.5">
                 {getQueenIssueSummary(apiary)}
               </span>
             </>
           ) : (
             <>
               <span className="text-base font-bold text-green-700 dark:text-green-400 leading-none">Healthy</span>
-              <span className="text-xs font-medium text-text-secondary leading-none mt-0.5">
+              <span className="text-sm font-medium text-text-secondary leading-none mt-0.5">
                 {daysSinceQueenright !== null ? `Latest ${daysSinceQueenright}d ago` : 'All hives recent'}
               </span>
             </>
@@ -861,7 +861,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
           >
             <ListChecks size={14} />
             <span className="text-sm font-semibold tabular-nums">{apiary.activeTaskCount}</span>
-            <span className="text-xs font-medium">task{apiary.activeTaskCount !== 1 ? 's' : ''}</span>
+            <span className="text-sm font-medium">task{apiary.activeTaskCount !== 1 ? 's' : ''}</span>
           </div>
         )}
       </div>
@@ -870,14 +870,14 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
         <div className="px-3 py-2 flex items-center gap-2">
           <div className="flex items-center gap-1 shrink-0">
             <Scale size={12} className="text-text-tertiary" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+            <span className="text-sm font-semibold uppercase tracking-wider text-text-tertiary">
               Avg ({apiary.scales.length})
             </span>
           </div>
           {scaleLoading && (
             <div className="flex items-center gap-1">
               <div className="animate-spin rounded-full h-3 w-3 border border-text-tertiary border-t-transparent" />
-              <span className="text-xs text-text-tertiary">Loading...</span>
+              <span className="text-sm text-text-tertiary">Loading...</span>
             </div>
           )}
           {!scaleLoading && avgWeight && (
@@ -890,7 +890,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
             </div>
           )}
           {!scaleLoading && scaleData.length === 0 && (
-            <span className="text-xs text-text-tertiary">No data</span>
+            <span className="text-sm text-text-tertiary">No data</span>
           )}
         </div>
       )}

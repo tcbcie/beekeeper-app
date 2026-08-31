@@ -141,7 +141,7 @@ export default function SubscriptionHistoryTable() {
       </div>
 
       <div className="px-6 py-4 bg-surface-elevated dark:bg-surface-elevated border-t border-border">
-        <p className="text-xs text-text-tertiary">
+        <p className="text-sm text-text-tertiary">
           Showing all subscription activations and renewals for your account
         </p>
       </div>

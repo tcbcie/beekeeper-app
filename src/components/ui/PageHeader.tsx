@@ -19,7 +19,7 @@ export default function PageHeader({
     <div className={`flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between ${className}`.trim()}>
       <div className="min-w-0">
         {eyebrow && (
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-text-tertiary">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.14em] text-text-tertiary">
             {eyebrow}
           </p>
         )}

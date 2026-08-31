@@ -45,7 +45,7 @@ export default function SuperFullnessGauge({ value, size = 22 }: SuperFullnessGa
           className="stroke-amber-600 dark:stroke-amber-400"
         />
       </svg>
-      <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200 tabular-nums">
+      <span className="text-sm font-bold text-amber-900 dark:text-amber-200 tabular-nums">
         {Math.round(clamped)}%
       </span>
     </span>

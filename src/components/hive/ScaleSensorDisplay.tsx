@@ -130,7 +130,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
         </p>
         <div className="flex items-center gap-2">
           {lastUpdated && (
-            <span className="text-xs text-text-tertiary flex items-center gap-1">
+            <span className="text-sm text-text-tertiary flex items-center gap-1">
               <Clock size={10} />
               {lastUpdated.toLocaleTimeString()}
             </span>
@@ -149,7 +149,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       {/* Weight Section */}
       {(weight !== undefined || weightChange24h !== null || weightChange7d !== null || weightChange30d !== null) && (
         <div className="p-3 border border-border rounded-lg space-y-2">
-          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
+          <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* Current Weight */}
             {weight !== undefined && (
@@ -157,8 +157,8 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
                 <div className="flex items-center gap-1.5">
                   <Scale size={14} className="text-amber-600 shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-[10px] text-amber-600 dark:text-amber-400">Current</p>
-                    <p className="text-sm font-bold text-amber-800 dark:text-amber-200 truncate">
+                    <p className="text-sm text-amber-600 dark:text-amber-400">Current</p>
+                    <p className="text-base font-bold text-amber-800 dark:text-amber-200 truncate">
                       {weight.toFixed(1)} kg
                     </p>
                   </div>
@@ -180,8 +180,8 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
                     <TrendingDown size={14} className="text-red-600 shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <p className={`text-[10px] ${weightChange24h >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>24h</p>
-                    <p className={`text-sm font-bold truncate ${weightChange24h >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                    <p className={`text-sm ${weightChange24h >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>24h</p>
+                    <p className={`text-base font-bold truncate ${weightChange24h >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
                       {weightChange24h >= 0 ? '+' : ''}{weightChange24h.toFixed(2)} kg
                     </p>
                   </div>
@@ -203,8 +203,8 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
                     <TrendingDown size={14} className="text-red-600 shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <p className={`text-[10px] ${weightChange7d >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>7d</p>
-                    <p className={`text-sm font-bold truncate ${weightChange7d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                    <p className={`text-sm ${weightChange7d >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>7d</p>
+                    <p className={`text-base font-bold truncate ${weightChange7d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
                       {weightChange7d >= 0 ? '+' : ''}{weightChange7d.toFixed(2)} kg
                     </p>
                   </div>
@@ -226,8 +226,8 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
                     <TrendingDown size={14} className="text-red-600 shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <p className={`text-[10px] ${weightChange30d >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>30d</p>
-                    <p className={`text-sm font-bold truncate ${weightChange30d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                    <p className={`text-sm ${weightChange30d >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>30d</p>
+                    <p className={`text-base font-bold truncate ${weightChange30d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
                       {weightChange30d >= 0 ? '+' : ''}{weightChange30d.toFixed(2)} kg
                     </p>
                   </div>
@@ -241,14 +241,14 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       {/* Colony Section - Brood Temperature */}
       {temperature !== undefined && (
         <div className="p-3 border border-border rounded-lg space-y-2">
-          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
+          <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
               <div className="flex items-center gap-1.5">
                 <Flame size={14} className="text-orange-600 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[10px] text-orange-600 dark:text-orange-400">Brood Temp</p>
-                  <p className="text-sm font-bold text-orange-800 dark:text-orange-200 truncate">
+                  <p className="text-sm text-orange-600 dark:text-orange-400">Brood Temp</p>
+                  <p className="text-base font-bold text-orange-800 dark:text-orange-200 truncate">
                     {temperature.toFixed(1)}°C
                   </p>
                 </div>
@@ -261,14 +261,14 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       {/* Environmental Section - Humidity */}
       {humidity !== undefined && (
         <div className="p-3 border border-border rounded-lg space-y-2">
-          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
+          <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className="p-2 bg-cyan-50 dark:bg-cyan-900/20 rounded border border-cyan-200 dark:border-cyan-800">
               <div className="flex items-center gap-1.5">
                 <Droplets size={14} className="text-cyan-600 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[10px] text-cyan-600 dark:text-cyan-400">Humidity</p>
-                  <p className="text-sm font-bold text-cyan-800 dark:text-cyan-200 truncate">
+                  <p className="text-sm text-cyan-600 dark:text-cyan-400">Humidity</p>
+                  <p className="text-base font-bold text-cyan-800 dark:text-cyan-200 truncate">
                     {humidity.toFixed(0)}%
                   </p>
                 </div>
@@ -281,7 +281,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       {/* Technical Section - Battery */}
       {batteryInfo !== null && (
         <div className="p-3 border border-border rounded-lg space-y-2">
-          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
+          <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className={`p-2 rounded border ${
               batteryInfo.percent < 20
@@ -291,8 +291,8 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
               <div className="flex items-center gap-1.5">
                 <Battery size={14} className={`shrink-0 ${batteryInfo.percent < 20 ? 'text-red-600' : 'text-green-600'}`} />
                 <div className="min-w-0">
-                  <p className={`text-[10px] ${batteryInfo.percent < 20 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>Battery</p>
-                  <p className={`text-sm font-bold truncate ${batteryInfo.percent < 20 ? 'text-red-800 dark:text-red-200' : 'text-green-800 dark:text-green-200'}`}>
+                  <p className={`text-sm ${batteryInfo.percent < 20 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>Battery</p>
+                  <p className={`text-base font-bold truncate ${batteryInfo.percent < 20 ? 'text-red-800 dark:text-red-200' : 'text-green-800 dark:text-green-200'}`}>
                     {batteryInfo.percent}%
                   </p>
                 </div>

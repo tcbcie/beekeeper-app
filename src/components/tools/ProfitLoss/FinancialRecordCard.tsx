@@ -82,7 +82,7 @@ export default function FinancialRecordCard({
             </div>
 
             {/* Date */}
-            <p className="text-xs text-text-tertiary mt-1">
+            <p className="text-sm text-text-tertiary mt-1">
               {formatDate(record.transaction_date)}
             </p>
 

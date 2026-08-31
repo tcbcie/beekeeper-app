@@ -136,7 +136,7 @@ export default function AboutPage() {
               className="rounded-xl border border-border bg-surface/70 p-4 text-center"
             >
               <p className="mb-1 text-sm font-semibold text-foreground">{tech.name}</p>
-              <p className="text-xs text-text-secondary">{tech.description}</p>
+              <p className="text-sm text-text-secondary">{tech.description}</p>
             </div>
           ))}
         </div>
@@ -145,7 +145,7 @@ export default function AboutPage() {
       <Panel padding="lg" className="relative overflow-hidden border border-amber-300/70 dark:border-amber-800/70">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-500/15 via-transparent to-orange-500/10 dark:from-amber-500/10 dark:to-orange-500/10" />
         <div className="relative text-center">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-amber-800 dark:text-amber-300">
+          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.14em] text-amber-800 dark:text-amber-300">
             Credits
           </p>
           <h2 className="mb-4 font-serif text-2xl sm:text-3xl text-foreground">

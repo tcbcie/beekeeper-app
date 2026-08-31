@@ -315,16 +315,16 @@ export default function QueenDetailPage() {
             <h1 className="text-2xl font-bold text-foreground">{queen.queen_number}</h1>
             <QueenRoleBadge role={queen.queen_role} />
             {queenCode && (
-              <span className="px-2 py-0.5 text-xs font-mono font-medium rounded border border-border bg-surface-secondary text-text-secondary" title="Composite queen code (country · breeder · number · year)">
+              <span className="px-2 py-0.5 text-sm font-mono font-medium rounded border border-border bg-surface-secondary text-text-secondary" title="Composite queen code (country · breeder · number · year)">
                 {queenCode}
               </span>
             )}
             {markingColor && (
-              <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colorBadgeClass(markingColor)}`}>
+              <span className={`px-2 py-0.5 text-sm font-medium rounded border ${colorBadgeClass(markingColor)}`}>
                 {markingColor}
               </span>
             )}
-            <span className={`px-2 py-0.5 text-xs font-medium rounded border ${
+            <span className={`px-2 py-0.5 text-sm font-medium rounded border ${
               queen.status === 'active'
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
                 : queen.status === 'virgin'
@@ -439,7 +439,7 @@ export default function QueenDetailPage() {
                   onChange={(e) => setEmergedDate(e.target.value)}
                   className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
                 />
-                <p className="text-xs text-text-tertiary mt-1">Pre-filled with the estimate — adjust to the actual hatch day.</p>
+                <p className="text-sm text-text-tertiary mt-1">Pre-filled with the estimate — adjust to the actual hatch day.</p>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -541,7 +541,7 @@ export default function QueenDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Identity */}
           <div>
-            <h3 className="text-xs font-semibold text-text-tertiary uppercase mb-2">Identity</h3>
+            <h3 className="text-sm font-semibold text-text-tertiary uppercase mb-2">Identity</h3>
             <div className="space-y-1.5 text-sm">
               <p><span className="text-text-tertiary">Source:</span> <span className="text-text-primary">{queen.source || 'N/A'}</span></p>
               <p><span className="text-text-tertiary">Born:</span> <span className="text-text-primary">{queen.birth_date ? new Date(queen.birth_date).toLocaleDateString('en-IE') : 'N/A'}</span></p>
@@ -557,7 +557,7 @@ export default function QueenDetailPage() {
 
           {/* Genetics */}
           <div>
-            <h3 className="text-xs font-semibold text-text-tertiary uppercase mb-2">Genetics</h3>
+            <h3 className="text-sm font-semibold text-text-tertiary uppercase mb-2">Genetics</h3>
             <div className="space-y-1.5 text-sm">
               <p>
                 <span className="text-text-tertiary">Mother:</span>{' '}
@@ -607,7 +607,7 @@ export default function QueenDetailPage() {
 
           {/* Assignment */}
           <div>
-            <h3 className="text-xs font-semibold text-text-tertiary uppercase mb-2">Assignment</h3>
+            <h3 className="text-sm font-semibold text-text-tertiary uppercase mb-2">Assignment</h3>
             {hive ? (
               <div className="space-y-1.5 text-sm">
                 <p>
@@ -626,7 +626,7 @@ export default function QueenDetailPage() {
             )}
             {queen.performance_notes && (
               <div className="mt-3 pt-3 border-t border-border">
-                <p className="text-xs text-text-tertiary font-medium mb-1">Performance Notes</p>
+                <p className="text-sm text-text-tertiary font-medium mb-1">Performance Notes</p>
                 <p className="text-sm text-text-primary">{queen.performance_notes}</p>
               </div>
             )}
@@ -690,12 +690,12 @@ export default function QueenDetailPage() {
                 className="flex items-center justify-between p-3 bg-surface-elevated dark:bg-surface-elevated rounded-lg border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colorBadgeClass(child.marking_color)}`}>
+                  <span className={`px-2 py-0.5 text-sm font-medium rounded border ${colorBadgeClass(child.marking_color)}`}>
                     {child.marking_color || 'None'}
                   </span>
                   <span className="font-medium text-foreground">{child.queen_number}</span>
                 </div>
-                <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                <span className={`px-2 py-0.5 text-sm font-medium rounded ${
                   child.status === 'active'
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                     : child.status === 'cell'
@@ -726,20 +726,20 @@ export default function QueenDetailPage() {
                   <span className="text-sm text-text-primary">{s.hive_number}</span>
                   <div className="flex items-center gap-1.5">
                     {s.queen_seen ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-green-700 dark:text-green-400">
+                      <span className="inline-flex items-center gap-1 text-sm text-green-700 dark:text-green-400">
                         <CheckCircle size={12} /> Seen
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-xs text-red-700 dark:text-red-400">
+                      <span className="inline-flex items-center gap-1 text-sm text-red-700 dark:text-red-400">
                         <XCircle size={12} /> Not seen
                       </span>
                     )}
                     {s.eggs_present && (
-                      <span className="text-xs text-amber-700 dark:text-amber-400">Eggs present</span>
+                      <span className="text-sm text-amber-700 dark:text-amber-400">Eggs present</span>
                     )}
                   </div>
                 </div>
-                <span className="text-xs text-text-tertiary">
+                <span className="text-sm text-text-tertiary">
                   {new Date(s.inspection_date).toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </span>
               </Link>

@@ -362,7 +362,7 @@ export default function VarroaTreatmentForm({
                 onChange={(e) => setShowAllProducts(e.target.checked)}
                 className="w-4 h-4 rounded border-border text-forest-600 focus:ring-forest-500"
               />
-              <span className="text-xs text-text-tertiary">
+              <span className="text-sm text-text-tertiary">
                 Show all products (not just {isUkNiResident ? 'UK' : 'Ireland'} approved)
               </span>
             </label>
@@ -414,7 +414,7 @@ export default function VarroaTreatmentForm({
                   {selectedProduct.notes && (
                     <div className="pt-2 border-t border-border">
                       <span className="font-medium text-text-secondary block mb-1">Notes:</span>
-                      <span className="text-text-tertiary text-xs">{selectedProduct.notes}</span>
+                      <span className="text-text-tertiary text-sm">{selectedProduct.notes}</span>
                     </div>
                   )}
                 </div>
@@ -485,7 +485,7 @@ export default function VarroaTreatmentForm({
         <div>
           <label className="block text-sm font-medium text-text-secondary mb-1">
             Temperature (°C)
-            {fetchingWeather && <span className="ml-2 text-xs text-blue-600">Fetching...</span>}
+            {fetchingWeather && <span className="ml-2 text-sm text-blue-600">Fetching...</span>}
           </label>
           <input
             type="number"
@@ -501,7 +501,7 @@ export default function VarroaTreatmentForm({
         <div>
           <label className="block text-sm font-medium text-text-secondary mb-1">
             Weather Conditions
-            {fetchingWeather && <span className="ml-2 text-xs text-blue-600">Fetching...</span>}
+            {fetchingWeather && <span className="ml-2 text-sm text-blue-600">Fetching...</span>}
           </label>
           <input
             type="text"
@@ -512,7 +512,7 @@ export default function VarroaTreatmentForm({
             disabled={fetchingWeather}
           />
           {formData.hive_id && !fetchingWeather && (
-            <p className="text-xs text-text-tertiary mt-1">
+            <p className="text-sm text-text-tertiary mt-1">
               Weather data auto-populated based on hive location. You can edit if needed.
             </p>
           )}

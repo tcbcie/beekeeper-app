@@ -238,7 +238,7 @@ export default function DashboardPage() {
  <div className="space-y-6">
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
  <div className="flex flex-col gap-2">
- <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-tertiary">Dashboard</p>
+ <p className="text-sm font-semibold uppercase tracking-[0.14em] text-text-tertiary">Dashboard</p>
  <div className="flex items-center gap-3 flex-wrap">
  <h1 className="font-serif text-3xl sm:text-4xl leading-tight text-foreground">Dashboard Overview</h1>
  {userRole === 'Admin' && (
@@ -248,7 +248,7 @@ export default function DashboardPage() {
  Admin
  </span>
  {openTicketsCount > 0 && (
- <span className="px-2 py-1 bg-red-500 dark:bg-red-600 text-white text-xs font-bold rounded-full flex items-center gap-1 min-w-[24px] justify-center">
+ <span className="px-2 py-1 bg-red-500 dark:bg-red-600 text-white text-sm font-bold rounded-full flex items-center gap-1 min-w-[24px] justify-center">
  {openTicketsCount}
  </span>
  )}
@@ -260,25 +260,25 @@ export default function DashboardPage() {
  <MessageCircle size={14} />
  <span>Tickets:</span>
  {userTicketStatus.has_response > 0 && (
- <span className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-500 text-white text-xs font-bold rounded-full animate-pulse" title={`${userTicketStatus.has_response} ticket(s) have a new response - click to view`}>
+ <span className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-500 text-white text-sm font-bold rounded-full animate-pulse" title={`${userTicketStatus.has_response} ticket(s) have a new response - click to view`}>
  {userTicketStatus.has_response}
  <Reply size={10} />
  </span>
  )}
  {userTicketStatus.open > 0 && (
- <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full" title={`${userTicketStatus.open} open ticket(s) - awaiting response`}>
+ <span className="flex items-center gap-1 px-1.5 py-0.5 bg-amber-500 text-white text-sm font-bold rounded-full" title={`${userTicketStatus.open} open ticket(s) - awaiting response`}>
  {userTicketStatus.open}
  <Clock size={10} />
  </span>
  )}
  {userTicketStatus.in_progress > 0 && (
- <span className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-500 text-white text-xs font-bold rounded-full" title={`${userTicketStatus.in_progress} ticket(s) being addressed`}>
+ <span className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-500 text-white text-sm font-bold rounded-full" title={`${userTicketStatus.in_progress} ticket(s) being addressed`}>
  {userTicketStatus.in_progress}
  <span className="animate-pulse">●</span>
  </span>
  )}
  {userTicketStatus.resolved > 0 && (
- <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-500 text-white text-xs font-bold rounded-full" title={`${userTicketStatus.resolved} ticket(s) resolved - review & close`}>
+ <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-500 text-white text-sm font-bold rounded-full" title={`${userTicketStatus.resolved} ticket(s) resolved - review & close`}>
  {userTicketStatus.resolved}
  <CheckCircle size={10} />
  </span>
@@ -351,7 +351,7 @@ export default function DashboardPage() {
      className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-sm font-semibold cursor-pointer"
    >
      <span>Tap an apiary below to apply &ldquo;{activeAction.label}&rdquo;</span>
-     <span className="text-xs underline">Cancel</span>
+     <span className="text-sm underline">Cancel</span>
    </div>
  )}
  <div className="grid grid-cols-2 gap-3">
@@ -486,7 +486,7 @@ export default function DashboardPage() {
  <div key={card.label} className="flex flex-col">
  <div className="flex items-center gap-1.5 mb-1">
  <AppIcon icon={card.icon} size="sm" className="text-text-secondary" />
- <span className="text-xs text-text-tertiary">{card.label}</span>
+ <span className="text-sm text-text-tertiary">{card.label}</span>
  </div>
  <span className="text-xl font-bold text-foreground">{card.value}</span>
  </div>
@@ -507,7 +507,7 @@ export default function DashboardPage() {
  <h4 className="font-medium text-foreground text-sm truncate">
  {member.profiles?.full_name || 'Unknown User'}
  </h4>
- <p className="text-xs text-text-secondary truncate">{member.profiles?.email}</p>
+ <p className="text-sm text-text-secondary truncate" title={member.profiles?.email}>{member.profiles?.email}</p>
  </div>
  <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
  <span className="fj-badge fj-badge-blue">{member.teams?.name || 'Unknown'}</span>
@@ -536,7 +536,7 @@ export default function DashboardPage() {
  <div key={card.label} className="flex flex-col">
  <div className="flex items-center gap-1.5 mb-1">
  <AppIcon icon={card.icon} size="sm" className="text-text-secondary" />
- <span className="text-xs text-text-tertiary">{card.label}</span>
+ <span className="text-sm text-text-tertiary">{card.label}</span>
  </div>
  <span className="text-xl font-bold text-foreground">{card.value}</span>
  </div>
@@ -571,7 +571,7 @@ export default function DashboardPage() {
  )}
 
  {/* Application Version */}
- <p className="text-xs text-text-tertiary text-center py-2">
+ <p className="text-sm text-text-tertiary text-center py-2">
  HiveCraic v1.11.3 &middot; 29th August 2026 &middot; <Link href="/dashboard/about?section=changes" className="text-forest-600 dark:text-forest-400 hover:underline">View Changes</Link>
  </p>
  </div>
@@ -601,7 +601,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  icon = <Search size={18} className="text-blue-600 dark:text-blue-400" />
  label = `Inspection of ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
  badge = (
- <span className={`px-2 py-1 text-xs font-semibold rounded ${
+ <span className={`px-2 py-1 text-sm font-semibold rounded ${
  record.queen_seen
  ? 'bg-green-200 dark:bg-green-900/40 text-green-900 dark:text-green-200'
  : 'bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200'
@@ -614,7 +614,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  icon = <Syringe size={18} className="text-red-600 dark:text-red-400" />
  label = `Varroa Treatment - ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
  badge = (
- <span className="px-2 py-1 text-xs font-semibold rounded bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-200">
+ <span className="px-2 py-1 text-sm font-semibold rounded bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-200">
  {record.treatment_type}
  </span>
  )
@@ -623,7 +623,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  icon = <Bug size={18} className="text-orange-600 dark:text-orange-400" />
  label = `Varroa Check - ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
  badge = record.infestation_rate !== null ? (
- <span className="px-2 py-1 text-xs font-semibold rounded bg-orange-200 dark:bg-orange-900/40 text-orange-900 dark:text-orange-200">
+ <span className="px-2 py-1 text-sm font-semibold rounded bg-orange-200 dark:bg-orange-900/40 text-orange-900 dark:text-orange-200">
  {record.infestation_rate}% infestation
  </span>
  ) : null
@@ -632,7 +632,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  icon = <Wheat size={18} className="text-amber-600 dark:text-amber-400" />
  label = `Feeding - ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
  badge = (
- <span className="px-2 py-1 text-xs font-semibold rounded bg-amber-200 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200">
+ <span className="px-2 py-1 text-sm font-semibold rounded bg-amber-200 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200">
  {record.feed_type}
  </span>
  )
@@ -641,7 +641,7 @@ function RecentActivitySection({ recentActivity, recentActivityError, onRetry }:
  icon = <Droplet size={18} className="text-yellow-600 dark:text-yellow-400" />
  label = `Harvest - ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
  badge = record.honey_weight !== null ? (
- <span className="px-2 py-1 text-xs font-semibold rounded bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200">
+ <span className="px-2 py-1 text-sm font-semibold rounded bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200">
  {record.honey_weight} kg
  </span>
  ) : null
@@ -734,7 +734,7 @@ function TeamsSection({ ownedTeams, memberTeams, loadingTeams, isTeamMember, has
  Owner
  </span>
  </div>
- <div className="flex items-center gap-3 text-xs text-text-secondary">
+ <div className="flex items-center gap-3 text-sm text-text-secondary">
  <span className="flex items-center gap-1">
  <Users size={12} />
  {team.member_count || 0}
@@ -762,7 +762,7 @@ function TeamsSection({ ownedTeams, memberTeams, loadingTeams, isTeamMember, has
  {team.user_role}
  </span>
  </div>
- <div className="flex items-center gap-3 text-xs text-text-secondary">
+ <div className="flex items-center gap-3 text-sm text-text-secondary">
  <span className="flex items-center gap-1">
  <Users size={12} />
  {team.member_count || 0}
@@ -834,7 +834,7 @@ function RearingGroupsSection({ ownedRearingGroups, memberRearingGroups, loading
  Owner
  </span>
  </div>
- <div className="flex items-center gap-3 text-xs text-text-secondary">
+ <div className="flex items-center gap-3 text-sm text-text-secondary">
  <span className="flex items-center gap-1">
  <Users size={12} />
  {group.member_count || 0}
@@ -862,7 +862,7 @@ function RearingGroupsSection({ ownedRearingGroups, memberRearingGroups, loading
  Member
  </span>
  </div>
- <div className="flex items-center gap-3 text-xs text-text-secondary">
+ <div className="flex items-center gap-3 text-sm text-text-secondary">
  <span className="flex items-center gap-1">
  <Users size={12} />
  {group.member_count || 0}

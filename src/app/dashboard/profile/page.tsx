@@ -1381,14 +1381,14 @@ export default function ProfilePage() {
 
  <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
  <p className="text-red-900 dark:text-red-100 font-semibold text-sm mb-1.5">After 12 Months:</p>
- <p className="text-red-800 dark:text-red-200 text-xs">
+ <p className="text-red-800 dark:text-red-200 text-sm">
  All data permanently deleted. Cannot be recovered.
  </p>
  </div>
 
  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
  <p className="text-amber-900 dark:text-amber-100 font-semibold text-sm mb-1.5">Recommended:</p>
- <p className="text-amber-800 dark:text-amber-200 text-xs">
+ <p className="text-amber-800 dark:text-amber-200 text-sm">
  Export your data first (JSON/CSV options above)
  </p>
  </div>

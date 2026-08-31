@@ -30,12 +30,12 @@ export default function HarvestCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="px-2 py-0.5 bg-green-100 text-green-900 dark:bg-green-900/45 dark:text-green-100 border border-green-200 dark:border-green-700/60 text-xs font-medium rounded">
+              <span className="px-2 py-0.5 bg-green-100 text-green-900 dark:bg-green-900/45 dark:text-green-100 border border-green-200 dark:border-green-700/60 text-sm font-medium rounded">
                 Harvest
               </span>
               <h3 className="text-base font-bold">Hive: {harvest.hives?.hive_number || 'Unknown'}</h3>
             </div>
-            <p className="text-xs text-text-tertiary">
+            <p className="text-sm text-text-tertiary">
               {new Date(harvest.harvest_date + 'T00:00:00').toLocaleDateString('en-GB', {
                 weekday: 'short',
                 year: 'numeric',
@@ -44,7 +44,7 @@ export default function HarvestCard({
               })}
             </p>
             {harvest.profiles && harvest.user_id !== userId && sharedHiveIds.includes(harvest.hive_id) && (
-              <p className="text-xs text-text-tertiary mt-0.5">
+              <p className="text-sm text-text-tertiary mt-0.5">
                 Recorded by: <span className="font-medium text-text-secondary">
                   {(harvest.profiles.first_name && harvest.profiles.last_name)
                     ? `${harvest.profiles.first_name} ${harvest.profiles.last_name}`
@@ -117,7 +117,7 @@ export default function HarvestCard({
       {/* Notes */}
       {harvest.notes && (
         <div className="mt-2 px-3 py-2 bg-surface/50 dark:bg-surface-elevated rounded border border-border">
-          <span className="text-xs text-text-tertiary">Notes:</span>{' '}
+          <span className="text-sm text-text-tertiary">Notes:</span>{' '}
           <span className="text-sm text-text-secondary">{harvest.notes}</span>
         </div>
       )}

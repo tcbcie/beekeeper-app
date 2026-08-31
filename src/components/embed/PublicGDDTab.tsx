@@ -639,7 +639,7 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
           <div className="flex flex-wrap gap-4">
             {/* Year chips */}
             <div className="space-y-1.5">
-              <label className="text-xs text-text-secondary">Years (compare)</label>
+              <label className="text-sm text-text-secondary">Years (compare)</label>
               <div className="flex flex-wrap gap-1.5">
                 {years.map(year => (
                   <button
@@ -660,7 +660,7 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
 
             {/* Vegetation */}
             <div className="space-y-1.5">
-              <label className="text-xs text-text-secondary">Vegetation</label>
+              <label className="text-sm text-text-secondary">Vegetation</label>
               <select
                 value={selectedVegetation}
                 onChange={(e) => setSelectedVegetation(e.target.value)}
@@ -676,7 +676,7 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
             {/* Period filter */}
             {viewMode === 'chart' && chartType === 'vegetation' && (
               <div className="space-y-1.5">
-                <label className="text-xs text-text-secondary">Period</label>
+                <label className="text-sm text-text-secondary">Period</label>
                 <div className="flex flex-wrap gap-1.5">
                   {([['all', 'All'], ['q1', 'Q1'], ['q2', 'Q2'], ['q3', 'Q3'], ['q4', 'Q4'], ['custom', 'Custom']] as const).map(([key, label]) => (
                     <button
@@ -839,7 +839,7 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
                 </div>
               )}
               <div className="mt-3 text-center">
-                <p className="text-xs text-text-tertiary">
+                <p className="text-sm text-text-tertiary">
                   Compare how GDD accumulates throughout the year. Each line shows cumulative GDD from Jan 1.
                   {currentGDD !== null && ` Current year: ${currentGDD} GDD as of today.`}
                 </p>
@@ -861,7 +861,7 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
               )}
               {!showTemperature && (
                 <div className="mt-3 text-center">
-                  <p className="text-xs text-text-tertiary">
+                  <p className="text-sm text-text-tertiary">
                     Compare GDD values across years to see how bloom timing varies. Lower GDD = earlier bloom.
                   </p>
                 </div>

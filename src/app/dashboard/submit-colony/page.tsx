@@ -280,7 +280,7 @@ export default function SubmitColonyPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-text-tertiary mb-1">Latitude</label>
+                <label className="block text-sm text-text-tertiary mb-1">Latitude</label>
                 <input
                   type="text"
                   value={formData.latitude}
@@ -291,7 +291,7 @@ export default function SubmitColonyPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-tertiary mb-1">Longitude</label>
+                <label className="block text-sm text-text-tertiary mb-1">Longitude</label>
                 <input
                   type="text"
                   value={formData.longitude}
@@ -370,7 +370,7 @@ export default function SubmitColonyPage() {
             <p className="text-sm text-text-secondary">
               <strong>Contact Information</strong>
             </p>
-            <p className="text-xs text-text-tertiary mt-0.5">
+            <p className="text-sm text-text-tertiary mt-0.5">
               Your email address (and name/phone if available in your profile) will be shared with reviewers so they can contact you about this sighting.
             </p>
           </div>
@@ -380,7 +380,7 @@ export default function SubmitColonyPage() {
             {/* Location Aid Photo */}
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">Location Aid Photo (optional)</label>
-              <p className="text-xs text-text-tertiary mb-2">A photo to help find the location (landmark, building, etc.)</p>
+              <p className="text-sm text-text-tertiary mb-2">A photo to help find the location (landmark, building, etc.)</p>
               <div className="flex items-start">
                 {locationImagePreview ? (
                   <div className="relative">
@@ -417,7 +417,7 @@ export default function SubmitColonyPage() {
             {/* Colony Photo */}
             <div>
               <label className="block text-sm font-medium text-text-secondary mb-2">Colony Photo (optional)</label>
-              <p className="text-xs text-text-tertiary mb-2">A photo of the colony entrance or bee activity</p>
+              <p className="text-sm text-text-tertiary mb-2">A photo of the colony entrance or bee activity</p>
               <div className="flex items-start">
                 {colonyImagePreview ? (
                   <div className="relative">

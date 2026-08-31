@@ -475,7 +475,7 @@ export default function OrderDetailPage() {
               Overdue — {formatMoney(orderBalance(order), isUkNi)} was due by {formatCrmDate(order.due_date)}.
             </p>
           )}
-          <p className="text-xs text-text-tertiary mt-2">
+          <p className="text-sm text-text-tertiary mt-2">
             Record a deposit or part payment here. Overpayments are kept as customer credit. Income is recognised in your ledger only once the full amount is paid.
           </p>
         </Panel>
@@ -518,7 +518,7 @@ export default function OrderDetailPage() {
           </Button>
         </div>
         {order.payment_status === 'paid' && (
-          <p className="text-xs text-text-tertiary mt-3">
+          <p className="text-sm text-text-tertiary mt-3">
             Revenue for this order has been recognised in your income/expense ledger by product category.
           </p>
         )}

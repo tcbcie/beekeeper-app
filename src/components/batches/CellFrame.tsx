@@ -95,7 +95,7 @@ export default function CellFrame({
           <select
             value={bulkStatusDraft}
             onChange={(e) => handleBulkStatusChange(e.target.value)}
-            className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+            className="rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
           >
             <option value="">Change Status...</option>
             {FRAME_STATUSES.map((s) => (
@@ -106,7 +106,7 @@ export default function CellFrame({
             type="date"
             value={bulkDateDraft}
             onChange={(e) => handleBulkDateChange(e.target.value)}
-            className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+            className="rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
             title="Change date for selected"
           />
           <Button

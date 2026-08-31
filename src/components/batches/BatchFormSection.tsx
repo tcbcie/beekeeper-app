@@ -519,7 +519,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  </div>
  )}
  {!!editingBatch && editingBatchHasGrafts && (
- <p className="text-xs text-text-tertiary mt-1">Cell records exist — breeder queens are locked. Edit per-cell on the frame.</p>
+ <p className="text-sm text-text-tertiary mt-1">Cell records exist — breeder queens are locked. Edit per-cell on the frame.</p>
  )}
  </div>
 
@@ -538,7 +538,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
  required
  />
- {formData.graft_date && <p className="text-xs text-text-tertiary mt-1">{getDayName(formData.graft_date)}</p>}
+ {formData.graft_date && <p className="text-sm text-text-tertiary mt-1">{getDayName(formData.graft_date)}</p>}
  </div>
 
  <div>
@@ -549,7 +549,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  onChange={(e) => setFormData({...formData, acceptance_check_date: e.target.value})}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
  />
- <p className="text-xs text-text-tertiary mt-1">Graft + 1 day{formData.acceptance_check_date ? ` · ${getDayName(formData.acceptance_check_date)}` : ''}</p>
+ <p className="text-sm text-text-tertiary mt-1">Graft + 1 day{formData.acceptance_check_date ? ` · ${getDayName(formData.acceptance_check_date)}` : ''}</p>
  </div>
 
  <div>
@@ -560,7 +560,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  onChange={(e) => setFormData({...formData, first_option_to_cage_date: e.target.value})}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
  />
- <p className="text-xs text-text-tertiary mt-1">Graft + 5 days{formData.first_option_to_cage_date ? ` · ${getDayName(formData.first_option_to_cage_date)}` : ''}</p>
+ <p className="text-sm text-text-tertiary mt-1">Graft + 5 days{formData.first_option_to_cage_date ? ` · ${getDayName(formData.first_option_to_cage_date)}` : ''}</p>
  </div>
 
  <div>
@@ -571,7 +571,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  onChange={(e) => setFormData({...formData, second_option_to_cage_date: e.target.value})}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
  />
- <p className="text-xs text-text-tertiary mt-1">Graft + 10 days{formData.second_option_to_cage_date ? ` · ${getDayName(formData.second_option_to_cage_date)}` : ''}</p>
+ <p className="text-sm text-text-tertiary mt-1">Graft + 10 days{formData.second_option_to_cage_date ? ` · ${getDayName(formData.second_option_to_cage_date)}` : ''}</p>
  </div>
 
  <div>
@@ -579,7 +579,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  Expected Hatch
  <div className="group relative inline-block ml-1 align-middle">
  <MessageCircle size={14} className="text-purple-600 dark:text-purple-300 cursor-help" />
- <div className="invisible group-hover:visible absolute right-0 top-6 w-64 p-2 bg-gray-800 dark:bg-gray-700 text-white text-xs rounded shadow-lg z-10">
+ <div className="invisible group-hover:visible absolute right-0 top-6 w-64 p-2 bg-gray-800 dark:bg-gray-700 text-white text-sm rounded shadow-lg z-10">
  Assuming the larvae are approximately four days after the egg was laid, they should all be of the same age and ideally no more than 12 hours old at the time of grafting.
  </div>
  </div>
@@ -590,7 +590,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  onChange={(e) => setFormData({...formData, emergence_date: e.target.value})}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
  />
- <p className="text-xs text-text-tertiary mt-1">Graft + 12 days{formData.emergence_date ? ` · ${getDayName(formData.emergence_date)}` : ''}</p>
+ <p className="text-sm text-text-tertiary mt-1">Graft + 12 days{formData.emergence_date ? ` · ${getDayName(formData.emergence_date)}` : ''}</p>
  </div>
  </div>
  </div>
@@ -629,7 +629,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  ))}
  </select>
  {!formData.starter_apiary_id && (
- <p className="text-xs text-text-tertiary mt-1">Select an apiary first</p>
+ <p className="text-sm text-text-tertiary mt-1">Select an apiary first</p>
  )}
  </div>
  </div>
@@ -641,7 +641,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  <div className="flex items-center justify-between">
  <div>
  <h4 className="text-sm font-semibold text-foreground">Group Batch</h4>
- <p className="text-xs text-text-tertiary">Link this batch to a rearing group</p>
+ <p className="text-sm text-text-tertiary">Link this batch to a rearing group</p>
  </div>
  <label className="relative inline-flex items-center cursor-pointer">
  <input
@@ -695,8 +695,8 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
  ))}
  </select>
- <p className="text-xs text-text-tertiary mt-1">If your mating location (apiary) is not listed, please set one up in the Apiary section.</p>
- <p className="text-xs text-text-tertiary mt-1">This is the intended mating location and will be used as the default for the NIHBS report unless the location is overwritten by the location at the time of distribution.</p>
+ <p className="text-sm text-text-tertiary mt-1">If your mating location (apiary) is not listed, please set one up in the Apiary section.</p>
+ <p className="text-sm text-text-tertiary mt-1">This is the intended mating location and will be used as the default for the NIHBS report unless the location is overwritten by the location at the time of distribution.</p>
  </div>
  </div>
  )}
@@ -705,7 +705,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border overflow-hidden">
  <div className="flex items-center justify-between">
  <h4 className="text-sm font-semibold text-foreground">Batch Quantities</h4>
- <button type="button" onClick={() => setQuantitiesOpen(!quantitiesOpen)} className="flex items-center gap-1 px-2 py-1.5 text-xs text-text-tertiary hover:text-foreground rounded">
+ <button type="button" onClick={() => setQuantitiesOpen(!quantitiesOpen)} className="flex items-center gap-1 px-2 py-1.5 text-sm text-text-tertiary hover:text-foreground rounded">
  {quantitiesOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
  {quantitiesOpen ? 'Hide' : 'Show'}
  </button>
@@ -713,10 +713,10 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  {quantitiesOpen && <div className="space-y-3 mt-3">
  {/* Frame Layout: Rows × Cells per Row */}
  <div className="p-3 rounded-lg border-2 border-amber-600 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20 space-y-3">
- <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">Grafting Frame Layout</p>
+ <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Grafting Frame Layout</p>
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
  <div>
- <label className="block text-xs font-medium text-text-secondary mb-1">Rows</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Rows</label>
  <div className={stepperRowClassName}>
  <IconButton
  type="button"
@@ -762,7 +762,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  </div>
  </div>
  <div>
- <label className="block text-xs font-medium text-text-secondary mb-1">Cells per Row</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Cells per Row</label>
  <div className={stepperRowClassName}>
  <IconButton
  type="button"
@@ -810,7 +810,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  </div>
  {/* Total Grafts (auto-calculated but editable) */}
  <div>
- <label className="block text-xs font-medium text-text-secondary mb-1">Total Grafts</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Total Grafts</label>
  <div className={stepperRowClassName}>
  <IconButton
  type="button"
@@ -848,7 +848,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
 
  {/* Grafts Accepted */}
  <div>
- <label className="block text-xs font-medium text-text-secondary mb-1">Grafts Accepted</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Grafts Accepted</label>
  <div className={stepperRowClassName}>
  <IconButton
  type="button"
@@ -885,7 +885,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
 
  {/* Queens Hatched */}
  <div>
- <label className="block text-xs font-medium text-text-secondary mb-1">Queens Hatched</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Queens Hatched</label>
  <div className={stepperRowClassName}>
  <IconButton
  type="button"
@@ -922,7 +922,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
 
  {/* Queens Mated */}
  <div>
- <label className="block text-xs font-medium text-text-secondary mb-1">Queens Mated</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Queens Mated</label>
  <div className={stepperRowClassName}>
  <IconButton
  type="button"
@@ -960,9 +960,9 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  {/* Sealed Cells Distributed - read-only */}
  {editingBatch && sealedCellCounts[editingBatch.id] > 0 && (
  <div>
- <label className="block text-xs font-medium text-text-secondary mb-1">Sealed Cells Distributed</label>
+ <label className="block text-sm font-medium text-text-secondary mb-1">Sealed Cells Distributed</label>
  <div className="text-sm text-foreground font-medium">{sealedCellCounts[editingBatch.id]}</div>
- <p className="text-xs text-text-tertiary italic mt-1">Excluded from NIHBS report hatched/mated counts</p>
+ <p className="text-sm text-text-tertiary italic mt-1">Excluded from NIHBS report hatched/mated counts</p>
  </div>
  )}
  </div>
@@ -1050,7 +1050,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  <button
  type="button"
  onClick={() => setNotificationPrefsOpen(!notificationPrefsOpen)}
- className="flex items-center gap-1 px-2 py-1.5 text-xs text-amber-800 dark:text-amber-200 hover:text-amber-900 dark:hover:text-amber-100 rounded"
+ className="flex items-center gap-1 px-2 py-1.5 text-sm text-amber-800 dark:text-amber-200 hover:text-amber-900 dark:hover:text-amber-100 rounded"
  aria-expanded={notificationPrefsOpen}
  >
  {notificationPrefsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -1076,7 +1076,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  />
  <label htmlFor="browser-notifications" className="ml-2 text-sm text-amber-900 dark:text-amber-200">
  Send Browser Notifications for This Batch
- <span className="block text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+ <span className="block text-sm text-amber-700 dark:text-amber-300 mt-0.5">
  Get notified on the day of important dates (acceptance check, cage dates, hatch date)
  </span>
  </label>
@@ -1092,7 +1092,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  />
  <label htmlFor="email-digest" className="ml-2 text-sm text-amber-900 dark:text-amber-200">
  Include This Batch in Weekly Email Digest
- <span className="block text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+ <span className="block text-sm text-amber-700 dark:text-amber-300 mt-0.5">
  Receive a weekly summary of upcoming dates for this batch
  </span>
  </label>
@@ -1109,7 +1109,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  />
  <label htmlFor="batch-event-reminders" className="ml-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
  Enable Email Reminders for Batch Events
- <span className="block text-xs font-normal text-amber-700 dark:text-amber-300 mt-0.5">
+ <span className="block text-sm font-normal text-amber-700 dark:text-amber-300 mt-0.5">
  Send individual email reminders for all auto-created batch events (acceptance check, cage dates, emergence)
  </span>
  </label>

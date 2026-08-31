@@ -185,7 +185,7 @@ export default function FrameCellCalculator() {
             </Button>
           </div>
         </div>
-        <p className="text-xs text-text-tertiary mt-1">
+        <p className="text-sm text-text-tertiary mt-1">
           Standard worker cells are ~5.4mm, small cell foundation is ~4.9mm, drone cells are ~6.9mm
         </p>
       </div>
@@ -243,7 +243,7 @@ export default function FrameCellCalculator() {
           <li>Langstroth Deep: ~7,000-8,000 cells (both sides)</li>
           <li>Dadant Modified Deep: ~9,000-10,000 cells (both sides)</li>
         </ul>
-        <p className="mt-2 text-xs text-text-tertiary">
+        <p className="mt-2 text-sm text-text-tertiary">
           Note: Actual cell counts vary based on wax-drawn cell size and may differ from foundation specifications.
         </p>
       </div>

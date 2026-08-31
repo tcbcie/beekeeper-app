@@ -348,7 +348,7 @@ export default function FrameStandardsManager() {
         </table>
       </TableContainer>
 
-      <p className="text-xs text-text-tertiary">
+      <p className="text-sm text-text-tertiary">
         These frame standards appear in the Frame Cell Calculator dropdown. All authenticated users can view them in the calculator.
       </p>
     </div>

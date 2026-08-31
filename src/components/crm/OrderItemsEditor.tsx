@@ -55,7 +55,7 @@ export default function OrderItemsEditor({ items, onChange, isUkNi }: OrderItems
           <div key={index} className="field-journal-panel p-3 space-y-2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs text-text-tertiary mb-1">Product</label>
+                <label className="block text-sm text-text-tertiary mb-1">Product</label>
                 <SelectField
                   value={item.product_type}
                   onChange={(e) => update(index, { product_type: e.target.value as ProductType })}
@@ -67,7 +67,7 @@ export default function OrderItemsEditor({ items, onChange, isUkNi }: OrderItems
                 </SelectField>
               </div>
               <div>
-                <label className="block text-xs text-text-tertiary mb-1">Description</label>
+                <label className="block text-sm text-text-tertiary mb-1">Description</label>
                 <TextInput
                   value={item.description}
                   onChange={(e) => update(index, { description: e.target.value })}
@@ -78,7 +78,7 @@ export default function OrderItemsEditor({ items, onChange, isUkNi }: OrderItems
             </div>
             <div className="grid grid-cols-3 gap-2 items-end">
               <div>
-                <label className="block text-xs text-text-tertiary mb-1">Quantity</label>
+                <label className="block text-sm text-text-tertiary mb-1">Quantity</label>
                 <TextInput
                   type="number"
                   min="0"
@@ -89,7 +89,7 @@ export default function OrderItemsEditor({ items, onChange, isUkNi }: OrderItems
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-tertiary mb-1">Unit price</label>
+                <label className="block text-sm text-text-tertiary mb-1">Unit price</label>
                 <TextInput
                   type="number"
                   min="0"

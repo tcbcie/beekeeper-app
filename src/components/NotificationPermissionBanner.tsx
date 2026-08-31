@@ -100,7 +100,7 @@ export default function NotificationPermissionBanner() {
               </Button>
             </div>
             {permission === 'denied' && (
-              <p className="text-xs text-amber-100 mt-2 bg-red-600/30 p-2 rounded">
+              <p className="text-sm text-amber-100 mt-2 bg-red-600/30 p-2 rounded">
                 Notifications are blocked. Please enable them in your browser settings to receive alerts.
               </p>
             )}

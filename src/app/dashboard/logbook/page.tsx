@@ -205,7 +205,7 @@ export default function LogbookPage() {
  {skill.description}
  </p>
  {entry && !isActive && (
- <p className="text-xs text-text-tertiary mt-1">
+ <p className="text-sm text-text-tertiary mt-1">
  Assessed by {entry.assessor_name} on {new Date(entry.completed_date).toLocaleDateString('en-IE')}
  </p>
  )}
@@ -217,7 +217,7 @@ export default function LogbookPage() {
  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border-b border-border">
  <div className="space-y-3">
  <div>
- <label className="block text-xs font-medium text-text-secondary mb-1">
+ <label className="block text-sm font-medium text-text-secondary mb-1">
  Assessor Name <span className="text-red-500">*</span>
  </label>
  <input
@@ -231,7 +231,7 @@ export default function LogbookPage() {
  </div>
  <div className="grid grid-cols-2 gap-3">
  <div>
- <label className="block text-xs font-medium text-text-secondary mb-1">
+ <label className="block text-sm font-medium text-text-secondary mb-1">
  FIBKA Number
  </label>
  <input
@@ -244,7 +244,7 @@ export default function LogbookPage() {
  />
  </div>
  <div>
- <label className="block text-xs font-medium text-text-secondary mb-1">
+ <label className="block text-sm font-medium text-text-secondary mb-1">
  Date Completed <span className="text-red-500">*</span>
  </label>
  <input
@@ -257,7 +257,7 @@ export default function LogbookPage() {
  </div>
  </div>
  <div>
- <label className="block text-xs font-medium text-text-secondary mb-1">
+ <label className="block text-sm font-medium text-text-secondary mb-1">
  Notes
  </label>
  <textarea

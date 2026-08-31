@@ -794,7 +794,7 @@ export default function UserManagement() {
                 <p className="font-semibold text-foreground mb-2">Status Symbols</p>
                 <div className="space-y-2 text-text-secondary">
                   <div>
-                    <p className="font-medium text-xs text-text-tertiary mb-1">Account Status:</p>
+                    <p className="font-medium text-sm text-text-tertiary mb-1">Account Status:</p>
                     <div className="flex items-center gap-3 ml-2">
                       <span className="flex items-center gap-1">
                         <Badge tone="green">●</Badge>
@@ -807,7 +807,7 @@ export default function UserManagement() {
                     </div>
                   </div>
                   <div>
-                    <p className="font-medium text-xs text-text-tertiary mb-1">Subscription Status:</p>
+                    <p className="font-medium text-sm text-text-tertiary mb-1">Subscription Status:</p>
                     <div className="grid grid-cols-2 gap-1 ml-2 text-xs">
                       <span className="flex items-center gap-1">
                         <Badge tone="green">✓</Badge>
@@ -1304,7 +1304,7 @@ export default function UserManagement() {
                                   <span className="text-text-tertiary block mb-1">Transaction ID</span>
                                   {user.latest_transaction_id ? (
                                     <div>
-                                      <p className="font-mono text-xs text-blue-600 break-all" title={user.latest_transaction_id}>
+                                      <p className="font-mono text-sm text-blue-600 break-all" title={user.latest_transaction_id}>
                                         {user.latest_transaction_id}
                                       </p>
                                       <TextLink
@@ -1317,7 +1317,7 @@ export default function UserManagement() {
                                       </TextLink>
                                     </div>
                                   ) : (
-                                    <p className="text-text-tertiary italic text-xs">No transaction</p>
+                                    <p className="text-text-tertiary italic text-sm">No transaction</p>
                                   )}
                                 </div>
                               )}
@@ -1392,7 +1392,7 @@ export default function UserManagement() {
                                         year: 'numeric'
                                       })}
                                     </p>
-                                    <p className="text-xs text-text-tertiary">
+                                    <p className="text-sm text-text-tertiary">
                                       {new Date(user.last_sign_in_at).toLocaleTimeString('en-US', {
                                         hour: '2-digit',
                                         minute: '2-digit'
@@ -1422,7 +1422,7 @@ export default function UserManagement() {
                                       ({Math.floor((Date.now() - new Date(user.deleted_at).getTime()) / (1000 * 60 * 60 * 24))} days ago)
                                     </span>
                                   </div>
-                                  <p className="text-xs text-green-600 mt-1">
+                                  <p className="text-sm text-green-600 mt-1">
                                     ✓ All subscription history and data preserved
                                   </p>
                                 </div>

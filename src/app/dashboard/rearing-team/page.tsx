@@ -626,7 +626,7 @@ export default function RearingTeamPage() {
                                     <select
                                       value={member.experience_level || ''}
                                       onChange={(e) => handleUpdateExperienceLevel(member.id, e.target.value)}
-                                      className="px-2 py-1 text-xs border border-border rounded bg-surface text-foreground"
+                                      className="px-2 py-1 text-base border border-border rounded bg-surface text-foreground"
                                       title="Experience level"
                                     >
                                       <option value="">Level</option>

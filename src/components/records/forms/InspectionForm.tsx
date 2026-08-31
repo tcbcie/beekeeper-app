@@ -1112,7 +1112,7 @@ export default function InspectionForm({
           type="button"
           onClick={() => onChange(0)}
           aria-label={`Clear ${label} rating`}
-          className="min-h-[44px] w-full px-3 sm:min-h-[36px] sm:w-auto rounded-md border border-border bg-surface-elevated text-xs font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+          className="min-h-[44px] w-full px-3 sm:min-h-[36px] sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
         >
           Clear
         </Button>
@@ -1225,7 +1225,7 @@ export default function InspectionForm({
       {present && (
         <div className="space-y-3">
           <div>
-            <label htmlFor={`${labelId('cells', title)}-count`} className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
+            <label htmlFor={`${labelId('cells', title)}-count`} className="block text-sm font-medium text-text-tertiary mb-2">Number</label>
             <div className="flex flex-wrap items-center gap-2">
               <Button
           unstyled
@@ -1254,7 +1254,7 @@ export default function InspectionForm({
             </div>
           </div>
           <div role="group" aria-labelledby={`${labelId('cells', title)}-removed`}>
-            <p id={`${labelId('cells', title)}-removed`} className="block text-xs font-medium text-text-tertiary mb-2">Removed all</p>
+            <p id={`${labelId('cells', title)}-removed`} className="block text-sm font-medium text-text-tertiary mb-2">Removed all</p>
             <div className="flex gap-2">
               <Button
           unstyled
@@ -1371,7 +1371,7 @@ export default function InspectionForm({
                 }}
               />
               {weightFromScale && (
-                <p className="mt-1 text-xs text-text-tertiary">
+                <p className="mt-1 text-sm text-text-tertiary">
                   Auto-filled from {weightFromScale.source === 'wolf' ? 'Wolf Waagen' : 'BEEP'} scale
                 </p>
               )}
@@ -1411,7 +1411,7 @@ export default function InspectionForm({
             <div className="space-y-3">
               <div className="flex items-baseline justify-between">
                 <span className="text-sm font-medium text-text-secondary">Frames with Brood per box</span>
-                <span className="text-xs text-text-tertiary">Total: {formData.brood_frames ?? 0}</span>
+                <span className="text-sm text-text-tertiary">Total: {formData.brood_frames ?? 0}</span>
               </div>
               {(formData.brood_frames_per_box ?? []).map(box => (
                 <div key={`box-${box.box}-${box.type}`}>
@@ -1428,7 +1428,7 @@ export default function InspectionForm({
                 && initialData?.brood_frames_per_box == null
                 && initialData?.brood_frames != null
                 && initialData.brood_frames > 0 && (
-                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
                   Per-box detail wasn&apos;t recorded when this inspection was first saved. Box 1 reflects the original total of {initialData.brood_frames}; please adjust if needed.
                 </p>
               )}
@@ -1554,7 +1554,7 @@ export default function InspectionForm({
                     unstyled
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, drones_present: LEVEL_NOT_RECORDED }))}
-                    className="min-h-[44px] w-full px-3 sm:min-h-[36px] sm:w-auto rounded-md border border-border bg-surface-elevated text-xs font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+                    className="min-h-[44px] w-full px-3 sm:min-h-[36px] sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
                   >
                     Clear
                   </Button>
@@ -1571,7 +1571,7 @@ export default function InspectionForm({
                       key={option.value}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, drones_present: option.value }))}
-                      className={`min-h-[44px] sm:min-h-[48px] px-2 rounded-lg font-semibold text-xs sm:text-sm leading-tight whitespace-nowrap transition-all ${
+                      className={`min-h-[44px] sm:min-h-[48px] px-2 rounded-lg font-semibold text-sm leading-tight whitespace-nowrap transition-all ${
                         formData.drones_present === option.value
                           ? 'bg-amber-600 text-white shadow-lg'
                           : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
@@ -1617,7 +1617,7 @@ export default function InspectionForm({
                     unstyled
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, propolis_level: LEVEL_NOT_RECORDED }))}
-                    className="min-h-[44px] w-full px-3 sm:min-h-[36px] sm:w-auto rounded-md border border-border bg-surface-elevated text-xs font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+                    className="min-h-[44px] w-full px-3 sm:min-h-[36px] sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
                   >
                     Clear
                   </Button>
@@ -1634,7 +1634,7 @@ export default function InspectionForm({
                       key={option.value}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, propolis_level: option.value }))}
-                      className={`min-h-[44px] sm:min-h-[48px] px-2 rounded-lg font-semibold text-xs sm:text-sm leading-tight whitespace-nowrap transition-all ${
+                      className={`min-h-[44px] sm:min-h-[48px] px-2 rounded-lg font-semibold text-sm leading-tight whitespace-nowrap transition-all ${
                         formData.propolis_level === option.value
                           ? 'bg-amber-800 text-white shadow-lg'
                           : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
@@ -1661,7 +1661,7 @@ export default function InspectionForm({
           >
             <div className="text-left">
               <h4 className="text-sm font-semibold text-foreground">Given/Taken</h4>
-              <p className="mt-1 text-xs text-text-tertiary">Use minus for taken items and plus for given items.</p>
+              <p className="mt-1 text-sm text-text-tertiary">Use minus for taken items and plus for given items.</p>
             </div>
             {givenTakenExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </Button>
@@ -1686,7 +1686,7 @@ export default function InspectionForm({
                       <label htmlFor={`given-taken-${field.key}`} className="text-sm font-medium text-text-secondary">
                         {field.label}
                       </label>
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${adjustmentStateClasses}`}>
+                      <span className={`rounded-full px-2.5 py-1 text-sm font-semibold ${adjustmentStateClasses}`}>
                         {adjustmentStateLabel}
                       </span>
                     </div>
@@ -1770,7 +1770,7 @@ export default function InspectionForm({
             >
               <div className="text-left">
                 <h4 className="text-sm font-semibold text-foreground">Honey Super Fullness</h4>
-                <p className="mt-1 text-xs text-text-tertiary">Estimate how full each honey super is (0&ndash;100%).</p>
+                <p className="mt-1 text-sm text-text-tertiary">Estimate how full each honey super is (0&ndash;100%).</p>
               </div>
               {superFullnessExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </Button>
@@ -1837,7 +1837,7 @@ export default function InspectionForm({
                   'Varroa'
                 )}
                 <div className="mt-3 space-y-2" role="group" aria-labelledby="varroa-where-seen-label">
-                  <p id="varroa-where-seen-label" className="text-xs font-medium text-text-secondary">Where seen</p>
+                  <p id="varroa-where-seen-label" className="text-sm font-medium text-text-secondary">Where seen</p>
                   <div className="flex flex-wrap gap-2">
                     <label className="flex items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-purple-200 dark:border-purple-800">
                       <input
@@ -1979,7 +1979,7 @@ export default function InspectionForm({
           >
             <div className="text-left">
               <h4 className="text-sm font-semibold text-foreground">Next Visit Plan</h4>
-              <p className="mt-1 text-xs text-text-tertiary">
+              <p className="mt-1 text-sm text-text-tertiary">
                 Optional. Each task is added to your Tasks list, linked to this hive.
                 {followUpDrafts.length > 0 && ` (${followUpDrafts.length} task${followUpDrafts.length === 1 ? '' : 's'} ready)`}
               </p>
@@ -1989,7 +1989,7 @@ export default function InspectionForm({
           {followUpExpanded && (
             <div className="space-y-4 p-4 pt-0">
               {initialData && (
-                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
                   Follow-up tasks already created from this inspection live in your Tasks list. Adding rows here creates new tasks — re-typing existing ones will produce duplicates.
                 </p>
               )}
@@ -2001,20 +2001,20 @@ export default function InspectionForm({
               {followUpDrafts.map((draft, index) => (
                 <div key={index} className="rounded-lg border border-border bg-surface-secondary/40 p-3 space-y-3">
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-xs font-semibold text-text-secondary uppercase tracking-wide">Task {index + 1}</span>
+                    <span className="text-sm font-semibold text-text-secondary uppercase tracking-wide">Task {index + 1}</span>
                     <Button
                       unstyled
                       type="button"
                       onClick={() => removeFollowUpDraft(index)}
                       aria-label={`Remove task ${index + 1}`}
-                      className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center gap-1 text-xs font-medium"
+                      className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center gap-1 text-sm font-medium"
                     >
                       <Trash2 size={14} />
                       Remove
                     </Button>
                   </div>
                   <div>
-                    <label htmlFor={`follow-up-title-${index}`} className="block text-xs font-medium text-text-secondary mb-1">
+                    <label htmlFor={`follow-up-title-${index}`} className="block text-sm font-medium text-text-secondary mb-1">
                       Title <span className="text-red-600 dark:text-red-400">*</span>
                     </label>
                     <input
@@ -2028,7 +2028,7 @@ export default function InspectionForm({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label htmlFor={`follow-up-date-${index}`} className="block text-xs font-medium text-text-secondary mb-1">Due date</label>
+                      <label htmlFor={`follow-up-date-${index}`} className="block text-sm font-medium text-text-secondary mb-1">Due date</label>
                       <input
                         id={`follow-up-date-${index}`}
                         type="date"
@@ -2038,7 +2038,7 @@ export default function InspectionForm({
                       />
                     </div>
                     <div>
-                      <label htmlFor={`follow-up-priority-${index}`} className="block text-xs font-medium text-text-secondary mb-1">Priority</label>
+                      <label htmlFor={`follow-up-priority-${index}`} className="block text-sm font-medium text-text-secondary mb-1">Priority</label>
                       <select
                         id={`follow-up-priority-${index}`}
                         value={draft.priority}
@@ -2053,7 +2053,7 @@ export default function InspectionForm({
                     </div>
                   </div>
                   <div>
-                    <label htmlFor={`follow-up-equipment-${index}`} className="block text-xs font-medium text-text-secondary mb-1">
+                    <label htmlFor={`follow-up-equipment-${index}`} className="block text-sm font-medium text-text-secondary mb-1">
                       Equipment / consumables to bring
                     </label>
                     <input
@@ -2064,10 +2064,10 @@ export default function InspectionForm({
                       placeholder="e.g. oxalic acid, applicator"
                       className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
                     />
-                    <p className="mt-1 text-xs text-text-tertiary">Separate multiple items with a comma.</p>
+                    <p className="mt-1 text-sm text-text-tertiary">Separate multiple items with a comma.</p>
                   </div>
                   <div>
-                    <label htmlFor={`follow-up-description-${index}`} className="block text-xs font-medium text-text-secondary mb-1">Notes</label>
+                    <label htmlFor={`follow-up-description-${index}`} className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
                     <textarea
                       id={`follow-up-description-${index}`}
                       value={draft.description}
