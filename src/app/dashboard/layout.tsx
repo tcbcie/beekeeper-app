@@ -126,7 +126,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       <ChatButton />
-      <BottomNavBar onMoreClick={() => setIsMobileMenuOpen(true)} />
+      <BottomNavBar
+        // Toggles, because the button reports aria-expanded and names itself
+        // "Close menu" while open. A handler that only ever opened would make
+        // both of those claims false.
+        onMoreClick={() => setIsMobileMenuOpen(open => !open)}
+        isMoreOpen={isMobileMenuOpen}
+      />
     </div>
   )
 }

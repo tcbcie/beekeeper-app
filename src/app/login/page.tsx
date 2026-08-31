@@ -219,8 +219,9 @@ function LoginForm() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-text-secondary">Email</label>
+                <label htmlFor="login-email" className="block text-sm font-medium text-text-secondary">Email</label>
                 <input
+                  id="login-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -231,15 +232,16 @@ function LoginForm() {
 
               <div>
                 <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-text-secondary">Password</label>
+                  <label htmlFor="login-password" className="block text-sm font-medium text-text-secondary">Password</label>
                   <Link
                     href="/forgot-password"
-                    className={`text-xs font-medium text-forest-700 hover:text-forest-800 dark:text-forest-300 dark:hover:text-forest-200 ${isSignUp ? 'invisible' : ''}`}
+                    className={`text-sm font-medium text-forest-700 hover:text-forest-800 dark:text-forest-300 dark:hover:text-forest-200 ${isSignUp ? 'invisible' : ''}`}
                   >
                     Forgot Password?
                   </Link>
                 </div>
                 <input
+                  id="login-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -250,8 +252,15 @@ function LoginForm() {
                 />
               </div>
 
-              <div className={`rounded-lg px-3 py-2 text-center text-sm min-h-[32px] ${message ? messageClasses : 'invisible'}`}>
-                {message || '\u00A0'}
+              {/* Kept permanently in the accessibility tree. The previous
+                  `invisible` class is `visibility: hidden`, which removes the
+                  element from that tree, so a live region declared on it would
+                  never announce. min-h-[32px] reserves the space instead. */}
+              <div
+                role="alert"
+                className={`rounded-lg px-3 py-2 text-center text-sm min-h-[32px] ${message ? messageClasses : ''}`}
+              >
+                {message}
               </div>
 
               <div className="grid grid-cols-2 gap-3">

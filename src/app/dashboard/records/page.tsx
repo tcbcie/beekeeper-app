@@ -15,6 +15,7 @@ import TextAreaField from '@/components/ui/TextAreaField'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 import { useToast } from '@/components/ui/Toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters } from '@/hooks/useRecordFilters'
 import { toLocalDateString, toLocalDateTimeInputValue } from '@/lib/date-utils'
@@ -81,6 +82,28 @@ function mapTypeParamToRecordType(typeParam: string | null): RecordType | null {
 export default function RecordsPage() {
   const router = useRouter()
   const toast = useToast()
+  const confirmDialog = useConfirm()
+
+  // Unsaved-inspection protection. The form reports its own dirty state; the
+  // page holds it in a ref so consulting it never triggers a re-render.
+  const inspectionDirtyRef = useRef(false)
+
+  const handleInspectionDirtyChange = useCallback((dirty: boolean) => {
+    inspectionDirtyRef.current = dirty
+  }, [])
+
+  /** Returns true when it is safe to throw away whatever is in the form. */
+  const confirmDiscardInspection = useCallback(async () => {
+    if (!inspectionDirtyRef.current) return true
+    return confirmDialog({
+      title: 'Discard this inspection?',
+      message: 'This inspection has not been saved. If you leave now, everything you have entered will be lost.',
+      confirmLabel: 'Discard',
+      cancelLabel: 'Keep editing',
+      variant: 'warning'
+    })
+  }, [confirmDialog])
+
   const searchParams = useSearchParams()
   const formRef = useRef<HTMLDivElement>(null)
   const hasInitialisedApiaryFilterRef = useRef(false)
@@ -339,7 +362,11 @@ export default function RecordsPage() {
   }, [apiaries, filters.apiaryId, filters.hiveId, searchParams, setApiaryId])
 
   // New record handler - defined before useEffect that uses it
-  const handleNewRecord = useCallback((type: RecordType, presetHiveId?: string) => {
+  // Unguarded. Used by the URL deep-link effect, which runs on page load when
+  // there is nothing open to discard. Keeping it synchronous matters: the
+  // effect calls router.replace() immediately afterwards, and deferring these
+  // state updates behind an await would sequence them after that navigation.
+  const openNewRecord = useCallback((type: RecordType, presetHiveId?: string) => {
     const now = new Date()
     const currentDate = toLocalDateString(now)
     const currentDateTime = toLocalDateTimeInputValue(now)
@@ -424,6 +451,13 @@ export default function RecordsPage() {
     }, 100)
   }, [userId])
 
+  // Guarded. Used by the New Record dropdown, where the user may already have
+  // an inspection in progress that opening another record would destroy.
+  const handleNewRecord = useCallback(async (type: RecordType, presetHiveId?: string) => {
+    if (!(await confirmDiscardInspection())) return
+    openNewRecord(type, presetHiveId)
+  }, [confirmDiscardInspection, openNewRecord])
+
   // Handle URL query parameters
   useEffect(() => {
     const hiveParam = searchParams.get('hive')
@@ -449,7 +483,7 @@ export default function RecordsPage() {
       } else if (mappedType) {
         const validCreateTypes = new Set<RecordType>(['inspection', 'varroa_check', 'varroa_treatment', 'feeding', 'harvest', 'archive'])
         if (validCreateTypes.has(mappedType)) {
-          handleNewRecord(mappedType, hiveParam)
+          openNewRecord(mappedType, hiveParam)
         }
       }
 
@@ -468,11 +502,11 @@ export default function RecordsPage() {
       }
       const validTypes: RecordType[] = ['inspection', 'varroa_check', 'varroa_treatment', 'feeding', 'harvest']
       if (validTypes.includes(createParam as RecordType)) {
-        handleNewRecord(createParam as RecordType)
+        openNewRecord(createParam as RecordType)
       }
       router.replace('/dashboard/records')
     }
-  }, [searchParams, hives, router, userId, setHiveId, setOwnershipFilter, handleNewRecord, setApiaryId, setRecordTypeFilter, setShowArchivedHives])
+  }, [searchParams, hives, router, userId, setHiveId, setOwnershipFilter, openNewRecord, setApiaryId, setRecordTypeFilter, setShowArchivedHives])
 
   useEffect(() => {
     if (!highlightedRecordKey || scrolledRecordKeyRef.current === highlightedRecordKey) return
@@ -820,7 +854,10 @@ export default function RecordsPage() {
     }
   }
 
-  const handleInspectionEdit = (inspection: Inspection) => {
+  const handleInspectionEdit = async (inspection: Inspection) => {
+    // Opening another inspection overwrites the one in the form.
+    if (!(await confirmDiscardInspection())) return
+
     setInspectionDraft(null)
     setEditingInspection(inspection)
     setFormType('inspection')
@@ -1277,7 +1314,9 @@ export default function RecordsPage() {
                 {formType === 'archive' && 'Archive Hive'}
               </h2>
               <IconButton
-                onClick={resetForm}
+                onClick={async () => {
+                  if (await confirmDiscardInspection()) resetForm()
+                }}
                 aria-label="Close form"
               >
                 <X size={20} />
@@ -1300,6 +1339,7 @@ export default function RecordsPage() {
                 onHiveChange={handleHiveChange}
                 onImageClick={handleImageClick}
                 fetchingWeather={fetchingWeather}
+                onDirtyChange={handleInspectionDirtyChange}
               />
             )}
 
