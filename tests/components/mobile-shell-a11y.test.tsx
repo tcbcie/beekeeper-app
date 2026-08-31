@@ -184,3 +184,62 @@ describe('BottomNavBar', () => {
     expect(onMoreClick).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('BottomNavBar layout (Phase 2)', () => {
+  it('shows exactly four destinations plus More', () => {
+    render(<BottomNavBar onMoreClick={vi.fn()} />)
+    expect(screen.getAllByRole('link')).toHaveLength(4)
+    expect(screen.getByRole('button', { name: 'Open menu' })).toBeInTheDocument()
+  })
+
+  it('uses the short label in the bar, not the full one', () => {
+    render(<BottomNavBar onMoreClick={vi.fn()} />)
+    // Full names stay in the drawer and desktop sidebar.
+    expect(screen.getByText('Home')).toBeInTheDocument()
+    expect(screen.getByText('Tasks')).toBeInTheDocument()
+    expect(screen.queryByText('Overview')).not.toBeInTheDocument()
+    expect(screen.queryByText('Tasks & Events')).not.toBeInTheDocument()
+  })
+
+  it('keeps Apiaries out of the bar but in the drawer', () => {
+    const { unmount } = render(<BottomNavBar onMoreClick={vi.fn()} />)
+    expect(screen.queryByText('Apiaries')).not.toBeInTheDocument()
+    unmount()
+
+    render(<MobileDrawer isOpen onClose={vi.fn()} />)
+    expect(screen.getByText('Apiaries')).toBeInTheDocument()
+  })
+
+  it('has no horizontal scroll container', () => {
+    const { container } = render(<BottomNavBar onMoreClick={vi.fn()} />)
+    expect(container.querySelector('.overflow-x-auto')).toBeNull()
+    expect(container.querySelector('.scrollbar-hide')).toBeNull()
+    expect(container.querySelector('.min-w-max')).toBeNull()
+  })
+
+  it('lets every slot shrink, so the row can never overflow the viewport', () => {
+    const { container } = render(<BottomNavBar onMoreClick={vi.fn()} />)
+    const slots = container.querySelectorAll('a[href], button')
+    expect(slots.length).toBe(5)
+    slots.forEach(slot => {
+      // Flex items default to min-width:auto and would otherwise refuse to
+      // shrink below their label, pushing the row into horizontal overflow.
+      expect(slot).toHaveClass('min-w-0')
+      expect(slot).toHaveClass('flex-1')
+    })
+  })
+
+  it('reserves a 48px touch target per slot', () => {
+    const { container } = render(<BottomNavBar onMoreClick={vi.fn()} />)
+    container.querySelectorAll('a[href], button').forEach(slot => {
+      expect(slot).toHaveClass('min-h-[48px]')
+    })
+  })
+
+  it('renders labels at the 14px floor rather than 11px', () => {
+    const { container } = render(<BottomNavBar onMoreClick={vi.fn()} />)
+    expect(screen.getByText('Records')).toHaveClass('text-sm')
+    // Checked as a string: an arbitrary-value class is not a valid selector.
+    expect(container.innerHTML).not.toContain('text-[11px]')
+  })
+})

@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useBottomSurfaceSlot } from '@/contexts/BottomSurfaceContext'
 import { Bell, X, Check } from 'lucide-react'
 import { initializeNotifications } from '@/lib/notifications'
 import Button from '@/components/ui/Button'
@@ -7,7 +8,14 @@ import IconButton from '@/components/ui/IconButton'
 
 export default function NotificationPermissionBanner() {
   const [show, setShow] = useState(false)
+  const [permanentlyDismissed, setPermanentlyDismissed] = useState(false)
   const [permission, setPermission] = useState<NotificationPermission>('default')
+
+  // Read in an effect rather than during render: localStorage is unavailable
+  // on the server and reading it inline risks a hydration mismatch.
+  useEffect(() => {
+    setPermanentlyDismissed(localStorage.getItem('notification-banner-dismissed') === 'true')
+  }, [])
 
   useEffect(() => {
     // Check current notification permission
@@ -51,13 +59,19 @@ export default function NotificationPermissionBanner() {
     }
   }, [])
 
-  // Don't show if permission is already granted or permanently dismissed
-  if (!show || permission === 'granted' || localStorage.getItem('notification-banner-dismissed') === 'true') {
+  // Lowest precedence: yields to an update or an install offer, and waits
+  // while a form is in progress.
+  const mayShow = useBottomSurfaceSlot(
+    'notification',
+    show && permission !== 'granted' && !permanentlyDismissed
+  )
+
+  if (!mayShow) {
     return null
   }
 
   return (
-    <div className="fixed bottom-20 md:bottom-4 right-4 left-4 md:left-auto md:w-96 z-50 animate-slide-up">
+    <div className="fixed above-bottom-nav md:bottom-4 right-4 left-4 md:left-auto md:w-96 z-50 animate-slide-up">
       <div className="bg-gradient-to-r from-amber-500 to-amber-600 dark:from-amber-600 dark:to-amber-700 rounded-lg shadow-2xl p-4 text-white border-2 border-amber-400 dark:border-amber-500">
         <div className="flex items-start gap-3">
           <div className="bg-black/10 p-2 rounded-full flex-shrink-0">

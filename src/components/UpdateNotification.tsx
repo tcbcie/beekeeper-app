@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { updateManager, UpdateState } from '@/lib/update-manager'
 import Button from '@/components/ui/Button'
+import { useBottomSurfaceSlot } from '@/contexts/BottomSurfaceContext'
 
 export default function UpdateNotification() {
   const [updateState, setUpdateState] = useState<UpdateState>({ status: 'no-update' })
@@ -33,13 +34,16 @@ export default function UpdateNotification() {
     setIsVisible(false)
   }
 
-  // Don't render if not visible or no update available
-  if (!isVisible || updateState.status !== 'ready') {
+  // Highest precedence of the three banners, but still deferred while a form
+  // is in progress; the claim is retained so it returns afterwards.
+  const mayShow = useBottomSurfaceSlot('update', isVisible && updateState.status === 'ready')
+
+  if (!mayShow) {
     return null
   }
 
   return (
-    <div className="fixed bottom-20 md:bottom-4 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
+    <div className="fixed above-bottom-nav md:bottom-4 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
       <div className="bg-surface dark:bg-surface-elevated rounded-lg shadow-2xl border-2 border-amber-500 max-w-md mx-4">
         <div className="p-4">
           <div className="flex items-start">

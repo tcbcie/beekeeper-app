@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { X, Download, Smartphone } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
+import { useBottomSurfaceSlot } from '@/contexts/BottomSurfaceContext'
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[]
@@ -99,13 +100,15 @@ export default function InstallPrompt() {
     localStorage.setItem('pwa-install-dismissed', Date.now().toString())
   }, [])
 
-  // Don't render if already installed or no prompt available
-  if (isInstalled || !showBanner) {
+  // Yields to an available update, and waits while a form is in progress.
+  const mayShow = useBottomSurfaceSlot('install', !isInstalled && showBanner)
+
+  if (!mayShow) {
     return null
   }
 
   return (
-    <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-r from-amber-500 to-amber-600 shadow-lg animate-slide-up">
+    <div className="fixed above-bottom-nav md:bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-r from-amber-500 to-amber-600 shadow-lg animate-slide-up">
       <div className="max-w-lg mx-auto flex items-center gap-3">
         <div className="flex-shrink-0 w-12 h-12 bg-black/10 rounded-xl flex items-center justify-center">
           <Smartphone size={24} className="text-white" />
