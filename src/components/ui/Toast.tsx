@@ -75,6 +75,8 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   )
 }
 
+const MAX_VISIBLE_TOASTS = 3
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
 
@@ -86,7 +88,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
     const newToast: Toast = { id, message, type, duration }
 
-    setToasts(prev => [...prev, newToast])
+    // Bounded, so a burst cannot grow past the region reserved for it and
+    // start covering the controls underneath. Oldest are dropped first.
+    setToasts(prev => [...prev, newToast].slice(-MAX_VISIBLE_TOASTS))
 
     if (duration > 0) {
       setTimeout(() => removeToast(id), duration)
@@ -116,7 +120,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       {/* Toast Container */}
       <div
-        className="fixed bottom-20 md:bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"
+        className="fixed above-bottom-nav md:bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"
         aria-label="Notifications"
       >
         {toasts.map(toast => (

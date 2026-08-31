@@ -35,6 +35,13 @@
   /* Border Colors - Light Theme */
   --border-color: #e5e5e5;      /* Subtle gray */
 
+  /* Mobile bottom navigation. 48px row + 8px vertical padding either side,
+     matching BottomNavBar's min-h-[48px] and py-2. Anything fixed near the
+     bottom clears the bar by deriving from --bottom-nav-inset rather than
+     guessing its own offset. */
+  --bottom-nav-height: 4rem;
+  --bottom-nav-inset: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+
   /* Forest Green - Primary (NOT honey yellow) */
   --forest-50: #f0fdf4;
   --forest-100: #dcfce7;
@@ -93,6 +100,13 @@
   --slate-800: #1e293b;
   --slate-900: #0f172a;
   --slate-950: #020617;
+}
+
+/* The bottom bar is hidden from `md` upward, so nothing needs to clear it. */
+@media (min-width: 768px) {
+  :root {
+    --bottom-nav-height: 0rem;
+  }
 }
 
 @theme inline {
@@ -221,6 +235,38 @@ body {
   .min-touch-target {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  /* ============================================
+     One definition of the space the mobile bottom
+     navigation occupies, so every surface that has
+     to clear it agrees on where "above the bar"
+     is.
+
+     Nine fixed surfaces previously carried their
+     own hand-tuned offset (bottom-4, bottom-16,
+     bottom-20, bottom-22) and only the navigation
+     bar accounted for env(safe-area-inset-bottom),
+     so on a device with a larger inset everything
+     else sat too low.
+
+     --bottom-nav-height is the bar's own height;
+     --bottom-nav-inset adds the device inset. The
+     bar is hidden from `md` upward, where the
+     inset collapses to the gutter only.
+     ============================================ */
+     Both are wrapped in :where() so they carry no
+     specificity, matching the .fj-btn convention
+     already used here. A component keeps its own
+     md: override for desktop, where the bar is
+     hidden and --bottom-nav-height collapses to 0.
+     ============================================ */
+  :where(.above-bottom-nav) {
+    bottom: calc(var(--bottom-nav-inset) + 0.5rem);
+  }
+
+  :where(.pb-bottom-nav) {
+    padding-bottom: calc(var(--bottom-nav-inset) + 0.5rem);
   }
 
   .scrollbar-hide {

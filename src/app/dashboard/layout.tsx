@@ -117,7 +117,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
       />
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-20 md:pb-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-bottom-nav md:pb-6">
         <div className="flex gap-4 md:gap-6">
           <Sidebar />
           <main className="flex-1 w-full min-w-0">

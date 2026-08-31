@@ -13,6 +13,13 @@ export type NavFeature = 'crm' | 'logbook'
 export interface NavItem {
   href: string
   label: string
+  /**
+   * Shorter name used only by the mobile bottom bar, where each destination
+   * gets roughly a fifth of the viewport. At 320px that is a 56px label
+   * budget, which "Overview" (61px) and "Tasks & Events" (99px) exceed.
+   * Every other surface renders `label`, so desktop naming is unaffected.
+   */
+  shortLabel?: string
   icon: LucideIcon
   group?: NavGroupId
   pinToBottom?: boolean
@@ -35,13 +42,13 @@ export const navGroups: NavGroup[] = [
 ]
 
 export const baseNavItems: NavItem[] = [
-  { href: '/dashboard', label: 'Overview', icon: Home, bottomNav: true },
-  { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin, group: 'manage', bottomNav: true },
+  { href: '/dashboard', label: 'Overview', shortLabel: 'Home', icon: Home, bottomNav: true },
+  { href: '/dashboard/apiaries', label: 'Apiaries', icon: MapPin, group: 'manage' },
   { href: '/dashboard/hives', label: 'Hives', icon: Archive, group: 'manage', bottomNav: true },
   { href: '/dashboard/queens', label: 'Queens', icon: Crown, group: 'manage' },
   { href: '/dashboard/batches', label: 'Queen Rearing', icon: Egg, group: 'manage' },
   { href: '/dashboard/records', label: 'Records', icon: ClipboardList, group: 'activity', bottomNav: true },
-  { href: '/dashboard/tasks', label: 'Tasks & Events', icon: Calendar, group: 'activity', bottomNav: true },
+  { href: '/dashboard/tasks', label: 'Tasks & Events', shortLabel: 'Tasks', icon: Calendar, group: 'activity', bottomNav: true },
   { href: '/dashboard/crm/customers', label: 'Customers', icon: Contact, group: 'activity', feature: 'crm' },
   { href: '/dashboard/crm/orders', label: 'Orders', icon: ShoppingCart, group: 'activity', feature: 'crm' },
   { href: '/dashboard/crm/insights', label: 'Sales Insights', icon: BarChart3, group: 'activity', feature: 'crm' },

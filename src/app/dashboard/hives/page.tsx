@@ -367,10 +367,13 @@ export default function HivesPage() {
 
  // Reserve space at the bottom so the fixed bulk-action bar never covers the
  // last hive cards (taller reserve on mobile where the bar may wrap to 2 rows).
+ // The md breakpoint matters: the bar now clears the bottom navigation,
+ // which is itself visible until md, so dropping to a smaller reserve at
+ // sm would let the bar cover the last row between 640px and 768px.
  const bulkBarVisible = selectionMode && selectedOwnedHives.length > 0
 
  return (
- <div className={`space-y-6 ${bulkBarVisible ? 'pb-40 sm:pb-24' : ''}`}>
+<div className={`space-y-6 ${bulkBarVisible ? 'pb-40 md:pb-24' : ''}`}>
  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
  <h1 className="text-responsive-3xl font-bold text-foreground">Hives</h1>
  <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-end gap-3 w-full md:w-auto min-w-0">
@@ -508,7 +511,7 @@ export default function HivesPage() {
 
  {/* Floating bulk action bar — shown while hives are selected */}
  {bulkBarVisible && (
- <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-1rem)] sm:w-auto max-w-2xl">
+ <div className="fixed above-bottom-nav md:bottom-4 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-1rem)] sm:w-auto max-w-2xl">
  <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 bg-surface dark:bg-surface-elevated border border-border rounded-xl shadow-xl px-3 py-3 sm:px-4">
  <span className="w-full sm:w-auto text-sm font-semibold text-text-primary text-center sm:text-left">
  {selectedOwnedHives.length} selected

@@ -5,6 +5,7 @@ import { ThemeProvider } from "./providers/theme-provider";
 import { ToastProvider } from "@/components/ui/Toast";
 import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import { BottomSurfaceProvider } from '@/contexts/BottomSurfaceContext'
 import InstallPrompt from "@/components/InstallPrompt";
 import "./globals.css";
 
@@ -76,15 +77,17 @@ export default function RootLayout({
       <body
         className="antialiased"
       >
-        <ThemeProvider>
-          <ToastProvider>
-            <ConfirmProvider>
-              {children}
-            </ConfirmProvider>
-          </ToastProvider>
-        </ThemeProvider>
-        <ServiceWorkerRegistration />
-        <InstallPrompt />
+        <BottomSurfaceProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              <ConfirmProvider>
+                {children}
+              </ConfirmProvider>
+            </ToastProvider>
+          </ThemeProvider>
+          <ServiceWorkerRegistration />
+          <InstallPrompt />
+        </BottomSurfaceProvider>
         <Analytics />
         <SpeedInsights />
       </body>
