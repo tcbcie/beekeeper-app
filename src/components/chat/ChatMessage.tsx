@@ -62,8 +62,8 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       <div
         className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
           isUser
-            ? 'bg-forest-600 dark:bg-forest-500'
-            : 'bg-amber-500 dark:bg-amber-600'
+            ? 'bg-forest-800'
+            : 'bg-amber-800'
         }`}
       >
         {isUser ? (
@@ -77,7 +77,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       <div
         className={`max-w-[80%] rounded-lg px-4 py-2 ${
           isUser
-            ? 'bg-forest-600 dark:bg-forest-700 text-white'
+            ? 'bg-forest-800 text-white'
             : 'bg-surface-secondary text-text-primary'
         }`}
       >

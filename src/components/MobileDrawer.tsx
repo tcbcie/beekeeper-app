@@ -2,8 +2,9 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getUserRole, type UserRole } from '@/lib/auth'
+import { useDialogA11y } from '@/hooks/useDialogA11y'
 import { useCrmEnabled } from '@/hooks/useCrmEnabled'
 import { useLogbookEnabled } from '@/hooks/useLogbookEnabled'
 import IconButton from '@/components/ui/IconButton'
@@ -27,6 +28,9 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
   const { logbookEnabled } = useLogbookEnabled()
   const features = { crm: crmEnabled, logbook: logbookEnabled }
   const [userRole, setUserRole] = useState<UserRole>('User')
+  const drawerRef = useRef<HTMLElement | null>(null)
+
+  useDialogA11y({ isOpen, onClose, containerRef: drawerRef })
 
   useEffect(() => {
     const fetchRole = async () => {
@@ -61,8 +65,11 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
     }
   }, [isOpen])
 
+  const isActiveHref = (href: string) =>
+    href === '/dashboard' ? pathname === href : pathname.startsWith(href)
+
   const linkClasses = (href: string) => {
-    const isActive = href === '/dashboard' ? pathname === href : pathname.startsWith(href)
+    const isActive = isActiveHref(href)
     return `flex items-center gap-4 px-4 py-4 rounded-lg transition-all duration-200 touch-manipulation min-h-[48px] ${
       isActive
         ? 'bg-forest-600 text-white font-medium border-l-2 border-forest-400'
@@ -81,8 +88,19 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
         aria-hidden="true"
       />
 
-      {/* Drawer */}
+      {/* Drawer.
+          `inert` while closed is what keeps the navigation links out of the
+          tab order and the accessibility tree. The panel stays mounted and is
+          only translated off-screen, so without it every link below remains
+          focusable and announceable while the drawer looks shut. */}
       <aside
+        ref={drawerRef}
+        id="mobile-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mobile-drawer-title"
+        inert={!isOpen}
+        tabIndex={-1}
         className={`fixed top-0 left-0 z-[70] h-full w-72 border-r border-border bg-surface/95 backdrop-blur-xl transform transition-transform duration-300 ease-in-out md:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
@@ -90,7 +108,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">
-            <h2 className="text-lg font-semibold text-foreground">Menu</h2>
+            <h2 id="mobile-drawer-title" className="text-lg font-semibold text-foreground">Menu</h2>
             <IconButton
               onClick={onClose}
               className="touch-manipulation min-h-[48px] min-w-[48px] flex items-center justify-center"
@@ -101,11 +119,16 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4">
+          <nav aria-label="Main navigation" className="flex-1 overflow-y-auto p-4">
             {/* Top items (Overview) */}
             <div className="space-y-2">
               {topItems.map(item => (
-                <Link key={item.href} href={item.href} className={linkClasses(item.href)}>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={isActiveHref(item.href) ? 'page' : undefined}
+                  className={linkClasses(item.href)}
+                >
                   <item.icon size={24} />
                   <span className="text-base">{item.label}</span>
                 </Link>
@@ -123,7 +146,12 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
                   </p>
                   <div className="space-y-2 mt-1">
                     {items.map(item => (
-                      <Link key={item.href} href={item.href} className={linkClasses(item.href)}>
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        aria-current={isActiveHref(item.href) ? 'page' : undefined}
+                        className={linkClasses(item.href)}
+                      >
                         <item.icon size={24} />
                         <span className="text-base">{item.label}</span>
                       </Link>
@@ -136,7 +164,12 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             {/* After-group items (Tools) */}
             <div className="space-y-2 mt-4">
               {afterGroupItems.map(item => (
-                <Link key={item.href} href={item.href} className={linkClasses(item.href)}>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={isActiveHref(item.href) ? 'page' : undefined}
+                  className={linkClasses(item.href)}
+                >
                   <item.icon size={24} />
                   <span className="text-base">{item.label}</span>
                 </Link>
@@ -149,7 +182,12 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
             {/* Bottom items (Profile, About) */}
             <div className="space-y-2">
               {bottomItems.map(item => (
-                <Link key={item.href} href={item.href} className={linkClasses(item.href)}>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={isActiveHref(item.href) ? 'page' : undefined}
+                  className={linkClasses(item.href)}
+                >
                   <item.icon size={24} />
                   <span className="text-base">{item.label}</span>
                 </Link>
@@ -157,7 +195,12 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
 
               {/* Admin */}
               {userRole === 'Admin' && adminNavItems.map(item => (
-                <Link key={item.href} href={item.href} className={linkClasses(item.href)}>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={isActiveHref(item.href) ? 'page' : undefined}
+                  className={linkClasses(item.href)}
+                >
                   <item.icon size={24} />
                   <span className="text-base">{item.label}</span>
                 </Link>

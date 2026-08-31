@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Bind the dark: variant to the .dark class set by theme-provider.tsx.
+   Tailwind v4 otherwise defaults dark: to @media (prefers-color-scheme: dark),
+   which reports the operating system setting and ignores the in-app theme
+   control. Without this, dark: utilities follow the OS while .dark-scoped
+   rules and custom properties follow the app, so the two disagree whenever
+   the user's OS and chosen theme differ - including every morning for anyone
+   on the time-based auto theme with a permanently dark OS. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --font-dm-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --font-dm-serif: Georgia, "Times New Roman", Times, serif;
@@ -56,6 +65,8 @@
   --amber-500: #f59e0b;
   --amber-600: #d97706;
   --amber-700: #b45309;
+  --amber-800: #92400e;
+  --amber-900: #78350f;
 
   /* Accent Colors for Actions */
   --accent-primary: #16a34a;        /* Forest-600 */
@@ -126,6 +137,8 @@
   --color-amber-500: var(--amber-500);
   --color-amber-600: var(--amber-600);
   --color-amber-700: var(--amber-700);
+  --color-amber-800: var(--amber-800);
+  --color-amber-900: var(--amber-900);
 
   /* Text colors */
   --color-text-primary: var(--text-primary);
@@ -533,7 +546,7 @@ textarea::placeholder {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-height: 2.5rem;
+    min-height: 3rem;
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
     border: 1px solid transparent;
@@ -546,17 +559,17 @@ textarea::placeholder {
   }
 
   :where(.fj-btn-sm) {
-    min-height: 2.25rem;
+    min-height: 2.75rem;
     padding: 0.375rem 0.75rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
 
   :where(.fj-btn-xs) {
-    min-height: 1.75rem;
+    min-height: 2.75rem;
     padding: 0.125rem 0.5rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
     border-radius: 0.375rem;
   }
 
@@ -586,30 +599,34 @@ textarea::placeholder {
     background: #9333ea;
   }
 
+  /* forest-800. White on forest-600 measured 3.30:1 and failed WCAG AA;
+     forest-800 clears AAA at 7.13:1. */
   :where(.fj-btn-success) {
-    background: #16a34a;
+    background: #166534;
     color: #ffffff;
   }
 
   :where(.fj-btn-success):hover {
-    background: #15803d;
+    background: #14532d;
   }
 
   .dark :where(.fj-btn-success):hover {
-    background: #16a34a;
+    background: #166534;
   }
 
+  /* amber-800. White on amber-600 measured 3.19:1 and failed WCAG AA;
+     amber-800 clears AAA at 7.09:1. */
   :where(.fj-btn-amber) {
-    background: #d97706;
+    background: #92400e;
     color: #ffffff;
   }
 
   :where(.fj-btn-amber):hover {
-    background: #b45309;
+    background: #78350f;
   }
 
   .dark :where(.fj-btn-amber):hover {
-    background: #d97706;
+    background: #92400e;
   }
 
   :where(.fj-btn-danger) {
@@ -629,6 +646,11 @@ textarea::placeholder {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    /* Minimum 44x44px hit area. min-* wins over the explicit width/height
+       on .fj-icon-btn-xs, so the small visual size is preserved while the
+       touch target meets WCAG 2.2 target size. */
+    min-width: 2.75rem;
+    min-height: 2.75rem;
     border-radius: 0.5rem;
     color: var(--text-secondary);
     transition:
@@ -954,6 +976,7 @@ textarea::placeholder {
 
   .fj-control {
     width: 100%;
+    min-height: 3rem;
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     padding: 0.5rem 0.75rem;
@@ -1259,6 +1282,112 @@ textarea::placeholder {
   /* Emerald */
   .text-emerald-600 { color: #065f46; }
   .text-emerald-700 { color: #064e3b; }
+}
+
+/* ============================================
+   White text on saturated brand fills.
+   Measured against white: forest-500 2.28:1,
+   forest-600 3.30:1, amber-500 2.15:1,
+   amber-600 3.19:1 - all fail WCAG AA (4.5:1).
+   Shifted to the -800 shades, which clear AAA
+   (7:1) at 7.13:1 and 7.09:1.
+
+   Only the failing pairing is targeted, so a
+   fill carrying no white text keeps its current
+   appearance. Compound selectors are 0,2,0 and
+   sit outside Tailwind's layers, so they win
+   over the single-class utilities.
+
+   Hover is restated here deliberately: Tailwind's
+   hover:bg-* utilities compile to the same 0,2,0
+   specificity, so without these rules hover
+   feedback would be lost entirely.
+
+   Dark-variant fills are handled in the block
+   that follows, because a dark: class token is
+   a different class name and is never matched
+   by the selectors here.
+   ============================================ */
+.bg-forest-500.text-white,
+.bg-forest-600.text-white {
+  background-color: #166534;
+}
+
+.bg-forest-500.text-white:hover,
+.bg-forest-600.text-white:hover {
+  background-color: #14532d;
+}
+
+.bg-amber-500.text-white,
+.bg-amber-600.text-white {
+  background-color: #92400e;
+}
+
+.bg-amber-500.text-white:hover,
+.bg-amber-600.text-white:hover {
+  background-color: #78350f;
+}
+
+/* ============================================
+   The same correction for dark-variant fills.
+   A dark: utility is a distinct class name, so
+   the selectors above cannot reach it; these
+   pairings would otherwise keep their failing
+   ratios in dark mode while the light theme
+   reported compliant.
+
+   dark:bg-forest-500 is the worst pair in the
+   codebase at 2.28:1 against white, used 25
+   times. dark:bg-amber-500 measures 2.15:1.
+
+   Scoped under .dark so they apply only when the
+   in-app theme is dark, matching the custom
+   variant declared at the top of this file.
+   Specificity is 0,3,0, which beats the compiled
+   utility at 0,1,0.
+   ============================================ */
+.dark .dark\:bg-forest-500.text-white,
+.dark .dark\:bg-forest-600.text-white {
+  background-color: #166534;
+}
+
+.dark .dark\:bg-forest-500.text-white:hover,
+.dark .dark\:bg-forest-600.text-white:hover {
+  background-color: #14532d;
+}
+
+.dark .dark\:bg-amber-500.text-white,
+.dark .dark\:bg-amber-600.text-white {
+  background-color: #92400e;
+}
+
+.dark .dark\:bg-amber-500.text-white:hover,
+.dark .dark\:bg-amber-600.text-white:hover {
+  background-color: #78350f;
+}
+
+/* ============================================
+   Reduced motion.
+   Disables non-essential movement while keeping
+   spinners, which communicate loading state
+   rather than decoration.
+   The source tree contains no transitionend or
+   animationend listeners, so collapsing these
+   durations cannot stall an awaited event.
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *:not(.animate-spin):not(.animate-spin-slow),
+  *:not(.animate-spin):not(.animate-spin-slow)::before,
+  *:not(.animate-spin):not(.animate-spin-slow)::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Print styles for reports */

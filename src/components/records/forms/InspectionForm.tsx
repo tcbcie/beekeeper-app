@@ -9,6 +9,7 @@ import { useImageUpload } from '@/hooks/useImageUpload'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface InspectionFormProps {
   initialData: InspectionFormData | null
@@ -25,6 +26,8 @@ interface InspectionFormProps {
   onHiveChange: (hiveId: string) => Promise<void>
   onImageClick: (url: string) => void
   fetchingWeather?: boolean
+  /** Reports whether the form holds unsaved work, so the parent can guard its own exit paths. */
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 const numberSelectorSelectedClasses = {
@@ -85,6 +88,18 @@ function createGivenTakenDrafts(data: Pick<InspectionFormData, GivenTakenFieldKe
   }, {} as Record<GivenTakenFieldKey, string>)
 }
 
+/**
+ * One string capturing everything the user can type into this form.
+ * Used to tell a pristine form from an edited one.
+ */
+function serialiseFormState(
+  data: InspectionFormData,
+  drafts: Record<GivenTakenFieldKey, string>,
+  followUps: FollowUpTaskDraft[]
+): string {
+  return JSON.stringify([data, drafts, followUps])
+}
+
 function normaliseGivenTakenValues(
   data: InspectionFormData,
   drafts: Record<GivenTakenFieldKey, string>
@@ -127,7 +142,8 @@ export default function InspectionForm({
   onCancel,
   onHiveChange,
   onImageClick,
-  fetchingWeather = false
+  fetchingWeather = false,
+  onDirtyChange
 }: InspectionFormProps) {
   const buildInitialFormData = () => initialData || getDefaultInspectionFormData()
 
@@ -180,6 +196,54 @@ export default function InspectionForm({
   const lastScalePrefillHiveIdRef = useRef<string | null>(null)
   const scaleFetchAbortRef = useRef<AbortController | null>(null)
   const [weightFromScale, setWeightFromScale] = useState<{ kg: number; source: 'beep' | 'wolf' } | null>(null)
+
+  const confirmDialog = useConfirm()
+
+  // ---- Unsaved-changes tracking ------------------------------------------
+  // The comparison deliberately reaches past formData. The photograph is held
+  // in its own state and is not JSON-serialisable, so a formData-only diff
+  // would call a photo-only edit pristine and discard it without warning.
+  // An in-flight voice note counts too, since its transcript has not yet
+  // landed in notes.
+  const pristineSnapshotRef = useRef<string | null>(null)
+  const [isDirty, setIsDirty] = useState(false)
+
+  useEffect(() => {
+    if (pristineSnapshotRef.current === null) {
+      pristineSnapshotRef.current = serialiseFormState(formData, givenTakenDrafts, followUpDrafts)
+    }
+    // Baseline is captured once, from the first committed render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (pristineSnapshotRef.current === null) return
+    const current = serialiseFormState(formData, givenTakenDrafts, followUpDrafts)
+    setIsDirty(
+      current !== pristineSnapshotRef.current ||
+      imageFile !== null ||
+      isVoiceRecording ||
+      voiceProcessing
+    )
+  }, [formData, givenTakenDrafts, followUpDrafts, imageFile, isVoiceRecording, voiceProcessing])
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty)
+  }, [isDirty, onDirtyChange])
+
+  // Clearing on unmount stops a stale flag guarding a form that is already gone.
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange])
+
+  // Browser navigation, refresh and tab close.
+  useEffect(() => {
+    if (!isDirty) return
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', warnBeforeUnload)
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload)
+  }, [isDirty])
 
   // Abort any in-flight voice transcription on unmount so a late response
   // cannot leak the cleaned transcript into a different inspection's notes.
@@ -338,6 +402,12 @@ export default function InspectionForm({
         setSuperFullnessExpanded(false)
         setFollowUpExpanded(false)
         setFollowUpDrafts([])
+        // Re-baseline, or the freshly reset form reads as edited.
+        pristineSnapshotRef.current = serialiseFormState(
+          defaultFormData,
+          createGivenTakenDrafts(defaultFormData),
+          []
+        )
         resetImage()
         voiceAbortRef.current?.abort()
         voiceAbortRef.current = null
@@ -360,6 +430,12 @@ export default function InspectionForm({
     setFormApiaryId(getApiaryIdForHive(initialData.hive_id))
     setFollowUpExpanded(false)
     setFollowUpDrafts([])
+    // Re-baseline against the inspection now being edited.
+    pristineSnapshotRef.current = serialiseFormState(
+      initialData,
+      createGivenTakenDrafts(initialData),
+      []
+    )
 
     // Auto-expand sections that have recorded data so the user sees them immediately
     setDronesExpanded(
@@ -685,7 +761,17 @@ export default function InspectionForm({
     setFollowUpDrafts(prev => prev.filter((_, i) => i !== index))
   }, [])
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
+    if (isDirty) {
+      const discard = await confirmDialog({
+        title: 'Discard this inspection?',
+        message: 'This inspection has not been saved. If you leave now, everything you have entered will be lost.',
+        confirmLabel: 'Discard',
+        cancelLabel: 'Keep editing',
+        variant: 'warning'
+      })
+      if (!discard) return
+    }
     resetImage()
     resetVoiceRecorder()
     setVoiceError(null)
@@ -984,8 +1070,9 @@ export default function InspectionForm({
           <h4 className="text-sm font-semibold text-foreground mb-4">Inspection Details</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
+              <label htmlFor="inspection-apiary" className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
               <select
+                id="inspection-apiary"
                 value={formApiaryId}
                 onChange={(e) => {
                   setFormApiaryId(e.target.value)
@@ -1003,8 +1090,9 @@ export default function InspectionForm({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
+              <label htmlFor="inspection-hive" className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
               <select
+                id="inspection-hive"
                 value={formData.hive_id}
                 onChange={(e) => handleHiveSelect(e.target.value)}
                 className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
@@ -1018,8 +1106,9 @@ export default function InspectionForm({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Date *</label>
+              <label htmlFor="inspection-date" className="block text-sm font-medium text-text-secondary mb-1">Date *</label>
               <input
+                id="inspection-date"
                 type="date"
                 value={formData.inspection_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, inspection_date: e.target.value }))}
@@ -1029,8 +1118,9 @@ export default function InspectionForm({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Time *</label>
+              <label htmlFor="inspection-time" className="block text-sm font-medium text-text-secondary mb-1">Time *</label>
               <input
+                id="inspection-time"
                 type="time"
                 value={formData.inspection_time}
                 onChange={(e) => setFormData(prev => ({ ...prev, inspection_time: e.target.value }))}
@@ -1040,8 +1130,9 @@ export default function InspectionForm({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Weight (kg)</label>
+              <label htmlFor="inspection-weight" className="block text-sm font-medium text-text-secondary mb-1">Weight (kg)</label>
               <input
+                id="inspection-weight"
                 type="number"
                 step="0.1"
                 value={formData.weight ?? ''}
@@ -1572,8 +1663,9 @@ export default function InspectionForm({
 
         {/* Notes Section */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
+          <label htmlFor="inspection-notes" className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
           <textarea
+            id="inspection-notes"
             value={formData.notes}
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
             className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
@@ -1748,7 +1840,7 @@ export default function InspectionForm({
         {/* Image Upload Section */}
         {userHasActiveSubscription && (
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-text-secondary mb-2">Photo (optional)</label>
+            <p className="block text-sm font-medium text-text-secondary mb-2">Photo (optional)</p>
             <div className="flex items-start gap-3">
               {(imagePreview || formData.image_url) && (
                 <div className="relative w-20 h-20 flex-shrink-0 group">
@@ -1782,10 +1874,10 @@ export default function InspectionForm({
               <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all p-4">
                 <div className="flex flex-col items-center justify-center">
                   <Camera size={24} className="text-text-tertiary mb-1" />
-                  <p className="text-xs text-text-tertiary text-center">
+                  <p className="text-sm text-text-tertiary text-center">
                     <span className="font-semibold">Click to upload</span> or drag and drop
                   </p>
-                  <p className="text-xs text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
+                  <p className="text-sm text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
                 </div>
                 <input
                   type="file"

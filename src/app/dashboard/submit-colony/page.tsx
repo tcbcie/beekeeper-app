@@ -394,7 +394,7 @@ export default function SubmitColonyPage() {
                     <Button
                       type="button"
                       onClick={handleRemoveLocationImage}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      className="absolute -top-2 -right-2 flex min-h-[2.75rem] min-w-[2.75rem] items-center justify-center bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                     >
                       <X size={14} />
                     </Button>
@@ -431,7 +431,7 @@ export default function SubmitColonyPage() {
                     <Button
                       type="button"
                       onClick={handleRemoveColonyImage}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      className="absolute -top-2 -right-2 flex min-h-[2.75rem] min-w-[2.75rem] items-center justify-center bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                     >
                       <X size={14} />
                     </Button>

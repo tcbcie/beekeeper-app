@@ -73,6 +73,7 @@ export default function RecordFiltersBar({
         {/* Ownership Filter - Only show for team members */}
         {isTeamMember && (
           <select
+            aria-label="Filter by record ownership"
             value={ownershipFilter}
             onChange={(e) => onOwnershipChange(e.target.value as OwnershipFilter)}
             className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
@@ -85,6 +86,7 @@ export default function RecordFiltersBar({
 
         {/* Record Type Filter */}
         <select
+          aria-label="Filter by record type"
           value={recordTypeFilter}
           onChange={(e) => onRecordTypeChange(e.target.value as RecordType | 'all')}
           className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-forest-400 dark:hover:border-forest-500 focus:border-forest-500 dark:focus:border-forest-400 focus:ring-2 focus:ring-forest-200 dark:focus:ring-forest-800 transition-all"
@@ -100,6 +102,7 @@ export default function RecordFiltersBar({
 
         {/* Apiary Filter */}
         <select
+          aria-label="Filter by apiary"
           value={apiaryId}
           onChange={(e) => {
             onApiaryChange(e.target.value)
@@ -117,6 +120,7 @@ export default function RecordFiltersBar({
 
         {/* Hive Filter */}
         <select
+          aria-label="Filter by hive"
           value={hiveId}
           onChange={(e) => onHiveChange(e.target.value)}
           className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
@@ -199,8 +203,9 @@ export default function RecordFiltersBar({
       {timePeriod === 'custom' && (
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-text-secondary">From:</label>
+            <label htmlFor="records-filter-date-from" className="text-sm text-text-secondary">From:</label>
             <input
+              id="records-filter-date-from"
               type="date"
               value={customStartDate}
               onChange={(e) => onCustomStartDateChange(e.target.value)}
@@ -208,8 +213,9 @@ export default function RecordFiltersBar({
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-text-secondary">To:</label>
+            <label htmlFor="records-filter-date-to" className="text-sm text-text-secondary">To:</label>
             <input
+              id="records-filter-date-to"
               type="date"
               value={customEndDate}
               onChange={(e) => onCustomEndDateChange(e.target.value)}
