@@ -4,12 +4,16 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { ChevronDown, ChevronUp, Camera, X, Mic, Square, Loader2, Plus, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import type { Hive, Apiary, InspectionFormData, FollowUpTaskDraft, FollowUpTaskPriority, BroodBoxFrames, BroodBoxType } from '@/types/records'
-import { getDefaultInspectionFormData, getDefaultFollowUpTaskDraft, LEVEL_NOT_RECORDED } from '@/types/records'
+import { getDefaultInspectionFormData, getDefaultFollowUpTaskDraft, LEVEL_NOT_RECORDED, getLevelLabel } from '@/types/records'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
+import TextInput from '@/components/ui/TextInput'
+import SelectField from '@/components/ui/SelectField'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
+import InspectionStepper, { INSPECTION_STEPS } from './InspectionStepper'
+import { DISCARD_INSPECTION_PROMPT } from '@/lib/inspection-discard'
 
 interface InspectionFormProps {
   initialData: InspectionFormData | null
@@ -53,6 +57,20 @@ const givenTakenFields: Array<{ key: GivenTakenFieldKey; label: string }> = [
   { key: 'store_frames', label: 'Store Frames' },
 ]
 
+/** Renders an ISO date as day/month/year without going via Date, which would
+ *  shift the day in any timezone behind UTC. */
+function formatVisitDate(iso: string): string {
+  const [year, month, day] = iso.split('-')
+  return year && month && day ? `${day}/${month}/${year}` : iso
+}
+
+const YES_NO = (value: boolean) => (value ? 'Yes' : 'No')
+
+/** Slug for a group's labelling id, derived from the label the user can see. */
+function labelId(prefix: string, label: string): string {
+  return `${prefix}-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+}
+
 const INSPECTION_ADJUSTMENT_MIN = -2147483648
 const INSPECTION_ADJUSTMENT_MAX = 2147483647
 
@@ -87,6 +105,15 @@ function createGivenTakenDrafts(data: Pick<InspectionFormData, GivenTakenFieldKe
     return drafts
   }, {} as Record<GivenTakenFieldKey, string>)
 }
+
+interface StepValidationError {
+  step: number
+  fieldId: string
+  message: string
+}
+
+const FIRST_STEP = 1
+const LAST_STEP = INSPECTION_STEPS.length
 
 /**
  * One string capturing everything the user can type into this form.
@@ -197,6 +224,203 @@ export default function InspectionForm({
   const scaleFetchAbortRef = useRef<AbortController | null>(null)
   const [weightFromScale, setWeightFromScale] = useState<{ kg: number; source: 'beep' | 'wolf' } | null>(null)
 
+  // ---- Stepped flow ------------------------------------------------------
+  // Only the visible step changes; every field, effect and handler stays put.
+  // Hive selection alone drives six effects that write into other steps'
+  // fields, and they keep working precisely because state is not moved.
+  const [step, setStep] = useState(FIRST_STEP)
+  // The furthest step reached, so the progress control can offer a direct jump
+  // back without letting the user skip ahead past validation.
+  const [furthestStep, setFurthestStep] = useState(FIRST_STEP)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  const goToStep = useCallback((next: number) => {
+    const clamped = Math.min(Math.max(next, FIRST_STEP), LAST_STEP)
+    setStep(clamped)
+    setFurthestStep(prev => Math.max(prev, clamped))
+    // A step change replaces a screenful of content, so start it at the top
+    // rather than leaving the user part-way down the previous step.
+    // Guarded because scrollIntoView is not universally implemented; an
+    // unguarded call throws and would take the step change down with it,
+    // turning a cosmetic nicety into broken navigation.
+    const heading = stepHeadingRef.current
+    if (typeof heading?.scrollIntoView === 'function') {
+      heading.scrollIntoView({ block: 'start' })
+    }
+  }, [])
+
+  const goToPreviousStep = useCallback(() => goToStep(step - 1), [goToStep, step])
+
+  // ---- Validation --------------------------------------------------------
+  // Native validation cannot carry this flow. The hive, date and time inputs
+  // keep their `required` attributes for semantics, but inactive steps are
+  // unmounted, so by the time the form is submitted from the review step those
+  // fields are absent from the DOM and the browser would check nothing at all.
+  // CSS-hiding them instead would be worse: submission is then blocked by a
+  // validation bubble anchored to something the user cannot see.
+  const validateStep = useCallback((target: number): StepValidationError[] => {
+    if (target !== 1) return []
+
+    const errors: StepValidationError[] = []
+    if (!formData.hive_id) {
+      errors.push({ step: 1, fieldId: 'inspection-hive', message: 'Choose the hive this inspection is for.' })
+    }
+    if (!formData.inspection_date) {
+      errors.push({ step: 1, fieldId: 'inspection-date', message: 'Enter the date of the visit.' })
+    }
+    if (!formData.inspection_time) {
+      errors.push({ step: 1, fieldId: 'inspection-time', message: 'Enter the time of the visit.' })
+    }
+    return errors
+  }, [formData.hive_id, formData.inspection_date, formData.inspection_time])
+
+  const goToNextStep = useCallback(() => {
+    const errors = validateStep(step)
+    if (errors.length > 0) {
+      setFieldErrors(Object.fromEntries(errors.map(error => [error.fieldId, error.message])))
+      // Focus after the error has been rendered, so the field it names exists
+      // and its message is already in the accessibility tree when focus lands.
+      requestAnimationFrame(() => {
+        document.getElementById(errors[0].fieldId)?.focus()
+      })
+      return
+    }
+    setFieldErrors({})
+    goToStep(step + 1)
+  }, [goToStep, step, validateStep])
+
+  // Clear each message as the user fixes the field it belongs to, rather than
+  // leaving stale errors standing until the next attempt to move on.
+  useEffect(() => {
+    setFieldErrors(previous => {
+      const shown = Object.keys(previous)
+      if (shown.length === 0) return previous
+      const stillInvalid = new Set(validateStep(step).map(error => error.fieldId))
+      const remaining = shown.filter(fieldId => stillInvalid.has(fieldId))
+      if (remaining.length === shown.length) return previous
+      return Object.fromEntries(remaining.map(fieldId => [fieldId, previous[fieldId]]))
+    })
+  }, [validateStep, step])
+
+  // ---- Review summary ----------------------------------------------------
+  // Only values the beekeeper actually recorded are listed. A routine
+  // inspection touches a handful of fields, and showing fifty empty rows would
+  // bury the few that matter. The sentinels differ by field: ratings and
+  // disease indicators use 0, the level fields use -1, and honey-super
+  // fullness distinguishes null (never recorded) from 0 (recorded as empty).
+  const reviewGroups = useMemo(() => {
+    const groups: { step: number; title: string; items: { label: string; value: string }[] }[] = []
+    const push = (step: number, title: string, items: ({ label: string; value: string } | null)[]) => {
+      const present = items.filter((item): item is { label: string; value: string } => item !== null)
+      if (present.length > 0) groups.push({ step, title, items: present })
+    }
+
+    const rating = (label: string, value: number) =>
+      value > 0 ? { label, value: `${value} of 5` } : null
+    const level = (label: string, value: number | null) => {
+      const text = getLevelLabel(value)
+      return text ? { label, value: text } : null
+    }
+    const flag = (label: string, value: boolean) => (value ? { label, value: 'Yes' } : null)
+    const count = (label: string, value: number | null) =>
+      value !== null && value !== 0 ? { label, value: String(value) } : null
+
+    const hive = hives.find(candidate => candidate.id === formData.hive_id)
+    const apiary = apiaries.find(candidate => candidate.id === formApiaryId)
+
+    push(1, 'Hive and visit', [
+      { label: 'Hive', value: hive?.hive_number ?? 'Not selected' },
+      apiary ? { label: 'Apiary', value: apiary.name } : null,
+      { label: 'Date', value: formatVisitDate(formData.inspection_date) },
+      { label: 'Time', value: formData.inspection_time },
+      formData.weight !== null ? { label: 'Weight', value: `${formData.weight} kg` } : null,
+    ])
+
+    const cells = [
+      formData.queen_cups ? `Cups: ${formData.queen_cups_number}` : null,
+      formData.swarm_cells ? `Swarm: ${formData.swarm_cells_number}` : null,
+      formData.supercedure_cells ? `Supercedure: ${formData.supercedure_cells_number}` : null,
+      formData.emergency_cells ? `Emergency: ${formData.emergency_cells_number}` : null,
+    ].filter(Boolean)
+
+    const recordedFullness = (formData.honey_super_fullness ?? []).filter(
+      value => value !== null && value !== undefined
+    )
+
+    push(2, 'Queen and colony', [
+      flag('Queen seen', formData.queen_seen),
+      flag('Eggs present', formData.eggs_present),
+      count('Brood frames', formData.brood_frames),
+      count('Right-sized frames', formData.right_sized_frames),
+      rating('Population strength', formData.population_strength),
+      cells.length > 0 ? { label: 'Queen cells', value: cells.join(', ') } : null,
+      recordedFullness.length > 0
+        ? { label: 'Super fullness', value: recordedFullness.map(value => `${value}%`).join(', ') }
+        : null,
+    ])
+
+    const diseases = [
+      ['AFB', formData.afb_disease],
+      ['EFB', formData.efb_disease],
+      ['Chalkbrood', formData.chalkbrood_disease],
+      ['Nosemosis', formData.nosemosis_disease],
+      ['DWV', formData.dwv_disease],
+      ['IAPV/CBPV', formData.iapv_cbpv_disease],
+      ['Varroa', formData.varroa_disease],
+    ]
+      .filter(([, value]) => (value as number) > 0)
+      .map(([label, value]) => `${label} ${value} of 5`)
+
+    push(3, 'Health and behaviour', [
+      rating('Temperament', formData.temperament_rating),
+      rating('Brood pattern', formData.brood_pattern_rating),
+      rating('Swarming tendency', formData.swarming_tendency),
+      rating('Calmness', formData.calmness),
+      level('Drones', formData.drones_present),
+      formData.drone_brood_present !== null
+        ? { label: 'Drone brood', value: YES_NO(formData.drone_brood_present) }
+        : null,
+      level('Propolis', formData.propolis_level),
+      diseases.length > 0 ? { label: 'Disease indicators', value: diseases.join(', ') } : null,
+      rating('Recapping', formData.recapping),
+      rating('VSH', formData.vsh),
+      rating('SMR', formData.smr),
+    ])
+
+    const givenTaken = givenTakenFields
+      .map(field => ({ label: field.label, value: formData[field.key] }))
+      .filter(entry => entry.value !== 0)
+      .map(entry => `${entry.label} ${entry.value > 0 ? '+' : ''}${entry.value}`)
+
+    push(4, 'Notes and follow-up', [
+      givenTaken.length > 0 ? { label: 'Given / taken', value: givenTaken.join(', ') } : null,
+      formData.notes.trim() ? { label: 'Notes', value: formData.notes.trim() } : null,
+      imageFile || formData.image_url ? { label: 'Photograph', value: 'Attached' } : null,
+      followUpDrafts.filter(task => task.title.trim()).length > 0
+        ? {
+            label: 'Follow-up tasks',
+            value: followUpDrafts
+              .filter(task => task.title.trim())
+              .map(task => task.title.trim())
+              .join(', '),
+          }
+        : null,
+    ])
+
+    return groups
+  }, [apiaries, followUpDrafts, formApiaryId, formData, hives, imageFile])
+
+  // Everything still outstanding anywhere in the flow. Checked on the review
+  // step so a user cannot reach the end and meet a Save button that silently
+  // does nothing because step one was never completed.
+  const outstandingErrors = useMemo(() => {
+    const errors: StepValidationError[] = []
+    for (let target = FIRST_STEP; target < LAST_STEP; target += 1) {
+      errors.push(...validateStep(target))
+    }
+    return errors
+  }, [validateStep])
+
   const confirmDialog = useConfirm()
 
   // ---- Unsaved-changes tracking ------------------------------------------
@@ -205,6 +429,7 @@ export default function InspectionForm({
   // would call a photo-only edit pristine and discard it without warning.
   // An in-flight voice note counts too, since its transcript has not yet
   // landed in notes.
+  const stepHeadingRef = useRef<HTMLDivElement | null>(null)
   const pristineSnapshotRef = useRef<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
 
@@ -402,6 +627,10 @@ export default function InspectionForm({
         setSuperFullnessExpanded(false)
         setFollowUpExpanded(false)
         setFollowUpDrafts([])
+        // The form has been replaced underneath the user; leaving them on step 4
+        // of a flow whose contents just changed is disorienting.
+        setStep(FIRST_STEP)
+        setFurthestStep(FIRST_STEP)
         // Re-baseline, or the freshly reset form reads as edited.
         pristineSnapshotRef.current = serialiseFormState(
           defaultFormData,
@@ -430,6 +659,8 @@ export default function InspectionForm({
     setFormApiaryId(getApiaryIdForHive(initialData.hive_id))
     setFollowUpExpanded(false)
     setFollowUpDrafts([])
+    setStep(FIRST_STEP)
+    setFurthestStep(FIRST_STEP)
     // Re-baseline against the inspection now being edited.
     pristineSnapshotRef.current = serialiseFormState(
       initialData,
@@ -726,6 +957,30 @@ export default function InspectionForm({
       return
     }
 
+    // Pressing Enter in a text field submits a form implicitly. Before this
+    // flow was stepped that was a useful shortcut. Now it would save straight
+    // from step one, skipping every remaining step and the review the flow
+    // exists to provide - a beekeeper typing a weight and pressing Enter would
+    // silently file a nearly empty inspection. Enter therefore advances,
+    // which is what the key means in a stepped flow, and only the review step
+    // can actually submit.
+    if (step !== LAST_STEP) {
+      goToNextStep()
+      return
+    }
+
+    // The button is disabled while anything is outstanding, but a form can be
+    // submitted by other means; an incomplete inspection must never be written.
+    const outstanding = outstandingErrors
+    if (outstanding.length > 0) {
+      setStep(outstanding[0].step)
+      setFieldErrors(Object.fromEntries(outstanding.map(error => [error.fieldId, error.message])))
+      requestAnimationFrame(() => {
+        document.getElementById(outstanding[0].fieldId)?.focus()
+      })
+      return
+    }
+
     const submitData = normaliseGivenTakenValues(formData, givenTakenDrafts)
     setFormData(submitData)
     setGivenTakenDrafts(createGivenTakenDrafts(submitData))
@@ -763,13 +1018,7 @@ export default function InspectionForm({
 
   const handleCancel = async () => {
     if (isDirty) {
-      const discard = await confirmDialog({
-        title: 'Discard this inspection?',
-        message: 'This inspection has not been saved. If you leave now, everything you have entered will be lost.',
-        confirmLabel: 'Discard',
-        cancelLabel: 'Keep editing',
-        variant: 'warning'
-      })
+      const discard = await confirmDialog(DISCARD_INSPECTION_PROMPT)
       if (!discard) return
     }
     resetImage()
@@ -855,9 +1104,9 @@ export default function InspectionForm({
 
   // Render star rating component
   const renderStarRating = useCallback((value: number, onChange: (val: number) => void, label: string) => (
-    <div>
+    <div role="group" aria-labelledby={labelId('rating', label)}>
       <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <label className="text-sm font-medium text-text-secondary sm:pr-2">{label}</label>
+        <p id={labelId('rating', label)} className="text-sm font-medium text-text-secondary sm:pr-2">{label}</p>
         <Button
           unstyled
           type="button"
@@ -893,10 +1142,10 @@ export default function InspectionForm({
   // Render number selector (1..max). `max` comes from the hive's per-box frame
   // count so the picker can extend beyond the historical 1-10 range.
   const renderNumberSelector = useCallback((value: number | null, onChange: (val: number | null) => void, label: string, color: NumberSelectorTheme = 'purple', max: number = 10) => (
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-text-secondary mb-3">
+    <div className="mb-4" role="group" aria-labelledby={labelId('count', label)}>
+      <p id={labelId('count', label)} className="block text-sm font-medium text-text-secondary mb-3">
         {label} {value !== null ? `(${value})` : ''}
-      </label>
+      </p>
       <div className="flex flex-wrap gap-2">
         {Array.from({ length: Math.max(1, max) }, (_, i) => i + 1).map((num) => (
           <Button
@@ -939,9 +1188,9 @@ export default function InspectionForm({
     removedAll: boolean,
     onRemovedAllChange: (val: boolean) => void
   ) => (
-    <div className="bg-surface-secondary p-3 rounded-lg">
+    <div className="bg-surface-secondary p-3 rounded-lg" role="group" aria-labelledby={labelId('cells', title)}>
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-        <label className="text-sm font-medium leading-tight text-text-secondary">{title}</label>
+        <p id={labelId('cells', title)} className="text-sm font-medium leading-tight text-text-secondary">{title}</p>
         <div className="grid w-full grid-cols-2 gap-2 sm:ml-auto sm:flex sm:w-auto">
           <Button
           unstyled
@@ -976,7 +1225,7 @@ export default function InspectionForm({
       {present && (
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
+            <label htmlFor={`${labelId('cells', title)}-count`} className="block text-xs font-medium text-text-tertiary mb-2">Number</label>
             <div className="flex flex-wrap items-center gap-2">
               <Button
           unstyled
@@ -987,6 +1236,7 @@ export default function InspectionForm({
                 -
               </Button>
               <input
+                id={`${labelId('cells', title)}-count`}
                 type="number"
                 value={count}
                 onChange={(e) => onCountChange(parseInt(e.target.value) || 0)}
@@ -1003,8 +1253,8 @@ export default function InspectionForm({
               </Button>
             </div>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-text-tertiary mb-2">Removed all</label>
+          <div role="group" aria-labelledby={`${labelId('cells', title)}-removed`}>
+            <p id={`${labelId('cells', title)}-removed`} className="block text-xs font-medium text-text-tertiary mb-2">Removed all</p>
             <div className="flex gap-2">
               <Button
           unstyled
@@ -1038,112 +1288,87 @@ export default function InspectionForm({
   ), [])
 
   return (
-    <div className="bg-surface rounded-lg shadow border border-border p-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-        <h3 className="text-xl font-semibold text-foreground">
-          {initialData?.hive_id ? 'Edit Inspection' : 'Record New Inspection'}
-        </h3>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <Button
-          unstyled
-            type="submit"
-            form="inspection-form"
-            disabled={submitting || fetchingWeather}
-            className="px-6 py-3 sm:py-2 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 disabled:bg-surface-secondary disabled:cursor-not-allowed transition-all touch-manipulation font-medium"
-          >
-            {submitting ? 'Saving...' : fetchingWeather ? 'Fetching Weather...' : initialData?.hive_id ? 'Update' : 'Save'} Inspection
-          </Button>
-          <Button
-          unstyled
-            type="button"
-            onClick={handleCancel}
-            className="px-6 py-3 sm:py-2 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated touch-manipulation font-medium"
-          >
-            Cancel
-          </Button>
-        </div>
+    <div>
+      <div ref={stepHeadingRef}>
+      <InspectionStepper
+        steps={INSPECTION_STEPS}
+        current={step}
+        furthest={furthestStep}
+        onSelect={goToStep}
+      />
       </div>
 
       <form id="inspection-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Inspection Details Section */}
+        {step === 1 && (
         <div className="md:col-span-2 p-4 rounded-lg border border-border">
           <h4 className="text-sm font-semibold text-foreground mb-4">Inspection Details</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="inspection-apiary" className="block text-sm font-medium text-text-secondary mb-1">Apiary</label>
-              <select
-                id="inspection-apiary"
-                value={formApiaryId}
-                onChange={(e) => {
-                  setFormApiaryId(e.target.value)
-                  setFormData(prev => ({ ...prev, hive_id: '' }))
-                }}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
-              >
-                <option value="">All Apiaries</option>
-                {apiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>
-                    {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SelectField
+              label="Apiary"
+              id="inspection-apiary"
+              value={formApiaryId}
+              onChange={(e) => {
+                setFormApiaryId(e.target.value)
+                setFormData(prev => ({ ...prev, hive_id: '' }))
+              }}
+            >
+              <option value="">All Apiaries</option>
+              {apiaries.map((apiary) => (
+                <option key={apiary.id} value={apiary.id}>
+                  {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
+                </option>
+              ))}
+            </SelectField>
+
+            <SelectField
+              label="Hive"
+              id="inspection-hive"
+              required
+              error={fieldErrors['inspection-hive']}
+              value={formData.hive_id}
+              onChange={(e) => handleHiveSelect(e.target.value)}
+            >
+              <option value="">Select hive</option>
+              {filteredHives.map((h) => (
+                <option key={h.id} value={h.id}>{h.hive_number}</option>
+              ))}
+            </SelectField>
+
+            <TextInput
+              label="Date"
+              id="inspection-date"
+              type="date"
+              required
+              error={fieldErrors['inspection-date']}
+              value={formData.inspection_date}
+              onChange={(e) => setFormData(prev => ({ ...prev, inspection_date: e.target.value }))}
+            />
+
+            <TextInput
+              label="Time"
+              id="inspection-time"
+              type="time"
+              required
+              error={fieldErrors['inspection-time']}
+              value={formData.inspection_time}
+              onChange={(e) => setFormData(prev => ({ ...prev, inspection_time: e.target.value }))}
+            />
 
             <div>
-              <label htmlFor="inspection-hive" className="block text-sm font-medium text-text-secondary mb-1">Hive *</label>
-              <select
-                id="inspection-hive"
-                value={formData.hive_id}
-                onChange={(e) => handleHiveSelect(e.target.value)}
-                className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
-                required
-              >
-                <option value="">Select hive</option>
-                {filteredHives.map((h) => (
-                  <option key={h.id} value={h.id}>{h.hive_number}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="inspection-date" className="block text-sm font-medium text-text-secondary mb-1">Date *</label>
-              <input
-                id="inspection-date"
-                type="date"
-                value={formData.inspection_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, inspection_date: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="inspection-time" className="block text-sm font-medium text-text-secondary mb-1">Time *</label>
-              <input
-                id="inspection-time"
-                type="time"
-                value={formData.inspection_time}
-                onChange={(e) => setFormData(prev => ({ ...prev, inspection_time: e.target.value }))}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="inspection-weight" className="block text-sm font-medium text-text-secondary mb-1">Weight (kg)</label>
-              <input
+              <TextInput
+                label="Weight (kg)"
                 id="inspection-weight"
                 type="number"
                 step="0.1"
+                placeholder="Optional"
                 value={formData.weight ?? ''}
                 onChange={(e) => {
                   const next = e.target.value ? parseFloat(e.target.value) : null
-                  // User typed → drop the auto-fill marker.
+                  // User typed -> drop the auto-fill marker.
                   if (weightFromScale && next !== weightFromScale.kg) setWeightFromScale(null)
                   setFormData(prev => ({ ...prev, weight: next }))
                 }}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
-                placeholder="Optional"
               />
               {weightFromScale && (
                 <p className="mt-1 text-xs text-text-tertiary">
@@ -1153,8 +1378,10 @@ export default function InspectionForm({
             </div>
           </div>
         </div>
+        )}
 
         {/* Queen & Brood Section */}
+        {step === 2 && (
         <div className="md:col-span-2 p-4 rounded-lg border border-border">
           <h4 className="text-sm font-semibold text-foreground mb-4">Queen & Brood</h4>
 
@@ -1278,20 +1505,36 @@ export default function InspectionForm({
             )}
           </div>
         </div>
+        )}
+
+        {/* Colony Strength - population strength describes colony state, so it
+            sits with the queen and brood rather than with behaviour. The grid
+            classes are kept identical: this row was fixed once for wrapping on
+            narrow screens and must stay wrap-safe inside a step container. */}
+        {step === 2 && (
+        <div className="md:col-span-2 p-4 rounded-lg border border-border">
+          <h4 className="text-sm font-semibold text-foreground mb-4">Colony Strength</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {renderStarRating(formData.population_strength, (val) => setFormData(prev => ({ ...prev, population_strength: val })), 'Population Strength')}
+          </div>
+        </div>
+        )}
 
         {/* Behaviour Section */}
+        {step === 3 && (
         <div className="md:col-span-2 p-4 rounded-lg border border-border">
           <h4 className="text-sm font-semibold text-foreground mb-4">Behaviour Ratings</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {renderStarRating(formData.population_strength, (val) => setFormData(prev => ({ ...prev, population_strength: val })), 'Population Strength')}
             {renderStarRating(formData.temperament_rating, (val) => setFormData(prev => ({ ...prev, temperament_rating: val })), 'Temperament')}
             {renderStarRating(formData.brood_pattern_rating, (val) => setFormData(prev => ({ ...prev, brood_pattern_rating: val })), 'Brood Pattern')}
             {renderStarRating(formData.swarming_tendency, (val) => setFormData(prev => ({ ...prev, swarming_tendency: val })), 'Swarming Tendency')}
             {renderStarRating(formData.calmness, (val) => setFormData(prev => ({ ...prev, calmness: val })), 'Calmness')}
           </div>
         </div>
+        )}
 
         {/* Drones Section - Collapsible */}
+        {step === 3 && (
         <div className="md:col-span-2 rounded-lg border border-border">
           <Button
           unstyled
@@ -1306,7 +1549,7 @@ export default function InspectionForm({
             <div className="p-4 pt-0 space-y-4">
               <div>
                 <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <label className="text-sm font-medium text-text-secondary">Drone Population Level</label>
+                  <p id="drone-level" className="text-sm font-medium text-text-secondary">Drone Population Level</p>
                   <Button
                     unstyled
                     type="button"
@@ -1316,7 +1559,7 @@ export default function InspectionForm({
                     Clear
                   </Button>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" role="group" aria-labelledby="drone-level">
                   {[
                     { value: 0, label: 'Low' },
                     { value: 1, label: 'Medium' },
@@ -1351,8 +1594,10 @@ export default function InspectionForm({
             </div>
           )}
         </div>
+        )}
 
         {/* Propolis Section - Collapsible */}
+        {step === 3 && (
         <div className="md:col-span-2 rounded-lg border border-border">
           <Button
           unstyled
@@ -1367,7 +1612,7 @@ export default function InspectionForm({
             <div className="p-4 pt-0 space-y-4">
               <div>
                 <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <label className="text-sm font-medium text-text-secondary">Propolis Level</label>
+                  <p id="propolis-level" className="text-sm font-medium text-text-secondary">Propolis Level</p>
                   <Button
                     unstyled
                     type="button"
@@ -1377,7 +1622,7 @@ export default function InspectionForm({
                     Clear
                   </Button>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" role="group" aria-labelledby="propolis-level">
                   {[
                     { value: 0, label: 'Low' },
                     { value: 1, label: 'Medium' },
@@ -1403,8 +1648,10 @@ export default function InspectionForm({
             </div>
           )}
         </div>
+        )}
 
         {/* Given/Taken Section - Collapsible */}
+        {step === 4 && (
         <div className="md:col-span-2 rounded-lg border border-border">
           <Button
           unstyled
@@ -1510,9 +1757,10 @@ export default function InspectionForm({
             </div>
           )}
         </div>
+        )}
 
         {/* Honey Super Fullness Section - Collapsible (only when the hive has supers) */}
-        {honeySuperSliderCount > 0 && (
+        {step === 2 && honeySuperSliderCount > 0 && (
           <div className="md:col-span-2 rounded-lg border border-border">
             <Button
               unstyled
@@ -1560,6 +1808,7 @@ export default function InspectionForm({
         )}
 
         {/* Disease Section - Collapsible */}
+        {step === 3 && (
         <div className="md:col-span-2 rounded-lg border border-border">
           <Button
           unstyled
@@ -1640,8 +1889,10 @@ export default function InspectionForm({
             </div>
           )}
         </div>
+        )}
 
         {/* Hygienic Behaviour Section - Collapsible */}
+        {step === 3 && (
         <div className="md:col-span-2 rounded-lg border border-border">
           <Button
           unstyled
@@ -1660,8 +1911,10 @@ export default function InspectionForm({
             </div>
           )}
         </div>
+        )}
 
         {/* Notes Section */}
+        {step === 4 && (
         <div className="md:col-span-2">
           <label htmlFor="inspection-notes" className="block text-sm font-medium text-text-secondary mb-1">Notes</label>
           <textarea
@@ -1713,8 +1966,10 @@ export default function InspectionForm({
             </div>
           )}
         </div>
+        )}
 
         {/* Next Visit Plan - Collapsible */}
+        {step === 4 && (
         <div className="md:col-span-2 rounded-lg border border-border">
           <Button
             unstyled
@@ -1836,9 +2091,10 @@ export default function InspectionForm({
             </div>
           )}
         </div>
+        )}
 
         {/* Image Upload Section */}
-        {userHasActiveSubscription && (
+        {step === 4 && userHasActiveSubscription && (
           <div className="md:col-span-2">
             <p className="block text-sm font-medium text-text-secondary mb-2">Photo (optional)</p>
             <div className="flex items-start gap-3">
@@ -1890,21 +2146,104 @@ export default function InspectionForm({
           </div>
         )}
 
-        {/* Bottom Save/Cancel Buttons - mirror of top for long forms */}
+        {/* Review. Deliberately a preview of unsaved work: nothing has been
+            written until Save is pressed on this step. */}
+        {step === LAST_STEP && (
+        <div className="md:col-span-2 space-y-4">
+          <p className="text-sm text-text-secondary">
+            Check the details below, then save. Nothing has been recorded yet.
+          </p>
+
+          {outstandingErrors.length > 0 && (
+            <div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-900 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+              <p className="font-medium">This inspection is not ready to save.</p>
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                {outstandingErrors.map(error => (
+                  <li key={error.fieldId}>{error.message}</li>
+                ))}
+              </ul>
+              <Button
+                unstyled
+                type="button"
+                onClick={() => goToStep(outstandingErrors[0].step)}
+                className="mt-3 min-h-[44px] rounded-lg border border-red-300 px-4 py-2 font-medium text-red-900 hover:bg-red-100 dark:border-red-700 dark:text-red-200 dark:hover:bg-red-900/40"
+              >
+                Go to step {outstandingErrors[0].step}
+              </Button>
+            </div>
+          )}
+
+          {reviewGroups.map(group => (
+            <div key={group.step} className="rounded-lg border border-border p-4">
+              <div className="mb-3 flex items-baseline justify-between gap-3">
+                <h4 className="text-sm font-semibold text-foreground">{group.title}</h4>
+                <Button
+                  unstyled
+                  type="button"
+                  onClick={() => goToStep(group.step)}
+                  className="min-h-[44px] rounded-md px-3 py-1 text-sm font-medium text-forest-800 underline hover:bg-surface-secondary dark:text-forest-300"
+                >
+                  Edit
+                </Button>
+              </div>
+              <dl className="space-y-2">
+                {group.items.map(item => (
+                  <div key={item.label} className="flex flex-col gap-0.5 sm:flex-row sm:gap-3">
+                    <dt className="text-sm text-text-secondary sm:w-44 sm:flex-shrink-0">{item.label}</dt>
+                    <dd className="text-sm text-foreground break-words">{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ))}
+
+          {reviewGroups.length <= 1 && (
+            <p className="text-sm text-text-muted">
+              Only the visit details have been recorded. That is enough to save an inspection.
+            </p>
+          )}
+        </div>
+        )}
+
+        {/* Step navigation. Save is deliberately reachable only from the review
+            step, so the flow always ends with the user seeing what is about to
+            be written. All controls are 48px. */}
         <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 pt-2 border-t border-border">
           <Button
           unstyled
-            type="submit"
-            disabled={submitting || fetchingWeather}
-            className="px-6 py-3 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 disabled:bg-surface-secondary disabled:cursor-not-allowed transition-all touch-manipulation font-medium w-full sm:w-auto"
+            type="button"
+            onClick={goToPreviousStep}
+            disabled={step === 1}
+            className="px-6 py-3 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation font-medium w-full sm:w-auto"
           >
-            {submitting ? 'Saving...' : fetchingWeather ? 'Fetching Weather...' : initialData?.hive_id ? 'Update' : 'Save'} Inspection
+            Previous
           </Button>
+
+          {step < LAST_STEP ? (
+            <Button
+            unstyled
+              type="button"
+              onClick={goToNextStep}
+              className="px-6 py-3 min-h-[48px] bg-forest-800 text-white rounded-lg hover:bg-forest-900 active:bg-forest-900 transition-all touch-manipulation font-medium w-full sm:w-auto"
+            >
+              Next
+            </Button>
+          ) : (
+            <Button
+            unstyled
+              type="submit"
+              disabled={submitting || fetchingWeather || outstandingErrors.length > 0}
+              className="px-6 py-3 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 disabled:bg-surface-secondary disabled:cursor-not-allowed transition-all touch-manipulation font-medium w-full sm:w-auto"
+            >
+              {submitting ? 'Saving...' : fetchingWeather ? 'Fetching Weather...' : isEditing ? 'Update' : 'Save'} Inspection
+            </Button>
+          )}
+
           <Button
           unstyled
             type="button"
             onClick={handleCancel}
-            className="px-6 py-3 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated touch-manipulation font-medium w-full sm:w-auto"
+            className="px-6 py-3 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated touch-manipulation font-medium w-full sm:w-auto sm:ml-auto"
           >
             Cancel
           </Button>
