@@ -97,6 +97,17 @@ function renderForm(overrides: Partial<React.ComponentProps<typeof InspectionFor
   return { onCancel, onDirtyChange }
 }
 
+/**
+ * Edits a field that is visible when the form opens.
+ *
+ * The flow is stepped, so Notes now lives on step four. These tests are about
+ * dirty tracking rather than any particular field, so they use the weight input
+ * from step one and stay independent of where fields are grouped.
+ */
+function editAFieldOnTheOpeningStep() {
+  fireEvent.change(screen.getByLabelText('Weight (kg)'), { target: { value: '17.5' } })
+}
+
 function clickCancel() {
   fireEvent.click(screen.getAllByRole('button', { name: /cancel/i })[0])
 }
@@ -127,17 +138,13 @@ describe('pristine form', () => {
 describe('edited form', () => {
   it('reports itself as dirty once a field changes', async () => {
     const { onDirtyChange } = renderForm()
-    fireEvent.change(screen.getByLabelText('Notes'), {
-      target: { value: 'Colony looked strong' },
-    })
+    editAFieldOnTheOpeningStep()
     await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(true))
   })
 
   it('asks before discarding', async () => {
     const { onCancel } = renderForm()
-    fireEvent.change(screen.getByLabelText('Notes'), {
-      target: { value: 'Colony looked strong' },
-    })
+    editAFieldOnTheOpeningStep()
     clickCancel()
     await waitFor(() => expect(confirmSpy).toHaveBeenCalledTimes(1))
     await waitFor(() => expect(onCancel).toHaveBeenCalledTimes(1))
@@ -146,9 +153,7 @@ describe('edited form', () => {
   it('keeps the work when the user declines', async () => {
     confirmSpy.mockImplementation(async () => false)
     const { onCancel } = renderForm()
-    fireEvent.change(screen.getByLabelText('Notes'), {
-      target: { value: 'Colony looked strong' },
-    })
+    editAFieldOnTheOpeningStep()
     clickCancel()
     await waitFor(() => expect(confirmSpy).toHaveBeenCalledTimes(1))
     expect(onCancel).not.toHaveBeenCalled()

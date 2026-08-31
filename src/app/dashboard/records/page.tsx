@@ -17,6 +17,8 @@ import IconButton from '@/components/ui/IconButton'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { useReportFormActive } from '@/contexts/BottomSurfaceContext'
+import { DISCARD_INSPECTION_PROMPT } from '@/lib/inspection-discard'
+import { useNavigationGuard } from '@/hooks/useNavigationGuard'
 import { updateManager } from '@/lib/update-manager'
 import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters } from '@/hooks/useRecordFilters'
@@ -119,14 +121,13 @@ export default function RecordsPage() {
   /** Returns true when it is safe to throw away whatever is in the form. */
   const confirmDiscardInspection = useCallback(async () => {
     if (!inspectionDirtyRef.current) return true
-    return confirmDialog({
-      title: 'Discard this inspection?',
-      message: 'This inspection has not been saved. If you leave now, everything you have entered will be lost.',
-      confirmLabel: 'Discard',
-      cancelLabel: 'Keep editing',
-      variant: 'warning'
-    })
+    return confirmDialog(DISCARD_INSPECTION_PROMPT)
   }, [confirmDialog])
+
+  // The last of Phase 1's six exit paths. An in-app link now asks before it
+  // navigates away from a part-finished inspection, using the same wording as
+  // every other discard prompt.
+  useNavigationGuard(inspectionDirty, confirmDiscardInspection)
 
   const searchParams = useSearchParams()
   const formRef = useRef<HTMLDivElement>(null)
