@@ -16,6 +16,8 @@ import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { useReportFormActive } from '@/contexts/BottomSurfaceContext'
+import { updateManager } from '@/lib/update-manager'
 import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters } from '@/hooks/useRecordFilters'
 import { toLocalDateString, toLocalDateTimeInputValue } from '@/lib/date-utils'
@@ -87,10 +89,32 @@ export default function RecordsPage() {
   // Unsaved-inspection protection. The form reports its own dirty state; the
   // page holds it in a ref so consulting it never triggers a re-render.
   const inspectionDirtyRef = useRef(false)
+  // Mirrored into state as well as the ref: the ref keeps the exit guards free
+  // of re-renders, while the shell needs a rendered value to mute Mel and hold
+  // back banners. It flips at most twice in a form's lifetime.
+  const [inspectionDirty, setInspectionDirty] = useState(false)
 
   const handleInspectionDirtyChange = useCallback((dirty: boolean) => {
     inspectionDirtyRef.current = dirty
+    setInspectionDirty(dirty)
   }, [])
+
+  // Nothing interruptive may take the bottom of the screen while an inspection
+  // is part-finished. Deferred banners return once it is saved or discarded.
+  useReportFormActive(inspectionDirty)
+
+  // A service-worker update reloads every open client, including ones that
+  // never showed the prompt. Reading the ref rather than the state keeps the
+  // guard current without re-registering on each change.
+  useEffect(() => {
+    return updateManager.registerUnsavedWorkGuard(() => inspectionDirtyRef.current)
+  }, [])
+
+  // A guard falling quiet is not observable on its own, so the moment the work
+  // stops being at risk we ask the manager to run any reload it held back.
+  useEffect(() => {
+    if (!inspectionDirty) updateManager.flushPendingReload()
+  }, [inspectionDirty])
 
   /** Returns true when it is safe to throw away whatever is in the form. */
   const confirmDiscardInspection = useCallback(async () => {

@@ -12,6 +12,10 @@ export interface UpdateState {
 
 export type UpdateListener = (state: UpdateState) => void
 
+const UPDATE_DISMISSED_KEY = 'pwa-update-dismissed'
+/** Short by design: an update may carry a fix the user needs. */
+const UPDATE_DISMISSED_COOLDOWN_MS = 60 * 60 * 1000
+
 class UpdateManager {
   private registration: ServiceWorkerRegistration | null = null
   private listeners: Set<UpdateListener> = new Set()
@@ -22,6 +26,10 @@ class UpdateManager {
   private noUpdateTimeout: ReturnType<typeof setTimeout> | null = null
   private visibilityHandler: (() => void) | null = null
   private controllerChangeHandler: (() => void) | null = null
+  /** Predicates that veto a reload while they report unsaved work. */
+  private unsavedWorkGuards: Set<() => boolean> = new Set()
+  /** A reload that arrived while work was at risk, waiting to be run. */
+  private reloadPending = false
 
   /**
    * Initialize the update manager with service worker registration
@@ -31,10 +39,17 @@ class UpdateManager {
     this.initialized = true
     this.registration = registration
 
-    // Check for waiting service worker (update already downloaded)
+    // Check for waiting service worker (update already downloaded).
+    // The reference is kept either way so an explicit check can still apply it,
+    // but a recent dismissal suppresses the prompt. This is the exact path that
+    // made "Later" meaningless: the worker is still waiting after a reload, so
+    // the prompt reappeared immediately. A genuinely new update arrives through
+    // the updatefound listener below and is not suppressed.
     if (registration.waiting) {
       this.waitingWorker = registration.waiting
-      this.updateState({ status: 'ready' })
+      if (!this.isDismissalActive()) {
+        this.updateState({ status: 'ready' })
+      }
     }
 
     // Listen for new service worker installing
@@ -53,8 +68,21 @@ class UpdateManager {
       })
     })
 
-    // Listen for controller change (new service worker activated)
+    // Listen for controller change (new service worker activated).
+    //
+    // This fires in EVERY open client, not just the one that pressed Update,
+    // because the service worker calls clients.claim() on activate. A second
+    // tab holding a half-finished inspection would therefore be reloaded
+    // without ever having seen the prompt. The guard has to live here, in the
+    // handler every client runs, rather than on the Update button.
+    //
+    // The reload is not cancelled, only deferred: once the work is saved or
+    // discarded, hasUnsavedWork() returns false and the pending reload runs.
     this.controllerChangeHandler = () => {
+      if (this.hasUnsavedWork()) {
+        this.reloadPending = true
+        return
+      }
       window.location.reload()
     }
     navigator.serviceWorker.addEventListener('controllerchange', this.controllerChangeHandler)
@@ -103,6 +131,40 @@ class UpdateManager {
   }
 
   /**
+   * Registers a predicate the manager consults before reloading this client.
+   * Returns an unsubscribe function.
+   */
+  registerUnsavedWorkGuard(guard: () => boolean): () => void {
+    this.unsavedWorkGuards.add(guard)
+    return () => {
+      this.unsavedWorkGuards.delete(guard)
+      // Removing the last guard can be what makes a deferred reload safe.
+      this.flushPendingReload()
+    }
+  }
+
+  /** True when any registered guard reports work that would be lost. */
+  private hasUnsavedWork(): boolean {
+    for (const guard of this.unsavedWorkGuards) {
+      try {
+        if (guard()) return true
+      } catch {
+        // A broken guard must not silently authorise data loss.
+        return true
+      }
+    }
+    return false
+  }
+
+  /** Runs a reload that was deferred, once nothing is at risk. */
+  flushPendingReload(): void {
+    if (this.reloadPending && !this.hasUnsavedWork()) {
+      this.reloadPending = false
+      window.location.reload()
+    }
+  }
+
+  /**
    * Apply the pending update (activate waiting service worker)
    */
   applyUpdate(): void {
@@ -119,7 +181,29 @@ class UpdateManager {
    * Dismiss the update (user chose not to update now)
    */
   dismissUpdate(): void {
+    // Persisted, so "Later" survives a page load. Previously this was memory
+    // only, and initialize() re-flagged any still-waiting worker as ready on
+    // the very next load, so the prompt returned immediately. The window is
+    // deliberately far shorter than the install prompt's seven days, because
+    // an update may carry a fix the user needs.
+    try {
+      localStorage.setItem(UPDATE_DISMISSED_KEY, Date.now().toString())
+    } catch {
+      // Private mode or a full quota: the dialog simply reappears sooner.
+    }
     this.updateState({ status: 'no-update' })
+  }
+
+  /** True while a recent dismissal should keep the prompt hidden. */
+  isDismissalActive(): boolean {
+    try {
+      const dismissedAt = localStorage.getItem(UPDATE_DISMISSED_KEY)
+      if (!dismissedAt) return false
+      const elapsed = Date.now() - Number(dismissedAt)
+      return Number.isFinite(elapsed) && elapsed >= 0 && elapsed < UPDATE_DISMISSED_COOLDOWN_MS
+    } catch {
+      return false
+    }
   }
 
   /**
