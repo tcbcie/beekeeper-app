@@ -114,6 +114,50 @@ Those two files still fail, with the same pre-existing count of 14 and the same 
 * An arbitrary-value Tailwind class is not a valid CSS selector; `container.querySelector('.text-\[11px\]')` threw in jsdom. Replaced with a string check on the markup.
 * The reload-guard tests drive `flushPendingReload` directly rather than going through `initialize()`, because the singleton's `initialized` flag is never reset between tests. Routing through it would have reproduced the existing suite's failure mode rather than testing anything.
 
+## 3c. QA Audit (Principal Quality Architect Review)
+
+An audit of the Phase 2 diff found one defect the change made reachable, one gap it introduced, and one regression created while fixing that gap. All were fixed. Nothing Critical was found.
+
+### 🟠 High — an explicit update check reported "no update" while one was waiting
+
+`checkForUpdates()` calls `registration.update()` and then falls back to `no-update` after a second. It never inspected `registration.waiting`. Before the dismissal cooldown that barely mattered, because `initialize()` flagged a waiting worker as ready on load. With the cooldown suppressing that path, a user who pressed "Later" and then deliberately asked "are there updates?" was told there were none, while one sat ready to install.
+
+Fixed by having `checkForUpdates()` surface an already-waiting worker. Asking directly now overrides having said "later" earlier, which is the correct precedence: the cooldown suppresses nagging, not answers to direct questions.
+
+While in that function, a pre-existing leak was closed: repeated checks overwrote `noUpdateTimeout` without clearing it, leaving orphaned timers that could demote a later `ready` state back to `no-update`.
+
+### 🟠 High — pressing "Update Now" appeared to do nothing
+
+The deferral introduced in this phase is invisible. The banner hides, the reload is held back, and the user sees no result. The likely response is to press it again, or to assume the update failed.
+
+`applyUpdate()` now reports whether the reload was deferred, and the notification explains that the update will be applied once the current work is saved.
+
+### 🟡 Medium — the first attempt at that fix broke 22 existing tests
+
+Calling `useToast()` inside `UpdateNotification` made a previously provider-independent component throw outside a `ToastProvider`, which is how its tests render it. Two corrections followed, and the second is the one that matters:
+
+* `useOptionalToast()` was added for components that merely enhance behaviour with a message and must still render in isolation. `useToast` keeps throwing, since most callers genuinely require it.
+* More importantly, the component was asking two questions — is there unsaved work, and please apply the update — when one would do. `applyUpdate()` now answers both. That is better encapsulation, and it also degrades safely against an incomplete test double, which is what exposed the problem.
+
+The existing tests were left untouched throughout. The fix belonged in the application code, not in the assertions.
+
+### Verified clear
+
+* **The `:where()` utilities cannot fight the components' own `md:` overrides.** `md:bottom-4` carries specificity 0,1,0 against the utility's 0,0,0, so desktop offsets win as intended, and the token applies only below `md` where the bar exists.
+* **The reserved height is honest.** The bar measures roughly 60px (22px icon, 4px gap, 17.5px label, 16px padding, 1px border) against a 64px token, so the reserve is slightly generous rather than short.
+* **Guards cannot leak.** Each is removed on unmount, and removing the last one flushes any reload that was waiting on it.
+* **The coordinator degrades without a provider**, which is why every existing `UpdateNotification` test still passes unmodified.
+
+### Accepted, not fixed
+
+**🟡 Deferring the reload widens a version-skew window.** Once `controllerchange` has fired, the new worker controls the page while the old JavaScript is still running, and the activate handler has already purged old caches. A lazily-loaded chunk requested during that window can fail. The window was previously near-zero because the reload was immediate.
+
+This is accepted deliberately: the alternative is destroying the user's inspection, which is the worse failure by a wide margin. The window is bounded by how long the user takes to save, and it closes the moment they do. Recorded rather than hidden.
+
+**🟢 A capped toast stack can drop an unseen message.** With a cap of three, a burst of four discards the oldest. Newest-wins is the right default, and the alternative is a stack that grows over the controls beneath it.
+
+**🟢 Reporting form activity re-renders the provider tree.** The coordinator sits in the root layout, so toggling the flag re-renders the application shell. It toggles at most twice per form, which does not justify splitting the context.
+
 ## 4. Post-Task Review
 
 * **Root Cause Found (if applicable):** The mobile shell had no shared notion of the space at the bottom of the screen. Each floating surface picked its own offset by eye and its own visibility in isolation, so five of them shared one stacking bucket, three sat in the same band, and only the navigation bar accounted for the device safe area. The navigation bar itself reserved a fixed width per destination, needing 456px on a 390px screen, which pushed a destination off-screen behind a hidden scrollbar. Separately, the installed app's Inspections shortcut pointed at a route that does not exist, and because the service worker calls `clients.claim()` while every client reloads unconditionally on `controllerchange`, one tab applying an update reloaded them all — including a tab holding a part-finished inspection that never saw the prompt.
