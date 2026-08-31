@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react'
 import { updateManager, UpdateState } from '@/lib/update-manager'
 import Button from '@/components/ui/Button'
 import { useBottomSurfaceSlot } from '@/contexts/BottomSurfaceContext'
+import { useOptionalToast } from '@/components/ui/Toast'
 
 export default function UpdateNotification() {
   const [updateState, setUpdateState] = useState<UpdateState>({ status: 'no-update' })
   const [isVisible, setIsVisible] = useState(false)
+  const toast = useOptionalToast()
 
   useEffect(() => {
     // Subscribe to update state changes
@@ -25,8 +27,15 @@ export default function UpdateNotification() {
   }, [])
 
   const handleUpdate = () => {
-    updateManager.applyUpdate()
+    // The reload is held back while a form holds unsaved work, so without this
+    // the banner simply disappears and nothing observable happens. Say so,
+    // rather than leaving the user to press Update again and wonder.
+    const deferred = updateManager.applyUpdate()
     setIsVisible(false)
+
+    if (deferred) {
+      toast?.info('Update ready. It will be applied once your current work is saved.', 6000)
+    }
   }
 
   const handleDismiss = () => {

@@ -114,6 +114,21 @@ class UpdateManager {
       this.updateState({ status: 'checking' })
       await this.registration.update()
 
+      // An explicit check must surface a worker that is already waiting, even
+      // while a dismissal cooldown is suppressing the passive prompt.
+      // Otherwise the user asks "are there updates?" and is told no while one
+      // sits ready to install, which the cooldown made reachable across
+      // reloads. Asking directly overrides having said "later" earlier.
+      if (this.registration.waiting) {
+        this.waitingWorker = this.registration.waiting
+        this.updateState({ status: 'ready' })
+        return
+      }
+
+      // Repeated checks previously overwrote this handle without clearing it,
+      // leaving orphaned timers that could demote a later 'ready' state.
+      if (this.noUpdateTimeout) clearTimeout(this.noUpdateTimeout)
+
       // If no update was found, the state will remain 'checking'
       // We'll update it to 'no-update' after a brief delay
       this.noUpdateTimeout = setTimeout(() => {
@@ -165,16 +180,23 @@ class UpdateManager {
   }
 
   /**
-   * Apply the pending update (activate waiting service worker)
+   * Apply the pending update (activate waiting service worker).
+   * Returns true when the resulting reload will be deferred because work is
+   * unsaved, so the caller can explain the delay.
    */
-  applyUpdate(): void {
+  applyUpdate(): boolean {
     if (!this.waitingWorker) {
       console.warn('No waiting service worker to activate')
-      return
+      return false
     }
 
     // Send message to waiting service worker to skip waiting
     this.waitingWorker.postMessage({ type: 'SKIP_WAITING' })
+
+    // Reported so the UI can say the update is queued. The reload happens on
+    // controllerchange and will be held back if work is unsaved, so without
+    // this the banner just disappears and nothing observable happens.
+    return this.hasUnsavedWork()
   }
 
   /**

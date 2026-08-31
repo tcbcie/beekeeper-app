@@ -29,6 +29,16 @@ export function useToast() {
   return context
 }
 
+/**
+ * Toast access for components that merely *enhance* their behaviour with a
+ * message and must still work without one. Returns null when no provider is
+ * mounted, rather than throwing, so shell components stay renderable in
+ * isolation. Prefer `useToast` wherever a toast is genuinely required.
+ */
+export function useOptionalToast() {
+  return useContext(ToastContext)
+}
+
 const toastStyles: Record<ToastType, { bg: string; icon: typeof CheckCircle; iconColor: string }> = {
   success: {
     bg: 'bg-green-50 dark:bg-green-950/50 border-green-200 dark:border-green-800',
