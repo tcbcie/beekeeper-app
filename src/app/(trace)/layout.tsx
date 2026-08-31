@@ -25,7 +25,7 @@ export default function TraceLayout({
 
       {/* Minimal footer */}
       <footer className="pb-6">
-        <p className="text-center text-xs text-text-tertiary">
+        <p className="text-center text-sm text-text-tertiary">
           Powered by <span className="text-amber-600 dark:text-amber-400">HiveCraic</span>
         </p>
       </footer>

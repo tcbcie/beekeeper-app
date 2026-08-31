@@ -478,7 +478,7 @@ export default function BatchesPage() {
  <option key={y} value={y}>{y}</option>
  ))}
  </select>
- <span className="text-xs text-text-tertiary">{filteredBatches.length} of {batches.length} batches</span>
+ <span className="text-sm text-text-tertiary">{filteredBatches.length} of {batches.length} batches</span>
  </div>
 
  {/* Mobile Card View */}
@@ -489,7 +489,7 @@ export default function BatchesPage() {
  <div className="flex items-center gap-2">
  <h4 className="font-semibold text-foreground text-lg">{batch.batch_name}</h4>
  {batch.status === 'completed' && (
- <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border border-green-200 dark:border-green-800">Completed</span>
+ <span className="px-2 py-0.5 rounded text-sm font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border border-green-200 dark:border-green-800">Completed</span>
  )}
  </div>
  <div className="flex gap-2">
@@ -559,15 +559,15 @@ export default function BatchesPage() {
  <table className="min-w-full divide-y divide-border">
  <thead className="bg-surface-secondary">
  <tr>
- <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Actions</th>
- <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Batch Name</th>
- <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Breeder Queen</th>
- <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Graft Date</th>
- <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Grafts</th>
- <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Accepted</th>
- <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Hatched</th>
- <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Mated</th>
- <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Sealed Dist.</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Actions</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Batch Name</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Breeder Queen</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Graft Date</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Grafts</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Accepted</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Hatched</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Mated</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Sealed Dist.</th>
  </tr>
  </thead>
  <tbody className="bg-surface dark:bg-surface divide-y divide-border">
@@ -585,7 +585,7 @@ export default function BatchesPage() {
  <span className="inline-flex items-center gap-2">
  {batch.batch_name}
  {batch.status === 'completed' && (
- <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border border-green-200 dark:border-green-800">Completed</span>
+ <span className="px-2 py-0.5 rounded text-sm font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 border border-green-200 dark:border-green-800">Completed</span>
  )}
  </span>
  </td>
@@ -973,30 +973,30 @@ export default function BatchesPage() {
  <table className="min-w-full divide-y divide-border">
  <thead className="bg-surface-secondary">
  <tr>
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Rank</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Hive</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Apiary</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Inspections</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Score</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Brood Pattern</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Population</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Temperament</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Swarming (Low=Good)</th>
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Honey Yield</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Rank</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Hive</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Apiary</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Inspections</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Score</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Brood Pattern</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Population</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Temperament</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Swarming (Low=Good)</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Honey Yield</th>
  {optionalColumns.calmness && (
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Calmness</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Calmness</th>
  )}
  {optionalColumns.recapping && (
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Recapping</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Recapping</th>
  )}
  {optionalColumns.vsh && (
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">VSH</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">VSH</th>
  )}
  {optionalColumns.smr && (
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">SMR</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">SMR</th>
  )}
  {optionalColumns.chalkbrood && (
- <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase">Chalkbrood</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Chalkbrood</th>
  )}
  </tr>
  </thead>

@@ -46,7 +46,7 @@ export default function RatingButtons({
           <button
             type="button"
             onClick={() => onChange(0)}
-            className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-xs sm:text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
+            className={`min-h-[48px] sm:min-h-[52px] rounded-lg font-medium text-sm transition-all touch-manipulation col-span-3 sm:col-span-1 ${
               value === 0
                 ? 'bg-forest-600 text-white shadow-lg ring-2 ring-forest-300'
                 : 'bg-surface-secondary text-foreground hover:bg-surface-elevated active:bg-surface-elevated'
@@ -59,7 +59,7 @@ export default function RatingButtons({
       </div>
 
       {helpText && (
-        <p className="text-xs text-text-tertiary mt-2">{helpText}</p>
+        <p className="text-sm text-text-tertiary mt-2">{helpText}</p>
       )}
     </div>
   )

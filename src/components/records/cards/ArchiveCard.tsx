@@ -37,14 +37,14 @@ export default function ArchiveCard({ archiveRecord }: ArchiveCardProps) {
 
       {archiveRecord.archive_reason_value && (
         <div className="p-4 bg-surface/50 dark:bg-surface-elevated rounded-lg border border-border mb-3">
-          <span className="text-xs text-text-tertiary mb-1 block">Reason</span>
+          <span className="text-sm text-text-tertiary mb-1 block">Reason</span>
           <span className="text-sm font-medium text-foreground">{archiveRecord.archive_reason_value}</span>
         </div>
       )}
 
       {archiveRecord.archive_notes && (
         <div className="p-4 bg-surface/50 dark:bg-surface-elevated rounded-lg border border-border">
-          <span className="text-xs text-text-tertiary mb-1 block">Additional Notes</span>
+          <span className="text-sm text-text-tertiary mb-1 block">Additional Notes</span>
           <span className="text-sm text-text-secondary">{archiveRecord.archive_notes}</span>
         </div>
       )}

@@ -795,9 +795,12 @@ textarea::placeholder {
     line-height: 1.25rem;
   }
 
+  /* Kept as a distinct class for the Chip API, but no longer smaller
+     than .fj-chip-sm: 12px chip text fell below the 14px floor this
+     programme establishes, and a chip always carries meaning. */
   .fj-chip-xs {
-    font-size: 0.75rem;
-    line-height: 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
     padding: 0.375rem 0.75rem;
   }
 
@@ -847,8 +850,8 @@ textarea::placeholder {
     justify-content: center;
     border-radius: 0.375rem;
     padding: 0.125rem 0.375rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
     font-weight: 500;
   }
 

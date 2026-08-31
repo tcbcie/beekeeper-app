@@ -191,7 +191,7 @@ export default function ScaleSelectionModal({
                             }
                           </p>
                           {isAssignedElsewhere && (
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                            <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
                               Currently assigned to Hive {device.assigned_to?.hiveNumber}
                               {device.assigned_to?.apiaryName && ` at ${device.assigned_to.apiaryName}`}
                             </p>
@@ -214,7 +214,7 @@ export default function ScaleSelectionModal({
 
         {/* Footer */}
         <div className="p-4 border-t border-border bg-surface-secondary/50">
-          <p className="text-xs text-text-tertiary text-center">
+          <p className="text-sm text-text-tertiary text-center">
             Devices are managed in your BEEP account at app.beep.nl
           </p>
         </div>

@@ -282,7 +282,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
             { value: 'caging', label: 'Cage the Queen' },
           ]}
         />
-        <p className="text-xs text-text-tertiary mt-1">
+        <p className="text-sm text-text-tertiary mt-1">
           {isCaging
             ? 'The caged queen can’t leave, so a swarm returns. After the cage period the colony is broodless and the comb and most brood are preserved.'
             : 'All brood is removed and replaced with foundation, so the colony restarts its brood nest — the strongest reset, but it must redraw comb.'}
@@ -314,7 +314,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
             </select>
-            <p className="text-xs text-text-tertiary mt-1">
+            <p className="text-sm text-text-tertiary mt-1">
               Bloom timing varies 2–3 weeks across locations, so everything is calculated for this apiary.
             </p>
           </div>
@@ -383,7 +383,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                       </span>{' '}
                       of full strength. An earlier break trades spring strength for a stronger summer force.
                     </p>
-                    <p className="text-xs text-text-tertiary mt-2">
+                    <p className="text-sm text-text-tertiary mt-2">
                       Timed to the start of swarm season (~{formatDate(result.bounds.swarmSeasonStart)}) — a brood break
                       is a swarm-control tool, so it isn&apos;t brought forward into early spring when the colony isn&apos;t
                       yet in swarm mode.
@@ -470,7 +470,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                         { value: 24, label: '+ Drone brood — 24 d' },
                       ]}
                     />
-                    <p className="text-xs text-text-tertiary mt-1">
+                    <p className="text-sm text-text-tertiary mt-1">
                       24 days also clears capped drone brood (a varroa reservoir); fine-tune in Advanced.
                     </p>
                   </div>
@@ -498,7 +498,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                       <span>{formatDate(result.bounds.latest)}</span>
                     </div>
                     {effectiveTbr && effectiveTbr < result.bounds.earliest && (
-                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                      <p className="text-sm text-amber-700 dark:text-amber-400 mt-1">
                         Earlier than recommended ({formatDate(result.bounds.earliest)}) — before swarm season starts
                         and/or below your {Math.round(springFloor * 100)}% spring-strength floor.
                       </p>
@@ -528,7 +528,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                     <span>{formatDate(swarmSeason.min)}</span>
                     <span>{formatDate(swarmSeason.max)}</span>
                   </div>
-                  <p className="text-xs text-text-tertiary mt-1">
+                  <p className="text-sm text-text-tertiary mt-1">
                     A brood break is a swarm-control tool, so the recommended date is never brought forward past
                     this. Move it to match when your colonies actually start swarm preparations.
                   </p>
@@ -549,7 +549,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                     className="w-full h-3 accent-forest-600 cursor-pointer"
                     aria-label="Protect spring strength floor"
                   />
-                  <p className="text-xs text-text-tertiary mt-1">
+                  <p className="text-sm text-text-tertiary mt-1">
                     Lower this to accept the spring crop tailing off on a declining force, in exchange for an
                     earlier break and a stronger force for the summer flow. 100% keeps the spring crop at full strength.
                   </p>
@@ -585,7 +585,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                     className="w-full h-3 accent-forest-600 cursor-pointer"
                     aria-label="Queen lay rate"
                   />
-                  <p className="text-xs text-text-tertiary mt-1">
+                  <p className="text-sm text-text-tertiary mt-1">
                     ≈ {(constants.layRate * constants.eggToEmergenceDays).toLocaleString()} cells of brood at peak
                     {effectiveCellsPerFrame > 0 && (
                       <> (~{(constants.layRate * constants.eggToEmergenceDays / effectiveCellsPerFrame).toFixed(1)} {frameLabel} frames at {Math.round(broodUtilisation * 100)}% utilisation)</>
@@ -623,7 +623,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                       className="w-full h-3 accent-forest-600 cursor-pointer"
                       aria-label="Brood-area utilisation"
                     />
-                    <p className="text-xs text-text-tertiary mt-1">
+                    <p className="text-sm text-text-tertiary mt-1">
                       Wall-to-wall is never 100% — bees leave a gap along the bottom and under-use the corners and edge frames.
                     </p>
                   </div>
@@ -711,7 +711,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                         <span className="font-semibold text-foreground">≈ {foodPlan.budget.pollenKg.toFixed(1)} kg pollen</span>{' '}
                         — mostly foraged
                       </p>
-                      <p className="text-xs text-text-secondary mt-1">
+                      <p className="text-sm text-text-secondary mt-1">
                         ~{foodPlan.budget.pollenToForageKg.toFixed(1)} kg must come from fresh foraging — stored beebread covers
                         only ~{foodPlan.budget.storedBeebreadKg} kg, so the rebuild needs steady pollen flights (a cold, wet spell
                         stalls it regardless of honey).
@@ -731,7 +731,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                       Leave or feed ≈ {foodPlan.budget.totalHoneyKg.toFixed(1)} kg of stores and don&apos;t strip the spring crop bare.
                     </div>
                   )}
-                  <p className="text-xs text-text-tertiary mt-2">
+                  <p className="text-sm text-text-tertiary mt-2">
                     {isCaging
                       ? 'Caging keeps the nest and most of the brood, so the rebuild is far cheaper than TBR — no comb to redraw. Scales with lay rate; honey comes from stores, pollen mostly from foraging.'
                       : 'Assumes comb is drawn from foundation (worst case). Scales with lay rate; honey comes from stores, pollen mostly from foraging.'}
@@ -752,7 +752,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                   <div className="px-4 pb-4 grid sm:grid-cols-2 gap-4">
                     {constantFields(method).map((f) => (
                       <div key={f.key}>
-                        <label className="block text-xs font-medium text-text-secondary mb-1">
+                        <label className="block text-sm font-medium text-text-secondary mb-1">
                           {f.label} — <span className="font-semibold text-foreground">{constants[f.key]}</span>
                         </label>
                         <input
@@ -824,7 +824,7 @@ function CropPicker({
         </span>
         {badge && <span className={`text-xs px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>}
       </div>
-      {note && <p className="text-xs text-text-tertiary mt-1">{note}</p>}
+      {note && <p className="text-sm text-text-tertiary mt-1">{note}</p>}
     </div>
   )
 }
@@ -993,8 +993,8 @@ function LevelKey({ dot, label }: { dot: string; label: string }) {
 function Milestone({ label, date, highlight }: { label: string; date: string; highlight?: boolean }) {
   return (
     <div className={`rounded-lg p-3 border ${highlight ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'bg-surface-secondary border-border'}`}>
-      <p className="text-xs text-text-tertiary">{label}</p>
-      <p className={`text-sm font-semibold ${highlight ? 'text-amber-700 dark:text-amber-300' : 'text-foreground'}`}>
+      <p className="text-sm text-text-tertiary">{label}</p>
+      <p className={`text-base font-semibold ${highlight ? 'text-amber-700 dark:text-amber-300' : 'text-foreground'}`}>
         {formatDate(date)}
       </p>
     </div>

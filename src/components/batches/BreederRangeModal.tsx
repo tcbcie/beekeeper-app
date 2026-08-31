@@ -128,7 +128,7 @@ export default function BreederRangeModal({
             <div key={row.queen_id} className="flex flex-wrap items-center gap-3">
               <div className="min-w-[8rem] flex-1 text-sm font-medium text-foreground">{row.queen_number}</div>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-text-secondary">Start</label>
+                <label className="text-sm text-text-secondary">Start</label>
                 <input
                   type="number"
                   min={1}
@@ -137,7 +137,7 @@ export default function BreederRangeModal({
                   onChange={(e) => updateRow(idx, 'start', e.target.value)}
                   className="w-20 px-2 py-1 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 />
-                <label className="text-xs text-text-secondary">End</label>
+                <label className="text-sm text-text-secondary">End</label>
                 <input
                   type="number"
                   min={1}

@@ -145,7 +145,7 @@ export default function FeedbackForm({ traceCode }: FeedbackFormProps) {
  maxLength={500}
  className="w-full px-4 py-3 rounded-xl border border-border bg-surface-secondary text-foreground placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
  />
- <p className="text-xs text-text-tertiary text-right mt-1">
+ <p className="text-sm text-text-tertiary text-right mt-1">
  {comment.length}/500
  </p>
  </div>

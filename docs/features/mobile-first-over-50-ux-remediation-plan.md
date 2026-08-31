@@ -417,6 +417,7 @@ The first Claude task should be limited to Phase 1 foundations. It should not re
 | Phase 1 — accessibility and safety foundations | Done, deployed and verified | `b036597` |
 | Phase 2 — mobile shell and overlay coordination | Done, pushed, **build not yet verified** | `ccdeb78`, `6ffa68d`, `3adaba5` |
 | Phase 3 — focused inspection workflow | Done, pushed, **build not yet verified** | `adea7bb` |
+| Typography floor (own stage, not numbered) | T1–T5 done, pushed, **build not yet verified**; long tail deferred | see `mobile-first-typography-floor-plan.md` |
 | Phase 4 — Hives and Records simplification | Not started | — |
 | Phase 5 — dashboard and user validation | Not started, gated on moderated testing | — |
 
@@ -428,7 +429,7 @@ Each phase has its own plan in `docs/features/mobile-first-phaseN-*.md` and its 
 |---|---|---|
 | P0 | Long inspection form can lose substantial work | Closed. Phase 1 added dirty-state protection across six exit paths; Phase 3 added the stepped flow and review. |
 | P0 | Shared targets can be 28–40px | Closed in Phase 1. Buttons 48px, compact 44px, icon buttons 44px, form controls 48px. |
-| P0 | Pervasive small text | **Open, and unscheduled.** See below. |
+| P0 | Pervasive small text | Substantially closed by the typography stage: 971 `text-xs` → 393, 68 arbitrary sub-14px → 4, both floors applied. The remaining 393 are the deferred long tail, held by a ratchet test. |
 | P0 | Green/amber foreground pairs fail AA | Closed in Phase 1, at AAA rather than AA. |
 | P0 | Form controls lack associated labels | Closed. Phase 1 did the visit fields; Phase 3 did the remainder. |
 | P0 | Bottom navigation hides a primary item | Closed in Phase 2. Four destinations plus More, fluid, no scrolling. |
@@ -441,11 +442,39 @@ Each phase has its own plan in `docs/features/mobile-first-phaseN-*.md` and its 
 | P2 | Motion preferences are not respected | Closed in Phase 1. |
 | P2 | Fixed content padding may not cover safe area | Closed in Phase 2, with one shared inset token. |
 
-### The largest piece of unfinished work
+### The typography floor — what shipped
 
-**The typography floor was never assigned to a phase.** Phase 1 raised it in the shared primitives and on its own five surfaces; Phase 2 raised the navigation labels. Everything else was left, and the counts have barely moved: **971 text-xs, 32 text-[11px] and 36 text-[10px]** remain across the application, against 973/34/36 when the review was written.
+**It was never assigned to a phase**, which is why it outlived Phases 1 to 3. It has
+now had its own stage and its own plan
+(`docs/features/mobile-first-typography-floor-plan.md`,
+`tasks/mobile-first-typography-todo.md`).
 
-This is the last open P0 and, for an audience over 50 with reduced eyesight, is probably the most valuable work remaining. It is also largely mechanical, because the shared floors already exist: the task is to raise text that carries meaning to at least 14px and leave genuinely decorative text alone. It warrants its own phase and its own plan.
+Both floors from section 7 were applied, after the owner confirmed that the 16px
+tier still stands — it had quietly dropped out of this document's own summary, which
+remembered only 14px. Body copy and form values are 16px; labels, badges, table
+headers, helper text and metadata are 14px.
+
+| Measure | Before | After |
+|---|---|---|
+| `text-xs` (12px) | 971 | 393 |
+| Arbitrary sizes below 14px | 68 | 4 |
+| Form controls below 16px | 13 | 0 |
+
+The 393 that remain are the deliberately deferred long tail — settings, admin,
+research, tools, CRM, reports and traceability. A ratchet in
+`tests/styles/typography-floor.test.ts` records both counts as ceilings, so they can
+fall but never rise; new 12px text fails the suite rather than accumulating unnoticed,
+which is how the count reached 971 in the first place.
+
+The four arbitrary sizes left are deliberate: three in `CellFrame`, where a 64px-wide
+native date input cannot render at 14px and needs a layout answer rather than a class
+change, and the version string, which is decorative.
+
+**The rule used, since the backlog asked for one and none existed.** Text must reach
+the floor if a user could need to read it to act. It may stay smaller only if
+deleting it entirely would cost the user nothing — which came to about 25 sites out
+of 971, in practice two ASCII-art rows in the hive-stack diagram and the version
+badge. A badge is meaningful: "badge" is a shape, not a licence to be unreadable.
 
 ### Corrections to this document found during implementation
 
@@ -460,6 +489,29 @@ Recorded so they are not rediscovered.
 * **Update dismissal did not persist**, so a dismissed update returned on the very next page load.
 * **The five stages for the inspection flow did not cover every block.** Honey Super Fullness was unassigned, and two blocks straddled a boundary.
 * **A rewrite of the inspection form was not necessary**, and would have been actively harmful: roughly twenty-five committed behaviours and eight already-fixed defects live in that markup.
+* **`:where(.above-bottom-nav)` never worked in production.** A comment in
+  `globals.css` closed early, so the prose after it plus a second `*/` were parsed as
+  part of a selector and CSS error recovery discarded the whole rule. Seven fixed
+  surfaces use that class and none declares a mobile `bottom` of its own, so the
+  update prompt, install prompt, chat button and dialog, toasts, the notification
+  banner and the hives bulk bar all fell back to `bottom: auto` on every phone. This
+  was Phase 2 work. Fixed, with a test that now fails on a stray delimiter.
+* **The shared `fj-*` families other than `fj-btn` are not wrapped in `:where()`.**
+  They sit in `@layer utilities` after the Tailwind import, so at equal specificity
+  they beat any `text-*` passed through `className` — a per-instance size override
+  silently does nothing. Two victims found. Migrating them is a sound follow-up.
+* **The 16px tier had dropped out of section 12's summary**, which remembered only
+  14px. A stage planned from the summary alone would have closed the P0 without
+  meeting the acceptance criteria written for it.
+* **The small-text estimate was low again.** The unconstrained-flow category was
+  put at ~170 sites; it was 271.
+* **Widening table headers does not break the wide tables.** Both the batch table
+  and the 16-column leaderboard are `overflow-x-auto` with `min-w-full`, so they
+  already scroll and simply scroll a little more.
+* **`leading-none` scales with font size** rather than collapsing, so the dense
+  weather strip tolerated the rise. What could not tolerate it was the 7-day
+  forecast: seven `flex-1` columns give ~41px each at 320px against ~48px needed, so
+  the max/min pair was reflowed to stack.
 
 ### Deliberately deferred, with reasons
 
@@ -486,3 +538,7 @@ Phases 2 and 3 are pushed but have not been exercised in a browser. The checks t
 4. All five inspection steps at 320px.
 5. Pressing Enter in the weight field on step one — it must advance, not save.
 6. Starting an inspection, deploying, and confirming the tab does not reload until the work is saved or discarded.
+7. The seven floating surfaces that use `.above-bottom-nav` — update prompt, install prompt, chat button and dialog, toasts, notification banner and the hives bulk bar — now that the rule positioning them actually applies. None of them has ever been seen sitting where it was designed to sit.
+8. The 7-day forecast strip at 320px, where the temperatures now stack.
+9. `HiveListCard`'s hive-stack diagram, whose `h-8` and `h-10` rows now hold 14px text and a 14px gauge numeral.
+10. The graft tracker's inputs on a real iPhone: thirteen controls moved to 16px specifically to stop Safari zooming on focus.

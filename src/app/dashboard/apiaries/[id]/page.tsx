@@ -94,27 +94,27 @@ export default function ApiaryDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Location Details */}
           <div>
-            <h3 className="text-xs font-semibold text-text-tertiary uppercase mb-2">Location</h3>
+            <h3 className="text-sm font-semibold text-text-tertiary uppercase mb-2">Location</h3>
             {apiary.eircode && (
               <p className="text-sm text-text-primary font-medium">{apiary.eircode}</p>
             )}
             {apiary.latitude && apiary.longitude && (
-              <p className="text-xs text-text-tertiary mt-1">
+              <p className="text-sm text-text-tertiary mt-1">
                 {Number(apiary.latitude).toFixed(4)}, {Number(apiary.longitude).toFixed(4)}
               </p>
             )}
             {apiary.elevation != null && (
-              <p className="text-xs text-text-tertiary mt-1">
+              <p className="text-sm text-text-tertiary mt-1">
                 {Math.round(Number(apiary.elevation))} m above sea level
               </p>
             )}
             {apiary.grid_reference && (
-              <p className="text-xs text-text-tertiary mt-1">
+              <p className="text-sm text-text-tertiary mt-1">
                 Irish Grid: {apiary.grid_reference}
               </p>
             )}
             {apiary.share_location && (
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
+              <p className="text-sm text-blue-600 dark:text-blue-400 mt-1 flex items-center gap-1">
                 <MapPin size={10} />
                 Shared publicly
               </p>
@@ -123,16 +123,16 @@ export default function ApiaryDetailPage() {
 
           {/* Stats */}
           <div>
-            <h3 className="text-xs font-semibold text-text-tertiary uppercase mb-2">Hives</h3>
+            <h3 className="text-sm font-semibold text-text-tertiary uppercase mb-2">Hives</h3>
             <p className="text-2xl font-bold text-foreground">{stats.activeHives}</p>
-            <p className="text-xs text-text-tertiary">
+            <p className="text-sm text-text-tertiary">
               {stats.archivedHives > 0 && `+ ${stats.archivedHives} archived`}
             </p>
           </div>
 
           {/* Last Inspection */}
           <div>
-            <h3 className="text-xs font-semibold text-text-tertiary uppercase mb-2">Last Inspection</h3>
+            <h3 className="text-sm font-semibold text-text-tertiary uppercase mb-2">Last Inspection</h3>
             {daysSinceInspection !== null ? (
               <>
                 <p className={`text-lg font-bold ${
@@ -142,7 +142,7 @@ export default function ApiaryDetailPage() {
                 }`}>
                   {daysSinceInspection} days ago
                 </p>
-                <p className="text-xs text-text-tertiary">
+                <p className="text-sm text-text-tertiary">
                   {new Date(stats.lastInspectionDate!).toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </p>
               </>
@@ -209,13 +209,13 @@ export default function ApiaryDetailPage() {
                 <div className="flex items-center gap-3">
                   <span className="font-medium text-foreground">{hive.hive_number}</span>
                   {hive.queens?.[0] && (
-                    <span className="text-xs text-text-secondary">
+                    <span className="text-sm text-text-secondary">
                       Queen: {hive.queens[0].queen_number}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                  <span className={`px-2 py-0.5 text-sm font-medium rounded ${
                     hive.archived_at
                       ? 'bg-surface dark:bg-surface text-text-tertiary border border-border'
                       : hive.status === 'active'
@@ -225,7 +225,7 @@ export default function ApiaryDetailPage() {
                     {hive.archived_at ? 'Archived' : hive.status}
                   </span>
                   {hive.is_queenless && !hive.archived_at && (
-                    <span className="px-2 py-0.5 text-xs font-medium rounded bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700">
+                    <span className="px-2 py-0.5 text-sm font-medium rounded bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700">
                       {formatQueenlessLabel(hive.queenless_reason)}
                     </span>
                   )}
@@ -252,9 +252,9 @@ export default function ApiaryDetailPage() {
                 <div className="flex items-center gap-2">
                   <Clock size={14} className="text-text-tertiary" />
                   <span className="text-sm font-medium text-foreground">{record.type}</span>
-                  <span className="text-xs text-text-secondary">- {record.hive_number}</span>
+                  <span className="text-sm text-text-secondary">- {record.hive_number}</span>
                 </div>
-                <span className="text-xs text-text-tertiary">
+                <span className="text-sm text-text-tertiary">
                   {new Date(record.date).toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                 </span>
               </Link>

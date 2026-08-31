@@ -1017,7 +1017,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                   <h4 className="font-medium text-amber-800 dark:text-amber-300 flex items-center gap-2">
                     <span>🍯</span> Public Preview
                   </h4>
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
                     This is what consumers will see when they scan the QR code
                   </p>
                 </div>
@@ -1030,7 +1030,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                   <div className="p-4 space-y-4">
                     {/* Editable Title */}
                     <div>
-                      <label className="block text-xs font-medium text-text-secondary mb-1">Title</label>
+                      <label className="block text-sm font-medium text-text-secondary mb-1">Title</label>
                       <input
                         type="text"
                         value={batchForm.public_title}
@@ -1042,7 +1042,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
 
                     {/* Editable Origin */}
                     <div>
-                      <label className="block text-xs font-medium text-text-secondary mb-1">Origin Headline</label>
+                      <label className="block text-sm font-medium text-text-secondary mb-1">Origin Headline</label>
                       <input
                         type="text"
                         value={batchForm.public_origin}
@@ -1090,7 +1090,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                               />
                               <span className="text-sm font-medium">Show apiary image on public page</span>
                             </label>
-                            <p className="text-xs text-text-secondary mt-1">
+                            <p className="text-sm text-text-secondary mt-1">
                               Display this image below the map on the trace page
                             </p>
                           </div>
@@ -1109,14 +1109,14 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                         />
                         <span className="text-sm font-medium">Show feedback form on public page</span>
                       </label>
-                      <p className="text-xs text-text-secondary mt-1 ml-6">
+                      <p className="text-sm text-text-secondary mt-1 ml-6">
                         Allow customers to rate and comment on this honey
                       </p>
                     </div>
 
                     {/* Story Template Selector */}
                     <div>
-                      <label className="block text-xs font-medium text-text-secondary mb-2">Story Template</label>
+                      <label className="block text-sm font-medium text-text-secondary mb-2">Story Template</label>
                       <div className="space-y-1.5 mb-3">
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -1157,7 +1157,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                         ))}
                       </div>
 
-                      <label className="block text-xs font-medium text-text-secondary mb-1">Story Text</label>
+                      <label className="block text-sm font-medium text-text-secondary mb-1">Story Text</label>
                       <textarea
                         value={batchForm.public_story}
                         onChange={(e) => {
@@ -1173,7 +1173,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                       {batchForm.public_story && (
                         <div className="mt-2 p-3 bg-surface-secondary rounded-lg border border-border">
                           <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-medium text-text-secondary">Preview:</p>
+                            <p className="text-sm font-medium text-text-secondary">Preview:</p>
                             <div className="flex items-center gap-3 text-xs">
                               <span className="flex items-center gap-1">
                                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
@@ -1201,7 +1201,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                       )}
 
                       {hasUnfilledPlaceholders(stripMarkers(batchForm.public_story)) && (
-                        <p className="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
+                        <p className="text-sm text-red-600 dark:text-red-400 mt-1 flex items-center gap-1">
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                           </svg>
@@ -1209,7 +1209,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                         </p>
                       )}
                       {publicPreview.floralSources.length === 0 && !hasUnfilledPlaceholders(stripMarkers(batchForm.public_story)) && (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                        <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
                           Tip: Add floral source to harvests to auto-populate templates
                         </p>
                       )}
@@ -1520,7 +1520,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                             <div className="bg-surface p-4 rounded-xl border border-border inline-block mb-2">
                               <QRCodeSVG id={svgId} value={url} size={180} level="H" includeMargin={true} />
                             </div>
-                            <p className="text-xs text-text-secondary mb-2 break-all">{url}</p>
+                            <p className="text-sm text-text-secondary mb-2 break-all">{url}</p>
                             <Button
                               onClick={() => downloadQrCode(svgId, `qr-${qrBatch.batch_code}-${jar.jar_weight_g}g.png`)}
                               className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
@@ -1541,7 +1541,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                     <div className="bg-surface p-4 rounded-xl border border-border inline-block mb-4">
                       <QRCodeSVG id="qr-code-svg" value={url} size={200} level="H" includeMargin={true} />
                     </div>
-                    <p className="text-xs text-text-secondary mb-4 break-all">{url}</p>
+                    <p className="text-sm text-text-secondary mb-4 break-all">{url}</p>
                     <Button
                       onClick={() => downloadQrCode('qr-code-svg', `qr-${qrBatch.batch_code}.png`)}
                       className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"

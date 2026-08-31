@@ -1392,7 +1392,7 @@ export default function TasksEventsPage() {
                               </table>
                             </div>
                             {loadingOverview && (
-                              <p className="mt-1 text-xs text-text-tertiary print:hidden">Loading hive context…</p>
+                              <p className="mt-1 text-sm text-text-tertiary print:hidden">Loading hive context…</p>
                             )}
                           </div>
                         )}
@@ -1424,7 +1424,7 @@ export default function TasksEventsPage() {
                                     <td className="border border-border px-3 py-2 align-top text-foreground print:border-black">
                                       <span className={task.completed ? 'line-through text-text-tertiary' : ''}>{task.title}</span>
                                       {task.description && (
-                                        <p className="mt-1 text-xs text-text-tertiary print:text-black">{task.description}</p>
+                                        <p className="mt-1 text-sm text-text-tertiary print:text-black">{task.description}</p>
                                       )}
                                     </td>
                                     <td className="border border-border px-3 py-2 align-top text-foreground print:border-black whitespace-nowrap">{formatLocalDate(task.start_date)}</td>

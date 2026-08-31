@@ -83,7 +83,7 @@ function SortableTh({ label, colKey, sortKey, sortDir, onToggle, paddingClass = 
     <th
       scope="col"
       aria-sort={ariaSort}
-      className={`${paddingClass} py-3 text-left text-xs font-medium text-text-tertiary uppercase`}
+      className={`${paddingClass} py-3 text-left text-sm font-medium text-text-tertiary uppercase`}
     >
       <button
         type="button"
@@ -667,7 +667,7 @@ export default function QueensPage() {
  </span>
  {(() => {
  const code = queenCodeFor(queen, queen.user_id === userId ? breederContext : null)
- return code ? <div className="text-xs font-mono text-text-tertiary mt-0.5">{code}</div> : null
+ return code ? <div className="text-sm font-mono text-text-tertiary mt-0.5">{code}</div> : null
  })()}
  </div>
  <span className={`shrink-0 px-2.5 py-1 rounded text-sm font-medium ${queenStatusBadgeClass(queen.status)}`}>
@@ -692,7 +692,7 @@ export default function QueensPage() {
  {calculateQueenAge(queen.birth_date)}
  </div>
  <div>
- <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${markingColorChipClass(queen.marking_color)}`}>
+ <span className={`inline-block px-2 py-1 rounded text-sm font-medium ${markingColorChipClass(queen.marking_color)}`}>
  {queen.marking_color || 'No colour'}
  </span>
  </div>
@@ -717,7 +717,7 @@ export default function QueensPage() {
  )}
  {queen.status === 'active' && queen.birth_date && (Date.now() - new Date(queen.birth_date).getTime()) > 2 * 365 * 24 * 60 * 60 * 1000 && (
  <div className="col-span-2">
- <span className="inline-block px-2 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded border border-amber-300 dark:border-amber-700">
+ <span className="inline-block px-2 py-1 text-sm font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded border border-amber-300 dark:border-amber-700">
  Over 2 years old — replace soon
  </span>
  </div>
@@ -769,16 +769,16 @@ export default function QueensPage() {
  <table className="min-w-full divide-y divide-border">
  <thead className="bg-surface-secondary">
  <tr>
- <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">
  Actions
  </th>
  <SortableTh label="Queen Number" colKey="queen_number" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
  <SortableTh label="Mother" colKey="mother" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
  <SortableTh label="Age" colKey="age" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
- <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">
  Color
  </th>
- <th className="px-3 py-3 text-left text-xs font-medium text-text-tertiary uppercase">
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">
  Hive
  </th>
  <SortableTh label="Apiary" colKey="apiary" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} paddingClass="px-3" />
@@ -849,7 +849,7 @@ export default function QueensPage() {
  // Only stamp the viewer's breeder context on queens they own; shared queens from
  // other beekeepers keep their own provenance (distributed) or show no code.
  const code = queenCodeFor(queen, queen.user_id === userId ? breederContext : null)
- return code ? <div className="text-xs font-mono text-text-tertiary mt-0.5">{code}</div> : null
+ return code ? <div className="text-sm font-mono text-text-tertiary mt-0.5">{code}</div> : null
  })()}
  </td>
  <td className="px-6 py-4 whitespace-nowrap text-text-secondary">
@@ -870,14 +870,14 @@ export default function QueensPage() {
  <span className="flex items-center gap-1.5">
  {calculateQueenAge(queen.birth_date)}
  {queen.status === 'active' && queen.birth_date && (Date.now() - new Date(queen.birth_date).getTime()) > 2 * 365 * 24 * 60 * 60 * 1000 && (
- <span className="px-1.5 py-0.5 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded border border-amber-300 dark:border-amber-700">
+ <span className="px-1.5 py-0.5 text-sm font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded border border-amber-300 dark:border-amber-700">
  Replace soon
  </span>
  )}
  </span>
  </td>
  <td className="px-3 py-4 whitespace-nowrap">
- <span className={`px-2 py-1 rounded text-xs font-medium ${markingColorChipClass(queen.marking_color)}`}>
+ <span className={`px-2 py-1 rounded text-sm font-medium ${markingColorChipClass(queen.marking_color)}`}>
  {queen.marking_color || 'None'}
  </span>
  </td>
@@ -898,7 +898,7 @@ export default function QueensPage() {
  {queen.hives?.apiaries?.name || 'N/A'}
  </td>
  <td className="px-3 py-4 whitespace-nowrap">
- <span className={`px-2 py-1 rounded text-xs font-medium ${queenStatusBadgeClass(queen.status)}`}>
+ <span className={`px-2 py-1 rounded text-sm font-medium ${queenStatusBadgeClass(queen.status)}`}>
  {queenStatusLabel(queen.status)}
  </span>
  </td>

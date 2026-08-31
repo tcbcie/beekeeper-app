@@ -494,7 +494,7 @@ export default function TreatmentManagement() {
                         </td>
                         <td className="px-4 py-3 text-center">
                           <div className="flex flex-col items-center gap-1">
-                            <label className="flex items-center gap-1 text-xs">
+                            <label className="flex items-center gap-1 text-sm">
                               <input
                                 type="checkbox"
                                 checked={formData.approved_in_ireland}
@@ -503,7 +503,7 @@ export default function TreatmentManagement() {
                               />
                               IE
                             </label>
-                            <label className="flex items-center gap-1 text-xs">
+                            <label className="flex items-center gap-1 text-sm">
                               <input
                                 type="checkbox"
                                 checked={formData.approved_in_uk}

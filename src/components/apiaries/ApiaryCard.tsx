@@ -56,22 +56,22 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
             </p>
           )}
           {apiary.is_shared && (
-            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full border border-blue-300 dark:border-blue-700 mt-1">
+            <span className="inline-flex items-center px-2 py-0.5 text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full border border-blue-300 dark:border-blue-700 mt-1">
               👥 Shared via {apiary.team_name || 'team'}
             </span>
           )}
           {!apiary.is_shared && apiary.team_name && (
-            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full border border-purple-300 dark:border-purple-700 mt-1">
+            <span className="inline-flex items-center px-2 py-0.5 text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full border border-purple-300 dark:border-purple-700 mt-1">
               📤 Shared with {apiary.team_name}
             </span>
           )}
           {apiary.is_mating_apiary && !apiary.is_shared && (
-            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full border border-purple-300 dark:border-purple-700 mt-1">
+            <span className="inline-flex items-center px-2 py-0.5 text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full border border-purple-300 dark:border-purple-700 mt-1">
               Mating Location (Apiary)
             </span>
           )}
           {apiary.share_location && (
-            <p className="text-xs text-blue-800 dark:text-blue-400 mt-1 flex items-center gap-1">
+            <p className="text-sm text-blue-800 dark:text-blue-400 mt-1 flex items-center gap-1">
               <MapPin size={12} />
               Location shared publicly (~5km radius)
             </p>
@@ -111,12 +111,12 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
       {/* Hive count and last inspection badges */}
       <div className="flex flex-wrap gap-2 mb-4">
         {apiary.hive_count !== undefined && (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-full border border-amber-300 dark:border-amber-700">
+          <span className="inline-flex items-center gap-1 px-2 py-1 text-sm font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-full border border-amber-300 dark:border-amber-700">
             {apiary.hive_count} hive{apiary.hive_count !== 1 ? 's' : ''}
           </span>
         )}
         {daysSinceInspection !== null ? (
-          <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full border ${
+          <span className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded-full border ${
             daysSinceInspection < 7
               ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
               : daysSinceInspection < 14
@@ -127,7 +127,7 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
             Inspected {daysSinceInspection}d ago
           </span>
         ) : apiary.hive_count && apiary.hive_count > 0 ? (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-surface-secondary text-text-secondary rounded-full border border-border">
+          <span className="inline-flex items-center gap-1 px-2 py-1 text-sm font-medium bg-surface-secondary text-text-secondary rounded-full border border-border">
             <Clock size={10} />
             Never inspected
           </span>

@@ -148,7 +148,7 @@ export default function SalesInsightsPage() {
             <Panel padding="md">
               <p className="text-sm text-text-secondary">Open to fulfil</p>
               <p className="text-2xl font-bold text-foreground tabular-nums">{stats.pendingCount}</p>
-              <p className="text-xs text-text-tertiary">pending order{stats.pendingCount !== 1 ? 's' : ''}</p>
+              <p className="text-sm text-text-tertiary">pending order{stats.pendingCount !== 1 ? 's' : ''}</p>
             </Panel>
           </div>
 
@@ -195,7 +195,7 @@ export default function SalesInsightsPage() {
                   >
                     <div>
                       <p className="font-medium text-foreground">{c.name}</p>
-                      <p className="text-xs text-text-tertiary">{c.order_count} order{c.order_count !== 1 ? 's' : ''}</p>
+                      <p className="text-sm text-text-tertiary">{c.order_count} order{c.order_count !== 1 ? 's' : ''}</p>
                     </div>
                     <span className="font-semibold text-foreground tabular-nums">{formatMoney(c.orders_total, isUkNi)}</span>
                   </Link>
@@ -204,7 +204,7 @@ export default function SalesInsightsPage() {
             )}
           </Panel>
 
-          <p className="text-xs text-text-tertiary">
+          <p className="text-sm text-text-tertiary">
             Revenue figures count fully-paid orders only (cash basis), matching your income ledger. Deposits on
             part-paid orders are shown under Outstanding until the balance clears.
           </p>

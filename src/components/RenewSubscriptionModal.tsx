@@ -331,7 +331,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
               </div>
             </Card>
 
-            <p className="text-xs text-center text-text-tertiary">
+            <p className="text-sm text-center text-text-tertiary">
               Refreshing subscription status...
             </p>
           </div>
@@ -392,7 +392,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                     required
                     disabled={loading}
                   />
-                  <p className="mt-2 text-xs text-text-tertiary">
+                  <p className="mt-2 text-sm text-text-tertiary">
                     Don&apos;t have a renewal code? Contact an admin to get one.
                   </p>
                 </div>
@@ -450,11 +450,11 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-foreground">Annual Subscription</p>
-                      <p className="text-xs text-text-secondary mt-0.5">12 months of access</p>
+                      <p className="text-sm text-text-secondary mt-0.5">12 months of access</p>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold fj-text-info">EUR 24</p>
-                      <p className="text-xs text-text-secondary">per year</p>
+                      <p className="text-sm text-text-secondary">per year</p>
                     </div>
                   </div>
                 </InfoPanel>
@@ -510,11 +510,11 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-foreground">Association Member Rate</p>
-                      <p className="text-xs text-text-secondary mt-0.5">12 months of access + code required</p>
+                      <p className="text-sm text-text-secondary mt-0.5">12 months of access + code required</p>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">EUR 12</p>
-                      <p className="text-xs text-text-secondary">per year</p>
+                      <p className="text-sm text-text-secondary">per year</p>
                     </div>
                   </div>
                 </InfoPanel>
@@ -534,7 +534,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                     required
                     disabled={loading}
                   />
-                  <p className="mt-2 text-xs text-text-tertiary">
+                  <p className="mt-2 text-sm text-text-tertiary">
                     Enter the code provided by your beekeeping association
                   </p>
                 </div>

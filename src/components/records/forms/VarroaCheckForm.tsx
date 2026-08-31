@@ -417,7 +417,7 @@ export default function VarroaCheckForm({
           <label className="block text-sm font-medium text-text-secondary mb-1">
             {isNaturalDrop ? 'Daily Mite Drop' : 'Infestation Rate (%)'}
             {formData.mites_count !== null && formData.sample_size !== null && formData.sample_size > 0 && (
-              <span className="ml-2 text-xs text-green-600 font-normal">(Auto-calculated)</span>
+              <span className="ml-2 text-sm text-green-600 font-normal">(Auto-calculated)</span>
             )}
           </label>
           <input
@@ -430,7 +430,7 @@ export default function VarroaCheckForm({
           />
           {/* Season-based interpretation guidance */}
           {formData.infestation_rate !== null && !isNaturalDrop && (
-            <div className="mt-2 text-xs">
+            <div className="mt-2 text-sm">
               {getInfestationGuidance()}
             </div>
           )}
@@ -447,9 +447,9 @@ export default function VarroaCheckForm({
             <span className="text-sm font-medium text-text-secondary">
               Action Threshold Reached
               {isNaturalDrop ? (
-                <span className="ml-2 text-xs text-text-tertiary font-normal">(Auto-checked if ≥ 5 mites/day)</span>
+                <span className="ml-2 text-sm text-text-tertiary font-normal">(Auto-checked if ≥ 5 mites/day)</span>
               ) : (
-                <span className="ml-2 text-xs text-text-tertiary font-normal">(Auto-checked: Spring ≥1%, Mid/Late ≥3%)</span>
+                <span className="ml-2 text-sm text-text-tertiary font-normal">(Auto-checked: Spring ≥1%, Mid/Late ≥3%)</span>
               )}
             </span>
           </label>
@@ -503,10 +503,10 @@ export default function VarroaCheckForm({
               <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-orange-500 dark:hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all p-4">
                 <div className="flex flex-col items-center justify-center">
                   <Camera size={24} className="text-text-tertiary mb-1" />
-                  <p className="text-xs text-text-tertiary text-center">
+                  <p className="text-sm text-text-tertiary text-center">
                     <span className="font-semibold">Click to upload</span> or drag and drop
                   </p>
-                  <p className="text-xs text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
+                  <p className="text-sm text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
                 </div>
                 <input
                   type="file"

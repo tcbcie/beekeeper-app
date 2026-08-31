@@ -180,7 +180,7 @@ function OutcomeActionEditor({
 
   return (
     <div className="mt-3 rounded-2xl border border-emerald-200/80 bg-white/90 p-3 shadow-sm dark:border-emerald-900/60 dark:bg-surface-elevated/95">
-      <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">
         <CalendarDays size={14} className="text-emerald-700 dark:text-emerald-300" />
         <span>{getOutcomeActionTitle(draft.kind)}</span>
       </div>
@@ -215,7 +215,7 @@ function OutcomeActionEditor({
       {isFailed && (
         <div className="mb-3 space-y-3">
           <div className="space-y-2">
-            <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+            <label className="block text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">
               Reason (optional)
             </label>
             <select
@@ -235,10 +235,10 @@ function OutcomeActionEditor({
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
-              <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+              <label className="block text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">
                 Comment (optional)
               </label>
-              <span className="text-[11px] text-text-tertiary">{draft.comment.length}/{MAX_FAILURE_COMMENT_LENGTH}</span>
+              <span className="text-sm text-text-tertiary">{draft.comment.length}/{MAX_FAILURE_COMMENT_LENGTH}</span>
             </div>
             <textarea
               value={draft.comment}
@@ -252,7 +252,7 @@ function OutcomeActionEditor({
       )}
 
       <div className="space-y-2">
-        <label className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+        <label className="block text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">
           Date
         </label>
         <input
@@ -433,7 +433,7 @@ function OutcomeDateField({
 
   return (
     <div className="space-y-1">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
+      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
       <input
         type="date"
         value={dateEnabled ? draftDate : ''}
@@ -488,8 +488,8 @@ function OutcomeCommentField({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
-        <span className="text-[11px] text-text-tertiary">{disabled ? 0 : draftComment.length}/{maxLength}</span>
+        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
+        <span className="text-sm text-text-tertiary">{disabled ? 0 : draftComment.length}/{maxLength}</span>
       </div>
       <textarea
         value={draftComment}
@@ -518,7 +518,7 @@ function OutcomeReasonField({
 }) {
   return (
     <div className="space-y-1">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
+      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
       <select
         value={reason ?? ''}
         onChange={(event) => void onReasonChange(id, event.target.value)}
@@ -539,7 +539,7 @@ function OutcomeReasonField({
 
 function SectionHeading({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-2 border-b border-border pb-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-text-tertiary">
+    <p className="mb-2 border-b border-border pb-1.5 text-sm font-semibold uppercase tracking-[0.22em] text-text-tertiary">
       {children}
     </p>
   )
@@ -710,7 +710,7 @@ function ExpandedTrackerRowContent({
           || (distribution.offspring_hybridised === true && !distribution.queen_failed)
         ) && (
           <div className="mt-2 space-y-2 border-t border-border pt-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">
               Record details
             </p>
             <div className="grid gap-2">
@@ -1577,7 +1577,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         <div className="rounded-2xl border border-border bg-surface-secondary/55 p-4 shadow-sm dark:bg-surface-elevated/55">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-text-tertiary">Ledger filters</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-text-tertiary">Ledger filters</p>
               <p className="mt-1 text-xs text-text-secondary">{summaryLabel}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -1781,10 +1781,10 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
             <table className="min-w-[48rem] w-full border-separate border-spacing-0 text-sm">
               <thead className="bg-surface-secondary/70 dark:bg-surface-elevated/85">
                 <tr>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Queen</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Actions</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Status</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-text-tertiary">Distribution</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Queen</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Actions</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Distribution</th>
                 </tr>
               </thead>
               <tbody>
@@ -1930,7 +1930,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             <span className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${distribution.recipient_type_dot}`} title={distribution.recipient_type_label} />
                             <span className="font-medium text-foreground">{distribution.recipient_display_name}</span>
                             {distribution.recipient_is_club_member && (
-                              <span className="inline-flex items-center rounded-full border border-forest-300 bg-forest-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-forest-800 dark:border-forest-700 dark:bg-forest-900/40 dark:text-forest-300" title="Club member (mated-queen pricing differs)">
+                              <span className="inline-flex items-center rounded-full border border-forest-300 bg-forest-100 px-1.5 py-0.5 text-sm font-semibold uppercase tracking-wide text-forest-800 dark:border-forest-700 dark:bg-forest-900/40 dark:text-forest-300" title="Club member (mated-queen pricing differs)">
                                 Club
                               </span>
                             )}

@@ -129,7 +129,7 @@ export default function ProvenanceExplainer({ activeTab }: ProvenanceExplainerPr
                     )}
                   </div>
                   <p className="mt-1 text-sm text-text-secondary">{step.what}</p>
-                  <p className="mt-1 text-xs text-text-secondary">{step.when}</p>
+                  <p className="mt-1 text-sm text-text-secondary">{step.when}</p>
                 </li>
               )
             })}

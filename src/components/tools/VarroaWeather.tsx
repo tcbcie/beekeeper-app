@@ -420,7 +420,7 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
             <div className="text-xs mt-1 opacity-75">Winter cluster</div>
           </Button>
         </div>
-        <p className="text-xs text-text-secondary mt-2">
+        <p className="text-sm text-text-secondary mt-2">
           {broodStatus === 'brood'
             ? 'Showing treatments effective when brood is present. Oxalic acid treatments are not recommended.'
             : 'Showing treatments for broodless winter colonies. Oxalic acid is most effective now.'}
@@ -589,7 +589,7 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
                 <span className="text-foreground">Not recommended</span>
               </div>
             </div>
-            <p className="text-xs text-text-secondary mt-3">
+            <p className="text-sm text-text-secondary mt-3">
               Recommendations vary based on colony status. Oxalic acid is most effective during broodless periods. Thymol treatments need active bees to spread the product.
             </p>
           </div>

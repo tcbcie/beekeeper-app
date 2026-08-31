@@ -187,14 +187,14 @@ export default function WolfScaleSelectionModal({
                           <p className="text-sm text-text-tertiary">
                             ID: {scale.scale_id} | {scale.hardware_key}
                           </p>
-                          <p className="text-xs text-text-tertiary">
+                          <p className="text-sm text-text-tertiary">
                             {scale.latest_transmission_timestamp
                               ? `Last seen: ${new Date(scale.latest_transmission_timestamp).toLocaleString()}`
                               : 'No data yet'
                             }
                           </p>
                           {isAssignedElsewhere && (
-                            <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                            <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
                               Currently assigned to Hive {scale.assigned_to?.hiveNumber}
                               {scale.assigned_to?.apiaryName && ` at ${scale.assigned_to.apiaryName}`}
                             </p>
@@ -217,7 +217,7 @@ export default function WolfScaleSelectionModal({
 
         {/* Footer */}
         <div className="p-4 border-t border-border bg-surface-secondary/50">
-          <p className="text-xs text-text-tertiary text-center">
+          <p className="text-sm text-text-tertiary text-center">
             Scales are managed by Wolf Waagen
           </p>
         </div>

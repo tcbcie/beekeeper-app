@@ -207,13 +207,13 @@ export default function HiveDetailPage() {
             <p className="text-text-tertiary">Apiary: {hive.apiaries.name}</p>
           )}
           {hive.is_shared && hive.team_name && (
-            <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-xs font-medium rounded flex items-center gap-1 border border-blue-300 dark:border-blue-800">
+            <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-sm font-medium rounded flex items-center gap-1 border border-blue-300 dark:border-blue-800">
               <span>👥</span>
               <span>Shared via {hive.team_name}</span>
             </span>
           )}
           {!hive.is_shared && hive.shared_with_team && (
-            <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-xs font-medium rounded flex items-center gap-1 border border-purple-300 dark:border-purple-800">
+            <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-sm font-medium rounded flex items-center gap-1 border border-purple-300 dark:border-purple-800">
               <span>📤</span>
               <span>Shared with {hive.shared_with_team}</span>
             </span>
@@ -247,8 +247,8 @@ export default function HiveDetailPage() {
             }`}>
               <Scale size={hive.beep_device_id || hive.wolf_scale_id ? 20 : 18} className={hive.wolf_scale_id ? 'text-blue-600' : 'text-amber-600'} />
               Hive Scale
-              {hive.beep_device_id && <span className="text-xs text-amber-600 font-normal">(BEEP)</span>}
-              {hive.wolf_scale_id && <span className="text-xs text-blue-600 font-normal">(Wolf Waagen)</span>}
+              {hive.beep_device_id && <span className="text-sm text-amber-600 font-normal">(BEEP)</span>}
+              {hive.wolf_scale_id && <span className="text-sm text-blue-600 font-normal">(Wolf Waagen)</span>}
             </h2>
             {isOwner && (hive.beep_device_id || hive.wolf_scale_id) && (
               <Button
@@ -293,7 +293,7 @@ export default function HiveDetailPage() {
                   {beepConnected && (
                     <Button
                       onClick={() => setShowScaleModal(true)}
-                      className="px-3 py-1.5 text-xs bg-amber-600 dark:bg-amber-900/30 text-white dark:text-amber-300 rounded-lg hover:bg-amber-700 dark:hover:bg-amber-900/50 font-medium"
+                      className="px-3 py-1.5 text-sm bg-amber-600 dark:bg-amber-900/30 text-white dark:text-amber-300 rounded-lg hover:bg-amber-700 dark:hover:bg-amber-900/50 font-medium"
                     >
                       Connect BEEP
                     </Button>
@@ -301,7 +301,7 @@ export default function HiveDetailPage() {
                   {wolfConnected && (
                     <Button
                       onClick={() => setShowWolfModal(true)}
-                      className="px-3 py-1.5 text-xs bg-blue-600 dark:bg-blue-900/30 text-white dark:text-blue-300 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-900/50 font-medium"
+                      className="px-3 py-1.5 text-sm bg-blue-600 dark:bg-blue-900/30 text-white dark:text-blue-300 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-900/50 font-medium"
                     >
                       Connect Wolf
                     </Button>
@@ -356,10 +356,10 @@ export default function HiveDetailPage() {
                 </span>
                 <div className="flex gap-2">
                   {inspection.queen_seen && (
-                    <span className="px-2 py-1 bg-green-900/50 text-green-300 text-xs rounded border border-green-800">Queen Seen</span>
+                    <span className="px-2 py-1 bg-green-900/50 text-green-300 text-sm rounded border border-green-800">Queen Seen</span>
                   )}
                   {inspection.eggs_present && (
-                    <span className="px-2 py-1 bg-blue-900/50 text-blue-300 text-xs rounded border border-blue-800">Eggs</span>
+                    <span className="px-2 py-1 bg-blue-900/50 text-blue-300 text-sm rounded border border-blue-800">Eggs</span>
                   )}
                 </div>
               </div>
@@ -577,7 +577,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
             <div className="flex justify-between items-center">
               <span className="text-text-tertiary">Status:</span>
               <div className="flex items-center gap-2">
-                <span className={`font-medium px-2 py-1 rounded text-xs ${
+                <span className={`font-medium px-2 py-1 rounded text-sm ${
                   hive.status === 'active' ? 'bg-green-900/50 text-green-300 border border-green-800' :
                   hive.status === 'archived' ? 'bg-surface-secondary text-text-primary' :
                   'bg-surface-secondary text-text-primary'
@@ -585,7 +585,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                   {hive.status}
                 </span>
                 {hive.is_queenless && !hive.archived_at && (
-                  <span className="font-medium px-2 py-1 rounded text-xs bg-red-900/50 text-red-300 border border-red-800">
+                  <span className="font-medium px-2 py-1 rounded text-sm bg-red-900/50 text-red-300 border border-red-800">
                     {formatQueenlessLabel(hive.queenless_reason)}
                   </span>
                 )}
@@ -600,7 +600,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
             {hive.colony_established_date && (
               <div className="flex justify-between">
                 <span className="text-text-tertiary">Colony Established:</span>
-                <span className="font-medium text-xs text-text-primary">{new Date(hive.colony_established_date).toLocaleDateString()}</span>
+                <span className="font-medium text-sm text-text-primary">{new Date(hive.colony_established_date).toLocaleDateString()}</span>
               </div>
             )}
             {hive.configuration?.right_sized_broodbox && (
@@ -619,19 +619,19 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
             {hive.archived_at && (
               <div className="flex justify-between">
                 <span className="text-text-tertiary">Archived:</span>
-                <span className="font-medium text-xs text-text-primary">{new Date(hive.archived_at).toLocaleDateString()}</span>
+                <span className="font-medium text-sm text-text-primary">{new Date(hive.archived_at).toLocaleDateString()}</span>
               </div>
             )}
             {hive.archived_at && hive.archive_reason_value?.value && (
               <div className="flex justify-between">
                 <span className="text-text-tertiary">Archive Reason:</span>
-                <span className="font-medium text-xs text-text-primary">{hive.archive_reason_value.value}</span>
+                <span className="font-medium text-sm text-text-primary">{hive.archive_reason_value.value}</span>
               </div>
             )}
             {hive.archived_at && hive.archive_notes && (
               <div className="pt-2">
-                <span className="text-text-tertiary block mb-1 text-xs">Archive Notes:</span>
-                <span className="text-text-secondary text-xs italic">{hive.archive_notes}</span>
+                <span className="text-text-tertiary block mb-1 text-sm">Archive Notes:</span>
+                <span className="text-text-secondary text-sm italic">{hive.archive_notes}</span>
               </div>
             )}
           </div>
@@ -655,7 +655,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                 {(hive.queens.status === 'cell' || hive.queens.status === 'virgin' || hive.queens.status === 'active') && (
                   <div className="flex justify-between items-center">
                     <span className="text-text-tertiary">Stage:</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${queenStatusBadgeClass(hive.queens.status)}`}>
+                    <span className={`px-2 py-1 rounded text-sm font-medium ${queenStatusBadgeClass(hive.queens.status)}`}>
                       {hive.queens.status === 'active' ? 'Mated' : hive.queens.status === 'virgin' ? 'Virgin' : 'Cell'}
                     </span>
                   </div>
@@ -663,7 +663,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                 {hive.queens.marking_color && (
                   <div className="flex justify-between items-center">
                     <span className="text-text-tertiary">Marked Colour:</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    <span className={`px-2 py-1 rounded text-sm font-medium ${
                       hive.queens.marking_color === 'White' ? 'bg-surface-secondary text-text-primary' :
                       hive.queens.marking_color === 'Yellow' ? 'bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200' :
                       hive.queens.marking_color === 'Red' ? 'bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-200' :
@@ -678,7 +678,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                 {hive.queens.birth_date && (
                   <div className="flex justify-between">
                     <span className="text-text-tertiary">Birth Date:</span>
-                    <span className="font-medium text-xs text-text-primary">{new Date(hive.queens.birth_date).toLocaleDateString()}</span>
+                    <span className="font-medium text-sm text-text-primary">{new Date(hive.queens.birth_date).toLocaleDateString()}</span>
                   </div>
                 )}
                 {/* Only show an install date that is plausible: a queen cannot be installed
@@ -687,7 +687,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                 {hive.queen_installed_date && (!hive.queens.birth_date || hive.queen_installed_date >= hive.queens.birth_date) && (
                   <div className="flex justify-between">
                     <span className="text-text-tertiary">Installed:</span>
-                    <span className="font-medium text-xs text-text-primary">{new Date(hive.queen_installed_date).toLocaleDateString()}</span>
+                    <span className="font-medium text-sm text-text-primary">{new Date(hive.queen_installed_date).toLocaleDateString()}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -700,7 +700,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                 {hive.queen_marking_color && (
                   <div className="flex justify-between items-center">
                     <span className="text-text-tertiary">Marked Colour:</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    <span className={`px-2 py-1 rounded text-sm font-medium ${
                       hive.queen_marking_color === 'White' ? 'bg-surface-secondary text-text-primary' :
                       hive.queen_marking_color === 'Yellow' ? 'bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200' :
                       hive.queen_marking_color === 'Red' ? 'bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-200' :
@@ -715,7 +715,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                 {hive.queen_installed_date && (
                   <div className="flex justify-between">
                     <span className="text-text-tertiary">Installed:</span>
-                    <span className="font-medium text-xs text-text-primary">{new Date(hive.queen_installed_date).toLocaleDateString()}</span>
+                    <span className="font-medium text-sm text-text-primary">{new Date(hive.queen_installed_date).toLocaleDateString()}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -742,18 +742,18 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
             {hive.queen_last_seen ? (
               <div className="flex justify-between">
                 <span className="text-text-tertiary">Queen Last Seen:</span>
-                <span className="font-medium text-xs text-text-primary">{new Date(hive.queen_last_seen).toLocaleDateString()}</span>
+                <span className="font-medium text-sm text-text-primary">{new Date(hive.queen_last_seen).toLocaleDateString()}</span>
               </div>
             ) : (
-              <div className="text-text-tertiary italic text-xs">Queen not seen yet</div>
+              <div className="text-text-tertiary italic text-sm">Queen not seen yet</div>
             )}
             {hive.eggs_last_present ? (
               <div className="flex justify-between">
                 <span className="text-text-tertiary">Eggs Last Present:</span>
-                <span className="font-medium text-xs text-text-primary">{new Date(hive.eggs_last_present).toLocaleDateString()}</span>
+                <span className="font-medium text-sm text-text-primary">{new Date(hive.eggs_last_present).toLocaleDateString()}</span>
               </div>
             ) : (
-              <div className="text-text-tertiary italic text-xs">No eggs recorded yet</div>
+              <div className="text-text-tertiary italic text-sm">No eggs recorded yet</div>
             )}
           </div>
         </div>
@@ -804,7 +804,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
             </h3>
             <Link
               href={`/dashboard/tasks?hive=${hiveId}`}
-              className="text-xs text-forest-600 dark:text-emerald-400 hover:text-emerald-300"
+              className="text-sm text-forest-600 dark:text-emerald-400 hover:text-emerald-300"
             >
               View All
             </Link>
@@ -843,9 +843,9 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                     <div className="flex-1 min-w-0">
                       <div className={`font-medium text-sm truncate ${priorityTitleText}`}>{task.title}</div>
                       {task.description && (
-                        <div className={`text-xs mt-1 line-clamp-1 ${priorityDescriptionText}`}>{task.description}</div>
+                        <div className={`text-sm mt-1 line-clamp-1 ${priorityDescriptionText}`} title={task.description}>{task.description}</div>
                       )}
-                      <div className={`flex items-center gap-2 mt-1 text-xs ${priorityMetaText}`}>
+                      <div className={`flex items-center gap-2 mt-1 text-sm ${priorityMetaText}`}>
                         <Calendar size={12} />
                         <span>{new Date(task.start_date).toLocaleDateString()}</span>
                         {task.category && (
@@ -856,7 +856,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                      <span className={`text-sm px-2 py-0.5 rounded font-medium ${
                         task.priority === 'urgent' ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800' :
                         task.priority === 'high' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300 border border-orange-300 dark:border-orange-800' :
                         task.priority === 'normal' ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800' :

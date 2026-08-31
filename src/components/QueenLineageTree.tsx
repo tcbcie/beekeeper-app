@@ -390,7 +390,7 @@ export default function QueenLineageTree({ queenId, expanded, onToggle, motherFa
                     <div className="w-px h-4 bg-border"></div>
                   </div>
                   <div>
-                    <p className="text-xs text-text-tertiary text-center mb-2">
+                    <p className="text-sm text-text-tertiary text-center mb-2">
                       Daughters ({lineage.children.length})
                     </p>
                     <div className="flex flex-wrap justify-center gap-2">
@@ -421,7 +421,7 @@ export default function QueenLineageTree({ queenId, expanded, onToggle, motherFa
               {/* Siblings */}
               {lineage.siblings.length > 0 && (
                 <div className="pt-4 border-t border-border">
-                  <p className="text-xs text-text-tertiary mb-2">
+                  <p className="text-sm text-text-tertiary mb-2">
                     Sisters (same mother): {lineage.siblings.length}
                   </p>
                   <div className="flex flex-wrap gap-2">

@@ -56,7 +56,7 @@ const plannerShellClass = 'relative overflow-hidden rounded-[32px] border border
 const plannerPanelClass = 'rounded-[28px] border border-border bg-surface/90 p-4 shadow-sm sm:p-5'
 const plannerSummaryCardClass = 'rounded-2xl border border-border bg-surface-secondary/80 p-4 shadow-sm'
 const snapshotInsetSurfaceClass = 'rounded-xl border border-border bg-surface px-3 py-3 shadow-sm'
-const snapshotInsetBadgeBaseClass = 'inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]'
+const snapshotInsetBadgeBaseClass = 'inline-flex rounded-full border px-2.5 py-1 text-sm font-semibold uppercase tracking-[0.14em]'
 
 const PLANNER_TONES: Record<PlannerTone, { accentBorderClass: string; badgeClass: string; markerClass: string }> = {
   blue: {
@@ -289,7 +289,7 @@ function SnapshotPanel({
     <section className={plannerPanelClass}>
       <div className="border-b border-border/80 pb-4">
         <div className="max-w-2xl">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-text-tertiary">{eyebrow}</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-text-tertiary">{eyebrow}</p>
           <h4 className="mt-2 text-lg font-semibold text-foreground">{title}</h4>
           <p className="mt-2 text-sm leading-6 text-text-secondary">{description}</p>
         </div>
@@ -319,7 +319,7 @@ function SnapshotAnchorCard({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className={`h-2.5 w-2.5 rounded-full ${toneStyles.markerClass}`} />
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
           </div>
           <p className="mt-2 text-sm text-text-secondary">{label}</p>
         </div>
@@ -358,7 +358,7 @@ function SnapshotWindowCard({
         <div className="min-w-0 max-w-xl">
           <div className="flex items-center gap-2">
             <span className={`h-2.5 w-2.5 rounded-full ${toneStyles.markerClass}`} />
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
           </div>
           <p className="mt-2 text-sm leading-6 text-text-secondary">{note}</p>
         </div>
@@ -371,7 +371,7 @@ function SnapshotWindowCard({
       <div className="mt-4 grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(12rem,1fr))]">
         <div className={snapshotInsetSurfaceClass}>
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">From</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-text-tertiary">From</p>
             <span className={`${snapshotInsetBadgeBaseClass} ${toneStyles.badgeClass}`}>
               {start.weekday}
             </span>
@@ -380,7 +380,7 @@ function SnapshotWindowCard({
         </div>
         <div className={snapshotInsetSurfaceClass}>
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">Until</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-text-tertiary">Until</p>
             <span className={`${snapshotInsetBadgeBaseClass} ${toneStyles.badgeClass}`}>
               {end.weekday}
             </span>
@@ -412,7 +412,7 @@ function SnapshotSupportStrip({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className={`h-2.5 w-2.5 rounded-full ${toneStyles.markerClass}`} />
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-text-tertiary">{title}</p>
           </div>
           <p className="mt-2 text-sm leading-6 text-text-secondary">{note}</p>
         </div>
@@ -441,7 +441,7 @@ function MilestoneCard({ milestone }: { milestone: TimelineMilestone }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className={`h-2.5 w-2.5 rounded-full ${toneStyles.markerClass}`} />
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-text-tertiary">{milestone.offsetLabel}</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-text-tertiary">{milestone.offsetLabel}</p>
           </div>
           <h4 className="mt-2 text-lg font-semibold text-foreground">{milestone.label}</h4>
         </div>
@@ -468,7 +468,7 @@ function PlannerInfoBlock({
 }) {
   return (
     <div className="rounded-2xl border border-border bg-surface-secondary/80 px-4 py-3 shadow-sm">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-tertiary">{label}</p>
+      <p className="text-sm font-semibold uppercase tracking-[0.16em] text-text-tertiary">{label}</p>
       <p className="mt-2 text-sm leading-6 text-text-secondary">{value}</p>
     </div>
   )

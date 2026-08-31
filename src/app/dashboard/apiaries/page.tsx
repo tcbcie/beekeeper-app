@@ -808,7 +808,7 @@ export default function ApiariesPage() {
                   <div className="flex flex-col items-center justify-center py-4">
                     <Camera size={24} className="text-text-tertiary mb-2" />
                     <p className="text-sm text-text-tertiary">Click to upload photo</p>
-                    <p className="text-xs text-text-tertiary mt-1">PNG, JPG up to 5MB</p>
+                    <p className="text-sm text-text-tertiary mt-1">PNG, JPG up to 5MB</p>
                   </div>
                   <input
                     type="file"
@@ -869,7 +869,7 @@ export default function ApiariesPage() {
                   UK/NI Postcode
                 </label>
               </div>
-              <p className="text-xs text-text-tertiary mt-1">Optional - Used for automatic weather data on inspections</p>
+              <p className="text-sm text-text-tertiary mt-1">Optional - Used for automatic weather data on inspections</p>
             </div>
 
             {/* GPS Coordinates */}
@@ -917,7 +917,7 @@ export default function ApiariesPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs text-text-tertiary mb-1">Latitude</label>
+                  <label className="block text-sm text-text-tertiary mb-1">Latitude</label>
                   <TextInput
                     type="text"
                     value={formData.latitude}
@@ -931,7 +931,7 @@ export default function ApiariesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-text-tertiary mb-1">Longitude</label>
+                  <label className="block text-sm text-text-tertiary mb-1">Longitude</label>
                   <TextInput
                     type="text"
                     value={formData.longitude}
@@ -947,7 +947,7 @@ export default function ApiariesPage() {
               </div>
               {formData.elevation && (
                 <div className="mt-3">
-                  <label className="block text-xs text-text-tertiary mb-1">Elevation (metres above sea level)</label>
+                  <label className="block text-sm text-text-tertiary mb-1">Elevation (metres above sea level)</label>
                   <TextInput
                     type="text"
                     value={`${formData.elevation} m`}
@@ -958,7 +958,7 @@ export default function ApiariesPage() {
               )}
               {formData.grid_reference && (
                 <div className="mt-3">
-                  <label className="block text-xs text-text-tertiary mb-1">Irish Grid (10km square)</label>
+                  <label className="block text-sm text-text-tertiary mb-1">Irish Grid (10km square)</label>
                   <TextInput
                     type="text"
                     value={formData.grid_reference}
@@ -988,7 +988,7 @@ export default function ApiariesPage() {
                   </Button>
                 </div>
               )}
-              <p className="text-xs text-text-tertiary mt-2">Used for GDD calculations, weather data on inspections, and identifying potential drone congregation areas. Use &quot;Pick on Map&quot; for exact positioning, or &quot;Get Coordinates&quot; for approximate location from Eircode/postcode.</p>
+              <p className="text-sm text-text-tertiary mt-2">Used for GDD calculations, weather data on inspections, and identifying potential drone congregation areas. Use &quot;Pick on Map&quot; for exact positioning, or &quot;Get Coordinates&quot; for approximate location from Eircode/postcode.</p>
             </div>
 
             <div>
@@ -1022,7 +1022,7 @@ export default function ApiariesPage() {
                   />
                 <div>
                   <span className="text-sm font-medium text-text-primary">Mating Location (Apiary)</span>
-                  <p className="text-xs text-text-tertiary mt-1">
+                  <p className="text-sm text-text-tertiary mt-1">
                     Mark this as a mating location used for queen mating that you don&apos;t actively manage.
                   </p>
                 </div>
@@ -1048,7 +1048,7 @@ export default function ApiariesPage() {
                   />
                   <div>
                     <span className="text-sm font-medium text-text-primary">Share apiary location publicly</span>
-                    <p className="text-xs text-text-tertiary mt-1">
+                    <p className="text-sm text-text-tertiary mt-1">
                       Your exact location will be <strong>obfuscated to a ~5km radius</strong> to protect your privacy.
                       This helps beekeepers identify drone congregation areas and plan apiary placement.
                     </p>
@@ -1069,14 +1069,14 @@ export default function ApiariesPage() {
                   />
                   <div>
                     <span className="text-sm font-medium text-text-primary">Declare as NIHBS Conservation Area</span>
-                    <p className="text-xs text-text-tertiary mt-1">
+                    <p className="text-sm text-text-tertiary mt-1">
                       Marks this apiary as a designated AMM (Apis mellifera mellifera) conservation area on the community map.
                     </p>
                   </div>
                 </label>
                 {formData.is_conservation_area && (
                   <div className="mt-3 ml-7">
-                    <label className="block text-xs font-medium text-text-secondary mb-1">Conservation area radius (km)</label>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Conservation area radius (km)</label>
                       <TextInput
                         type="number"
                         min="0.5"

@@ -67,7 +67,7 @@ const TraitRow = ({
           {formatRating(value)}
         </span>
         {comparison != null && (
-          <span className="inline-flex items-center gap-0.5 text-xs text-text-tertiary min-w-[80px]">
+          <span className="inline-flex items-center gap-0.5 text-sm text-text-tertiary min-w-[80px]">
             {delta === 'up' && <ArrowUp size={12} className="text-green-600 dark:text-green-400" />}
             {delta === 'down' && <ArrowDown size={12} className="text-red-600 dark:text-red-400" />}
             {delta === 'same' && <Minus size={12} />}
@@ -117,7 +117,7 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border">
         <div className="flex flex-wrap items-center gap-4">
           <div>
-            <label className="block text-xs font-semibold text-text-tertiary uppercase mb-1">
+            <label className="block text-sm font-semibold text-text-tertiary uppercase mb-1">
               Time Window
             </label>
             <select
@@ -131,7 +131,7 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-text-tertiary uppercase mb-1">
+            <label className="block text-sm font-semibold text-text-tertiary uppercase mb-1">
               Min Inspections
             </label>
             <select
@@ -184,7 +184,7 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
             <p><span className="text-text-tertiary">Mated date:</span> <span className="text-text-primary">{formatDate(queen.mated_date ?? null)}</span></p>
             <p><span className="text-text-tertiary">Mated at (Eircode):</span> <span className="text-text-primary">{queen.mated_at_eircode || 'N/A'}</span></p>
             {!queen.father && (queen.mated_at_eircode || queen.mated_date) && (
-              <p className="text-xs text-text-tertiary italic mt-2">
+              <p className="text-sm text-text-tertiary italic mt-2">
                 In the absence of a recorded paternal line, the mating site stands in for drone provenance.
               </p>
             )}
@@ -212,11 +212,11 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
                   className="flex flex-wrap items-center justify-between gap-2 p-3 bg-surface-elevated dark:bg-surface-elevated rounded-lg border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors"
                 >
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded border ${colorBadgeClass(s.marking_color)}`}>
+                    <span className={`px-2 py-0.5 text-sm font-medium rounded border ${colorBadgeClass(s.marking_color)}`}>
                       {s.marking_color || 'None'}
                     </span>
                     <span className="font-medium text-foreground">{s.queen_number}</span>
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                    <span className={`px-2 py-0.5 text-sm font-medium rounded ${
                       s.status === 'active'
                         ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                         : s.status === 'cell'
@@ -226,7 +226,7 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
                       {s.status === 'cell' ? 'Cell' : s.status}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-text-secondary flex-wrap">
+                  <div className="flex items-center gap-3 text-sm text-text-secondary flex-wrap">
                     {s.hive_number && (
                       <span className="inline-flex items-center gap-1">
                         <ExternalLink size={12} />
@@ -252,7 +252,7 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground">Trait Averages</h2>
           {report && (
-            <span className="text-xs text-text-tertiary">
+            <span className="text-sm text-text-tertiary">
               n = {report.traitAverages.n} inspection{report.traitAverages.n === 1 ? '' : 's'}
             </span>
           )}
@@ -279,7 +279,7 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
           </div>
         )}
         {report && report.sisterAverages.n > 0 && traitsMeetMinimum && (
-          <p className="text-xs text-text-tertiary mt-3">
+          <p className="text-sm text-text-tertiary mt-3">
             Sister comparison combines {report.sisterAverages.n} inspection{report.sisterAverages.n === 1 ? '' : 's'} across {report.sisters.length} sister{report.sisters.length === 1 ? '' : 's'}.
           </p>
         )}
@@ -310,12 +310,12 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
               <div className="flex items-start gap-2 mt-2 p-3 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-300 dark:border-amber-700">
                 <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 uppercase">Disease flags</p>
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 uppercase">Disease flags</p>
                   <p className="text-sm text-amber-800 dark:text-amber-300">{report.latestSnapshot.diseases.join(', ')}</p>
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-text-tertiary italic mt-1">No disease flags on the most recent inspection.</p>
+              <p className="text-sm text-text-tertiary italic mt-1">No disease flags on the most recent inspection.</p>
             )}
           </div>
         ) : (

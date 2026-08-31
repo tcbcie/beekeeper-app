@@ -205,7 +205,7 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
           </p>
         ) : (
           <InfoPanel tone="amber" title="Data export is available to users with an active subscription.">
-            <p className="text-xs mt-1">
+            <p className="text-sm mt-1">
               Please renew your subscription to export your beekeeping data.
             </p>
           </InfoPanel>

@@ -399,7 +399,7 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
                     )}
 
                     {ticket.resolved_by && ticket.resolved_at && (
-                      <p className="text-xs text-text-tertiary">
+                      <p className="text-sm text-text-tertiary">
                         Resolved by: {ticket.resolver?.email || 'Unknown'} on{' '}
                         {new Date(ticket.resolved_at!).toLocaleString()}
                       </p>

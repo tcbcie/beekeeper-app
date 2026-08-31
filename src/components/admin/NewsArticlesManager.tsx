@@ -330,7 +330,7 @@ export default function NewsArticlesManager() {
                 {adding ? 'Fetching...' : 'Add'}
               </Button>
             </div>
-            <p className="text-xs text-text-tertiary mt-1">
+            <p className="text-sm text-text-tertiary mt-1">
               Metadata (title, description, image) will be automatically extracted from the URL
             </p>
           </div>
@@ -367,7 +367,7 @@ export default function NewsArticlesManager() {
                 // Edit Mode
                 <div className="p-4 space-y-3">
                   <div>
-                    <label className="block text-xs text-text-tertiary mb-1">Title</label>
+                    <label className="block text-sm text-text-tertiary mb-1">Title</label>
                     <input
                       type="text"
                       value={editTitle}
@@ -376,7 +376,7 @@ export default function NewsArticlesManager() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-text-tertiary mb-1">Description</label>
+                    <label className="block text-sm text-text-tertiary mb-1">Description</label>
                     <textarea
                       value={editDescription}
                       onChange={(e) => setEditDescription(e.target.value)}
@@ -386,7 +386,7 @@ export default function NewsArticlesManager() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-text-tertiary mb-1">Author</label>
+                      <label className="block text-sm text-text-tertiary mb-1">Author</label>
                       <input
                         type="text"
                         value={editAuthor}
@@ -395,7 +395,7 @@ export default function NewsArticlesManager() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-text-tertiary mb-1">Published Date</label>
+                      <label className="block text-sm text-text-tertiary mb-1">Published Date</label>
                       <input
                         type="date"
                         value={editPublishedDate}
@@ -443,7 +443,7 @@ export default function NewsArticlesManager() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-foreground line-clamp-1">{article.title}</h4>
-                        <p className="text-xs text-text-tertiary mt-0.5">
+                        <p className="text-sm text-text-tertiary mt-0.5">
                           {article.site_name || new URL(article.url).hostname} • {formatDate(article.published_date)}
                           {article.author && ` • ${article.author}`}
                         </p>

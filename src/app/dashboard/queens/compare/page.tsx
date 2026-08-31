@@ -297,7 +297,7 @@ export default function QueenComparePage() {
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border">
         <div className="flex flex-wrap items-center gap-4">
           <div>
-            <label className="block text-xs font-semibold text-text-tertiary uppercase mb-1">
+            <label className="block text-sm font-semibold text-text-tertiary uppercase mb-1">
               Time Window
             </label>
             <select
@@ -310,7 +310,7 @@ export default function QueenComparePage() {
               <option value="30">Last 30 days</option>
             </select>
           </div>
-          <p className="text-xs text-text-tertiary flex-1">
+          <p className="text-sm text-text-tertiary flex-1">
             Trait averages use the selected window. Latest inspection always shows the most recent entry.
           </p>
         </div>

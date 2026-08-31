@@ -132,7 +132,7 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
         </p>
         <div className="flex items-center gap-2">
           {lastUpdated && (
-            <span className="text-xs text-text-tertiary flex items-center gap-1">
+            <span className="text-sm text-text-tertiary flex items-center gap-1">
               <Clock size={10} />
               {lastUpdated.toLocaleTimeString()}
             </span>
@@ -151,7 +151,7 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
       {/* Weight Section */}
       {(weight !== undefined || yieldKg !== undefined || weightChange7d !== null || weightChange30d !== null) && (
         <div className="p-3 border border-border rounded-lg space-y-2">
-          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
+          <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* Weight */}
             {weight !== undefined && (
@@ -159,8 +159,8 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                 <div className="flex items-center gap-1.5">
                   <Scale size={14} className="text-blue-600 shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-[10px] text-blue-600 dark:text-blue-400">Current</p>
-                    <p className="text-sm font-bold text-blue-800 dark:text-blue-200 truncate">
+                    <p className="text-sm text-blue-600 dark:text-blue-400">Current</p>
+                    <p className="text-base font-bold text-blue-800 dark:text-blue-200 truncate">
                       {weight.toFixed(1)} kg
                     </p>
                   </div>
@@ -182,8 +182,8 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                     <TrendingDown size={14} className="text-red-600 shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <p className={`text-[10px] ${yieldKg >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>24h</p>
-                    <p className={`text-sm font-bold truncate ${yieldKg >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                    <p className={`text-sm ${yieldKg >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>24h</p>
+                    <p className={`text-base font-bold truncate ${yieldKg >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
                       {yieldKg >= 0 ? '+' : ''}{yieldKg.toFixed(2)} kg
                     </p>
                   </div>
@@ -205,8 +205,8 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                     <TrendingDown size={14} className="text-red-600 shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <p className={`text-[10px] ${weightChange7d >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>7d</p>
-                    <p className={`text-sm font-bold truncate ${weightChange7d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                    <p className={`text-sm ${weightChange7d >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>7d</p>
+                    <p className={`text-base font-bold truncate ${weightChange7d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
                       {weightChange7d >= 0 ? '+' : ''}{weightChange7d.toFixed(2)} kg
                     </p>
                   </div>
@@ -228,8 +228,8 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                     <TrendingDown size={14} className="text-red-600 shrink-0" />
                   )}
                   <div className="min-w-0">
-                    <p className={`text-[10px] ${weightChange30d >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>30d</p>
-                    <p className={`text-sm font-bold truncate ${weightChange30d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                    <p className={`text-sm ${weightChange30d >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>30d</p>
+                    <p className={`text-base font-bold truncate ${weightChange30d >= 0 ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
                       {weightChange30d >= 0 ? '+' : ''}{weightChange30d.toFixed(2)} kg
                     </p>
                   </div>
@@ -243,14 +243,14 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
       {/* Colony Section - Brood Temperature */}
       {broodTemp !== undefined && (
         <div className="p-3 border border-border rounded-lg space-y-2">
-          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
+          <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
               <div className="flex items-center gap-1.5">
                 <Flame size={14} className="text-orange-600 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-[10px] text-orange-600 dark:text-orange-400">Brood Temp</p>
-                  <p className="text-sm font-bold text-orange-800 dark:text-orange-200 truncate">
+                  <p className="text-sm text-orange-600 dark:text-orange-400">Brood Temp</p>
+                  <p className="text-base font-bold text-orange-800 dark:text-orange-200 truncate">
                     {broodTemp.toFixed(1)}°C
                   </p>
                 </div>
@@ -263,7 +263,7 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
       {/* Environmental Section - Weather Data */}
       {(temperature !== undefined || humidity !== undefined || typeof rain === 'number' || typeof windSpeed === 'number' || typeof windDirection === 'number') && (
         <div className="p-3 border border-border rounded-lg space-y-2">
-          <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
+          <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* Temperature */}
             {temperature !== undefined && (
@@ -271,8 +271,8 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                 <div className="flex items-center gap-1.5">
                   <Thermometer size={14} className="text-sky-600 shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-[10px] text-sky-600 dark:text-sky-400">Temp</p>
-                    <p className="text-sm font-bold text-sky-800 dark:text-sky-200 truncate">
+                    <p className="text-sm text-sky-600 dark:text-sky-400">Temp</p>
+                    <p className="text-base font-bold text-sky-800 dark:text-sky-200 truncate">
                       {temperature.toFixed(1)}°C
                     </p>
                   </div>
@@ -286,8 +286,8 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                 <div className="flex items-center gap-1.5">
                   <Droplets size={14} className="text-cyan-600 shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-[10px] text-cyan-600 dark:text-cyan-400">Humidity</p>
-                    <p className="text-sm font-bold text-cyan-800 dark:text-cyan-200 truncate">
+                    <p className="text-sm text-cyan-600 dark:text-cyan-400">Humidity</p>
+                    <p className="text-base font-bold text-cyan-800 dark:text-cyan-200 truncate">
                       {humidity.toFixed(0)}%
                     </p>
                   </div>
@@ -301,8 +301,8 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                 <div className="flex items-center gap-1.5">
                   <CloudRain size={14} className="text-indigo-600 shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-[10px] text-indigo-600 dark:text-indigo-400">Rain</p>
-                    <p className="text-sm font-bold text-indigo-800 dark:text-indigo-200 truncate">
+                    <p className="text-sm text-indigo-600 dark:text-indigo-400">Rain</p>
+                    <p className="text-base font-bold text-indigo-800 dark:text-indigo-200 truncate">
                       {rain.toFixed(1)} mm
                     </p>
                   </div>
@@ -316,8 +316,8 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                 <div className="flex items-center gap-1.5">
                   <Wind size={14} className="text-text-secondary shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-[10px] text-text-secondary">Wind</p>
-                    <p className="text-sm font-bold text-foreground truncate">
+                    <p className="text-sm text-text-secondary">Wind</p>
+                    <p className="text-base font-bold text-foreground truncate">
                       {windSpeed.toFixed(0)} km/h
                     </p>
                   </div>
@@ -331,8 +331,8 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                 <div className="flex items-center gap-1.5">
                   <Compass size={14} className="text-violet-600 shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-[10px] text-violet-600 dark:text-violet-400">Direction</p>
-                    <p className="text-sm font-bold text-violet-800 dark:text-violet-200 truncate">
+                    <p className="text-sm text-violet-600 dark:text-violet-400">Direction</p>
+                    <p className="text-base font-bold text-violet-800 dark:text-violet-200 truncate">
                       {getCardinalDirection(windDirection)}
                     </p>
                   </div>
@@ -348,7 +348,7 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
         const { Icon, color, percent } = getBatteryInfo(batteryVoltage)
         return (
           <div className="p-3 border border-border rounded-lg space-y-2">
-            <p className="text-xs font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
+            <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <div className={`p-2 rounded border ${
                 color === 'green' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
@@ -362,12 +362,12 @@ export default function WolfSensorDisplay({ scaleId, scaleName, hiveId }: WolfSe
                     'text-red-600'
                   }`} />
                   <div className="min-w-0">
-                    <p className={`text-[10px] ${
+                    <p className={`text-sm ${
                       color === 'green' ? 'text-green-600 dark:text-green-400' :
                       color === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
                       'text-red-600 dark:text-red-400'
                     }`}>Battery</p>
-                    <p className={`text-sm font-bold truncate ${
+                    <p className={`text-base font-bold truncate ${
                       color === 'green' ? 'text-green-800 dark:text-green-200' :
                       color === 'yellow' ? 'text-yellow-800 dark:text-yellow-200' :
                       'text-red-800 dark:text-red-200'

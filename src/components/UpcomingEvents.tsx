@@ -161,7 +161,7 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
       <div className="flex items-center gap-2 mb-4">
         <Calendar size={20} className="text-blue-600 dark:text-blue-400" />
         <h2 className="text-lg font-semibold text-foreground">Upcoming Events</h2>
-        <span className="ml-auto text-xs text-text-tertiary">Next 7 days</span>
+        <span className="ml-auto text-sm text-text-tertiary">Next 7 days</span>
       </div>
 
       <div className="space-y-3">
@@ -180,17 +180,17 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-xs text-text-secondary">{getEventLabel(event.event_type)}</p>
+                  <p className="text-sm text-text-secondary">{getEventLabel(event.event_type)}</p>
                   {event.category && (
-                    <span className="text-xs text-text-tertiary">• {getCategoryLabel(event.category)}</span>
+                    <span className="text-sm text-text-tertiary">• {getCategoryLabel(event.category)}</span>
                   )}
                 </div>
                 {event.apiary_name && (
-                  <p className="text-xs text-text-tertiary mt-0.5">{event.apiary_name}</p>
+                  <p className="text-sm text-text-tertiary mt-0.5">{event.apiary_name}</p>
                 )}
-                <p className="text-xs text-text-tertiary mt-0.5">{formatDate(event.date)}</p>
+                <p className="text-sm text-text-tertiary mt-0.5">{formatDate(event.date)}</p>
               </div>
-              <span className={`px-2 py-1 rounded text-xs font-medium border ${getBadgeColor(event.days_until)} whitespace-nowrap`}>
+              <span className={`px-2 py-1 rounded text-sm font-medium border ${getBadgeColor(event.days_until)} whitespace-nowrap`}>
                 {event.days_until === 1 ? 'Tomorrow' : `${event.days_until} days`}
               </span>
             </div>

@@ -934,10 +934,10 @@ export default function CommunityMapPage() {
         {/* DCA Apiary Selector Panel */}
         {showDCAPredictions && userApiaries.length > 0 && (
           <div className="bg-surface-elevated rounded-lg shadow-lg border border-border p-2 max-w-[200px]">
-            <p className="text-xs font-medium text-rose-600 mb-1.5">Select apiaries for DCA:</p>
+            <p className="text-sm font-medium text-rose-600 mb-1.5">Select apiaries for DCA:</p>
             <div className="space-y-1 max-h-[120px] overflow-y-auto">
               {userApiaries.map(a => (
-                <label key={a.id} className="flex items-center gap-1.5 text-xs text-foreground cursor-pointer">
+                <label key={a.id} className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer">
                   <input
                     type="checkbox"
                     checked={selectedDCAApiaries.includes(a.id)}
@@ -955,7 +955,7 @@ export default function CommunityMapPage() {
               ))}
             </div>
             {selectedDCAApiaries.length > 10 && (
-              <p className="text-xs text-amber-600 mt-1">Max 10 apiaries. First 10 will be used.</p>
+              <p className="text-sm text-amber-600 mt-1">Max 10 apiaries. First 10 will be used.</p>
             )}
             <button
               onClick={() => dca.calculate(selectedDCAApiaries)}
@@ -965,16 +965,16 @@ export default function CommunityMapPage() {
               {dca.loading ? 'Analysing terrain...' : 'Predict DCAs'}
             </button>
             {dca.error && (
-              <p className="text-xs text-red-500 mt-1">{dca.error}</p>
+              <p className="text-sm text-red-500 mt-1">{dca.error}</p>
             )}
             {!dca.error && dca.runStatus === 'success' && dca.predictions.length > 0 && (
-              <p className="text-xs text-rose-600 mt-1">{dca.predictions.length} area{dca.predictions.length !== 1 ? 's' : ''} found</p>
+              <p className="text-sm text-rose-600 mt-1">{dca.predictions.length} area{dca.predictions.length !== 1 ? 's' : ''} found</p>
             )}
             {!dca.error && dca.runStatus === 'fallback' && dca.predictions.length > 0 && (
-              <p className="text-xs text-amber-600 mt-1">Showing a low-confidence fallback hotspot for this selection.</p>
+              <p className="text-sm text-amber-600 mt-1">Showing a low-confidence fallback hotspot for this selection.</p>
             )}
             {!dca.error && dca.runStatus === 'empty' && (
-              <p className="text-xs text-text-secondary mt-1">No DCA hotspot could be generated for this selection.</p>
+              <p className="text-sm text-text-secondary mt-1">No DCA hotspot could be generated for this selection.</p>
             )}
           </div>
         )}

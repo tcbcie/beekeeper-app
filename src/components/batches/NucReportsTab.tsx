@@ -747,7 +747,7 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
               </div>
               <p className="text-sm text-text-secondary mt-1">Setup to Queen Emergence</p>
               {daysToEmergence.length > 0 && (
-                <p className="text-xs text-text-tertiary mt-1">Based on {daysToEmergence.length} nucs</p>
+                <p className="text-sm text-text-tertiary mt-1">Based on {daysToEmergence.length} nucs</p>
               )}
             </div>
             <div className="text-center py-4">
@@ -756,7 +756,7 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
               </div>
               <p className="text-sm text-text-secondary mt-1">Setup to Mating Confirmed</p>
               {daysToMating.length > 0 && (
-                <p className="text-xs text-text-tertiary mt-1">Based on {daysToMating.length} nucs</p>
+                <p className="text-sm text-text-tertiary mt-1">Based on {daysToMating.length} nucs</p>
               )}
             </div>
           </div>

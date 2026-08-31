@@ -327,7 +327,7 @@ export function useKeyEvents({
         {showForm && (
           <div className="flex flex-wrap items-end gap-2 p-3 bg-surface-secondary dark:bg-surface-elevated rounded-lg border border-border">
             <div className="space-y-1">
-              <label className="text-xs text-text-secondary">Date</label>
+              <label className="text-sm text-text-secondary">Date</label>
               <input
                 type="date"
                 value={eventDate}
@@ -336,7 +336,7 @@ export function useKeyEvents({
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-text-secondary">Event Type</label>
+              <label className="text-sm text-text-secondary">Event Type</label>
               <select
                 value={eventTypeId}
                 onChange={(e) => setEventTypeId(e.target.value)}
@@ -349,7 +349,7 @@ export function useKeyEvents({
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-text-secondary">Notes (optional)</label>
+              <label className="text-sm text-text-secondary">Notes (optional)</label>
               <input
                 type="text"
                 value={notes}
@@ -374,7 +374,7 @@ export function useKeyEvents({
             <Loader2 size={16} className="animate-spin text-text-tertiary" />
           </div>
         ) : filteredEvents.length === 0 ? (
-          <p className="text-xs text-text-tertiary">No events recorded for selected years.</p>
+          <p className="text-sm text-text-tertiary">No events recorded for selected years.</p>
         ) : (
           <div className="space-y-1 max-h-40 overflow-y-auto">
             {filteredEvents.map(evt => (

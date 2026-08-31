@@ -518,7 +518,7 @@ export default function DistributeGraftModal({
                   />
                 </div>
                 {searchText.trim().length >= 2 && !searching && searchResults.length === 0 && (
-                  <p className="mt-2 text-xs text-text-secondary">
+                  <p className="mt-2 text-sm text-text-secondary">
                     {isSearchingForSelf
                       ? 'You cannot distribute a queen to yourself — she is already in your Queen Register. To take her out of the nuc, assign her to one of your hives, then retire the nuc.'
                       : 'No HiveCraic user found. If they are not on the app, use the Other Beekeeper tab.'}
@@ -561,7 +561,7 @@ export default function DistributeGraftModal({
             {isExternal && (
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">Name</label>
+                  <label className="block text-sm text-text-secondary mb-1">Name</label>
                   <input
                     type="text"
                     value={extName}
@@ -573,7 +573,7 @@ export default function DistributeGraftModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">Email</label>
+                  <label className="block text-sm text-text-secondary mb-1">Email</label>
                   <input
                     type="email"
                     value={extEmail}
@@ -584,7 +584,7 @@ export default function DistributeGraftModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">Mobile</label>
+                  <label className="block text-sm text-text-secondary mb-1">Mobile</label>
                   <input
                     type="tel"
                     value={extPhone}
@@ -595,7 +595,7 @@ export default function DistributeGraftModal({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-text-secondary mb-1">Apiary / Mating Location (closest Eircode)<span className="text-red-500"> *</span></label>
+                  <label className="block text-sm text-text-secondary mb-1">Apiary / Mating Location (closest Eircode)<span className="text-red-500"> *</span></label>
                   <input
                     type="text"
                     value={extLocation}
@@ -653,7 +653,7 @@ export default function DistributeGraftModal({
                 className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
               />
               {locationError && (
-                <p className="text-xs text-red-600 dark:text-red-400 mt-1">{locationError}</p>
+                <p className="text-sm text-red-600 dark:text-red-400 mt-1">{locationError}</p>
               )}
             </div>
           )}
@@ -676,7 +676,7 @@ export default function DistributeGraftModal({
                 ))}
               </select>
               {hives.length === 0 && (
-                <p className="text-xs text-text-tertiary mt-1">No hives recorded at this apiary yet &mdash; this is optional.</p>
+                <p className="text-sm text-text-tertiary mt-1">No hives recorded at this apiary yet &mdash; this is optional.</p>
               )}
             </div>
           )}

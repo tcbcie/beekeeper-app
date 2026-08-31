@@ -111,7 +111,7 @@ export default function QueenTrackingSection({
 
       {/* Marking Colour Note */}
       {markingColour && emergenceYear && !isNaN(emergenceYear) && (
-        <p className="text-xs text-text-secondary mb-2 flex items-center gap-1.5">
+        <p className="text-sm text-text-secondary mb-2 flex items-center gap-1.5">
           Marking colour for this batch:
           <span className={`inline-block w-3 h-3 rounded-full ${COLOUR_DOTS[markingColour] || ''}`} />
           <span className="font-semibold">{markingColour}</span>
@@ -123,11 +123,11 @@ export default function QueenTrackingSection({
       {(tableSelectMode || tableSelectedIds.size > 0) && (
         <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-forest-200 bg-forest-50 dark:border-forest-800 dark:bg-forest-950/20 p-3">
           <span className="text-sm font-medium text-foreground">{tableSelectedIds.size} selected</span>
-          <Button type="button" onClick={selectAllTable} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
+          <Button type="button" onClick={selectAllTable} className="text-sm text-forest-600 dark:text-forest-400 hover:underline">
             Select All
           </Button>
           {tableSelectedIds.size > 0 && (
-            <Button type="button" onClick={deselectAllTable} className="text-xs text-text-secondary hover:underline">
+            <Button type="button" onClick={deselectAllTable} className="text-sm text-text-secondary hover:underline">
               Deselect All
             </Button>
           )}
@@ -136,20 +136,20 @@ export default function QueenTrackingSection({
             type="date"
             value={bulkDate}
             onChange={(e) => setBulkDate(e.target.value)}
-            className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+            className="rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
           />
           <Button
             type="button"
             onClick={() => handleTableBulkDateChange(bulkDate)}
             disabled={tableSelectedIds.size === 0}
-            className="px-2 py-1 text-xs bg-surface-secondary text-foreground rounded hover:bg-surface-elevated disabled:opacity-50"
+            className="px-2 py-1 text-sm bg-surface-secondary text-foreground rounded hover:bg-surface-elevated disabled:opacity-50"
           >
             Apply Date
           </Button>
           <select
             onChange={(e) => { if (e.target.value) { handleTableBulkStatusChange(e.target.value, bulkDate); e.target.value = '' } }}
             defaultValue=""
-            className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+            className="rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
           >
             <option value="" disabled>Change Status...</option>
             {TABLE_STATUSES.map((s) => (
@@ -160,7 +160,7 @@ export default function QueenTrackingSection({
             type="button"
             onClick={() => handleTableBulkQueenMarked(true)}
             disabled={tableSelectedIds.size === 0}
-            className="px-2 py-1 text-xs bg-forest-600 text-white rounded hover:bg-forest-700 disabled:opacity-50"
+            className="px-2 py-1 text-sm bg-forest-600 text-white rounded hover:bg-forest-700 disabled:opacity-50"
           >
             Mark All
           </Button>
@@ -168,7 +168,7 @@ export default function QueenTrackingSection({
             type="button"
             onClick={() => handleTableBulkQueenMarked(false)}
             disabled={tableSelectedIds.size === 0}
-            className="px-2 py-1 text-xs bg-surface-secondary text-foreground rounded hover:bg-surface-elevated disabled:opacity-50"
+            className="px-2 py-1 text-sm bg-surface-secondary text-foreground rounded hover:bg-surface-elevated disabled:opacity-50"
           >
             Unmark All
           </Button>
@@ -182,7 +182,7 @@ export default function QueenTrackingSection({
                 const selected = grafts.filter(g => tableSelectedIds.has(g.id))
                 setBulkDistributeGrafts(selected)
               }}
-              className="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center gap-1"
+              className="px-2 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center gap-1"
             >
               <Send size={12} />
               Distribute
@@ -192,7 +192,7 @@ export default function QueenTrackingSection({
             type="button"
             onClick={handleTableBulkDelete}
             disabled={tableSelectedIds.size === 0}
-            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 flex items-center gap-1"
+            className="px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 flex items-center gap-1"
           >
             <Trash2 size={12} />
             Delete
@@ -206,13 +206,13 @@ export default function QueenTrackingSection({
           <thead className="bg-surface-secondary dark:bg-surface">
             <tr>
               <th className="px-2 py-2 w-8" />
-              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Cell #</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Status</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Last Update</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Queen Marked</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Queen Number</th>
-              <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Weight (mg)</th>
-              <th className="px-3 py-2 text-right text-xs font-medium text-text-secondary">Actions</th>
+              <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Cell #</th>
+              <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Status</th>
+              <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Last Update</th>
+              <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Queen Marked</th>
+              <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Queen Number</th>
+              <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Weight (mg)</th>
+              <th className="px-3 py-2 text-right text-sm font-medium text-text-secondary">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -243,11 +243,11 @@ export default function QueenTrackingSection({
                   <td className="px-3 py-2">
                     {isLocked ? (
                       isLockedByFailed ? (
-                        <span className="px-2 py-1 text-xs rounded bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800 font-medium">
+                        <span className="px-2 py-1 text-sm rounded bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800 font-medium">
                           Failed
                         </span>
                       ) : (
-                        <span className="px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-medium">
+                        <span className="px-2 py-1 text-sm rounded bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-medium">
                           Distributed/Sold
                         </span>
                       )
@@ -255,7 +255,7 @@ export default function QueenTrackingSection({
                       <select
                         value={graft.status}
                         onChange={(e) => updateGraftStatus(graft.id, e.target.value)}
-                        className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+                        className="rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
                       >
                         {TABLE_STATUSES.map(s => (
                           <option key={s.value} value={s.value}>{s.label}</option>
@@ -265,14 +265,14 @@ export default function QueenTrackingSection({
                   </td>
                   <td className="px-3 py-2">
                     {isLocked ? (
-                      <span className="text-xs text-text-secondary">{graft.status_date ? formatDateIrish(graft.status_date) : '-'}</span>
+                      <span className="text-sm text-text-secondary">{graft.status_date ? formatDateIrish(graft.status_date) : '-'}</span>
                     ) : (
                       <input
                         key={`${graft.id}-sd-${graft.status_date ?? ''}`}
                         type="date"
                         defaultValue={graft.status_date || ''}
                         onChange={(e) => updateGraftStatusDate(graft.id, e.target.value)}
-                        className="w-32 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+                        className="w-32 rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
                       />
                     )}
                   </td>
@@ -287,7 +287,7 @@ export default function QueenTrackingSection({
                   </td>
                   <td className="px-3 py-2">
                     {(isLocked || !canMark) ? (
-                      <span className="text-xs text-text-secondary">{graft.queen_number || '-'}</span>
+                      <span className="text-sm text-text-secondary">{graft.queen_number || '-'}</span>
                     ) : (
                       <input
                         key={`${graft.id}-qn-${graft.queen_number ?? ''}`}
@@ -300,13 +300,13 @@ export default function QueenTrackingSection({
                           }
                         }}
                         placeholder="Enter number..."
-                        className="w-28 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+                        className="w-28 rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
                       />
                     )}
                   </td>
                   <td className="px-3 py-2">
                     {(isLocked || !canMark) ? (
-                      <span className="text-xs text-text-secondary">{graft.latest_weight_mg ?? '-'}</span>
+                      <span className="text-sm text-text-secondary">{graft.latest_weight_mg ?? '-'}</span>
                     ) : (
                       <input
                         key={`${graft.id}-wt-${graft.latest_weight_mg ?? ''}`}
@@ -322,7 +322,7 @@ export default function QueenTrackingSection({
                         min="1"
                         step="1"
                         placeholder="mg"
-                        className="w-20 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+                        className="w-20 rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
                       />
                     )}
                   </td>
@@ -397,16 +397,16 @@ export default function QueenTrackingSection({
                 </div>
                 {isLocked ? (
                   isLockedByFailed ? (
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800">
+                    <span className="px-2 py-0.5 rounded text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800">
                       Failed
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                    <span className="px-2 py-0.5 rounded text-sm font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
                       Distributed
                     </span>
                   )
                 ) : (
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusInfo?.color || ''}`}>
+                  <span className={`px-2 py-0.5 rounded text-sm font-medium ${statusInfo?.color || ''}`}>
                     {statusInfo?.label || graft.status}
                   </span>
                 )}
@@ -414,11 +414,11 @@ export default function QueenTrackingSection({
               {!isLocked && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs text-text-secondary">Status</label>
+                    <label className="text-sm text-text-secondary">Status</label>
                     <select
                       value={graft.status}
                       onChange={(e) => updateGraftStatus(graft.id, e.target.value)}
-                      className="rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+                      className="rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
                     >
                       {TABLE_STATUSES.map(s => (
                         <option key={s.value} value={s.value}>{s.label}</option>
@@ -426,17 +426,17 @@ export default function QueenTrackingSection({
                     </select>
                   </div>
                   <div className="flex items-center justify-between">
-                    <label className="text-xs text-text-secondary">Last Update</label>
+                    <label className="text-sm text-text-secondary">Last Update</label>
                     <input
                       key={`${graft.id}-sd-${graft.status_date ?? ''}`}
                       type="date"
                       defaultValue={graft.status_date || ''}
                       onChange={(e) => updateGraftStatusDate(graft.id, e.target.value)}
-                      className="w-28 sm:w-32 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+                      className="w-28 sm:w-32 rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
                     />
                   </div>
                   <div className="flex items-center justify-between">
-                    <label className="text-xs text-text-secondary">Queen Marked</label>
+                    <label className="text-sm text-text-secondary">Queen Marked</label>
                     <input
                       type="checkbox"
                       checked={graft.queen_marked}
@@ -446,7 +446,7 @@ export default function QueenTrackingSection({
                     />
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <label className="text-xs text-text-secondary shrink-0">Queen Number</label>
+                    <label className="text-sm text-text-secondary shrink-0">Queen Number</label>
                     {canMark ? (
                     <input
                       key={`${graft.id}-qn-${graft.queen_number ?? ''}`}
@@ -459,14 +459,14 @@ export default function QueenTrackingSection({
                         }
                       }}
                       placeholder="Enter number..."
-                      className="w-24 sm:w-28 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+                      className="w-24 sm:w-28 rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
                     />
                     ) : (
-                      <span className="text-xs text-text-secondary">{graft.queen_number || '-'}</span>
+                      <span className="text-sm text-text-secondary">{graft.queen_number || '-'}</span>
                     )}
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <label className="text-xs text-text-secondary shrink-0">Weight (mg)</label>
+                    <label className="text-sm text-text-secondary shrink-0">Weight (mg)</label>
                     {canMark ? (
                     <input
                       key={`${graft.id}-wt-${graft.latest_weight_mg ?? ''}`}
@@ -482,10 +482,10 @@ export default function QueenTrackingSection({
                       min="1"
                       step="1"
                       placeholder="mg"
-                      className="w-20 rounded border border-border bg-surface px-2 py-1 text-xs text-foreground dark:bg-surface-elevated"
+                      className="w-20 rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
                     />
                     ) : (
-                      <span className="text-xs text-text-secondary">{graft.latest_weight_mg ?? '-'}</span>
+                      <span className="text-sm text-text-secondary">{graft.latest_weight_mg ?? '-'}</span>
                     )}
                   </div>
                 </div>
@@ -500,7 +500,7 @@ export default function QueenTrackingSection({
                       else next.add(graft.id)
                       return next
                     })}
-                    className="px-2 py-1 text-xs text-text-tertiary hover:text-foreground hover:bg-surface-secondary rounded flex items-center gap-1"
+                    className="px-2 py-1 text-sm text-text-tertiary hover:text-foreground hover:bg-surface-secondary rounded flex items-center gap-1"
                   >
                     {isLocked ? <Lock size={12} /> : <LockOpen size={12} />}
                     {isLocked ? 'Unlock' : 'Lock'}
@@ -510,7 +510,7 @@ export default function QueenTrackingSection({
                   <Button
                     type="button"
                     onClick={() => setDistributeGraft(graft)}
-                    className="px-2 py-1 text-xs text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded flex items-center gap-1"
+                    className="px-2 py-1 text-sm text-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded flex items-center gap-1"
                   >
                     <Send size={12} />
                     Distribute
@@ -520,7 +520,7 @@ export default function QueenTrackingSection({
                   <Button
                     type="button"
                     onClick={() => deleteGraft(graft.id)}
-                    className="px-2 py-1 text-xs text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex items-center gap-1"
+                    className="px-2 py-1 text-sm text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded flex items-center gap-1"
                   >
                     <Trash2 size={12} />
                     Delete

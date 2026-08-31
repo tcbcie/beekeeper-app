@@ -499,7 +499,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                   required
                   autoComplete="off"
                 />
-                <p className="mt-1 text-xs text-text-tertiary">Will be automatically converted to uppercase</p>
+                <p className="mt-1 text-sm text-text-tertiary">Will be automatically converted to uppercase</p>
               </div>
 
               <div>
@@ -529,7 +529,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                     description="Restrict to selected association"
                   />
                 </RadioChoiceGroup>
-                <p className="mt-1 text-xs text-text-tertiary">
+                <p className="mt-1 text-sm text-text-tertiary">
                   {newCodeData.code_type === 'individual' ? 'For direct user subscriptions' : 'For beekeeping association members'}
                 </p>
               </div>
@@ -551,7 +551,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                     ))}
                   </SelectField>
                   {loadingAssociations && (
-                    <p className="mt-1 text-xs text-text-tertiary">Loading associations...</p>
+                    <p className="mt-1 text-sm text-text-tertiary">Loading associations...</p>
                   )}
                 </div>
               )}
@@ -577,7 +577,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                   min="1"
                   tone="purple"
                 />
-                <p className="mt-1 text-xs text-text-tertiary">Leave empty for unlimited uses</p>
+                <p className="mt-1 text-sm text-text-tertiary">Leave empty for unlimited uses</p>
               </div>
 
               <div>
@@ -590,7 +590,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                   tone="purple"
                   required
                 />
-                <p className="mt-1 text-xs text-text-tertiary">Fixed date when subscriptions activated with this code will expire</p>
+                <p className="mt-1 text-sm text-text-tertiary">Fixed date when subscriptions activated with this code will expire</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Button
                     type="button"

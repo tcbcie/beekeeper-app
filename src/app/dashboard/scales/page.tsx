@@ -406,7 +406,7 @@ export default function ScalesPage() {
                 className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
-              <p className="text-xs text-text-tertiary mt-1">
+              <p className="text-sm text-text-tertiary mt-1">
                 API tokens are provided by Wolf Waagen support for ApiGraph 4.0 and Junior scales.
               </p>
             </div>

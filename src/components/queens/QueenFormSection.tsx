@@ -302,7 +302,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  {editingQueen.distributed_drone_source && (
  <p>Drone Source: {editingQueen.distributed_drone_source}</p>
  )}
- <p className="text-xs mt-1 text-amber-600 dark:text-amber-400">
+ <p className="text-sm mt-1 text-amber-600 dark:text-amber-400">
  Birth date, marking colour, source, father queen, and source batch are locked for distributed queens. Mother queen, subspecies, mated at, and lineage stay editable so you can record the queen&apos;s true line and where she was actually mated.
  </p>
  </div>
@@ -335,7 +335,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  <label className="block text-sm font-medium text-text-secondary mb-1">
  Marking Color
  {formData.birth_date && (
- <span className="ml-2 text-xs text-forest-600 dark:text-forest-400 font-normal">
+ <span className="ml-2 text-sm text-forest-600 dark:text-forest-400 font-normal">
  (Auto-set based on birth year)
  </span>
  )}
@@ -353,7 +353,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  </option>
  ))}
  </select>
- <p className="text-xs text-text-tertiary mt-1">
+ <p className="text-sm text-text-tertiary mt-1">
  International standard: White (1,6) | Yellow (2,7) | Red (3,8) | Green (4,9) | Blue (5,0)
  </p>
  </div>
@@ -386,7 +386,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  <option key={opt.value} value={opt.value}>{opt.label}</option>
  ))}
  </select>
- <p className="text-xs text-text-tertiary mt-1">Breeder/reference queens are breeding stock, not production colonies; they&apos;re excluded from the active count.</p>
+ <p className="text-sm text-text-tertiary mt-1">Breeder/reference queens are breeding stock, not production colonies; they&apos;re excluded from the active count.</p>
  </div>
 
  {formData.queen_role !== 'production' && (
@@ -400,7 +400,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  maxLength={10}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  />
- <p className="text-xs text-text-tertiary mt-1">Originating line/breeder. Used in this queen&apos;s code (e.g. UG-{formData.queen_number || 'number'}-year) instead of your own.</p>
+ <p className="text-sm text-text-tertiary mt-1">Originating line/breeder. Used in this queen&apos;s code (e.g. UG-{formData.queen_number || 'number'}-year) instead of your own.</p>
  </div>
  )}
 
@@ -447,7 +447,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  />
  Edit manually
  </label>
- <p className="text-xs text-text-tertiary mt-1">
+ <p className="text-sm text-text-tertiary mt-1">
  Auto-generated as <span className="italic">Dam × drone-source @ station (year)</span>. Tick &quot;Edit manually&quot; to override.
  </p>
  </div>
@@ -476,7 +476,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  </optgroup>
  )}
  </select>
- <p className="mt-1 text-xs text-text-tertiary">
+ <p className="mt-1 text-sm text-text-tertiary">
  A reared queen you distributed can be chosen here; she is added to your register as a breeder record on save so her line is traceable.
  </p>
  </div>
@@ -538,7 +538,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  <option key={opt.value} value={opt.value}>{opt.label}</option>
  ))}
  </select>
- <p className="text-xs text-text-tertiary mt-1">How she was mated — the sire side of the pedigree.</p>
+ <p className="text-sm text-text-tertiary mt-1">How she was mated — the sire side of the pedigree.</p>
  </div>
 
  <div>
@@ -556,7 +556,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  <option key={name} value={name} />
  ))}
  </datalist>
- <p className="text-xs text-text-tertiary mt-1">Pick a site or type a new one.</p>
+ <p className="text-sm text-text-tertiary mt-1">Pick a site or type a new one.</p>
  </div>
 
  <div>
@@ -571,7 +571,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  maxLength={8}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  />
- <p className="text-xs text-text-tertiary mt-1">
+ <p className="text-sm text-text-tertiary mt-1">
  Irish postcode where the queen was mated
  </p>
  </div>

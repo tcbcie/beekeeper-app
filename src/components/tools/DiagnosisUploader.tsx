@@ -193,10 +193,10 @@ export default function DiagnosisUploader({ userId }: DiagnosisUploaderProps) {
             <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-forest-500 dark:hover:border-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 transition-all p-4">
               <div className="flex flex-col items-center justify-center">
                 <Camera size={24} className="text-text-tertiary mb-1" />
-                <p className="text-xs text-text-tertiary text-center">
+                <p className="text-sm text-text-tertiary text-center">
                   <span className="font-semibold">Click to upload</span> or drag and drop
                 </p>
-                <p className="text-xs text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
+                <p className="text-sm text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
               </div>
               <input
                 type="file"
@@ -229,10 +229,10 @@ export default function DiagnosisUploader({ userId }: DiagnosisUploaderProps) {
 
       {/* Info Note */}
       <div className="mt-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 space-y-2">
-        <p className="text-xs text-blue-700 dark:text-blue-300">
+        <p className="text-sm text-blue-700 dark:text-blue-300">
           Upload clear, well-lit photos for better diagnosis. Include multiple angles if needed.
         </p>
-        <p className="text-xs text-blue-700 dark:text-blue-300">
+        <p className="text-sm text-blue-700 dark:text-blue-300">
           Your submission is anonymous. We are looking for high-quality images to help train an AI model that will provide automated diagnosis in the future.
         </p>
       </div>

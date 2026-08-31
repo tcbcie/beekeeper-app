@@ -139,7 +139,7 @@ function ReactivateForm() {
             </form>
 
             <Panel padding="sm" className="border-border/80 bg-surface/60">
-              <p className="text-center text-xs text-text-tertiary">
+              <p className="text-center text-sm text-text-tertiary">
                 Once submitted, an administrator will review your request and contact you by email. This typically takes 1-2 business days.
               </p>
             </Panel>

@@ -589,7 +589,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
               style={{ left: `${entrance.x}%`, top: `${entrance.y}%` }}
             >
               <DoorOpen className="w-6 h-6 text-forest-900 dark:text-forest-100" />
-              <span className="text-[11px] font-semibold text-forest-900 dark:text-forest-100 bg-white/80 dark:bg-black/40 px-1 rounded">
+              <span className="text-sm font-semibold text-forest-900 dark:text-forest-100 bg-white/80 dark:bg-black/40 px-1 rounded">
                 Entrance
               </span>
             </span>

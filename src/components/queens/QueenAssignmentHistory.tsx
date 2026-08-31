@@ -139,7 +139,7 @@ export default function QueenAssignmentHistory({ queenId }: QueenAssignmentHisto
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span
-                      className={`px-2 py-0.5 rounded text-xs font-semibold border ${
+                      className={`px-2 py-0.5 rounded text-sm font-semibold border ${
                         parked
                           ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700'
                           : 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
@@ -148,7 +148,7 @@ export default function QueenAssignmentHistory({ queenId }: QueenAssignmentHisto
                       {parked ? 'Parked' : 'Production'}
                     </span>
                     {current && (
-                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-forest-100 dark:bg-forest-900/40 text-forest-700 dark:text-forest-300 border border-forest-300 dark:border-forest-700">
+                      <span className="px-2 py-0.5 rounded text-sm font-semibold bg-forest-100 dark:bg-forest-900/40 text-forest-700 dark:text-forest-300 border border-forest-300 dark:border-forest-700">
                         Current
                       </span>
                     )}

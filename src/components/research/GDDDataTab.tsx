@@ -954,7 +954,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
           <div className="flex flex-wrap gap-4">
             {/* Year Filter - Multi-select chips */}
             <div className="space-y-1.5">
-              <label className="text-xs text-text-secondary">Years (compare)</label>
+              <label className="text-sm text-text-secondary">Years (compare)</label>
               <div className="flex flex-wrap gap-1.5">
                 {years.map(year => (
                   <Button
@@ -974,7 +974,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
 
             {/* Vegetation Filter */}
             <div className="space-y-1.5">
-              <label className="text-xs text-text-secondary">Vegetation</label>
+              <label className="text-sm text-text-secondary">Vegetation</label>
               <select
                 value={selectedVegetation}
                 onChange={(e) => setSelectedVegetation(e.target.value)}
@@ -989,7 +989,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
 
             {/* Apiary Filter */}
             <div className="space-y-1.5">
-              <label className="text-xs text-text-secondary">Apiary</label>
+              <label className="text-sm text-text-secondary">Apiary</label>
               <select
                 value={selectedApiary}
                 onChange={(e) => setSelectedApiary(e.target.value)}
@@ -1005,7 +1005,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             {/* Period Filter */}
             {viewMode === 'chart' && chartType === 'vegetation' && (
               <div className="space-y-1.5">
-                <label className="text-xs text-text-secondary">Period</label>
+                <label className="text-sm text-text-secondary">Period</label>
                 <div className="flex flex-wrap gap-1.5">
                   {([['all', 'All'], ['q1', 'Q1'], ['q2', 'Q2'], ['q3', 'Q3'], ['q4', 'Q4'], ['custom', 'Custom']] as const).map(([key, label]) => (
                     <Button
@@ -1179,7 +1179,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                 </div>
               )}
               <div className="mt-3 text-center">
-                <p className="text-xs text-text-tertiary">
+                <p className="text-sm text-text-tertiary">
                   Compare how GDD accumulates throughout the year. Each line shows cumulative GDD from Jan 1.
                   {currentGDD !== null && ` Current year: ${currentGDD} GDD as of today.`}
                 </p>
@@ -1209,7 +1209,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
               {/* Hide description when temp chart visible to save space */}
               {!showTemperature && (
                 <div className="mt-3 text-center">
-                  <p className="text-xs text-text-tertiary">
+                  <p className="text-sm text-text-tertiary">
                     Compare GDD values across years to see how bloom timing varies. Lower GDD = earlier bloom.
                   </p>
                 </div>

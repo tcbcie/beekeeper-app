@@ -305,7 +305,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  </div>
  </div>
  <div className="flex items-center gap-1">
- <span className={`text-[10px] px-1.5 py-0.5 rounded ${isBeep ? 'bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200' : 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200'}`}>
+ <span className={`text-sm px-1.5 py-0.5 rounded ${isBeep ? 'bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200' : 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200'}`}>
  {scaleType}
  </span>
  <IconButton

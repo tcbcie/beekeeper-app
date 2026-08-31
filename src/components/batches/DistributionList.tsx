@@ -131,7 +131,7 @@ export default function DistributionList({
 
         {/* Legend */}
         {!collapsed && (
-          <div className="flex items-center gap-3 text-xs text-text-secondary">
+          <div className="flex items-center gap-3 text-sm text-text-secondary">
             {(['group', 'app_user', 'external'] as RecipientType[]).filter(t => recipientTypesPresent.has(t)).map(type => (
               <span key={type} className="inline-flex items-center gap-1">
                 <span className={`inline-block w-2 h-2 rounded-full ${RECIPIENT_COLOURS[type].dot}`} />
@@ -149,21 +149,21 @@ export default function DistributionList({
             <table className="min-w-full divide-y divide-border">
               <thead className="bg-surface-secondary dark:bg-surface">
                 <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Cell / Queen</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Type</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Recipient</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">
+                  <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Cell / Queen</th>
+                  <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Type</th>
+                  <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Recipient</th>
+                  <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">
                     <button type="button" onClick={() => handleSort('date')} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
                       Date <SortIcon col="date" />
                     </button>
                   </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-text-secondary">Mating Location</th>
-                  <th className="px-3 py-2 text-center text-xs font-medium text-text-secondary">
+                  <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Mating Location</th>
+                  <th className="px-3 py-2 text-center text-sm font-medium text-text-secondary">
                     <button type="button" onClick={() => handleSort('mated')} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
                       Mated <SortIcon col="mated" />
                     </button>
                   </th>
-                  <th className="px-3 py-2 text-right text-xs font-medium text-text-secondary">Actions</th>
+                  <th className="px-3 py-2 text-right text-sm font-medium text-text-secondary">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -176,11 +176,11 @@ export default function DistributionList({
                       <td className="px-3 py-2 text-sm font-medium text-foreground">
                         #{dist.cell_number}
                         {graft?.queen_number && (
-                          <span className="block text-xs text-text-tertiary">Q#{graft.queen_number}</span>
+                          <span className="block text-sm text-text-tertiary">Q#{graft.queen_number}</span>
                         )}
                       </td>
                       <td className="px-3 py-2">
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${distTypeInfo.color}`}>
+                        <span className={`px-2 py-0.5 rounded text-sm font-medium ${distTypeInfo.color}`}>
                           {distTypeInfo.label}
                         </span>
                       </td>
@@ -190,26 +190,26 @@ export default function DistributionList({
                           {getRecipientDisplay(dist)}
                         </span>
                         {!dist.recipient_user_id && dist.external_recipient_phone && (
-                          <span className="block text-xs text-text-tertiary ml-3.5">{dist.external_recipient_phone}</span>
+                          <span className="block text-sm text-text-tertiary ml-3.5">{dist.external_recipient_phone}</span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-xs text-text-secondary whitespace-nowrap">
+                      <td className="px-3 py-2 text-sm text-text-secondary whitespace-nowrap">
                         {formatDateIrish(dist.distribution_date)}
                       </td>
-                      <td className="px-3 py-2 text-xs text-text-secondary max-w-[160px] truncate" title={getLocationDisplay(dist)}>
+                      <td className="px-3 py-2 text-sm text-text-secondary max-w-[160px] truncate" title={getLocationDisplay(dist)}>
                         {getLocationDisplay(dist)}
                       </td>
                       <td className="px-3 py-2 text-center">
                         {dist.distribution_type === 'mated_queen' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-sm font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
                             <Check size={12} /> Yes
                           </span>
                         ) : dist.mating_confirmed ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300" title={dist.mating_confirmed_date ? `${formatDateIrish(dist.mating_confirmed_date)}${dist.mating_location ? ` at ${dist.mating_location}` : ''}` : ''}>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-sm font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300" title={dist.mating_confirmed_date ? `${formatDateIrish(dist.mating_confirmed_date)}${dist.mating_location ? ` at ${dist.mating_location}` : ''}` : ''}>
                             <Check size={12} /> Yes
                           </span>
                         ) : (
-                          <span className="text-xs text-text-tertiary">Pending</span>
+                          <span className="text-sm text-text-tertiary">Pending</span>
                         )}
                       </td>
                       <td className="px-3 py-2 text-right">
@@ -219,7 +219,7 @@ export default function DistributionList({
                               type="button"
                               onClick={() => setMatingModalDist(dist)}
                               size="sm"
-                              className={`p-1.5 rounded text-xs ${
+                              className={`p-1.5 rounded text-sm ${
                                 dist.mating_confirmed
                                   ? 'border border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300'
                                   : 'border border-border bg-surface-secondary text-text-tertiary dark:bg-surface dark:text-text-secondary'
@@ -261,11 +261,11 @@ export default function DistributionList({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-foreground">#{dist.cell_number}</span>
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${distTypeInfo.color}`}>
+                      <span className={`px-2 py-0.5 rounded text-sm font-medium ${distTypeInfo.color}`}>
                         {distTypeInfo.label}
                       </span>
                       {(dist.mating_confirmed || dist.distribution_type === 'mated_queen') && (
-                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
+                        <span className="px-1.5 py-0.5 rounded text-sm font-medium bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">
                           Mated
                         </span>
                       )}
@@ -276,7 +276,7 @@ export default function DistributionList({
                           type="button"
                           onClick={() => setMatingModalDist(dist)}
                           size="sm"
-                          className={`p-1.5 rounded text-xs ${
+                          className={`p-1.5 rounded text-sm ${
                             dist.mating_confirmed
                               ? 'border border-green-200 bg-green-100 text-green-800 dark:border-green-800 dark:bg-green-900/30 dark:text-green-300'
                               : 'border border-border bg-surface-secondary text-text-tertiary dark:bg-surface dark:text-text-secondary'
@@ -297,7 +297,7 @@ export default function DistributionList({
                       </IconButton>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                     <div>
                       <span className="text-text-tertiary">To: </span>
                       <span className="inline-flex items-center gap-1">

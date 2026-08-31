@@ -86,7 +86,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
         </p>
         {hasSources && (
           <div className="mt-2 pt-2 border-t border-border/50">
-            <p className="text-xs text-text-muted mb-1">Sources:</p>
+            <p className="text-sm text-text-muted mb-1">Sources:</p>
             <ul className="space-y-0.5">
               {message.sources!.map((source, idx) => (
                 <li key={idx} className="text-xs">

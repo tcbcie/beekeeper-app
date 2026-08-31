@@ -494,7 +494,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
               <div className="flex flex-wrap gap-4">
                 {/* Period Filter */}
                 <div className="space-y-1.5">
-                  <label className="text-xs text-text-secondary">Period</label>
+                  <label className="text-sm text-text-secondary">Period</label>
                   <div className="flex flex-wrap gap-1.5">
                     {([['all', 'All'], ['q1', 'Q1'], ['q2', 'Q2'], ['q3', 'Q3'], ['q4', 'Q4'], ['custom', 'Custom']] as const).map(([key, label]) => (
                       <Button
@@ -632,7 +632,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
                   </div>
                 )}
                 <div className="mt-3 text-center">
-                  <p className="text-xs text-text-tertiary">
+                  <p className="text-sm text-text-tertiary">
                     Compare how foraging hours accumulate throughout the year. Each line shows cumulative hours from 1 Jan.
                     {currentYearTotal !== null && ` Current year: ${currentYearTotal} hrs as of today.`}
                   </p>
@@ -664,7 +664,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
                   </div>
                 )}
                 <div className="mt-3 text-center">
-                  <p className="text-xs text-text-tertiary">
+                  <p className="text-sm text-text-tertiary">
                     Compare monthly foraging hours across years. Hours are calculated from temperature, sunshine, and rainfall data.
                   </p>
                 </div>

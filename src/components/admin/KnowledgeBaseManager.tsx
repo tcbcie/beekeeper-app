@@ -641,7 +641,7 @@ export default function KnowledgeBaseManager() {
                 rows={6}
                 className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground resize-y"
               />
-              <p className="text-xs text-text-muted mt-1">
+              <p className="text-sm text-text-muted mt-1">
                 {newContent.length} characters
               </p>
             </div>
@@ -661,7 +661,7 @@ export default function KnowledgeBaseManager() {
                 className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-forest-600 file:text-white file:text-sm"
               />
               {selectedFile && (
-                <p className="text-xs text-text-muted mt-1">
+                <p className="text-sm text-text-muted mt-1">
                   Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                 </p>
               )}
@@ -858,7 +858,7 @@ export default function KnowledgeBaseManager() {
                         <div className="space-y-2">
                           <div className="flex gap-3">
                             <div className="flex-1">
-                              <label className="block text-xs text-text-tertiary mb-0.5">Display Name (for citations)</label>
+                              <label className="block text-sm text-text-tertiary mb-0.5">Display Name (for citations)</label>
                               <input
                                 type="text"
                                 value={editName}
@@ -870,7 +870,7 @@ export default function KnowledgeBaseManager() {
                               />
                             </div>
                             <div className="w-48">
-                              <label className="block text-xs text-text-tertiary mb-0.5">Author</label>
+                              <label className="block text-sm text-text-tertiary mb-0.5">Author</label>
                               <input
                                 type="text"
                                 value={editAuthor}
@@ -881,7 +881,7 @@ export default function KnowledgeBaseManager() {
                               />
                             </div>
                             <div className="w-20">
-                              <label className="block text-xs text-text-tertiary mb-0.5">Year</label>
+                              <label className="block text-sm text-text-tertiary mb-0.5">Year</label>
                               <input
                                 type="text"
                                 value={editYear}
@@ -895,7 +895,7 @@ export default function KnowledgeBaseManager() {
                           </div>
                           <div className="flex gap-3">
                             <div className="flex-1">
-                              <label className="block text-xs text-text-tertiary mb-0.5">Original Filename</label>
+                              <label className="block text-sm text-text-tertiary mb-0.5">Original Filename</label>
                               <input
                                 type="text"
                                 value={editOriginalFilename}
@@ -906,7 +906,7 @@ export default function KnowledgeBaseManager() {
                               />
                             </div>
                             <div className="flex-1">
-                              <label className="block text-xs text-text-tertiary mb-0.5">Source URL</label>
+                              <label className="block text-sm text-text-tertiary mb-0.5">Source URL</label>
                               <input
                                 type="url"
                                 value={editSourceUrl}

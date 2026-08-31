@@ -30,12 +30,12 @@ export default function TreatmentCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="px-2 py-0.5 bg-red-100 text-red-900 dark:bg-red-900/45 dark:text-red-100 border border-red-200 dark:border-red-700/60 text-xs font-medium rounded">
+              <span className="px-2 py-0.5 bg-red-100 text-red-900 dark:bg-red-900/45 dark:text-red-100 border border-red-200 dark:border-red-700/60 text-sm font-medium rounded">
                 Varroa Treatment
               </span>
               <h3 className="text-base font-bold">Hive: {treatment.hives?.hive_number || 'Unknown'}</h3>
             </div>
-            <p className="text-xs text-text-tertiary">
+            <p className="text-sm text-text-tertiary">
               {new Date(treatment.treatment_date + 'T00:00:00').toLocaleDateString('en-GB', {
                 weekday: 'short',
                 year: 'numeric',
@@ -45,7 +45,7 @@ export default function TreatmentCard({
               {treatment.treatment_time && ` at ${treatment.treatment_time.slice(0, 5)}`}
             </p>
             {treatment.profiles && treatment.user_id !== userId && sharedHiveIds.includes(treatment.hive_id) && (
-              <p className="text-xs text-text-tertiary mt-0.5">
+              <p className="text-sm text-text-tertiary mt-0.5">
                 Recorded by: <span className="font-medium text-text-secondary">
                   {(treatment.profiles.first_name && treatment.profiles.last_name)
                     ? `${treatment.profiles.first_name} ${treatment.profiles.last_name}`
@@ -112,7 +112,7 @@ export default function TreatmentCard({
       {/* Notes */}
       {treatment.notes && (
         <div className="mt-2 px-3 py-2 bg-surface/50 dark:bg-surface-elevated rounded border border-border">
-          <span className="text-xs text-text-tertiary">Notes:</span>{' '}
+          <span className="text-sm text-text-tertiary">Notes:</span>{' '}
           <span className="text-sm text-text-secondary">{treatment.notes}</span>
         </div>
       )}

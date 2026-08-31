@@ -117,7 +117,7 @@ To enable notifications:
           <h3 className="text-sm font-semibold text-foreground mb-1">
             Browser Notifications: {status.title}
           </h3>
-          <p className="text-xs text-text-secondary mb-2">
+          <p className="text-sm text-text-secondary mb-2">
             {status.description}
           </p>
           {permission === 'denied' && (
