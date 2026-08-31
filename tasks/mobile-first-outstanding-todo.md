@@ -22,27 +22,93 @@ implementation, and the reasoning behind everything deferred.
 ## 3. Execution Plan
 *(Agent: STOP and wait for user verification before beginning execution)*
 
-### A. Verify Phases 2 and 3 in a browser — do this first
+### A. Verify Phases 2 and 3 and the typography stage in a browser — do this first
 
-Both are pushed but have never been exercised in a real browser. Nothing else
-should be built on top of them until this is done.
+**Partly done, 31/08/2026**, against production (www.hivecraic.com, v1.11.3) in an
+emulated 360x740 Android viewport with the OS set to light and the app set to dark.
+Measured programmatically rather than by eye, so the figures are exact.
 
-- [ ] **Step 1:** Bottom navigation at 320px — every label on one line, no ellipsis.
+| Check | Result |
+|---|---|
+| 1 — bottom navigation | **Pass.** Five labels at 14px, none clipped. Widest ("Records") measures 50.3px; with padding a slot needs 58.3px, so five need 292px — fits at 320px with 28px spare. Font resolved to Segoe UI, a substitution, and still fits. |
+| 2 — both themes | **Pass, in the exact divergence case.** OS prefers light, app set to dark, app renders dark. 660 rules bound to the `.dark` class, **0** to `prefers-color-scheme`. Body `#0a0f1a` on `#f5f5f5`, about 17:1. |
+| 3 — drawer focus | **Pass.** Closed drawer carries `inert` and holds 17 links; zero off-screen focusable elements in the document. |
+| 7 — dense screens | **Pass.** Settings: no text under 14px, no target under 44px, no horizontal overflow. |
+| 7a — `.above-bottom-nav` | **Pass.** The rule is present in the CSSOM and both floating surfaces compute `bottom: 72px` (64px bar + 8px gutter). They were `bottom: auto` before. |
+| 7b — forecast strip | **Pass.** Seven columns at 47.7px; temperatures stacked at 14px occupying 20.9px. Would still fit at 320px. |
+| 7c — hive-stack diagram | **Pass.** `h-8`/`h-10` rows hold 14px with no clipping. |
+| 4 — five inspection steps | **Pass.** Walked all five at 360px. No text under 14px, no horizontal clipping, no page overflow, no control under 44px on any step. Step 1's five fields are all 16px and 48px tall with labels associated by `for`/`id`. The two 20x20 checkboxes on step 2 sit inside labels giving a 46x237px effective target. The review step lists only recorded values and is the only place a Save button exists. |
+| 6 — deferred update reload | **Pass, proved as an A/B.** Tested without deploying, by dispatching `controllerchange` at the live handler. Clean page: immediate reload. Dirty inspection: no reload, form open, hive still selected, still on step 1. Discarding then flushed the pending reload and the page reloaded. All three legs of the Phase 2 design confirmed in production. |
+| 5 — Enter on step 1 | **Pass.** With the form valid, Enter in the weight field advanced to "Step 2 of 5" and saved nothing. The High finding from the Phase 3 audit is fixed in production. |
+
+**Nuance found on check 5, worth knowing.** With step 1 *incomplete*, Enter never
+reaches `handleSubmit` at all: native constraint validation intercepts first, because
+hive, date and time carry `required`. The browser moves focus to the hive select and
+shows its own bubble ("Please select an item in the list"), so the guard added in
+Phase 3 never runs and the app's own styled, announced error never appears. The
+outcome is safe and arguably helpful, but it is the browser's behaviour rather than
+the designed one — the Phase 3 plan intended JavaScript validation throughout.
+Consider whether the native bubble or the app's own error is wanted here.
+
+Also confirmed in passing: **Phase 1's dirty-state guard works in production.**
+Cancelling a part-filled inspection raised the "Keep editing / Discard" dialogue
+rather than discarding silently.
+
+**How check 6 was run without a deploy.** The mechanism under test is
+`controllerchange` -> reload, deferred while unsaved work exists. Dispatching that
+event synthetically at `navigator.serviceWorker` exercises the real production
+handler with no deploy and no write. The control leg matters as much as the test
+leg: without it, "no reload" would be indistinguishable from a listener that was
+never wired up.
+
+*(Verification was read-only: both test inspections were discarded, and the record
+count was 89 before and after every step.)*
+
+Also measured: **no visible text below 14px on Dashboard, Records or Settings**, and
+no horizontal overflow on any page visited. On Hives the only sub-14px text is `═══`
+and `███` — the two ornaments deliberately exempted.
+
+**Found, pre-existing and not caused by this programme:** the `h-3` queen-excluder
+box in `HiveListCard` is 9px inside its borders and holds a 12px glyph, so it
+overflows by 3px. It did so before the typography stage too. Cosmetic; fix by giving
+the row more height or dropping the glyph for a plain rule.
+
+Still outstanding below: steps 4, 5, 6 and 7d.
+
+- [x] **Step 1:** Bottom navigation at 320px — every label on one line, no ellipsis.
   The widths were computed from font metrics, not measured, so a substituted font
   could be wider than calculated.
-- [ ] **Step 2:** Both themes throughout. Phase 2 rebound every `dark:` utility from
+- [x] **Step 2:** Both themes throughout. Phase 2 rebound every `dark:` utility from
   the operating system to the in-app theme control; anyone whose OS did not match
   their chosen theme has never seen the dark theme render as designed.
-- [ ] **Step 3:** Tab past the closed mobile drawer — focus must never land on a
+- [x] **Step 3:** Tab past the closed mobile drawer — focus must never land on a
   hidden navigation link. jsdom does not implement `inert`, so no test proves this.
-- [ ] **Step 4:** All five inspection steps at 320px, checking the rating rows,
+- [x] **Step 4:** All five inspection steps at 320px, checking the rating rows,
   drone grids and cell toggles that were each fixed once for narrow screens.
-- [ ] **Step 5:** Press Enter in the weight field on step one — it must advance, not
+- [x] **Step 5:** Press Enter in the weight field on step one — it must advance, not
   save. This was a High finding in the Phase 3 audit.
-- [ ] **Step 6:** Start an inspection, deploy an update, and confirm the tab does not
+- [x] **Step 6:** Start an inspection, deploy an update, and confirm the tab does not
   reload until the work is saved or discarded.
-- [ ] **Step 7:** Dense screens — settings, user management, team pages — which hold
+- [x] **Step 7:** Dense screens — settings, user management, team pages — which hold
   most of the 85 extra-small controls that grew in Phase 1.
+
+Added by the typography stage (commits `0fd633c`, `0c655b4`):
+
+- [x] **Step 7a:** **The seven surfaces that use `.above-bottom-nav`** — update
+  prompt, install prompt, chat button and dialog, toasts, notification banner and the
+  hives bulk-action bar. The rule positioning them was being discarded by the CSS
+  parser for the whole of Phase 2, so they have never sat where they were designed
+  to. **They will visibly move; that is the fix, not a regression.** Highest priority
+  of any check here.
+- [x] **Step 7b:** The 7-day forecast strip at 320px, where the max/min temperatures
+  now stack rather than sit side by side.
+- [x] **Step 7c:** `HiveListCard`'s hive-stack diagram — the `h-8` and `h-10` rows now
+  hold 14px text, and the super row also carries a 14px gauge numeral in 32px.
+- [ ] **Step 7d:** *(needs a real device — cannot be emulated)* The graft tracker's inputs on a real iPhone. Thirteen controls
+  moved to 16px specifically to stop Safari zooming on focus; that only shows on the
+  device.
+- [ ] **Step 7e:** *(dashboard strip verified; sensor tiles need a hive with a scale connected)* The sensor tiles and the dashboard apiary strip, where the QA pass
+  moved readings to 16px to restore the label/value hierarchy.
 
 ### B. The typography floor — largely done
 
