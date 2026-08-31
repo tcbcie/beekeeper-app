@@ -1,6 +1,6 @@
 # Feature: Mobile-First Phase 1 — Accessibility and Safety Foundations
 **Date:** 31/08/2026
-**Status:** Implemented — pending build verification by the owner
+**Status:** Implemented and deployed (verified by the owner, 31/08/2026)
 
 ## 1. Overview
 

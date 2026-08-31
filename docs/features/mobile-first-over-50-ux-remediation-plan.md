@@ -1,6 +1,6 @@
 # Feature: Mobile-First UX Remediation for Users Over 50
 **Date:** 31/08/2026
-**Status:** Draft
+**Status:** In Progress - Phases 1 to 3 implemented, Phases 4 and 5 outstanding. See section 12 for current state.
 
 ## 1. Overview
 
@@ -402,3 +402,87 @@ The first Claude task should be limited to Phase 1 foundations. It should not re
 - **Build run:** no, in accordance with repository instructions.
 - **Images retained as evidence:** none.
 - **Credentials retained:** none.
+
+---
+
+## 12. Programme Status
+
+*Added 31/08/2026, after Phases 1 to 3. This section is the entry point for anyone picking the programme up. The sections above are the original review and remain as written, so the reasoning behind each decision stays legible.*
+
+### Delivery so far
+
+| Phase | State | Commit |
+|---|---|---|
+| Test infrastructure repair | Done | `8e83fdb` |
+| Phase 1 — accessibility and safety foundations | Done, deployed and verified | `b036597` |
+| Phase 2 — mobile shell and overlay coordination | Done, pushed, **build not yet verified** | `ccdeb78`, `6ffa68d`, `3adaba5` |
+| Phase 3 — focused inspection workflow | Done, pushed, **build not yet verified** | `adea7bb` |
+| Phase 4 — Hives and Records simplification | Not started | — |
+| Phase 5 — dashboard and user validation | Not started, gated on moderated testing | — |
+
+Each phase has its own plan in `docs/features/mobile-first-phaseN-*.md` and its own task record in `tasks/mobile-first-phaseN-todo.md`. Those task records carry the implementation notes, the decisions taken and the defects found along the way, and are the place to look before changing any of this work.
+
+### Findings register — current state
+
+| Priority | Finding | State |
+|---|---|---|
+| P0 | Long inspection form can lose substantial work | Closed. Phase 1 added dirty-state protection across six exit paths; Phase 3 added the stepped flow and review. |
+| P0 | Shared targets can be 28–40px | Closed in Phase 1. Buttons 48px, compact 44px, icon buttons 44px, form controls 48px. |
+| P0 | Pervasive small text | **Open, and unscheduled.** See below. |
+| P0 | Green/amber foreground pairs fail AA | Closed in Phase 1, at AAA rather than AA. |
+| P0 | Form controls lack associated labels | Closed. Phase 1 did the visit fields; Phase 3 did the remainder. |
+| P0 | Bottom navigation hides a primary item | Closed in Phase 2. Four destinations plus More, fluid, no scrolling. |
+| P1 | Drawer remains interactive while visually closed | Closed in Phase 1, using inert and a full focus lifecycle. |
+| P1 | Floating Mel obscures form and card controls | Closed in Phase 2. Mel docks while a form is active. |
+| P1 | Hives and Records are difficult to scan | Open — Phase 4. |
+| P1 | Dashboard exposes too many simultaneous sections | Open — Phase 5, gated on user testing. |
+| P1 | PWA inspection shortcut is invalid | Closed in Phase 2. |
+| P2 | Image enlargement relies on double-click | **Open.** Five call sites still use onDoubleClick. |
+| P2 | Motion preferences are not respected | Closed in Phase 1. |
+| P2 | Fixed content padding may not cover safe area | Closed in Phase 2, with one shared inset token. |
+
+### The largest piece of unfinished work
+
+**The typography floor was never assigned to a phase.** Phase 1 raised it in the shared primitives and on its own five surfaces; Phase 2 raised the navigation labels. Everything else was left, and the counts have barely moved: **971 text-xs, 32 text-[11px] and 36 text-[10px]** remain across the application, against 973/34/36 when the review was written.
+
+This is the last open P0 and, for an audience over 50 with reduced eyesight, is probably the most valuable work remaining. It is also largely mechanical, because the shared floors already exist: the task is to raise text that carries meaning to at least 14px and leave genuinely decorative text alone. It warrants its own phase and its own plan.
+
+### Corrections to this document found during implementation
+
+Recorded so they are not rediscovered.
+
+* **The four-destination navigation target was achievable.** The apparent conflict between four destinations, no scrolling at 320px and 14px labels dissolved once the fixed 76px slot width was replaced by fluid distribution and two labels were shortened for the bar only.
+* **Two additional inspection discard paths existed** beyond those listed: starting another record, and opening a different inspection, both of which destroyed in-progress work silently.
+* **The small-text count was understated** at 701; it was 973, plus 70 arbitrary sub-14px sizes.
+* **Icon buttons had no base size at all**, not 28px. Only the extra-small variant had an explicit floor.
+* **NotificationPermissionBanner is not global**; it mounts only on the Batches page.
+* **The service worker could reload a tab that never showed the update prompt**, because clients.claim() plus an unconditional controllerchange reload affects every open client. This was a data-loss path the review did not mention.
+* **Update dismissal did not persist**, so a dismissed update returned on the very next page load.
+* **The five stages for the inspection flow did not cover every block.** Honey Super Fullness was unassigned, and two blocks straddled a boundary.
+* **A rewrite of the inspection form was not necessary**, and would have been actively harmful: roughly twenty-five committed behaviours and eight already-fixed defects live in that markup.
+
+### Deliberately deferred, with reasons
+
+* **Local inspection drafts.** Phase 1 already prevents the loss they were meant to prevent. The feasibility audit found the photograph cannot be stored, and that impersonation switches the live Supabase session *before* the page reloads, leaving a window in which one user's work could be written under another user's key. This needs a designed feature, not a rider on another phase.
+* **Browser back and forward guarding.** Closing it means manipulating the history stack and risks trapping a user trying to leave, which section 4 of this document warns against. In-app link clicks are guarded; this vector is knowingly open.
+* **A full-screen inspection panel on mobile.** The stepped flow already reduced the form from roughly three screens to one short step at a time, and the click guard closes the protection gap completely. This is now a presentation choice rather than a safety one.
+* **Migrating the eleven bespoke modals onto the shared dialog hook.** No acceptance criterion requires it, and it would put a large amount of working UI at risk.
+* **Converting the remaining native confirm() calls.** Five sit on the records page and belong with Phase 4.
+
+### Known issues outside this programme's scope
+
+* **137 test failures across 18 files.** Pre-existing, and invisible until the test suite was repaired, because it could not load at all. They are missing ConfirmProvider and ToastProvider wrappers, stale mocks, and one text-chunking assertion. None are in code this programme touched.
+* **getAppVersion() falls back to a hardcoded 1.4.2** while the application is at 1.11.3. Version handling is a manually triggered task by repository rule.
+* **MD/PWA-UPDATE-SYSTEM.md describes a network-first cache strategy** that the service worker does not implement; it is cache-first for static assets and map tiles.
+* **Deferring the update reload widens a version-skew window.** Once controllerchange has fired, the new worker controls the page while old JavaScript runs and caches have been purged, so a lazily-loaded chunk requested in that window can fail. Accepted deliberately: the alternative is discarding a beekeeper's in-progress inspection.
+
+### Outstanding verification
+
+Phases 2 and 3 are pushed but have not been exercised in a browser. The checks that matter, none of which a test can perform:
+
+1. The bottom navigation at 320px — labels on one line, no ellipsis. The widths were computed from font metrics, not measured.
+2. Both themes throughout. Phase 2 rebound every dark: utility from the operating system to the in-app theme control.
+3. Tabbing past the closed mobile drawer — focus must never reach a hidden link. jsdom does not implement inert, so no test proves this.
+4. All five inspection steps at 320px.
+5. Pressing Enter in the weight field on step one — it must advance, not save.
+6. Starting an inspection, deploying, and confirming the tab does not reload until the work is saved or discarded.
