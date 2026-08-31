@@ -5,7 +5,12 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   css: {
-    postcss: './postcss.test.config.mjs'
+    // Inline, not a path. Vite treats a string here as a DIRECTORY to search
+    // for a PostCSS config, so './postcss.test.config.mjs' never matched and
+    // resolution fell through to the real postcss.config.mjs, whose Tailwind
+    // v4 plugin this loader cannot construct - which failed every test file
+    // before any of them ran. CSS is disabled for tests below in any case.
+    postcss: { plugins: [] }
   },
   test: {
     globals: true,
