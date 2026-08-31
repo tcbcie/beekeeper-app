@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Edit2, Trash2, Bug, Camera } from 'lucide-react'
+import { Edit2, Trash2, Bug, Camera, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import type { VarroaCheck } from '@/types/records'
 import IconButton from '@/components/ui/IconButton'
@@ -45,10 +45,12 @@ export default function VarroaCheckCard({
 
           {/* Image thumbnail */}
           {userHasActiveSubscription && normalisedImageUrl && !thumbnailLoadFailed && (
-            <div
-              className="relative w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity group"
-              onDoubleClick={() => onImageClick(normalisedImageUrl)}
-              title="Double-click to enlarge"
+            <button
+              type="button"
+              onClick={() => onImageClick(normalisedImageUrl)}
+              aria-label="View larger varroa check photo"
+              title="View larger"
+              className="relative w-16 h-16 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
             >
               <Image
                 src={normalisedImageUrl}
@@ -58,10 +60,10 @@ export default function VarroaCheckCard({
                 sizes="64px"
                 onError={() => setThumbnailLoadFailed(true)}
               />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40 rounded-lg">
-                <Camera size={20} className="text-white" />
-              </div>
-            </div>
+              <span className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded bg-black/70 p-0.5 text-white pointer-events-none">
+                <ZoomIn size={14} aria-hidden="true" />
+              </span>
+            </button>
           )}
           {userHasActiveSubscription && normalisedImageUrl && thumbnailLoadFailed && (
             <div

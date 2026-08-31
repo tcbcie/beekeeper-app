@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Edit2, Trash2, Search, Camera, QrCode } from 'lucide-react'
+import { Edit2, Trash2, Search, Camera, QrCode, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import type { Inspection, Hive, Apiary } from '@/types/records'
 import { getLevelLabel } from '@/types/records'
@@ -102,10 +102,12 @@ export default function InspectionCard({
 
           {/* Photo thumbnail — only when available */}
           {userHasActiveSubscription && normalisedImageUrl && !thumbnailLoadFailed && (
-            <div
-              className="relative w-12 h-12 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity group rounded-lg overflow-hidden border border-border"
-              onDoubleClick={() => onImageClick(normalisedImageUrl)}
-              title="Double-click to enlarge"
+            <button
+              type="button"
+              onClick={() => onImageClick(normalisedImageUrl)}
+              aria-label="View larger inspection photo"
+              title="View larger"
+              className="relative w-12 h-12 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity rounded-lg overflow-hidden border border-border"
             >
               <Image
                 src={normalisedImageUrl}
@@ -115,10 +117,10 @@ export default function InspectionCard({
                 sizes="48px"
                 onError={() => setThumbnailLoadFailed(true)}
               />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-40">
-                <Camera size={16} className="text-white" />
-              </div>
-            </div>
+              <span className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded bg-black/70 p-0.5 text-white pointer-events-none">
+                <ZoomIn size={12} aria-hidden="true" />
+              </span>
+            </button>
           )}
           {userHasActiveSubscription && normalisedImageUrl && thumbnailLoadFailed && (
             <div className="w-12 h-12 flex-shrink-0 rounded-lg border border-dashed border-border bg-surface-elevated flex items-center justify-center">
