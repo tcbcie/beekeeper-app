@@ -254,7 +254,7 @@ body {
      --bottom-nav-inset adds the device inset. The
      bar is hidden from `md` upward, where the
      inset collapses to the gutter only.
-     ============================================ */
+
      Both are wrapped in :where() so they carry no
      specificity, matching the .fj-btn convention
      already used here. A component keeps its own
