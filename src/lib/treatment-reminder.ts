@@ -116,18 +116,9 @@ export async function syncTreatmentReminder(
     // about, so no row is created rather than one created and closed at once.
     if (isRemoved) return { ok: true, action: 'none' }
 
-    const { error } = await supabase.from('tasks_events').insert([{
-      ...fields,
-      user_id: userId,
-      treatment_id: treatmentId,
-      description: 'The treatment period is up. Check the hive and remove the treatment.',
-      event_type: 'task',
-      category: 'treatment',
-      priority: 'normal',
-      all_day: true,
-      reminder_enabled: true,
-      reminder_sent: false,
-    }])
+    const { error } = await supabase
+      .from('tasks_events')
+      .insert([{ ...fields, ...newReminderRow(userId, treatmentId) }])
 
     if (error) throw error
     return { ok: true, action: 'created' }
@@ -138,4 +129,59 @@ export async function syncTreatmentReminder(
       error: error instanceof Error ? error.message : 'Unknown error',
     }
   }
+}
+
+/**
+ * The columns that only ever appear on a newly created reminder. Shared by the
+ * single-treatment sync and the bulk creator below so the two cannot drift —
+ * a reminder created in bulk must behave exactly like one created on its own.
+ */
+function newReminderRow(userId: string, treatmentId: string) {
+  return {
+    user_id: userId,
+    treatment_id: treatmentId,
+    description: 'The treatment period is up. Check the hive and remove the treatment.',
+    event_type: 'task',
+    category: 'treatment',
+    priority: 'normal',
+    all_day: true,
+    reminder_enabled: true,
+    reminder_sent: false,
+  }
+}
+
+/**
+ * Creates reminders for a batch of freshly inserted treatments in one statement.
+ *
+ * `syncTreatmentReminder` reads before it writes, which is 2N round trips for a
+ * batch. These treatments were created moments ago and cannot already have a
+ * reminder, so the lookup is skipped entirely and every row goes in one insert.
+ *
+ * Inputs without a planned removal date, or already marked removed, are dropped
+ * — there is nothing to be reminded about. Returns how many rows were written.
+ */
+export async function createTreatmentReminders(
+  inputs: TreatmentReminderInput[]
+): Promise<{ ok: boolean; created: number; error?: string }> {
+  const rows = inputs
+    .filter(input => input.plannedRemovalDate && !input.removedDate)
+    .map(input => ({
+      title: buildReminderTitle(input.treatmentType, input.hiveNumber),
+      start_date: input.plannedRemovalDate,
+      hive_id: input.hiveId,
+      apiary_id: input.apiaryId,
+      is_team_task: input.isTeamTask,
+      completed: false,
+      completed_at: null,
+      notes: `Auto-created from a varroa treatment recorded on ${input.treatmentDate}.`,
+      ...newReminderRow(input.userId, input.treatmentId),
+    }))
+
+  if (rows.length === 0) return { ok: true, created: 0 }
+
+  const { error } = await supabase.from('tasks_events').insert(rows)
+  if (error) {
+    return { ok: false, created: 0, error: error.message }
+  }
+  return { ok: true, created: rows.length }
 }
