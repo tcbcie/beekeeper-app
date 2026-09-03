@@ -144,6 +144,28 @@ What is left of it:
   `fj-control` and `fj-panel-*` families in `:where()`, as `fj-btn` already is.
   Without it a `text-*` passed through `className` is silently ignored.
 
+### B2. Unsaved-work protection for every record form — done
+
+Plan: `docs/features/record-form-dirty-state-plan.md`.
+
+- [x] Shared `useFormDirtyState` hook, extracted from `InspectionForm`.
+- [x] `onDirtyChange` on the varroa treatment, varroa check, feeding and harvest
+  forms, and a guarded Cancel for the four that do not guard themselves.
+- [x] The records page's dirty tracking generalised from inspection-only to
+  form-level, and discard wording that names the record type.
+
+Closes the last live path of the class the programme opened with: a part-finished
+treatment, check, feeding or harvest could be destroyed with no prompt, because only
+the inspection form reported dirty state and every guard therefore treated the other
+four as permanently clean.
+
+- [ ] **Deferred:** refactor `InspectionForm` onto the hook. It is the source of the
+  hook rather than a divergent copy, but it carries roughly twenty-five committed
+  behaviours and re-baselines in two places; doing it alongside the extraction would
+  have muddied which half was at fault if the result misbehaved.
+- [ ] **Not covered:** the archive form, an inline `<form>` in the page with three
+  fields and no separate component.
+
 ### C. Image enlargement — done
 
 Plan: `docs/features/image-enlargement-affordance-plan.md`.
