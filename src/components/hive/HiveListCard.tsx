@@ -1,5 +1,5 @@
 'use client'
-import { useRef } from 'react'
+import { useId, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ExternalLink, MoreVertical, ArchiveRestore, Archive, Trash2, Scale, Clock, QrCode } from 'lucide-react'
@@ -46,6 +46,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  const router = useRouter()
  // Focus returns here when the overflow menu is closed with Escape.
  const menuTriggerRef = useRef<HTMLButtonElement>(null)
+ const menuId = useId()
 
  // Bulk actions only ever write to the user's own hives (RLS rejects others'),
  // so the selection checkbox is shown for owned hives only.
@@ -206,20 +207,18 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  }}
  className="p-1 hover:bg-surface-secondary rounded transition-colors"
  aria-label={`More options for hive ${hive.hive_number}`}
- aria-haspopup="menu"
  aria-expanded={openMenuId === hive.id}
+ aria-controls={openMenuId === hive.id ? menuId : undefined}
  >
  <MoreVertical size={16} className="text-text-secondary" />
  </Button>
  {openMenuId === hive.id && (
  <div
- role="menu"
- aria-label={`Actions for hive ${hive.hive_number}`}
+ id={menuId}
  className="absolute right-0 top-full mt-1 bg-surface dark:bg-surface-elevated border border-border rounded-lg shadow-lg z-10 min-w-[210px] overflow-hidden"
  >
  {hive.archived_at ? (
  <Button
- role="menuitem"
  onClick={(e) => {
  e.stopPropagation()
  onUnarchive(hive)
@@ -235,7 +234,6 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
      navigates to the archive form because archiving collects a reason
      and runs a cascade (scale disconnected, queen retired). */}
  <Link
- role="menuitem"
  href={`/dashboard/records?hive=${hive.id}&type=archive`}
  onClick={(e) => {
  e.stopPropagation()
@@ -246,9 +244,8 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  <Archive size={16} />
  <span>Archive</span>
  </Link>
- <div className="border-t border-border" role="none" />
+ <div className="border-t border-border" aria-hidden="true" />
  <Button
- role="menuitem"
  onClick={(e) => {
  e.stopPropagation()
  setOpenMenuId(null)

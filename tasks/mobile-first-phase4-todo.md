@@ -59,10 +59,11 @@ action, because it collects a reason and runs `archive_hive_cascade` — disconn
 the scale, retiring the queen, failing linked tracker rows. A one-tap archive would
 hide consequences the form makes explicit.
 
-The menu had no accessibility at all. It now has `aria-haspopup`, `aria-expanded`,
-`role="menu"`/`"menuitem"`, an accessible name carrying the hive number rather than a
-bare "More options" repeated on every card, Escape to close, and focus returned to
-the trigger.
+The menu had no accessibility at all. It now has `aria-expanded`, `aria-controls`,
+an accessible name carrying the hive number rather than a bare "More options"
+repeated on every card, Escape to close, and focus returned to the trigger. It is a
+disclosure rather than an ARIA menu — see the audit below for why the menu roles
+added here were removed again.
 
 ### 4C — Search
 
@@ -129,6 +130,48 @@ pre-existing baseline, unchanged throughout.
 - Escape closing the menu and returning focus to the kebab.
 - A hive delete now names the hive; confirm the name is the one you expect before
   trusting the prompt.
+
+## 3b. QA audit (01/09/2026)
+
+No Critical. One High, one Medium, two Low.
+
+**High — the overflow menu promised keyboard behaviour it did not have.**
+4B added `role="menu"`, `role="menuitem"` and `aria-haspopup="menu"`, but not the
+rest of the ARIA menu-button pattern: no Up/Down between items, no focus moved into
+the menu on open, no Tab-closes. Those roles put assistive technology into menu
+mode, where arrow keys are expected and Tab may not traverse the items at all — so
+announcing a menu and not behaving like one is worse than announcing nothing.
+Downgraded to a disclosure: `aria-expanded` plus `aria-controls`, real buttons and
+links in DOM order, Tab working normally. Escape and focus restore are kept. The
+alternative — implementing roving arrow-key navigation — was rejected as more
+machinery than a three-item action list warrants.
+
+**Medium — the time-period counts contradicted the list once search existed.**
+`timePeriodCounts` re-filters by every filter *except* the time period, and 4C did
+not add search to it. With a term typed, the buttons would have read "All Time (89)"
+beside a list showing three. The search predicate is now one `matchesSearch()`
+function called by both memos, so they cannot drift again.
+
+**Low — `archive_notes` was missing from the searchable fields.** Archive records
+carry both a reason and free notes; only the reason was searched.
+
+**Low — `ConfirmDialog` does not restore focus on cancel.** Dismissing a delete
+prompt drops focus to `<body>` rather than the control that opened it. Pre-existing
+and app-wide, not introduced here; recorded for whoever hardens that component.
+
+**Checked and found sound:** the four new edit guards short-circuit when the form is
+clean, so no prompt appears without something to lose; `clearCollapsedFilters` on
+both screens relies on the existing refetch effects rather than duplicating the
+direct `fetchHives` call, avoiding the double fetch the ownership select still does;
+the badge count and Clear operate on exactly the same set; `FilterDisclosure` keys
+sit under the `hivecraic:filters:` namespace and so are wiped on sign-out with
+everything else.
+
+**One limitation worth stating plainly:** the four new guards protect *inspection*
+work only, because `InspectionForm` is the sole form reporting dirty state. Editing
+a treatment while a part-filled treatment is open still overwrites it silently. That
+is unchanged by this phase rather than introduced by it, but it is the same defect
+class and will need the same `onDirtyChange` wiring in the other four forms.
 
 ## 4. Mistakes made, recorded
 
