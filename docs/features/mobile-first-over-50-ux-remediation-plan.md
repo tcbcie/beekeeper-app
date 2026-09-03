@@ -418,7 +418,7 @@ The first Claude task should be limited to Phase 1 foundations. It should not re
 | Phase 2 — mobile shell and overlay coordination | Done, pushed, **build not yet verified** | `ccdeb78`, `6ffa68d`, `3adaba5` |
 | Phase 3 — focused inspection workflow | Done, pushed, **build not yet verified** | `adea7bb` |
 | Typography floor (own stage, not numbered) | T1–T5 done, pushed, **build not yet verified**; long tail deferred | see `mobile-first-typography-floor-plan.md` |
-| Phase 4 — Hives and Records simplification | Not started | — |
+| Phase 4 — Hives and Records simplification | 4A–4D done, pushed, **build not yet verified** | see `mobile-first-phase4-list-simplification-plan.md` |
 | Phase 5 — dashboard and user validation | Not started, gated on moderated testing | — |
 
 Each phase has its own plan in `docs/features/mobile-first-phaseN-*.md` and its own task record in `tasks/mobile-first-phaseN-todo.md`. Those task records carry the implementation notes, the decisions taken and the defects found along the way, and are the place to look before changing any of this work.
@@ -435,10 +435,10 @@ Each phase has its own plan in `docs/features/mobile-first-phaseN-*.md` and its 
 | P0 | Bottom navigation hides a primary item | Closed in Phase 2. Four destinations plus More, fluid, no scrolling. |
 | P1 | Drawer remains interactive while visually closed | Closed in Phase 1, using inert and a full focus lifecycle. |
 | P1 | Floating Mel obscures form and card controls | Closed in Phase 2. Mel docks while a form is active. |
-| P1 | Hives and Records are difficult to scan | Open — Phase 4. |
+| P1 | Hives and Records are difficult to scan | Largely closed in Phase 4: search on both screens, secondary filters collapsed behind a counted Filters control, Delete demoted into an overflow menu and Archive promoted onto the card. The compact list view is deferred. |
 | P1 | Dashboard exposes too many simultaneous sections | Open — Phase 5, gated on user testing. |
 | P1 | PWA inspection shortcut is invalid | Closed in Phase 2. |
-| P2 | Image enlargement relies on double-click | **Open.** Five call sites still use onDoubleClick. |
+| P2 | Image enlargement relies on double-click | Closed. Four opening sites became real buttons opened by a single tap; the fifth is a zoom toggle inside the viewer and deliberately keeps its gesture. The finding understated it — the thumbnails were `<div>`s with no keyboard path at all. |
 | P2 | Motion preferences are not respected | Closed in Phase 1. |
 | P2 | Fixed content padding may not cover safe area | Closed in Phase 2, with one shared inset token. |
 
