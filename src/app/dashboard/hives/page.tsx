@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Plus, X, Scale, Archive, CheckSquare, Copy, FolderInput, Search } from 'lucide-react'
+import { Plus, X, Scale, Archive, CheckSquare, Copy, FolderInput, Search, Syringe, Droplet } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import TextInput from '@/components/ui/TextInput'
@@ -12,6 +12,10 @@ import { Hive } from '@/types/hive'
 import HiveFormSection from '@/components/hive/HiveFormSection'
 import HiveListCard from '@/components/hive/HiveListCard'
 import MoveHivesModal from '@/components/hive/MoveHivesModal'
+import BulkTreatmentModal, { type BulkTreatmentValues } from '@/components/hive/BulkTreatmentModal'
+import BulkFeedingModal, { type BulkFeedingValues } from '@/components/hive/BulkFeedingModal'
+import { createTreatmentReminders, type TreatmentReminderInput } from '@/lib/treatment-reminder'
+import type { TreatmentProduct, DropdownValue } from '@/types/records'
 import Button from '@/components/ui/Button'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { buildDeleteHivePrompt, buildUnarchiveHivePrompt } from '@/lib/record-delete-prompts'
@@ -36,6 +40,24 @@ export default function HivesPage() {
  const [selectionMode, setSelectionMode] = useState(false)
  const [selectedIds, setSelectedIds] = useState<string[]>([])
  const [showMoveModal, setShowMoveModal] = useState(false)
+ // Bulk record entry. Reference data is fetched the first time a modal is opened
+ // rather than on every visit to this page — most sessions never bulk-record.
+ const [showBulkTreatment, setShowBulkTreatment] = useState(false)
+ const [showBulkFeeding, setShowBulkFeeding] = useState(false)
+ const [bulkSaving, setBulkSaving] = useState(false)
+ const [treatmentProducts, setTreatmentProducts] = useState<TreatmentProduct[]>([])
+ const [applicationMethods, setApplicationMethods] = useState<DropdownValue[]>([])
+ const [feedTypes, setFeedTypes] = useState<DropdownValue[]>([])
+ const [isUkNiResident, setIsUkNiResident] = useState(false)
+ // Set synchronously on entry, before any await. `bulkSaving` is only for the
+ // button label and is set after the confirmation resolves, which leaves a
+ // window where a second invocation would pass the guard and write every record
+ // twice — and neither table has a unique constraint to catch it.
+ const bulkInFlightRef = useRef(false)
+ // Holds the in-flight load, not just a "started" flag: opening the second modal
+ // while the first fetch is still running must wait for it, not skip it and show
+ // empty dropdowns.
+ const bulkRefDataPromiseRef = useRef<Promise<void> | null>(null)
 
 
  // Data layer: fetching + ownership/archive filters (see useHivesList)
@@ -165,10 +187,6 @@ export default function HivesPage() {
  setSelectionMode(false)
  setSelectedIds([])
  }
-
- // Only act on the user's own hives that are still loaded — RLS rejects writes to
- // others' hives, and a hive hidden by a filter change should not be touched.
- const selectedOwnedHives = hives.filter((h) => selectedIds.includes(h.id) && h.user_id === userId)
 
  const handleBulkMove = async (apiaryId: string | null) => {
  if (!userId) return
@@ -301,6 +319,160 @@ export default function HivesPage() {
  fetchHives(userId)
  }
 
+ // --- Bulk record entry ---------------------------------------------------
+
+ // The dropdowns and the product list live on the records page. Rather than
+ // loading them on every visit here, they are fetched once, the first time a
+ // bulk modal is opened.
+ const loadBulkReferenceData = () => {
+ if (!userId) return Promise.resolve()
+ if (!bulkRefDataPromiseRef.current) bulkRefDataPromiseRef.current = fetchBulkReferenceData(userId)
+ return bulkRefDataPromiseRef.current
+ }
+
+ const fetchBulkReferenceData = async (currentUserId: string) => {
+ try {
+ const [products, methodCategory, feedCategory, profile] = await Promise.all([
+ supabase.from('varroa_treatment_products').select('*').order('product_name'),
+ supabase.from('dropdown_categories').select('id').eq('category_key', 'application_method').single(),
+ supabase.from('dropdown_categories').select('id').eq('category_key', 'feed_type').single(),
+ supabase.from('profiles').select('is_uk_ni_resident').eq('id', currentUserId).maybeSingle(),
+ ])
+
+ if (products.data) setTreatmentProducts(products.data as TreatmentProduct[])
+ if (profile.data) setIsUkNiResident(profile.data.is_uk_ni_resident || false)
+
+ const [methods, feeds] = await Promise.all([
+ methodCategory.data
+ ? supabase.from('dropdown_values').select('id, value').eq('category_id', methodCategory.data.id).eq('is_active', true).order('display_order')
+ : Promise.resolve({ data: null }),
+ feedCategory.data
+ ? supabase.from('dropdown_values').select('id, value').eq('category_id', feedCategory.data.id).eq('is_active', true).order('display_order')
+ : Promise.resolve({ data: null }),
+ ])
+ if (methods.data) setApplicationMethods(methods.data as DropdownValue[])
+ if (feeds.data) setFeedTypes(feeds.data as DropdownValue[])
+ } catch (error) {
+ // Allow a retry rather than caching a failure for the rest of the session.
+ bulkRefDataPromiseRef.current = null
+ console.error('Failed to load bulk reference data:', error)
+ }
+ }
+
+ const openBulkModal = async (kind: 'treatment' | 'feeding') => {
+ await loadBulkReferenceData()
+ if (kind === 'treatment') setShowBulkTreatment(true)
+ else setShowBulkFeeding(true)
+ }
+
+ const handleBulkTreatment = async (values: BulkTreatmentValues) => {
+ if (!userId || bulkInFlightRef.current) return
+ const targets = selectedOwnedHives
+ if (targets.length === 0) return
+ bulkInFlightRef.current = true
+ try {
+
+ const reminderNote = values.planned_removal_date
+ ? ` and ${targets.length} removal reminder${targets.length === 1 ? '' : 's'}`
+ : ''
+ const ok = await confirmDialog({
+ title: `Record ${values.treatment_type} for ${targets.length} hive${targets.length === 1 ? '' : 's'}?`,
+ message: `This creates ${targets.length} treatment record${targets.length === 1 ? '' : 's'}${reminderNote}. Running it twice records everything twice.`,
+ confirmLabel: 'Record',
+ variant: 'info',
+ })
+ if (!ok) return
+
+ setBulkSaving(true)
+ // One statement, so RLS rejects the whole batch rather than writing a
+ // partial medicines record. Selection is owner-only, which keeps it honest.
+ const { data: inserted, error } = await supabase
+ .from('varroa_treatments')
+ .insert(targets.map(hive => ({ ...values, hive_id: hive.id, user_id: userId })))
+ .select('id, hive_id')
+
+ if (error) {
+ console.error('Bulk treatment error:', error)
+ toast.error('Failed to record treatments: ' + error.message)
+ return
+ }
+
+ toast.success(`Recorded ${inserted?.length ?? 0} treatment${inserted?.length === 1 ? '' : 's'}.`)
+
+ // Best-effort, exactly as the single-treatment path: the treatments are the
+ // record that matters and they are already saved.
+ if (inserted && values.planned_removal_date) {
+ const byId = new Map(targets.map(hive => [hive.id, hive]))
+ const reminders: TreatmentReminderInput[] = inserted.flatMap(row => {
+ const hive = byId.get(row.hive_id)
+ if (!hive) return []
+ return [{
+ treatmentId: row.id,
+ userId,
+ hiveId: row.hive_id,
+ hiveNumber: hive.hive_number,
+ apiaryId: hive.apiary_id ?? null,
+ // Recomputed server-side by set_task_team_flag() on insert, so whatever
+ // is sent here is discarded. Kept explicit rather than guessed.
+ isTeamTask: false,
+ treatmentType: values.treatment_type,
+ treatmentDate: values.treatment_date,
+ plannedRemovalDate: values.planned_removal_date,
+ removedDate: null,
+ }]
+ })
+ const result = await createTreatmentReminders(reminders)
+ if (!result.ok) {
+ console.error('Bulk reminder insert failed:', result.error)
+ toast.warning(`Treatments saved, but ${reminders.length} removal reminder${reminders.length === 1 ? '' : 's'} could not be created. Open Tasks to add them manually.`)
+ }
+ }
+
+ setShowBulkTreatment(false)
+ exitSelection()
+ fetchHives(userId)
+ } finally {
+ bulkInFlightRef.current = false
+ setBulkSaving(false)
+ }
+ }
+
+ const handleBulkFeeding = async (values: BulkFeedingValues) => {
+ if (!userId || bulkInFlightRef.current) return
+ const targets = selectedOwnedHives
+ if (targets.length === 0) return
+ bulkInFlightRef.current = true
+ try {
+ const ok = await confirmDialog({
+ title: `Record ${values.feed_type} for ${targets.length} hive${targets.length === 1 ? '' : 's'}?`,
+ message: `This creates ${targets.length} feeding record${targets.length === 1 ? '' : 's'}. Running it twice records everything twice.`,
+ confirmLabel: 'Record',
+ variant: 'info',
+ })
+ if (!ok) return
+
+ setBulkSaving(true)
+ const { data: inserted, error } = await supabase
+ .from('feedings')
+ .insert(targets.map(hive => ({ ...values, hive_id: hive.id, user_id: userId })))
+ .select('id')
+
+ if (error) {
+ console.error('Bulk feeding error:', error)
+ toast.error('Failed to record feedings: ' + error.message)
+ return
+ }
+
+ toast.success(`Recorded ${inserted?.length ?? 0} feeding${inserted?.length === 1 ? '' : 's'}.`)
+ setShowBulkFeeding(false)
+ exitSelection()
+ fetchHives(userId)
+ } finally {
+ bulkInFlightRef.current = false
+ setBulkSaving(false)
+ }
+ }
+
  // Check if any hives have scales configured
  const hasAnyScales = hives.some(h => h.beep_device_id || h.wolf_scale_id)
  const hiveSearch = search.trim().toLowerCase()
@@ -377,6 +549,13 @@ export default function HivesPage() {
  }
  }
  })
+
+ // Only act on the user's own hives that are still VISIBLE. RLS rejects writes to
+ // others' hives, and a hive the beekeeper cannot currently see must not be written
+ // to — this derives from filteredHives, not the raw fetched list, so the search
+ // box and every filter genuinely exclude a hive from a bulk action rather than
+ // only appearing to.
+ const selectedOwnedHives = filteredHives.filter((h) => selectedIds.includes(h.id) && h.user_id === userId)
 
  // Puts the user back on the hive they were just working on (returning from its detail page,
  // or closing its edit form) instead of at the top of the list.
@@ -606,6 +785,20 @@ export default function HivesPage() {
  <span>Move<span className="hidden sm:inline"> to apiary</span></span>
  </Button>
  <Button
+ onClick={() => void openBulkModal('treatment')}
+ className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium flex items-center justify-center gap-2 whitespace-nowrap"
+ >
+ <Syringe size={18} className="flex-shrink-0" />
+ <span>Treat<span className="hidden sm:inline">ment</span></span>
+ </Button>
+ <Button
+ onClick={() => void openBulkModal('feeding')}
+ className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium flex items-center justify-center gap-2 whitespace-nowrap"
+ >
+ <Droplet size={18} className="flex-shrink-0" />
+ <span>Feed<span className="hidden sm:inline">ing</span></span>
+ </Button>
+ <Button
  onClick={handleBulkClone}
  className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 font-medium flex items-center justify-center gap-2 whitespace-nowrap"
  >
@@ -628,6 +821,27 @@ export default function HivesPage() {
  apiaries={apiaries}
  onClose={() => setShowMoveModal(false)}
  onMove={handleBulkMove}
+ />
+ )}
+ {showBulkTreatment && (
+ <BulkTreatmentModal
+ count={selectedOwnedHives.length}
+ honeySuperCount={selectedOwnedHives.filter(h => (h.configuration?.honey_supers ?? 0) > 0).length}
+ treatmentProducts={treatmentProducts}
+ applicationMethods={applicationMethods}
+ isUkNiResident={isUkNiResident}
+ saving={bulkSaving}
+ onClose={() => setShowBulkTreatment(false)}
+ onApply={handleBulkTreatment}
+ />
+ )}
+ {showBulkFeeding && (
+ <BulkFeedingModal
+ count={selectedOwnedHives.length}
+ feedTypes={feedTypes}
+ saving={bulkSaving}
+ onClose={() => setShowBulkFeeding(false)}
+ onApply={handleBulkFeeding}
  />
  )}
  </div>
