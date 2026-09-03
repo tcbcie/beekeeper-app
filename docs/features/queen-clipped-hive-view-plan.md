@@ -1,7 +1,7 @@
 # Queen Clipped Status on the Hive View
 
 **Date:** 03/09/2026
-**Status:** Built 03/09/2026. Not yet verified in a browser — that is the owner's check.
+**Status:** Built 03/09/2026, corrected the same day (section 8). Not yet verified in a browser.
 **Origin:** Support ticket, Gordon McCabe, 26/07/2026 (`suggestion`, open):
 
 > "A simple one, but useful in the spring for me. As I don't like clipping queens going
@@ -123,3 +123,66 @@ a moving target for an audience that relies on things staying put.
    queen-record field would have missed.
 3. Filters → **Clipped: No** narrows the list, and the filter badge shows one active filter.
 4. Clear resets it.
+
+## 8. Correction — the wrong field was being read (03/09/2026)
+
+Section 2 chose `hives.queen_clipped` because it covers all 308 hives while
+`queens.queen_clipped` covers only the 108 with a queen record. That reasoning was
+incomplete, and the owner found it immediately: a queen with **Queen Clipped ticked on her own
+record** showed no chip and was missed by the filter.
+
+### What section 2 missed
+
+`HiveFormSection.tsx:652` gates the ✂ toggle:
+
+```
+{/* Show queen attribute toggles only when there is a queen to describe */}
+{!formData.queen_id && !formData.is_queenless && (
+```
+
+**The hive's own clipped toggle is hidden whenever the hive has a linked queen.** So for those
+108 hives there is no way to set `hives.queen_clipped` from the interface at all — the only
+place clipping can be recorded is the queen form, which writes the other column.
+
+Which column holds the truth therefore depends on the hive, because that is what decides which
+form can edit it. The 31% conflict documented in section 2 is not data-hygiene drift; it is the
+direct product of two edit paths, and reading either column alone misses whichever population
+the other covers.
+
+### The rule now
+
+`src/lib/queen-clipped.ts` — `isQueenClipped(hive)`, used by both the card chip and the filter:
+
+* queenless → `false` (nothing to clip, and the form hides the toggle in that state too)
+* has a linked queen → `queens.queen_clipped`
+* otherwise → `hives.queen_clipped`
+
+`useHivesList` widens its queens `.select()` to fetch `queen_clipped`. No new query.
+
+### Measured against the live data
+
+| | |
+|---|---|
+| Chip showed before | 74 hives |
+| Chip shows now | **68** |
+| Newly shown | **14** |
+| No longer shown | 20 |
+
+The 14 newly shown include `59-DAN` (queen `53W`), the hive that exposed the bug, plus `#2`,
+`#7`, `EPF 4B`, `H1`, `H3`, `H6`, `LNH 02A`, `LNH 05`, `LNH 12`, `LNH 15`, `R1`, `R3`, `SMF 03`.
+
+### The 20 that stopped showing — deliberately left to the owner
+
+Those have a queen assigned, `hives.queen_clipped = true` and `queens.queen_clipped = false`.
+The queen record wins because **the hive flag can no longer be seen or edited** once a queen is
+linked: showing "Clipped" from a field the beekeeper cannot reach, contradicting the one they
+can, is worse than showing nothing.
+
+It remains possible that those 20 are genuinely clipped and the hive flag is the honest record.
+Copying the hive flag onto those 20 queens would preserve the display and reconcile the two
+fields in one go, but it asserts clipping on 20 queens from a flag of unknown age, so it is the
+owner's decision and no data was changed.
+
+### Verification
+
+0 `src` type errors, ESLint clean, suite unchanged at 18 failed files / 137 failed / 661 passed.
