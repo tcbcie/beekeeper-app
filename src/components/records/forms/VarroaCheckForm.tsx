@@ -7,6 +7,7 @@ import type { VarroaCheck, Hive, Apiary } from '@/types/records'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
+import { useFormDirtyState } from '@/hooks/useFormDirtyState'
 
 interface VarroaCheckFormProps {
   check: VarroaCheck | null
@@ -19,6 +20,8 @@ interface VarroaCheckFormProps {
   userHasActiveSubscription: boolean
   onSubmit: (check: VarroaCheck, imageFile: File | null) => Promise<void>
   onCancel: () => void
+  /** Reports unsaved work so the page can guard every exit path. */
+  onDirtyChange?: (dirty: boolean) => void
   onImageClick: (url: string) => void
 }
 
@@ -33,6 +36,7 @@ export default function VarroaCheckForm({
   userHasActiveSubscription,
   onSubmit,
   onCancel,
+  onDirtyChange,
   onImageClick
 }: VarroaCheckFormProps) {
   const [formData, setFormData] = useState<VarroaCheck>(check || {
@@ -65,6 +69,10 @@ export default function VarroaCheckForm({
     bucket: 'inspection-images',
     folder: 'varroa-checks'
   })
+  // Every exit guard on the records page asks one question: is there
+  // unsaved work? Until this was wired, the answer for this form was
+  // always no, so its contents could be discarded without a prompt.
+  useFormDirtyState({ value: formData, onDirtyChange, extraDirty: imageFile !== null })
 
   // Update form data when check prop changes
   useEffect(() => {

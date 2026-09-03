@@ -17,7 +17,7 @@ import IconButton from '@/components/ui/IconButton'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { useReportFormActive } from '@/contexts/BottomSurfaceContext'
-import { DISCARD_INSPECTION_PROMPT } from '@/lib/inspection-discard'
+import { buildDiscardRecordPrompt } from '@/lib/inspection-discard'
 import { buildDeleteRecordPrompt } from '@/lib/record-delete-prompts'
 import { useNavigationGuard } from '@/hooks/useNavigationGuard'
 import { updateManager } from '@/lib/update-manager'
@@ -84,51 +84,67 @@ function mapTypeParamToRecordType(typeParam: string | null): RecordType | null {
   return null
 }
 
+const RECORD_LABELS: Record<RecordType, string> = {
+  inspection: 'inspection',
+  varroa_treatment: 'treatment',
+  varroa_check: 'varroa check',
+  feeding: 'feeding record',
+  harvest: 'harvest record',
+  archive: 'archive record',
+}
+
 export default function RecordsPage() {
   const router = useRouter()
   const toast = useToast()
   const confirmDialog = useConfirm()
 
-  // Unsaved-inspection protection. The form reports its own dirty state; the
-  // page holds it in a ref so consulting it never triggers a re-render.
-  const inspectionDirtyRef = useRef(false)
+  const [formType, setFormType] = useState<RecordType>('inspection')
+
+  // Unsaved-work protection for whichever record form is open. Each form
+  // reports its own dirty state; the page holds it in a ref so consulting it
+  // never triggers a re-render.
+  //
+  // This was inspection-only until Phase 4's audit: the other four forms
+  // reported nothing, so every guard below treated them as permanently clean
+  // and their contents could be discarded without a prompt.
+  const formDirtyRef = useRef(false)
   // Mirrored into state as well as the ref: the ref keeps the exit guards free
   // of re-renders, while the shell needs a rendered value to mute Mel and hold
   // back banners. It flips at most twice in a form's lifetime.
-  const [inspectionDirty, setInspectionDirty] = useState(false)
+  const [formDirty, setFormDirty] = useState(false)
 
-  const handleInspectionDirtyChange = useCallback((dirty: boolean) => {
-    inspectionDirtyRef.current = dirty
-    setInspectionDirty(dirty)
+  const handleFormDirtyChange = useCallback((dirty: boolean) => {
+    formDirtyRef.current = dirty
+    setFormDirty(dirty)
   }, [])
 
   // Nothing interruptive may take the bottom of the screen while an inspection
   // is part-finished. Deferred banners return once it is saved or discarded.
-  useReportFormActive(inspectionDirty)
+  useReportFormActive(formDirty)
 
   // A service-worker update reloads every open client, including ones that
   // never showed the prompt. Reading the ref rather than the state keeps the
   // guard current without re-registering on each change.
   useEffect(() => {
-    return updateManager.registerUnsavedWorkGuard(() => inspectionDirtyRef.current)
+    return updateManager.registerUnsavedWorkGuard(() => formDirtyRef.current)
   }, [])
 
   // A guard falling quiet is not observable on its own, so the moment the work
   // stops being at risk we ask the manager to run any reload it held back.
   useEffect(() => {
-    if (!inspectionDirty) updateManager.flushPendingReload()
-  }, [inspectionDirty])
+    if (!formDirty) updateManager.flushPendingReload()
+  }, [formDirty])
 
   /** Returns true when it is safe to throw away whatever is in the form. */
-  const confirmDiscardInspection = useCallback(async () => {
-    if (!inspectionDirtyRef.current) return true
-    return confirmDialog(DISCARD_INSPECTION_PROMPT)
-  }, [confirmDialog])
+  const confirmDiscardOpenForm = useCallback(async () => {
+    if (!formDirtyRef.current) return true
+    return confirmDialog(buildDiscardRecordPrompt(RECORD_LABELS[formType]))
+  }, [confirmDialog, formType])
 
   // The last of Phase 1's six exit paths. An in-app link now asks before it
   // navigates away from a part-finished inspection, using the same wording as
   // every other discard prompt.
-  useNavigationGuard(inspectionDirty, confirmDiscardInspection)
+  useNavigationGuard(formDirty, confirmDiscardOpenForm)
 
   const searchParams = useSearchParams()
   const formRef = useRef<HTMLDivElement>(null)
@@ -141,7 +157,6 @@ export default function RecordsPage() {
 
   // Form state
   const [showForm, setShowForm] = useState(false)
-  const [formType, setFormType] = useState<RecordType>('inspection')
   const [editingInspection, setEditingInspection] = useState<Inspection | null>(null)
   const [inspectionDraft, setInspectionDraft] = useState<InspectionFormData | null>(null)
   const [editingTreatment, setEditingTreatment] = useState<VarroaTreatment | null>(null)
@@ -498,9 +513,9 @@ export default function RecordsPage() {
   // Guarded. Used by the New Record dropdown, where the user may already have
   // an inspection in progress that opening another record would destroy.
   const handleNewRecord = useCallback(async (type: RecordType, presetHiveId?: string) => {
-    if (!(await confirmDiscardInspection())) return
+    if (!(await confirmDiscardOpenForm())) return
     openNewRecord(type, presetHiveId)
-  }, [confirmDiscardInspection, openNewRecord])
+  }, [confirmDiscardOpenForm, openNewRecord])
 
   // Handle URL query parameters
   useEffect(() => {
@@ -900,7 +915,7 @@ export default function RecordsPage() {
 
   const handleInspectionEdit = async (inspection: Inspection) => {
     // Opening another inspection overwrites the one in the form.
-    if (!(await confirmDiscardInspection())) return
+    if (!(await confirmDiscardOpenForm())) return
 
     setInspectionDraft(null)
     setEditingInspection(inspection)
@@ -995,7 +1010,7 @@ export default function RecordsPage() {
   const handleTreatmentEdit = async (treatment: VarroaTreatment) => {
     // Opening any record form replaces whatever is in the panel, so this
     // needs the same guard the inspection edit path already has.
-    if (!(await confirmDiscardInspection())) return
+    if (!(await confirmDiscardOpenForm())) return
 
     setEditingTreatment(treatment)
     setFormType('varroa_treatment')
@@ -1106,7 +1121,7 @@ export default function RecordsPage() {
   const handleCheckEdit = async (check: VarroaCheck) => {
     // Opening any record form replaces whatever is in the panel, so this
     // needs the same guard the inspection edit path already has.
-    if (!(await confirmDiscardInspection())) return
+    if (!(await confirmDiscardOpenForm())) return
 
     setEditingCheck(check)
     setFormType('varroa_check')
@@ -1180,7 +1195,7 @@ export default function RecordsPage() {
   const handleFeedingEdit = async (feeding: Feeding) => {
     // Opening any record form replaces whatever is in the panel, so this
     // needs the same guard the inspection edit path already has.
-    if (!(await confirmDiscardInspection())) return
+    if (!(await confirmDiscardOpenForm())) return
 
     setEditingFeeding(feeding)
     setFormType('feeding')
@@ -1256,7 +1271,7 @@ export default function RecordsPage() {
   const handleHarvestEdit = async (harvest: Harvest) => {
     // Opening any record form replaces whatever is in the panel, so this
     // needs the same guard the inspection edit path already has.
-    if (!(await confirmDiscardInspection())) return
+    if (!(await confirmDiscardOpenForm())) return
 
     setEditingHarvest(harvest)
     setFormType('harvest')
@@ -1339,6 +1354,15 @@ export default function RecordsPage() {
     setEditingHarvest(null)
     setArchiveData(getDefaultArchiveFormData())
     setShowIpmTips(false)
+  }
+
+  /**
+   * Cancel for the four forms that do not guard themselves. InspectionForm
+   * guards its own Cancel because it must tear down its image and voice hooks
+   * only after the user has agreed; guarding it here as well would ask twice.
+   */
+  const handleGuardedCancel = async () => {
+    if (await confirmDiscardOpenForm()) resetForm()
   }
 
   const handleImageClick = (url: string) => {
@@ -1434,7 +1458,7 @@ export default function RecordsPage() {
               </h2>
               <IconButton
                 onClick={async () => {
-                  if (await confirmDiscardInspection()) resetForm()
+                  if (await confirmDiscardOpenForm()) resetForm()
                 }}
                 aria-label="Close form"
               >
@@ -1458,7 +1482,7 @@ export default function RecordsPage() {
                 onHiveChange={handleHiveChange}
                 onImageClick={handleImageClick}
                 fetchingWeather={fetchingWeather}
-                onDirtyChange={handleInspectionDirtyChange}
+                onDirtyChange={handleFormDirtyChange}
               />
             )}
 
@@ -1473,7 +1497,8 @@ export default function RecordsPage() {
                 applicationMethods={applicationMethods}
                 isUkNiResident={isUkNiResident}
                 onSubmit={handleTreatmentSubmit}
-                onCancel={resetForm}
+                onCancel={handleGuardedCancel}
+                onDirtyChange={handleFormDirtyChange}
                 onShowIpmTips={() => setShowIpmTips(true)}
                 onFetchWeather={handleFetchWeatherForHive}
               />
@@ -1490,7 +1515,8 @@ export default function RecordsPage() {
                 existingChecks={varroaChecks}
                 userHasActiveSubscription={userHasActiveSubscription}
                 onSubmit={handleCheckSubmit}
-                onCancel={resetForm}
+                onCancel={handleGuardedCancel}
+                onDirtyChange={handleFormDirtyChange}
                 onImageClick={handleImageClick}
               />
             )}
@@ -1504,7 +1530,8 @@ export default function RecordsPage() {
                 selectedHiveId={filters.hiveId}
                 feedTypeOptions={feedTypeOptions}
                 onSubmit={handleFeedingSubmit}
-                onCancel={resetForm}
+                onCancel={handleGuardedCancel}
+                onDirtyChange={handleFormDirtyChange}
               />
             )}
 
@@ -1517,7 +1544,8 @@ export default function RecordsPage() {
                 selectedHiveId={filters.hiveId}
                 floralSourceOptions={floralSourceOptions}
                 onSubmit={handleHarvestSubmit}
-                onCancel={resetForm}
+                onCancel={handleGuardedCancel}
+                onDirtyChange={handleFormDirtyChange}
               />
             )}
 

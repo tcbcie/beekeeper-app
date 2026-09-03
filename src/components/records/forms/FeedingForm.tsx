@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { Feeding, Hive, Apiary } from '@/types/records'
 import Button from '@/components/ui/Button'
+import { useFormDirtyState } from '@/hooks/useFormDirtyState'
 
 interface FeedingFormProps {
   feeding: Feeding | null
@@ -13,6 +14,8 @@ interface FeedingFormProps {
   feedTypeOptions: string[]
   onSubmit: (feeding: Feeding, isOther: boolean, otherType: string) => Promise<void>
   onCancel: () => void
+  /** Reports unsaved work so the page can guard every exit path. */
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 export default function FeedingForm({
@@ -23,7 +26,8 @@ export default function FeedingForm({
   selectedHiveId = '',
   feedTypeOptions,
   onSubmit,
-  onCancel
+  onCancel,
+  onDirtyChange
 }: FeedingFormProps) {
   const [formData, setFormData] = useState<Feeding>(feeding || {
     id: '',
@@ -41,6 +45,11 @@ export default function FeedingForm({
   const [otherFeedType, setOtherFeedType] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const isEditing = Boolean(feeding?.id)
+
+  // Every exit guard on the records page asks one question: is there
+  // unsaved work? Until this was wired, the answer for this form was
+  // always no, so its contents could be discarded without a prompt.
+  useFormDirtyState({ value: formData, onDirtyChange })
 
   // Update form data when feeding prop changes
   useEffect(() => {

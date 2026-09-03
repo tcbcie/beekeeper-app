@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import type { Harvest, Hive, Apiary } from '@/types/records'
 import Button from '@/components/ui/Button'
+import { useFormDirtyState } from '@/hooks/useFormDirtyState'
 
 interface HarvestFormProps {
   harvest: Harvest | null
@@ -13,6 +14,8 @@ interface HarvestFormProps {
   floralSourceOptions: string[]
   onSubmit: (harvest: Harvest) => Promise<void>
   onCancel: () => void
+  /** Reports unsaved work so the page can guard every exit path. */
+  onDirtyChange?: (dirty: boolean) => void
 }
 
 export default function HarvestForm({
@@ -23,7 +26,8 @@ export default function HarvestForm({
   selectedHiveId = '',
   floralSourceOptions,
   onSubmit,
-  onCancel
+  onCancel,
+  onDirtyChange
 }: HarvestFormProps) {
   const [formData, setFormData] = useState<Harvest>(harvest || {
     id: '',
@@ -42,6 +46,11 @@ export default function HarvestForm({
   const [formApiaryId, setFormApiaryId] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
   const isEditing = Boolean(harvest?.id)
+
+  // Every exit guard on the records page asks one question: is there
+  // unsaved work? Until this was wired, the answer for this form was
+  // always no, so its contents could be discarded without a prompt.
+  useFormDirtyState({ value: formData, onDirtyChange })
 
   // Update form data when harvest prop changes
   useEffect(() => {

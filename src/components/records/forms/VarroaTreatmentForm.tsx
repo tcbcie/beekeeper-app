@@ -6,6 +6,7 @@ import { useToast } from '@/components/ui/Toast'
 import type { VarroaTreatment, Hive, Apiary, TreatmentProduct, DropdownValue } from '@/types/records'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
+import { useFormDirtyState } from '@/hooks/useFormDirtyState'
 
 interface VarroaTreatmentFormProps {
   treatment: VarroaTreatment | null
@@ -18,6 +19,8 @@ interface VarroaTreatmentFormProps {
   isUkNiResident?: boolean
   onSubmit: (treatment: VarroaTreatment, isOther: boolean, otherType: string) => Promise<void>
   onCancel: () => void
+  /** Reports unsaved work so the page can guard every exit path. */
+  onDirtyChange?: (dirty: boolean) => void
   onShowIpmTips: () => void
   onFetchWeather: (hiveId: string) => Promise<{ temp: number; condition: string; humidity: number; wind_speed: number } | null>
 }
@@ -33,6 +36,7 @@ export default function VarroaTreatmentForm({
   isUkNiResident = false,
   onSubmit,
   onCancel,
+  onDirtyChange,
   onShowIpmTips,
   onFetchWeather
 }: VarroaTreatmentFormProps) {
@@ -60,6 +64,11 @@ export default function VarroaTreatmentForm({
   const [submitting, setSubmitting] = useState(false)
   const [showAllProducts, setShowAllProducts] = useState(false)
   const isEditing = Boolean(treatment?.id)
+
+  // Every exit guard on the records page asks one question: is there
+  // unsaved work? Until this was wired, the answer for this form was
+  // always no, so its contents could be discarded without a prompt.
+  useFormDirtyState({ value: formData, onDirtyChange })
 
   // Pre-filter treatment products by resident jurisdiction
   const filteredProducts = useMemo(() => {
