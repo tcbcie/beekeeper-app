@@ -15,7 +15,21 @@ import { useEffect, useRef, type RefObject } from 'react'
  * inert subtree and the attempt fails silently: if focus were requested in
  * the same commit that removes the attribute, the surface would open with
  * focus still stranded on the page behind it and nothing to indicate it.
+ *
+ * Dialogs stack. A confirmation opened from inside a modal leaves both open at
+ * once, and both would otherwise listen for Escape on `document` — closing the
+ * confirmation *and* the form behind it from one keypress, discarding work the
+ * user never chose to discard. `stopPropagation` cannot prevent that: listeners
+ * on the same node still all run. So each open surface registers on a stack and
+ * only the topmost acts on a key, which also stops two focus traps fighting over
+ * Tab.
  */
+
+/**
+ * Open dialog surfaces, oldest first. Module-level because the stack is a
+ * property of the page, not of any one dialog.
+ */
+const dialogStack: symbol[] = []
 
 const FOCUSABLE_SELECTOR = [
   'a[href]',
@@ -34,6 +48,23 @@ interface UseDialogA11yOptions {
 
 export function useDialogA11y({ isOpen, onClose, containerRef }: UseDialogA11yOptions) {
   const restoreFocusRef = useRef<HTMLElement | null>(null)
+  const stackTokenRef = useRef<symbol | null>(null)
+
+  // Join the stack while open, and leave it on close. Registered before the key
+  // handler below so the handler always has a token to compare.
+  useEffect(() => {
+    if (!isOpen) return
+
+    const token = Symbol('dialog')
+    stackTokenRef.current = token
+    dialogStack.push(token)
+
+    return () => {
+      const index = dialogStack.indexOf(token)
+      if (index !== -1) dialogStack.splice(index, 1)
+      stackTokenRef.current = null
+    }
+  }, [isOpen])
 
   // Remember what had focus, and give it back on close.
   useEffect(() => {
@@ -74,6 +105,9 @@ export function useDialogA11y({ isOpen, onClose, containerRef }: UseDialogA11yOp
     if (!isOpen) return
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Only the topmost surface responds; anything underneath stays put.
+      if (dialogStack[dialogStack.length - 1] !== stackTokenRef.current) return
+
       if (event.key === 'Escape') {
         event.stopPropagation()
         onClose()
