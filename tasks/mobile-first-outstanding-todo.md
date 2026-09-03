@@ -222,8 +222,30 @@ page moved onto the shared dialog.
 The parent plan requires moderated validation with six to eight beekeepers aged
 50–75 **before** the dashboard is changed. This is not a coding task yet.
 
-- [ ] **Step 13:** Run the moderated sessions described in parent plan section 9.
+Materials are ready: `docs/features/mobile-first-phase5-validation-pack.md` holds the
+screener, setup conditions, task script, observation sheet and what to do with the
+findings.
+
+- [x] **Step 12d:** Prepare the validation pack.
+- [ ] **Step 13:** Run the moderated sessions. **Owner's to conduct** — this is the
+  gate, and no amount of further code review substitutes for it.
 - [ ] **Step 14:** Write the Phase 5 plan from what those sessions actually show.
+
+**Two acceptance criteria in parent plan section 9 cannot pass as written**, and need
+a decision before or during the sessions:
+
+- [ ] **Step 13a:** *"Every participant understands whether an offline action is
+  saved locally, synchronised or failed."* There is no local save and no
+  synchronisation — the service worker passes every write straight to the network and
+  never queues one, and `OfflineIndicator` is a banner over `navigator.onLine`. Two of
+  the three states do not exist. Recommended rewrite: *"No participant believes an
+  action succeeded when it failed."* Whether to build offline saving is a separate and
+  much larger product decision.
+- [ ] **Step 13b:** *"Recover after accidentally pressing Back."* Browser Back is
+  deliberately unguarded (Step 16) because guarding it risks trapping a user trying to
+  leave. Keep the task — how badly it lands is the evidence needed to settle whether
+  that trade-off was right — but the facilitator must know the loss is expected
+  behaviour rather than a bug found mid-session.
 
 ### F. Deferred features, each needing its own design
 
