@@ -2,11 +2,12 @@
 import { useId, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ExternalLink, MoreVertical, ArchiveRestore, Archive, Trash2, Scale, Clock, QrCode } from 'lucide-react'
+import { ExternalLink, MoreVertical, ArchiveRestore, Archive, Trash2, Scale, Clock, QrCode, Syringe } from 'lucide-react'
 import type { Hive } from '@/types/hive'
 import { queenStatusBadgeClass } from '@/types/queen'
 import Button from '@/components/ui/Button'
 import { formatQueenlessLabel } from '@/lib/queenless'
+import { formatRemovalLabel } from '@/lib/treatment-removal'
 import SuperFullnessGauge from '@/components/hive/SuperFullnessGauge'
 
 interface HiveListCardProps {
@@ -153,6 +154,28 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  <span>📋</span>
  <span className="font-bold">{hive.active_tasks_count}</span>
  <span>Active Task{hive.active_tasks_count > 1 ? 's' : ''}</span>
+ </span>
+ )}
+ {/*
+   A treatment still on the hive. Unlike the status and sharing pills this one is
+   transient: it appears only between applying a treatment and recording its
+   removal, and disappears once the beekeeper does the thing it asks for. Sits
+   with the descriptive pills rather than the status cluster because the label
+   carries a product name and a date, and must be free to wrap.
+ */}
+ {!hive.archived_at && hive.active_treatment && (
+ <span className={`px-2 py-0.5 text-sm font-semibold rounded flex items-start gap-1 w-fit max-w-full border ${
+ hive.active_treatment.overdue
+ ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border-red-400 dark:border-red-700'
+ : 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 border-amber-400 dark:border-amber-700'
+ }`}>
+ <Syringe size={14} className="flex-shrink-0 mt-0.5" />
+ <span className="break-words">
+ {formatRemovalLabel(hive.active_treatment.treatment_type, {
+ planned_removal_date: hive.active_treatment.planned_removal_date,
+ removed_date: null,
+ })}
+ </span>
  </span>
  )}
  </div>

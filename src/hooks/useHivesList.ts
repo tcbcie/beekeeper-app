@@ -8,7 +8,9 @@ import { getTeamAccess } from '@/lib/team-access'
 import { useToast } from '@/components/ui/Toast'
 import { usePersistentState } from './usePersistentState'
 import { useSelection } from '@/contexts/SelectionContext'
-import { Hive } from '@/types/hive'
+import { Hive, ActiveTreatment } from '@/types/hive'
+import { getTreatmentRemovalState } from '@/lib/treatment-removal'
+import { toLocalDateString } from '@/lib/date-utils'
 
 export interface HiveListApiary {
  id: string
@@ -241,7 +243,7 @@ export function useHivesList() {
  ] = await Promise.all([
  supabase
  .from('varroa_treatments')
- .select('hive_id, treatment_date')
+ .select('hive_id, treatment_date, treatment_type, planned_removal_date, removed_date')
  .in('hive_id', hiveIds)
  .order('treatment_date', { ascending: false }),
  supabase
@@ -302,6 +304,23 @@ export function useHivesList() {
  }
  })
 
+ // Treatments still on the hive: planned to come off, not yet recorded as
+ // removed. Every treatment predating this feature has both dates null and so
+ // reads as nothing on, which is why no backfill was needed. Rows arrive
+ // newest-first, so the first hit per hive is the one worth showing.
+ const today = toLocalDateString(new Date())
+ const activeTreatmentByHive = new Map<string, ActiveTreatment>()
+ lastTreatments?.forEach(treatment => {
+ if (!treatment.hive_id || activeTreatmentByHive.has(treatment.hive_id)) return
+ const state = getTreatmentRemovalState(treatment, today)
+ if (state === 'none') return
+ activeTreatmentByHive.set(treatment.hive_id, {
+ treatment_type: treatment.treatment_type,
+ planned_removal_date: treatment.planned_removal_date,
+ overdue: state === 'overdue',
+ })
+ })
+
  // Build map of active task counts per hive
  const activeTasksByHive = new Map<string, number>()
  activeTasks?.forEach(task => {
@@ -354,6 +373,7 @@ export function useHivesList() {
  last_record: lastRecord,
  last_inspection_date: lastInspectionByHive.get(hive.id) || null,
  active_tasks_count: activeTasksByHive.get(hive.id) || 0,
+ active_treatment: activeTreatmentByHive.get(hive.id) ?? null,
  qr_tag_code: qrTagByHive.get(hive.id) ?? null,
  last_super_fullness: latestSuperFullness,
  previous_super_fullness: previousSuperFullness,

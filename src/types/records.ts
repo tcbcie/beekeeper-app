@@ -150,6 +150,10 @@ export interface VarroaTreatment {
   notes: string
   application_method_id: string | null
   batch_number?: string | null
+  /** When the treatment is due to come off. Null means nothing to remove. */
+  planned_removal_date?: string | null
+  /** When it actually came off. Null with a planned date set means still on. */
+  removed_date?: string | null
   hives?: {
     hive_number: string
     apiary_id: string | null
@@ -225,6 +229,13 @@ export interface TreatmentProduct {
   active_ingredients: string | null
   application_method: string | null
   treatment_duration: string | null
+  /**
+   * Days from application to removal, used to prefill a treatment's planned
+   * removal date. Null means a single application with nothing to remove.
+   * `treatment_duration` above is the free-text range this was derived from and
+   * is what the product tooltip displays.
+   */
+  removal_after_days: number | null
   temperature_range: string | null
   honey_flow_restrictions: string | null
   withdrawal_period_days: number | null
