@@ -1,6 +1,7 @@
 'use client'
-import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react'
 import { AlertTriangle, Trash2, Info } from 'lucide-react'
+import { useDialogA11y } from '@/hooks/useDialogA11y'
 
 type ConfirmVariant = 'danger' | 'warning' | 'info'
 
@@ -86,18 +87,14 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const cancelBtnRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
 
-  // Escape key handler
-  useEffect(() => {
-    if (!open) return
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleCancel()
-    }
-    document.addEventListener('keydown', onKeyDown)
-    // Auto-focus the cancel button when dialog opens
-    cancelBtnRef.current?.focus()
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open, handleCancel])
+  // Shares the dialog stack with ModalShell so a confirmation opened from inside
+  // a modal takes Escape for itself. Its own document-level listener used to
+  // close both at once, discarding a half-filled form the user never chose to
+  // discard. The hook also focuses Cancel first — it is the first focusable in
+  // the panel — preserving the safer default this dialog already had.
+  useDialogA11y({ isOpen: open, onClose: handleCancel, containerRef: panelRef })
 
   const variant = options.variant || 'danger'
   const style = variantStyles[variant]
@@ -117,8 +114,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           aria-labelledby="confirm-dialog-title"
         >
           <div
+            ref={panelRef}
             className="bg-surface dark:bg-surface-elevated rounded-xl shadow-xl max-w-md w-full p-6 border border-border animate-slide-up"
             onClick={(e) => e.stopPropagation()}
+            tabIndex={-1}
           >
             <div className="flex items-start gap-4">
               <div className={`p-3 rounded-full ${style.iconBg} flex-shrink-0`}>
