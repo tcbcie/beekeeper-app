@@ -126,6 +126,12 @@ export default function QueensPage() {
  const [roleFilter, setRoleFilter] = usePersistentState<'all' | 'production' | 'breeder'>(
    'queens:role', 'all', (v) => v === 'all' || v === 'production' || v === 'breeder'
  )
+ // The register is where clipping is recorded for any queen in a hive — the
+ // hive form hides its own toggle once a queen is linked — so it is also where
+ // "which ones still need doing" has to be answerable.
+ const [clippedFilter, setClippedFilter] = usePersistentState<'all' | 'clipped' | 'unclipped'>(
+   'queens:clipped', 'all', (v) => v === 'all' || v === 'clipped' || v === 'unclipped'
+ )
  // Apiary filter holds an apiary id, or 'all'. Stays local to this page
  // (consistent with the other queen filters), not the app-wide selection.
  const [apiaryFilter, setApiaryFilter] = usePersistentState<string>(
@@ -413,6 +419,8 @@ export default function QueensPage() {
  if (roleFilter === 'production' && !isProductionQueen(q.queen_role)) return false
  if (roleFilter === 'breeder' && isProductionQueen(q.queen_role)) return false
 
+ if (clippedFilter !== 'all' && Boolean(q.queen_clipped) !== (clippedFilter === 'clipped')) return false
+
  // Apply assignment filter
  if (assignmentFilter === 'assigned' && !q.hives?.id) return false
  if (assignmentFilter === 'unassigned' && q.hives?.id) return false
@@ -627,6 +635,16 @@ export default function QueensPage() {
  <option value="all">All Roles</option>
  <option value="production">Production</option>
  <option value="breeder">Breeder/Reference</option>
+ </select>
+ <select
+ value={clippedFilter}
+ onChange={(e) => setClippedFilter(e.target.value as 'all' | 'clipped' | 'unclipped')}
+ aria-label="Filter by clipped status"
+ className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500 transition-all"
+ >
+ <option value="all">Clipped: All</option>
+ <option value="clipped">Clipped: Yes</option>
+ <option value="unclipped">Clipped: No</option>
  </select>
  <select
  value={effectiveApiaryFilter}
