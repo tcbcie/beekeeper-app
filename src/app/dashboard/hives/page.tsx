@@ -47,6 +47,10 @@ export default function HivesPage() {
  fetchHives,
  } = useHivesList()
  const [scaleFilter, setScaleFilter] = usePersistentState<boolean>('hives:scales', false, (v) => typeof v === 'boolean')
+ // The spring task is "which queens still need clipping?", which the card cannot
+ // answer by itself: it shows a chip when clipped and nothing when not, so the
+ // answer is an absence. This filter states it directly.
+ const [clippedFilter, setClippedFilter] = usePersistentState<string>('hives:clipped', 'all', (v) => v === 'all' || v === 'clipped' || v === 'unclipped')
  const [sortOption, setSortOption] = usePersistentState<string>('hives:sort', 'default')
  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
@@ -307,6 +311,7 @@ export default function HivesPage() {
  ownershipFilter !== 'my',
  archiveFilter !== 'active',
  scaleFilter,
+ clippedFilter !== 'all',
  sortOption !== 'default',
  ].filter(Boolean).length
 
@@ -314,6 +319,7 @@ export default function HivesPage() {
  setOwnershipFilter('my')
  setArchiveFilter('active')
  setScaleFilter(false)
+ setClippedFilter('all')
  setSortOption('default')
  }
 
@@ -335,6 +341,12 @@ export default function HivesPage() {
  return false
  }
  if (scaleFilter && !hive.beep_device_id && !hive.wolf_scale_id) {
+ return false
+ }
+ if (clippedFilter === 'clipped' && !hive.queen_clipped) {
+ return false
+ }
+ if (clippedFilter === 'unclipped' && hive.queen_clipped) {
  return false
  }
  return true
@@ -481,6 +493,16 @@ export default function HivesPage() {
  <span className="text-sm whitespace-nowrap">With Scales</span>
  </label>
  )}
+ <select
+ value={clippedFilter}
+ onChange={(e) => setClippedFilter(e.target.value)}
+ aria-label="Filter by queen clipped status"
+ className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500/20 transition-all"
+ >
+ <option value="all">Clipped: All</option>
+ <option value="clipped">Clipped: Yes</option>
+ <option value="unclipped">Clipped: No</option>
+ </select>
  <select
  value={sortOption}
  onChange={(e) => setSortOption(e.target.value)}
