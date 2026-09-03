@@ -229,15 +229,19 @@ export default function InspectionForm({
   // Hive selection alone drives six effects that write into other steps'
   // fields, and they keep working precisely because state is not moved.
   const [step, setStep] = useState(FIRST_STEP)
-  // The furthest step reached, so the progress control can offer a direct jump
-  // back without letting the user skip ahead past validation.
-  const [furthestStep, setFurthestStep] = useState(FIRST_STEP)
+  // Which steps have actually been opened. A high-water mark was enough while
+  // the flow could only advance one step at a time, but steps can now be
+  // jumped: going straight from one to review would have ticked two and three
+  // as complete without the beekeeper ever seeing them.
+  const [visitedSteps, setVisitedSteps] = useState<Set<number>>(
+    () => new Set([FIRST_STEP])
+  )
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const goToStep = useCallback((next: number) => {
     const clamped = Math.min(Math.max(next, FIRST_STEP), LAST_STEP)
     setStep(clamped)
-    setFurthestStep(prev => Math.max(prev, clamped))
+    setVisitedSteps(prev => (prev.has(clamped) ? prev : new Set(prev).add(clamped)))
     // A step change replaces a screenful of content, so start it at the top
     // rather than leaving the user part-way down the previous step.
     // Guarded because scrollIntoView is not universally implemented; an
@@ -273,6 +277,14 @@ export default function InspectionForm({
     }
     return errors
   }, [formData.hive_id, formData.inspection_date, formData.inspection_time])
+
+  // Hive, date and time are the whole required set, so once step one is valid
+  // nothing further is compulsory and every remaining step can be reached
+  // directly. Gating them behind Next withheld nothing and simply made a
+  // beekeeper who wanted one observation walk through two screens of ratings.
+  // The review step is the backstop: it still refuses to save while anything
+  // is outstanding, and names the step that owes it.
+  const canJumpAhead = useMemo(() => validateStep(FIRST_STEP).length === 0, [validateStep])
 
   const goToNextStep = useCallback(() => {
     const errors = validateStep(step)
@@ -630,7 +642,7 @@ export default function InspectionForm({
         // The form has been replaced underneath the user; leaving them on step 4
         // of a flow whose contents just changed is disorienting.
         setStep(FIRST_STEP)
-        setFurthestStep(FIRST_STEP)
+        setVisitedSteps(new Set([FIRST_STEP]))
         // Re-baseline, or the freshly reset form reads as edited.
         pristineSnapshotRef.current = serialiseFormState(
           defaultFormData,
@@ -660,7 +672,7 @@ export default function InspectionForm({
     setFollowUpExpanded(false)
     setFollowUpDrafts([])
     setStep(FIRST_STEP)
-    setFurthestStep(FIRST_STEP)
+    setVisitedSteps(new Set([FIRST_STEP]))
     // Re-baseline against the inspection now being edited.
     pristineSnapshotRef.current = serialiseFormState(
       initialData,
@@ -973,7 +985,11 @@ export default function InspectionForm({
     // submitted by other means; an incomplete inspection must never be written.
     const outstanding = outstandingErrors
     if (outstanding.length > 0) {
-      setStep(outstanding[0].step)
+      // goToStep, not setStep: this is the one path that can move the user to
+      // an arbitrary step, and it must record the visit and scroll to the
+      // heading like every other move. Bypassing it left the sole writer of
+      // visitedSteps with a second, silent competitor.
+      goToStep(outstanding[0].step)
       setFieldErrors(Object.fromEntries(outstanding.map(error => [error.fieldId, error.message])))
       requestAnimationFrame(() => {
         document.getElementById(outstanding[0].fieldId)?.focus()
@@ -1293,8 +1309,9 @@ export default function InspectionForm({
       <InspectionStepper
         steps={INSPECTION_STEPS}
         current={step}
-        furthest={furthestStep}
+        visited={visitedSteps}
         onSelect={goToStep}
+        canJumpAhead={canJumpAhead}
       />
       </div>
 
