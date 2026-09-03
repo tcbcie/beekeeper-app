@@ -21,6 +21,7 @@ import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { buildDeleteHivePrompt, buildUnarchiveHivePrompt } from '@/lib/record-delete-prompts'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useHivesList } from '@/hooks/useHivesList'
+import { isQueenClipped } from '@/lib/queen-clipped'
 import { useListPositionMemory } from '@/hooks/useListPositionMemory'
 
 export default function HivesPage() {
@@ -515,10 +516,7 @@ export default function HivesPage() {
  if (scaleFilter && !hive.beep_device_id && !hive.wolf_scale_id) {
  return false
  }
- if (clippedFilter === 'clipped' && !hive.queen_clipped) {
- return false
- }
- if (clippedFilter === 'unclipped' && hive.queen_clipped) {
+ if (clippedFilter !== 'all' && isQueenClipped(hive) !== (clippedFilter === 'clipped')) {
  return false
  }
  return true

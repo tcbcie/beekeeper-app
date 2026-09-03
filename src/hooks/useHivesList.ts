@@ -168,11 +168,14 @@ export function useHivesList() {
  .filter((id): id is string => id !== null)
  )]
 
- const queensMap = new Map<string, { id: string; queen_number: string; marking_color?: string; status?: string }>()
+ const queensMap = new Map<string, { id: string; queen_number: string; marking_color?: string; status?: string; queen_clipped?: boolean }>()
  if (queenIds.length > 0) {
  const { data: queensData } = await supabase
  .from('queens')
- .select('id, queen_number, marking_color, status')
+ // queen_clipped is read here because a hive with a linked queen can only
+ // have its clipping recorded on the queen — the hive form hides its own
+ // toggle in that state. See isQueenClipped in lib/queen-clipped.
+ .select('id, queen_number, marking_color, status, queen_clipped')
  .in('id', queenIds)
 
  queensData?.forEach(queen => {

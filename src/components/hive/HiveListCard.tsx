@@ -8,6 +8,7 @@ import { queenStatusBadgeClass } from '@/types/queen'
 import Button from '@/components/ui/Button'
 import { formatQueenlessLabel } from '@/lib/queenless'
 import { formatRemovalLabel } from '@/lib/treatment-removal'
+import { isQueenClipped } from '@/lib/queen-clipped'
 import SuperFullnessGauge from '@/components/hive/SuperFullnessGauge'
 
 interface HiveListCardProps {
@@ -352,15 +353,14 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  <span className="text-text-tertiary">No details</span>
  )}
  {/*
-   Clipped status, from hives.queen_clipped rather than queens.queen_clipped:
-   185 active hives have no linked queen record at all and 51 of those are
-   flagged clipped, so the queen-record field would omit them. Sits outside the
-   three queen branches for the same reason — the flag belongs to the hive.
-   Shown only when true; most hives are unclipped and a "Not clipped" chip on
+   Clipped status. Which column holds the truth depends on whether the hive has
+   a linked queen, because that is what decides which form can edit it — see
+   isQueenClipped. Sits outside the three queen branches so it shows either way.
+   Rendered only when true; most hives are unclipped and a "Not clipped" chip on
    every card would be permanent chrome. The scissors matches the toggle in the
    hive Edit form so the indicator and its control read as the same thing.
  */}
- {hive.queen_clipped && (
+ {isQueenClipped(hive) && (
  <span className="px-2 py-0.5 rounded text-sm font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800 whitespace-nowrap">
  <span aria-hidden="true">✂ </span>Clipped
  </span>
