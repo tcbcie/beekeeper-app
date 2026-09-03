@@ -16,6 +16,8 @@ import { useHiveDetail } from '@/hooks'
 import HiveQRCode from '@/components/hive/HiveQRCode'
 import { supabase } from '@/lib/supabase'
 import { formatQueenlessLabel } from '@/lib/queenless'
+import { getTreatmentRemovalState, formatRemovalLabel } from '@/lib/treatment-removal'
+import { formatLocalDate } from '@/lib/date-utils'
 import type { Hive, HiveInspection, HiveVarroaCheck, HiveVarroaTreatment, HiveFeeding, HiveHarvest, InspectionAverages, HiveTask } from '@/types/hive'
 import { queenStatusBadgeClass } from '@/types/queen'
 import Button from '@/components/ui/Button'
@@ -427,7 +429,11 @@ export default function HiveDetailPage() {
           iconColor="text-red-400"
           records={varroaTreatments}
           emptyMessage="No treatments recorded yet"
-          renderRecord={(treatment) => (
+          renderRecord={(treatment) => {
+            // Derived once: three reads of the clock in one row could disagree
+            // across a midnight boundary and render a contradictory card.
+            const removalState = getTreatmentRemovalState(treatment)
+            return (
             <div key={treatment.id} className="border border-border rounded-lg p-4 hover:bg-surface-secondary">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                 <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-3">
@@ -440,11 +446,26 @@ export default function HiveDetailPage() {
                   <span className="text-sm text-text-tertiary">Dosage: {treatment.dosage}</span>
                 )}
               </div>
+              {/* Whether this treatment is still on the hive. Costs no new query:
+                  useHiveDetail already loads the full treatment history. */}
+              {removalState !== 'none' && (
+                <p className={`text-sm font-semibold mt-2 ${
+                  removalState === 'overdue' ? 'text-red-700 dark:text-red-300' : 'text-amber-700 dark:text-amber-300'
+                }`}>
+                  {formatRemovalLabel(treatment.treatment_type, treatment)}
+                </p>
+              )}
+              {treatment.removed_date && (
+                <p className="text-sm text-text-tertiary mt-2">
+                  Removed {formatLocalDate(treatment.removed_date)}
+                </p>
+              )}
               {treatment.notes && (
                 <p className="text-sm text-text-secondary mt-2 bg-surface-secondary p-2 rounded">{treatment.notes}</p>
               )}
             </div>
-          )}
+            )
+          }}
         />
 
         <RecordSection<HiveFeeding>

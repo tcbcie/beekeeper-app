@@ -19,6 +19,7 @@ import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { useReportFormActive } from '@/contexts/BottomSurfaceContext'
 import { buildDiscardRecordPrompt } from '@/lib/inspection-discard'
 import { buildDeleteRecordPrompt } from '@/lib/record-delete-prompts'
+import { syncTreatmentReminder } from '@/lib/treatment-reminder'
 import { useNavigationGuard } from '@/hooks/useNavigationGuard'
 import { updateManager } from '@/lib/update-manager'
 import { useRecordsData } from '@/hooks/useRecordsData'
@@ -981,23 +982,63 @@ export default function RecordsPage() {
         temperature: treatment.temperature,
         weather_conditions: treatment.weather_conditions || '',
         notes: treatment.notes || '',
-        application_method_id: treatment.application_method_id || null
+        application_method_id: treatment.application_method_id || null,
+        planned_removal_date: treatment.planned_removal_date || null,
+        removed_date: treatment.planned_removal_date ? (treatment.removed_date || null) : null
       }
 
+      let treatmentId = treatment.id
+
       if (treatment.id) {
-        const { error } = await supabase
+        // RLS allows a team-mate to see a treatment on a shared hive but not to
+        // change it, and the card offers Edit to everyone. Without asking which
+        // rows matched, that update silently does nothing — and the reminder
+        // sync below would then create a stray task owned by someone who cannot
+        // edit the treatment it points at.
+        const { data, error } = await supabase
           .from('varroa_treatments')
           .update(submitData)
           .eq('id', treatment.id)
           .eq('user_id', userId)
+          .select('id')
 
         if (error) throw error
+        if (!data || data.length === 0) {
+          toast.error('Only the beekeeper who recorded this treatment can change it.')
+          return
+        }
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('varroa_treatments')
           .insert([{ ...submitData, user_id: userId }])
+          .select('id')
+          .single()
 
         if (error) throw error
+        treatmentId = data.id
+      }
+
+      // The treatment is the source of truth. A reminder that cannot be written
+      // is reported and the record still saves, as with inspection follow-ups.
+      if (treatmentId) {
+        const selectedHive = hives.find(h => h.id === treatment.hive_id)
+        const reminder = await syncTreatmentReminder({
+          treatmentId,
+          userId,
+          hiveId: treatment.hive_id,
+          hiveNumber: selectedHive?.hive_number ?? treatment.hives?.hive_number ?? null,
+          apiaryId: selectedHive?.apiary_id ?? null,
+          isTeamTask: !!selectedHive && sharedHiveIds.includes(selectedHive.id),
+          treatmentType: submitData.treatment_type,
+          treatmentDate: submitData.treatment_date,
+          plannedRemovalDate: submitData.planned_removal_date,
+          removedDate: submitData.removed_date
+        })
+
+        if (!reminder.ok) {
+          console.error('Treatment reminder sync failed:', reminder.error)
+          toast.warning('Treatment saved, but its removal reminder could not be updated. Open Tasks to add it manually.')
+        }
       }
 
       await fetchVarroaTreatments(userId, filters.ownershipFilter)

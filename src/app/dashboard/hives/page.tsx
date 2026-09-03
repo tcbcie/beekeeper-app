@@ -393,6 +393,9 @@ export default function HivesPage() {
  if (!h.last_inspection_date) return true
  return new Date(h.last_inspection_date).getTime() < fourteenDaysAgo
  }).length
+ // Hives with a treatment still on them. Shown only when there are any, so the
+ // line does not gain a permanent "0 Treatments On" for most of the year.
+ const treatmentsOnCount = filteredHives.filter(h => !h.archived_at && h.active_treatment).length
 
  if (loading) return <LoadingSpinner text="Loading hives..." />
 
@@ -528,6 +531,7 @@ export default function HivesPage() {
  {filteredHives.length > 0 && (
  <p className="text-sm text-text-secondary">
  {activeCount} Active | {archivedCount} Archived | {needInspectionCount} Need Inspection (14+ days)
+ {treatmentsOnCount > 0 && ` | ${treatmentsOnCount} Treatment${treatmentsOnCount > 1 ? 's' : ''} On`}
  </p>
  )}
 

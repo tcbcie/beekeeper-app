@@ -104,6 +104,8 @@ export interface Hive {
   } | null
   last_inspection_date?: string | null
   active_tasks_count?: number
+  /** A treatment still on the hive: planned to come off, not yet removed. */
+  active_treatment?: ActiveTreatment | null
   /** Per-super fullness (0-100) from the most recent inspection; null when not recorded. */
   last_super_fullness?: number[] | null
   /** Per-super fullness from the inspection before the most recent one that recorded it. */
@@ -170,6 +172,16 @@ export interface HiveVarroaTreatment {
   treatment_type: string
   dosage: string | null
   notes: string | null
+  planned_removal_date?: string | null
+  removed_date?: string | null
+}
+
+/** The treatment a hive currently has on it, derived by `useHivesList`. */
+export interface ActiveTreatment {
+  treatment_type: string
+  planned_removal_date: string | null
+  /** True once the removal date has passed. */
+  overdue: boolean
 }
 
 export interface HiveFeeding {

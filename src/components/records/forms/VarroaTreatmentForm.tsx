@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { HelpCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import type { VarroaTreatment, Hive, Apiary, TreatmentProduct, DropdownValue } from '@/types/records'
+import { computePlannedRemovalDate } from '@/lib/treatment-removal'
+import { toLocalDateString } from '@/lib/date-utils'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 import { useFormDirtyState } from '@/hooks/useFormDirtyState'
@@ -53,7 +55,9 @@ export default function VarroaTreatmentForm({
     temperature: null,
     weather_conditions: '',
     notes: '',
-    application_method_id: null
+    application_method_id: null,
+    planned_removal_date: null,
+    removed_date: null
   })
 
   const [formApiaryId, setFormApiaryId] = useState<string>('')
@@ -77,6 +81,11 @@ export default function VarroaTreatmentForm({
     return treatmentProducts.filter(p => p.approved_in_ireland)
   }, [treatmentProducts, isUkNiResident, showAllProducts])
 
+  // Once the beekeeper types their own removal date we stop suggesting one.
+  // Seeded true when editing, so re-opening a saved treatment never silently
+  // rewrites the date it was recorded with.
+  const removalDateTouchedRef = useRef(Boolean(treatment?.id))
+
   // Track mounted state to prevent state updates after unmount
   const isMountedRef = useRef(true)
   const lastWeatherHiveIdRef = useRef<string | null>(null)
@@ -90,6 +99,7 @@ export default function VarroaTreatmentForm({
   useEffect(() => {
     if (treatment) {
       setFormData(treatment)
+      removalDateTouchedRef.current = true
       // Find apiary for selected hive
       const hive = hives.find(h => h.id === treatment.hive_id)
       setFormApiaryId(hive?.apiary_id ?? selectedApiaryId)
@@ -217,6 +227,16 @@ export default function VarroaTreatmentForm({
       toast.warning('Please enter the dosage')
       return
     }
+    // The database enforces both of these too. Catching them here means a clear
+    // sentence rather than a rejected write the beekeeper cannot interpret.
+    if (formData.planned_removal_date && formData.planned_removal_date < formData.treatment_date) {
+      toast.warning('The removal date cannot be before the treatment date')
+      return
+    }
+    if (formData.removed_date && formData.removed_date < formData.treatment_date) {
+      toast.warning('The date removed cannot be before the treatment date')
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -231,6 +251,41 @@ export default function VarroaTreatmentForm({
     .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
 
   const selectedProduct = treatmentProducts.find(p => p.product_name === formData.treatment_type)
+
+  // Suggest when the treatment should come off, from the product's known
+  // duration. Products entered as free text match no product row and simply get
+  // no suggestion — the field is still there and still editable, so the 11% of
+  // records with an unmatched product name lose the convenience, not the feature.
+  useEffect(() => {
+    if (removalDateTouchedRef.current) return
+    const suggested = computePlannedRemovalDate(
+      formData.treatment_date,
+      selectedProduct?.removal_after_days
+    ) || null
+    setFormData(prev => (
+      prev.planned_removal_date === suggested ? prev : { ...prev, planned_removal_date: suggested }
+    ))
+  }, [formData.treatment_date, selectedProduct])
+
+  const handleRemovalDateChange = (value: string) => {
+    removalDateTouchedRef.current = true
+    setFormData(prev => ({
+      ...prev,
+      planned_removal_date: value || null,
+      // Nothing to have removed once the plan itself is cleared.
+      removed_date: value ? prev.removed_date : null
+    }))
+  }
+
+  const handleRemovedToggle = (checked: boolean) => {
+    setFormData(prev => {
+      if (!checked) return { ...prev, removed_date: null }
+      // Default to today, but never earlier than the treatment itself — a
+      // back-dated or future-dated treatment would otherwise be rejected.
+      const today = toLocalDateString(new Date())
+      return { ...prev, removed_date: today < prev.treatment_date ? prev.treatment_date : today }
+    })
+  }
 
   return (
     <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
@@ -451,6 +506,60 @@ export default function VarroaTreatmentForm({
             />
           </div>
         )}
+
+        {/*
+          Removal tracking. Always shown, because a product typed as free text
+          matches no product row and would otherwise have nowhere to record this.
+        */}
+        <div className="rounded-md border border-border p-3 space-y-3">
+          <div>
+            <label htmlFor="planned-removal-date" className="block text-sm font-medium text-text-secondary mb-1">
+              Remove by
+            </label>
+            <input
+              id="planned-removal-date"
+              type="date"
+              value={formData.planned_removal_date || ''}
+              min={formData.treatment_date || undefined}
+              onChange={(e) => handleRemovalDateChange(e.target.value)}
+              className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            />
+            <p className="mt-1 text-sm text-text-tertiary">
+              {selectedProduct?.removal_after_days
+                ? `Suggested from ${selectedProduct.product_name} (${selectedProduct.treatment_duration}). Change it if you plan to leave it on longer.`
+                : 'Set this for strips or pads that must come out later. Leave it empty for a single application with nothing to remove.'}
+            </p>
+            {formData.planned_removal_date && (
+              <p className="mt-1 text-sm text-text-tertiary">
+                A reminder will be added to your tasks for this date.
+              </p>
+            )}
+          </div>
+
+          {formData.planned_removal_date && (
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">
+                <input
+                  type="checkbox"
+                  checked={Boolean(formData.removed_date)}
+                  onChange={(e) => handleRemovedToggle(e.target.checked)}
+                  className="w-5 h-5 rounded border-border text-forest-600 focus:ring-forest-500"
+                />
+                <span className="text-sm font-medium text-text-secondary">Treatment removed</span>
+              </label>
+              {formData.removed_date && (
+                <input
+                  type="date"
+                  aria-label="Date removed"
+                  value={formData.removed_date}
+                  min={formData.treatment_date || undefined}
+                  onChange={(e) => setFormData(prev => ({ ...prev, removed_date: e.target.value || null }))}
+                  className="mt-2 w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                />
+              )}
+            </div>
+          )}
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-text-secondary mb-1">Dosage *</label>
