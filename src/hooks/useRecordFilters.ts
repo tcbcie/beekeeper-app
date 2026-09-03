@@ -36,6 +36,31 @@ interface SearchableRecord {
   feed_type?: string | null
   floral_source?: string | null
   archive_reason_value?: string | null
+  archive_notes?: string | null
+}
+
+/**
+ * True when the record matches the search term, or when there is no term.
+ *
+ * UnifiedRecord is a discriminated union and each member carries a different
+ * identifying field, so the searchable surface is described once here rather
+ * than branched per record_type.
+ */
+function matchesSearch(record: UnifiedRecord, search: string): boolean {
+  if (!search) return true
+  const candidate = record as unknown as SearchableRecord
+  return [
+    candidate.hives?.hive_number,
+    candidate.hive_number,
+    candidate.notes,
+    candidate.archive_notes,
+    candidate.treatment_type,
+    candidate.batch_number,
+    candidate.method,
+    candidate.feed_type,
+    candidate.floral_source,
+    candidate.archive_reason_value,
+  ].some((field) => field?.toString().toLowerCase().includes(search))
 }
 
 interface UseRecordFiltersReturn {
@@ -207,24 +232,7 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
     return allRecords.filter(record => {
       // Free-text search across the fields that identify a record: the hive it
       // belongs to, its notes, and whatever names the record's own subject.
-      if (search) {
-        // UnifiedRecord is a discriminated union and each member carries a
-        // different identifying field, so the searchable surface is described
-        // once here rather than branching per record_type.
-        const candidate = record as unknown as SearchableRecord
-        const matches = [
-          candidate.hives?.hive_number,
-          candidate.hive_number,
-          candidate.notes,
-          candidate.treatment_type,
-          candidate.batch_number,
-          candidate.method,
-          candidate.feed_type,
-          candidate.floral_source,
-          candidate.archive_reason_value,
-        ].some((field) => field?.toString().toLowerCase().includes(search))
-        if (!matches) return false
-      }
+      if (!matchesSearch(record, search)) return false
 
       // Filter by record type
       if (filters.recordTypeFilter !== 'all' && record.record_type !== filters.recordTypeFilter) {
@@ -291,6 +299,8 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
 
     // Filter with everything except time period
     const baseFilteredRecords = allRecords.filter(record => {
+      // Search counts here too, or the button labels contradict the list below.
+      if (!matchesSearch(record, search)) return false
       if (filters.recordTypeFilter !== 'all' && record.record_type !== filters.recordTypeFilter) return false
       if (filters.ownershipFilter === 'team' && record.record_type === 'archive') return false
       if (!filters.showArchivedHives) {
@@ -317,7 +327,7 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
         return true
       }).length
     }
-  }, [allRecords, filters, hiveMap])
+  }, [allRecords, filters, hiveMap, search])
 
   return {
     filters,
