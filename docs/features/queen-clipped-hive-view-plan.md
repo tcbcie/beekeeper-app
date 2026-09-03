@@ -186,3 +186,35 @@ owner's decision and no data was changed.
 ### Verification
 
 0 `src` type errors, ESLint clean, suite unchanged at 18 failed files / 137 failed / 661 passed.
+
+## 9. Clipped filter on the queen register (03/09/2026)
+
+Section 8 established that for any hive with a linked queen, clipping can only be recorded on
+the queen — the hive form hides its own toggle in that state. It follows that the register is
+also where "which queens still need clipping?" has to be answerable, so the same filter now
+sits there.
+
+A `Clipped: All / Yes / No` select joins the ownership, status, assignment, role and apiary
+filters on `/dashboard/queens`, persisted as `queens:clipped`. **No query change** —
+`useQueensList` already selects `*`, so `queen_clipped` was in hand.
+
+Against the live data, with the register's default status filter of *active*:
+
+| Status | Total | Clipped | Unclipped |
+|---|---|---|---|
+| **active** | **153** | **22** | **131** |
+| dead | 14 | 2 | 12 |
+| cell | 12 | 0 | 12 |
+| retired | 7 | 2 | 5 |
+
+`Clipped: No` on active queens therefore produces a 131-queen spring worklist — something the
+hive card cannot give, because the absence of a chip is not sortable. The twelve cells and
+three virgins read as unclipped, which is correct: an unmated queen cannot be clipped. The
+existing status filter already removes them.
+
+**Not added: a visible clipped column in the register.** The filter answers the question by
+itself — `Clipped: No` *is* the list — and a column would touch both the desktop table and the
+mobile cards on a register that is already wide. Left for the owner to ask for.
+
+Verification: 0 `src` type errors, ESLint clean, suite unchanged at 18 failed files / 137
+failed / 661 passed.
