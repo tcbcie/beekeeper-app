@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
+import { useMemo, useState, useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useSelection } from '@/contexts/SelectionContext'
 import type {
@@ -25,10 +25,27 @@ interface TimePeriodCounts {
   custom: number
 }
 
+/** The fields a free-text search looks at, across every record type. */
+interface SearchableRecord {
+  hives?: { hive_number?: string | null } | null
+  hive_number?: string | null
+  notes?: string | null
+  treatment_type?: string | null
+  batch_number?: string | null
+  method?: string | null
+  feed_type?: string | null
+  floral_source?: string | null
+  archive_reason_value?: string | null
+}
+
 interface UseRecordFiltersReturn {
   // Filter state
   filters: FilterState
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>
+
+  // Free-text search. Not part of FilterState because it is never persisted.
+  searchTerm: string
+  setSearchTerm: React.Dispatch<React.SetStateAction<string>>
 
   // Individual setters for convenience
   setHiveId: (id: string) => void
@@ -55,6 +72,11 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
   // Hives/Tasks/Reports carries into Records and vice versa). The remaining
   // filters persist per-page (localStorage), surviving navigation and restart.
   const { selectedApiaryId, setSelectedApiaryId, selectedHiveId, setSelectedHiveId } = useSelection()
+
+  // Free text is deliberately NOT persisted, unlike every filter below it: a
+  // filter is a lasting preference, a search term is a moment. Same convention
+  // as crm/customers and crm/orders.
+  const [searchTerm, setSearchTerm] = useState('')
   const [stored, setStored] = usePersistentState<FilterState>(
     'records:filters',
     {
@@ -178,9 +200,32 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
 
   const dateRangeStart = useMemo(() => getDateRange(), [getDateRange])
 
+  const search = searchTerm.trim().toLowerCase()
+
   // Filter all records
   const filteredRecords = useMemo(() => {
     return allRecords.filter(record => {
+      // Free-text search across the fields that identify a record: the hive it
+      // belongs to, its notes, and whatever names the record's own subject.
+      if (search) {
+        // UnifiedRecord is a discriminated union and each member carries a
+        // different identifying field, so the searchable surface is described
+        // once here rather than branching per record_type.
+        const candidate = record as unknown as SearchableRecord
+        const matches = [
+          candidate.hives?.hive_number,
+          candidate.hive_number,
+          candidate.notes,
+          candidate.treatment_type,
+          candidate.batch_number,
+          candidate.method,
+          candidate.feed_type,
+          candidate.floral_source,
+          candidate.archive_reason_value,
+        ].some((field) => field?.toString().toLowerCase().includes(search))
+        if (!matches) return false
+      }
+
       // Filter by record type
       if (filters.recordTypeFilter !== 'all' && record.record_type !== filters.recordTypeFilter) {
         return false
@@ -235,7 +280,7 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
 
       return true
     })
-  }, [allRecords, filters, hiveMap, dateRangeStart])
+  }, [allRecords, filters, hiveMap, dateRangeStart, search])
 
   // Calculate record counts for each time period
   const timePeriodCounts = useMemo((): TimePeriodCounts => {
@@ -277,6 +322,8 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
   return {
     filters,
     setFilters,
+    searchTerm,
+    setSearchTerm,
     setHiveId,
     setApiaryId,
     setShowArchivedHives,

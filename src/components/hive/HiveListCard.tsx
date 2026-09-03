@@ -1,7 +1,8 @@
 'use client'
+import { useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ExternalLink, MoreVertical, ArchiveRestore, Scale, Clock, QrCode } from 'lucide-react'
+import { ExternalLink, MoreVertical, ArchiveRestore, Archive, Trash2, Scale, Clock, QrCode } from 'lucide-react'
 import type { Hive } from '@/types/hive'
 import { queenStatusBadgeClass } from '@/types/queen'
 import Button from '@/components/ui/Button'
@@ -43,6 +44,8 @@ function superFullnessChangedAt(
 
 export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchive, openMenuId, setOpenMenuId, selectionMode = false, selected = false, onToggleSelect, highlighted = false, onOpen }: HiveListCardProps) {
  const router = useRouter()
+ // Focus returns here when the overflow menu is closed with Escape.
+ const menuTriggerRef = useRef<HTMLButtonElement>(null)
 
  // Bulk actions only ever write to the user's own hives (RLS rejects others'),
  // so the selection checkbox is shown for owned hives only.
@@ -185,30 +188,79 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </span>
  )
  )}
- {hive.archived_at && (
- <div className="relative context-menu-container">
+ {isOwner && (
+ <div
+ className="relative context-menu-container"
+ onKeyDown={(e) => {
+ if (e.key !== 'Escape' || openMenuId !== hive.id) return
+ e.stopPropagation()
+ setOpenMenuId(null)
+ menuTriggerRef.current?.focus()
+ }}
+ >
  <Button
+ ref={menuTriggerRef}
  onClick={(e) => {
  e.stopPropagation()
  setOpenMenuId(openMenuId === hive.id ? null : hive.id)
  }}
  className="p-1 hover:bg-surface-secondary rounded transition-colors"
- aria-label="More options"
+ aria-label={`More options for hive ${hive.hive_number}`}
+ aria-haspopup="menu"
+ aria-expanded={openMenuId === hive.id}
  >
  <MoreVertical size={16} className="text-text-secondary" />
  </Button>
  {openMenuId === hive.id && (
- <div className="absolute right-0 top-full mt-1 bg-surface dark:bg-surface-elevated border border-border rounded-lg shadow-lg z-10 min-w-[160px]">
+ <div
+ role="menu"
+ aria-label={`Actions for hive ${hive.hive_number}`}
+ className="absolute right-0 top-full mt-1 bg-surface dark:bg-surface-elevated border border-border rounded-lg shadow-lg z-10 min-w-[210px] overflow-hidden"
+ >
+ {hive.archived_at ? (
  <Button
+ role="menuitem"
  onClick={(e) => {
  e.stopPropagation()
  onUnarchive(hive)
  }}
- className="w-full px-4 py-2 text-left text-sm hover:bg-forest-100 dark:hover:bg-forest-900/50 text-forest-600 dark:text-forest-400 flex items-center gap-2 rounded-lg transition-colors"
+ className="w-full px-4 py-3 text-left text-sm flex items-center gap-2 rounded-none justify-start text-forest-700 dark:text-forest-300 hover:bg-forest-100 dark:hover:bg-forest-900/50"
  >
  <ArchiveRestore size={16} />
  <span>Unarchive</span>
  </Button>
+ ) : (
+ <>
+ {/* Archive keeps the history and can be undone, so it leads. It
+     navigates to the archive form because archiving collects a reason
+     and runs a cascade (scale disconnected, queen retired). */}
+ <Link
+ role="menuitem"
+ href={`/dashboard/records?hive=${hive.id}&type=archive`}
+ onClick={(e) => {
+ e.stopPropagation()
+ setOpenMenuId(null)
+ }}
+ className="w-full px-4 py-3 text-left text-sm flex items-center gap-2 rounded-none justify-start text-foreground hover:bg-surface-secondary"
+ >
+ <Archive size={16} />
+ <span>Archive</span>
+ </Link>
+ <div className="border-t border-border" role="none" />
+ <Button
+ role="menuitem"
+ onClick={(e) => {
+ e.stopPropagation()
+ setOpenMenuId(null)
+ onDelete(hive.id)
+ }}
+ className="w-full px-4 py-3 text-left text-sm flex items-center gap-2 rounded-none justify-start text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50"
+ >
+ <Trash2 size={16} />
+ <span>Delete permanently</span>
+ </Button>
+ </>
+ )}
  </div>
  )}
  </div>
@@ -439,23 +491,16 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
 
  {/* Edit is available to the owner and to team members of the shared apiary
      (matches hives RLS). Delete stays owner-only. */}
+ {/* Edit is available to the owner and to team members of the shared apiary
+     (matches hives RLS). Archive, Unarchive and Delete live in the overflow
+     menu: Delete is irreversible and no longer sits beside a safe action. */}
  {(isOwner || hive.is_shared) && (
- <div className="flex gap-2">
  <Button
  onClick={() => onEdit(hive)}
- className="flex-1 px-3 py-2 text-sm bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/70 border border-blue-300 dark:border-blue-800 min-h-[44px]"
+ className="w-full px-3 py-2 text-sm bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900"
  >
  Edit
  </Button>
- {isOwner && (
- <Button
- onClick={() => onDelete(hive.id)}
- className="flex-1 px-3 py-2 text-sm bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/70 border border-red-300 dark:border-red-800 min-h-[44px]"
- >
- Delete
- </Button>
- )}
- </div>
  )}
  </div>
  )

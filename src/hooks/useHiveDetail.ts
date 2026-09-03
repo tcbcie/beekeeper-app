@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { buildUnarchiveHivePrompt } from '@/lib/record-delete-prompts'
 import type {
   Hive,
   HiveInspection,
@@ -220,14 +221,9 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
   const handleUnarchive = useCallback(async () => {
     if (!hive) return
 
-    const confirmed = await confirm({
-      title: 'Unarchive Hive',
-      message: `Are you sure you want to unarchive hive ${hive.hive_number}? This will set the hive status back to active, clear the archive date and reason, and make it visible in your active hives list.`,
-      confirmLabel: 'Unarchive',
-      variant: 'warning',
-    })
-
-    if (!confirmed) return
+    // Same wording as the hives list, so unarchiving asks one question
+    // regardless of which screen it is started from.
+    if (!(await confirm(buildUnarchiveHivePrompt(hive.hive_number)))) return
 
     try {
       const userId = await getCurrentUserId()

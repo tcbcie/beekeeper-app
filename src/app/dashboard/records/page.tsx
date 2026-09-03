@@ -18,6 +18,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { useReportFormActive } from '@/contexts/BottomSurfaceContext'
 import { DISCARD_INSPECTION_PROMPT } from '@/lib/inspection-discard'
+import { buildDeleteRecordPrompt } from '@/lib/record-delete-prompts'
 import { useNavigationGuard } from '@/hooks/useNavigationGuard'
 import { updateManager } from '@/lib/update-manager'
 import { useRecordsData } from '@/hooks/useRecordsData'
@@ -327,8 +328,26 @@ export default function RecordsPage() {
     setOwnershipFilter,
     setRecordTypeFilter,
     filteredRecords,
+    searchTerm,
+    setSearchTerm,
     timePeriodCounts
   } = useRecordFilters({ allRecords, hives })
+
+  const activeFilterCount = [
+    filters.ownershipFilter !== 'my',
+    filters.recordTypeFilter !== 'all',
+    filters.apiaryId !== '',
+    filters.hiveId !== '',
+    filters.showArchivedHives,
+  ].filter(Boolean).length
+
+  const clearCollapsedFilters = useCallback(() => {
+    setOwnershipFilter('my')
+    setRecordTypeFilter('all')
+    setApiaryId('')
+    setHiveId('')
+    setShowArchivedHives(false)
+  }, [setOwnershipFilter, setRecordTypeFilter, setApiaryId, setHiveId, setShowArchivedHives])
 
   // Initialize user and fetch data
   useEffect(() => {
@@ -894,7 +913,18 @@ export default function RecordsPage() {
 
   const handleInspectionDelete = async (id: string) => {
     if (!userId) return
-    if (!confirm('Are you sure you want to delete this inspection?')) return
+    const inspection = inspections.find((row) => row.id === id)
+    const ok = await confirmDialog(
+      buildDeleteRecordPrompt({
+        recordLabel: 'inspection',
+        hiveNumber: inspection?.hives?.hive_number,
+        date: inspection?.inspection_date,
+        consequence: inspection?.honey_supers
+          ? "The hive's honey super count will be reduced to match."
+          : undefined,
+      }),
+    )
+    if (!ok) return
 
     const { data: deletedRows, error } = await supabase
       .from('inspections')
@@ -962,7 +992,11 @@ export default function RecordsPage() {
     }
   }
 
-  const handleTreatmentEdit = (treatment: VarroaTreatment) => {
+  const handleTreatmentEdit = async (treatment: VarroaTreatment) => {
+    // Opening any record form replaces whatever is in the panel, so this
+    // needs the same guard the inspection edit path already has.
+    if (!(await confirmDiscardInspection())) return
+
     setEditingTreatment(treatment)
     setFormType('varroa_treatment')
     setShowForm(true)
@@ -973,15 +1007,26 @@ export default function RecordsPage() {
 
   const handleTreatmentDelete = async (treatment: VarroaTreatment) => {
     if (!userId) return
-    if (confirm('Are you sure you want to delete this treatment?')) {
-      const { error } = await supabase
-        .from('varroa_treatments')
-        .delete()
-        .eq('id', treatment.id)
-        .eq('user_id', userId)
+    const ok = await confirmDialog(
+      buildDeleteRecordPrompt({
+        recordLabel: 'varroa treatment',
+        hiveNumber: treatment.hives?.hive_number,
+        date: treatment.treatment_date,
+      }),
+    )
+    if (!ok) return
 
-      if (!error) await fetchVarroaTreatments(userId, filters.ownershipFilter)
+    const { error } = await supabase
+      .from('varroa_treatments')
+      .delete()
+      .eq('id', treatment.id)
+      .eq('user_id', userId)
+
+    if (error) {
+      toast.error(error.message)
+      return
     }
+    await fetchVarroaTreatments(userId, filters.ownershipFilter)
   }
 
   // Check handlers
@@ -1058,7 +1103,11 @@ export default function RecordsPage() {
     }
   }
 
-  const handleCheckEdit = (check: VarroaCheck) => {
+  const handleCheckEdit = async (check: VarroaCheck) => {
+    // Opening any record form replaces whatever is in the panel, so this
+    // needs the same guard the inspection edit path already has.
+    if (!(await confirmDiscardInspection())) return
+
     setEditingCheck(check)
     setFormType('varroa_check')
     setShowForm(true)
@@ -1069,15 +1118,26 @@ export default function RecordsPage() {
 
   const handleCheckDelete = async (check: VarroaCheck) => {
     if (!userId) return
-    if (confirm('Are you sure you want to delete this varroa check?')) {
-      const { error } = await supabase
-        .from('varroa_checks')
-        .delete()
-        .eq('id', check.id)
-        .eq('user_id', userId)
+    const ok = await confirmDialog(
+      buildDeleteRecordPrompt({
+        recordLabel: 'varroa check',
+        hiveNumber: check.hives?.hive_number,
+        date: check.check_date,
+      }),
+    )
+    if (!ok) return
 
-      if (!error) await fetchVarroaChecks(userId, filters.ownershipFilter)
+    const { error } = await supabase
+      .from('varroa_checks')
+      .delete()
+      .eq('id', check.id)
+      .eq('user_id', userId)
+
+    if (error) {
+      toast.error(error.message)
+      return
     }
+    await fetchVarroaChecks(userId, filters.ownershipFilter)
   }
 
   // Feeding handlers
@@ -1117,7 +1177,11 @@ export default function RecordsPage() {
     }
   }
 
-  const handleFeedingEdit = (feeding: Feeding) => {
+  const handleFeedingEdit = async (feeding: Feeding) => {
+    // Opening any record form replaces whatever is in the panel, so this
+    // needs the same guard the inspection edit path already has.
+    if (!(await confirmDiscardInspection())) return
+
     setEditingFeeding(feeding)
     setFormType('feeding')
     setShowForm(true)
@@ -1128,15 +1192,26 @@ export default function RecordsPage() {
 
   const handleFeedingDelete = async (feeding: Feeding) => {
     if (!userId) return
-    if (confirm('Are you sure you want to delete this feeding record?')) {
-      const { error } = await supabase
-        .from('feedings')
-        .delete()
-        .eq('id', feeding.id)
-        .eq('user_id', userId)
+    const ok = await confirmDialog(
+      buildDeleteRecordPrompt({
+        recordLabel: 'feeding record',
+        hiveNumber: feeding.hives?.hive_number,
+        date: feeding.feed_date,
+      }),
+    )
+    if (!ok) return
 
-      if (!error) await fetchFeedings(userId, filters.ownershipFilter)
+    const { error } = await supabase
+      .from('feedings')
+      .delete()
+      .eq('id', feeding.id)
+      .eq('user_id', userId)
+
+    if (error) {
+      toast.error(error.message)
+      return
     }
+    await fetchFeedings(userId, filters.ownershipFilter)
   }
 
   // Harvest handlers
@@ -1178,7 +1253,11 @@ export default function RecordsPage() {
     }
   }
 
-  const handleHarvestEdit = (harvest: Harvest) => {
+  const handleHarvestEdit = async (harvest: Harvest) => {
+    // Opening any record form replaces whatever is in the panel, so this
+    // needs the same guard the inspection edit path already has.
+    if (!(await confirmDiscardInspection())) return
+
     setEditingHarvest(harvest)
     setFormType('harvest')
     setShowForm(true)
@@ -1189,15 +1268,26 @@ export default function RecordsPage() {
 
   const handleHarvestDelete = async (harvest: Harvest) => {
     if (!userId) return
-    if (confirm('Are you sure you want to delete this harvest record?')) {
-      const { error } = await supabase
-        .from('harvests')
-        .delete()
-        .eq('id', harvest.id)
-        .eq('user_id', userId)
+    const ok = await confirmDialog(
+      buildDeleteRecordPrompt({
+        recordLabel: 'harvest record',
+        hiveNumber: harvest.hives?.hive_number,
+        date: harvest.harvest_date,
+      }),
+    )
+    if (!ok) return
 
-      if (!error) await fetchHarvests(userId, filters.ownershipFilter)
+    const { error } = await supabase
+      .from('harvests')
+      .delete()
+      .eq('id', harvest.id)
+      .eq('user_id', userId)
+
+    if (error) {
+      toast.error(error.message)
+      return
     }
+    await fetchHarvests(userId, filters.ownershipFilter)
   }
 
   // Archive handler
@@ -1304,6 +1394,10 @@ export default function RecordsPage() {
 
         {/* Filters */}
         <RecordFiltersBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={clearCollapsedFilters}
           hives={hives}
           apiaries={apiaries}
           isTeamMember={isTeamMember}
@@ -1494,7 +1588,11 @@ export default function RecordsPage() {
             <EmptyState
               icon={ClipboardList}
               title="No Records Found"
-              description="No records match your current filters. Try adjusting your filters or add a new record."
+              description={
+                searchTerm.trim()
+                  ? `Nothing matches "${searchTerm.trim()}" in the records loaded. Try a shorter term, or widen the time period to load older records.`
+                  : 'No records match your current filters. Try adjusting your filters or add a new record.'
+              }
             />
           ) : (
             filteredRecords.map(record => {

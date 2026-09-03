@@ -2,9 +2,11 @@
 import { useEffect, useState, useRef } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Plus, X, Scale, Archive, CheckSquare, Copy, FolderInput } from 'lucide-react'
+import { Plus, X, Scale, Archive, CheckSquare, Copy, FolderInput, Search } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
+import TextInput from '@/components/ui/TextInput'
+import FilterDisclosure from '@/components/ui/FilterDisclosure'
 import { useToast } from '@/components/ui/Toast'
 import { Hive } from '@/types/hive'
 import HiveFormSection from '@/components/hive/HiveFormSection'
@@ -12,17 +14,21 @@ import HiveListCard from '@/components/hive/HiveListCard'
 import MoveHivesModal from '@/components/hive/MoveHivesModal'
 import Button from '@/components/ui/Button'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
+import { buildDeleteHivePrompt, buildUnarchiveHivePrompt } from '@/lib/record-delete-prompts'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useHivesList } from '@/hooks/useHivesList'
 import { useListPositionMemory } from '@/hooks/useListPositionMemory'
 
 export default function HivesPage() {
 
+ // Free-text search is deliberately not persisted: filters describe a lasting
+ // preference, a search term describes a moment. Matches crm/customers.
+ const [search, setSearch] = useState('')
  const [showForm, setShowForm] = useState(false)
  const [editingHive, setEditingHive] = useState<Hive | null>(null)
  const toast = useToast()
- // Named confirmDialog (not `confirm`) so it never shadows the native
- // window.confirm() used elsewhere on this page (e.g. handleDelete).
+ // Named confirmDialog rather than confirm. No native window.confirm()
+ // remains on this page, but the name stays: renaming back would be churn.
  const confirmDialog = useConfirm()
  const formRef = useRef<HTMLDivElement>(null)
 
@@ -98,29 +104,26 @@ export default function HivesPage() {
 
  const handleDelete = async (id: string) => {
  if (!userId) return
- if (confirm('Are you sure you want to delete this hive?')) {
+ const hive = hives.find((row) => row.id === id)
+ if (!(await confirmDialog(buildDeleteHivePrompt(hive?.hive_number)))) return
+
  const { error } = await supabase
  .from('hives')
  .delete()
  .eq('id', id)
  .eq('user_id', userId)
 
- if (!error && userId) fetchHives(userId)
+ if (error) {
+ toast.error('Failed to delete hive: ' + error.message)
+ return
  }
+ fetchHives(userId)
  }
 
  const handleUnarchive = async (hive: Hive) => {
  if (!userId) return
 
- const confirmed = window.confirm(
- `Are you sure you want to unarchive hive ${hive.hive_number}?\n\n` +
- 'This will:\n' +
- '- Set the hive status back to active\n' +
- '- Clear the archive date and reason\n' +
- '- Make the hive visible in your active hives list'
- )
-
- if (!confirmed) return
+ if (!(await confirmDialog(buildUnarchiveHivePrompt(hive.hive_number)))) return
 
  try {
  // Unarchive hive - RLS policies will handle permissions for both owned and shared hives
@@ -296,10 +299,38 @@ export default function HivesPage() {
 
  // Check if any hives have scales configured
  const hasAnyScales = hives.some(h => h.beep_device_id || h.wolf_scale_id)
+ const hiveSearch = search.trim().toLowerCase()
+
+ // Counts exactly what the collapsed panel holds, so the badge and the Clear
+ // action agree. Apiary is excluded: it stays visible above.
+ const activeFilterCount = [
+ ownershipFilter !== 'my',
+ archiveFilter !== 'active',
+ scaleFilter,
+ sortOption !== 'default',
+ ].filter(Boolean).length
+
+ const clearCollapsedFilters = () => {
+ setOwnershipFilter('my')
+ setArchiveFilter('active')
+ setScaleFilter(false)
+ setSortOption('default')
+ }
 
  // Filter and sort hives based on selected apiary and position
  const filteredHives = [...hives]
  .filter(hive => {
+ if (hiveSearch) {
+ const matches = [
+ hive.hive_number,
+ hive.apiaries?.name,
+ hive.qr_tag_code,
+ hive.queens?.queen_number,
+ hive.status,
+ hive.notes,
+ ].some((field) => field?.toString().toLowerCase().includes(hiveSearch))
+ if (!matches) return false
+ }
  if (filterApiaryId && hive.apiary_id !== filterApiaryId) {
  return false
  }
@@ -377,6 +408,39 @@ export default function HivesPage() {
  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
  <h1 className="text-responsive-3xl font-bold text-foreground">Hives</h1>
  <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-end gap-3 w-full md:w-auto min-w-0">
+ <div className="relative w-full sm:w-64">
+ <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
+ <TextInput
+ value={search}
+ onChange={(e) => setSearch(e.target.value)}
+ placeholder="Search hive, apiary, tag or queen"
+ aria-label="Search hives"
+ className="rounded-lg"
+ style={{ paddingLeft: '2.25rem' }}
+ />
+ </div>
+ <select
+ value={filterApiaryId}
+ onChange={(e) => setFilterApiaryId(e.target.value)}
+ className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500/20 transition-all"
+ >
+ <option value="">All Apiaries</option>
+ {apiaries.map((apiary) => (
+ <option key={apiary.id} value={apiary.id}>
+ {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
+ </option>
+ ))}
+ </select>
+ {/* Apiary and the search box stay visible: they are how the list is
+     usually narrowed. Ownership, archive state, scales and sort are one
+     control away, with a count so a hidden filter never silently explains
+     a short list. */}
+ <FilterDisclosure
+ activeCount={activeFilterCount}
+ storageKey="hives:filtersOpen"
+ onClear={clearCollapsedFilters}
+ >
+ <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
  {isTeamMember && (
  <select
  value={ownershipFilter}
@@ -391,18 +455,6 @@ export default function HivesPage() {
  <option value="all">All Hives</option>
  </select>
  )}
- <select
- value={filterApiaryId}
- onChange={(e) => setFilterApiaryId(e.target.value)}
- className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500/20 transition-all"
- >
- <option value="">All Apiaries</option>
- {apiaries.map((apiary) => (
- <option key={apiary.id} value={apiary.id}>
- {apiary.name}{apiary.is_shared ? ' (Shared)' : ''}
- </option>
- ))}
- </select>
  <select
  value={archiveFilter}
  onChange={(e) => {
@@ -436,6 +488,8 @@ export default function HivesPage() {
  <option value="last_inspected">Sort: Last Inspected</option>
  <option value="status">Sort: Status</option>
  </select>
+ </div>
+ </FilterDisclosure>
  <Button
  onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
  className={`px-4 py-3 sm:py-2 min-h-[48px] rounded-lg font-medium flex items-center justify-center gap-2 touch-manipulation w-full sm:w-auto border ${
@@ -501,7 +555,9 @@ export default function HivesPage() {
  <EmptyState
  icon={Archive}
  title="No Hives Found"
- description={filterApiaryId
+ description={search.trim()
+ ? `No hives match "${search.trim()}". Try a shorter term, or clear the search.`
+ : filterApiaryId
  ? 'No hives found for this apiary. Select "All Apiaries" or add a new hive.'
  : 'Add your first hive to start tracking colonies, inspections, and queen records.'}
  actionLabel={!filterApiaryId ? 'Add Hive' : undefined}

@@ -187,7 +187,13 @@ behind a control showing an active count, fewer persistent card actions, Archive
 preferred to Delete, and the five remaining native `confirm()` calls on the records
 page moved onto the shared dialog.
 
-- [ ] **Step 12:** Write the Phase 4 plan and obtain approval.
+- [x] **Step 12:** Write the Phase 4 plan and obtain approval.
+- [x] **Step 12a:** 4A safety, 4B card actions, 4C search, 4D filters. See
+  `tasks/mobile-first-phase4-todo.md`.
+- [ ] **Step 12b:** Browser-verify Phase 4. Above all: opening a photo or a menu item
+  from inside either record form must not submit it.
+- [ ] **Step 12c:** The compact list view, deferred by decision 1. Re-measure whether
+  density still matters now that search and filters have landed.
 
 ### E. Phase 5 — dashboard, gated on user testing
 
@@ -248,7 +254,7 @@ Recorded because they were found during it, not because it caused them.
    of it has been seen running.
 2. ~~**B**, the typography floor~~ — T1 to T5 done. Only the deferred items above remain.
 3. **C**, the double-click fix, which is small and self-contained.
-4. **D**, Phase 4.
+4. ~~**D**, Phase 4~~ — 4A to 4D done; browser verification and the compact view remain.
 5. **E**, Phase 5, once the moderated sessions have happened.
 
 F and G can be picked up at any point; none of them blocks anything else.
