@@ -217,6 +217,22 @@ page moved onto the shared dialog.
 - [ ] **Step 12c:** The compact list view, deferred by decision 1. Re-measure whether
   density still matters now that search and filters have landed.
 
+### D2. Mobile navigation — the More menu as a bottom sheet
+
+Raised by the owner after Phase 4, and built before the Phase 5 sessions so those
+sessions validate the navigation that will ship rather than one about to be
+replaced. See `docs/features/mobile-navigation-bottom-sheet-plan.md`. No
+destination moved: the four-plus-More set confirmed on 31/08/2026 stands.
+
+- [x] **Step 12d:** N1 to N4 — the sheet, the grabber, the chevron, the swipe.
+- [ ] **Step 12e:** Browser-verify. The sheet must rise from the bar and stop
+  cleanly at its top edge; the chevron must rotate in step with it; a swipe up on
+  the bar must open the menu *without* also navigating to whichever destination it
+  began on.
+- [ ] **Step 12f:** Re-tune `maxDuration` (currently 800ms) from what the gloved
+  participants show. Too short excludes a slow gloved swipe; too long lets an
+  exploratory pan open the menu by accident.
+
 ### E. Phase 5 — dashboard, gated on user testing
 
 The parent plan requires moderated validation with six to eight beekeepers aged
