@@ -179,7 +179,11 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </span>
  )}
  </div>
- <div className="flex flex-wrap items-center gap-2">
+ {/* Right-hand status cluster. justify-end keeps every wrapped row flush
+     with the card edge — a long hive number pushes these onto two or three
+     rows, and without it the shorter rows align to the left of a box sized by
+     the widest pill, which reads as staggered. */}
+ <div className="flex flex-wrap items-center justify-end gap-2">
  <span className={`px-2 py-1 rounded text-sm font-medium whitespace-nowrap ${
  hive.status === 'active' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-800' :
  hive.status === 'archived' ? 'bg-surface dark:bg-surface-elevated text-text-primary border border-border' :
