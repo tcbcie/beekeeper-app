@@ -302,7 +302,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </span>
  )}
  </div>
- <div className="flex items-center gap-2">
+ <div className="flex flex-wrap items-center gap-2">
  <span className="text-text-tertiary">👑</span>
  {hive.queens?.id ? (
  <span className="flex items-center gap-1">
@@ -350,6 +350,20 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </span>
  ) : (
  <span className="text-text-tertiary">No details</span>
+ )}
+ {/*
+   Clipped status, from hives.queen_clipped rather than queens.queen_clipped:
+   185 active hives have no linked queen record at all and 51 of those are
+   flagged clipped, so the queen-record field would omit them. Sits outside the
+   three queen branches for the same reason — the flag belongs to the hive.
+   Shown only when true; most hives are unclipped and a "Not clipped" chip on
+   every card would be permanent chrome. The scissors matches the toggle in the
+   hive Edit form so the indicator and its control read as the same thing.
+ */}
+ {hive.queen_clipped && (
+ <span className="px-2 py-0.5 rounded text-sm font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800 whitespace-nowrap">
+ <span aria-hidden="true">✂ </span>Clipped
+ </span>
  )}
  </div>
  {hive.last_record && (
