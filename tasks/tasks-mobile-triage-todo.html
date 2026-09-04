@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Plan — Tasks &amp; Events Mobile Triage</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 62rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  h3 { margin-top: 1.5rem; color: #3d4a41; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  pre { background: #1f2620; color: #e8f0ea; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: .88em; }
+  pre code { background: none; color: inherit; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
+  th, td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
+  th { background: #eef3ef; }
+  .bad { color: #a32020; font-weight: 600; }
+  .good { color: #2f7a4d; font-weight: 600; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  ul.todo li { margin: .4rem 0; padding-left: 1.9rem; text-indent: -1.9rem; }
+  .status { display: inline-block; background: #fdf8ec; border: 1px solid #d4a017; border-radius: 4px; padding: .15rem .5rem; font-size: .85em; }
+  .mock { background: #f7faf8; border: 1px solid #d8e3da; border-radius: 6px; padding: 1rem; font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: .85em; white-space: pre; overflow-x: auto; line-height: 1.45; }
+  .rec { background: #eef7f1; border-left: 4px solid #2f7a4d; padding: .7rem 1rem; margin: 1rem 0; }
+</style>
+</head>
+<body>
+
+<h1>Tasks &amp; Events — Mobile Triage</h1>
+
+<p>
+  <span class="status">Status: T1–T8 implemented. Type-check clean, lint clean, suite shows no regression. <strong>Awaiting your browser test.</strong></span><br>
+  <strong>Date:</strong> 04/09/2026 &nbsp;·&nbsp;
+  <strong>Feature plan:</strong> <code>docs/features/tasks-mobile-triage-plan.md</code> &nbsp;·&nbsp;
+  <strong>File touched:</strong> <code>src/app/dashboard/tasks/page.tsx</code>
+</p>
+
+<blockquote>
+  <strong>Your brief:</strong> opening tasks on a phone is overwhelming when there are a
+  lot of them; the priority is not clear; there is no prefiltering; there is just a lot
+  of scrolling and the user loses interest.
+</blockquote>
+
+<h2>1. What I measured</h2>
+
+<p>Read-only queries against the live database, 19 accounts holding tasks. The numbers
+are worse than the brief suggests.</p>
+
+<table>
+  <tr><th>Measure</th><th>Value</th></tr>
+  <tr><td>Incomplete items across all accounts</td><td>160</td></tr>
+  <tr><td>…already past their date</td><td class="bad">153 (96%)</td></tr>
+  <tr><td>…due today</td><td>1</td></tr>
+  <tr><td>…in the future</td><td>6</td></tr>
+  <tr><td>…that are auto-generated queen-rearing milestones</td><td class="bad">116 (72%)</td></tr>
+  <tr><td>…that are anything else</td><td>43</td></tr>
+  <tr><td>…marked <code>high</code> or <code>urgent</code></td><td class="bad">92 (58%)</td></tr>
+  <tr><td>Busiest account</td><td>51 incomplete, 46 overdue, 44 of them <code>event</code> rows</td></tr>
+  <tr><td>Worst account</td><td>34 incomplete, <strong>all 34 overdue by 90+ days</strong></td></tr>
+</table>
+
+<p>So the screen is not a task list. It is a 96%-overdue archive, sorted so the
+<em>stalest</em> item is at the top, with no word anywhere on it saying "overdue".</p>
+
+<h2>2. Root causes</h2>
+
+<h3>RC1 — The screen opens on filters, not on work</h3>
+<p><code>page.tsx:751</code> is <code>grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3</code>.
+On a phone that is one column: five stacked selects (six for team members), each a 20px
+label plus a 48px <code>fj-control</code>, at <code>gap-4</code>.</p>
+<pre><code>5 × (20px label + 4px + 48px control) + 4 × 16px gap = 424px
++ "Filters" header (~40px) + Card padding (~32px)    ≈ 496px</code></pre>
+<p>On a 390 × 844 phone, with the app header and bottom navigation, that is most of the
+first screen. <strong>No task is visible on first paint.</strong> Hives and Records both
+had this and both were fixed in Phase 4. Tasks was missed.</p>
+
+<h3>RC2 — The screen has no notion of "due"</h3>
+<p><code>filteredTasks</code> (<code>page.tsx:496</code>) is a plain <code>.filter()</code>
+over the fetch order, <code>start_date</code> ascending. No sort control, no re-sort. So the
+top of the list is the most neglected item and today's work is at the bottom after 150+
+cards — and <strong>nothing on any card says a task is late</strong>. The concept already
+exists twice in this codebase (<code>getOverdueTasks</code> in
+<code>src/lib/ai/tools/tasks.ts:70</code>, <code>alerts.todayTasks</code> in the dashboard
+RPC) and never reached this screen. Mel can tell you that you have 46 overdue tasks; the
+Tasks page cannot.</p>
+
+<h3>RC3 — Three quarters of the list is machine-generated calendar noise</h3>
+<p><code>sync_batch_dates_to_tasks()</code>
+(<code>migrations/create_batch_events_trigger.sql</code>) writes <strong>four rows per
+rearing batch</strong>:</p>
+<table>
+  <tr><th>Title</th><th><code>event_type</code></th><th><code>category</code></th><th><code>priority</code></th></tr>
+  <tr><td><code>Acceptance Check: {batch}</code></td><td>event</td><td>queen_rearing</td><td class="bad">high</td></tr>
+  <tr><td><code>1st Cage Option: {batch}</code></td><td>event</td><td>queen_rearing</td><td class="bad">high</td></tr>
+  <tr><td><code>2nd Cage Option: {batch}</code></td><td>event</td><td>queen_rearing</td><td class="bad">high</td></tr>
+  <tr><td><code>Expected Emergence: {batch}</code></td><td>event</td><td>queen_rearing</td><td>normal</td></tr>
+</table>
+<p>They are informational milestones with <strong>no completion path</strong> — nothing
+ever ticks them — so they accumulate permanently. 116 of the 160 incomplete rows are
+these. Twenty batches a season means eighty permanent red-flagged entries that were never
+yours to do. They are cleanly separable: all 116 carry a non-null <code>batch_id</code>.</p>
+
+<h3>RC4 — Priority shouts on 58% of the list</h3>
+<p><code>page.tsx:887</code> renders the priority badge unconditionally, <code>normal</code>
+and <code>low</code> included. With RC3 on top, "HIGH" is on more than half of every screen,
+so it carries no information. The Visit Checklist already gets this right
+(<code>page.tsx:1432</code> hides <code>normal</code>); the main list does not.</p>
+
+<h3>RC5 — Cards are tall</h3>
+<p>One card can carry six badges wrapping over three lines, then a description (129 of 160
+rows have one), an equipment line, a date row and up to three association chips — roughly
+200px on a phone. Fifty-one incomplete tasks is about fifteen screens of scrolling.</p>
+
+<h3>RC6 — No search</h3>
+<p>Phase 4 gave Hives and Records a search box. Tasks has none, so a known task can only be
+reached by scrolling.</p>
+
+<h2>3. Before and after (mobile, 390px)</h2>
+
+<div class="mock">BEFORE                              AFTER
+┌────────────────────────────┐      ┌────────────────────────────┐
+│ Tasks &amp; Events 📅         │      │ Tasks &amp; Events 📅         │
+│ [Checklist]        [Add]   │      │ [Checklist]        [Add]   │
+├────────────────────────────┤      ├────────────────────────────┤
+│ ⚙ Filters                  │      │ 🔍 Search tasks, notes…    │
+│  Type                      │      ├────────────────────────────┤
+│  [All Types            ▾]  │      │ (Due now 46) (This week 3) │
+│  Category                  │      │ (Later 2) (Done) (All 51)  │
+│  [All Categories       ▾]  │      │ [⚙ Filters (1)] Clear      │
+│  Status                    │      ├────────────────────────────┤
+│  [Active               ▾]  │      │ ○ Treat hive 12 for varroa │
+│  Hive                      │      │   URGENT                   │
+│  [All Hives            ▾]  │      │   Overdue — 21 days        │
+│  Apiary                    │      │   Hive 12 · Home Apiary    │
+│  [All Apiaries         ▾]  │      ├────────────────────────────┤
+├────────────────────────────┤      │ ○ Add second super         │
+│ ○ Acceptance Check: Batch 3│      │   Overdue — 4 days         │
+│   HIGH  EVENT  QUEEN REAR… │      │   Hive 07 · Home Apiary    │
+│   📧 Email Reminder        │      ├────────────────────────────┤
+│   Auto-created from…       │      │ ○ Check stores             │
+│   6 May 2026 (All day)     │      │   Today                    │
+│   Batch: Batch 3           │      │   Ash Lane Apiary          │
+└─ ~496px before task one ───┘      └─ first task at ~200px ─────┘</div>
+
+<h2>4. The plan</h2>
+
+<p>Nothing below is a new component. Every piece already has a house pattern, listed in
+section 4 of the feature plan.</p>
+
+<ul class="todo">
+  <li>☑ <strong>T1 — Triage presets, always visible, carrying counts.</strong> Replaces the
+      Status select. Styled exactly as the Records time-period pills
+      (<code>RecordFiltersBar.tsx:99-146</code>), in a <code>flex flex-wrap gap-2</code> row
+      under the header.
+      <table>
+        <tr><th>Pill</th><th>Predicate</th></tr>
+        <tr><td><strong>Due now</strong> <em>(default)</em></td><td><code>!completed &amp;&amp; start_date &lt;= today</code></td></tr>
+        <tr><td>This week</td><td><code>!completed &amp;&amp; today &lt; start_date &lt;= today + 7</code></td></tr>
+        <tr><td>Later</td><td><code>!completed &amp;&amp; start_date &gt; today + 7</code></td></tr>
+        <tr><td>Done</td><td><code>completed</code></td></tr>
+        <tr><td>All</td><td>everything fetched</td></tr>
+      </table>
+      Counts computed under the <em>other</em> active filters, the way
+      <code>timePeriodCounts</code> already is on Records, so the number on a pill is what
+      tapping it gives. Persisted as <code>tasks:view</code> with a <strong>membership</strong>
+      validator, not a type check — Phase 4 recorded that a type-only validator lets a
+      retired enum value through.
+      <br><em>This is the prefiltering that is missing: the default answers "what do I need
+      to do", and the counts answer "what is the priority" before anything is tapped.</em></li>
+
+  <li>☑ <strong>T2 — Sort by urgency, not by age alone.</strong> Within the active preset:
+      <code>start_date</code> ascending, tie-broken by <code>PRIORITY_ORDER</code>
+      (<code>urgent 0, high 1, normal 2, low 3</code>), promoted out of
+      <code>UpcomingEvents.tsx</code> into one shared constant so the dashboard widget and
+      the list agree.</li>
+
+  <li>☑ <strong>T3 — Say "overdue".</strong> On an incomplete card dated before today, the
+      date line turns red and reads <code>Overdue — 12 days</code>, using the same
+      definition as <code>getOverdueTasks</code> so Mel and the screen tell one story. A
+      card dated today reads <code>Today</code>. One line of the card, not a new badge.</li>
+
+  <li>☑ <strong>T4 — Quieten the badges.</strong> Priority badge only when
+      <code>high</code>/<code>urgent</code> (the Visit Checklist rule, applied to the main
+      list). Type badge only when the row is not a plain <code>task</code>. The
+      <code>📧 Email Reminder</code> badge comes off the card — it applies to 13 of 160 rows,
+      it is a setting rather than a property of the work, and it is visible in the edit
+      form. A typical card goes from four-to-six badges down to none or one.</li>
+
+  <li>☑ <strong>T5 — Collapse the secondary filters.</strong> The whole filter
+      <code>Card</code> becomes a <code>FilterDisclosure</code> with
+      <code>storageKey="tasks:filtersOpen"</code>, an active count and <strong>Clear
+      filters</strong>. Inside, one <code>flex flex-col sm:flex-row sm:flex-wrap gap-3</code>:
+      Type, Category, Ownership, Apiary, Hive. Apiary and Hive keep routing through
+      <code>useSelection</code> and <strong>are</strong> counted — an apiary chosen on the
+      Hives screen would otherwise silently shorten this list with no visible cause, which
+      is exactly what the count badge exists to prevent.
+      <br><span class="good">First screen: ~496px of filters → one 48px control.</span></li>
+
+  <li>☑ <strong>T6 — Search.</strong> Ephemeral <code>useState</code>, no debounce (house
+      convention), matching title, description, notes and equipment. Placeholder
+      <code>Search tasks, notes or equipment</code>. Empty state
+      <code>No tasks match your search.</code></li>
+
+  <li>☑ <strong>T7 — Deep-link safety.</strong> <code>UpcomingEvents</code> links to
+      <code>/dashboard/tasks?task=&lt;id&gt;</code> for items <strong>1 to 7 days out</strong>.
+      With <strong>Due now</strong> as the default those rows are filtered out, and the
+      scroll-to-highlight effect is guarded by
+      <code>filteredTasks.some(t =&gt; t.id === highlightedTaskId)</code>
+      (<code>page.tsx:646</code>) — so it would silently do nothing and you would land on a
+      screen that does not contain the task you tapped. <strong>Applying a
+      <code>?task=</code> deep link therefore also sets the preset to
+      <code>All</code>.</strong> <code>?hive=</code> and <code>?apiary=</code> need no
+      override.</li>
+
+  <li>☑ <strong>T8 — Verification.</strong> Type-check, lint, test suite, then update this
+      record and the feature plan with a review section. <em>You test the build.</em></li>
+</ul>
+
+<h2>5. Decision taken</h2>
+<p><strong>Option (b) — hide batch milestones by default, with a pill to bring them back.</strong>
+Implemented as an <code>includeBatchMilestones</code> toggle persisted at
+<code>tasks:milestones</code>, default off, rendered as a purple pill at the end of the preset
+row. The options considered were:</p>
+
+
+<div class="rec">
+<p><strong>What should happen to the 116 batch milestones?</strong> They are 72% of the
+incomplete list, they are all flagged <code>high</code>, and none of them can ever be ticked
+off. Any amount of filtering and sorting is fighting this.</p>
+
+<p><strong>(a) Leave them, rely on the existing Type filter.</strong> Zero risk. But the
+default view stays three-quarters noise, which is your complaint. That Type select already
+exists and defaults to "All Types"; it has evidently not been enough.</p>
+
+<p><strong>(b) Default the primary view to tasks and reminders, with an always-visible
+<code>Batch milestones (n)</code> pill in the preset row. &nbsp;← chosen.</strong>
+Nothing is hidden — the count is on screen at all times, which is the standard this
+codebase already set for collapsed filters — and one tap brings them back. The default
+view drops from 160 items to 43. Small, contained, entirely client-side.</p>
+
+<p><strong>(c) Give the milestones a real completion path</strong> so they leave the list
+once the batch passes them. Correct in principle, and the only option that actually stops
+the accumulation. But it is a queen-rearing change touching a database trigger, and it is a
+much larger piece of work than this one. I would record it as a follow-up rather than do it
+here.</p>
+</div>
+
+<h2>6. Edge cases I will handle</h2>
+<ul>
+  <li>A stale <code>tasks:view</code> value — validated by membership, not type.</li>
+  <li><strong>"Due now" can legitimately be empty.</strong> A tidy account lands on an empty
+      screen, so the empty state must name the preset ("Nothing due now", other counts still
+      visible on their pills) rather than the generic "No tasks or events found", which
+      would read as data loss.</li>
+  <li><strong>The 12-month fetch window.</strong> <code>fetchTasks</code> is bounded to
+      <code>start_date &gt;= today − 1 year</code>, <code>.limit(1000)</code>. Search and the
+      <code>All</code> pill cannot find what was never fetched, and the pill counts are
+      counts of the fetched set. Same honesty limit Phase 4 recorded for the Records 500-row
+      cap. Not widened here.</li>
+  <li><strong>The Visit Checklist must not change.</strong> <code>checklistTasks</code>
+      deliberately ignores every page filter; it must keep ignoring the new preset too, so
+      the preset goes nowhere near it.</li>
+  <li><code>openChecklist</code> seeds the modal's apiary picker from
+      <code>filterApiary</code> — still works with apiary inside the disclosure.</li>
+  <li>Counts must be computed under the other filters, or a pill promises ten and delivers
+      two.</li>
+  <li>Two persisted keys added (<code>tasks:view</code>, <code>tasks:filtersOpen</code>), one
+      (<code>tasks:status</code>) retired and simply no longer read.</li>
+</ul>
+
+<h2>7. Out of scope</h2>
+<ul>
+  <li>Giving batch milestones a completion path (decision option c).</li>
+  <li>Widening the 12-month / 1000-row fetch window.</li>
+  <li>Task assignment to team members — there is no <code>assigned_to</code> column.</li>
+  <li>Recurrence — the columns exist and nothing writes them.</li>
+  <li>A calendar or month view.</li>
+  <li><strong>Known defect, recorded not fixed:</strong> <code>records/page.tsx:1141</code>
+      writes <code>category: 'Treatment'</code> (capital T), which violates
+      <code>tasks_events_category_check</code> and fails. Already noted in
+      <code>bulk-apply-treatment-feeding-plan.md:158-160</code>.</li>
+  <li>Consolidating the three overlapping task types (<code>HiveTask</code>, the local
+      <code>TaskEvent</code>, the local <code>UpcomingEvent</code>).</li>
+</ul>
+
+<h2>8. Database work</h2>
+<p><strong>None.</strong> Every change is client-side in
+<code>src/app/dashboard/tasks/page.tsx</code>. No schema, RLS policy, RPC, trigger or index
+is altered. <code>idx_tasks_events_user_start_date</code> already covers the fetch; the live
+schema was read only to produce section 1.</p>
+
+<h2>9. Review</h2>
+
+<h3>What changed</h3>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><code>src/lib/task-triage.ts</code> <em>(new)</em></td>
+      <td>The shared vocabulary: <code>PRIORITY_ORDER</code>/<code>priorityRank</code>, the
+          <code>TaskView</code> union with its membership validator, labels and empty-state copy,
+          <code>taskDateBounds</code>, <code>matchesTaskView</code>, <code>isBatchMilestone</code>,
+          <code>compareTaskUrgency</code>, <code>dueLabel</code>.</td></tr>
+  <tr><td><code>src/app/dashboard/tasks/page.tsx</code></td>
+      <td>Preset row, search box, <code>FilterDisclosure</code>, the split
+          <code>passesFilters</code> / <code>baseFilteredTasks</code> / <code>viewCounts</code> /
+          <code>filteredTasks</code> chain, badge conditions, the overdue line, the preset-aware
+          empty state, and the deep-link handling.</td></tr>
+  <tr><td><code>src/components/UpcomingEvents.tsx</code></td>
+      <td>Three lines: its private <code>PRIORITY_ORDER</code> replaced by the shared
+          <code>priorityRank</code>, so the widget and the list cannot drift apart.</td></tr>
+  <tr><td><code>tests/lib/task-triage.test.ts</code> <em>(new)</em></td>
+      <td>Seven cases covering the preset boundaries, milestone identification by foreign key, the
+          sort order, the overdue wording including the singular "1 day", and the validator
+          rejecting the retired <code>'active'</code> value.</td></tr>
+</table>
+
+<h3>First QA pass — three defects in my first draft</h3>
+
+<p><strong class="bad">&#128308; The deep link silently undid the fix.</strong> The first draft had a
+<code>?task=</code> link call <code>setView('all')</code> and
+<code>setIncludeBatchMilestones(true)</code>. Both are <em>persisted</em>. So one tap on a dashboard
+event would have permanently reset the preset to "All" and switched the batch milestones back on
+&mdash; restoring the exact 160-row list this work exists to avoid, with no way for the beekeeper to
+know why. <span class="good">Fixed</span> by leaving both preferences alone and having
+<code>filteredTasks</code> admit the highlighted row directly, so the deep-linked task appears and is
+scrolled to without touching a saved preference.</p>
+
+<p><strong class="bad">&#128992; The milestone pill lied whenever any other filter was set.</strong>
+<code>batchMilestoneCount</code> counted every incomplete milestone in the account, ignoring apiary,
+hive, ownership, search and the active preset. With an apiary selected it would have promised 116 and
+delivered three &mdash; the precise failure section 6 of this document warns about for the preset
+counts. <span class="good">Fixed</span> by extracting <code>passesFilters</code> as a shared predicate
+and counting milestones that pass it <em>and</em> the current preset, so the pill states exactly how
+many rows toggling it will add. That also fixed a quieter second bug: in the <strong>Done</strong>
+view the old count was always 0, so the pill vanished while still suppressing completed milestones
+with no way to reveal them.</p>
+
+<p><strong>&#128993; Ad-hoc date arithmetic.</strong> <code>dueLabel</code> computed the overdue span
+with raw <code>Date.parse</code> millisecond division. <span class="good">Fixed</span> to use the
+existing <code>differenceInCalendarDays</code> and <code>parseLocalDate</code> helpers, so it agrees
+with every other day count in the application.</p>
+
+<p>Also added <code>role="group"</code> with a label on the preset row, so a screen reader announces
+what the pills filter rather than reading five loose toggle buttons.</p>
+
+<h3>Second QA pass — a further six findings</h3>
+
+<p>A second independent audit was run over the implemented code. Two findings were material.</p>
+
+<p><strong class="bad">&#128992; The ownership filter could apply with no control on screen.</strong>
+<code>tasks:ownership</code> is persisted, but its <code>&lt;select&gt;</code> renders only when
+<code>isTeamMember</code> is true, and <code>activeFilterCount</code> also counts it only when
+<code>isTeamMember</code> is true &mdash; while the filter itself ran unconditionally. A beekeeper
+whose team access ends keeps a stored value of <code>'team'</code>, whose predicate excludes every
+row they own. The result is an empty list, no visible control, nothing on the Filters badge, and no
+way to clear it. The new preset-aware empty state makes this worse, not better: it says "Nothing due
+now" with total confidence. <span class="good">Fixed</span> by gating the predicate on
+<code>isTeamMember</code> too, so the filter, its control and its count can never disagree.
+<em>Pre-existing in structure, but newly reachable in a way that reads as data loss.</em></p>
+
+<p><strong class="bad">&#128992; The deep-linked row stayed pinned forever.</strong>
+<code>highlightedTaskId</code> is set on arrival and never cleared. Before this work that was
+cosmetic &mdash; a blue ring that outstayed its welcome. But the fix for the earlier critical finding
+has <code>filteredTasks</code> <em>inject</em> that row whatever the preset, so the ring became a
+task permanently wedged into every subsequent view: a card plainly not due, sitting in "Due now",
+undismissable short of reloading. <span class="good">Fixed</span> by treating the highlight as spent
+the moment the beekeeper steers the list themselves &mdash; changing preset, toggling milestones or
+clearing filters all release it. This is the second-order defect of my own first-pass fix, which is
+exactly what a second pass is for.</p>
+
+<p><strong>&#128993; <code>role="group"</code> mislabelled the milestone toggle.</strong> The group
+label reads "Filter tasks by when they are due", and the milestone pill sat inside it &mdash; but it
+filters by what a row <em>is</em>, not when it is due. <span class="good">Fixed</span> by moving it
+out of the group. The first attempt used <code>display: contents</code> on the group wrapper and was
+rejected on review: that property has a history of dropping the element carrying the role out of the
+accessibility tree entirely, which would have removed the label it was added to provide. Real
+nesting instead.</p>
+
+<p><strong>&#128993; A guard that did not guard.</strong> <code>dueLabel</code> wrapped its day count
+in <code>Math.max(1, &hellip;)</code> to floor it &mdash; but <code>parseLocalDate</code> returns an
+Invalid Date for anything that is not a <code>YYYY-MM-DD</code> prefix, and <code>Math.max(1, NaN)</code>
+is <code>NaN</code>. The floor silently passed NaN through to the card as "Overdue &mdash; NaN days".
+<span class="good">Fixed</span> with an explicit <code>Number.isFinite</code> check falling back to
+the bare word "Overdue", which stays true whatever the date said.</p>
+
+<p><strong>&#128994; <code>PRIORITY_ORDER</code> was exported mutable.</strong> Harmless while it was
+private to <code>UpcomingEvents</code>; less so now it is shared, where a stray write would silently
+reorder the dashboard widget as well as the list. <span class="good">Frozen</span> and typed
+<code>Readonly</code>.</p>
+
+<p><strong>&#128994; The inactive milestone pill dimmed an interactive control</strong>
+(<code>text-text-secondary</code>) while its four neighbours used <code>text-foreground</code>.
+For an audience of 50+ with reduced eyesight, a control should not be the faintest thing in its own
+row. <span class="good">Matched</span> to the others.</p>
+
+<h3>Verification</h3>
+<table>
+  <tr><th>Check</th><th>Result</th></tr>
+  <tr><td><code>tsc --noEmit</code>, errors under <code>src/</code></td><td class="good">0</td></tr>
+  <tr><td><code>next lint</code> on the three changed files</td>
+      <td class="good">3 warnings, all <code>exhaustive-deps</code>. Verified against <code>main</code>
+          by stashing: the identical warnings pre-exist, and one now lists <em>fewer</em> missing names
+          than before. None added.</td></tr>
+  <tr><td>Full suite (re-run after both audit passes)</td>
+      <td class="good">137 failed / 18 files &mdash; exactly the pre-existing baseline recorded in
+          <code>mobile-first-over-50-ux-remediation-plan.md</code> &sect;12. Passing tests 661 &rarr; 668,
+          the 7 new triage cases. No regression.</td></tr>
+  <tr><td><code>tests/styles/typography-floor.test.ts</code></td>
+      <td class="good">Passes &mdash; no new sub-14px text.</td></tr>
+  <tr><td>Touch targets</td>
+      <td class="good">The pills inherit <code>min-height: 3rem</code> from <code>:where(.fj-btn)</code>,
+          which <code>px-3 py-1.5</code> does not override. 48px.</td></tr>
+</table>
+
+<blockquote><strong>Not verified, and not verifiable by tooling:</strong> the build, and how this looks
+and behaves on a real phone in both themes. Per repository rule I have not run the build &mdash; please
+test it. What is worth looking at is listed below.</blockquote>
+
+<h3>What to check in the browser</h3>
+<ol>
+  <li>The Tasks screen on a phone: a task card should be visible without scrolling.</li>
+  <li>The preset counts should add up &mdash; <strong>Due now</strong> + <strong>This week</strong> +
+      <strong>Later</strong> + <strong>Done</strong> should equal <strong>All</strong>.</li>
+  <li>Tap <strong>Batch milestones</strong>: the count on that pill should equal the increase in the
+      count on the currently selected preset.</li>
+  <li>Overdue rows should read <code>&middot; Overdue &mdash; N days</code> in red, today's in amber.
+      Check both themes.</li>
+  <li>From the dashboard, tap an item in <strong>Upcoming Events</strong>. It should scroll to and ring
+      the task <em>even though it is days away</em> &mdash; and when you next open Tasks directly, your
+      preset should still be <strong>Due now</strong>, not <strong>All</strong>.</li>
+  <li>Set an apiary on the Hives screen, then open Tasks: the <strong>Filters</strong> control should
+      show a count of 1, rather than silently showing you a short list.</li>
+  <li>The <strong>Visit Checklist</strong> should be unchanged &mdash; it deliberately ignores every
+      page filter, and the new preset must not reach it.</li>
+</ol>
+
+<h3>Follow-ups recorded, not done</h3>
+<ul>
+  <li><strong>Batch milestones still accumulate.</strong> Hiding them by default is a presentation fix;
+      the trigger keeps writing four uncompletable rows per batch forever. Option (c) &mdash; a real
+      completion path &mdash; remains the only thing that stops the growth, and belongs to queen
+      rearing.</li>
+  <li><code>records/page.tsx:1141</code> writes <code>category: 'Treatment'</code> against a
+      lowercase-only check constraint.</li>
+  <li>Three overlapping task types could collapse onto one.</li>
+</ul>
+
+</body>
+</html>
