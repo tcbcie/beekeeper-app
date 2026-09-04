@@ -17,12 +17,11 @@ import { getDefaultInspectionFormData } from '@/types/records'
 // every pass and spin the form into an infinite render loop.
 const mocks = vi.hoisted(() => ({
   confirmSpy: vi.fn(async () => true),
-  imageState: { imageFile: null as File | null, imagePreview: null as string | null },
+  imageState: { staged: [] as { id: string; file: File; preview: string }[] },
   voiceState: { isRecording: false },
   imageFns: {
-    handleImageChange: vi.fn(),
-    handleRemoveImage: vi.fn(),
-    setPreviewFromUrl: vi.fn(),
+    addFiles: vi.fn(),
+    removeFile: vi.fn(),
     reset: vi.fn(),
   },
   voiceFns: {
@@ -38,10 +37,9 @@ vi.mock('@/components/ui/ConfirmDialog', () => ({
   useConfirm: () => mocks.confirmSpy,
 }))
 
-vi.mock('@/hooks/useImageUpload', () => ({
-  useImageUpload: () => ({
-    imageFile: mocks.imageState.imageFile,
-    imagePreview: mocks.imageState.imagePreview,
+vi.mock('@/hooks/useStagedPhotos', () => ({
+  useStagedPhotos: () => ({
+    staged: mocks.imageState.staged,
     ...mocks.imageFns,
   }),
 }))
@@ -115,10 +113,18 @@ function clickCancel() {
 beforeEach(() => {
   confirmSpy.mockClear()
   confirmSpy.mockImplementation(async () => true)
-  imageState.imageFile = null
-  imageState.imagePreview = null
+  imageState.staged = []
   voiceState.isRecording = false
 })
+
+/** One photograph picked but not yet uploaded. */
+function stagedPhoto() {
+  return {
+    id: 'staged-1',
+    file: new File(['x'], 'frame.jpg', { type: 'image/jpeg' }),
+    preview: 'blob:frame',
+  }
+}
 
 describe('pristine form', () => {
   it('reports itself as clean', async () => {
@@ -162,15 +168,15 @@ describe('edited form', () => {
 
 describe('attachments count as unsaved work', () => {
   it('treats a photograph-only edit as dirty', async () => {
-    // The regression this guards: imageFile lives outside formData, so a
+    // The regression this guards: staged photographs live outside formData, so a
     // formData-only comparison would call this pristine and bin the photo.
-    imageState.imageFile = new File(['x'], 'frame.jpg', { type: 'image/jpeg' })
+    imageState.staged = [stagedPhoto()]
     const { onDirtyChange } = renderForm()
     await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(true))
   })
 
   it('asks before discarding a photograph-only edit', async () => {
-    imageState.imageFile = new File(['x'], 'frame.jpg', { type: 'image/jpeg' })
+    imageState.staged = [stagedPhoto()]
     const { onCancel } = renderForm()
     clickCancel()
     await waitFor(() => expect(confirmSpy).toHaveBeenCalledTimes(1))

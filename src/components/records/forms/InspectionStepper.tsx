@@ -57,7 +57,7 @@ export const INSPECTION_STEPS: InspectionStep[] = [
     id: 4,
     title: 'Notes and follow-up',
     shortTitle: 'Notes',
-    contents: 'Frames given or taken, notes, a photograph and follow-up tasks.',
+    contents: 'Frames given or taken, notes, photographs and follow-up tasks.',
     optional: true,
   },
   {

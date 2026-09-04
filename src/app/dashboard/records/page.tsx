@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { uploadImageFile, deleteUploadedImages } from '@/lib/upload-image'
 import { getCurrentUserId, hasActiveSubscription } from '@/lib/auth'
 import { Home, X, ClipboardList } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -168,7 +169,10 @@ export default function RecordsPage() {
 
   // UI state
   const [imageModalOpen, setImageModalOpen] = useState(false)
-  const [modalImageUrl, setModalImageUrl] = useState<string | null>(null)
+  // An array even for the single-image callers (varroa checks), so the viewer has
+  // one code path and inspections can hand it a whole gallery.
+  const [modalImages, setModalImages] = useState<string[]>([])
+  const [modalStartIndex, setModalStartIndex] = useState(0)
   const [showIpmTips, setShowIpmTips] = useState(false)
   const [fetchingWeather, setFetchingWeather] = useState(false)
   const [highlightedRecordKey, setHighlightedRecordKey] = useState<string | null>(null)
@@ -328,7 +332,10 @@ export default function RecordsPage() {
       remaining_cells: editingInspection.remaining_cells ?? defaults.remaining_cells,
       queen_cells_notes: editingInspection.queen_cells_notes ?? defaults.queen_cells_notes,
       notes: editingInspection.notes ?? defaults.notes,
-      image_url: editingInspection.image_url ?? defaults.image_url
+      // This mapping is an explicit whitelist: a field missing here is silently
+      // dropped on every edit. image_urls must be carried, never image_url - that
+      // one is a generated mirror and writing it is rejected by Postgres.
+      image_urls: editingInspection.image_urls ?? defaults.image_urls
     }
   }, [editingInspection, inspectionDraft])
 
@@ -718,41 +725,11 @@ export default function RecordsPage() {
     return await fetchWeatherForApiary(selectedHive.apiary_id)
   }
 
-  // Image upload helper
-  const uploadImage = async (file: File, folder: string): Promise<string | null> => {
-    try {
-      const fileExt = file.name.split('.').pop()?.toLowerCase()
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
-      const filePath = `${folder}/${fileName}`
-
-      let contentType = file.type
-      if (!contentType || contentType === 'application/json') {
-        const mimeMap: Record<string, string> = {
-          'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
-          'gif': 'image/gif', 'webp': 'image/webp'
-        }
-        contentType = mimeMap[fileExt || ''] || 'image/jpeg'
-      }
-
-      const correctedFile = new File([file], file.name, { type: contentType })
-
-      const { error: uploadError } = await supabase.storage
-        .from('inspection-images')
-        .upload(filePath, correctedFile, { contentType, cacheControl: '3600', upsert: false })
-
-      if (uploadError) throw uploadError
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('inspection-images')
-        .getPublicUrl(filePath)
-
-      return publicUrl
-    } catch (error) {
-      console.error('Failed to upload image:', error)
-      toast.error(`Failed to upload image: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      return null
-    }
-  }
+  // Uploads go through @/lib/upload-image, which is also what useImageUpload calls.
+  // This used to be a second, weaker copy that skipped the magic-byte, MIME and
+  // 10MB checks - so the app's busiest upload path was its least validated one.
+  const uploadImage = (file: File, folder: string): Promise<string | null> =>
+    uploadImageFile(file, { folder, onError: (message) => toast.error(message) })
 
   // Apply a Given/Taken honey-super delta to a hive's stored configuration.
   // Atomic via Postgres RPC: clamps at 0, only mutates the honey_supers key,
@@ -777,21 +754,36 @@ export default function RecordsPage() {
   // Inspection handlers
   const handleInspectionSubmit = async (
     formData: InspectionFormData,
-    imageFile: File | null,
+    imageFiles: File[],
     followUpTasks: FollowUpTaskDraft[] = []
   ) => {
     if (!userId) return
 
+    // Declared outside the try so the failure paths below can undo it. Anything
+    // uploaded during an attempt that does not end in a saved row is rubbish: no
+    // record points at it, and nothing in this app ever collects it. Cleaning up
+    // also means a retry starts from a clean slate rather than leaving another
+    // copy behind on every attempt.
+    const uploadedUrls: string[] = []
+    // Once the row exists it owns those photos, so the cleanup below must stop.
+    let recordSaved = false
+
     try {
-      let imageUrl = formData.image_url
-      if (imageFile) {
-        const uploadedUrl = await uploadImage(imageFile, 'inspections')
+      // formData.image_urls already holds the photos being kept from a previous
+      // save, in order and minus any the beekeeper removed. Newly picked files are
+      // uploaded and appended. Sequential rather than parallel: a phone on a hive
+      // roof gets one upload's worth of bandwidth at a time, and a mid-way failure
+      // should abort before burning the rest of the user's data allowance.
+      for (const file of imageFiles) {
+        const uploadedUrl = await uploadImage(file, 'inspections')
         if (!uploadedUrl) {
-          // Upload failed - error already shown via toast in uploadImage
+          // Upload failed - error already shown via toast in uploadImage.
+          await deleteUploadedImages(uploadedUrls)
           return
         }
-        imageUrl = uploadedUrl
+        uploadedUrls.push(uploadedUrl)
       }
+      const imageUrls = [...formData.image_urls, ...uploadedUrls]
 
       let weatherData = null
       setFetchingWeather(true)
@@ -833,7 +825,9 @@ export default function RecordsPage() {
         drones_present: formData.drones_present === -1 ? null : formData.drones_present,
         propolis_level: formData.propolis_level === -1 ? null : formData.propolis_level,
         honey_super_fullness: sanitisedSuperFullness,
-        image_url: imageUrl,
+        // image_urls is the only writable photo column. inspections.image_url is a
+        // GENERATED mirror of image_urls[1] and Postgres rejects any write to it.
+        image_urls: imageUrls,
         weather_temp: weatherData?.temp ?? null,
         weather_condition: weatherData?.condition ?? null,
         weather_humidity: weatherData?.humidity ?? null,
@@ -850,9 +844,11 @@ export default function RecordsPage() {
 
         if (error) throw error
         if (!updatedRows || updatedRows.length !== 1) {
+          await deleteUploadedImages(uploadedUrls)
           toast.error('Inspection could not be updated. It may have been changed elsewhere — please refresh.')
           return
         }
+        recordSaved = true
 
         const oldHiveId = editingInspection.hive_id
         const oldHoneySupers = Number.isInteger(editingInspection.honey_supers)
@@ -873,6 +869,7 @@ export default function RecordsPage() {
           .insert([{ ...submitData, user_id: userId }])
 
         if (error) throw error
+        recordSaved = true
 
         await adjustHiveHoneySupers(formData.hive_id, formData.honey_supers)
       }
@@ -910,6 +907,12 @@ export default function RecordsPage() {
       await fetchHives(userId)
       resetForm()
     } catch (error) {
+      // Only tidy up when the row never landed. Past that point - a failing
+      // refetch, a honey-super adjustment - the saved inspection references these
+      // photos, and deleting them would break a record that exists.
+      if (!recordSaved) {
+        await deleteUploadedImages(uploadedUrls)
+      }
       toast.error(error instanceof Error ? error.message : 'Error saving inspection')
     }
   }
@@ -1406,10 +1409,19 @@ export default function RecordsPage() {
     if (await confirmDiscardOpenForm()) resetForm()
   }
 
-  const handleImageClick = (url: string) => {
-    setModalImageUrl(normaliseStoragePublicUrl(url))
+  // Inspections pass their whole photo set and the one tapped; everything else
+  // passes a single URL and lands on the same viewer with navigation hidden.
+  const handleGalleryClick = (urls: string[], startIndex: number) => {
+    const normalised = urls
+      .map((url) => normaliseStoragePublicUrl(url))
+      .filter((url): url is string => Boolean(url))
+    if (normalised.length === 0) return
+    setModalImages(normalised)
+    setModalStartIndex(Math.min(Math.max(startIndex, 0), normalised.length - 1))
     setImageModalOpen(true)
   }
+
+  const handleImageClick = (url: string) => handleGalleryClick([url], 0)
 
   const handleHiveChange = async (hiveId: string) => {
     // Fetch weather data when hive changes (for inspection form)
@@ -1521,7 +1533,7 @@ export default function RecordsPage() {
                 onSubmit={handleInspectionSubmit}
                 onCancel={resetForm}
                 onHiveChange={handleHiveChange}
-                onImageClick={handleImageClick}
+                onImageClick={handleGalleryClick}
                 fetchingWeather={fetchingWeather}
                 onDirtyChange={handleFormDirtyChange}
               />
@@ -1681,7 +1693,7 @@ export default function RecordsPage() {
                       apiaries={apiaries}
                       onEdit={handleInspectionEdit}
                       onDelete={handleInspectionDelete}
-                      onImageClick={handleImageClick}
+                      onImageClick={handleGalleryClick}
                     />
                   )
                   break
@@ -1790,7 +1802,8 @@ export default function RecordsPage() {
         {/* Image Modal */}
         <ImageZoomModal
           isOpen={imageModalOpen}
-          imageUrl={modalImageUrl}
+          images={modalImages}
+          startIndex={modalStartIndex}
           onClose={() => setImageModalOpen(false)}
         />
       </div>

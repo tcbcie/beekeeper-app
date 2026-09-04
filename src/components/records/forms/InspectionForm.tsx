@@ -5,7 +5,8 @@ import { ChevronDown, ChevronUp, Camera, X, Mic, Square, Loader2, Plus, Trash2, 
 import Image from 'next/image'
 import type { Hive, Apiary, InspectionFormData, FollowUpTaskDraft, FollowUpTaskPriority, BroodBoxFrames, BroodBoxType } from '@/types/records'
 import { getDefaultInspectionFormData, getDefaultFollowUpTaskDraft, LEVEL_NOT_RECORDED, getLevelLabel } from '@/types/records'
-import { useImageUpload } from '@/hooks/useImageUpload'
+import { useStagedPhotos } from '@/hooks/useStagedPhotos'
+import { validateImageFile } from '@/lib/upload-image'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
@@ -25,10 +26,10 @@ interface InspectionFormProps {
   selectedHiveId?: string
   isEditing?: boolean
   userHasActiveSubscription: boolean
-  onSubmit: (formData: InspectionFormData, imageFile: File | null, followUpTasks: FollowUpTaskDraft[]) => Promise<void>
+  onSubmit: (formData: InspectionFormData, imageFiles: File[], followUpTasks: FollowUpTaskDraft[]) => Promise<void>
   onCancel: () => void
   onHiveChange: (hiveId: string) => Promise<void>
-  onImageClick: (url: string) => void
+  onImageClick: (urls: string[], startIndex: number) => void
   fetchingWeather?: boolean
   /** Reports whether the form holds unsaved work, so the parent can guard its own exit paths. */
   onDirtyChange?: (dirty: boolean) => void
@@ -119,6 +120,10 @@ const LAST_STEP = INSPECTION_STEPS.length
  * One string capturing everything the user can type into this form.
  * Used to tell a pristine form from an edited one.
  */
+// Six photographs wrap to two rows of thumbnails on a phone and still leave each
+// one tappable. At the 10MB per-file limit it is also already a 60MB inspection.
+const MAX_INSPECTION_PHOTOS = 6
+
 function serialiseFormState(
   data: InspectionFormData,
   drafts: Record<GivenTakenFieldKey, string>,
@@ -195,17 +200,55 @@ export default function InspectionForm({
   const [followUpExpanded, setFollowUpExpanded] = useState(false)
   const [followUpDrafts, setFollowUpDrafts] = useState<FollowUpTaskDraft[]>([])
 
-  const {
-    imageFile,
-    imagePreview,
-    handleImageChange,
-    handleRemoveImage,
-    setPreviewFromUrl,
-    reset: resetImage
-  } = useImageUpload({
-    bucket: 'inspection-images',
-    folder: 'inspections'
-  })
+  // Photographs already saved on this inspection live in formData.image_urls, so
+  // removing one is an ordinary formData edit and the dirty-state diff catches it
+  // for free. Only newly picked files need state of their own.
+  const { staged: stagedPhotos, addFiles: addStagedPhotos, removeFile: removeStagedPhoto, reset: resetStagedPhotos } = useStagedPhotos()
+
+  const keptPhotoUrls = formData.image_urls
+  const totalPhotoCount = keptPhotoUrls.length + stagedPhotos.length
+  const photoSlotsRemaining = MAX_INSPECTION_PHOTOS - totalPhotoCount
+  // One ordered list for the viewer, so next/previous crosses saved and unsaved alike.
+  const allPhotoPreviews = [...keptPhotoUrls, ...stagedPhotos.map(photo => photo.preview)]
+
+  // Each file is checked here, when it is picked, rather than at save. Validating
+  // only at upload time meant a bad file aborted the whole save after earlier
+  // photos had already been uploaded - and told the beekeeper about it long after
+  // they chose it, at the end of a form they had just filled in.
+  const handlePhotosSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target
+    const files = Array.from(input.files ?? [])
+    // Clear the input straight away so picking the same file again still fires.
+    input.value = ''
+    if (files.length === 0) return
+
+    const accepted: File[] = []
+    const problems: string[] = []
+    for (const file of files) {
+      const problem = await validateImageFile(file)
+      if (problem) {
+        problems.push(`${file.name}: ${problem}`)
+      } else {
+        accepted.push(file)
+      }
+    }
+
+    // The cap is enforced inside the hook against its own live count, not against
+    // photoSlotsRemaining: this handler awaits validation, so two picks can be in
+    // flight and both would otherwise read the same stale figure from this render.
+    const rejectedForSpace = addStagedPhotos(accepted, MAX_INSPECTION_PHOTOS, keptPhotoUrls.length)
+    if (rejectedForSpace > 0) {
+      problems.push(
+        `Only ${MAX_INSPECTION_PHOTOS} photos per inspection, so ${rejectedForSpace} ${rejectedForSpace === 1 ? 'was' : 'were'} not added.`
+      )
+    }
+    setPhotoError(problems.length > 0 ? problems.join(' ') : null)
+  }
+
+  const handleRemoveSavedPhoto = (url: string) => {
+    setPhotoError(null)
+    setFormData(prev => ({ ...prev, image_urls: prev.image_urls.filter(existing => existing !== url) }))
+  }
 
   const {
     isRecording: isVoiceRecording,
@@ -217,6 +260,7 @@ export default function InspectionForm({
   } = useVoiceRecorder()
   const [voiceProcessing, setVoiceProcessing] = useState(false)
   const [voiceError, setVoiceError] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
   const voiceAbortRef = useRef<AbortController | null>(null)
   // Scale-weight auto-fill: tracks which hive we've already prefetched for so the
   // effect doesn't loop on every formData change. Cleared on hive change.
@@ -407,7 +451,9 @@ export default function InspectionForm({
     push(4, 'Notes and follow-up', [
       givenTaken.length > 0 ? { label: 'Given / taken', value: givenTaken.join(', ') } : null,
       formData.notes.trim() ? { label: 'Notes', value: formData.notes.trim() } : null,
-      imageFile || formData.image_url ? { label: 'Photograph', value: 'Attached' } : null,
+      totalPhotoCount > 0
+        ? { label: totalPhotoCount === 1 ? 'Photograph' : 'Photographs', value: `${totalPhotoCount} attached` }
+        : null,
       followUpDrafts.filter(task => task.title.trim()).length > 0
         ? {
             label: 'Follow-up tasks',
@@ -420,7 +466,7 @@ export default function InspectionForm({
     ])
 
     return groups
-  }, [apiaries, followUpDrafts, formApiaryId, formData, hives, imageFile])
+  }, [apiaries, followUpDrafts, formApiaryId, formData, hives, totalPhotoCount])
 
   // Everything still outstanding anywhere in the flow. Checked on the review
   // step so a user cannot reach the end and meet a Save button that silently
@@ -436,9 +482,11 @@ export default function InspectionForm({
   const confirmDialog = useConfirm()
 
   // ---- Unsaved-changes tracking ------------------------------------------
-  // The comparison deliberately reaches past formData. The photograph is held
-  // in its own state and is not JSON-serialisable, so a formData-only diff
-  // would call a photo-only edit pristine and discard it without warning.
+  // The comparison deliberately reaches past formData. Newly picked photographs
+  // are Files held in their own state and are not JSON-serialisable, so a
+  // formData-only diff would call a photo-only edit pristine and discard it
+  // without warning. Removing an already-saved photo edits formData.image_urls
+  // and so is caught by the diff itself.
   // An in-flight voice note counts too, since its transcript has not yet
   // landed in notes.
   const stepHeadingRef = useRef<HTMLDivElement | null>(null)
@@ -458,11 +506,11 @@ export default function InspectionForm({
     const current = serialiseFormState(formData, givenTakenDrafts, followUpDrafts)
     setIsDirty(
       current !== pristineSnapshotRef.current ||
-      imageFile !== null ||
+      stagedPhotos.length > 0 ||
       isVoiceRecording ||
       voiceProcessing
     )
-  }, [formData, givenTakenDrafts, followUpDrafts, imageFile, isVoiceRecording, voiceProcessing])
+  }, [formData, givenTakenDrafts, followUpDrafts, stagedPhotos, isVoiceRecording, voiceProcessing])
 
   useEffect(() => {
     onDirtyChange?.(isDirty)
@@ -649,7 +697,7 @@ export default function InspectionForm({
           createGivenTakenDrafts(defaultFormData),
           []
         )
-        resetImage()
+        resetStagedPhotos()
         voiceAbortRef.current?.abort()
         voiceAbortRef.current = null
         resetVoiceRecorder()
@@ -692,13 +740,11 @@ export default function InspectionForm({
       Array.isArray(initialData.honey_super_fullness) && initialData.honey_super_fullness.length > 0
     )
 
-    if (initialData.image_url) {
-      setPreviewFromUrl(initialData.image_url)
-    } else {
-      resetImage()
-    }
+    // Saved photographs ride in with formData.image_urls; only files staged
+    // against the previously open inspection need dropping here.
+    resetStagedPhotos()
     previousInitialDataRef.current = initialData
-  }, [getApiaryIdForHive, initialData, resetImage, resetVoiceRecorder, selectedApiaryId, setPreviewFromUrl])
+  }, [getApiaryIdForHive, initialData, resetStagedPhotos, resetVoiceRecorder, selectedApiaryId])
 
   useEffect(() => {
     if (isEditing || initialData?.hive_id) {
@@ -1010,7 +1056,7 @@ export default function InspectionForm({
           equipment_needed: draft.equipment_needed.trim(),
         }))
         .filter(draft => draft.title !== '')
-      await onSubmit(submitData, imageFile, tasks)
+      await onSubmit(submitData, stagedPhotos.map(photo => photo.file), tasks)
     } finally {
       setSubmitting(false)
     }
@@ -1037,16 +1083,11 @@ export default function InspectionForm({
       const discard = await confirmDialog(DISCARD_INSPECTION_PROMPT)
       if (!discard) return
     }
-    resetImage()
+    resetStagedPhotos()
     resetVoiceRecorder()
     setVoiceError(null)
     setVoiceProcessing(false)
     onCancel()
-  }
-
-  const handleRemoveCurrentImage = () => {
-    handleRemoveImage()
-    setFormData(prev => ({ ...prev, image_url: null }))
   }
 
   const filteredHives = hives
@@ -2110,58 +2151,116 @@ export default function InspectionForm({
         </div>
         )}
 
-        {/* Image Upload Section */}
+        {/* Photographs. The drop zone used to render unconditionally beside the
+            single thumbnail, which read as an empty second slot but was the same
+            single-file input - picking a second photo silently replaced the
+            first. It now sits below the strip, is labelled with the running
+            count, and disappears at the cap. */}
         {step === 4 && userHasActiveSubscription && (
           <div className="md:col-span-2">
-            <p className="block text-sm font-medium text-text-secondary mb-2">Photo (optional)</p>
-            <div className="flex items-start gap-3">
-              {(imagePreview || formData.image_url) && (
-                <div className="relative w-20 h-20 flex-shrink-0 group">
-                  <button
-                    type="button"
-                    onClick={() => onImageClick(imagePreview || formData.image_url || '')}
-                    aria-label="View larger inspection photo"
-                    title="View larger"
-                    className="relative w-full h-full cursor-pointer hover:opacity-80 transition-opacity"
-                  >
-                    <Image
-                      src={imagePreview || formData.image_url || ''}
-                      alt="Preview"
-                      fill
-                      className="object-cover rounded-lg border-2 border-border shadow-sm"
-                      sizes="80px"
-                    />
-                    <span className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded bg-black/70 p-0.5 text-white pointer-events-none">
-                      <ZoomIn size={14} aria-hidden="true" />
-                    </span>
-                  </button>
-                  <Button
-          unstyled
-                    type="button"
-                    onClick={handleRemoveCurrentImage}
-                    className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
-                    title="Remove image"
-                  >
-                    <X size={16} />
-                  </Button>
-                </div>
-              )}
-              <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all p-4">
+            <p className="block text-sm font-medium text-text-secondary mb-2">
+              Photos (optional) &mdash; up to {MAX_INSPECTION_PHOTOS}
+            </p>
+
+            {totalPhotoCount > 0 && (
+              <div className="flex flex-wrap items-start gap-3 mb-3">
+                {keptPhotoUrls.map((url, index) => (
+                  <div key={url} className="relative w-20 h-20 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => onImageClick(allPhotoPreviews, index)}
+                      aria-label={`View larger inspection photo ${index + 1} of ${totalPhotoCount}`}
+                      title="View larger"
+                      className="relative w-full h-full cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                      <Image
+                        src={url}
+                        alt={`Inspection photo ${index + 1}`}
+                        fill
+                        className="object-cover rounded-lg border-2 border-border shadow-sm"
+                        sizes="80px"
+                      />
+                      <span className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded bg-black/70 p-0.5 text-white pointer-events-none">
+                        <ZoomIn size={14} aria-hidden="true" />
+                      </span>
+                    </button>
+                    <Button
+                      unstyled
+                      type="button"
+                      onClick={() => handleRemoveSavedPhoto(url)}
+                      className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
+                      aria-label={`Remove photo ${index + 1}`}
+                      title="Remove photo"
+                    >
+                      <X size={16} />
+                    </Button>
+                  </div>
+                ))}
+
+                {stagedPhotos.map((photo, index) => (
+                  <div key={photo.id} className="relative w-20 h-20 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => onImageClick(allPhotoPreviews, keptPhotoUrls.length + index)}
+                      aria-label={`View larger inspection photo ${keptPhotoUrls.length + index + 1} of ${totalPhotoCount}`}
+                      title="View larger"
+                      className="relative w-full h-full cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                      {/* Object URL from a File the browser has not uploaded yet, so
+                          next/image cannot optimise it. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photo.preview}
+                        alt={`New inspection photo ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg border-2 border-blue-400 shadow-sm"
+                      />
+                      <span className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded bg-black/70 p-0.5 text-white pointer-events-none">
+                        <ZoomIn size={14} aria-hidden="true" />
+                      </span>
+                    </button>
+                    <Button
+                      unstyled
+                      type="button"
+                      onClick={() => removeStagedPhoto(photo.id)}
+                      className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
+                      aria-label={`Remove new photo ${index + 1}`}
+                      title="Remove photo"
+                    >
+                      <X size={16} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {photoSlotsRemaining > 0 ? (
+              <label className="flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all p-4">
                 <div className="flex flex-col items-center justify-center">
                   <Camera size={24} className="text-text-tertiary mb-1" />
                   <p className="text-sm text-text-tertiary text-center">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
+                    <span className="font-semibold">
+                      {totalPhotoCount === 0 ? 'Click to upload' : 'Add more photos'}
+                    </span>
+                    {totalPhotoCount === 0 ? ' or drag and drop' : ` — ${totalPhotoCount} of ${MAX_INSPECTION_PHOTOS} attached`}
                   </p>
-                  <p className="text-sm text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
+                  <p className="text-sm text-text-tertiary">PNG, JPG, WEBP up to 10MB each</p>
                 </div>
                 <input
                   type="file"
                   className="hidden"
                   accept="image/*"
-                  onChange={handleImageChange}
+                  multiple
+                  onChange={handlePhotosSelected}
                 />
               </label>
-            </div>
+            ) : (
+              <p className="text-sm text-text-tertiary">
+                All {MAX_INSPECTION_PHOTOS} photo slots used. Remove one to add another.
+              </p>
+            )}
+            {photoError && (
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400">{photoError}</p>
+            )}
           </div>
         )}
 
