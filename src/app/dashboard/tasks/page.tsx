@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { getTeamAccess } from '@/lib/team-access'
-import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, Filter, ClipboardList, Printer } from 'lucide-react'
+import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, ClipboardList, Printer, Search } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ModalShell from '@/components/ui/ModalShell'
@@ -23,6 +23,19 @@ import Surface from '@/components/ui/Surface'
 import { formatLocalDate, toLocalDateString } from '@/lib/date-utils'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useSelection } from '@/contexts/SelectionContext'
+import FilterDisclosure from '@/components/ui/FilterDisclosure'
+import {
+  compareTaskUrgency,
+  dueLabel,
+  isBatchMilestone,
+  isTaskView,
+  matchesTaskView,
+  taskDateBounds,
+  TASK_VIEWS,
+  TASK_VIEW_EMPTY_COPY,
+  TASK_VIEW_LABELS,
+  type TaskView,
+} from '@/lib/task-triage'
 
 interface TaskEvent {
   id: string
@@ -99,7 +112,19 @@ export default function TasksEventsPage() {
   // Filter states (persisted per-page so they survive navigation/restart)
   const [filterType, setFilterType] = usePersistentState<string>('tasks:type', 'all')
   const [filterCategory, setFilterCategory] = usePersistentState<string>('tasks:category', 'all')
-  const [filterStatus, setFilterStatus] = usePersistentState<string>('tasks:status', 'active')
+  // The date preset. Replaces the old 'tasks:status' select: status is now one
+  // axis of the preset rather than a filter of its own. Validated by membership
+  // rather than by type, so a retired value cannot fall through to a default.
+  const [view, setView] = usePersistentState<TaskView>('tasks:view', 'due', isTaskView)
+  // The rearing-batch trigger writes four uncompletable calendar milestones per
+  // batch; on real accounts they are ~72% of the outstanding list. Off by
+  // default, with the count always on screen so nothing is silently hidden.
+  const [includeBatchMilestones, setIncludeBatchMilestones] = usePersistentState<boolean>(
+    'tasks:milestones', false, (v) => typeof v === 'boolean'
+  )
+  // Ephemeral by house convention: a filter is a lasting preference, a search
+  // term describes a moment.
+  const [searchTerm, setSearchTerm] = useState('')
   // Apiary/hive come from the app-wide shared selection (carries across pages).
   // This page uses the 'all' sentinel; the shared store uses '' for "all".
   const { selectedApiaryId, setSelectedApiaryId, selectedHiveId, setSelectedHiveId } = useSelection()
@@ -326,7 +351,10 @@ export default function TasksEventsPage() {
     setFilterOwnership('all')
     setFilterHive(targetTask.hive_id || 'all')
     setFilterApiary(targetTask.apiary_id || 'all')
-    setFilterStatus(targetTask.completed ? 'completed' : 'active')
+    // The preset and the milestone toggle are deliberately left alone — both
+    // are persisted, and filteredTasks admits the highlighted row directly, so
+    // following a dashboard link cannot quietly undo a saved preference.
+    setSearchTerm('')
     setHighlightedTaskId(taskId)
     appliedTaskDeepLinkRef.current = taskId
     scrolledTaskRef.current = null
@@ -492,21 +520,124 @@ export default function TasksEventsPage() {
     }
   }
 
-  // Filter tasks
-  const filteredTasks = tasks.filter(task => {
+  // Today and the end of the seven-day window, as comparable ISO date strings.
+  // Not memoised: they are strings, so the memos below still compare by value
+  // and a page left open past midnight picks up the new day on its next render.
+  const { today, weekEnd } = taskDateBounds()
+
+  const trimmedSearch = searchTerm.trim().toLowerCase()
+
+  // Search and the collapsed panel, but not the date preset and not the
+  // milestone toggle — both of those need to count rows this predicate admits.
+  const passesFilters = useCallback((task: TaskEvent) => {
     if (filterType !== 'all' && task.event_type !== filterType) return false
     if (filterCategory !== 'all' && task.category !== filterCategory) return false
-    if (filterStatus === 'completed' && !task.completed) return false
-    if (filterStatus === 'active' && task.completed) return false
     if (filterHive !== 'all' && task.hive_id !== filterHive) return false
     if (filterApiary !== 'all' && task.apiary_id !== filterApiary) return false
 
-    // Ownership filter
-    if (filterOwnership === 'my' && task.user_id !== userId) return false
-    if (filterOwnership === 'team' && (task.user_id === userId || !task.is_team_task)) return false
+    // Ownership, gated on team membership exactly as its select and its entry
+    // in activeFilterCount are. Without that gate the filter outlives the
+    // control: 'tasks:ownership' is persisted, so a beekeeper whose team access
+    // ends keeps a stored value of 'team', which hides every row they own while
+    // the select that set it is no longer rendered and the Filters badge counts
+    // nothing. An empty list, no visible cause, and no way to clear it.
+    if (isTeamMember) {
+      if (filterOwnership === 'my' && task.user_id !== userId) return false
+      if (filterOwnership === 'team' && (task.user_id === userId || !task.is_team_task)) return false
+    }
+
+    if (trimmedSearch) {
+      const haystack = [task.title, task.description, task.notes, task.equipment_needed]
+      if (!haystack.some(field => field?.toLowerCase().includes(trimmedSearch))) return false
+    }
 
     return true
-  })
+  }, [filterType, filterCategory, filterHive, filterApiary, filterOwnership, isTeamMember, userId, trimmedSearch])
+
+  // Everything except the date preset. The preset counts are computed from this
+  // set, so the number on a pill is exactly what tapping it will show.
+  const baseFilteredTasks = useMemo(
+    () => tasks.filter(task =>
+      passesFilters(task) && (includeBatchMilestones || !isBatchMilestone(task))
+    ),
+    [tasks, passesFilters, includeBatchMilestones]
+  )
+
+  const viewCounts = useMemo(() => {
+    const counts = { due: 0, week: 0, later: 0, done: 0, all: 0 } as Record<TaskView, number>
+    for (const task of baseFilteredTasks) {
+      for (const candidate of TASK_VIEWS) {
+        if (matchesTaskView(task, candidate, today, weekEnd)) counts[candidate] += 1
+      }
+    }
+    return counts
+  }, [baseFilteredTasks, today, weekEnd])
+
+  // Exactly how many rows the toggle would add to what is on screen — so it is
+  // counted under the same filters and the same preset. A flat count of every
+  // milestone in the account would promise 116 and deliver three the moment an
+  // apiary or a search term was in play.
+  const batchMilestoneCount = useMemo(
+    () => tasks.filter(task =>
+      isBatchMilestone(task) && passesFilters(task) && matchesTaskView(task, view, today, weekEnd)
+    ).length,
+    [tasks, passesFilters, view, today, weekEnd]
+  )
+
+  // Nearest date first, most urgent first within a day — except in Done, where
+  // the most recently finished is the useful end.
+  const filteredTasks = useMemo(() => {
+    const rows = baseFilteredTasks.filter(task => matchesTaskView(task, view, today, weekEnd))
+
+    // A dashboard deep link can point at a task the current preset excludes —
+    // Upcoming Events links to items up to seven days out, and to batch
+    // milestones. Admit that one row rather than widening the preset: the
+    // preset is persisted, so widening it would mean one tap on a dashboard
+    // event permanently restored the full list this screen exists to avoid.
+    if (highlightedTaskId && !rows.some(task => task.id === highlightedTaskId)) {
+      const target = tasks.find(task => task.id === highlightedTaskId)
+      if (target) rows.push(target)
+    }
+
+    return rows.sort(view === 'done'
+      ? (a, b) => compareTaskUrgency(b, a)
+      : compareTaskUrgency)
+  }, [baseFilteredTasks, tasks, view, today, weekEnd, highlightedTaskId])
+
+  // Counts exactly what the collapsed panel holds, so the badge and Clear agree.
+  // Apiary and hive are included: they are shared app-wide via useSelection, so
+  // a choice made on the Hives screen would otherwise silently shorten this list.
+  const activeFilterCount = [
+    filterType !== 'all',
+    filterCategory !== 'all',
+    isTeamMember && filterOwnership !== 'all',
+    filterHive !== 'all',
+    filterApiary !== 'all',
+  ].filter(Boolean).length
+
+  // A deep link's highlight is spent the moment the beekeeper steers the list
+  // themselves. Without this, the out-of-preset row that filteredTasks injects
+  // below stays pinned to every later preset — a task that plainly does not
+  // belong in "Due now", ringed in blue, with no way to dismiss it short of
+  // reloading the page.
+  const selectView = useCallback((next: TaskView) => {
+    setView(next)
+    setHighlightedTaskId(null)
+  }, [setView])
+
+  const toggleBatchMilestones = useCallback(() => {
+    setIncludeBatchMilestones(prev => !prev)
+    setHighlightedTaskId(null)
+  }, [setIncludeBatchMilestones])
+
+  const clearCollapsedFilters = useCallback(() => {
+    setFilterType('all')
+    setFilterCategory('all')
+    setFilterOwnership('all')
+    setFilterHive('all')
+    setFilterApiary('all')
+    setHighlightedTaskId(null)
+  }, [setFilterType, setFilterCategory, setFilterOwnership, setFilterHive, setFilterApiary])
 
   // Tasks shown inside the Visit Checklist modal. Scoped only by the modal's
   // apiary picker and active-status; the page-level filters don't apply so the
@@ -748,105 +879,158 @@ export default function TasksEventsPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <Card padding="sm" className="mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter size={18} className="text-text-tertiary" />
-          <h2 className="font-semibold text-foreground">Filters</h2>
+      {/* Search, date presets, then everything else one control away.
+          The filter panel used to sit open above the list: on a phone that is
+          five stacked 48px selects with labels, roughly 500px, so no task was
+          visible until the beekeeper had already scrolled. */}
+      <div className="space-y-4 mb-6">
+        <div className="relative w-full sm:max-w-sm">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
+          <TextInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search tasks, notes or equipment"
+            aria-label="Search tasks and events"
+            className="rounded-lg"
+            style={{ paddingLeft: '2.25rem' }}
+          />
         </div>
-        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${isTeamMember ? 'xl:grid-cols-6' : 'xl:grid-cols-5'} gap-4`}>
-          <div>
-            <FieldLabel>Type</FieldLabel>
-            <SelectField
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-            >
-              <option value="all">All Types</option>
-              <option value="task">Tasks</option>
-              <option value="event">Events</option>
-              <option value="reminder">Reminders</option>
-            </SelectField>
-          </div>
 
-          <div>
-            <FieldLabel>Category</FieldLabel>
-            <SelectField
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-            >
-              <option value="all">All Categories</option>
-              <option value="inspection">Inspection</option>
-              <option value="treatment">Treatment</option>
-              <option value="feeding">Feeding</option>
-              <option value="harvest">Harvest</option>
-              <option value="queen_rearing">Queen Rearing</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="general">General</option>
-              <option value="other">Other</option>
-            </SelectField>
-          </div>
-
-          <div>
-            <FieldLabel>Status</FieldLabel>
-            <SelectField
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="completed">Completed</option>
-            </SelectField>
-          </div>
-
-          {isTeamMember && (
-            <div>
-              <FieldLabel>Ownership</FieldLabel>
-              <SelectField
-                value={filterOwnership}
-                onChange={(e) => setFilterOwnership(e.target.value as 'all' | 'my' | 'team')}
+        {/* The presets carry their own counts, which is why they stay visible:
+            together they answer "what needs doing, and how much of it" before
+            anything is tapped. */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* The date presets are one group; the milestone toggle sits outside
+              it, because it filters by what a row is rather than by when it is
+              due and must not be announced under the group's label. Real
+              nesting rather than `display: contents`, which has a history of
+              dropping the element that carries the role out of the
+              accessibility tree. */}
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter tasks by when they are due">
+            {TASK_VIEWS.map(candidate => (
+              <Button
+                key={candidate}
+                onClick={() => selectView(candidate)}
+                aria-pressed={view === candidate}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  view === candidate
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-surface border border-border text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30'
+                }`}
               >
-                <option value="all">All Tasks</option>
-                <option value="my">My Tasks</option>
-                <option value="team">Team Tasks</option>
+                {TASK_VIEW_LABELS[candidate]} ({viewCounts[candidate]})
+              </Button>
+            ))}
+          </div>
+
+          {batchMilestoneCount > 0 && (
+            <Button
+              onClick={toggleBatchMilestones}
+              aria-pressed={includeBatchMilestones}
+              title="Acceptance checks, caging dates and expected emergence, generated from your rearing batches"
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors sm:ml-2 ${
+                includeBatchMilestones
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-surface border border-border text-foreground hover:bg-purple-50 dark:hover:bg-purple-950/30'
+              }`}
+            >
+              Batch milestones ({batchMilestoneCount})
+            </Button>
+          )}
+        </div>
+
+        <FilterDisclosure
+          activeCount={activeFilterCount}
+          storageKey="tasks:filtersOpen"
+          onClear={clearCollapsedFilters}
+        >
+          <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${isTeamMember ? 'xl:grid-cols-5' : 'xl:grid-cols-4'} gap-4`}>
+            <div>
+              <FieldLabel>Type</FieldLabel>
+              <SelectField
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+              >
+                <option value="all">All Types</option>
+                <option value="task">Tasks</option>
+                <option value="event">Events</option>
+                <option value="reminder">Reminders</option>
               </SelectField>
             </div>
-          )}
 
-          <div>
-            <FieldLabel>Hive</FieldLabel>
-            <SelectField
-              value={filterHive}
-              onChange={(e) => setFilterHive(e.target.value)}
-            >
-              <option value="all">All Hives</option>
-              {hives.map(hive => (
-                <option key={hive.id} value={hive.id}>Hive {hive.hive_number}</option>
-              ))}
-            </SelectField>
+            <div>
+              <FieldLabel>Category</FieldLabel>
+              <SelectField
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+              >
+                <option value="all">All Categories</option>
+                <option value="inspection">Inspection</option>
+                <option value="treatment">Treatment</option>
+                <option value="feeding">Feeding</option>
+                <option value="harvest">Harvest</option>
+                <option value="queen_rearing">Queen Rearing</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="general">General</option>
+                <option value="other">Other</option>
+              </SelectField>
+            </div>
+
+            {isTeamMember && (
+              <div>
+                <FieldLabel>Ownership</FieldLabel>
+                <SelectField
+                  value={filterOwnership}
+                  onChange={(e) => setFilterOwnership(e.target.value as 'all' | 'my' | 'team')}
+                >
+                  <option value="all">All Tasks</option>
+                  <option value="my">My Tasks</option>
+                  <option value="team">Team Tasks</option>
+                </SelectField>
+              </div>
+            )}
+
+            <div>
+              <FieldLabel>Hive</FieldLabel>
+              <SelectField
+                value={filterHive}
+                onChange={(e) => setFilterHive(e.target.value)}
+              >
+                <option value="all">All Hives</option>
+                {hives.map(hive => (
+                  <option key={hive.id} value={hive.id}>Hive {hive.hive_number}</option>
+                ))}
+              </SelectField>
+            </div>
+
+            <div>
+              <FieldLabel>Apiary</FieldLabel>
+              <SelectField
+                value={filterApiary}
+                onChange={(e) => setFilterApiary(e.target.value)}
+              >
+                <option value="all">All Apiaries</option>
+                {apiaries.map(apiary => (
+                  <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
+                ))}
+              </SelectField>
+            </div>
           </div>
-
-          <div>
-            <FieldLabel>Apiary</FieldLabel>
-            <SelectField
-              value={filterApiary}
-              onChange={(e) => setFilterApiary(e.target.value)}
-            >
-              <option value="all">All Apiaries</option>
-              {apiaries.map(apiary => (
-                <option key={apiary.id} value={apiary.id}>{apiary.name}</option>
-              ))}
-            </SelectField>
-          </div>
-        </div>
-
-      </Card>
+        </FilterDisclosure>
+      </div>
 
       {/* Task List */}
       {filteredTasks.length === 0 ? (
         <Card padding="lg" className="text-center">
           <Calendar size={48} className="mx-auto text-text-tertiary mb-4" />
-          <p className="text-text-tertiary mb-2">No tasks or events found</p>
-          <p className="text-sm text-text-tertiary">Create your first task or event to get started</p>
+          <p className="text-text-tertiary mb-2">
+            {trimmedSearch ? 'No tasks match your search.' : TASK_VIEW_EMPTY_COPY[view]}
+          </p>
+          <p className="text-sm text-text-tertiary">
+            {trimmedSearch
+              ? 'Only the last twelve months are loaded, so an older task may not be searchable.'
+              : 'Create your first task or event to get started'}
+          </p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -884,18 +1068,21 @@ export default function TasksEventsPage() {
                       <h3 className={`font-semibold text-foreground ${task.completed ? 'line-through' : ''}`}>
                         {task.title}
                       </h3>
-                      <Badge tone={getPriorityBadgeTone(task.priority)} className="uppercase">
-                        {task.priority}
-                      </Badge>
-                      <Badge tone="neutral">{getTypeLabel(task.event_type)}</Badge>
+                      {/* Only badges that say something. Priority was on every
+                          card including 'normal', and 58% of outstanding rows
+                          are high or urgent, so it had stopped carrying any
+                          signal. The Visit Checklist already applied this rule. */}
+                      {(task.priority === 'high' || task.priority === 'urgent') && (
+                        <Badge tone={getPriorityBadgeTone(task.priority)} className="uppercase">
+                          {task.priority}
+                        </Badge>
+                      )}
+                      {task.event_type !== 'task' && (
+                        <Badge tone="neutral">{getTypeLabel(task.event_type)}</Badge>
+                      )}
                       {task.category && (
                         <Badge tone="green">
                           {getCategoryLabel(task.category)}
-                        </Badge>
-                      )}
-                      {task.reminder_enabled && (
-                        <Badge tone="amber">
-                          📧 Email Reminder
                         </Badge>
                       )}
                       {task.is_team_task && (
@@ -922,13 +1109,29 @@ export default function TasksEventsPage() {
                     )}
 
                     <div className="flex items-center gap-4 text-sm text-text-secondary flex-wrap">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 flex-wrap">
                         <Calendar size={14} />
                         <span>{formatDate(task.start_date)}</span>
                         {task.start_time && !task.all_day && (
                           <span>at {formatTime(task.start_time)}</span>
                         )}
                         {task.all_day && <span>(All day)</span>}
+                        {/* The screen had no notion of "late" at all, while 96%
+                            of outstanding rows were past their date. Same
+                            definition Mel uses in getOverdueTasks. */}
+                        {(() => {
+                          const due = dueLabel(task, today)
+                          if (!due) return null
+                          return (
+                            <span className={`font-semibold ${
+                              due === 'Today'
+                                ? 'text-amber-700 dark:text-amber-300'
+                                : 'text-red-700 dark:text-red-300'
+                            }`}>
+                              · {due}
+                            </span>
+                          )
+                        })()}
                       </div>
 
                       {task.end_date && task.end_date !== task.start_date && (

@@ -5,6 +5,7 @@ import { differenceInCalendarDays, formatLocalDate, parseLocalDate, toLocalDateS
 import { Calendar, Bell } from 'lucide-react'
 import Link from 'next/link'
 import Panel from '@/components/ui/Panel'
+import { priorityRank } from '@/lib/task-triage'
 
 interface UpcomingEvent {
   id: string
@@ -19,8 +20,6 @@ interface UpcomingEvent {
   apiary_id?: string
   apiary_name?: string
 }
-
-const PRIORITY_ORDER: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 }
 
 export default function UpcomingEvents({ userId }: { userId: string }) {
   const [events, setEvents] = useState<UpcomingEvent[]>([])
@@ -78,10 +77,9 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
       if (a.days_until !== b.days_until) {
         return a.days_until - b.days_until
       }
-      // If same day, prioritise by priority (urgent > high > normal > low)
-      const aPriority = a.priority ? PRIORITY_ORDER[a.priority] : 999
-      const bPriority = b.priority ? PRIORITY_ORDER[b.priority] : 999
-      return aPriority - bPriority
+      // If same day, prioritise by priority (urgent > high > normal > low).
+      // Shared with the Tasks screen so both orderings agree.
+      return priorityRank(a.priority) - priorityRank(b.priority)
     })
 
     setEvents(upcomingEvents)
