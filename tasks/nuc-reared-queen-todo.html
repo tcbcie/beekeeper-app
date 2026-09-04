@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Plan — Mark, Number &amp; Distribute a Queen Reared in a Mating Nuc</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  h3 { margin-top: 1.5rem; color: #3d4a41; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  pre { background: #1f2620; color: #e8f0ea; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: .88em; }
+  pre code { background: none; color: inherit; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
+  th, td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
+  th { background: #eef3ef; }
+  .bad { color: #a32020; font-weight: 600; }
+  .good { color: #2f7a4d; font-weight: 600; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  ul.todo li { margin: .35rem 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+</style>
+</head>
+<body>
+
+<h1>Mark, Number &amp; Distribute a Queen Reared in a Mating Nuc</h1>
+
+<p><strong>Status:</strong> awaiting your approval &nbsp;·&nbsp; <strong>Date:</strong> 29 August 2026</p>
+
+<blockquote>
+<p><strong>The problem, in your words:</strong> where a graft goes <em>directly</em> into a mating nuc,
+and a queen subsequently emerges and mates, there is no way to <strong>(a)</strong> mark that queen,
+<strong>(b)</strong> assign a number to her, or <strong>(c)</strong> distribute her.</p>
+</blockquote>
+
+<h2>1. Root cause</h2>
+
+<p>Confirmed against the live database and the code. There are <strong>two</strong> separate causes, not one.</p>
+
+<h3>Cause A — a mating nuc has nowhere to record the queen reared inside it</h3>
+
+<p><code>mating_nucs.queen_id</code> looks like it should hold the nuc's queen. It does not — it holds the
+<strong>mother/breeder</strong> queen. The nuc setup form labels it <em>"Grafted from"</em>
+(<span class="file">MatingNucsTab.tsx:1129-1143</span>), it is auto-filled from the selected cell's breeder
+(<span class="file">MatingNucsTab.tsx:1160-1161</span>), and the nuc card renders it as
+<em>"Breeder Queen: …"</em> (<span class="file">MatingNucsTab.tsx:1672</span>).</p>
+
+<p>Verified across all 142 rows in <code>mating_nucs</code>: <strong>not one</strong> <code>queen_id</code>
+points at a queen with <code>source_graft_id</code> set. Every one points at a breeder. On your nuc
+<strong>198</strong>, <code>queen_id</code> → <strong>UGX1.4</strong>, <code>queen_role = 'breeder'</code>,
+born 2025-05-25 — the mother, not the daughter that emerged on 27/07/2026.</p>
+
+<p class="bad">There is therefore no column anywhere in the schema for the daughter queen reared in a nuc.</p>
+
+<h3>Cause B — every queen action is gated on <code>graft_id</code>, which is NULL for a direct graft</h3>
+
+<p>Nuc 198 has <code>graft_id = NULL</code> and <code>batch_id = NULL</code> (no batch was chosen at setup, so
+the "Cell/Graft" picker never appeared). Every queen-level action is hidden behind that column:</p>
+
+<table>
+  <tr><th>Action</th><th>Gate</th><th>Location</th></tr>
+  <tr><td>Mark Queen</td><td><code>graftId &amp;&amp; …</code></td><td class="file">NucInspectionPanel.tsx:455</td></tr>
+  <tr><td>Weight Queen</td><td><code>graftId &amp;&amp; graftStatus &amp;&amp; …</code></td><td class="file">NucInspectionPanel.tsx:470</td></tr>
+  <tr><td>Distribute (Send icon)</td><td><code>nuc.graft_id &amp;&amp; …</code></td><td class="file">MatingNucsTab.tsx:1644</td></tr>
+  <tr><td>Distribute modal</td><td><code>distributeNuc.graft_id &amp;&amp; distributeNuc.batch_id</code></td><td class="file">MatingNucsTab.tsx:1793</td></tr>
+</table>
+
+<p>This exactly reproduces your screenshot: nuc 198 is status <code>mating</code> (labelled <em>"Mated"</em>,
+<span class="file">MatingNucsTab.tsx:126-128</span>), which <em>is</em> in
+<code>NUC_DISTRIBUTABLE_STATUSES = ['virgin','mating','laying']</code> — so the <strong>only</strong> reason
+the Distribute icon is missing is the null <code>graft_id</code>. Likewise the expanded panel offers only
+"Add Inspection", with no Mark Queen button.</p>
+
+<p>And even where marking <em>is</em> allowed, it writes the number to
+<code>batch_grafts.queen_number</code> (<span class="file">NucInspectionPanel.tsx:400-407</span>) — a table whose
+<code>batch_id</code> is <code>NOT NULL</code>. A batch-less nuc has no row there to write to.</p>
+
+<h2>2. What we can reuse (this keeps the change small)</h2>
+
+<p>The hard part is <strong>already built</strong>. The <em>"distribute a registry queen"</em> feature
+(<span class="file">docs/features/distribute-registry-queen.md</span>) added a second, graft-free source to
+<code>graft_distributions</code>:</p>
+
+<pre><code>-- already in production
+graft_id / batch_id  →  nullable
+source_queen_id      →  uuid REFERENCES queens(id)
+CHECK: exactly one source (graft pair XOR source_queen_id)</code></pre>
+
+<p>There are already 2 live rows using it (<code>distribution_type = 'mated_queen'</code>,
+<code>graft_id IS NULL</code>). <code>DistributeGraftModal</code> already accepts a <code>sourceQueenId</code> prop,
+and <code>create_queen_for_distribution</code> / <code>promote_distributed_queen_on_mating</code> already handle
+the queen-sourced branch — including the Queen Ledger, CRM order linking, mating confirmation, recipient
+queen minting and the failure report.</p>
+
+<p class="good">So requirement (c) needs no new distribution machinery at all — only a real
+<code>queens</code> record to point at, plus the two gates relaxed.</p>
+
+<h2>3. The plan — three small steps</h2>
+
+<h3>Step 1 — one new column</h3>
+
+<p>Applied via the Supabase MCP connection (no SQL file, per project convention — will be noted in memory
+alongside the other live-DB-only objects).</p>
+
+<pre><code>ALTER TABLE mating_nucs
+  ADD COLUMN reared_queen_id uuid REFERENCES queens(id) ON DELETE SET NULL;
+
+CREATE INDEX mating_nucs_reared_queen_id_idx
+  ON mating_nucs (reared_queen_id) WHERE reared_queen_id IS NOT NULL;</code></pre>
+
+<p><code>queen_id</code> keeps its current meaning (the breeder). Nothing existing changes meaning, so no
+data migration and no risk to the batch-driven flow.</p>
+
+<h3>Step 2 — mint the queen <em>on demand</em>; marking is optional</h3>
+
+<blockquote>
+<p><strong>Revised after review.</strong> The first draft made marking the step that minted the queen. That is
+wrong: marking must stay optional — you may have an unmarked virgin you want to distribute, and requiring a
+marking first would block a legitimate sale. <strong>Minting and marking are now separate.</strong></p>
+</blockquote>
+
+<p>One new RPC, <strong>idempotent</strong> and <strong>atomic</strong>, called by <em>both</em> actions.
+All its marking parameters are optional, so it can mint a bare, unmarked, unnumbered queen:</p>
+
+<pre><code>ensure_nuc_reared_queen(
+  p_nuc_id         uuid,
+  p_queen_number   text DEFAULT NULL,
+  p_marking_colour text DEFAULT NULL,
+  p_marked_date    date DEFAULT NULL
+) RETURNS uuid</code></pre>
+
+<ul>
+  <li><strong>Mark Queen</strong> → calls it <em>with</em> number/colour/date.</li>
+  <li><strong>Distribute</strong> → calls it <em>with no optional args</em>, then opens the modal with the
+      returned queen id. An unmarked queen distributes perfectly well.</li>
+  <li>Either action can come first, or marking can be skipped entirely.</li>
+  <li>Guarded on nuc status ∈ <code>virgin | mating | laying</code> — before there is a virgin there is no
+      queen to mint. Raises otherwise.</li>
+</ul>
+
+<ul>
+  <li>If <code>reared_queen_id</code> is already set → <strong>UPDATE</strong> that queen's number/colour.</li>
+  <li>Otherwise <strong>INSERT</strong> a queen and link it:
+    <ul>
+      <li><code>mother_id</code> = the nuc's <code>queen_id</code> (the breeder) — this is what gives the new queen her lineage</li>
+      <li><code>birth_date</code> = <code>queen_emerged_at</code> (falls back to <code>setup_date</code>)</li>
+      <li><code>mated_date</code> = <code>mating_confirmed_at</code></li>
+      <li><code>status</code> = <code>active</code> if mated, else <code>virgin</code>; <code>queen_role = 'production'</code></li>
+      <li><code>subspecies</code> / <code>lineage</code> inherited from the mother</li>
+      <li><code>source = 'Own Breeding'</code>, matching the existing <code>ensure_reared_queen_record</code> RPC</li>
+      <li><code>marking_color</code> from the emergence year — note <code>queens</code> has <strong>no</strong>
+          <code>marked</code> boolean, only a colour; marked-ness stays on <code>mating_nucs.queen_marked_at</code></li>
+    </ul>
+  </li>
+  <li><strong>Duplicate number guard:</strong> raise a clear
+      <em>"A queen numbered X already exists in your register"</em> — exactly what
+      <code>ensure_reared_queen_record</code> does. There is no DB uniqueness on
+      <code>queens(user_id, queen_number)</code>; it is an app convention, and silently minting a second
+      queen "53" would be worse than an error.</li>
+  <li>Then stamps <code>mating_nucs.queen_marked_at</code>.</li>
+  <li><code>SECURITY DEFINER</code>, <code>search_path = public</code>, <code>GRANT EXECUTE TO authenticated</code>
+      — per the two standing gotchas in project memory.</li>
+</ul>
+
+<p>UI: in <span class="file">NucInspectionPanel.tsx</span>, show the existing <strong>Mark Queen</strong> button
+when there is a graft <em>or</em> the nuc has reached <code>virgin</code>/<code>mating</code>/<code>laying</code>.
+The existing inline form (auto colour + Queen # input) is reused as-is; only the save handler branches:
+graft present → today's behaviour, unchanged; no graft → call the new RPC.
+(<code>handleMarkQueen</code> already tolerates a null graft at <span class="file">:401-409</span>, so this is a
+smaller change than it looks — the button is simply never rendered today.)</p>
+
+<blockquote>
+<p><strong>Must fix at the same time — the marking colour.</strong> <code>markColour</code> is derived from
+<code>getQueenColorFromYear(emergenceDate)</code> (<span class="file">NucInspectionPanel.tsx:322</span>), and
+<code>emergenceDate</code> is passed as <code>nuc.rearing_batches?.emergence_date</code>
+(<span class="file">MatingNucsTab.tsx:1718</span>) — the <em>batch's</em> date. Nuc 198 has no batch, so the
+form would show <strong>"Unknown"</strong> and the queen would be created with no marking colour.
+Fix: fall back to the nuc's own <code>queen_emerged_at</code> (then <code>setup_date</code>). One-line prop change.</p>
+</blockquote>
+
+<h3>Step 3 — Distribute</h3>
+
+<p>Two gates relaxed in <span class="file">MatingNucsTab.tsx</span>:</p>
+
+<ul>
+  <li>Line 1644 — show the Send icon whenever the status is distributable
+      (<code>virgin | mating | laying</code>) and the nuc is not retired. The <code>nuc.graft_id</code>
+      requirement is dropped: <strong>no marking and no graft needed.</strong></li>
+  <li>Line 1793 — when there is no graft, call <code>ensure_nuc_reared_queen(nuc.id)</code> first, then render
+      the same <code>DistributeGraftModal</code> with <code>sourceQueenId</code> instead of
+      <code>graftId</code>/<code>batchId</code>.</li>
+</ul>
+
+<p>Everything downstream — recipient selection, CRM order linking, the Queen Ledger, mating confirmation —
+works already through the registry-queen path.</p>
+
+<h2>4. Resulting flow for nuc 198</h2>
+
+<p>Both routes work, and neither depends on the other.</p>
+
+<ol>
+  <li><strong>Marking route.</strong> Expand nuc 198 → <strong>Mark Queen</strong> now appears (status is
+      "Mated") → enter <code>#53</code>, the number you had to type into an inspection note as free text →
+      a real queen record is created: mother <strong>UGX1.4</strong>, born 27/07/2026, mated 27/08/2026, blue.</li>
+  <li><strong>Distribution route.</strong> The Send icon now appears too — <em>whether or not she was ever
+      marked</em>. Distributing an unmarked virgin mints her silently and hands her to the existing
+      registry-queen flow.</li>
+</ol>
+
+<h3 class="good">Decided — an unmarked queen is numbered <code>Nuc 198</code></h3>
+
+<p><code>queens.queen_number</code> is <code>NOT NULL</code>, so a queen minted by the distribute route with no
+marking still needs one. She is minted as <code>Nuc &lt;nuc_number&gt;</code> and that value is overwritten the
+moment you mark and number her properly. This mirrors the graft flow's existing
+<code>graft.queen_number || 'Cell #' + cell_number</code> fallback
+(<span class="file">useGraftDistributions.ts:321</span>). No extra clicks at distribution time.</p>
+
+<h2>5. Decisions I have made (tell me if you disagree)</h2>
+
+<ul>
+  <li class="good"><strong>CONFIRMED — marking is optional and never a prerequisite.</strong> The queen is
+      minted on demand by whichever action happens first. An unmarked virgin can be distributed; a queen can be
+      marked and never distributed; a queen can be neither.</li>
+  <li class="good"><strong>CONFIRMED — marking allowed from <code>virgin</code> onward.</strong> Before there is
+      a virgin there is nothing to mark, so that is also the floor for minting.</li>
+  <li class="good"><strong>CONFIRMED — <code>queen_role = 'production'</code></strong>, so she appears in the
+      Queen Register as a normal queen. Promoting her to a breeder node stays a separate, existing action.</li>
+  <li><strong><code>queen_id</code> is not renamed.</strong> It means "breeder" in ~15 places; renaming buys
+      nothing and risks plenty.</li>
+</ul>
+
+<h2>6. Todo</h2>
+
+<ul class="todo">
+  <li>[ ] 1. Add <code>mating_nucs.reared_queen_id</code> + index (MCP migration)</li>
+  <li>[ ] 2. Create <code>ensure_nuc_reared_queen</code> RPC — idempotent, all marking args optional, status-guarded, SECURITY DEFINER, granted to <code>authenticated</code></li>
+  <li>[ ] 3. Run <code>get_advisors</code> after the DDL and revoke anything it flags</li>
+  <li>[ ] 4. <span class="file">NucInspectionPanel.tsx</span> — ungate Mark Queen (graft <em>or</em> virgin+); branch the save handler to the RPC</li>
+  <li>[ ] 5. <span class="file">MatingNucsTab.tsx</span> — select <code>reared_queen_id</code>; drop <code>graft_id</code> from the Send-icon gate (line 1644)</li>
+  <li>[ ] 6. <span class="file">MatingNucsTab.tsx</span> — mint-then-open for the queen-sourced modal branch (line 1793)</li>
+  <li>[ ] 7. <span class="file">NucInspectionPanel.tsx</span> — fall back to the nuc's <code>queen_emerged_at</code> for the marking colour when there is no batch</li>
+  <li>[ ] 8. Show the reared queen's number on the nuc card — <code>cellOrMarking</code> (<span class="file">MatingNucsTab.tsx:1583-1587</span>) currently reads only <code>batch_grafts.queen_number</code></li>
+  <li>[ ] 9. Docs — note the repo has <strong>two</strong> trees: <span class="file">docs/feature/</span> (singular, plans)
+      and <span class="file">docs/features/</span> (plural, implemented state). Put the plan in the singular tree per
+      CLAUDE.md; update <span class="file">docs/features/mark-queen-from-nuc.md</span> and
+      <span class="file">docs/features/mating-nucs.md</span> once built.</li>
+  <li>[ ] 10. Run the <code>qa-engineer</code> audit</li>
+  <li>[ ] 11. Save a memory note for the new live-DB-only RPC</li>
+  <li>[ ] 12. Hand to you to test the build</li>
+</ul>
+
+<h2>8. Out of scope — found along the way, not part of this change</h2>
+
+<p>The exploration turned up several pre-existing defects. I am <strong>not</strong> touching them here; listing
+them so they are not lost.</p>
+
+<ul>
+  <li><code>graft_introduced</code> is a valid status in the DB CHECK and in <code>NUC_STATUSES</code>
+      (<span class="file">MatingNucsTab.tsx:107</span>) but <strong>no code ever writes it</strong> — 0 rows live.
+      It is arguably the correct status for "graft placed straight into the nuc"; worth a separate decision.
+      Same for <code>merged</code>.</li>
+  <li><code>cell_introduced_at</code> is displayed and exported but never written by any code path.</li>
+  <li>Retire is not hidden for <code>sold</code> nucs (<span class="file">MatingNucsTab.tsx:1662</span>),
+      contradicting <span class="file">docs/features/lock-sold-nuc-cards.md:12</span>.</li>
+  <li><span class="file">src/lib/ai/tools/nucs.ts:213</span> filters on status <code>'pending'</code>, which is not
+      a valid value and matches nothing; <span class="file">:18-31</span> does not filter
+      <code>is_inventory</code>, so the assistant mixes empty boxes with live nucs.</li>
+  <li>"Breeder Queen" is resolved differently on the card (<code>mating_nucs.queen_id</code>) than in
+      <span class="file">NucReportsTab.tsx:156</span> (<code>batch_grafts.breeder_queen_id</code>) — the two
+      surfaces can disagree.</li>
+  <li>Stale docs: <span class="file">mating-nucs.md:26</span> omits <code>graft_introduced</code>, and both it
+      and <span class="file">nuc-inspection-status-sync.md:13</span> claim dead/missing leaves the graft
+      unchanged, but <span class="file">NucInspectionPanel.tsx:212</span> sets it to <code>failed</code>.</li>
+  <li><strong>You cannot distribute a queen to yourself unless the batch belongs to a rearing group you are in.</strong>
+      <code>search_users_for_distribution</code> excludes <code>auth.uid()</code>, so the "App User" tab can never
+      return you; only the "Group Member" tab can. This does not block the plan — after step 2 the queen is already
+      in your register, so you no longer <em>need</em> a self-distribution to keep her — but it is worth knowing.</li>
+</ul>
+
+<h2>9. Why the queen must exist independently of both marking and distribution</h2>
+
+<p>Worth stating explicitly, because it inverts how the app works today.</p>
+
+<p>There are exactly <strong>three</strong> code paths that can create a <code>queens</code> row: the manual
+Add Queen form, <code>create_queen_for_distribution</code> (fires only when a distribution is saved
+<em>and</em> a recipient app user is set), and <code>ensure_reared_queen_record</code> (whose only UI lists
+grafts that <strong>already have a distribution row</strong>).</p>
+
+<p class="bad">So today the app can only say "distribute in order to create the record" — never "create the
+record, then decide what to do with her."</p>
+
+<p>That is the deeper reason your nuc 198 queen does not exist anywhere: she was never distributed, so nothing
+ever minted her.</p>
+
+<p>The fix is <strong>not</strong> to move that trigger onto marking — that would just swap one mandatory
+gate for another, and marking is genuinely optional. Instead the queen becomes real as soon as she
+<em>is</em> real: once a virgin has emerged in the nuc, any action that needs a queen record mints one.
+Marking, numbering and distribution then all become independent, optional things you can do to her, in any
+order or not at all — which is how it works at the hive.</p>
+
+<h2>7. Review</h2>
+
+<p class="good"><strong>Done.</strong> Two DB objects, three files touched.
+<code>npx tsc --noEmit</code> → <strong>0 errors in <code>src/</code></strong>;
+<code>npx eslint</code> on all three changed files → <strong>clean</strong>.
+The full build has <em>not</em> been run — that is yours to test.</p>
+
+<h3>What changed</h3>
+
+<table>
+  <tr><th>Where</th><th>Change</th></tr>
+  <tr><td><strong>DB</strong></td><td><code>mating_nucs.reared_queen_id</code> + partial index</td></tr>
+  <tr><td><strong>DB</strong></td><td><code>ensure_nuc_reared_queen(nuc, number?, colour?, date?)</code> — idempotent, status-guarded, duplicate-guarded, <code>SECURITY DEFINER</code>, granted to <code>authenticated</code> only</td></tr>
+  <tr><td><span class="file">MatingNucsTab.tsx</span></td><td>Send-icon gate no longer needs a graft; <code>openDistribute</code> mints then opens; queen-sourced modal branch; donor queen retired to <code>distributed</code> on save; card number/colour fallbacks</td></tr>
+  <tr><td><span class="file">NucInspectionPanel.tsx</span></td><td><code>nucStatus</code> prop; Mark Queen ungated for graft-less nucs; branched save handler; real error messages surfaced</td></tr>
+  <tr><td><span class="file">ai/tools/nucs.ts</span></td><td>Three disambiguated <code>queens</code> embeds</td></tr>
+</table>
+
+<h3>Verified against the live database (all inside rolled-back transactions)</h3>
+
+<table>
+  <tr><th>Check</th><th>Result</th></tr>
+  <tr><td>Mint from nuc 198</td><td class="good"><code>Nuc 198</code> · active · production · born 27/07/2026 · mated 27/08/2026 · <strong>White</strong> · mother <strong>UGX1.4</strong> · TBKA Kilcornan</td></tr>
+  <tr><td>Idempotency (distribute, then mark <code>#53</code>)</td><td class="good">ONE queen, renumbered <code>Nuc 198</code> → <code>53</code>, marked date stamped</td></tr>
+  <tr><td>Status guard on a <code>setup</code> nuc</td><td class="good">Raised — "This nuc has no queen yet…"</td></tr>
+  <tr><td>Duplicate number <code>UGX1.4</code></td><td class="good">Raised — "A queen numbered UGX1.4 already exists…"</td></tr>
+  <tr><td>Leakage after tests</td><td class="good">0 stray queens, 0 linked nucs, nuc 198 untouched</td></tr>
+</table>
+
+<h3>Two defects caught and fixed during the audit</h3>
+
+<ol>
+  <li class="bad"><strong>The PostgREST embed break.</strong> Adding a second FK to <code>queens</code> made
+      every bare <code>queens(queen_number)</code> embed from <code>mating_nucs</code> ambiguous — five call
+      sites that would have failed at runtime, three of them in the AI tools. All now name their
+      constraint explicitly.</li>
+  <li class="bad"><strong>The duplicate-number message would never have shown.</strong> Supabase rejects with
+      a <code>PostgrestError</code> plain object, not an <code>Error</code> instance, so my
+      <code>error instanceof Error</code> check was always false and the RPC's message degraded to a generic
+      "Failed to mark queen". Now read defensively.</li>
+</ol>
+
+<h3>Scope note</h3>
+
+<p>This unlocks <strong>20 existing graft-less nucs</strong> currently in a distributable state, not just
+198. <code>graft_id</code> without <code>batch_id</code> does not occur in the data (0 rows), so there is
+no inconsistent path between the two branches.</p>
+
+<p><span class="file">src/app/dashboard/crm/orders/[id]/page.tsx</span> and
+<span class="file">docs/features/distribution-order-linking.md</span> were already modified in the working
+tree before this task and were <strong>not</strong> touched.</p>
+
+<h3>Over to you</h3>
+
+<p>Please test in the browser: expand nuc 198 → <strong>Mark Queen</strong> should now appear; and the
+<strong>Send</strong> icon should appear on the collapsed row whether or not she is marked.</p>
+
+</body>
+</html>

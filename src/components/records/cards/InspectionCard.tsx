@@ -19,7 +19,7 @@ interface InspectionCardProps {
   apiaries: Apiary[]
   onEdit: (inspection: Inspection) => void
   onDelete: (id: string) => void
-  onImageClick: (url: string) => void
+  onImageClick: (urls: string[], startIndex: number) => void
 }
 
 function renderStars(rating: number): string {
@@ -56,7 +56,12 @@ export default function InspectionCard({
 }: InspectionCardProps) {
   const hive = hives.find(h => h.id === inspection.hive_id)
   const apiary = apiaries.find(a => a.id === hive?.apiary_id)
-  const normalisedImageUrl = normaliseStoragePublicUrl(inspection.image_url)
+  // The card shows the first photo and a count; the viewer gets the whole set.
+  const photoUrls = (inspection.image_urls ?? [])
+    .map((url) => normaliseStoragePublicUrl(url))
+    .filter((url): url is string => Boolean(url))
+  const normalisedImageUrl = photoUrls[0] ?? null
+  const extraPhotoCount = Math.max(0, photoUrls.length - 1)
   const [thumbnailLoadFailed, setThumbnailLoadFailed] = useState(false)
   const [qrModalOpen, setQrModalOpen] = useState(false)
 
@@ -104,8 +109,10 @@ export default function InspectionCard({
           {userHasActiveSubscription && normalisedImageUrl && !thumbnailLoadFailed && (
             <button
               type="button"
-              onClick={() => onImageClick(normalisedImageUrl)}
-              aria-label="View larger inspection photo"
+              onClick={() => onImageClick(photoUrls, 0)}
+              aria-label={photoUrls.length > 1
+                ? `View ${photoUrls.length} inspection photos`
+                : 'View larger inspection photo'}
               title="View larger"
               className="relative w-12 h-12 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity rounded-lg overflow-hidden border border-border"
             >
@@ -120,6 +127,14 @@ export default function InspectionCard({
               <span className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded bg-black/70 p-0.5 text-white pointer-events-none">
                 <ZoomIn size={12} aria-hidden="true" />
               </span>
+              {extraPhotoCount > 0 && (
+                <span
+                  className="absolute top-0 right-0 px-1 rounded-bl bg-black/75 text-white text-sm font-semibold leading-tight pointer-events-none"
+                  aria-hidden="true"
+                >
+                  +{extraPhotoCount}
+                </span>
+              )}
             </button>
           )}
           {userHasActiveSubscription && normalisedImageUrl && thumbnailLoadFailed && (

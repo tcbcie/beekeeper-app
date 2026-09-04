@@ -201,10 +201,21 @@ export function useRecordsData(): UseRecordsDataReturn {
       }
     }
 
-    const normalisedInspections = inspectionsData.map((inspection) => ({
-      ...inspection,
-      image_url: normaliseStoragePublicUrl(inspection.image_url)
-    }))
+    // Legacy rows carry an old Supabase project hostname, so every stored URL has
+    // to be normalised before it reaches next/image - each element of the array,
+    // not just the first. image_url is the database's generated mirror of
+    // image_urls[1], so it is normalised from the already-normalised array rather
+    // than separately, keeping the two in step.
+    const normalisedInspections = inspectionsData.map((inspection) => {
+      const imageUrls = ((inspection.image_urls ?? []) as string[])
+        .map((url) => normaliseStoragePublicUrl(url))
+        .filter((url): url is string => Boolean(url))
+      return {
+        ...inspection,
+        image_urls: imageUrls,
+        image_url: imageUrls[0] ?? null
+      }
+    })
     setInspections(normalisedInspections as Inspection[])
   }, [updateSharedHiveIds])
 

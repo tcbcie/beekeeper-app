@@ -13,19 +13,18 @@ import { getDefaultInspectionFormData } from '@/types/records'
 
 const mocks = vi.hoisted(() => ({
   confirmSpy: vi.fn(async () => true),
-  imageState: { imageFile: null as File | null, imagePreview: null as string | null },
+  imageState: { staged: [] as { id: string; file: File; preview: string }[] },
   imageFns: {
-    handleImageChange: vi.fn(),
-    handleRemoveImage: vi.fn(),
-    setPreviewFromUrl: vi.fn(),
+    addFiles: vi.fn(),
+    removeFile: vi.fn(),
     reset: vi.fn(),
   },
   voiceFns: { startRecording: vi.fn(), stopRecording: vi.fn(), reset: vi.fn() },
 }))
 
 vi.mock('@/components/ui/ConfirmDialog', () => ({ useConfirm: () => mocks.confirmSpy }))
-vi.mock('@/hooks/useImageUpload', () => ({
-  useImageUpload: () => ({ ...mocks.imageState, ...mocks.imageFns }),
+vi.mock('@/hooks/useStagedPhotos', () => ({
+  useStagedPhotos: () => ({ ...mocks.imageState, ...mocks.imageFns }),
 }))
 vi.mock('@/hooks/useVoiceRecorder', () => ({
   useVoiceRecorder: () => ({ isRecording: false, isSupported: false, error: null, ...mocks.voiceFns }),
@@ -237,9 +236,9 @@ describe('the submitted payload is unchanged', () => {
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
 
-    const [formData, imageFile, followUpTasks] = onSubmit.mock.calls[0] as unknown as [
+    const [formData, imageFiles, followUpTasks] = onSubmit.mock.calls[0] as unknown as [
       Record<string, unknown>,
-      File | null,
+      File[],
       unknown[],
     ]
 
@@ -249,7 +248,8 @@ describe('the submitted payload is unchanged', () => {
     )
     expect(formData.hive_id).toBe('hive-1')
     expect(formData.weight).toBe(18.5)
-    expect(imageFile).toBeNull()
+    // Photographs are now a list; nothing staged means an empty one, not null.
+    expect(imageFiles).toEqual([])
     expect(followUpTasks).toEqual([])
   })
 })
