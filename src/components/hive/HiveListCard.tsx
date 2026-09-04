@@ -104,9 +104,13 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  Overview & Records
  </Button>
 
- <div className="flex justify-between items-start mb-3">
- <div className="flex flex-col gap-1">
- <h3 className="text-xl font-bold text-foreground whitespace-nowrap">
+ <div className="flex justify-between items-start gap-2 mb-3">
+ {/* min-w-0 + break-words: a compound hive number ("77-HMN+|70-HMN+") is one
+     unbreakable token, and a flex item's default min-width:auto would size this
+     column to it, shoving the status cluster off the right edge of the card —
+     worst on a phone. Letting it shrink and wrap keeps the pills inside the card. */}
+ <div className="flex flex-col gap-1 min-w-0">
+ <h3 className="text-xl font-bold text-foreground break-words">
  {hive.hive_number}
  </h3>
  {(hive.beep_device_id || hive.wolf_scale_id || hive.qr_tag_code) && (
@@ -184,7 +188,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
      with the card edge — a long hive number pushes these onto two or three
      rows, and without it the shorter rows align to the left of a box sized by
      the widest pill, which reads as staggered. */}
- <div className="flex flex-wrap items-center justify-end gap-2">
+ <div className="flex flex-wrap items-center justify-end gap-2 max-w-full">
  <span className={`px-2 py-1 rounded text-sm font-medium whitespace-nowrap ${
  hive.status === 'active' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-800' :
  hive.status === 'archived' ? 'bg-surface dark:bg-surface-elevated text-text-primary border border-border' :
