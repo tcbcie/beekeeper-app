@@ -29,7 +29,7 @@
 <h1>Tasks &amp; Events — Mobile Triage</h1>
 
 <p>
-  <span class="status">Status: T1–T8 implemented. Type-check clean, lint clean, suite shows no regression. <strong>Awaiting your browser test.</strong></span><br>
+  <span class="status">Status: T1–T9 implemented (T9 added 04/09/2026 after the owner reported cards still filling the screen). Type-check clean, lint clean, suite shows no regression. <strong>Awaiting your browser test.</strong></span><br>
   <strong>Date:</strong> 04/09/2026 &nbsp;·&nbsp;
   <strong>Feature plan:</strong> <code>docs/features/tasks-mobile-triage-plan.md</code> &nbsp;·&nbsp;
   <strong>File touched:</strong> <code>src/app/dashboard/tasks/page.tsx</code>
@@ -215,6 +215,81 @@ section 4 of the feature plan.</p>
   <li>☑ <strong>T8 — Verification.</strong> Type-check, lint, test suite, then update this
       record and the feature plan with a review section. <em>You test the build.</em></li>
 </ul>
+
+<h2>4b. T9 — the compact card (added after first browser test)</h2>
+
+<blockquote><strong>Owner feedback, 04/09/2026:</strong> "on a mobile screen, every single task is
+taking up way too much space, almost filling the entire screen."</blockquote>
+
+<p>Correct, and RC5 was the finding this plan deliberately deferred &mdash; the same call Phase 4 made
+about the Hives compact view. It is now the binding constraint, so it has been done.</p>
+
+<h3>Why a card was ~380px</h3>
+<p>The width was the hidden cause. On a 390px phone the content column was:</p>
+<pre><code>390 − 32 page padding − 4 accent border − 32 card padding
+    − 44 checkbox − 12 gap − 88 Edit/Delete column  ≈ 174px</code></pre>
+<p>The two permanently visible icon buttons took <strong>a quarter of the screen width</strong> for
+actions used rarely. Everything then wrapped against the remaining 174px: title over three lines,
+badges over two rows, description over four, the date line over three, association chips over two.</p>
+
+<h3>What the collapsed card carries now</h3>
+<div class="mock">┌──────────────────────────────────────┐
+│ [○] Treat hive 12 for varroa      [⌄]│
+│     06/08/2026 · Overdue — 21 days   │
+│     · Hive 12 · Home Apiary  URGENT  │
+└──────────────────────────────────────┘</div>
+<p>Title clamped to two lines, then <em>one</em> wrapped line of context: date, lateness, hive,
+apiary, and a priority badge only when it is high or urgent. Content column is now ~210px and the
+card is roughly <strong>74–98px</strong> instead of ~380px &mdash; about <strong>seven cards a
+screen instead of one and a half</strong>.</p>
+
+<p>Description, equipment, times, end date, the remaining badges, the batch chip and both actions
+move into a panel opened by the chevron. One card open at a time, following
+<code>expandedNucId</code> in <code>MatingNucsTab</code>. The chevron is a real
+<code>IconButton</code> with <code>aria-expanded</code> and <code>aria-controls</code>, not a click
+handler on the card &mdash; a bare <code>&lt;div&gt;</code> target would have no keyboard path, which
+is the defect Phase 4 recorded on the Records cards.</p>
+
+<p>Edit and Delete are now <strong>labelled buttons</strong> rather than a bare pencil and bin. On a
+long list those icons are a guess, and this audience should not have to guess before deleting
+something. Demoting Delete into the panel also follows Phase 4&rsquo;s destructive-action hierarchy.</p>
+
+<p>Association lookups moved to <code>Map</code>s built once
+(<code>hiveById</code>/<code>apiaryById</code>/<code>batchById</code>). They were three
+<code>.find()</code> calls per card inside the render loop &mdash; O(tasks &times; hives) on every
+keystroke of the new search box. <code>checklistGroups</code> now shares them instead of rebuilding
+two of its own.</p>
+
+<h3>Third QA pass — five findings on the new card</h3>
+
+<p><strong class="bad">&#128992; A long title became unreachable on a phone.</strong>
+<code>line-clamp-2</code> plus a <code>title</code> attribute works on a desktop hover and nowhere
+else &mdash; and expanding the card did not un-clamp it, so the tail of a long title could not be
+read on the very device the card was compacted for. <span class="good">Fixed:</span> clamped while
+collapsed, whole while open.</p>
+
+<p><strong>&#128993; The expanded card repeated the date on nine rows out of ten.</strong> The time
+block fired on <code>all_day</code>, and a live count showed <strong>144 of 160</strong> outstanding
+rows are all-day single-day tasks &mdash; so most expanded cards would have printed
+"04/09/2026 (All day)" directly beneath "04/09/2026 &middot; Overdue &mdash; 12 days".
+<span class="good">Fixed:</span> the block renders only when there is a start time or a differing end
+date, which is 9 rows rather than 144.</p>
+
+<p><strong>&#128993; An empty badge row.</strong> A task with no category, type, reminder, team flag
+or batch rendered an empty flex container still contributing its <code>space-y-3</code> margin &mdash;
+8 outstanding rows today. <span class="good">Fixed</span> with a <code>hasDetailBadges</code> guard.</p>
+
+<p><strong>&#128993; <code>aria-expanded</code> with no <code>aria-controls</code>.</strong> The panel
+had no id to point at. <span class="good">Fixed</span> using the same convention as
+<code>FilterDisclosure</code>: the attribute is set only while the panel exists to be referenced.</p>
+
+<p><strong>&#128993; A deep-linked task arrived collapsed</strong>, showing less than the dashboard
+widget that was tapped to reach it. <span class="good">Fixed:</span> a <code>?task=</code> link now
+opens that card as well as ringing it.</p>
+
+<p><strong>&#9898; Noted, not changed:</strong> a task attached to an archived hive renders
+"Hive Unknown", because <code>fetchAssociations</code> loads only non-archived hives. Pre-existing,
+and a live count returns zero such rows today, so it is recorded rather than fixed.</p>
 
 <h2>5. Decision taken</h2>
 <p><strong>Option (b) — hide batch milestones by default, with a pill to bring them back.</strong>

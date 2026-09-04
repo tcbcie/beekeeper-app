@@ -384,3 +384,59 @@ A second independent audit was run over the finished code. Two findings mattered
 Re-verified after both passes: zero `tsc` errors under `src/`, the same three
 pre-existing `exhaustive-deps` warnings and no others, and the suite unchanged at
 137 failures across 18 files with 668 passing.
+
+## 12. T9 — the compact card (added 04/09/2026 after the first browser test)
+
+The owner reported that on a phone "every single task is taking up way too much
+space, almost filling the entire screen". That is RC5, which this plan
+deliberately deferred — the same call Phase 4 made about the Hives compact view.
+With the filters gone it became the binding constraint, so it has been done.
+
+**The width was the hidden cause.** On a 390px phone the content column was
+`390 − 32 page − 4 accent − 32 card − 44 checkbox − 12 gap − 88 Edit/Delete` ≈
+**174px**. The two permanently visible icon buttons took a quarter of the screen
+for actions used rarely, and everything else wrapped against what was left:
+title over three lines, badges over two rows, description over four, the date
+line over three, association chips over two.
+
+**Collapsed** now carries a two-line-clamped title and one wrapped line of
+context — date, lateness, hive, apiary, and a priority badge only when high or
+urgent. Content column ~210px, card ~74–98px instead of ~380px: roughly seven
+cards a screen instead of one and a half.
+
+**Expanded** — opened by a chevron, one card at a time, following
+`expandedNucId` in `MatingNucsTab` — carries the description, equipment, times,
+end date, remaining badges, batch chip and both actions. The chevron is a real
+`IconButton` with `aria-expanded` and `aria-controls`, not a click handler on
+the card: a bare `<div>` target has no keyboard path, which is the defect Phase
+4 recorded on the Records cards.
+
+Edit and Delete became **labelled buttons** rather than a bare pencil and bin,
+and Delete is now inside the panel — Phase 4's destructive-action hierarchy.
+
+Association lookups moved to `Map`s built once (`hiveById`/`apiaryById`/
+`batchById`); they were three `.find()` calls per card inside the render loop,
+O(tasks × hives) on every keystroke of the new search box. `checklistGroups`
+shares them rather than rebuilding two of its own.
+
+### Third audit pass — five findings on the new card
+
+* **A long title became unreachable on a phone.** `line-clamp-2` plus a `title`
+  attribute works on desktop hover and nowhere else, and expanding did not
+  un-clamp it. Clamped while collapsed, whole while open.
+* **The expanded card repeated the date on nine rows out of ten.** The time
+  block fired on `all_day`, and **144 of 160** outstanding rows are all-day
+  single-day tasks, so most cards would have printed the date directly beneath
+  itself. Now it renders only for a start time or a differing end date — 9 rows
+  rather than 144.
+* **An empty badge row** with live margin for a task carrying no category, type,
+  reminder, team flag or batch (8 rows today). Guarded by `hasDetailBadges`.
+* **`aria-expanded` with no `aria-controls`** — the panel had no id. Fixed using
+  the `FilterDisclosure` convention: set only while the panel exists.
+* **A deep-linked task arrived collapsed**, showing less than the dashboard
+  widget tapped to reach it. A `?task=` link now opens the card as well as
+  ringing it.
+
+Noted and not changed: a task on an archived hive renders "Hive Unknown",
+because `fetchAssociations` loads only non-archived hives. Pre-existing, and a
+live count returns zero such rows today.

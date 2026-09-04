@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { getTeamAccess } from '@/lib/team-access'
-import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, ClipboardList, Printer, Search } from 'lucide-react'
+import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, ClipboardList, Printer, Search, ChevronDown } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ModalShell from '@/components/ui/ModalShell'
@@ -141,6 +141,10 @@ export default function TasksEventsPage() {
   const [loadingOverview, setLoadingOverview] = useState(false)
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null)
+  // One card open at a time, as MatingNucsTab does with expandedNucId. The
+  // collapsed card carries only what decides whether to act on a task; the
+  // description, equipment, associations and the two actions live in here.
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
   const appliedTaskDeepLinkRef = useRef<string | null>(null)
   const appliedApiaryFilterRef = useRef<string | null>(null)
   const scrolledTaskRef = useRef<string | null>(null)
@@ -356,6 +360,10 @@ export default function TasksEventsPage() {
     // following a dashboard link cannot quietly undo a saved preference.
     setSearchTerm('')
     setHighlightedTaskId(taskId)
+    // Opened, because arriving from a dashboard link is a request for this one
+    // task. Landing on a collapsed two-line card would show less than the
+    // widget that was tapped to get here.
+    setExpandedTaskId(taskId)
     appliedTaskDeepLinkRef.current = taskId
     scrolledTaskRef.current = null
   }, [searchParams, tasks])
@@ -520,6 +528,12 @@ export default function TasksEventsPage() {
     }
   }
 
+  // Association lookups. Previously three `.find()` calls per card inside the
+  // render loop, so a full list against a large apiary was O(tasks × hives).
+  const hiveById = useMemo(() => new Map(hives.map(h => [h.id, h])), [hives])
+  const apiaryById = useMemo(() => new Map(apiaries.map(a => [a.id, a])), [apiaries])
+  const batchById = useMemo(() => new Map(batches.map(b => [b.id, b])), [batches])
+
   // Today and the end of the seven-day window, as comparable ISO date strings.
   // Not memoised: they are strings, so the memos below still compare by value
   // and a page left open past midnight picks up the new day on its next render.
@@ -660,8 +674,6 @@ export default function TasksEventsPage() {
     type HiveGroup = { hiveId: string | null; hiveNumber: string; tasks: TaskEvent[] }
     type ApiaryGroup = { apiaryId: string | null; apiaryName: string; hives: HiveGroup[] }
 
-    const apiaryById = new Map(apiaries.map(a => [a.id, a]))
-    const hiveById = new Map(hives.map(h => [h.id, h]))
     const apiaryMap = new Map<string, ApiaryGroup>()
 
     for (const task of checklistTasks) {
@@ -701,7 +713,7 @@ export default function TasksEventsPage() {
       }
     }
     return sortedApiaries
-  }, [checklistTasks, apiaries, hives])
+  }, [checklistTasks, apiaryById, hiveById])
 
   const openChecklist = useCallback(() => {
     setChecklistApiaryId(filterApiary !== 'all' ? filterApiary : 'all')
@@ -1034,159 +1046,188 @@ export default function TasksEventsPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {filteredTasks.map(task => (
-            <div
-              key={task.id}
-              id={`task-card-${task.id}`}
-              className={`scroll-mt-24 rounded-lg transition-shadow ${
-                task.id === highlightedTaskId ? 'ring-2 ring-blue-500/60 ring-offset-2 ring-offset-background shadow-lg' : ''
-              }`}
-            >
-              <Card
-                padding="sm"
-                className={`border-l-4 ${getTaskCardAccentClass(task)}`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  {/* Completion checkbox */}
-                  <IconButton
-                    onClick={() => toggleComplete(task)}
-                    className="mt-1 flex-shrink-0"
-                    disabled={togglingIds.has(task.id)}
-                    aria-label={task.completed ? 'Mark as incomplete' : 'Mark as complete'}
-                  >
-                    {task.completed ? (
-                      <CheckCircle2 size={20} className="text-green-600" />
-                    ) : (
-                      <Circle size={20} className="text-text-tertiary hover:text-text-tertiary" />
-                    )}
-                  </IconButton>
+          {filteredTasks.map(task => {
+            const isExpanded = expandedTaskId === task.id
+            const due = dueLabel(task, today)
+            const hiveNumber = task.hive_id ? hiveById.get(task.hive_id)?.hive_number ?? 'Unknown' : null
+            const apiaryName = task.apiary_id ? apiaryById.get(task.apiary_id)?.name ?? 'Unknown' : null
+            const batchName = task.batch_id ? batchById.get(task.batch_id)?.batch_name ?? 'Unknown' : null
+            // Only when there is something the collapsed line did not already
+            // say. 144 of 160 outstanding rows are all-day single-day tasks,
+            // so including all_day here would have repeated the date verbatim
+            // under itself on nine cards out of ten.
+            const hasTimes = Boolean(
+              (task.start_time && !task.all_day) ||
+              (task.end_date && task.end_date !== task.start_date)
+            )
+            const hasDetailBadges = Boolean(
+              task.event_type !== 'task' || task.category || task.reminder_enabled ||
+              task.is_team_task || task.user_id !== userId || batchName
+            )
 
-                  {/* Task content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start gap-2 mb-2 flex-wrap">
-                      <h3 className={`font-semibold text-foreground ${task.completed ? 'line-through' : ''}`}>
+            return (
+              <div
+                key={task.id}
+                id={`task-card-${task.id}`}
+                className={`scroll-mt-24 rounded-lg transition-shadow ${
+                  task.id === highlightedTaskId ? 'ring-2 ring-blue-500/60 ring-offset-2 ring-offset-background shadow-lg' : ''
+                }`}
+              >
+                <Card
+                  padding="sm"
+                  className={`border-l-4 ${getTaskCardAccentClass(task)}`}
+                >
+                  {/* The collapsed row carries only what decides whether to act
+                      on this task now. Everything else was costing roughly
+                      380px a card on a phone, so barely one task fitted on a
+                      screen and the two icon buttons on the right took a
+                      quarter of the width away from the title. */}
+                  <div className="flex items-start gap-2">
+                    <IconButton
+                      onClick={() => toggleComplete(task)}
+                      className="flex-shrink-0"
+                      disabled={togglingIds.has(task.id)}
+                      aria-label={task.completed ? `Mark ${task.title} as incomplete` : `Mark ${task.title} as complete`}
+                    >
+                      {task.completed ? (
+                        <CheckCircle2 size={20} className="text-green-600" />
+                      ) : (
+                        <Circle size={20} className="text-text-tertiary" />
+                      )}
+                    </IconButton>
+
+                    <div className="flex-1 min-w-0">
+                      {/* Clamped while collapsed, whole while open. A hover
+                          title is no use on a phone, so without this the tail
+                          of a long title would be unreachable on the very
+                          device this card was compacted for. */}
+                      <h3
+                        className={`font-semibold text-foreground ${isExpanded ? '' : 'line-clamp-2'} ${task.completed ? 'line-through' : ''}`}
+                        title={task.title}
+                      >
                         {task.title}
                       </h3>
-                      {/* Only badges that say something. Priority was on every
-                          card including 'normal', and 58% of outstanding rows
-                          are high or urgent, so it had stopped carrying any
-                          signal. The Visit Checklist already applied this rule. */}
-                      {(task.priority === 'high' || task.priority === 'urgent') && (
-                        <Badge tone={getPriorityBadgeTone(task.priority)} className="uppercase">
-                          {task.priority}
-                        </Badge>
-                      )}
-                      {task.event_type !== 'task' && (
-                        <Badge tone="neutral">{getTypeLabel(task.event_type)}</Badge>
-                      )}
-                      {task.category && (
-                        <Badge tone="green">
-                          {getCategoryLabel(task.category)}
-                        </Badge>
-                      )}
-                      {task.is_team_task && (
-                        <Badge tone="purple">
-                          Team Task
-                        </Badge>
-                      )}
-                      {task.user_id !== userId && (
-                        <Badge tone="blue">
-                          Created by {task.creator_name || task.creator_email || 'team member'}
-                        </Badge>
-                      )}
+
+                      {/* One wrapped line of context, replacing the separate
+                          date, association and badge blocks. */}
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text-secondary">
+                        <span className="whitespace-nowrap">{formatDate(task.start_date)}</span>
+                        {due && (
+                          <span className={`font-semibold whitespace-nowrap ${
+                            due === 'Today'
+                              ? 'text-amber-700 dark:text-amber-300'
+                              : 'text-red-700 dark:text-red-300'
+                          }`}>
+                            · {due}
+                          </span>
+                        )}
+                        {hiveNumber && <span className="whitespace-nowrap">· Hive {hiveNumber}</span>}
+                        {apiaryName && <span className="truncate max-w-full">· {apiaryName}</span>}
+                        {(task.priority === 'high' || task.priority === 'urgent') && (
+                          <Badge tone={getPriorityBadgeTone(task.priority)} className="uppercase">
+                            {task.priority}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
 
-                    {task.description && (
-                      <p className="text-sm text-text-tertiary mb-2">{task.description}</p>
-                    )}
+                    {/* A real button rather than a click handler on the card
+                        itself, so the detail is reachable from a keyboard and
+                        announces whether it is open. */}
+                    <IconButton
+                      onClick={() => setExpandedTaskId(isExpanded ? null : task.id)}
+                      className="flex-shrink-0"
+                      aria-expanded={isExpanded}
+                      aria-controls={isExpanded ? `task-detail-${task.id}` : undefined}
+                      aria-label={isExpanded ? `Hide details for ${task.title}` : `Show details for ${task.title}`}
+                    >
+                      <ChevronDown
+                        size={20}
+                        className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                      />
+                    </IconButton>
+                  </div>
 
-                    {task.equipment_needed && (
-                      <div className="fj-text-warning text-sm mb-2 flex items-start gap-1">
-                        <span className="font-medium">Equipment:</span>
-                        <span>{task.equipment_needed}</span>
-                      </div>
-                    )}
+                  {isExpanded && (
+                    <div id={`task-detail-${task.id}`} className="mt-3 pt-3 border-t border-border space-y-3">
+                      {task.description && (
+                        <p className="text-sm text-text-secondary">{task.description}</p>
+                      )}
 
-                    <div className="flex items-center gap-4 text-sm text-text-secondary flex-wrap">
-                      <div className="flex items-center gap-1 flex-wrap">
-                        <Calendar size={14} />
-                        <span>{formatDate(task.start_date)}</span>
-                        {task.start_time && !task.all_day && (
-                          <span>at {formatTime(task.start_time)}</span>
-                        )}
-                        {task.all_day && <span>(All day)</span>}
-                        {/* The screen had no notion of "late" at all, while 96%
-                            of outstanding rows were past their date. Same
-                            definition Mel uses in getOverdueTasks. */}
-                        {(() => {
-                          const due = dueLabel(task, today)
-                          if (!due) return null
-                          return (
-                            <span className={`font-semibold ${
-                              due === 'Today'
-                                ? 'text-amber-700 dark:text-amber-300'
-                                : 'text-red-700 dark:text-red-300'
-                            }`}>
-                              · {due}
-                            </span>
-                          )
-                        })()}
-                      </div>
+                      {task.equipment_needed && (
+                        <div className="fj-text-warning text-sm flex flex-wrap items-start gap-1">
+                          <span className="font-medium">Equipment:</span>
+                          <span>{task.equipment_needed}</span>
+                        </div>
+                      )}
 
-                      {task.end_date && task.end_date !== task.start_date && (
-                        <div className="flex items-center gap-1">
-                          <span>to {formatDate(task.end_date)}</span>
-                          {task.end_time && !task.all_day && (
-                            <span>at {formatTime(task.end_time)}</span>
+                      {hasTimes && (
+                        <div className="flex items-center gap-1 flex-wrap text-sm text-text-secondary">
+                          <Calendar size={14} />
+                          <span>{formatDate(task.start_date)}</span>
+                          {task.start_time && !task.all_day && <span>at {formatTime(task.start_time)}</span>}
+                          {task.all_day && <span>(All day)</span>}
+                          {task.end_date && task.end_date !== task.start_date && (
+                            <>
+                              <span>to {formatDate(task.end_date)}</span>
+                              {task.end_time && !task.all_day && <span>at {formatTime(task.end_time)}</span>}
+                            </>
                           )}
                         </div>
                       )}
-                    </div>
 
-                    {/* Associations */}
-                    {(task.hive_id || task.apiary_id || task.batch_id) && (
-                      <div className="flex items-center gap-2 mt-2 text-xs text-text-secondary flex-wrap">
-                        {task.hive_id && (
-                          <Chip size="xs" tone="neutral">
-                            Hive: {hives.find(h => h.id === task.hive_id)?.hive_number || 'Unknown'}
-                          </Chip>
+                      {hasDetailBadges && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {task.event_type !== 'task' && (
+                          <Badge tone="neutral">{getTypeLabel(task.event_type)}</Badge>
                         )}
-                        {task.apiary_id && (
-                          <Chip size="xs" tone="neutral">
-                            Apiary: {apiaries.find(a => a.id === task.apiary_id)?.name || 'Unknown'}
-                          </Chip>
+                        {task.category && (
+                          <Badge tone="green">{getCategoryLabel(task.category)}</Badge>
                         )}
-                        {task.batch_id && (
-                          <Chip size="xs" tone="neutral">
-                            Batch: {batches.find(b => b.id === task.batch_id)?.batch_name || 'Unknown'}
-                          </Chip>
+                        {task.reminder_enabled && (
+                          <Badge tone="amber">📧 Email Reminder</Badge>
                         )}
+                        {task.is_team_task && (
+                          <Badge tone="purple">Team Task</Badge>
+                        )}
+                        {task.user_id !== userId && (
+                          <Badge tone="blue">
+                            Created by {task.creator_name || task.creator_email || 'team member'}
+                          </Badge>
+                        )}
+                        {batchName && <Chip size="xs" tone="neutral">Batch: {batchName}</Chip>}
                       </div>
-                    )}
-                  </div>
-                </div>
+                      )}
 
-                {/* Actions */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <IconButton
-                    onClick={() => handleEdit(task)}
-                    title="Edit"
-                  >
-                    <Edit2 size={16} />
-                  </IconButton>
-                  <IconButton
-                    onClick={() => handleDelete(task.id)}
-                    tone="danger"
-                    title="Delete"
-                  >
-                    <Trash2 size={16} />
-                  </IconButton>
-                </div>
-                </div>
-              </Card>
-            </div>
-          ))}
+                      {/* Labelled rather than icon-only: on a long list a bare
+                          pencil and bin are a guess, and this audience should
+                          not have to guess before deleting something. */}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          onClick={() => handleEdit(task)}
+                          tone="neutral"
+                          size="sm"
+                          className="flex-1 sm:flex-none"
+                        >
+                          <Edit2 size={16} />
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => handleDelete(task.id)}
+                          tone="danger"
+                          size="sm"
+                          className="flex-1 sm:flex-none"
+                        >
+                          <Trash2 size={16} />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              </div>
+            )
+          })}
         </div>
       )}
 
