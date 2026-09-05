@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { getTeamAccess } from '@/lib/team-access'
 import { isValidEircode, formatEircode } from '@/lib/eircode'
+import { deleteUploadedImages } from '@/lib/upload-image'
 import { Plus, X, MapPin, Loader2, Map, UserPlus, Camera, MapPinOff } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -415,6 +416,12 @@ export default function ApiariesPage() {
     e.preventDefault()
     if (!userId) return
 
+    // Photos uploaded during this attempt. If the save then fails they belong to
+    // no row and nothing else will ever collect them, so they are removed. Once
+    // the row is saved it owns them and the cleanup must stop.
+    const uploadedUrls: string[] = []
+    let recordSaved = false
+
     // Only validate Irish Eircodes; UK/NI postcodes use a different format. A *missing* postcode
     // is not rejected here — it is folded into the single address check below, so the user is
     // never asked two consecutive questions about the same incomplete address.
@@ -493,15 +500,20 @@ export default function ApiariesPage() {
         }
       }
 
-      // Upload image if a new file was selected
+      // Upload image if a new file was selected.
+      //
+      // A failed upload aborts the save. It used to fall through and keep the old
+      // URL, so the apiary saved successfully with the previous photo still on it
+      // and the beekeeper had no way to tell their new one had not been stored.
       let imageUrl: string | null = editingApiary?.image_url || null
       if (imageFile) {
         const uploadedUrl = await uploadImage(imageFile)
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl
-        }
+        if (!uploadedUrl) return  // uploadImage has already reported why
+        imageUrl = uploadedUrl
+        uploadedUrls.push(uploadedUrl)
       } else if (!imagePreview) {
-        // Image was removed
+        // Image was removed. The old object is queued for deletion by the
+        // storage_cleanup_queue trigger, so nothing to do here.
         imageUrl = null
       }
 
@@ -530,6 +542,7 @@ export default function ApiariesPage() {
           .eq('user_id', userId)
 
         if (error) throw error
+        recordSaved = true
         apiaryId = editingApiary.id
       } else {
         // Generate ID client-side to avoid INSERT...RETURNING which triggers
@@ -540,6 +553,7 @@ export default function ApiariesPage() {
           .insert([{ id: newId, ...dataToSave, user_id: userId }])
 
         if (error) throw error
+        recordSaved = true
         apiaryId = newId
       }
 
@@ -574,6 +588,9 @@ export default function ApiariesPage() {
       fetchApiaries()
       resetForm()
     } catch (error) {
+      // Only when the row never landed - past that point the saved apiary
+      // references this photo and deleting it would break a real record.
+      if (!recordSaved) await deleteUploadedImages(uploadedUrls)
       const errorMessage = error instanceof Error ? error.message : 'An error occurred'
       toast.error(errorMessage)
     }

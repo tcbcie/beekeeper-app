@@ -2,6 +2,7 @@
 
 **Date:** 04/09/2026
 **Status:** Implemented - awaiting `CRON_SECRET` in Vercel and browser verification by the owner
+**Updated:** 05/09/2026 - failed-save orphans now covered in every upload flow (section 5)
 **Follows:** `inspection-multi-photo-plan.md`, which flagged this leak and deliberately left it out of scope
 
 **Outcome.** Photographs that are replaced, removed, or whose record is deleted are now removed from Supabase Storage. Capture happens inside the database, so it also covers deletions no client code ever sees. An audit found **24 already-orphaned objects totalling 94 MB** - about 17% of the 541 MB held in the two buckets.
@@ -114,6 +115,30 @@ The 24 already-orphaned objects were **queued, not deleted directly**, so they p
 
 ---
 
-## 5. Not covered
+## 5. Failed-save orphans (added 05/09/2026)
 
-Uploads that **never reached a row** are invisible to a database trigger. The inspection form cleans those up itself (`records/page.tsx`), but the apiary, varroa-check, wild-colony and wild-colony-inspection upload flows have no equivalent, so a failed save after a successful upload still orphans there. That is a separate fix across four flows; the nightly sweep will not catch it because nothing ever queues those URLs.
+Uploads that **never reach a row** are invisible to a database trigger, so the sweeper can never catch them - nothing queues those URLs. Every remaining upload flow now cleans up after itself, matching what the inspection form already did:
+
+| Flow | File |
+|---|---|
+| Apiary photo | `app/dashboard/apiaries/page.tsx` |
+| Varroa check | `app/dashboard/records/page.tsx` (`handleCheckSubmit`) |
+| Wild colony (two photos) | `components/research/WildColoniesTab.tsx` |
+| Wild colony inspection | `components/wild-colonies/WildColonyInspectionForm.tsx` |
+| Public colony submission (two photos) | `app/dashboard/submit-colony/page.tsx` |
+| Diagnosis image | `components/tools/DiagnosisUploader.tsx` |
+
+Each tracks what it uploaded during the attempt and removes it if the save then fails, guarded by a `recordSaved` flag so a failure *after* the row lands never strips the photo off a record that exists. Where a flow uploads two photos, a failure on the second removes the first.
+
+**A second defect found while doing this.** Four of these flows treated a failed upload as success:
+
+```ts
+const uploadedUrl = await uploadImage(imageFile)
+if (uploadedUrl) { imageUrl = uploadedUrl }   // falls through on failure
+```
+
+The record then saved with the *previous* photo still attached (or none), and the beekeeper had no way to tell their new photo had not been stored. A failed upload now aborts the save. All five call sites already pass an `onError` that raises a toast, so the abort is explained rather than silent.
+
+`WildColonyInspectionPanel` was also adjusted: its post-save tidy-up is wrapped so it cannot throw, because the form treats a thrown error as "not saved" and would otherwise delete the photograph of a record that had in fact been written. Its refetch is now awaited so a failure there is logged rather than becoming an unhandled rejection.
+
+The repeated pattern across six call sites is a deliberate trade-off: each flow's control flow differs enough (two uploads, a form/panel split, differing early-return points) that a shared abstraction would have touched more code than the duplication costs.

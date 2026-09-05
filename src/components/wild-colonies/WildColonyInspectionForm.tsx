@@ -11,6 +11,7 @@ import {
   WEATHER_CONDITIONS
 } from '@/types/wild-colonies'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import { deleteUploadedImages } from '@/lib/upload-image'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
 
@@ -185,22 +186,31 @@ export default function WildColonyInspectionForm({
     e.preventDefault()
     setSubmitting(true)
 
+    // A photo uploaded during an attempt that does not end in a saved row belongs
+    // to nothing and nothing else will ever collect it. onSubmit only throws when
+    // the row failed to save, so the catch below is an accurate "not saved".
+    const uploadedUrls: string[] = []
+
     try {
       let imageUrl: string | null = initialImageUrl || null
 
       if (imageFile) {
         const uploadedUrl = await uploadImage(imageFile)
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl
-        }
+        // A failed upload aborts the save. It used to fall through and keep the
+        // previous URL, so the inspection saved with the old photo still on it.
+        if (!uploadedUrl) return
+        imageUrl = uploadedUrl
+        uploadedUrls.push(uploadedUrl)
       } else if (!imagePreview && initialImageUrl) {
-        // Image was removed
+        // Image was removed. The old object is queued for deletion by the
+        // storage_cleanup_queue trigger.
         imageUrl = null
       }
 
       await onSubmit(formData, imageUrl)
       resetImage()
     } catch (error) {
+      await deleteUploadedImages(uploadedUrls)
       console.error('Error submitting inspection:', error)
       toast.error('Failed to save inspection')
     } finally {
