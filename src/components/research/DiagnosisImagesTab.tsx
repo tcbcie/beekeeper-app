@@ -114,12 +114,10 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  setDeleting(image.id)
 
  try {
- const urlParts = image.image_url.split('/inspection-images/')
- if (urlParts[1]) {
- const filePath = urlParts[1]
- await supabase.storage.from('inspection-images').remove([filePath])
- }
-
+ // Delete the row only. A trigger queues the storage object for the nightly
+ // sweeper. This used to remove the file first and the row second, so a failing
+ // row delete left a row pointing at a deleted object - a permanently broken
+ // image, which is worse than an orphaned file.
  const { error: deleteError } = await supabase
  .from('diagnosis_images')
  .delete()

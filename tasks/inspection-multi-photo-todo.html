@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Plan &mdash; Multiple Photos per Inspection</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  h3 { margin-top: 1.5rem; color: #3d4a41; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  pre { background: #1f2620; color: #e8f0ea; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: .88em; }
+  pre code { background: none; color: inherit; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
+  th, td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
+  th { background: #eef3ef; }
+  .bad { color: #a32020; font-weight: 600; }
+  .good { color: #2f7a4d; font-weight: 600; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  ul.todo li { margin: .35rem 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+  .ascii { background: #f6f9f7; border: 1px solid #d8e3da; border-radius: 6px; padding: 1rem; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85em; white-space: pre; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>Multiple Photos per Inspection</h1>
+
+<p><strong>Status:</strong> implemented, awaiting your browser test &nbsp;&middot;&nbsp; <strong>Date:</strong> 4 September 2026 &nbsp;&middot;&nbsp; <strong>Doc:</strong> to become <span class="file">docs/features/inspection-multi-photo-plan.md</span></p>
+
+<blockquote>
+<p><strong>The problem, in your words:</strong> &ldquo;I cannot attach more than one image. Even though it gives me the placeholder to attach a second one. However, if I do so, the first one is gone.&rdquo;</p>
+</blockquote>
+
+<h2>1. Root cause &mdash; three layers, all real</h2>
+
+<h3>Cause A &mdash; the state holds exactly one file</h3>
+<p><span class="file">src/hooks/useImageUpload.ts:38-39</span> holds <code>imageFile: File | null</code> and one <code>imagePreview</code>. <code>handleImageChange</code> (<span class="file">:55-70</span>) reads only <code>e.target.files?.[0]</code> and calls <code>setImageFile(file)</code>, which <em>replaces</em>. The <code>&lt;input type="file"&gt;</code> at <span class="file">InspectionForm.tsx:2157-2162</span> has no <code>multiple</code> attribute, so even multi-selecting in the OS picker yields only file&nbsp;<code>[0]</code>.</p>
+
+<h3>Cause B &mdash; the schema holds exactly one URL</h3>
+<p><code>inspections.image_url</code> is a scalar <code>text</code>. There is nowhere to put a second photo. Verified live: <strong>1,757 inspections, 74 with a photo.</strong></p>
+
+<h3>Cause C &mdash; the phantom second slot (this is the bit that misled you)</h3>
+<p>In <span class="file">InspectionForm.tsx:2117-2164</span> the thumbnail and the dashed drop zone are <em>siblings</em> in a flex row. Only the thumbnail is conditional; <strong>the drop zone renders unconditionally</strong>. So once a photo is attached you get thumbnail&nbsp;+&nbsp;a full &ldquo;Click to upload or drag and drop&rdquo; box beside it, which reads exactly like an empty second slot. It is the same single-file handler. Dropping a second photo silently overwrites the first.</p>
+
+<div class="ascii">TODAY                                    AFTER
++--------+ +--------------------+        +--------+ +--------+ +--------+
+| photo  | |  Click to upload   |        | photo  | | photo  | | photo  |
+|  [x]   | |  or drag and drop  |  -->   |  [x]   | |  [x]   | |  [x]   |
++--------+ +--------------------+        +--------+ +--------+ +--------+
+            ^ looks like slot 2                     +----------------------+
+              actually overwrites slot 1            |  + Add more photos   |
+                                                    |  3 of 6 attached     |
+                                                    +----------------------+</div>
+
+<h2>2. What we can reuse (this keeps the change small)</h2>
+<ul>
+  <li>The <code>inspection-images</code> bucket already exists &mdash; public, 50&nbsp;MB limit &mdash; and its storage RLS already grants authenticated insert/update/delete plus public read. <strong>No bucket or storage-policy work at all.</strong></li>
+  <li><code>normaliseStoragePublicUrl</code> (<span class="file">src/lib/storage-url.ts</span>) already exists and is mandated for every stored URL.</li>
+  <li><code>ImageZoomModal</code> already does zoom, pan and 44px controls; it only needs prev/next added <em>additively</em>.</li>
+  <li>The validated upload (magic bytes, MIME allow-list, 10&nbsp;MB, MIME correction) already exists in <span class="file">useImageUpload.ts:88-160</span> &mdash; it is simply <em>not the code that runs</em> for inspections today (see D2).</li>
+</ul>
+
+<h2>3. Design</h2>
+
+<h3>D1 &mdash; Data model: an array column, with the old column kept as a derived mirror</h3>
+
+<pre><code>ALTER TABLE public.inspections
+  ADD COLUMN image_urls text[] NOT NULL DEFAULT '{}';
+
+UPDATE public.inspections
+  SET image_urls = ARRAY[image_url]
+  WHERE image_url IS NOT NULL AND image_url &lt;&gt; '';
+
+ALTER TABLE public.inspections DROP COLUMN image_url;
+ALTER TABLE public.inspections
+  ADD COLUMN image_url text GENERATED ALWAYS AS (image_urls[1]) STORED;</code></pre>
+
+<p><strong>Why an array and not an <code>inspection_images</code> child table</strong> (the <code>diagnosis_images</code> precedent):</p>
+<table>
+  <tr><th></th><th class="good">text[] column</th><th class="bad">child table</th></tr>
+  <tr><td>New RLS policies</td><td>none &mdash; inherits <code>inspections</code> RLS wholesale</td><td>4, and SELECT must re-derive <code>can_access_hive()</code> through the parent</td></tr>
+  <tr><td>The ~20 <code>select('*')</code> read sites</td><td>get the photos free</td><td>every one needs an explicit join added</td></tr>
+  <tr><td>User data backup <span class="file">database-export.ts:187</span></td><td>exported free by <code>select('*')</code></td><td>silently omitted unless registered</td></tr>
+  <tr><td>Photo order</td><td>array order, no extra column</td><td>needs a <code>sort_order</code> column &mdash; <strong>no precedent anywhere in this schema</strong></td></tr>
+  <tr><td>Per-photo captions later</td><td>would need a migration</td><td>free</td></tr>
+</table>
+<p>We are not asking for per-photo captions, so the array wins on every axis that matters. <code>diagnosis_images</code> is a child table because those rows carry <code>description</code>, <code>diagnosis_type</code> and a whole comments table &mdash; it is a standalone research gallery, not photos belonging to a parent record.</p>
+
+<p><strong>Why keep <code>image_url</code> as a generated mirror</strong> rather than delete it: the audit found <strong>20+ places that read it</strong>. As <code>GENERATED ALWAYS AS (image_urls[1]) STORED</code> every one of them keeps working untouched and always shows the first photo &mdash; and there is still exactly <em>one</em> source of truth, so the two can never drift. Better still, any write site I miss <strong>fails loudly at the database</strong> instead of silently diverging.</p>
+<p><span class="good">Verified against the live database on a throwaway probe table, then dropped:</span> <code>image_urls = {a.jpg, b.jpg}</code> &rarr; <code>image_url = 'a.jpg'</code>; empty array &rarr; <code>NULL</code>; and <code>UPDATE ... SET image_url = ...</code> is rejected with <code>42P10 / column "image_url" can only be updated to DEFAULT</code>.</p>
+
+<h3>D2 &mdash; Route uploads through the validated path, and delete the duplicate</h3>
+<p><span class="file">src/app/dashboard/records/page.tsx:711-755</span> is a <strong>second, weaker copy</strong> of the upload logic &mdash; no magic-byte check, no MIME allow-list, no 10&nbsp;MB limit. It is the copy that actually runs for inspections. Extract the good implementation to <span class="file">src/lib/upload-image.ts</span>, have <code>useImageUpload</code> call it (behaviour identical, <strong>its 9 existing callers untouched</strong>), and delete the duplicate. Uploading N photos needs a loop over one trustworthy function, so this is on the critical path rather than opportunistic tidying &mdash; and it closes a real validation hole.</p>
+
+<h3>D3 &mdash; Step 4 UI: a thumbnail strip, and no phantom slot</h3>
+<p>Cap <strong>6 photos</strong>. Thumbnails stay 80&times;80 with the existing zoom badge and red remove button. The drop zone moves <em>below</em> the strip, is relabelled <strong>&ldquo;Add more photos &mdash; 3 of 6 attached&rdquo;</strong> once at least one is attached, gains <code>multiple</code>, and <strong>disappears at the cap</strong>. Selecting more than the remaining allowance keeps the first N and warns. The subscription gate (<code>userHasActiveSubscription</code>) is retained exactly as-is.</p>
+
+<h3>D4 &mdash; Reading surfaces</h3>
+<ul>
+  <li><span class="file">InspectionCard.tsx:103-124</span> &mdash; first thumbnail, with a <code>+N</code> badge when there are more; tapping opens the gallery at index 0.</li>
+  <li><span class="file">ImageZoomModal.tsx</span> &mdash; add <em>optional</em> <code>images?: string[]</code> and <code>startIndex?: number</code> with prev/next at 44px. The existing <code>imageUrl</code> prop stays and keeps working, so <strong>apiaries, varroa checks and diagnosis images are not touched</strong>.</li>
+  <li><span class="file">records/page.tsx:331</span> &mdash; the <code>Inspection</code>&nbsp;&rarr;&nbsp;<code>InspectionFormData</code> mapping is an <strong>explicit field whitelist</strong>. <code>image_urls</code> must be added or photos vanish on every edit. <span class="bad">Highest-risk line in the change.</span></li>
+  <li>Review step <span class="file">InspectionForm.tsx:410</span> &mdash; <code>'Photograph': 'Attached'</code> becomes <code>'Photographs': '3 attached'</code>, and the hand-synced twin string at <span class="file">InspectionStepper.tsx:60</span> is updated to match.</li>
+  <li>Dirty-state <span class="file">InspectionForm.tsx:461</span> &mdash; <code>imageFile !== null</code> becomes &ldquo;any new file staged, or any existing photo removed&rdquo;.</li>
+</ul>
+
+<h2>4. Decisions I have made (tell me if you disagree)</h2>
+<table>
+  <tr><th>Decision</th><th>Reasoning</th></tr>
+  <tr><td><strong>Cap of 6 photos</strong></td><td>At 10&nbsp;MB each that is already a 60&nbsp;MB inspection. Six thumbnails wrap to two rows on a phone and stay tappable.</td></tr>
+  <tr><td><strong>No drag-to-reorder in v1</strong></td><td>Order is the order added; remove and re-add to change it. Reordering on a phone, in gloves, is a feature of its own.</td></tr>
+  <tr><td><strong>Storage cleanup stays out of scope</strong></td><td>Nothing in this app has <em>ever</em> deleted an inspection photo from storage &mdash; replacing, removing, or deleting the whole inspection all orphan the file today. This change multiplies an existing leak rather than creating one. It deserves its own plan across inspections, varroa checks and apiaries; I will write it up as a follow-up rather than smuggle it in here. <strong>Say the word if you want it included.</strong></td></tr>
+  <tr><td><strong>Subscription gate retained</strong></td><td>Photos are already paid-tier; this is not the change to revisit that.</td></tr>
+  <tr><td><strong>Old <code>image_url</code> column not dropped</strong></td><td>Becomes a generated mirror &mdash; see D1.</td></tr>
+</table>
+
+<h2>5. Risks</h2>
+<ul>
+  <li><strong>The generated column rejects writes.</strong> That is the point, but a missed write site throws at runtime. The audit found exactly one (<span class="file">page.tsx:836</span>, via a <code>{...submitData}</code> spread) &mdash; the spread needs an explicit carve-out. I will grep for every <code>image_url</code> write before running the migration.</li>
+  <li><strong>Two tests mock <code>useImageUpload</code></strong> &mdash; <span class="file">tests/components/records/inspection-stepped-flow.test.tsx:27-28</span> and <span class="file">inspection-dirty-state.test.tsx:41-42</span> (the latter asserts &ldquo;treats a photograph-only edit as dirty&rdquo;). Both need updating.</li>
+  <li><strong>Backfill is one-way</strong> once <code>image_url</code> is dropped and recreated. Only 74 rows carry a photo; I will snapshot those 74 URLs to a table before the DDL so it is trivially reversible.</li>
+  <li><strong>Offline is unaffected</strong> &mdash; confirmed there is no write queue, no background sync and no draft persistence for inspections (a <code>File</code> is not serialisable, which is why).</li>
+</ul>
+
+<h2>6. Todo</h2>
+<ul class="todo">
+  <li>&#9745; 1. Snapshot the 74 existing photo URLs, then run the D1 migration via MCP (add <code>image_urls</code>, backfill, swap <code>image_url</code> to generated)</li>
+  <li>&#9745; 2. <span class="file">src/lib/upload-image.ts</span> &mdash; extract the validated upload; point <code>useImageUpload</code> at it (no behaviour change)</li>
+  <li>&#9745; 3. <span class="file">records/page.tsx</span> &mdash; delete the duplicate uploader (<span class="file">:711-755</span>), upload N files, write <code>image_urls</code>, carve <code>image_url</code> out of the spread</li>
+  <li>&#9745; 4. <span class="file">records/page.tsx:331</span> &mdash; add <code>image_urls</code> to the edit whitelist</li>
+  <li>&#9745; 5. <span class="file">src/types/records.ts</span> &mdash; <code>image_urls: string[]</code> on <code>Inspection</code>, <code>InspectionFormData</code> and the defaults</li>
+  <li>&#9745; 6. <span class="file">InspectionForm.tsx</span> &mdash; multi-photo state, thumbnail strip, <code>multiple</code> input, cap, dirty-state, review summary</li>
+  <li>&#9745; 7. <span class="file">InspectionStepper.tsx:60</span> &mdash; update the step-4 contents string to the plural</li>
+  <li>&#9745; 8. <span class="file">ImageZoomModal.tsx</span> &mdash; additive <code>images</code>/<code>startIndex</code> + prev/next</li>
+  <li>&#9745; 9. <span class="file">InspectionCard.tsx</span> &mdash; first thumbnail + <code>+N</code> badge, open gallery</li>
+  <li>&#9745; 10. <span class="file">useRecordsData.ts:204-207</span> &mdash; normalise every URL in the array</li>
+  <li>&#9745; 11. Update the two tests that mock the upload hook</li>
+  <li>&#9745; 12. <span class="file">docs/features/inspection-multi-photo-plan.md</span> &mdash; write the feature doc</li>
+  <li>&#9745; 13. Run the <code>qa-engineer</code> audit</li>
+  <li>&#9745; 14. Write the Review section below</li>
+  <li>&#9744; 15. Hand to you to test the build</li>
+</ul>
+
+<h2>7. Database connections (MCP server)</h2>
+<p>All schema work goes through the Supabase MCP server against the live project &mdash; no SQL files parsed or written. Already verified through it: the column inventory, the 1,757/74 row counts, <code>inspections</code> RLS (SELECT is <code>can_access_hive()</code>, writes are owner-only), both storage buckets and their policies, and the generated-column behaviour on a probe table that has been dropped. Post-DDL I will run <code>get_advisors</code>, per the house rule.</p>
+
+<h2>8. Review</h2>
+
+<h3>What changed</h3>
+<p>An inspection now carries up to six photographs. Two new files, eight changed, two migrations.</p>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><span class="file">src/lib/upload-image.ts</span> <em>(new)</em></td><td>The single validated upload path, plus <code>validateImageFile</code> and <code>deleteUploadedImages</code>.</td></tr>
+  <tr><td><span class="file">src/hooks/useStagedPhotos.ts</span> <em>(new)</em></td><td>Holds photos picked but not yet uploaded; owns revoking their object URLs.</td></tr>
+  <tr><td><span class="file">useImageUpload.ts</span></td><td>Now delegates to the shared helper. Its nine other callers behave identically.</td></tr>
+  <tr><td><span class="file">InspectionForm.tsx</span></td><td>Thumbnail strip, <code>multiple</code> input, cap, pick-time validation, dirty-state, review count.</td></tr>
+  <tr><td><span class="file">InspectionCard.tsx</span></td><td>First photo with a <code>+N</code> badge; opens the whole set.</td></tr>
+  <tr><td><span class="file">ImageZoomModal.tsx</span></td><td>Optional <code>images</code>/<code>startIndex</code>, prev/next at 44px, arrow keys, "N of M" chip.</td></tr>
+  <tr><td><span class="file">records/page.tsx</span></td><td>Uploads N files, writes <code>image_urls</code>, deletes the duplicate uploader, one gallery modal state.</td></tr>
+  <tr><td><span class="file">useRecordsData.ts</span>, <span class="file">types/records.ts</span>, <span class="file">InspectionStepper.tsx</span></td><td>Array normalisation, types, plural step description.</td></tr>
+</table>
+
+<h3>Verified against the live database</h3>
+<ul>
+  <li>Migration <code>inspections_multi_photo_image_urls</code>: 1,757 inspections, 74 with photos, 74 mirrors populated, <span class="good">zero backfill mismatches</span> against the snapshot.</li>
+  <li>A rolled-back probe confirmed a three-photo write, clearing to empty, and that a legacy <code>image_url</code> write is <span class="good">rejected</span>.</li>
+</ul>
+
+<h3 class="bad">One security defect I introduced, caught by get_advisors and fixed</h3>
+<p>I first created the pre-migration snapshot as <code>public._inspection_image_url_backup_20260904</code>. A table in <code>public</code> is exposed through PostgREST and it had no RLS &mdash; <strong>every account's photo URLs would have been readable by any authenticated caller.</strong> Migration <code>move_inspection_image_backup_out_of_public</code> moved it to a new <code>backups</code> schema with <code>USAGE</code> revoked from <code>anon</code> and <code>authenticated</code>. Confirmed after: 74 rows intact, nothing left in <code>public</code>, neither role able to see the schema. It is safe to drop once you are happy in production.</p>
+
+<h3>Two defects caught in the QA audit and fixed</h3>
+<ol>
+  <li><strong class="bad">Partial uploads were orphaned, and retries duplicated them.</strong> If photo three of four failed, the first two were already in the bucket, the save aborted, and nothing would ever have referenced or removed them &mdash; then pressing Save again uploaded them a second time. Impossible with one photo; routine with six. The batch now removes anything it uploaded before bailing.</li>
+  <li><strong class="bad">Files were only validated at save.</strong> A too-large or non-image file was accepted into the strip and only rejected at the end, after the form was filled in. Validation now runs when the photo is <em>picked</em>, naming the offending file inline.</li>
+</ol>
+
+<h3 class="bad">Second QA pass &mdash; four more defects, all mine, all fixed</h3>
+<ol>
+  <li><strong>Critical: side effects inside React state updaters.</strong> <code>useStagedPhotos</code> created and revoked object URLs inside <code>setStaged(prev =&gt; ...)</code>. Updaters must be pure and React re-runs them (always in StrictMode, and whenever a concurrent render is discarded). Each replay leaked a blob URL per photo; a replayed removal could revoke a URL belonging to surviving state, leaving a permanently broken thumbnail. The hook now keeps the ref authoritative and does all URL work outside the updater.</li>
+  <li><strong>High: the six-photo cap could be breached.</strong> Making the pick handler <code>async</code> for pick-time validation meant two picks could be in flight, both reading the same stale slot count. The cap is now enforced inside the hook against its own synchronously-updated list.</li>
+  <li><strong>High: orphans on <em>any</em> post-upload failure.</strong> The first pass only cleaned up when the upload loop failed &mdash; a database error or a rejected optimistic update still orphaned the photos. Cleanup now runs on every failure path, guarded by a <code>recordSaved</code> flag so it can never delete photos a saved inspection already references.</li>
+  <li><strong>Medium: the viewer could lock page scroll with nothing on screen.</strong> <code>ImageZoomModal</code> set <code>body.overflow = 'hidden'</code> before the early return that renders nothing, leaving the page unscrollable and undismissable. Now conditional. Also guarded <code>% 0</code> in next/previous and memoised the gallery, which was re-parsing a URL per photo on every mousemove during a pan.</li>
+</ol>
+<p>Two findings recorded and deliberately <strong>not</strong> changed: the ~28px remove button (your design call &mdash; see below), and a negligible sub-millisecond window where the saved-photo count could leave the cap off by one.</p>
+
+<h3>Verification</h3>
+<ul>
+  <li><code>tsc --noEmit</code>: <span class="good">no errors in src/</span>.</li>
+  <li><code>eslint</code> on all ten changed files: <span class="good">clean</span>.</li>
+  <li><code>tests/components/records/</code>: <span class="good">32 passed</span>. The two suites mocking <code>useImageUpload</code> were retargeted at <code>useStagedPhotos</code>, keeping the regression they guard.</li>
+  <li>The wider suite has <strong>137 pre-existing failures across 18 files</strong> (auth, changelog, StatCard, GDD tracker, ingest utils and similar). I confirmed these are <span class="good">identical at HEAD</span> in a clean worktree, so none are attributable to this change.</li>
+</ul>
+
+<h3>Scope note</h3>
+<p>Storage cleanup for photos that were <em>successfully saved</em> and later replaced or removed remains out of scope, as agreed &mdash; that leak predates this work and spans inspections, varroa checks and apiaries. The fix above covers only rubbish this change's own failed uploads would have left.</p>
+
+<h3 class="bad">Over to you &mdash; not yet tested in a browser</h3>
+<p>Please attach two or three photos to an inspection, save, reopen it, remove the middle one, save again, and check the card's <code>+N</code> badge and the viewer's next/previous.</p>
+
+</body>
+</html>

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { storagePathFromPublicUrl } from '@/lib/storage-url'
 
 export interface UploadImageOptions {
   bucket?: string
@@ -59,22 +60,32 @@ export async function validateImageFile(file: File): Promise<string | null> {
  * the first two are already in the bucket but no row will reference them, so they
  * would be orphaned the moment the save aborts. Best-effort - a failure to tidy
  * up must never mask the original error.
+ *
+ * Note this is only for files that never reached a row. Photos that WERE saved
+ * and are later replaced or deleted are handled by the storage_cleanup_queue
+ * trigger and the nightly sweeper, because those deletions can happen inside the
+ * database (a hive delete cascades) where no client code ever sees them.
  */
-export async function deleteUploadedImages(
-  publicUrls: string[],
-  bucket: string = 'inspection-images'
-): Promise<void> {
-  const marker = `/${bucket}/`
-  const paths = publicUrls
-    .map(url => url.split(marker)[1])
-    .filter((path): path is string => Boolean(path))
+export async function deleteUploadedImages(publicUrls: string[]): Promise<void> {
+  // Group by bucket rather than trusting a caller-supplied one: the bucket is
+  // part of the URL, and storagePathFromPublicUrl drops anything that is not a
+  // public object URL of this project.
+  const byBucket = new Map<string, string[]>()
+  for (const url of publicUrls) {
+    const ref = storagePathFromPublicUrl(url)
+    if (!ref) continue
+    const existing = byBucket.get(ref.bucket)
+    if (existing) existing.push(ref.path)
+    else byBucket.set(ref.bucket, [ref.path])
+  }
 
-  if (paths.length === 0) return
-
-  try {
-    await supabase.storage.from(bucket).remove(paths)
-  } catch (error) {
-    console.error('Failed to clean up partially uploaded images:', error)
+  for (const [bucket, paths] of byBucket) {
+    try {
+      const { error } = await supabase.storage.from(bucket).remove(paths)
+      if (error) console.error(`Failed to clean up uploads in ${bucket}:`, error)
+    } catch (error) {
+      console.error('Failed to clean up partially uploaded images:', error)
+    }
   }
 }
 
