@@ -1,6 +1,7 @@
 'use client'
 import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { deleteUploadedImages } from '@/lib/upload-image'
 import { Plus, Edit2, X, MapPin, Camera, TreeDeciduous, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, ClipboardList, User, Filter } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useImageUpload } from '@/hooks/useImageUpload'
@@ -198,14 +199,22 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  return
  }
 
+ // Photos uploaded during this attempt. If the save then fails they belong to no
+ // row and nothing else will ever collect them, so they are removed. Once the row
+ // is saved it owns them and the cleanup must stop.
+ const uploadedUrls: string[] = []
+ let recordSaved = false
+
  try {
- // Handle location image
+ // Handle location image. A failed upload aborts the save: it used to fall
+ // through and keep the previous URL, so the record saved with the old photo
+ // and the observer had no way to tell their new one had not been stored.
  let locationImageUrl = editingColony?.image_url_location || null
  if (locationImageFile) {
  const uploadedUrl = await uploadLocationImage(locationImageFile)
- if (uploadedUrl) {
+ if (!uploadedUrl) return
  locationImageUrl = uploadedUrl
- }
+ uploadedUrls.push(uploadedUrl)
  } else if (!locationImagePreview && editingColony?.image_url_location) {
  locationImageUrl = null
  }
@@ -214,9 +223,13 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  let colonyImageUrl = editingColony?.image_url || null
  if (colonyImageFile) {
  const uploadedUrl = await uploadColonyImage(colonyImageFile)
- if (uploadedUrl) {
- colonyImageUrl = uploadedUrl
+ if (!uploadedUrl) {
+ // The location image may already be up; it would be orphaned by returning.
+ await deleteUploadedImages(uploadedUrls)
+ return
  }
+ colonyImageUrl = uploadedUrl
+ uploadedUrls.push(uploadedUrl)
  } else if (!colonyImagePreview && editingColony?.image_url) {
  colonyImageUrl = null
  }
@@ -246,6 +259,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  .eq('id', editingColony.id)
 
  if (error) throw error
+ recordSaved = true
 
  if (overrideStatus === 'confirmed') {
  toast.success('Colony confirmed')
@@ -276,12 +290,15 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  .insert([newRecordData])
 
  if (error) throw error
+ recordSaved = true
  toast.success('Colony added successfully')
  }
 
  fetchColonies()
  resetForm()
  } catch (error) {
+ // Only when the row never landed - a saved colony owns its photos.
+ if (!recordSaved) await deleteUploadedImages(uploadedUrls)
  const errorMessage = error instanceof Error ? error.message : 'An error occurred'
  toast.error(errorMessage)
  }

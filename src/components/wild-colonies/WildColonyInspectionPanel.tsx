@@ -128,10 +128,19 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
       toast.success('Inspection recorded')
     }
 
-    setShowForm(false)
-    setEditingInspection(null)
-    fetchInspections()
-    onInspectionChange?.()
+    // The row is saved from here on. Tidy-up must not be able to throw, because
+    // the form treats a thrown error as "not saved" and deletes the photograph it
+    // just uploaded - which would strip the image off a record that does exist.
+    try {
+      setShowForm(false)
+      setEditingInspection(null)
+      // Awaited so a failure here is caught and logged below rather than becoming
+      // an unhandled rejection.
+      await fetchInspections()
+      onInspectionChange?.()
+    } catch (error) {
+      console.error('Inspection saved, but refreshing the view failed:', error)
+    }
   }
 
   const handleEdit = (inspection: WildColonyInspection) => {

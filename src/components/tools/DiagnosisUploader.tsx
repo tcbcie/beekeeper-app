@@ -5,6 +5,7 @@ import { Camera, X, CheckCircle, Upload } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import { deleteUploadedImages } from '@/lib/upload-image'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 
@@ -77,7 +78,9 @@ export default function DiagnosisUploader({ userId }: DiagnosisUploaderProps) {
         throw new Error('Failed to upload image')
       }
 
-      // Insert record to database
+      // Insert record to database. If this fails the image is already in the
+      // bucket with nothing referencing it, and nothing else would ever collect
+      // it, so it is removed before the error surfaces.
       const { error: dbError } = await supabase
         .from('diagnosis_images')
         .insert({
@@ -88,6 +91,7 @@ export default function DiagnosisUploader({ userId }: DiagnosisUploaderProps) {
         })
 
       if (dbError) {
+        await deleteUploadedImages([imageUrl])
         throw dbError
       }
 

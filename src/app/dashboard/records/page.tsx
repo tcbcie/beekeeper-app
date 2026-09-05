@@ -1092,6 +1092,11 @@ export default function RecordsPage() {
   const handleCheckSubmit = async (check: VarroaCheck, imageFile: File | null) => {
     if (!userId) return
 
+    // Same contract as the inspection save: a photo uploaded during an attempt
+    // that does not end in a saved row is rubbish nothing else will collect.
+    const uploadedUrls: string[] = []
+    let recordSaved = false
+
     try {
       let imageUrl = check.image_url
       if (imageFile) {
@@ -1101,6 +1106,7 @@ export default function RecordsPage() {
           return
         }
         imageUrl = uploadedUrl
+        uploadedUrls.push(uploadedUrl)
       }
 
       const submitData = {
@@ -1123,12 +1129,14 @@ export default function RecordsPage() {
           .eq('user_id', userId)
 
         if (error) throw error
+        recordSaved = true
       } else {
         const { error } = await supabase
           .from('varroa_checks')
           .insert([{ ...submitData, user_id: userId }])
 
         if (error) throw error
+        recordSaved = true
 
         // Create treatment task if threshold reached
         if (check.action_threshold_reached) {
@@ -1158,6 +1166,8 @@ export default function RecordsPage() {
       await fetchVarroaChecks(userId, filters.ownershipFilter)
       resetForm()
     } catch (error) {
+      // Only when the row never landed - a saved check owns its photo.
+      if (!recordSaved) await deleteUploadedImages(uploadedUrls)
       toast.error('Error saving check: ' + (error instanceof Error ? error.message : 'Unknown error'))
     }
   }

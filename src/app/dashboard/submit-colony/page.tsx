@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { deleteUploadedImages } from '@/lib/upload-image'
 import { getCurrentUserId } from '@/lib/auth'
 import { MapPin, Camera, TreeDeciduous, X, CheckCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -123,24 +124,33 @@ export default function SubmitColonyPage() {
 
     setSubmitting(true)
 
+    // Photos uploaded during this attempt. If the submission then fails they
+    // belong to no row and nothing else will ever collect them.
+    const uploadedUrls: string[] = []
+    let recordSaved = false
+
     try {
       let locationImageUrl = null
       let colonyImageUrl = null
 
-      // Upload location aid photo
+      // Upload location aid photo. A failed upload aborts the submission rather
+      // than quietly filing a sighting without the photo that was chosen for it.
       if (locationImageFile) {
         const uploadedUrl = await uploadLocationImage(locationImageFile)
-        if (uploadedUrl) {
-          locationImageUrl = uploadedUrl
-        }
+        if (!uploadedUrl) return
+        locationImageUrl = uploadedUrl
+        uploadedUrls.push(uploadedUrl)
       }
 
       // Upload colony photo
       if (colonyImageFile) {
         const uploadedUrl = await uploadColonyImage(colonyImageFile)
-        if (uploadedUrl) {
-          colonyImageUrl = uploadedUrl
+        if (!uploadedUrl) {
+          await deleteUploadedImages(uploadedUrls)
+          return
         }
+        colonyImageUrl = uploadedUrl
+        uploadedUrls.push(uploadedUrl)
       }
 
       // Always fetch user profile data (email is required)
@@ -177,10 +187,13 @@ export default function SubmitColonyPage() {
         .insert([dataToSave])
 
       if (error) throw error
+      recordSaved = true
 
       setSubmitted(true)
       toast.success('Wild colony sighting submitted for review!')
     } catch (error) {
+      // Only when the row never landed - a saved sighting owns its photos.
+      if (!recordSaved) await deleteUploadedImages(uploadedUrls)
       const errorMessage = error instanceof Error ? error.message : 'An error occurred'
       toast.error(errorMessage)
     } finally {
