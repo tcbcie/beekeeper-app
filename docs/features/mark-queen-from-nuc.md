@@ -67,9 +67,11 @@ queen with colour alone, and no number, remains valid.
   alongside the number. The value is trimmed at this chokepoint so a whitespace-only entry cannot
   claim the queen is marked. Clearing the number omits `queen_marked` from the payload entirely,
   rather than re-sending a locally held value that could clobber a change made in another tab.
-- **UI** — the **Queen Marked** checkbox in `QueenTrackingSection.tsx` (both the table and card views)
-  is disabled while a queen number is recorded, since unticking it would contradict the number still
-  shown beside it. Clear the number first to unmark her.
+- **Unmark path** — unticking **Queen Marked** clears the queen number with it, in both
+  `updateGraftQueenMarked` and the bulk `handleTableBulkQueenMarked`. Leaving the number behind would
+  put the row straight back into the state this rule exists to prevent. The number is not recoverable
+  from anywhere else, so both paths confirm first, and the bulk one says how many numbers will go.
+  The checkbox itself stays clickable.
 - **Existing data** — migration `backfill_graft_queen_marked_when_numbered` set `queen_marked = true`
   on the nine numbered-but-unmarked graft rows.
 
