@@ -55,8 +55,9 @@ node scripts/update-version.mjs 1.0.12 --verbose
 # 1. Bump version
 npm run version:bump
 
-# 2. Update changelog manually in:
-#    src/app/dashboard/about/page.tsx
+# 2. Changelog entries are extracted from your commits automatically
+#    Add or correct one:
+#    node scripts/add-changelog.mjs <version> <type> <title> <description>
 
 # 3. Review changes
 git diff

@@ -98,8 +98,9 @@ node scripts/update-version.mjs 1.1.0-beta.1
 - **src/app/dashboard/page.tsx** - Version and date display  
 - **src/app/dashboard/about/page.tsx** - Latest version badge and date
 
-**⚠️ Manual Update Required:**
-- Changelog section in `src/app/dashboard/about/page.tsx`
+**Changelog:** handled for you. `bump-version.mjs` extracts entries from your commit
+messages and writes them to the Supabase `changelog` table, which the About page reads
+via `src/lib/changelog.ts`. Add or correct one with `scripts/add-changelog.mjs`.
 
 **Features:**
 - Validates version format (supports pre-release versions)
@@ -117,7 +118,7 @@ node scripts/update-version.mjs 1.1.0-beta.1
 npm run version:bump
 # Review changes
 git diff
-# Update changelog in src/app/dashboard/about/page.tsx
+# Changelog entries are extracted from your commits automatically
 # Test build
 npm run build
 # Commit
@@ -132,7 +133,7 @@ git push && git push --tags
 ### New Feature: Minor Version
 ```bash
 npm run version:bump minor
-# Update changelog manually
+# Changelog entries are extracted from your commits automatically
 # Review and test
 git diff && npm run build
 # Commit and tag
@@ -145,7 +146,7 @@ git push && git push --tags
 ### Breaking Change: Major Version
 ```bash
 npm run version:bump major
-# Update changelog with migration notes
+# Add migration notes: node scripts/add-changelog.mjs <version> improvement "Title" "Detail"
 # Review thoroughly
 git diff && npm run build
 # Commit and tag
@@ -201,24 +202,18 @@ npm run version:bump minor  # For new features
 npm run version:bump major  # For breaking changes
 ```
 
-### 2. Update Changelog
-Edit `src/app/dashboard/about/page.tsx` and add your release notes:
+### 2. Check the Changelog
+The bump already extracted entries from your commit messages and saved them to the
+Supabase `changelog` table, and it reports how many landed. Nothing to hand-edit: the
+About page renders them via `src/lib/changelog.ts`.
 
-```tsx
-<div className="border-l-4 border-emerald-500 pl-4 mb-6">
-  <div className="flex items-center gap-2 mb-2">
-    <span className="px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded font-semibold">
-      v1.0.12
-    </span>
-    <span className="text-sm text-gray-600">November 18, 2025</span>
-  </div>
-  <h3 className="font-semibold text-gray-900 mb-2">Latest Release</h3>
-  <ul className="list-disc list-inside text-gray-700 space-y-1 text-sm">
-    <li>Fixed validation bug in queen registration form</li>
-    <li>Improved hive inspection date picker</li>
-    <li>Updated dashboard statistics display</li>
-  </ul>
-</div>
+If an entry failed to save, or you want to reword one, add it directly:
+
+```bash
+node scripts/add-changelog.mjs <version> <type> <title> <description>
+
+# type is one of: feature, bugfix, improvement, documentation
+node scripts/add-changelog.mjs 1.0.12 bugfix "Queen form validation" "Fixed the error when registering a queen without a number"
 ```
 
 ### 3. Review Changes
@@ -450,9 +445,9 @@ npm run version:bump
    npm run version:bump && npm run build
    ```
 
-2. **Update changelog with meaningful notes**
-   - Describe what changed from user perspective
-   - List bug fixes, new features, improvements
+2. **Write meaningful commit messages**
+   - Changelog entries are extracted from them, so they become your release notes
+   - Describe what changed from the user's perspective
    - Note any breaking changes
 
 3. **Test build after version bump**
@@ -488,8 +483,9 @@ npm run version:bump
 2. **Don't manually edit version numbers**
    - Always use the scripts for consistency
 
-3. **Don't forget to update changelog**
-   - Users need to know what changed
+3. **Don't let the changelog fail silently**
+   - The bump reports how many entries saved; if any failed, add them with
+     `scripts/add-changelog.mjs` before releasing
 
 4. **Don't forget to push tags**
    ```bash
@@ -546,7 +542,7 @@ project-root/
 │       └── dashboard/
 │           ├── page.tsx            # Version information
 │           └── about/
-│               └── page.tsx        # Changelog and version
+│               └── page.tsx        # Version + changelog (read from the database)
 └── package.json                    # npm scripts
 ```
 
@@ -635,8 +631,7 @@ If you encounter issues:
 
 **Most common usage:**
 ```bash
-npm run version:bump          # Bump patch version
-# Update changelog manually
+npm run version:bump          # Bump patch version, extracting the changelog from commits
 git diff && npm run build     # Review and test
 git add . && git commit -m "chore: update to v1.0.12"
 git tag v1.0.12 && git push --follow-tags
