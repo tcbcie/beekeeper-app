@@ -282,7 +282,10 @@ export default function QueenTrackingSection({
                       checked={graft.queen_marked}
                       onChange={(e) => updateGraftQueenMarked(graft.id, e.target.checked)}
                       className="h-4 w-4 rounded border-border bg-surface text-forest-600 focus:ring-forest-500 dark:bg-surface-elevated"
-                      disabled={isLocked || !canMark}
+                      // A queen number implies the marking, so unticking this while a number is
+                      // recorded would contradict the number still on the card.
+                      disabled={isLocked || !canMark || !!graft.queen_number?.trim()}
+                      title={graft.queen_number?.trim() ? 'A numbered queen is always marked. Clear the queen number to unmark her.' : undefined}
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -442,7 +445,10 @@ export default function QueenTrackingSection({
                       checked={graft.queen_marked}
                       onChange={(e) => updateGraftQueenMarked(graft.id, e.target.checked)}
                       className="h-4 w-4 rounded border-border bg-surface text-forest-600 focus:ring-forest-500 dark:bg-surface-elevated"
-                      disabled={!canMark}
+                      // A queen number implies the marking, so unticking this while a number is
+                      // recorded would contradict the number still on the card.
+                      disabled={!canMark || !!graft.queen_number?.trim()}
+                      title={graft.queen_number?.trim() ? 'A numbered queen is always marked. Clear the queen number to unmark her.' : undefined}
                     />
                   </div>
                   <div className="flex items-center justify-between gap-2">

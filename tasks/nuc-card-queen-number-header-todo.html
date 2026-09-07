@@ -1,0 +1,119 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Nuc card header shows Cell # after a queen number is assigned</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 62rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; color: #1c2b21; }
+  h1 { font-size: 1.5rem; } h2 { font-size: 1.15rem; margin-top: 2rem; }
+  code, pre { background: #f2f5f1; border-radius: 4px; }
+  code { padding: 0.1rem 0.3rem; } pre { padding: 0.75rem; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #d5ded3; padding: 0.4rem 0.6rem; text-align: left; }
+  .bad { color: #a12; font-weight: 600; } .good { color: #176b3a; font-weight: 600; }
+  .done::before { content: "\2713 "; color: #176b3a; font-weight: 700; }
+  ul.checklist { list-style: none; padding-left: 0; }
+  ul.checklist li { margin-bottom: 0.3rem; }
+</style>
+
+<h1>Nuc card header shows &ldquo;Cell #6&rdquo; after the queen has a number</h1>
+
+<h2>Problem</h2>
+<p>
+  Nuc <strong>124</strong> (batch TQRQB_RZ06) has queen number <strong>48</strong>, but its card
+  subtitle still read <code class="bad">TQRQB_RZ06 &middot; Cell #6 &middot; Breeder Queen: 1B &middot; Mating Site: AP03 - Stephen</code>.
+  Once a queen has her own number, the cell she was grafted from is no longer the useful identifier.
+</p>
+
+<h2>Root cause</h2>
+<p>
+  <code>src/components/batches/MatingNucsTab.tsx:1632</code> swaps &ldquo;Cell #N&rdquo; for the
+  queen&rsquo;s identity only when the <em>marked</em> flag is set. But <code>queen_number</code> and
+  <code>queen_marked</code> were written independently &mdash; the Queen Tracker&rsquo;s number field
+  (<code>updateGraftQueenNumber</code>, <code>src/hooks/useBatchGrafts.ts</code>) wrote only the
+  number. Live data confirmed all three combinations existed:
+</p>
+<table>
+  <tr><th>State</th><th>Rows before</th><th>Rows after</th></tr>
+  <tr><td>Numbered + marked</td><td>50</td><td class="good">59</td></tr>
+  <tr><td>Numbered, <em>not</em> marked</td><td class="bad">9</td><td class="good">0</td></tr>
+  <tr><td>Marked, no number (valid)</td><td>11</td><td>11</td></tr>
+</table>
+<p>Nuc 124&rsquo;s graft was one of the nine: <code>queen_number = '48'</code>, <code>queen_marked = false</code>.</p>
+
+<h2>Decision</h2>
+<p>
+  Rico chose to <strong>treat &ldquo;has a number&rdquo; as implying &ldquo;is marked&rdquo;</strong>
+  &mdash; a queen can only carry a number because someone marked her to put it there. So this is fixed
+  as a <em>data invariant</em>, not as a display special-case. The reverse does not hold: a queen
+  marked with colour alone, and no number, stays valid.
+</p>
+<p>
+  With the flag corrected, the existing subtitle logic renders the right thing on its own, so
+  <code>MatingNucsTab.tsx</code> needed <strong>no change at all</strong>.
+</p>
+
+<h2>To do</h2>
+<ul class="checklist">
+  <li class="done">Backfill the nine numbered-but-unmarked graft rows (migration <code>backfill_graft_queen_marked_when_numbered</code>)</li>
+  <li class="done">Couple <code>queen_marked</code> to <code>queen_number</code> in <code>updateGraftQueenNumber</code></li>
+  <li class="done">Stop the Queen Tracker checkbox re-breaking the invariant</li>
+  <li class="done">Run the <code>qa-engineer</code> audit &mdash; two defects found in my own change, both fixed</li>
+  <li class="done">Verify with <code>tsc --noEmit</code> and <code>eslint</code></li>
+  <li class="done">Update <code>docs/features/mark-queen-from-nuc.md</code></li>
+  <li>[ ] Rico to test in the browser</li>
+</ul>
+
+<h2>Review</h2>
+
+<h3>1. Data backfill (Supabase MCP migration)</h3>
+<pre>update batch_grafts set queen_marked = true
+where queen_marked = false and nullif(trim(queen_number), '') is not null;</pre>
+<p>Nine rows corrected across all accounts; verified <code>numbered_not_marked = 0</code> afterwards.</p>
+
+<h3>2. Write path &mdash; <code>src/hooks/useBatchGrafts.ts</code></h3>
+<p>
+  Setting a number now sets the flag with it. Two hardening points came out of the audit:
+  the value is <strong>trimmed at this chokepoint</strong> (so a whitespace-only entry cannot claim
+  the queen is marked), and clearing the number <strong>omits <code>queen_marked</code> from the
+  payload entirely</strong> rather than re-sending the locally held value &mdash; my first draft
+  wrote it back, which could clobber a change made in another tab.
+</p>
+<pre>const updates = trimmed
+  ? { queen_number: trimmed, queen_marked: true }
+  : { queen_number: null }</pre>
+
+<h3>3. UI guard &mdash; <code>src/components/batches/QueenTrackingSection.tsx</code></h3>
+<p>
+  The audit caught a hole: the <strong>Queen Marked</strong> checkbox could be unticked on a graft
+  that carries a number, immediately re-breaking the invariant and reproducing the original bug. It is
+  now disabled while a number is recorded, in both the table and card views, with a title explaining
+  that the number must be cleared first.
+</p>
+
+<h3>Result for nuc 124</h3>
+<table>
+  <tr><th>Before</th><th>After</th></tr>
+  <tr>
+    <td class="bad">TQRQB_RZ06 &middot; Cell #6 &middot; Breeder Queen: 1B &middot; Mating Site: AP03 - Stephen</td>
+    <td class="good">TQRQB_RZ06 &middot; Marked White #48 &middot; Breeder Queen: 1B &middot; Mating Site: AP03 - Stephen</td>
+  </tr>
+</table>
+
+<h3>Knock-on effects (all intended by the rule)</h3>
+<p>Those nine queens now read as marked everywhere <code>queen_marked</code> is consumed:</p>
+<ul>
+  <li>Nuc card subtitle &mdash; <code>Marked &lt;Colour&gt; #48</code> instead of <code>Cell #6</code></li>
+  <li>Nuc panel button &mdash; now &ldquo;Edit Marking&rdquo; rather than &ldquo;Mark Queen&rdquo;</li>
+  <li>Queen Tracker marking chip and colour dot</li>
+  <li>CRM order line (<code>crm/orders/[id]/page.tsx</code>)</li>
+  <li><code>ensure_reared_queen_record</code> &mdash; now assigns a marking colour when promoting such a queen into the breeder register</li>
+</ul>
+<p>
+  The nuc-reared-queen path needed nothing: <code>ensure_nuc_reared_queen</code> already stamps
+  <code>mating_nucs.queen_marked_at</code>. Confirmed zero affected rows there.
+</p>
+
+<h3>Verification</h3>
+<ul>
+  <li><code>npx tsc --noEmit</code> &mdash; 97 errors, <strong>all</strong> in <code>tests/</code> (pre-existing mock typings); zero in <code>src/</code></li>
+  <li><code>npx eslint</code> on the three touched files &mdash; clean</li>
+  <li>Build not run, per project convention &mdash; over to Rico to test in the browser</li>
+</ul>
