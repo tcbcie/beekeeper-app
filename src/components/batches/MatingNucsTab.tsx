@@ -1204,11 +1204,12 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (selectedGraft?.breeder_queen_id) {
    updates.queen_id = selectedGraft.breeder_queen_id
  }
- if (selectedGraft?.status === 'emerged' && selectedGraft.queen_marked) {
-   updates.queen_marked_at = formData.setup_date || new Date().toISOString().split('T')[0]
- } else if (!e.target.value) {
-   updates.queen_marked_at = ''
- }
+ // The marking date describes the cell's own queen, so it has to follow the newly selected
+ // cell rather than linger from the one that was there before. Key it on queen_marked alone:
+ // a queen can be marked in any of MARKABLE_STATUSES, not just 'emerged'.
+ updates.queen_marked_at = selectedGraft?.queen_marked
+   ? (formData.setup_date || new Date().toISOString().split('T')[0])
+   : ''
  setFormData({ ...formData, ...updates })
  }}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
