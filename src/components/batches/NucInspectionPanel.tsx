@@ -408,10 +408,14 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
   const handleMarkQueen = async () => {
     setMarkSaving(true)
     try {
+      // The ensure_nuc_reared_queen RPC btrims this for the no-graft branch; do the same here so
+      // both doors agree. Untrimmed, "  " would set queen_marked on an effectively empty number,
+      // and " 48" would register as a different queen from "48" while looking identical.
+      const trimmedQueenNumber = markQueenNumber.trim()
       if (graftId) {
         const { error: graftError } = await supabase
           .from('batch_grafts')
-          .update({ queen_marked: true, queen_number: markQueenNumber || null })
+          .update({ queen_marked: true, queen_number: trimmedQueenNumber || null })
           .eq('id', graftId)
           .eq('user_id', userId)
 
@@ -429,7 +433,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
         // record instead. The RPC also stamps mating_nucs.queen_marked_at.
         const { error: rpcError } = await supabase.rpc('ensure_nuc_reared_queen', {
           p_nuc_id: nucId,
-          p_queen_number: markQueenNumber || null,
+          p_queen_number: trimmedQueenNumber || null,
           p_marking_colour: markColour || null,
           p_marked_date: markDate,
         })

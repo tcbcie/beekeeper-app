@@ -131,3 +131,12 @@ Every writer of the two marking records has been walked:
 | `handleDelete` | yes | nuc row is deleted |
 | `handleRetire` | no | only sets `retired_at` |
 | `useMatingNucBulk` | no | only sets graft `status` |
+
+### Trimming, both doors
+
+`handleMarkQueen` has two branches: a graft cell holds the number, or `ensure_nuc_reared_queen` does.
+The RPC applies `nullif(btrim(...), '')` to what it is given; the graft branch wrote
+`markQueenNumber || null` raw. So the same form trimmed or did not trim depending on whether the nuc
+had a cell behind it. Untrimmed, `"  "` sets `queen_marked` on an effectively empty number — the state
+the `updateGraftQueenNumber` chokepoint trims to prevent — and `" 48"` registers as a different queen
+from `"48"` while looking identical in the UI. Both branches now trim.
