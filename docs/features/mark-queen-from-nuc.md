@@ -111,3 +111,23 @@ That same save reverts the old cell to `sealed` and clears its `queen_marked`/`q
 queen number recorded against it is lost. The form now confirms before that happens, matching the
 Queen Tracker's prompt when unmarking. The check runs before any of the writes, so cancelling leaves
 the nuc and both cells untouched rather than half-applied.
+
+### Changing the batch
+
+`handleBatchChange` resets `graft_id` to detach the nuc from its cell, but left `queen_marked_at`
+untouched, so the same stale-date defect survived through a second entry point: change the **Batch**
+on a nuc whose queen was marked and the old cell is reverted on save while the nuc keeps its marking
+date, leaving a card that reads `Marked <Colour>` with no cell and no marked queen behind it. The
+handler now clears the date along with the cell.
+
+Every writer of the two marking records has been walked:
+
+| Path | Unmarks a graft? | Nuc date handled |
+| --- | --- | --- |
+| `updateGraftQueenMarked` | yes | clears it |
+| `handleTableBulkQueenMarked` | yes | clears it |
+| `MatingNucsTab` cell selector | via save | recomputed from the new cell |
+| `MatingNucsTab` batch selector | via save | cleared with the cell |
+| `handleDelete` | yes | nuc row is deleted |
+| `handleRetire` | no | only sets `retired_at` |
+| `useMatingNucBulk` | no | only sets graft `status` |
