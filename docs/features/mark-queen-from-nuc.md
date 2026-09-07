@@ -72,6 +72,14 @@ queen with colour alone, and no number, remains valid.
   put the row straight back into the state this rule exists to prevent. The number is not recoverable
   from anywhere else, so both paths confirm first, and the bulk one says how many numbers will go.
   The checkbox itself stays clickable.
+- **Both marking records** — the nuc card treats `mating_nucs.queen_marked_at` as proof of marking in
+  its own right (`queenMarked = queen_marked_at || batch_grafts.queen_marked`), so unmarking clears
+  that date on the linked nucs as well. Clearing only the graft flag would leave the card reading
+  `Marked <Colour>` for a queen the tracker had just unmarked — the same contradiction in a new place.
+  The graft write is not rolled back if the nuc write fails; the partial failure is reported instead.
+- **Zero-row writes** — both paths ask for the affected row back with `.select('id')` and treat an
+  empty result as an error. PostgREST reports a zero-row update as a success, so a deleted row or an
+  RLS refusal would otherwise leave the optimistic UI showing a change that never landed.
 - **Existing data** — migration `backfill_graft_queen_marked_when_numbered` set `queen_marked = true`
   on the nine numbered-but-unmarked graft rows.
 
