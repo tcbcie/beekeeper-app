@@ -206,6 +206,9 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  // Convert empty strings to null for optional UUID fields
  const dataToSubmit = {
  ...formData,
+ // Trailing spaces are invisible in the field but make a distinct queen number, and numbers
+ // are unique per account by string comparison — " 48" would sit alongside "48" undetected.
+ queen_number: formData.queen_number.trim(),
  mother_id: resolvedMotherId || null,
  father_id: formData.father_id || null,
  batch_id: formData.batch_id || null,
