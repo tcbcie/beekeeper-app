@@ -394,18 +394,29 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   }, [fetchGrafts, toast])
 
   const updateGraftQueenMarked = useCallback(async (graftId: string, marked: boolean) => {
-    const previous = grafts.find(g => g.id === graftId)?.queen_marked
-    setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_marked: marked } : g))
+    const existing = grafts.find(g => g.id === graftId)
+    const previousMarked = existing?.queen_marked
+    const previousNumber = existing?.queen_number
+    // A queen number implies the marking, so unmarking her cannot leave the number behind —
+    // it would put the row straight back into the state this rule exists to prevent.
+    const clearedNumber = !marked ? existing?.queen_number?.trim() : ''
+    if (clearedNumber && !confirm(`Unmarking this queen also clears her number (${clearedNumber}). Continue?`)) {
+      return
+    }
+    const updates = clearedNumber
+      ? { queen_marked: marked, queen_number: null }
+      : { queen_marked: marked }
+    setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, ...updates } : g))
     try {
       const { error } = await supabase
         .from('batch_grafts')
-        .update({ queen_marked: marked })
+        .update(updates)
         .eq('id', graftId)
       if (error) throw error
     } catch (error) {
       console.error('Error updating queen marked:', error)
       toast.error('Failed to update queen marked')
-      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_marked: previous ?? false } : g))
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_marked: previousMarked ?? false, queen_number: previousNumber ?? null } : g))
     }
   }, [toast, grafts])
 
@@ -718,10 +729,20 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   const handleTableBulkQueenMarked = useCallback(async (marked: boolean) => {
     const ids = Array.from(tableSelectedIds)
     if (ids.length === 0) return
+    // Unmarking clears the queen number too, for the same reason as the single-row toggle.
+    // Say how many numbers go, because in bulk that is easy to do by accident.
+    const numberedCount = marked
+      ? 0
+      : ids.filter(id => grafts.find(g => g.id === id)?.queen_number?.trim()).length
+    if (numberedCount > 0 && !confirm(
+      `Unmarking also clears the queen number on ${numberedCount} of the ${ids.length} selected cells. Continue?`
+    )) {
+      return
+    }
     try {
       const { error } = await supabase
         .from('batch_grafts')
-        .update({ queen_marked: marked })
+        .update(marked ? { queen_marked: true } : { queen_marked: false, queen_number: null })
         .in('id', ids)
       if (error) throw error
       toast.success(`${ids.length} queens ${marked ? 'marked' : 'unmarked'}`)
@@ -731,7 +752,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       console.error('Error bulk updating queen marked:', error)
       toast.error('Failed to update queen marked')
     }
-  }, [tableSelectedIds, toast, fetchGrafts])
+  }, [tableSelectedIds, toast, fetchGrafts, grafts])
 
   const handleTableBulkDelete = useCallback(async () => {
     const ids = Array.from(tableSelectedIds)

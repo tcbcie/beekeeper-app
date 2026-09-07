@@ -54,7 +54,7 @@
 <ul class="checklist">
   <li class="done">Backfill the nine numbered-but-unmarked graft rows (migration <code>backfill_graft_queen_marked_when_numbered</code>)</li>
   <li class="done">Couple <code>queen_marked</code> to <code>queen_number</code> in <code>updateGraftQueenNumber</code></li>
-  <li class="done">Stop the Queen Tracker checkbox re-breaking the invariant</li>
+  <li class="done">Stop the Queen Tracker checkbox re-breaking the invariant &mdash; unticking now clears the number</li>
   <li class="done">Run the <code>qa-engineer</code> audit &mdash; two defects found in my own change, both fixed</li>
   <li class="done">Verify with <code>tsc --noEmit</code> and <code>eslint</code></li>
   <li class="done">Update <code>docs/features/mark-queen-from-nuc.md</code></li>
@@ -80,12 +80,27 @@ where queen_marked = false and nullif(trim(queen_number), '') is not null;</pre>
   ? { queen_number: trimmed, queen_marked: true }
   : { queen_number: null }</pre>
 
-<h3>3. UI guard &mdash; <code>src/components/batches/QueenTrackingSection.tsx</code></h3>
+<h3>3. Unmark path &mdash; <code>src/hooks/useBatchGrafts.ts</code></h3>
 <p>
   The audit caught a hole: the <strong>Queen Marked</strong> checkbox could be unticked on a graft
-  that carries a number, immediately re-breaking the invariant and reproducing the original bug. It is
-  now disabled while a number is recorded, in both the table and card views, with a title explaining
-  that the number must be cleared first.
+  that carries a number, immediately re-breaking the invariant and reproducing the original bug.
+</p>
+<p>
+  My first attempt disabled the checkbox; Rico chose the other direction &mdash; <strong>keep it
+  clickable and clear the number on unticking</strong>. So <code>QueenTrackingSection.tsx</code> is
+  back to its original state, and the enforcement lives in the hook instead, in both
+  <code>updateGraftQueenMarked</code> and the bulk <code>handleTableBulkQueenMarked</code>.
+</p>
+<p>
+  The number is not recoverable from anywhere else, so both paths confirm before clearing, and the
+  bulk one reports how many numbers will go:
+</p>
+<pre>Unmarking this queen also clears her number (48). Continue?
+Unmarking also clears the queen number on 3 of the 12 selected cells. Continue?</pre>
+<p>
+  Unticking a queen who was marked with colour alone is unaffected &mdash; no number, no prompt.
+  The number input remounts empty on its own, because its <code>key</code> already includes
+  <code>graft.queen_number</code>.
 </p>
 
 <h3>Result for nuc 124</h3>
