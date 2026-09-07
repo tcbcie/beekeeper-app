@@ -724,6 +724,17 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  return
  }
 
+ // Moving a nuc off its cell reverts that cell to 'sealed' and wipes its marking below, which
+ // takes the queen number with it. Warn before any of the writes run, so cancelling leaves
+ // everything untouched — the Queen Tracker asks the same question when unmarking.
+ const revertingGraftId = editingNuc?.graft_id
+ if (revertingGraftId && revertingGraftId !== (formData.graft_id || null)) {
+ const lostNumber = grafts.find(g => g.id === revertingGraftId)?.queen_number?.trim()
+ if (lostNumber && !confirm(`Moving this nuc off its current cell also clears that cell's queen number (${lostNumber}). Continue?`)) {
+ return
+ }
+ }
+
  const nucData = {
  nuc_number: formData.nuc_number || null,
  batch_id: formData.batch_id || null,
