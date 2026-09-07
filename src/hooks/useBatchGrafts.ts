@@ -426,18 +426,30 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   }, [toast, grafts])
 
   const updateGraftQueenNumber = useCallback(async (graftId: string, queenNumber: string) => {
-    const previous = grafts.find(g => g.id === graftId)?.queen_number
-    setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_number: queenNumber || null } : g))
+    const existing = grafts.find(g => g.id === graftId)
+    const previousNumber = existing?.queen_number
+    const previousMarked = existing?.queen_marked
+    // Sanitise here rather than trusting the caller, so a whitespace-only entry cannot claim
+    // the queen is marked.
+    const trimmed = queenNumber.trim()
+    // A queen can only carry a number because someone marked her to put it there, so setting a
+    // queen number implies the marking. Clearing the number omits queen_marked from the payload
+    // entirely — a queen marked with colour alone is a legitimate state, and re-sending the flag
+    // we happen to hold locally would clobber a change made in another tab.
+    const updates = trimmed
+      ? { queen_number: trimmed, queen_marked: true }
+      : { queen_number: null }
+    setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, ...updates } : g))
     try {
       const { error } = await supabase
         .from('batch_grafts')
-        .update({ queen_number: queenNumber || null })
+        .update(updates)
         .eq('id', graftId)
       if (error) throw error
     } catch (error) {
       console.error('Error updating queen number:', error)
       toast.error('Failed to update queen number')
-      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_number: previous ?? null } : g))
+      setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_number: previousNumber ?? null, queen_marked: previousMarked ?? false } : g))
     }
   }, [toast, grafts])
 
