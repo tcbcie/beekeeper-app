@@ -274,7 +274,7 @@ async function main() {
     } catch (error) {
       console.log('\n⚠️  Could not extract changelog from git commits');
       console.log('   You can add entries manually with:');
-      console.log(`   node .claude/skills/versioning/scripts/add-changelog.mjs\n`);
+      console.log(`   node scripts/add-changelog.mjs\n`);
     }
 
     console.log('\n╔════════════════════════════════════════╗');
@@ -293,7 +293,7 @@ async function main() {
 
     if (skipConfirm) {
       console.log('💡 Add changelog entries manually with:');
-      console.log(`   node .claude/skills/versioning/scripts/add-changelog.mjs\n`);
+      console.log(`   node scripts/add-changelog.mjs\n`);
     }
 
   } catch (error) {
