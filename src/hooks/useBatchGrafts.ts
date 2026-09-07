@@ -398,27 +398,48 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     const previousMarked = existing?.queen_marked
     const previousNumber = existing?.queen_number
     // A queen number implies the marking, so unmarking her cannot leave the number behind —
-    // it would put the row straight back into the state this rule exists to prevent.
-    const clearedNumber = !marked ? existing?.queen_number?.trim() : ''
-    if (clearedNumber && !confirm(`Unmarking this queen also clears her number (${clearedNumber}). Continue?`)) {
+    // it would put the row straight back into the state this rule exists to prevent. Prompt
+    // against the number the user can actually see, but clear unconditionally below, so
+    // consistency never depends on how fresh the local list happens to be.
+    const visibleNumber = marked ? '' : (existing?.queen_number?.trim() ?? '')
+    if (visibleNumber && !confirm(`Unmarking this queen also clears her number (${visibleNumber}). Continue?`)) {
       return
     }
-    const updates = clearedNumber
-      ? { queen_marked: marked, queen_number: null }
-      : { queen_marked: marked }
+    const updates = marked
+      ? { queen_marked: true }
+      : { queen_marked: false, queen_number: null }
     setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, ...updates } : g))
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('batch_grafts')
         .update(updates)
         .eq('id', graftId)
+        .select('id')
       if (error) throw error
+      // PostgREST treats a zero-row update as a success, so a row that has since been deleted —
+      // or that RLS will not let us write — would leave the optimistic state standing as a lie.
+      if (!data?.length) throw new Error('That cell could not be updated. Reload and try again.')
+
+      // The nuc card counts its own queen_marked_at as proof of marking, so leaving it stamped
+      // would keep showing "Marked" for a queen the tracker has just unmarked.
+      if (!marked) {
+        const { error: nucError } = await supabase
+          .from('mating_nucs')
+          .update({ queen_marked_at: null })
+          .eq('graft_id', graftId)
+          .eq('user_id', userId)
+        if (nucError) {
+          // The graft itself saved, so do not roll that back — report the partial failure.
+          console.error('Error clearing nuc marking date:', nucError)
+          toast.error('Queen unmarked, but her nuc may still show as marked. Please reload.')
+        }
+      }
     } catch (error) {
       console.error('Error updating queen marked:', error)
-      toast.error('Failed to update queen marked')
+      toast.error(error instanceof Error ? error.message : 'Failed to update queen marked')
       setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_marked: previousMarked ?? false, queen_number: previousNumber ?? null } : g))
     }
-  }, [toast, grafts])
+  }, [toast, grafts, userId])
 
   const updateGraftStatusDate = useCallback(async (graftId: string, date: string) => {
     const previous = grafts.find(g => g.id === graftId)?.status_date
@@ -452,14 +473,18 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       : { queen_number: null }
     setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, ...updates } : g))
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('batch_grafts')
         .update(updates)
         .eq('id', graftId)
+        .select('id')
       if (error) throw error
+      // A zero-row update is a success to PostgREST; without this the optimistic state would
+      // keep showing a number that was never stored.
+      if (!data?.length) throw new Error('That cell could not be updated. Reload and try again.')
     } catch (error) {
       console.error('Error updating queen number:', error)
-      toast.error('Failed to update queen number')
+      toast.error(error instanceof Error ? error.message : 'Failed to update queen number')
       setGrafts(prev => prev.map(g => g.id === graftId ? { ...g, queen_number: previousNumber ?? null, queen_marked: previousMarked ?? false } : g))
     }
   }, [toast, grafts])
@@ -745,6 +770,19 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
         .update(marked ? { queen_marked: true } : { queen_marked: false, queen_number: null })
         .in('id', ids)
       if (error) throw error
+      // Clear the nucs' own marking date too, or their cards keep showing "Marked" for queens
+      // this action has just unmarked.
+      if (!marked) {
+        const { error: nucError } = await supabase
+          .from('mating_nucs')
+          .update({ queen_marked_at: null })
+          .in('graft_id', ids)
+          .eq('user_id', userId)
+        if (nucError) {
+          console.error('Error clearing nuc marking dates:', nucError)
+          toast.error('Queens unmarked, but their nucs may still show as marked. Please reload.')
+        }
+      }
       toast.success(`${ids.length} queens ${marked ? 'marked' : 'unmarked'}`)
       fetchGrafts()
       setTableSelectedIds(new Set())
@@ -752,7 +790,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       console.error('Error bulk updating queen marked:', error)
       toast.error('Failed to update queen marked')
     }
-  }, [tableSelectedIds, toast, fetchGrafts, grafts])
+  }, [tableSelectedIds, toast, fetchGrafts, grafts, userId])
 
   const handleTableBulkDelete = useCallback(async () => {
     const ids = Array.from(tableSelectedIds)
