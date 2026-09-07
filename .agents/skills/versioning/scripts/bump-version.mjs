@@ -23,7 +23,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -220,8 +220,19 @@ async function main() {
 
           for (const entry of changelogData.entries) {
             try {
-              const result = execSync(
-                `node "${join(__dirname, 'add-changelog.mjs')}" "${newVersion}" "${entry.entry_type}" "${entry.title}" "${entry.description}"`,
+              // Titles and descriptions come from commit messages, so they routinely contain
+              // quotes and can contain backticks or $(...). Interpolating them into a shell
+              // string truncated the argument at the first quote and would have let a commit
+              // message run shell commands.
+              const result = execFileSync(
+                'node',
+                [
+                  join(__dirname, 'add-changelog.mjs'),
+                  newVersion,
+                  entry.entry_type,
+                  entry.title,
+                  entry.description
+                ],
                 {
                   cwd: ROOT_DIR,
                   encoding: 'utf8',
