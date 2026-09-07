@@ -106,3 +106,8 @@ The date now keys on `queen_marked` alone, which is the field that actually reco
 cleared for any cell that does not carry one. Dropping the `emerged` check also fixes the opposite
 miss: `MARKABLE_STATUSES` is `emerged`, `in_nuc` and `mated`, so a queen marked in a mated cell was
 never getting her date stamped either.
+
+That same save reverts the old cell to `sealed` and clears its `queen_marked`/`queen_number`, so the
+queen number recorded against it is lost. The form now confirms before that happens, matching the
+Queen Tracker's prompt when unmarking. The check runs before any of the writes, so cancelling leaves
+the nuc and both cells untouched rather than half-applied.
