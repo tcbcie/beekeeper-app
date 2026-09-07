@@ -573,6 +573,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  ...prev,
  batch_id: batchId,
  graft_id: '',
+ // Dropping the cell drops the marking it evidenced, so the date cannot stay behind — the
+ // cell selector clears it the same way when the cell changes under it.
+ queen_marked_at: '',
  queen_id: selectedBatch?.mother_queen_id || '',
  mating_location: matingApiary?.name || prev.mating_location,
  }))
