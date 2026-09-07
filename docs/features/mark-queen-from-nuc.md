@@ -140,3 +140,19 @@ The RPC applies `nullif(btrim(...), '')` to what it is given; the graft branch w
 had a cell behind it. Untrimmed, `"  "` sets `queen_marked` on an effectively empty number — the state
 the `updateGraftQueenNumber` chokepoint trims to prevent — and `" 48"` registers as a different queen
 from `"48"` while looking identical in the UI. Both branches now trim.
+
+### Queen numbers are trimmed wherever they are entered
+
+The register form (`QueenFormSection`) had the same untrimmed input, and it was the source of the one
+padded value in the data: a queen numbered `"M5 - 1 "`. The trim now happens in `dataToSubmit`,
+which is the single object feeding both the insert and the update, alongside the existing
+`origin_breeder_code` trim.
+
+Migration `trim_padded_queen_numbers` corrected the stored value. It skips any row whose trimmed form
+would collide with another queen the same user already holds, so it is safe to re-run. Both
+`queens.queen_number` and `batch_grafts.queen_number` are now free of surrounding whitespace.
+
+Note the register form has no required-check on the queen number, so a blank one is still accepted —
+that is pre-existing and unchanged here. Any new rejection would have to sit in the pure-validation
+block at the top of `handleSubmit`, before `ensure_reared_queen_record` runs, or a promoted reared
+queen would be left stranded by the rejection.
