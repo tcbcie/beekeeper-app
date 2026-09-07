@@ -212,7 +212,12 @@ async function main() {
         if (changelogData.entries && changelogData.entries.length > 0) {
           console.log('\n💾 Saving changelog entries to database...\n');
 
-          // Add each entry to database
+          // Add each entry to database. Track what actually landed: a per-entry failure is
+          // swallowed below, so counting attempts reported a changelog that saved nothing
+          // exactly like one that saved everything.
+          let addedCount = 0;
+          const failedTitles = [];
+
           for (const entry of changelogData.entries) {
             try {
               const result = execSync(
@@ -223,13 +228,29 @@ async function main() {
                   input: 'y\n' // Auto-confirm
                 }
               );
+              addedCount++;
               console.log(`✅ Added: ${entry.title}`);
             } catch (error) {
+              failedTitles.push(entry.title);
               console.log(`⚠️  Could not add entry: ${entry.title}`);
             }
           }
 
-          console.log(`\n✨ Added ${changelogData.entries.length} changelog entries from git commits!`);
+          const attempted = changelogData.entries.length;
+          if (failedTitles.length === 0) {
+            console.log(`\n✨ Added ${addedCount} changelog entries from git commits!`);
+          } else {
+            console.log('');
+            console.log(`   Added ${addedCount} of ${attempted} changelog entries - ${failedTitles.length} failed:`);
+            for (const title of failedTitles) {
+              console.log(`   - ${title}`);
+            }
+            console.log('');
+            console.log('   The release notes are incomplete until these are added.');
+            console.log('   Check .env.local has SUPABASE_SERVICE_ROLE_KEY, then re-add with:');
+            console.log('   node scripts/add-changelog.mjs <version> <type> <title> <description>');
+            console.log('');
+          }
         }
       }
     } catch (error) {
