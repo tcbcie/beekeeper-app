@@ -16,7 +16,7 @@
  * - chore: Build/tooling changes → documentation
  *
  * Usage:
- *   node .claude/skills/versioning/scripts/extract-git-changelog.mjs [version]
+ *   node scripts/extract-git-changelog.mjs [version]
  */
 
 import { execSync } from 'child_process';

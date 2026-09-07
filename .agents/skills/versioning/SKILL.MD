@@ -98,15 +98,15 @@ npm run version:bump major
 #### 2. update-version.mjs
 **Purpose**: Update version across all files (usually called by bump-version.mjs)
 
-**Location**: `.Codex/skills/versioning/scripts/update-version.mjs`
+**Location**: `scripts/update-version.mjs`
 
 **Usage**:
 ```bash
 # Update to specific version with current date
-node .Codex/skills/versioning/scripts/update-version.mjs 1.0.12
+node scripts/update-version.mjs 1.0.12
 
 # Update with custom date
-node .Codex/skills/versioning/scripts/update-version.mjs 1.0.12 "December 1, 2025"
+node scripts/update-version.mjs 1.0.12 "December 1, 2025"
 
 # Via npm
 npm run version:update 1.0.12 "December 1, 2025"
@@ -115,20 +115,20 @@ npm run version:update 1.0.12 "December 1, 2025"
 #### 3. add-changelog.mjs ⭐ NEW
 **Purpose**: Add changelog entries to the database (called automatically by bump-version or standalone)
 
-**Location**: `.Codex/skills/versioning/scripts/add-changelog.mjs`
+**Location**: `scripts/add-changelog.mjs`
 
 **Usage**:
 ```bash
 # Interactive mode (prompts for all fields)
-node .Codex/skills/versioning/scripts/add-changelog.mjs
+node scripts/add-changelog.mjs
 
 # Non-interactive mode (all arguments provided)
-node .Codex/skills/versioning/scripts/add-changelog.mjs <version> <type> <title> <description>
+node scripts/add-changelog.mjs <version> <type> <title> <description>
 
 # Examples
-node .Codex/skills/versioning/scripts/add-changelog.mjs "1.1.0" "feature" "Team Tasks" "Team members can now close tasks for shared hives"
-node .Codex/skills/versioning/scripts/add-changelog.mjs "1.0.12" "bugfix" "Login Fix" "Fixed login error for OAuth users"
-node .Codex/skills/versioning/scripts/add-changelog.mjs "1.0.13" "improvement" "UI Polish" "Improved dark mode contrast on forms"
+node scripts/add-changelog.mjs "1.1.0" "feature" "Team Tasks" "Team members can now close tasks for shared hives"
+node scripts/add-changelog.mjs "1.0.12" "bugfix" "Login Fix" "Fixed login error for OAuth users"
+node scripts/add-changelog.mjs "1.0.13" "improvement" "UI Polish" "Improved dark mode contrast on forms"
 ```
 
 **Features**:
@@ -230,14 +230,14 @@ If you skipped adding entries during version bump, or want to add more entries l
 
 ```bash
 # Interactive mode - script reads version from version.json
-node .Codex/skills/versioning/scripts/add-changelog.mjs
+node scripts/add-changelog.mjs
 
 # Non-interactive mode - provide all arguments
-node .Codex/skills/versioning/scripts/add-changelog.mjs "1.0.12" "bugfix" "Fixed login error" "Resolved issue where users couldn't log in"
+node scripts/add-changelog.mjs "1.0.12" "bugfix" "Fixed login error" "Resolved issue where users couldn't log in"
 
 # Examples
-node .Codex/skills/versioning/scripts/add-changelog.mjs "1.1.0" "feature" "Database Changelog" "Moved changelog to database for better version tracking"
-node .Codex/skills/versioning/scripts/add-changelog.mjs "1.1.0" "improvement" "UI Polish" "Improved dark mode styling across all pages"
+node scripts/add-changelog.mjs "1.1.0" "feature" "Database Changelog" "Moved changelog to database for better version tracking"
+node scripts/add-changelog.mjs "1.1.0" "improvement" "UI Polish" "Improved dark mode styling across all pages"
 ```
 
 **Entry Types**:
