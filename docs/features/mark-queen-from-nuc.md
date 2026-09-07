@@ -92,3 +92,17 @@ Those nine queens now show as marked wherever `queen_marked` is read: the nuc ca
 (`Marked <Colour> #48` in place of `Cell #6`), the Queen Tracker's marking chip, the nuc panel button
 (now "Edit Marking"), the CRM order line, and `ensure_reared_queen_record`, which now assigns a
 marking colour when promoting such a queen into the breeder register.
+
+### Changing which cell a nuc points to
+
+The nuc edit form's cell selector stamps `queen_marked_at` from the newly chosen cell. It previously
+stamped only when that cell was `emerged` **and** marked, and cleared the date only when the cell was
+removed entirely. Switching a nuc from a marked cell to a different, unmarked one therefore left the
+old cell's marking date on the nuc, so the card read `Marked <Colour>` — with no number, since the
+number lives on the graft — for a queen who had never been marked. The old cell is reset to `sealed`
+with its marking wiped on the same save, so the nuc was asserting a marking nothing backed.
+
+The date now keys on `queen_marked` alone, which is the field that actually records a marking, and is
+cleared for any cell that does not carry one. Dropping the `emerged` check also fixes the opposite
+miss: `MARKABLE_STATUSES` is `emerged`, `in_nuc` and `mated`, so a queen marked in a mated cell was
+never getting her date stamped either.

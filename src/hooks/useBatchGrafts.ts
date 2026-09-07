@@ -772,6 +772,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       if (error) throw error
       // Clear the nucs' own marking date too, or their cards keep showing "Marked" for queens
       // this action has just unmarked.
+      let nucsCleared = true
       if (!marked) {
         const { error: nucError } = await supabase
           .from('mating_nucs')
@@ -780,10 +781,16 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
           .eq('user_id', userId)
         if (nucError) {
           console.error('Error clearing nuc marking dates:', nucError)
-          toast.error('Queens unmarked, but their nucs may still show as marked. Please reload.')
+          nucsCleared = false
         }
       }
-      toast.success(`${ids.length} queens ${marked ? 'marked' : 'unmarked'}`)
+      // The grafts saved either way, so report a partial failure rather than following an error
+      // toast with a success one that contradicts it.
+      if (nucsCleared) {
+        toast.success(`${ids.length} queens ${marked ? 'marked' : 'unmarked'}`)
+      } else {
+        toast.error(`${ids.length} queens unmarked, but their nucs may still show as marked. Please reload.`)
+      }
       fetchGrafts()
       setTableSelectedIds(new Set())
     } catch (error) {
