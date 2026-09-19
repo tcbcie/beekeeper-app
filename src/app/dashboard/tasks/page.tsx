@@ -128,10 +128,19 @@ export default function TasksEventsPage() {
   // Apiary/hive come from the app-wide shared selection (carries across pages).
   // This page uses the 'all' sentinel; the shared store uses '' for "all".
   const { selectedApiaryId, setSelectedApiaryId, selectedHiveId, setSelectedHiveId } = useSelection()
-  const filterHive = selectedHiveId || 'all'
   const setFilterHive = useCallback((id: string) => setSelectedHiveId(id === 'all' ? '' : id), [setSelectedHiveId])
   const filterApiary = selectedApiaryId || 'all'
   const setFilterApiary = useCallback((id: string) => setSelectedApiaryId(id === 'all' ? '' : id), [setSelectedApiaryId])
+  const filteredHives = useMemo(
+    () => filterApiary === 'all' ? hives : hives.filter(hive => hive.apiary_id === filterApiary),
+    [hives, filterApiary]
+  )
+  // Only clear a known mismatch: an absent hive may be archived or missing
+  // because shared access could not be loaded.
+  const selectedFilterHive = hives.find(hive => hive.id === selectedHiveId)
+  const hasInvalidHiveSelection = !!selectedApiaryId && !!selectedFilterHive &&
+    selectedFilterHive.apiary_id !== selectedApiaryId
+  const filterHive = hasInvalidHiveSelection ? 'all' : selectedHiveId || 'all'
   const [filterOwnership, setFilterOwnership] = usePersistentState<'all' | 'my' | 'team'>(
     'tasks:ownership', 'all', (v) => v === 'all' || v === 'my' || v === 'team'
   )
@@ -304,17 +313,31 @@ export default function TasksEventsPage() {
     }
   }, [userId, fetchTasks, fetchAssociations])
 
+  // Reconcile saved selections before applying any incoming direct link.
+  // Only a loaded hive can establish an apiary mismatch.
+  useEffect(() => {
+    if (hasInvalidHiveSelection) setFilterHive('all')
+  }, [hasInvalidHiveSelection, setFilterHive])
+
   // Handle URL parameters for opening form with pre-filled hive
   useEffect(() => {
     const create = searchParams.get('create')
     const hiveId = searchParams.get('hive')
+    const apiaryId = searchParams.get('apiary')
 
     if (hiveId && hives.length > 0) {
       // Find the hive to get its apiary_id
       const selectedHive = hives.find(h => h.id === hiveId)
 
-      // Set filter to the specific hive
-      setFilterHive(hiveId)
+      // An explicit apiary takes precedence over a conflicting hive.
+      // Normalise before writing so this effect cannot restore a stale selection.
+      const conflictsWithApiary = apiaryId && apiaryId !== 'all' &&
+        selectedHive && selectedHive.apiary_id !== apiaryId
+      setFilterHive(conflictsWithApiary ? 'all' : hiveId)
+      if (!apiaryId) {
+        // Hive tasks can retain an older apiary or have no apiary assigned.
+        setFilterApiary('all')
+      }
 
       // If create=true, open form with pre-filled hive and apiary
       if (create === 'true' && selectedHive) {
@@ -327,7 +350,7 @@ export default function TasksEventsPage() {
         setShowForm(true)
       }
     }
-  }, [searchParams, hives])
+  }, [searchParams, hives, setFilterHive, setFilterApiary])
 
   // Handle ?apiary= param for pre-filtering by apiary (apply once only)
   // Also open form if ?create=true&apiary= (no hive needed)
@@ -341,7 +364,7 @@ export default function TasksEventsPage() {
         setShowForm(true)
       }
     }
-  }, [searchParams])
+  }, [searchParams, setFilterApiary])
 
   useEffect(() => {
     const taskId = searchParams.get('task')
@@ -353,7 +376,10 @@ export default function TasksEventsPage() {
     setFilterType('all')
     setFilterCategory('all')
     setFilterOwnership('all')
-    setFilterHive(targetTask.hive_id || 'all')
+    const targetHive = hives.find(hive => hive.id === targetTask.hive_id)
+    const conflictsWithApiary = targetTask.apiary_id && targetHive &&
+      targetHive.apiary_id !== targetTask.apiary_id
+    setFilterHive(conflictsWithApiary ? 'all' : targetTask.hive_id || 'all')
     setFilterApiary(targetTask.apiary_id || 'all')
     // The preset and the milestone toggle are deliberately left alone — both
     // are persisted, and filteredTasks admits the highlighted row directly, so
@@ -366,7 +392,7 @@ export default function TasksEventsPage() {
     setExpandedTaskId(taskId)
     appliedTaskDeepLinkRef.current = taskId
     scrolledTaskRef.current = null
-  }, [searchParams, tasks])
+  }, [searchParams, tasks, hives, setFilterType, setFilterCategory, setFilterOwnership, setFilterHive, setFilterApiary])
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1009,7 +1035,7 @@ export default function TasksEventsPage() {
                 onChange={(e) => setFilterHive(e.target.value)}
               >
                 <option value="all">All Hives</option>
-                {hives.map(hive => (
+                {filteredHives.map(hive => (
                   <option key={hive.id} value={hive.id}>Hive {hive.hive_number}</option>
                 ))}
               </SelectField>
@@ -1019,7 +1045,14 @@ export default function TasksEventsPage() {
               <FieldLabel>Apiary</FieldLabel>
               <SelectField
                 value={filterApiary}
-                onChange={(e) => setFilterApiary(e.target.value)}
+                onChange={(e) => {
+                  const nextApiary = e.target.value
+                  setFilterApiary(nextApiary)
+                  if (selectedFilterHive && nextApiary !== 'all' &&
+                    selectedFilterHive.apiary_id !== nextApiary) {
+                    setFilterHive('all')
+                  }
+                }}
               >
                 <option value="all">All Apiaries</option>
                 {apiaries.map(apiary => (
