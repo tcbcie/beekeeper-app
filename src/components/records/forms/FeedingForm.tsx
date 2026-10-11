@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import type { Feeding, Hive, Apiary } from '@/types/records'
 import Button from '@/components/ui/Button'
 import { useFormDirtyState } from '@/hooks/useFormDirtyState'
+import { isSugarSyrup } from '@/lib/feeding'
 
 interface FeedingFormProps {
   feeding: Feeding | null
@@ -35,6 +36,7 @@ export default function FeedingForm({
     user_id: '',
     feed_date: new Date().toISOString().split('T')[0],
     feed_type: '',
+    syrup_inverted: false,
     quantity: null,
     unit: 'L',
     notes: ''
@@ -227,6 +229,17 @@ export default function FeedingForm({
               placeholder="Enter custom feed type"
               required
             />
+          )}
+          {isSugarSyrup(isOtherFeedType ? otherFeedType : formData.feed_type) && (
+            <label className="mt-2 flex items-center gap-3 min-h-[48px] cursor-pointer text-foreground">
+              <input
+                type="checkbox"
+                checked={formData.syrup_inverted}
+                onChange={(e) => setFormData(prev => ({ ...prev, syrup_inverted: e.target.checked }))}
+                className="h-5 w-5 rounded border-border"
+              />
+              Syrup inverted
+            </label>
           )}
         </div>
 

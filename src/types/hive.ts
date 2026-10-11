@@ -189,7 +189,9 @@ export interface HiveFeeding {
   feed_date: string
   hive_id: string
   feed_type: string
-  amount: number | null
+  syrup_inverted: boolean
+  quantity: number | null
+  unit: string
   notes: string | null
 }
 

@@ -3,10 +3,12 @@ import { useState } from 'react'
 import ModalShell from '@/components/ui/ModalShell'
 import Button from '@/components/ui/Button'
 import { toLocalDateString } from '@/lib/date-utils'
+import { isSugarSyrup } from '@/lib/feeding'
 
 export interface BulkFeedingValues {
   feed_date: string
   feed_type: string
+  syrup_inverted: boolean
   quantity: number | null
   unit: string
   notes: string
@@ -45,12 +47,14 @@ export default function BulkFeedingModal({
   const [feedDate, setFeedDate] = useState(() => toLocalDateString(new Date()))
   const [feedType, setFeedType] = useState('')
   const [otherFeedType, setOtherFeedType] = useState('')
+  const [syrupInverted, setSyrupInverted] = useState(false)
   const [quantity, setQuantity] = useState('')
   const [unit, setUnit] = useState('L')
   const [notes, setNotes] = useState('')
 
   const isOther = feedType === OTHER
   const resolvedType = isOther ? otherFeedType.trim() : feedType
+  const isSyrup = isSugarSyrup(resolvedType)
   const canApply = Boolean(feedDate && resolvedType) && !saving
 
   const apply = () => {
@@ -59,6 +63,8 @@ export default function BulkFeedingModal({
     onApply({
       feed_date: feedDate,
       feed_type: resolvedType,
+      // Only syrup can be inverted; a tick left over from a syrup choice is dropped.
+      syrup_inverted: isSyrup && syrupInverted,
       quantity: quantity.trim() === '' || Number.isNaN(parsed) ? null : parsed,
       unit,
       notes: notes.trim(),
@@ -133,6 +139,17 @@ export default function BulkFeedingModal({
               placeholder="Enter feed type"
               className="mt-2 w-full px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
             />
+          )}
+          {isSyrup && (
+            <label className="mt-2 flex items-center gap-3 min-h-[48px] cursor-pointer text-foreground">
+              <input
+                type="checkbox"
+                checked={syrupInverted}
+                onChange={(e) => setSyrupInverted(e.target.checked)}
+                className="h-5 w-5 rounded border-border"
+              />
+              Syrup inverted
+            </label>
           )}
         </div>
 

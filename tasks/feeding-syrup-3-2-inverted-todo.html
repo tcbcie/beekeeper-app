@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <title>Feeding: 3:2 Syrup and Inverted Flag: Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; }
+    .task { padding: 0.4rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>Feeding: 3:2 Syrup and Inverted Flag</h1>
+
+<h2>Request</h2>
+<ol>
+  <li>Add a <strong>Sugar Syrup (3:2)</strong> feed type.</li>
+  <li>Add a checkbox that records whether the syrup was <strong>inverted</strong>.</li>
+</ol>
+
+<h2>Findings</h2>
+<ul>
+  <li>Feed types are not hard-coded. They come from the live DB: <code>dropdown_values</code> in the
+      <code>feed_type</code> category. Today the order is 1:1 (1), 2:1 (2), Fondant (3), and so on.</li>
+  <li><code>feedings</code> has no column for "inverted" yet.</li>
+  <li>Feedings are written in two places: the Records form (<code>FeedingForm</code> plus
+      <code>handleFeedingSubmit</code> in <code>records/page.tsx</code>) and the bulk
+      <strong>Record feeding</strong> modal on the Hives page (<code>BulkFeedingModal</code>, whose values are
+      spread straight into the insert).</li>
+  <li>Feedings are shown in <code>FeedingCard</code> (Records) and in the hive detail page's feeding list.</li>
+</ul>
+
+<h2>Plan</h2>
+
+<h3>Database (via MCP)</h3>
+<div class="task"><input type="checkbox" checked disabled> Insert the <code>Sugar Syrup (3:2)</code> dropdown value between 1:1 and 2:1 (ordered by strength: 1:1, 3:2, 2:1) and shift the later <code>display_order</code> values up by one.</div>
+<div class="task"><input type="checkbox" checked disabled> Migration: <code>ALTER TABLE feedings ADD COLUMN syrup_inverted boolean NOT NULL DEFAULT false</code>. Existing rows become "not inverted", and the existing RLS policies already cover the new column.</div>
+
+<h3>Code</h3>
+<div class="task"><input type="checkbox" checked disabled> <code>types/records.ts</code>: add <code>syrup_inverted: boolean</code> to <code>Feeding</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>FeedingForm.tsx</code>: add an <strong>"Syrup inverted"</strong> checkbox (48px touch target) that appears only when the feed type is a sugar syrup. It resets to unticked if the type changes to something else.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>records/page.tsx</code>: include <code>syrup_inverted</code> in <code>submitData</code> and in the new-feeding default.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>BulkFeedingModal.tsx</code>: the same checkbox, also shown only for sugar syrups, added to <code>BulkFeedingValues</code>. The Hives page insert picks it up through the spread, so no change is needed there.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>FeedingCard.tsx</code>: show <strong>Inverted: Yes</strong> when the flag is set.</div>
+<div class="task"><input type="checkbox" checked disabled> Hive detail feeding list: show "(inverted)" next to the feed type when the flag is set (add <code>syrup_inverted</code> to <code>HiveFeeding</code>).</div>
+
+<h3>Docs and QA</h3>
+<div class="task"><input type="checkbox" checked disabled> Add <code>docs/features/feeding-syrup-3-2-inverted.md</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> Run the <code>qa-engineer</code> audit on the change.</div>
+<div class="task"><input type="checkbox" disabled> You test the build and the forms.</div>
+
+<div class="note">
+  <strong>Separate bug found, fixed with your approval:</strong> the hive detail feeding list reads
+  <code>feeding.amount</code> and always shows "kg", but the column is <code>quantity</code> with its own
+  <code>unit</code>. Because of this, quantities never appear on the hive detail page. The fix is two lines in
+  the same block I'm already editing.
+</div>
+
+<h2>Review</h2>
+<h3>Database (MCP migration <code>feedings_syrup_3_2_and_inverted</code>)</h3>
+<ul>
+  <li>The feed type order is now: Sugar Syrup (1:1), <strong>Sugar Syrup (3:2)</strong>, Sugar Syrup (2:1), Fondant, and the rest as before. Verified by query.</li>
+  <li>New column <code>feedings.syrup_inverted boolean NOT NULL DEFAULT false</code>. Existing records read as not inverted, and the security advisor check showed nothing new.</li>
+</ul>
+<h3>Code</h3>
+<ul>
+  <li><code>src/lib/feeding.ts</code> (new): <code>isSugarSyrup()</code>, shared by both forms.</li>
+  <li><code>FeedingForm.tsx</code> and <code>BulkFeedingModal.tsx</code>: a "Syrup inverted" checkbox with a 48px touch target, shown only for sugar syrups.</li>
+  <li><code>records/page.tsx</code> and the bulk modal save <code>isSugarSyrup(type) &amp;&amp; ticked</code>, so a leftover tick is never stored against a non-syrup feed.</li>
+  <li><code>FeedingCard.tsx</code> shows "Inverted: Yes". The hive detail list shows "(inverted)".</li>
+  <li><strong>Bug fix:</strong> <code>HiveFeeding</code> declared a non-existent <code>amount</code> field, so the hive page rendered "undefined kg". It now uses <code>quantity</code> and <code>unit</code> from the table.</li>
+</ul>
+<h3>Verification</h3>
+<ul>
+  <li><code>tsc --noEmit</code>: no errors in <code>src/</code>. The only errors are the existing <code>tests/</code> mock-typing ones.</li>
+  <li>ESLint is clean on all changed files.</li>
+  <li>QA audit found no Critical, High or Medium issues.</li>
+  <li>Docs: <code>docs/features/feeding-syrup-3-2-inverted.md</code>.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>Records → New Feeding: pick Sugar Syrup (3:2), tick "Syrup inverted", save. The card should show "Inverted: Yes".</li>
+  <li>Edit that feeding and change it to Fondant: the checkbox should disappear. Save, and the card should no longer say inverted.</li>
+  <li>Hives → select several → Record feeding with an inverted syrup. Check the records.</li>
+  <li>Open a hive's detail page: feedings should show "2 L" (not "undefined kg") and "(inverted)" where set.</li>
+</ol>
+
+</body>
+</html>

@@ -83,6 +83,12 @@ export default function FeedingCard({
             <span className="text-text-tertiary">Feed Type:</span>{' '}
             <span className="font-medium text-foreground">{feeding.feed_type}</span>
           </span>
+          {feeding.syrup_inverted && (
+            <span>
+              <span className="text-text-tertiary">Inverted:</span>{' '}
+              <span className="font-medium text-foreground">Yes</span>
+            </span>
+          )}
           {feeding.quantity !== null && (
             <span>
               <span className="text-text-tertiary">Quantity:</span>{' '}

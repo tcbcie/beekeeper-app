@@ -189,6 +189,7 @@ export interface Feeding {
   user_id: string
   feed_date: string
   feed_type: string
+  syrup_inverted: boolean
   quantity: number | null
   unit: string
   notes: string

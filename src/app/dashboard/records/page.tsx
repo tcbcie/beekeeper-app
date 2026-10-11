@@ -21,6 +21,7 @@ import { useReportFormActive } from '@/contexts/BottomSurfaceContext'
 import { buildDiscardRecordPrompt } from '@/lib/inspection-discard'
 import { buildDeleteRecordPrompt } from '@/lib/record-delete-prompts'
 import { syncTreatmentReminder } from '@/lib/treatment-reminder'
+import { isSugarSyrup } from '@/lib/feeding'
 import { useNavigationGuard } from '@/hooks/useNavigationGuard'
 import { updateManager } from '@/lib/update-manager'
 import { useRecordsData } from '@/hooks/useRecordsData'
@@ -490,6 +491,7 @@ export default function RecordsPage() {
         hive_id: presetHiveId || '',
         feed_date: currentDate,
         feed_type: '',
+        syrup_inverted: false,
         quantity: null,
         unit: '',
         notes: '',
@@ -1214,10 +1216,13 @@ export default function RecordsPage() {
     if (!userId) return
 
     try {
+      const feedType = isOther ? otherType : feeding.feed_type
       const submitData = {
         hive_id: feeding.hive_id,
         feed_date: feeding.feed_date,
-        feed_type: isOther ? otherType : feeding.feed_type,
+        feed_type: feedType,
+        // Only syrup can be inverted; a tick left over from a syrup choice is dropped.
+        syrup_inverted: isSugarSyrup(feedType) && feeding.syrup_inverted,
         quantity: feeding.quantity,
         unit: feeding.unit,
         notes: feeding.notes || ''

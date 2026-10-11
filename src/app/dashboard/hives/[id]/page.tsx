@@ -481,10 +481,12 @@ export default function HiveDetailPage() {
                   <span className="font-medium text-foreground">
                     {new Date(feeding.feed_date).toLocaleDateString()}
                   </span>
-                  <span className="ml-3 text-sm font-medium text-orange-400">{feeding.feed_type}</span>
+                  <span className="ml-3 text-sm font-medium text-orange-400">
+                    {feeding.feed_type}{feeding.syrup_inverted ? ' (inverted)' : ''}
+                  </span>
                 </div>
-                {feeding.amount !== null && (
-                  <span className="text-sm text-text-tertiary">{feeding.amount} kg</span>
+                {feeding.quantity != null && (
+                  <span className="text-sm text-text-tertiary">{feeding.quantity} {feeding.unit}</span>
                 )}
               </div>
               {feeding.notes && (
