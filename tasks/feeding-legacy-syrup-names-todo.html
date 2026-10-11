@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <title>Legacy Syrup Feed Names: Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; }
+    .task { padding: 0.4rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.4rem 0.6rem; text-align: left; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Rename Legacy Syrup Feed Names</h1>
+
+<h2>Problem</h2>
+<p>15 older feedings store the feed type without brackets, for example "Sugar Syrup 2:1" instead of the dropdown's
+"Sugar Syrup (2:1)". Because the text doesn't match a dropdown value exactly, the edit form treats them as custom
+<strong>Other</strong> types. They also show up as a separate type wherever feedings are grouped or filtered by type.</p>
+
+<h2>Findings (live DB)</h2>
+<table>
+  <tr><th>Stored value</th><th>Rename to</th><th>Rows</th><th>Accounts</th><th>Dates</th></tr>
+  <tr><td><code>Sugar Syrup 1:1</code></td><td><code>Sugar Syrup (1:1)</code></td><td>5</td><td>1</td><td>17 Jul – 26 Sep 2025</td></tr>
+  <tr><td><code>Sugar Syrup 2:1</code></td><td><code>Sugar Syrup (2:1)</code></td><td>10</td><td>1</td><td>21 Jul – 26 Sep 2025</td></tr>
+</table>
+<ul>
+  <li>These are the only syrup values outside the three dropdown options, with no whitespace or case variants.</li>
+  <li>The only trigger on <code>feedings</code> is <code>feedings_updated_at</code>, which bumps <code>updated_at</code>. Nothing in
+      the app or in any DB function reads <code>feedings.updated_at</code>, so the bump is harmless.</li>
+  <li>No code change is needed. These all date from 2025, before the dropdown used bracketed names. Today's dropdown
+      only produces bracketed values.</li>
+</ul>
+
+<h2>Plan (data only, no code)</h2>
+<div class="task"><input type="checkbox" checked disabled> Record the 15 row ids first (in the Review below) so the change can be reversed exactly.</div>
+<div class="task"><input type="checkbox" checked disabled> One MCP migration, <code>feedings_normalise_legacy_syrup_names</code>, with two exact-match updates:
+<pre><code>UPDATE feedings SET feed_type = 'Sugar Syrup (1:1)' WHERE feed_type = 'Sugar Syrup 1:1';
+UPDATE feedings SET feed_type = 'Sugar Syrup (2:1)' WHERE feed_type = 'Sugar Syrup 2:1';</code></pre></div>
+<div class="task"><input type="checkbox" checked disabled> Verify: no non-dropdown syrup values remain, and the bracketed totals rise by exactly 5 and 10.</div>
+<div class="task"><input type="checkbox" checked disabled> Add a note to <code>docs/features/feeding-syrup-3-2-inverted.md</code>.</div>
+<div class="task"><input type="checkbox" disabled> You open one of those 2025 feedings in Records → Edit. The dropdown should show "Sugar Syrup (2:1)", not "Other".</div>
+
+<div class="note"><strong>Untouched:</strong> <code>syrup_inverted</code> (stays false), quantities, dates, notes and other feed types.</div>
+
+<h2>Review</h2>
+<ul>
+  <li>MCP migration <code>feedings_normalise_legacy_syrup_names</code> applied.</li>
+  <li>Verified totals: Sugar Syrup (1:1) went from 52 to <strong>57</strong> (+5) and Sugar Syrup (2:1) from 71 to <strong>81</strong> (+10). No unbracketed syrup values remain.</li>
+  <li>No code changed. The note was added to <code>docs/features/feeding-syrup-3-2-inverted.md</code>.</li>
+</ul>
+<h3>Rows changed and rollback</h3>
+<p>If this ever needs undoing, this SQL restores exactly the 15 rows:</p>
+<pre><code>UPDATE feedings SET feed_type = 'Sugar Syrup 1:1' WHERE id IN ('67843778-ab15-4f81-bb36-e2f6f7c0d3b3','a35f88ec-3e71-463a-bf31-edd488e71343','0e204a28-c34e-45bf-98a9-cf1521706986','2f5f3100-4a0b-4d0c-a383-03a0b1ddd4e4','89a3dfd7-07ea-4ae5-b4b1-6783a647eddf');
+UPDATE feedings SET feed_type = 'Sugar Syrup 2:1' WHERE id IN ('34f33bae-a57a-46a1-abd5-7eeadbe69cf0','1cbc42f6-6c62-4e34-b4c7-bf4e594ad75f','cc684ae3-2022-4f7a-a911-c8d5edc0bc83','d2a1a614-7b49-4dd4-aea6-9e771fd077f9','56306955-7899-4061-b2e6-13674d9d1408','c5133c07-8850-4e1d-a75c-b5396c78d59f','1e837aa2-a877-403e-a3eb-85096a4586d6','f1e39080-62cb-4f66-b7f1-9580b8f7ad06','2ae10d36-434c-4d18-9dae-80b811302752','8f0ff5d8-fd6a-464b-91db-3e587d5a351f');</code></pre>
+<h3>Please test</h3>
+<ol>
+  <li>Open a 2025 syrup feeding (July to September) in Records → Edit. The Feed Type dropdown should show "Sugar Syrup (1:1)" or "(2:1)", not "Other" with a text box.</li>
+</ol>
+
+</body>
+</html>

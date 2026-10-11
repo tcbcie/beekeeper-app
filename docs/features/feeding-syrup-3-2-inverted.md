@@ -43,3 +43,11 @@ The hive detail feeding list read `feeding.amount` with a hard-coded "kg", but t
 `quantity` with its own `unit`. `amount` was always `undefined`, and `undefined !== null` let it
 through, so the list rendered "undefined kg". `HiveFeeding` (`src/types/hive.ts`) now matches the table
 (`quantity`, `unit`, `syrup_inverted`), and the list shows `quantity unit`.
+
+## Legacy syrup names (data clean-up, 11 Oct 2026)
+
+15 feedings from 2025 (one account) stored "Sugar Syrup 1:1" / "Sugar Syrup 2:1" without brackets, so the
+edit form showed them as custom "Other" types. The MCP migration `feedings_normalise_legacy_syrup_names`
+renamed them to the dropdown values "Sugar Syrup (1:1)" (5 rows) and "Sugar Syrup (2:1)" (10 rows).
+No code change was needed, because the current dropdown only produces bracketed values. The row ids
+and rollback SQL are in `tasks/feeding-legacy-syrup-names-todo.html`.
