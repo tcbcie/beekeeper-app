@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import type { Feeding, Hive, Apiary } from '@/types/records'
 import Button from '@/components/ui/Button'
 import { useFormDirtyState } from '@/hooks/useFormDirtyState'
-import { isSugarSyrup } from '@/lib/feeding'
+import { isSyrupFeed } from '@/lib/feeding'
 
 interface FeedingFormProps {
   feeding: Feeding | null
@@ -230,7 +230,7 @@ export default function FeedingForm({
               required
             />
           )}
-          {isSugarSyrup(isOtherFeedType ? otherFeedType : formData.feed_type) && (
+          {isSyrupFeed(isOtherFeedType ? otherFeedType : formData.feed_type) && (
             <label className="mt-2 flex items-center gap-3 min-h-[48px] cursor-pointer text-foreground">
               <input
                 type="checkbox"

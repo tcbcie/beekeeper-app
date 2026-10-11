@@ -97,6 +97,12 @@
   <li>A feeding with no quantity is now reported as "Not recorded" (history) or "quantity not recorded" (timeline), not "null L".</li>
   <li>ESLint is clean and there are no type errors in <code>src/</code>. QA found no Critical, High or Medium issues.</li>
 </ul>
+<h3>Follow-up: wider syrup match</h3>
+<ul>
+  <li><code>isSugarSyrup</code> was renamed to <code>isSyrupFeed</code> and now matches "syrup" anywhere, case-insensitive. Custom "Other" entries such as "Ambrosia syrup" or "Inverted sugar syrup" now get the checkbox.</li>
+  <li>No effect on existing data: all 138 saved syrup feedings already start with "Sugar Syrup".</li>
+  <li>ESLint is clean and there are no type errors in <code>src/</code>. QA found no issues.</li>
+</ul>
 <h3>Please test</h3>
 <ol>
   <li>Records → New Feeding: pick Sugar Syrup (3:2), tick "Syrup inverted", save. The card should show "Inverted: Yes".</li>

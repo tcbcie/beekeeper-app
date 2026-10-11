@@ -3,7 +3,7 @@ import { useState } from 'react'
 import ModalShell from '@/components/ui/ModalShell'
 import Button from '@/components/ui/Button'
 import { toLocalDateString } from '@/lib/date-utils'
-import { isSugarSyrup } from '@/lib/feeding'
+import { isSyrupFeed } from '@/lib/feeding'
 
 export interface BulkFeedingValues {
   feed_date: string
@@ -54,7 +54,7 @@ export default function BulkFeedingModal({
 
   const isOther = feedType === OTHER
   const resolvedType = isOther ? otherFeedType.trim() : feedType
-  const isSyrup = isSugarSyrup(resolvedType)
+  const isSyrup = isSyrupFeed(resolvedType)
   const canApply = Boolean(feedDate && resolvedType) && !saving
 
   const apply = () => {

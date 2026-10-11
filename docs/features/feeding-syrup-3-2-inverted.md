@@ -20,9 +20,10 @@ cover the new column without changes.
 
 ## Behaviour
 
-- `isSugarSyrup()` in `src/lib/feeding.ts` decides whether the checkbox shows. It matches any feed type
-  starting with "Sugar Syrup", including a custom "Other" entry worded that way.
-- On save, `syrup_inverted` is stored as `isSugarSyrup(feedType) && ticked`. If you tick the box and then
+- `isSyrupFeed()` in `src/lib/feeding.ts` decides whether the checkbox shows. It matches "syrup" anywhere
+  in the feed type (case-insensitive), so it covers the three sugar syrups and custom "Other" entries
+  such as "Ambrosia syrup" or "Inverted sugar syrup".
+- On save, `syrup_inverted` is stored as `isSyrupFeed(feedType) && ticked`. If you tick the box and then
   switch to a non-syrup feed type, the tick is dropped and is never saved against fondant and similar.
 - Both ways of writing a feeding get the checkbox:
   - Records → New/Edit Feeding (`FeedingForm`, saved by `handleFeedingSubmit` in `records/page.tsx`)
