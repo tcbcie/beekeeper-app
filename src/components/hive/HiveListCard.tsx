@@ -67,6 +67,10 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  (_, i) => superFullnessChangedAt(hive.last_super_fullness, hive.previous_super_fullness, i)
  )
 
+ // `??`, not `||`: 0 full boxes is a real choice (e.g. a half-box-only hive). The legacy
+ // `brood_boxes` total applies only to old configs that have no `brood_boxes_full` at all.
+ const fullBroodBoxes = hive.configuration?.brood_boxes_full ?? hive.configuration?.brood_boxes ?? 0
+
  return (
  <div
  id={`hive-card-${hive.id}`}
@@ -467,11 +471,11 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  ))}
 
  {/* Full-Size Brood Boxes */}
- {Array.from({ length: hive.configuration.brood_boxes_full || hive.configuration.brood_boxes || 0 }).map((_, i) => (
+ {Array.from({ length: fullBroodBoxes }).map((_, i) => (
  <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-sm font-semibold relative">
  <span className="relative z-10">🐝 Brood Full {i + 1}</span>
  {/* Frame orientation visualization */}
- {i === (hive.configuration?.brood_boxes_full || hive.configuration?.brood_boxes || 1) - 1 && hive.configuration?.frame_orientation && (
+ {i === fullBroodBoxes - 1 && hive.configuration?.frame_orientation && (
  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 pointer-events-none">
  {hive.configuration?.frame_orientation === 'warm' ? (
  <div className="flex flex-col gap-0.5">

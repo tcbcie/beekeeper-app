@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <title>Hive Card Zero Full Brood Boxes: Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; }
+    .task { padding: 0.4rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>Hive Card Shows a Full Brood Box That Isn't There</h1>
+
+<h2>Problem</h2>
+<p>Hive <strong>xx</strong> (apiary Home) is configured with 0 full-size and 1 half-size brood boxes, but the
+Hive Setup drawing on the Hives list card shows "Brood Half 1" <em>and</em> "Brood Full 1".</p>
+
+<h2>Root cause</h2>
+<p>The stored configuration is
+<code>{"brood_boxes_full": 0, "brood_boxes_half": 1, "brood_boxes": 1, ...}</code>.
+<code>brood_boxes</code> is a legacy total that the hive form still always writes as 1.</p>
+<p><code>HiveListCard.tsx:470</code> counts full boxes with
+<code>brood_boxes_full || brood_boxes || 0</code>. Because <code>0</code> is falsy, a deliberate "0 full boxes"
+falls through to the legacy <code>1</code>. Line 474 (the frame-orientation marker on the last full box) has the same
+<code>||</code> chain.</p>
+<p>The legacy fallback is only meant for old hives that have no <code>brood_boxes_full</code> at all. The 3D apiary
+view (<code>Hive3D.tsx:50</code>) and the inspection form (<code>InspectionForm.tsx:1101</code>) already get this right with
+<code>??</code>. The hive card is the only reader that uses <code>||</code>.</p>
+
+<h2>Plan (one file: <code>src/components/hive/HiveListCard.tsx</code>)</h2>
+<div class="task"><input type="checkbox" checked disabled> Work out the full-box count once, as <code>brood_boxes_full ?? brood_boxes ?? 0</code>, and use it for both the box loop (line 470) and the last-box check for the frame-orientation marker (line 474).</div>
+<div class="task"><input type="checkbox" checked disabled> Lint, type-check and run the QA audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Add a feature doc in <code>docs/features</code>.</div>
+<div class="task"><input type="checkbox" disabled> You check that hive xx shows only "Brood Half 1".</div>
+
+<div class="note">No data change is needed: the stored config is correct, and only the drawing misreads it.
+Changing what the form writes to the legacy <code>brood_boxes</code> field is out of scope. No reader depends on it once this is fixed.</div>
+
+<h2>Review</h2>
+<ul>
+  <li><code>HiveListCard.tsx</code>: one new constant, <code>fullBroodBoxes = brood_boxes_full ?? brood_boxes ?? 0</code>, used by the full-box loop and the frame-orientation marker. Two <code>||</code> chains removed.</li>
+  <li>Impact: 7 active hives had a phantom full box, and all are fixed by this render change. No data was changed.</li>
+  <li>ESLint is clean and there are no type errors in <code>src/</code>. QA found no Critical, High or Medium issues.</li>
+  <li>Low note: hives with only half boxes no longer show the frame-orientation marker (it was only ever drawn on a full box, and before the fix on the phantom one).</li>
+  <li>Doc: <code>docs/features/hive-card-zero-full-brood-fix-plan.md</code>.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>Hives list → hive <strong>xx</strong> (Home): the Hive Setup should show only "Brood Half 1".</li>
+  <li>A normal hive with full boxes should look unchanged, including its frame-orientation lines.</li>
+</ol>
+
+</body>
+</html>
