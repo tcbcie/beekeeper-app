@@ -139,7 +139,7 @@ export const getHiveTimeline: Tool = {
       supabase.from('inspections').select('id, inspection_date, temperament_rating, brood_pattern_rating, notes').eq('hive_id', hive.id).order('inspection_date', { ascending: false }).limit(limit),
       supabase.from('varroa_checks').select('id, check_date, mites_count, method, infestation_rate').eq('hive_id', hive.id).order('check_date', { ascending: false }).limit(limit),
       supabase.from('varroa_treatments').select('id, treatment_date, treatment_type').eq('hive_id', hive.id).order('treatment_date', { ascending: false }).limit(limit),
-      supabase.from('feedings').select('id, feed_date, feed_type, quantity, unit').eq('hive_id', hive.id).order('feed_date', { ascending: false }).limit(limit),
+      supabase.from('feedings').select('id, feed_date, feed_type, syrup_inverted, quantity, unit').eq('hive_id', hive.id).order('feed_date', { ascending: false }).limit(limit),
       supabase.from('harvests').select('id, harvest_date, honey_weight, notes').eq('hive_id', hive.id).order('harvest_date', { ascending: false }).limit(limit)
     ])
 
@@ -173,7 +173,7 @@ export const getHiveTimeline: Tool = {
       timeline.push({
         date: f.feed_date,
         type: 'Feeding',
-        details: `${f.feed_type}: ${f.quantity} ${f.unit}`
+        details: `${f.feed_type}${f.syrup_inverted ? ' (inverted)' : ''}: ${f.quantity != null ? `${f.quantity} ${f.unit}` : 'quantity not recorded'}`
       })
     })
 

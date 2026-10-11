@@ -61,6 +61,15 @@
   the same block I'm already editing.
 </div>
 
+<h2>Follow-up: AI assistant</h2>
+<div class="task"><input type="checkbox" checked disabled> <code>src/lib/ai/tools/feeding.ts</code> (<code>getFeedingHistory</code>): select <code>syrup_inverted</code> and report the type as e.g. "Sugar Syrup (3:2) (inverted)".</div>
+<div class="task"><input type="checkbox" checked disabled> <code>src/lib/ai/tools/hives.ts</code> (hive timeline): the same "(inverted)" suffix on feeding entries.</div>
+<div class="note">
+  <strong>Related bug in the same lines, fixed:</strong> both tools build the amount as <code>`${quantity} ${unit}`</code>.
+  Quantity is optional, so a feeding without one reaches the assistant as "null L". The proposed fix is to
+  report "not recorded" instead.
+</div>
+
 <h2>Review</h2>
 <h3>Database (MCP migration <code>feedings_syrup_3_2_and_inverted</code>)</h3>
 <ul>
@@ -82,12 +91,19 @@
   <li>QA audit found no Critical, High or Medium issues.</li>
   <li>Docs: <code>docs/features/feeding-syrup-3-2-inverted.md</code>.</li>
 </ul>
+<h3>Follow-up: AI assistant</h3>
+<ul>
+  <li><code>getFeedingHistory</code> and the hive timeline now report "(inverted)" after the feed type.</li>
+  <li>A feeding with no quantity is now reported as "Not recorded" (history) or "quantity not recorded" (timeline), not "null L".</li>
+  <li>ESLint is clean and there are no type errors in <code>src/</code>. QA found no Critical, High or Medium issues.</li>
+</ul>
 <h3>Please test</h3>
 <ol>
   <li>Records → New Feeding: pick Sugar Syrup (3:2), tick "Syrup inverted", save. The card should show "Inverted: Yes".</li>
   <li>Edit that feeding and change it to Fondant: the checkbox should disappear. Save, and the card should no longer say inverted.</li>
   <li>Hives → select several → Record feeding with an inverted syrup. Check the records.</li>
   <li>Open a hive's detail page: feedings should show "2 L" (not "undefined kg") and "(inverted)" where set.</li>
+  <li>Ask the AI assistant "show feeding history for hive 7-DAN". Inverted syrups should say "(inverted)", and a feeding without a quantity should say "Not recorded".</li>
 </ol>
 
 </body>

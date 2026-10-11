@@ -32,6 +32,9 @@ cover the new column without changes.
 
 - Records feeding card (`FeedingCard`): shows **Inverted: Yes** when set.
 - Hive detail feeding list: shows "(inverted)" after the feed type.
+- AI assistant: `getFeedingHistory` (`src/lib/ai/tools/feeding.ts`) and the hive timeline tool
+  (`src/lib/ai/tools/hives.ts`) add "(inverted)" after the feed type. A feeding with no quantity is
+  reported as "Not recorded" / "quantity not recorded" instead of "null L".
 
 ## Related fix
 

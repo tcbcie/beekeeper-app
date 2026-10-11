@@ -36,7 +36,7 @@ export const getFeedingHistory: Tool = {
 
     const { data, error } = await supabase
       .from('feedings')
-      .select('feed_date, feed_type, quantity, unit, notes')
+      .select('feed_date, feed_type, syrup_inverted, quantity, unit, notes')
       .eq('hive_id', hive.id)
       .order('feed_date', { ascending: false })
       .limit(args.limit || 10)
@@ -49,8 +49,8 @@ export const getFeedingHistory: Tool = {
       apiary: hive.apiary_name,
       feedings: data.map(f => ({
         date: formatDate(f.feed_date),
-        type: f.feed_type || 'Unknown',
-        amount: `${f.quantity} ${f.unit}`,
+        type: `${f.feed_type || 'Unknown'}${f.syrup_inverted ? ' (inverted)' : ''}`,
+        amount: f.quantity != null ? `${f.quantity} ${f.unit}` : 'Not recorded',
         notes: f.notes?.substring(0, 50) || 'None'
       }))
     }
