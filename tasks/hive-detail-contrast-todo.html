@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <title>Hive Detail Contrast Pass: Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; }
+    .task { padding: 0.4rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.92em; }
+    th, td { border: 1px solid #e5e7eb; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+    .swatch { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 500; border: 1px solid transparent; }
+  </style>
+</head>
+<body>
+
+<h1>Hive Detail Page: Light-Mode Contrast Pass</h1>
+
+<h2>Problem</h2>
+<p>The record lists and status badges on <code>src/app/dashboard/hives/[id]/page.tsx</code> were styled for dark mode only.
+In the default light theme they show pale text or light-on-murky badges, at about 1.5:1 to 2.5:1 contrast. That is well
+below WCAG AA (4.5:1 for text, 3:1 for icons), and hard to read for 50+ users outdoors.</p>
+
+<h2>Before and after (light mode)</h2>
+<table>
+  <tr><th>Element</th><th>Now</th><th>Proposed</th></tr>
+  <tr><td>Feed type text</td>
+      <td><span class="swatch" style="color:#fb923c">Sugar Syrup (3:2)</span></td>
+      <td><span class="swatch" style="color:#9a3412">Sugar Syrup (3:2)</span></td></tr>
+  <tr><td>Honey weight</td>
+      <td><span class="swatch" style="color:#facc15">12 kg</span></td>
+      <td><span class="swatch" style="color:#854d0e">12 kg</span></td></tr>
+  <tr><td>Queen Seen badge</td>
+      <td><span class="swatch" style="background:rgba(20,83,45,.5);color:#86efac;border-color:#166534">Queen Seen</span></td>
+      <td><span class="swatch" style="background:#dcfce7;color:#166534;border-color:#86efac">Queen Seen</span></td></tr>
+  <tr><td>Mite count (high)</td>
+      <td><span class="swatch" style="background:rgba(127,29,29,.5);color:#fca5a5;border-color:#991b1b">14 mites</span></td>
+      <td><span class="swatch" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5">14 mites</span></td></tr>
+</table>
+
+<h2>Approach</h2>
+<p>This is a class-only change in one file. Every element gets a light-mode colour, and its <strong>current classes move behind
+<code>dark:</code></strong>, so dark mode looks exactly as it does today. The pairs reuse patterns already in the codebase:</p>
+<ul>
+  <li><strong>Badges</strong>: the same page's line 212 pattern:
+      <code>bg-X-100 text-X-800 border-X-300 dark:bg-X-900/50 dark:text-X-300 dark:border-X-800</code></li>
+  <li><strong>Coloured text</strong>: line 453's pattern, using shade 700 or 800 in light mode and the current 400 in dark mode</li>
+  <li><strong>Section icons</strong>: the <code>Toast</code>/<code>ConfirmDialog</code> pattern <code>text-X-600 dark:text-X-400</code>
+      (shade 700 for yellow, because yellow-600 is just under 3:1)</li>
+</ul>
+
+<h2>Plan (one file: <code>src/app/dashboard/hives/[id]/page.tsx</code>)</h2>
+<h3>Badges</h3>
+<div class="task"><input type="checkbox" checked disabled> <code>:170</code> "Hive not found" box (red)</div>
+<div class="task"><input type="checkbox" checked disabled> <code>:361</code> Queen Seen (green) and <code>:364</code> Eggs (blue)</div>
+<div class="task"><input type="checkbox" checked disabled> <code>:411–413</code> mite count badge (red, yellow and green bands)</div>
+<div class="task"><input type="checkbox" checked disabled> <code>:604</code> Active status (green) and <code>:611</code> Queenless (red)</div>
+<h3>Coloured text</h3>
+<div class="task"><input type="checkbox" checked disabled> <code>:443</code> treatment type: <code>text-red-700 dark:text-red-400</code></div>
+<div class="task"><input type="checkbox" checked disabled> <code>:484</code> feed type: <code>text-orange-800 dark:text-orange-400</code></div>
+<div class="task"><input type="checkbox" checked disabled> <code>:516</code> honey weight: <code>text-yellow-800 dark:text-yellow-400</code></div>
+<h3>Section header icons</h3>
+<div class="task"><input type="checkbox" checked disabled> <code>:350, :395, :429, :474, :502</code>: Inspections (blue), Varroa Checks (purple), Treatments (red), Feedings (orange), Harvests (yellow)</div>
+<h3>Wrap-up</h3>
+<div class="task"><input type="checkbox" checked disabled> Lint, type-check and run the QA audit</div>
+<div class="task"><input type="checkbox" checked disabled> Add a feature doc in <code>docs/features</code></div>
+<div class="task"><input type="checkbox" disabled> You check the page in light and dark mode</div>
+
+<div class="note"><strong>Out of scope:</strong> layout, wording, the date formatting note and other pages. Only colour classes
+change, and dark mode is untouched.</div>
+
+<h2>Review</h2>
+<ul>
+  <li>16 class-only line changes in <code>src/app/dashboard/hives/[id]/page.tsx</code>. Every item in the plan was done as specified.</li>
+  <li>A token-by-token scan found no dark-only colour left without a light pair. Each <code>dark:</code> class is the exact original class, so dark mode is unchanged.</li>
+  <li>All new classes are written out in full in the source, so Tailwind will generate them.</li>
+  <li>ESLint is clean and there are no type errors in <code>src/</code>. QA found no Critical, High or Medium issues.</li>
+  <li>Doc: <code>docs/features/hive-detail-contrast-fix-plan.md</code>.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>Open a hive's detail page in <strong>light mode</strong>. The badges (Queen Seen, Eggs, mite counts, Active, Queenless) should be pale with dark text, and the feed type, treatment type and honey weight should be easy to read.</li>
+  <li>Switch to <strong>dark mode</strong>. Everything should look exactly as it did before.</li>
+</ol>
+
+</body>
+</html>

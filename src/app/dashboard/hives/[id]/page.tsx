@@ -167,7 +167,7 @@ export default function HiveDetailPage() {
   if (!hive) {
     return (
       <div className="p-6">
-        <div className="bg-red-900/50 border border-red-800 rounded-lg p-4 text-red-300">
+        <div className="bg-red-100 border border-red-300 text-red-800 dark:bg-red-900/50 dark:border-red-800 dark:text-red-300 rounded-lg p-4">
           Hive not found
         </div>
       </div>
@@ -347,7 +347,7 @@ export default function HiveDetailPage() {
         <RecordSection<HiveInspection>
           title="Inspections"
           icon={Calendar}
-          iconColor="text-blue-400"
+          iconColor="text-blue-600 dark:text-blue-400"
           records={inspections}
           emptyMessage="No inspections recorded yet"
           renderRecord={(inspection) => (
@@ -358,10 +358,10 @@ export default function HiveDetailPage() {
                 </span>
                 <div className="flex gap-2">
                   {inspection.queen_seen && (
-                    <span className="px-2 py-1 bg-green-900/50 text-green-300 text-sm rounded border border-green-800">Queen Seen</span>
+                    <span className="px-2 py-1 bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800 text-sm rounded">Queen Seen</span>
                   )}
                   {inspection.eggs_present && (
-                    <span className="px-2 py-1 bg-blue-900/50 text-blue-300 text-sm rounded border border-blue-800">Eggs</span>
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 border border-blue-300 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800 text-sm rounded">Eggs</span>
                   )}
                 </div>
               </div>
@@ -392,7 +392,7 @@ export default function HiveDetailPage() {
         <RecordSection<HiveVarroaCheck>
           title="Varroa Checks"
           icon={Bug}
-          iconColor="text-purple-400"
+          iconColor="text-purple-600 dark:text-purple-400"
           records={varroaChecks}
           emptyMessage="No varroa checks recorded yet"
           renderRecord={(check) => (
@@ -408,9 +408,9 @@ export default function HiveDetailPage() {
                 </div>
                 {check.mite_count !== null && (
                   <span className={`px-3 py-1 rounded font-medium ${
-                    check.mite_count > 10 ? 'bg-red-900/50 text-red-300 border border-red-800' :
-                    check.mite_count > 5 ? 'bg-yellow-900/50 text-yellow-300 border border-yellow-800' :
-                    'bg-green-900/50 text-green-300 border border-green-800'
+                    check.mite_count > 10 ? 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800' :
+                    check.mite_count > 5 ? 'bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/50 dark:text-yellow-300 dark:border-yellow-800' :
+                    'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800'
                   }`}>
                     {check.mite_count} mites
                   </span>
@@ -426,7 +426,7 @@ export default function HiveDetailPage() {
         <RecordSection<HiveVarroaTreatment>
           title="Varroa Treatments"
           icon={Syringe}
-          iconColor="text-red-400"
+          iconColor="text-red-600 dark:text-red-400"
           records={varroaTreatments}
           emptyMessage="No treatments recorded yet"
           renderRecord={(treatment) => {
@@ -440,7 +440,7 @@ export default function HiveDetailPage() {
                   <span className="font-medium text-foreground">
                     {new Date(treatment.treatment_date).toLocaleDateString()}
                   </span>
-                  <span className="text-sm font-medium text-red-400">{treatment.treatment_type}</span>
+                  <span className="text-sm font-medium text-red-700 dark:text-red-400">{treatment.treatment_type}</span>
                 </div>
                 {treatment.dosage && (
                   <span className="text-sm text-text-tertiary">Dosage: {treatment.dosage}</span>
@@ -471,7 +471,7 @@ export default function HiveDetailPage() {
         <RecordSection<HiveFeeding>
           title="Feedings"
           icon={Wheat}
-          iconColor="text-orange-400"
+          iconColor="text-orange-600 dark:text-orange-400"
           records={feedings}
           emptyMessage="No feedings recorded yet"
           renderRecord={(feeding) => (
@@ -481,7 +481,7 @@ export default function HiveDetailPage() {
                   <span className="font-medium text-foreground">
                     {new Date(feeding.feed_date).toLocaleDateString()}
                   </span>
-                  <span className="ml-3 text-sm font-medium text-orange-400">
+                  <span className="ml-3 text-sm font-medium text-orange-800 dark:text-orange-400">
                     {feeding.feed_type}{feeding.syrup_inverted ? ' (inverted)' : ''}
                   </span>
                 </div>
@@ -499,7 +499,7 @@ export default function HiveDetailPage() {
         <RecordSection<HiveHarvest>
           title="Harvests"
           icon={Droplet}
-          iconColor="text-yellow-400"
+          iconColor="text-yellow-700 dark:text-yellow-400"
           records={harvests}
           emptyMessage="No harvests recorded yet"
           renderRecord={(harvest) => (
@@ -513,7 +513,7 @@ export default function HiveDetailPage() {
                     <div className="text-sm text-text-tertiary">{harvest.frames_harvested} frames</div>
                   )}
                   {harvest.honey_weight !== null && (
-                    <div className="text-sm font-medium text-yellow-400">{harvest.honey_weight} kg</div>
+                    <div className="text-sm font-medium text-yellow-800 dark:text-yellow-400">{harvest.honey_weight} kg</div>
                   )}
                 </div>
               </div>
@@ -601,14 +601,14 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
               <span className="text-text-tertiary">Status:</span>
               <div className="flex items-center gap-2">
                 <span className={`font-medium px-2 py-1 rounded text-sm ${
-                  hive.status === 'active' ? 'bg-green-900/50 text-green-300 border border-green-800' :
+                  hive.status === 'active' ? 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/50 dark:text-green-300 dark:border-green-800' :
                   hive.status === 'archived' ? 'bg-surface-secondary text-text-primary' :
                   'bg-surface-secondary text-text-primary'
                 }`}>
                   {hive.status}
                 </span>
                 {hive.is_queenless && !hive.archived_at && (
-                  <span className="font-medium px-2 py-1 rounded text-sm bg-red-900/50 text-red-300 border border-red-800">
+                  <span className="font-medium px-2 py-1 rounded text-sm bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800">
                     {formatQueenlessLabel(hive.queenless_reason)}
                   </span>
                 )}
