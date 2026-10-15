@@ -23,6 +23,17 @@ const MAX_EMAIL_LEN = 254 // RFC 5321 max address length
 const RATE_LIMIT = 25 // invoice emails per user per hour
 const RATE_WINDOW_MS = 60 * 60 * 1000
 
+// The seller name and order number are user-controlled; escape them before they go into the email HTML.
+function escapeHtml(value: unknown): string {
+  if (value == null) return ''
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function joinAddress(c: Record<string, unknown>): string | null {
   const parts = [c.address_line1, c.address_line2, c.city, c.county, c.postcode, c.country]
     .map((p) => (typeof p === 'string' ? p.trim() : '')).filter(Boolean)
@@ -165,7 +176,7 @@ export async function POST(request: NextRequest) {
         to: [to],
         reply_to: profile.email || undefined,
         subject: `Invoice ${order.order_number} from ${sellerName}`,
-        html: `<p>Hello,</p><p>Please find attached invoice <strong>${order.order_number}</strong> from ${sellerName}.</p><p>Thank you for your business.</p>`,
+        html: `<p>Hello,</p><p>Please find attached invoice <strong>${escapeHtml(order.order_number)}</strong> from ${escapeHtml(sellerName)}.</p><p>Thank you for your business.</p>`,
         text: `Hello,\n\nPlease find attached invoice ${order.order_number} from ${sellerName}.\n\nThank you for your business.`,
         attachments: [{ filename: `${order.order_number}.pdf`, content: pdfBase64 }],
       }),

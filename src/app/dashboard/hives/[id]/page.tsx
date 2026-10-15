@@ -79,11 +79,12 @@ export default function HiveDetailPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('beep_api_token')
+        .select('beep_connected_at')
         .eq('id', session.user.id)
         .single()
 
-      setBeepConnected(!!profile?.beep_api_token)
+      // The token itself is server-only; connected_at is set and cleared with it.
+      setBeepConnected(!!profile?.beep_connected_at)
     } catch (error) {
       console.error('Error checking BEEP connection:', error)
     }
@@ -97,11 +98,11 @@ export default function HiveDetailPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('wolf_api_token')
+        .select('wolf_connected_at')
         .eq('id', session.user.id)
         .single()
 
-      setWolfConnected(!!profile?.wolf_api_token)
+      setWolfConnected(!!profile?.wolf_connected_at)
     } catch (error) {
       console.error('Error checking Wolf Waagen connection:', error)
     }

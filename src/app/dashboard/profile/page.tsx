@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { fetchUserExportData, USER_EXPORT_TABLES } from '@/lib/database-export'
-import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
+import { getCurrentUserId, getUserRole, PROFILE_COLUMNS, type UserRole } from '@/lib/auth'
 import { Edit2, Save, Download, Trash2, Scale, Users, Crown, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
@@ -33,7 +33,6 @@ interface UserProfile {
  id: string
  role: 'User' | 'Admin'
  created_at: string
- updated_at: string
  email?: string
  first_name?: string
  last_name?: string
@@ -161,7 +160,7 @@ export default function ProfilePage() {
  try {
  const { data, error } = await supabase
  .from('profiles')
- .select('*')
+ .select(PROFILE_COLUMNS)
  .eq('id', userId)
  .maybeSingle()
 

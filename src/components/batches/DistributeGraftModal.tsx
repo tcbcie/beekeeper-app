@@ -164,7 +164,7 @@ export default function DistributeGraftModal({
 
   // Debounced user search with stale-result guard (app_user mode only)
   useEffect(() => {
-    if (recipientMode !== 'app_user' || searchText.length < 2) {
+    if (recipientMode !== 'app_user' || searchText.trim().length < 3) {
       setSearchResults([])
       return
     }
@@ -280,13 +280,13 @@ export default function DistributeGraftModal({
   const externalLocationRequired = isExternal && !extLocation.trim()
   const canSubmit = isExternal ? (!!externalHasData && !externalLocationRequired) : !!selectedUser
 
-  // Mirrors the ILIKE the search RPC uses, so the hint only shows when the empty result really
-  // is the self-exclusion rather than a genuine miss.
+  // Mirrors the search RPC (name contains the text, or the complete email matches), so the hint
+  // only shows when the empty result really is the self-exclusion rather than a genuine miss.
   const isSearchingForSelf = useMemo(() => {
     const needle = searchText.trim().toLowerCase()
-    if (needle.length < 2 || !ownIdentity) return false
-    return [ownIdentity.email, ownIdentity.full_name]
-      .some((field) => !!field && field.toLowerCase().includes(needle))
+    if (needle.length < 3 || !ownIdentity) return false
+    return (!!ownIdentity.full_name && ownIdentity.full_name.toLowerCase().includes(needle)) ||
+      (!!ownIdentity.email && ownIdentity.email.toLowerCase() === needle)
   }, [searchText, ownIdentity])
 
   const handleSubmit = async () => {
@@ -512,7 +512,7 @@ export default function DistributeGraftModal({
                     type="text"
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
-                    placeholder="Search by name or email..."
+                    placeholder="Search by name or full email address…"
                     className="w-full pl-9 pr-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
                     autoFocus
                   />

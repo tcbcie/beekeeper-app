@@ -68,13 +68,12 @@ function DeclineInvitationContent() {
           return
         }
 
-        // Decline the invitation
-        const { error: updateError } = await supabase
-          .from('team_invitations')
-          .update({ status: 'declined', declined_at: new Date().toISOString() })
-          .eq('id', invitationId)
+        // Decline the invitation (RPC: works without logging in; returns false if nothing changed)
+        const { data: declined, error: updateError } = await supabase
+          .rpc('decline_team_invitation', { p_invitation_id: invitationId })
 
         if (updateError) throw updateError
+        if (!declined) throw new Error('Invitation could not be declined')
 
         setStatus('success')
         setMessage(`You have declined the invitation to join ${invitation.teams?.name}`)

@@ -73,14 +73,11 @@ function LoginForm() {
 
     try {
       if (isSignUp) {
-        const { data: checkData } = await supabase
-          .from('profiles')
-          .select('id, deleted_at, original_email')
-          .eq('original_email', email)
-          .not('deleted_at', 'is', null)
-          .maybeSingle()
+        // Yes/no check: anonymous visitors cannot read profile rows
+        const { data: isDeletedAccount } = await supabase
+          .rpc('is_deleted_account', { p_email: email })
 
-        if (checkData && checkData.deleted_at) {
+        if (isDeletedAccount === true) {
           setMessage('This account has been deactivated. Redirecting to account reactivation page...')
           setLoading(false)
           setTimeout(() => {

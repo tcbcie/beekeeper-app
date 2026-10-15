@@ -211,15 +211,16 @@ export default function ScalesPage() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('beep_api_token, beep_connected_at, wolf_api_token, wolf_connected_at')
+          .select('beep_connected_at, wolf_connected_at')
           .eq('id', id)
           .maybeSingle()
 
         if (error) throw error
 
         if (data) {
-          // Check BEEP connection status
-          if (data.beep_api_token) {
+          // Check BEEP connection status (the token itself is server-only;
+          // connected_at is set and cleared together with it)
+          if (data.beep_connected_at) {
             setBeepConnected(true)
             setBeepConnectedAt(data.beep_connected_at)
           } else {
@@ -227,7 +228,7 @@ export default function ScalesPage() {
             setBeepConnectedAt(null)
           }
           // Check Wolf Waagen connection status
-          if (data.wolf_api_token) {
+          if (data.wolf_connected_at) {
             setWolfConnected(true)
             setWolfConnectedAt(data.wolf_connected_at)
           } else {

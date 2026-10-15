@@ -1013,7 +1013,8 @@ export function useGraftDistributions() {
   }, [])
 
   const searchUsers = useCallback(async (searchText: string): Promise<RecipientUser[]> => {
-    if (!searchText || searchText.length < 2) return []
+    // The RPC needs 3+ characters (name fragment or a complete email) and returns masked emails
+    if (!searchText || searchText.trim().length < 3) return []
     try {
       const { data, error } = await supabase
         .rpc('search_users_for_distribution', { search_text: searchText })

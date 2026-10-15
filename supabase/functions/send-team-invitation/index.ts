@@ -11,11 +11,23 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
 interface InvitationRequest {
   invitationId: string
-  inviteeEmail: string
-  teamName: string
-  inviterName: string
-  inviterEmail: string
-  expiresAt: string
+}
+
+function escapeHtml(value: unknown): string {
+  if (value == null) return ''
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function jsonResponse(body: Record<string, unknown>, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+  })
 }
 
 serve(async (req) => {
@@ -31,49 +43,65 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body
-    const {
-      invitationId,
-      inviteeEmail,
-      teamName,
-      inviterName,
-      inviterEmail,
-      expiresAt,
-    }: InvitationRequest = await req.json()
+    const supabase = createClient(
+      SUPABASE_URL!,
+      SUPABASE_SERVICE_ROLE_KEY!
+    )
 
-    console.log('📧 Sending team invitation email:', {
-      invitationId,
-      inviteeEmail,
-      teamName,
-      inviterName,
-    })
+    // The caller must be the signed-in user who created this invitation. Every detail in the
+    // email comes from the database, never from the request body, so this function cannot be
+    // used to send arbitrary mail from our domain.
+    const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
+    const { data: { user } } = await supabase.auth.getUser(token)
+    if (!user) return jsonResponse({ error: 'Unauthorised' }, 401)
 
-    // Validate required fields
-    if (!invitationId || !inviteeEmail || !teamName) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
+    const { invitationId }: InvitationRequest = await req.json()
+    if (!invitationId) return jsonResponse({ error: 'Missing invitationId' }, 400)
+
+    const { data: invitation } = await supabase
+      .from('team_invitations')
+      .select('id, email, invited_by, status, expires_at, teams(name)')
+      .eq('id', invitationId)
+      .maybeSingle()
+
+    if (!invitation || invitation.invited_by !== user.id || invitation.status !== 'pending') {
+      return jsonResponse({ error: 'Invitation not found' }, 403)
     }
 
+    const { data: inviter } = await supabase
+      .from('profiles')
+      .select('first_name, last_name, email')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    const teams = invitation.teams as { name: string } | { name: string }[] | null
+    const teamName = (Array.isArray(teams) ? teams[0]?.name : teams?.name) || 'a team'
+    const inviteeEmail = invitation.email as string
+    const inviterEmail = inviter?.email || user.email || ''
+    const inviterName = [inviter?.first_name, inviter?.last_name].filter(Boolean).join(' ')
+
+    console.log('📧 Sending team invitation email:', { invitationId: invitation.id })
+
     // Format expiry date
-    const expiryDate = new Date(expiresAt)
+    const expiryDate = new Date(invitation.expires_at as string)
     const formattedExpiry = expiryDate.toLocaleDateString('en-IE', {
       day: '2-digit',
       month: 'long',
       year: 'numeric',
     })
 
-    // Create Supabase client for generating accept/decline links
-    const supabase = createClient(
-      SUPABASE_URL!,
-      SUPABASE_SERVICE_ROLE_KEY!
-    )
-
     // Generate accept/decline URLs (these will be handled in the app)
     const appUrl = 'https://www.hivecraic.com'
-    const acceptUrl = `${appUrl}/accept-invitation?id=${invitationId}`
-    const declineUrl = `${appUrl}/decline-invitation?id=${invitationId}`
+    const acceptUrl = `${appUrl}/accept-invitation?id=${invitation.id}`
+    const declineUrl = `${appUrl}/decline-invitation?id=${invitation.id}`
+
+    // HTML-safe copies of user-controlled text
+    const h = {
+      team: escapeHtml(teamName),
+      inviter: escapeHtml(inviterName || inviterEmail),
+      inviterEmail: escapeHtml(inviterEmail),
+      invitee: escapeHtml(inviteeEmail),
+    }
 
     // Build HTML email
     const htmlContent = `
@@ -96,14 +124,14 @@ serve(async (req) => {
     <h2 style="color: #d97706; margin-top: 0;">You've Been Invited to Join a Team!</h2>
 
     <p style="font-size: 16px; margin-bottom: 20px;">
-      Hello! <strong>${inviterName || inviterEmail}</strong> has invited you to join the team
-      <strong style="color: #d97706;">${teamName}</strong> on HiveCraic.
+      Hello! <strong>${h.inviter}</strong> has invited you to join the team
+      <strong style="color: #d97706;">${h.team}</strong> on HiveCraic.
     </p>
 
     <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 25px 0;">
       <p style="margin: 0; font-size: 14px; color: #6b7280;">
-        <strong>Team:</strong> ${teamName}<br>
-        <strong>Invited by:</strong> ${inviterName || inviterEmail}<br>
+        <strong>Team:</strong> ${h.team}<br>
+        <strong>Invited by:</strong> ${h.inviter}<br>
         <strong>Expires:</strong> ${formattedExpiry}
       </p>
     </div>
@@ -134,21 +162,21 @@ serve(async (req) => {
         redirected back to accept the team invitation.
       </p>
       <p style="margin: 10px 0 0 0; font-size: 14px; color: #92400e;">
-        <strong>Important:</strong> Please use this email address (<strong>${inviteeEmail}</strong>) when signing up
+        <strong>Important:</strong> Please use this email address (<strong>${h.invitee}</strong>) when signing up
         to ensure your invitation is processed correctly.
       </p>
     </div>
 
     <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">
       This invitation will expire on <strong>${formattedExpiry}</strong>.
-      If you have any questions, please contact ${inviterEmail}.
+      If you have any questions, please contact ${h.inviterEmail}.
     </p>
 
   </div>
 
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
     <p style="margin: 5px 0;">
-      You received this email because ${inviterName || inviterEmail} invited you to join their team on HiveCraic.
+      You received this email because ${h.inviter} invited you to join their team on HiveCraic.
     </p>
     <p style="margin: 5px 0;">
       <a href="${appUrl}" style="color: #f59e0b; text-decoration: none;">HiveCraic</a> -
