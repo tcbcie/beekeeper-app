@@ -48,15 +48,10 @@ function AcceptInvitationContent() {
 
       try {
         // Fetch invitation details first (before checking auth)
-        // We need to fetch this before auth check to get the invited email
+        // We need to fetch this before auth check to get the invited email.
+        // RPC: the table itself is only readable by the team owner and the invitee.
         const { data: invitation, error: invitationError } = await supabase
-          .from('team_invitations')
-          .select(`
-            *,
-            teams(name)
-          `)
-          .eq('id', invitationId)
-          .maybeSingle()
+          .rpc('get_team_invitation', { p_invitation_id: invitationId })
 
         if (invitationError) {
           console.error('Error fetching invitation:', invitationError)

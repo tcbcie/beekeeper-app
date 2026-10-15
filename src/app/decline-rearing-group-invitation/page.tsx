@@ -31,12 +31,9 @@ function DeclineRearingGroupInvitationContent() {
       try {
         const userId = await getCurrentUserId()
 
-        // Fetch invitation details
+        // Fetch invitation details (RPC: the table is only readable by the owner and the invitee)
         const { data: invitation, error: invitationError } = await supabase
-          .from('rearing_group_invitations')
-          .select('*, rearing_groups(name)')
-          .eq('id', invitationId)
-          .single()
+          .rpc('get_rearing_group_invitation', { p_invitation_id: invitationId })
 
         if (invitationError || !invitation) {
           setStatus('error')

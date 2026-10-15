@@ -75,11 +75,9 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
 
     try {
       // Step 1: Validate the code type before activation
+      // (RPC: the codes table is admin-only; this looks up a single exact code)
       const { data: codeData, error: codeError } = await supabase
-        .from('registration_codes')
-        .select('id, code, code_type, is_active')
-        .eq('code', code.trim().toUpperCase())
-        .maybeSingle()
+        .rpc('lookup_registration_code', { p_code: code.trim().toUpperCase() })
 
       if (codeError) {
         console.error('Error validating code:', codeError)
@@ -193,10 +191,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
     try {
       // Step 1: Validate the association code
       const { data: codeData, error: codeError } = await supabase
-        .from('registration_codes')
-        .select('id, code, code_type, association_id, is_active, max_uses, current_uses, subscription_expires_at, beekeeping_associations!registration_codes_association_id_fkey(name)')
-        .eq('code', associationCode.trim().toUpperCase())
-        .maybeSingle()
+        .rpc('lookup_registration_code', { p_code: associationCode.trim().toUpperCase() })
 
       if (codeError) {
         console.error('Error validating association code:', codeError)

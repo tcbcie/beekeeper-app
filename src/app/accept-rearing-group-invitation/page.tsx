@@ -46,12 +46,9 @@ function AcceptRearingGroupInvitationContent() {
       invitationId = invitationId.trim().replace(/#$/, '')
 
       try {
-        // Fetch invitation details
+        // Fetch invitation details (RPC: the table is only readable by the owner and the invitee)
         const { data: invitation, error: invitationError } = await supabase
-          .from('rearing_group_invitations')
-          .select('*, rearing_groups(name)')
-          .eq('id', invitationId)
-          .maybeSingle()
+          .rpc('get_rearing_group_invitation', { p_invitation_id: invitationId })
 
         if (invitationError) {
           console.error('Error fetching invitation:', invitationError)

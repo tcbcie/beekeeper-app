@@ -32,12 +32,9 @@ function DeclineInvitationContent() {
         // Get current user (optional for declining)
         const userId = await getCurrentUserId()
 
-        // Fetch invitation details
+        // Fetch invitation details (RPC: the table is only readable by the owner and the invitee)
         const { data: invitation, error: invitationError } = await supabase
-          .from('team_invitations')
-          .select('*, teams(name)')
-          .eq('id', invitationId)
-          .single()
+          .rpc('get_team_invitation', { p_invitation_id: invitationId })
 
         if (invitationError || !invitation) {
           setStatus('error')
