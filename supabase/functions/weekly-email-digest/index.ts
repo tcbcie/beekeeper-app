@@ -7,6 +7,17 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') // Optional: Use Resend for emails
+// Internal webhook secret, sent by the pg_cron job as x-webhook-secret (read from Vault).
+// Deployed with verify_jwt=false, so this is the only thing that authorises a call.
+const WEBHOOK_SECRET = Deno.env.get('NOTIFY_WEBHOOK_SECRET')
+
+// Constant-time comparison so the secret cannot be guessed byte by byte from timings.
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
 
 interface Batch {
   id: string
@@ -153,6 +164,15 @@ function generateEmailHTML(userName: string, events: UpcomingEvent[]): string {
 }
 
 serve(async (req) => {
+  // Only the scheduled job knows the secret; reject everything else (fail closed if unset).
+  const providedSecret = req.headers.get('x-webhook-secret') ?? ''
+  if (!WEBHOOK_SECRET || !safeEqual(providedSecret, WEBHOOK_SECRET)) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorised' }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    )
+  }
+
   try {
     // Initialize Supabase client with service role key
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -251,12 +271,14 @@ serve(async (req) => {
       }
     }
 
+    // Details (including addresses) go to the function log only, never the response
+    if (errors.length > 0) console.error('Email send errors:', errors)
+
     return new Response(
       JSON.stringify({
         success: true,
         emailsSent: emailsSent.length,
-        emails: emailsSent,
-        errors: errors.length > 0 ? errors : undefined,
+        errors: errors.length,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     )
