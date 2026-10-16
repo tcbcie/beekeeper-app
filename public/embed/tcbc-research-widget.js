@@ -22,8 +22,8 @@
 
   // ---- Config baked in at build time ----
   var SUPABASE_URL = 'https://tbhofdmfzwibysnnssnx.supabase.co'
-  var SUPABASE_ANON_KEY =
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiaG9mZG1mendpYnlzbm5zc254Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3Njc2MjgsImV4cCI6MjA3NjM0MzYyOH0.uhOPPVNiccHMc9yiHwDgV3ebHu4HWizC6PEmP-kSKyU'
+  // Publishable key (sb_publishable_…): public by design, replaces the legacy anon JWT
+  var SUPABASE_ANON_KEY = 'sb_publishable_HSlflpg4k3itMvPtk-RDEg_x1NuTj8Z'
 
   var REGIONS = {
     galway: {

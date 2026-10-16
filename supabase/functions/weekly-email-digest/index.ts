@@ -5,7 +5,18 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+// New sb_secret_ key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name), with the
+// legacy service_role key as a fallback until the legacy keys are deactivated.
+function readSecretKey(): string | undefined {
+  try {
+    const key = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}').default
+    if (typeof key === 'string' && key) return key
+  } catch { /* fall back to the legacy key */ }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+}
+const SUPABASE_SERVICE_ROLE_KEY = readSecretKey()!
+// Key type only (never the value), to confirm the migration before legacy keys are switched off
+console.log('Supabase server key type:', SUPABASE_SERVICE_ROLE_KEY?.startsWith('sb_secret_') ? 'secret' : 'legacy')
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') // Optional: Use Resend for emails
 // Internal webhook secret, sent by the pg_cron job as x-webhook-secret (read from Vault).
 // Deployed with verify_jwt=false, so this is the only thing that authorises a call.

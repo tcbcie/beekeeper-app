@@ -39,6 +39,11 @@ const PATTERNS = [
     regex: /\bsk_live_[A-Za-z0-9]{20,}/,
   },
   {
+    name: 'Supabase secret API key',
+    // New-style server key (sb_secret_…): full database access, bypasses RLS.
+    regex: /\bsb_secret_[A-Za-z0-9_-]{20,}/,
+  },
+  {
     name: 'Supabase service-role JWT marker (decoded payload)',
     // If anyone ever pastes a decoded service_role JWT payload, flag it.
     regex: /"role"\s*:\s*"service_role"/,
