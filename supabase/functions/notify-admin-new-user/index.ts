@@ -8,6 +8,27 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+// Shared with the notify_admin_new_user database trigger (sent as x-webhook-secret).
+// Deployed with verify_jwt=false, so this is the only thing that authorises a call.
+const NOTIFY_WEBHOOK_SECRET = Deno.env.get('NOTIFY_WEBHOOK_SECRET')
+
+// Constant-time comparison so the secret cannot be guessed byte by byte from timings.
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
+function escapeHtml(value: unknown): string {
+  if (value == null) return ''
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
 
 interface WebhookPayload {
   type: 'INSERT'
@@ -34,6 +55,15 @@ serve(async (req) => {
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
       },
     })
+  }
+
+  // Only the database trigger knows the secret; reject everything else (fail closed if unset).
+  const providedSecret = req.headers.get('x-webhook-secret') ?? ''
+  if (!NOTIFY_WEBHOOK_SECRET || !safeEqual(providedSecret, NOTIFY_WEBHOOK_SECRET)) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorised' }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    )
   }
 
   try {
@@ -129,8 +159,8 @@ serve(async (req) => {
 
     <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 25px 0;">
       <p style="margin: 0; font-size: 14px; color: #92400e;">
-        <strong>Name:</strong> ${userName}<br>
-        <strong>Email:</strong> ${newUser.email}<br>
+        <strong>Name:</strong> ${escapeHtml(userName)}<br>
+        <strong>Email:</strong> ${escapeHtml(newUser.email)}<br>
         <strong>Signed Up:</strong> ${formattedDate}
       </p>
     </div>
