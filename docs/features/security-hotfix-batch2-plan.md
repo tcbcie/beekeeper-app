@@ -36,7 +36,7 @@
 | `security_hotfix_batch2_lockdown` (`20261015140000_…`) | Table-wide SELECT on `profiles` revoked from app roles, re-granted on every column except `beep_api_token`/`wolf_api_token`<br>The anon "deleted accounts" policy dropped |
 | `security_hotfix_batch2_notify_trigger` (`20261016090000_…`) | `notify_admin_new_user` trigger sends the webhook secret instead of the service-role JWT. The repo copy holds a placeholder |
 
-### App code (commit `0cef3d0`)
+### App code (commit `40b565d`)
 
 - `src/lib/auth.ts`: `PROFILE_COLUMNS` added. The `profile` page and `getUserProfile` use it.
 - `hives/[id]` and `scales`: connection status read from `*_connected_at`.

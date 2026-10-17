@@ -22,13 +22,13 @@ The legacy API keys are **deactivated** and the legacy JWT secret is **revoked**
 
 ## Steps taken
 
-1. **Prepare** (`d328db4`):
+1. **Prepare** (`7e8a61f`):
    - The 5 edge functions read `SUPABASE_SECRET_KEYS`, with a legacy fallback during the switch-over.
    - The invitation functions moved to `verify_jwt = false`.
    - The embed widget switched to the publishable key.
    - `scripts/check-secrets.mjs` blocks `sb_secret_`.
 2. **Switch the app:** the owner changed the two Vercel values and redeployed (twice, because of a build cache).
-3. **Clean up** (`5b49c20`): the cron jobs dropped the anon header, and Vault `anon_key` was deleted.
+3. **Clean up** (`d21dbde`): the cron jobs dropped the anon header, and Vault `anon_key` was deleted.
 4. **Deactivate legacy API keys:** Settings → API Keys.
 5. **JWT signing keys:** Project Settings → JWT Keys.
    - **Migrate JWT secret**, then **Rotate keys** to ES256.

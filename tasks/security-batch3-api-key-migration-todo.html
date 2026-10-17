@@ -95,8 +95,8 @@
 </table>
 <p><strong>What changed in the repo:</strong></p>
 <ul>
-  <li><code>d328db4</code>: the edge functions read <code>SUPABASE_SECRET_KEYS</code>, the embed widget uses the publishable key, and the secret scanner blocks <code>sb_secret_</code>.</li>
-  <li><code>5b49c20</code>: the cron jobs no longer send the anon key, and its Vault entry was deleted.</li>
+  <li><code>7e8a61f</code>: the edge functions read <code>SUPABASE_SECRET_KEYS</code>, the embed widget uses the publishable key, and the secret scanner blocks <code>sb_secret_</code>.</li>
+  <li><code>d21dbde</code>: the cron jobs no longer send the anon key, and its Vault entry was deleted.</li>
 </ul>
 <p>The app code was unchanged: only the values of the two Vercel variables changed.</p>
 <p><strong>Lesson:</strong> on Supabase, "Deactivate legacy API keys" only stops the legacy keys being used <em>as API keys</em>. Because they are JWTs signed with the legacy JWT secret, they stayed valid as <code>Authorization: Bearer</code> tokens until that secret was revoked through the JWT signing keys migration. Any future leak of a legacy-style JWT needs both steps.</p>
