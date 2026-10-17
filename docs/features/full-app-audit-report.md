@@ -52,6 +52,12 @@
 | API-07 | **Fixed 17/10/2026 (batch 7).** Paid AI, transcription, news search and geocoding routes had no limits. Per-user hourly and daily limits now apply. |
 | API-08 | **Fixed 17/10/2026 (batch 7).** Admin actions were only in console logs. There is now an append-only admin audit log, impersonation start and exit are recorded, and the user is emailed. |
 | AI-01 | **Fixed 17/10/2026 (batch 8).** Mel's data tools used the secret key, so only hand-written filters protected users' data, and two colony tools leaked other users' colony numbers. The tools now query as the signed-in user, so the database rules apply; only the caller's own scale tokens use the secret key. |
+| CLI-03 | **In progress (batch 9, 17/10/2026).** A Content Security Policy was added in report-only mode, with reports going to `/api/csp-report` (Vercel logs). It will switch to enforcing once the reports are clean. |
+| CLI-04 | **Fixed 17/10/2026 (batch 9).** Added a `Permissions-Policy` header and removed `X-Powered-By`. Apex HSTS is a Vercel domain setting (optional, owner). |
+| CLI-05 | **Fixed 17/10/2026 (batch 9).** The login `?redirect=` could send a just-signed-in user to another site. It is now parsed as a URL and only same-site paths are kept. |
+| CLI-06 | **Fixed 17/10/2026 (batch 6, DB-04).** The public trace functions no longer return exact coordinates. |
+| CLI-07 | **Fixed 17/10/2026 (batch 9).** The tag code is now escaped in the QR print window. |
+| CLI-08 | **Fixed 17/10/2026 (batch 9).** The TCBC widget loads Chart.js with a Subresource Integrity hash. |
 | Other Phase 1 findings | The remaining Medium and Low findings from the Phase 1 database, API, client, AI and supply-chain audits are kept in a local register until they are fixed, because this repository is public. |
 
 All checks so far were read-only: SQL catalogue queries over the Supabase MCP connection, reading the deployed edge-function source, and searching the codebase. No data, schema or code was changed. No exploit was attempted against production.

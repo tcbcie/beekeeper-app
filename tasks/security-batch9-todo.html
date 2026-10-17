@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 9: Browser Hardening</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    pre { background: #fef3c7; padding: 0.8rem; border-radius: 4px; overflow-x: auto; font-size: 0.85em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Security Batch 9: Browser Hardening (CLI-03 to CLI-08)</h1>
+<p><strong>Status:</strong> Step 1 done 17/10/2026; tested by you, committed and pushed. Step 2 (enforce the CSP) follows after a few days of reports. <strong>Findings:</strong> the client and PWA Low findings from Phase 1.</p>
+
+<h2>What's open</h2>
+<table>
+  <tr><th>ID</th><th>Problem</th></tr>
+  <tr><td>CLI-03</td><td>No Content Security Policy on the app (only <code>/embed</code> has one, for framing). Sign-in tokens live in browser storage, so a CSP is the main brake on token theft if a script-injection bug ever slips in.</td></tr>
+  <tr><td>CLI-04</td><td>No <code>Permissions-Policy</code> header. The server announces "X-Powered-By: Next.js". The bare <code>hivecraic.com</code> sends a shorter HSTS header than <code>www</code>; that is a Vercel domain setting, not code.</td></tr>
+  <tr><td>CLI-05</td><td><strong>Open redirect after login.</strong> <code>/login?redirect=/%09/evil.com</code> passes the check, and the browser turns it into <code>//evil.com</code>. So a just-signed-in user could be sent to a look-alike phishing page.</td></tr>
+  <tr><td>CLI-06</td><td>Exact coordinates in the public trace functions. <strong>Already fixed in batch 6 (DB-04)</strong>; it only needs marking as closed.</td></tr>
+  <tr><td>CLI-07</td><td>The hive QR print window inserts the tag code without escaping it. The codes are system-generated, so this is hygiene only.</td></tr>
+  <tr><td>CLI-08</td><td>The TCBC embed widget loads Chart.js from a CDN with no integrity check. A tampered CDN copy would run on tcbc.ie.</td></tr>
+</table>
+
+<h2>Plan</h2>
+<h3>A. CSP in two steps (so nothing breaks for users)</h3>
+<div class="task"><input type="checkbox" checked disabled> <strong>Step 1 (this batch):</strong> add the CSP as <code>Content-Security-Policy-Report-Only</code> in <code>next.config.ts</code>. The browser enforces nothing yet and reports anything that <em>would</em> be blocked to a small new route, <code>/api/csp-report</code>. That route writes one short line per report to the Vercel logs, with a capped size and no query strings.</div>
+<div class="task"><input type="checkbox" disabled> <strong>Step 2 (a follow-up, after a few days of normal use):</strong> I read the reports from the Vercel logs, add anything legitimate I missed, and switch the header to enforcing. That's a one-line change.</div>
+<pre>default-src 'self';
+script-src 'self' 'unsafe-inline';
+style-src 'self' 'unsafe-inline';
+img-src 'self' data: blob: https:;
+font-src 'self' data:;
+connect-src 'self' https://&lt;project&gt;.supabase.co wss://&lt;project&gt;.supabase.co
+  https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com
+  https://api.open-meteo.com https://archive-api.open-meteo.com
+  https://nominatim.openstreetmap.org https://api.postcodes.io https://en.wikipedia.org;
+worker-src 'self' blob:; child-src blob:; media-src 'self' blob:;
+manifest-src 'self'; frame-src 'none'; object-src 'none';
+base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests</pre>
+<p>I re-checked every external address the browser code calls today; the list above covers them. Stripe, BEEP, Wolf, Resend and Google Geocoding are only reached from the server or by full-page navigation. <code>'unsafe-inline'</code> for scripts is needed by Next.js and the theme script. Removing it needs per-request nonces, which is a bigger change and not worth it yet. <code>/embed</code> keeps its own framing policy.</p>
+
+<h3>B. Other headers (CLI-04)</h3>
+<div class="task"><input type="checkbox" checked disabled> <code>Permissions-Policy: camera=(self), microphone=(self), geolocation=(self), payment=(), usb=(), browsing-topics=()</code>. The microphone is for voice notes, geolocation for apiary location, and the camera for photos.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>poweredByHeader: false</code>, so the server stops announcing the framework.</div>
+
+<h3>C. Small fixes (CLI-05, CLI-07, CLI-08)</h3>
+<div class="task"><input type="checkbox" checked disabled> CLI-05: the login redirect is parsed as a URL and accepted only if it stays on our own site; then just its path is used. Tabs, backslashes and encoded tricks all fall back to <code>/dashboard</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> CLI-07: escape the tag code in the QR print window, the same way the hive number already is.</div>
+<div class="task"><input type="checkbox" checked disabled> CLI-08: the widget loads the published <code>chart.umd.js</code> (byte-for-byte the npm 4.4.1 file; the <code>.min.js</code> it used is generated on the fly by the CDN, so it can't be pinned safely) with <code>integrity="sha384-dug+Jx…"</code> and <code>crossorigin="anonymous"</code>. The browser refuses a tampered copy.</div>
+
+<h3>D. Verify and close</h3>
+<div class="task"><input type="checkbox" checked disabled> Type-check and lint, <code>qa-engineer</code> review, docs (security headers doc, TCBC widget doc, findings register; CLI-06 marked as closed by batch 6).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> build and click through the app: dashboard, maps (Mapbox and the trace map), weather, voice note, photos, the public <code>/trace</code> page, login with a <code>?redirect=</code>. Then commit and push.</div>
+
+<div class="note"><strong>Owner action, optional:</strong> for the bare <code>hivecraic.com</code> (which only redirects to <code>www</code>) to send the full HSTS header, set it in Vercel → Domains. It only matters if you ever submit the site to the browsers' HSTS preload list, so it can wait.</div>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>CSP (step 1)</td><td><code>next.config.ts</code>: <code>buildContentSecurityPolicy()</code> sends <code>Content-Security-Policy-Report-Only</code> on every route except <code>/embed</code>. The Supabase origin and its <code>wss://</code> version come from <code>NEXT_PUBLIC_SUPABASE_URL</code>; dev mode adds <code>'unsafe-eval'</code> for fast refresh. Reports go to the new <code>/api/csp-report</code>, which logs one capped <code>[CSP]</code> line per report with query strings removed and returns 204.</td></tr>
+  <tr><td>Headers</td><td><code>Permissions-Policy</code> on all routes (camera, microphone and location for this site only; payment, USB and topics off). <code>poweredByHeader: false</code>.</td></tr>
+  <tr><td>Login redirect</td><td>Parsed with <code>new URL(raw, placeholder origin)</code>; only same-origin paths are kept. Checked: tab, newline, backslash, <code>//</code> and absolute URLs all go to <code>/dashboard</code>; real paths keep their query and fragment.</td></tr>
+  <tr><td>QR print</td><td>The tag code is escaped like the hive number.</td></tr>
+  <tr><td>Widget</td><td>Published <code>chart.umd.js</code> (checked byte-identical to the npm 4.4.1 tarball and the jsDelivr copy) with SRI <code>sha384-dug+Jx…</code> and <code>crossorigin</code>; jsDelivr sends <code>Access-Control-Allow-Origin: *</code>.</td></tr>
+  <tr><td>QA</td><td>No type errors; ESLint clean; the widget parses. No Critical, High or Medium issues. Report-only mode can't block anything for users.</td></tr>
+</table>
+<p><strong>Still to do:</strong> after a few days of use: read the <code>[CSP]</code> lines in the Vercel logs, adjust, and switch to enforcing (step 2).</p>
+</body>
+</html>

@@ -73,7 +73,10 @@ export default function HiveQRCode({ tagCode, hiveNumber }: HiveQRCodeProps) {
     const printWindow = window.open('', '_blank')
     if (!printWindow) return
 
-    const escaped = hiveNumber.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    const escapeHtml = (value: string) =>
+      value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    const escaped = escapeHtml(hiveNumber)
+    const escapedTagCode = escapeHtml(tagCode)
 
     printWindow.document.write(`
       <html>
@@ -82,7 +85,7 @@ export default function HiveQRCode({ tagCode, hiveNumber }: HiveQRCodeProps) {
           <h2>Hive ${escaped}</h2>
           ${svgData}
           <p style="color:#666;font-size:14px;margin-top:8px;">www.hivecraic.com</p>
-          <p style="color:#333;font-size:16px;font-weight:bold;margin-top:2px;">${tagCode}</p>
+          <p style="color:#333;font-size:16px;font-weight:bold;margin-top:2px;">${escapedTagCode}</p>
           <script>window.onload=function(){window.print();window.close();}</script>
         </body>
       </html>

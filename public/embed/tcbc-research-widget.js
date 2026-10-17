@@ -35,8 +35,13 @@
     },
   }
 
+  // The published Chart.js 4.4.1 UMD build (byte-identical to the npm tarball), pinned with
+  // Subresource Integrity so a tampered CDN copy is refused. Don't use the CDN's on-the-fly
+  // ".min.js" variant: it is generated, so its hash can't be pinned reliably.
   var CHART_JS_SRC =
-    'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js'
+    'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js'
+  var CHART_JS_INTEGRITY =
+    'sha384-dug+JxfBvklEQdJ4AYuBBAIScUz0bVN73xpy273gcAwHjb3qI0fXmuYNaNfdyYJG'
   var BLOOM_LOOKBACK_DAYS = 60 // how far back we count "still blooming" for open-ended records
 
   // ---- Read script tag attributes ----
@@ -433,6 +438,8 @@
       }
       var s = document.createElement('script')
       s.src = CHART_JS_SRC
+      s.integrity = CHART_JS_INTEGRITY
+      s.crossOrigin = 'anonymous'
       s.async = true
       s.onload = function () {
         resolve()

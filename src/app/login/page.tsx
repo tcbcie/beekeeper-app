@@ -20,19 +20,19 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const rawRedirect = searchParams.get('redirect') || '/dashboard'
-  // Reject open-redirect patterns. The previous check only blocked '//evil.com'
-  // (protocol-relative), but '/\evil.com' bypassed it -- browsers normalize
-  // backslashes to slashes, turning '/\foo' into '//foo'. Also reject anything
-  // not starting with '/', and any second-character that isn't a normal path
-  // separator-safe character.
-  const isSafeRelative = (() => {
-    if (!rawRedirect.startsWith('/')) return false
-    if (rawRedirect.length === 1) return true
-    const second = rawRedirect[1]
-    if (second === '/' || second === '\\') return false
-    return true
+  // Reject open redirects. Character checks are not enough ('/%09/evil.com' becomes
+  // '//evil.com' once the browser strips the tab), so parse it as the browser would against a
+  // placeholder origin and keep only the path of a same-origin URL.
+  const redirectUrl = (() => {
+    const base = 'https://hivecraic.invalid'
+    if (!rawRedirect.startsWith('/')) return '/dashboard'
+    try {
+      const url = new URL(rawRedirect, base)
+      return url.origin === base ? `${url.pathname}${url.search}${url.hash}` : '/dashboard'
+    } catch {
+      return '/dashboard'
+    }
   })()
-  const redirectUrl = isSafeRelative ? rawRedirect : '/dashboard'
 
   useEffect(() => {
     const emailParam = searchParams.get('email')

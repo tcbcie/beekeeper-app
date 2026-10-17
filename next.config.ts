@@ -51,8 +51,65 @@ function buildStorageRemotePatterns(): RemotePattern[] {
   })
 }
 
+// Content Security Policy for the app (everything except /embed/*). Shipped as Report-Only
+// first: browsers block nothing and report would-be violations to /api/csp-report (Vercel logs).
+// Switch the header key to 'Content-Security-Policy' once the reports are clean.
+// 'unsafe-inline' scripts: Next.js hydration and the theme script need it (nonces would be the
+// stricter route). img-src https: covers news images, map tiles and Supabase Storage.
+function buildContentSecurityPolicy(): string {
+  const connectSrc = [
+    "'self'",
+    'https://api.mapbox.com',
+    'https://events.mapbox.com',
+    'https://*.tiles.mapbox.com',
+    'https://api.open-meteo.com',
+    'https://archive-api.open-meteo.com',
+    'https://nominatim.openstreetmap.org',
+    'https://api.postcodes.io',
+    'https://en.wikipedia.org',
+  ]
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (supabaseUrl) {
+    try {
+      const { origin, host, protocol } = new URL(supabaseUrl)
+      connectSrc.push(origin, `${protocol === 'https:' ? 'wss' : 'ws'}://${host}`)
+    } catch {
+      // Malformed URL: leave Supabase out; the reports will show it.
+    }
+  }
+  // Next.js dev mode (fast refresh) needs eval; production does not.
+  const scriptSrc = process.env.NODE_ENV === 'development'
+    ? "'self' 'unsafe-inline' 'unsafe-eval'"
+    : "'self' 'unsafe-inline'"
+
+  return [
+    "default-src 'self'",
+    `script-src ${scriptSrc}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    `connect-src ${connectSrc.join(' ')}`,
+    "worker-src 'self' blob:",
+    'child-src blob:',
+    "media-src 'self' blob:",
+    "manifest-src 'self'",
+    "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    'upgrade-insecure-requests',
+    'report-uri /api/csp-report',
+  ].join('; ')
+}
+
+// Only this site may use the camera (photos), microphone (voice notes) and location (apiaries).
+const permissionsPolicy = 'camera=(self), microphone=(self), geolocation=(self), payment=(), usb=(), browsing-topics=()'
+
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['192.168.100.50'],
+  // Don't announce the framework in an X-Powered-By header.
+  poweredByHeader: false,
   // @react-pdf/renderer ships native-ish internals (yoga wasm, fonts) that
   // break when bundled — keep it external to the server build.
   serverExternalPackages: ['@react-pdf/renderer'],
@@ -79,6 +136,8 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'Permissions-Policy', value: permissionsPolicy },
+          { key: 'Content-Security-Policy-Report-Only', value: buildContentSecurityPolicy() },
         ],
       },
       {
@@ -89,6 +148,7 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          { key: 'Permissions-Policy', value: permissionsPolicy },
           { key: 'Content-Security-Policy', value: embedFrameAncestors },
         ],
       },

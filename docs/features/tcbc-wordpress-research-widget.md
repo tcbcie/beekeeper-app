@@ -350,7 +350,7 @@ The iframe is intentionally fixed-height (no auto-resize): the embed page is mos
 
 **Widget** — `public/embed/tcbc-research-widget.js` is a single 13 KB vanilla JS file with:
 - Three cards: Current GDD, Blooming now, This week's forage hours
-- Chart.js 4.4.1 lazy-loaded from jsDelivr CDN (only when the forage chart renders)
+- Chart.js 4.4.1 lazy-loaded from jsDelivr CDN (only when the forage chart renders). Since 17/10/2026 (security batch 9) it loads the published `dist/chart.umd.js`, byte-identical to the npm tarball, with `integrity="sha384-…"` and `crossorigin="anonymous"`, so the browser refuses a tampered CDN copy on tcbc.ie. Don't switch back to the CDN's generated `.min.js`: its hash can't be pinned reliably. If you bump the version, recompute the hash from the npm tarball.
 - Inline CSS with `--tcbc-gdd-*` variables, responsive 1-col (mobile) / 3-col (≥720px) grid
 - Light/dark/auto theme via `data-theme` attribute
 - "Powered by HiveCraic" attribution link in the footer
