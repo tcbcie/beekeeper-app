@@ -27,6 +27,30 @@ self.addEventListener('install', (event) => {
   )
 })
 
+// Delete cached entries from CACHE_NAME that match `shouldDelete(url)`.
+function deleteCachedEntries(shouldDelete) {
+  return caches.open(CACHE_NAME).then((cache) =>
+    cache.keys().then((requests) =>
+      Promise.all(requests.map((request) => {
+        return shouldDelete(new URL(request.url)) ? cache.delete(request) : undefined
+      }))
+    )
+  )
+}
+
+// Our own /api/* routes return per-user data. Earlier worker versions cached them
+// (keyed by URL only, so readable by the next person on the device); drop them.
+function isOwnApi(url) {
+  return url.origin === self.location.origin && url.pathname.startsWith('/api/')
+}
+
+// On sign-out keep only the immutable build assets and the offline shell; anything
+// else (third-party lookups such as weather or geocoding carry apiary locations).
+function isUserData(url) {
+  const sameOrigin = url.origin === self.location.origin
+  return !(sameOrigin && (url.pathname.startsWith('/_next/static/') || OFFLINE_URLS.includes(url.pathname)))
+}
+
 self.addEventListener('activate', (event) => {
   console.log('Service Worker activating...')
   event.waitUntil(
@@ -39,7 +63,10 @@ self.addEventListener('activate', (event) => {
           }
         })
       )
-    }).then(() => clients.claim())
+    })
+      .then(() => deleteCachedEntries(isOwnApi))
+      .catch((err) => console.warn('Cache clean-up failed:', err))
+      .then(() => clients.claim())
   )
 })
 
@@ -60,6 +87,14 @@ self.addEventListener('message', (event) => {
   if (event.data.type === 'SKIP_WAITING') {
     console.log('Received SKIP_WAITING message, activating new service worker...')
     self.skipWaiting()
+    return
+  }
+
+  // Sent by the app on sign-out (src/lib/sign-out-cleanup.ts)
+  if (event.data.type === 'CLEAR_USER_DATA') {
+    event.waitUntil(
+      deleteCachedEntries(isUserData).catch((err) => console.warn('Clearing user data failed:', err))
+    )
     return
   }
 
@@ -93,11 +128,18 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // Never cache our own API routes either: they return per-user data, and the
+  // cache is keyed by URL only, so a later user on this device could be served it.
+  const requestUrl = new URL(event.request.url)
+  if (isOwnApi(requestUrl)) {
+    return
+  }
+
   // Cache-first strategy for Next.js build assets: files under /_next/static/
   // are content-hashed and immutable, so once cached they never need the
   // network again. This is what makes the app open fast on poor connections
   // in the field. Old entries are purged when CACHE_NAME is bumped.
-  const requestPath = new URL(event.request.url).pathname
+  const requestPath = requestUrl.pathname
   if (requestPath.startsWith('/_next/static/')) {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {

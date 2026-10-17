@@ -34,6 +34,10 @@
 | API-01 | **Fixed 17/10/2026 (batch 4).** The storage clean-up could be tricked into deleting another user's photo with a variant URL. |
 | SUP-01 | **Fixed 17/10/2026.** A Supabase personal access token in git history (Feb 2026) was revoked by the owner. |
 | SUP-02 | **Fixed 17/10/2026.** Production database exports in git history were removed by a history rewrite and force-push. GitHub's cached copies of the old commits still need a purge request to GitHub Support. |
+| SUP-12 | **Fixed 17/10/2026 (batch 5).** Next.js 15.5.7 had known advisories (SSRF, denial of service, cache poisoning). Upgraded to 15.5.28, the latest 15.5 security patch. |
+| SUP-11 | **Fixed 17/10/2026 (batch 5).** Unused and deprecated packages (`ai`, `@supabase/auth-helpers-nextjs`) were removed and `npm audit fix` applied: runtime audit 20 findings (1 critical) down to 5 (0 critical); the rest need Next.js 16 or a breaking `exceljs` downgrade and aren't reachable. |
+| CLI-01 | **Fixed 17/10/2026 (batch 5).** The service worker cached `/api/*` responses and kept them after logout. It no longer caches them, deletes old copies when it updates, and clears cached user data on sign-out. |
+| CLI-02 | **Fixed 17/10/2026 (batch 5).** The admin's stored session from an impersonation stayed on the device unless the banner's Exit was used. Every sign-out now removes it. |
 | Other Phase 1 findings | The remaining Medium and Low findings from the Phase 1 database, API, client, AI and supply-chain audits are kept in a local register until they are fixed, because this repository is public. |
 
 All checks so far were read-only: SQL catalogue queries over the Supabase MCP connection, reading the deployed edge-function source, and searching the codebase. No data, schema or code was changed. No exploit was attempted against production.

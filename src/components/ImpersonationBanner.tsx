@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { UserX } from 'lucide-react'
 import Button from '@/components/ui/Button'
-
-const IMPERSONATION_KEY = 'hivecraic_impersonation'
+import { IMPERSONATION_KEY } from '@/lib/sign-out-cleanup'
 
 interface ImpersonationData {
   originalSession: {
@@ -19,8 +18,14 @@ interface ImpersonationData {
 
 export function getImpersonationData(): ImpersonationData | null {
   if (typeof window === 'undefined') return null
-  const data = localStorage.getItem(IMPERSONATION_KEY)
-  return data ? JSON.parse(data) : null
+  try {
+    const data = localStorage.getItem(IMPERSONATION_KEY)
+    return data ? JSON.parse(data) as ImpersonationData : null
+  } catch {
+    // Unreadable or corrupted entry: treat as not impersonating and drop it.
+    try { localStorage.removeItem(IMPERSONATION_KEY) } catch { /* storage unavailable */ }
+    return null
+  }
 }
 
 export function setImpersonationData(data: ImpersonationData): void {

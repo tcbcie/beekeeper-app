@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef } f
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { clearPersistedFilters } from '@/hooks/usePersistentState'
+import { clearLocalUserData } from '@/lib/sign-out-cleanup'
 
 interface AuthContextType {
   user: User | null
@@ -110,6 +111,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // signing in on this device cannot inherit this user's apiary/hive
           // selections (e.g. switching between demo and real accounts).
           clearPersistedFilters()
+          // Same reason: drop leftover impersonation tokens and the worker's runtime cache.
+          clearLocalUserData()
           setUser(null)
           setUserId(null)
         } else if (typeof navigator !== 'undefined' && navigator.onLine === false) {

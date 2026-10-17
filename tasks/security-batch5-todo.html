@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 5: Next.js Upgrade</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    .warn { background: #fef2f2; border-left: 3px solid #dc2626; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Security Batch 5: Next.js Upgrade, Dependency Clean-Up, Service Worker</h1>
+<p><strong>Status:</strong> Done 17/10/2026; tested by you, committed and pushed. <strong>Findings:</strong> SUP-12 (High), SUP-11 (Low), CLI-01 (Medium), CLI-02 (Medium).</p>
+<div class="warn"><strong>Keep out of git until part C ships:</strong> CLI-01 and CLI-02 are open. The Next.js advisories are already public, so parts A and B are not sensitive.</div>
+
+<h2>What I found</h2>
+<table>
+  <tr><th>Item</th><th>Now</th><th>Target</th></tr>
+  <tr><td><code>next</code></td><td>15.5.7 (Dec 2025)</td><td><strong>15.5.28</strong> (14/10/2026), the latest 15.5 patch. Same minor version, so no migration is needed.</td></tr>
+  <tr><td><code>eslint-config-next</code></td><td>15.5.6</td><td>15.5.28 (kept in step with <code>next</code>)</td></tr>
+  <tr><td><code>react</code> / <code>react-dom</code></td><td>19.1.0</td><td>Unchanged. Next.js bundles its own React server runtime.</td></tr>
+  <tr><td>Node</td><td>22 locally; Vercel default is 24</td><td>Unchanged</td></tr>
+</table>
+<ul>
+  <li><strong>15.5.28</strong> is a security release. It fixes a <em>Critical</em> remote code execution in the image optimiser with SVG files, and a <em>High</em> Server Actions denial of service. Neither applies here: <code>dangerouslyAllowSVG</code> isn't set, Vercel runs the image optimiser, and the app has no Server Actions. It's still worth taking.</li>
+  <li><strong>15.5.8–15.5.27</strong> fixed Medium cache-poisoning and metadata information-disclosure advisories, among others. The audit's earlier SSRF and Server Components denial-of-service items are in this range too.</li>
+  <li>Release age: 15.5.28 is only 3 days old. I'm making an exception to my usual two-week wait because it's an official security patch.</li>
+  <li><code>npm audit</code> (runtime packages): 1 critical (<code>next</code>) and 9 high. Several come through <code>next</code> (<code>sharp</code>, <code>postcss</code>); others are transitive (<code>ws</code>, <code>undici</code>, <code>minimatch</code>, <code>tmp</code>, <code>nanoid</code>…) and have non-breaking fixes.</li>
+  <li>Unused: <code>ai</code> and <code>@supabase/auth-helpers-nextjs</code> (deprecated) have 0 imports. <code>@google/generative-ai</code> is only used by <code>scripts/ingest</code>.</li>
+</ul>
+
+<h2>Plan</h2>
+<h3>A. Next.js upgrade (one small change)</h3>
+<div class="task"><input type="checkbox" checked disabled> Set <code>next</code> to <code>^15.5.28</code> and <code>eslint-config-next</code> to <code>15.5.28</code> in <code>package.json</code>, then run <code>npm install</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> Review the lockfile diff: only the <code>next</code> family (<code>@next/*</code>, <code>sharp</code>, <code>postcss</code>) should move.</div>
+<div class="task"><input type="checkbox" checked disabled> Type-check and lint (no build, per your rules).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> <code>npm run build</code> and a quick look in <code>npm run dev</code> (login, dashboard, a hive, images, community map, a public <code>/trace</code> page).</div>
+
+<h3>B. Dependency clean-up (separate commit)</h3>
+<div class="task"><input type="checkbox" checked disabled> Remove the unused <code>ai</code> and <code>@supabase/auth-helpers-nextjs</code>. Move <code>@google/generative-ai</code> to <code>devDependencies</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> Run <code>npm audit fix</code> <em>without</em> <code>--force</code>, so only non-breaking transitive updates are made. Review the lockfile diff and re-run the audit. Anything needing a major version (such as <code>exceljs</code>/<code>uuid</code>) gets listed, not forced.</div>
+
+<h3>C. Service worker and sign-out (CLI-01, CLI-02)</h3>
+<div class="task"><input type="checkbox" checked disabled> <code>public/service-worker.js</code>: never cache <code>/api/*</code> responses. Those are signed-in, per-user data.</div>
+<div class="task"><input type="checkbox" checked disabled> On every sign-out path, delete the service worker's runtime caches and the leftover <code>hivecraic_impersonation</code> admin tokens. I'll find all the paths first: the navbar, deactivation, account deletion and the impersonation banner. One shared helper keeps it simple.</div>
+<div class="task"><input type="checkbox" checked disabled> Check how the worker update reaches installed copies of the app (cache name and activate step) without changing the version number. Version bumps stay manual.</div>
+
+<h3>D. Verify and close</h3>
+<div class="task"><input type="checkbox" disabled> <code>qa-engineer</code> review and docs are done; still to do: commit, push and check it went live. Then check the new build actually went live, given last time's promote-to-production issue.</div>
+
+<div class="note"><strong>Not in this batch:</strong> Next.js 16. It's a major upgrade with breaking changes (async request APIs, middleware renamed to proxy, Turbopack by default) and deserves its own plan. 15.5 still gets security patches.</div>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>A. Next.js</td><td><code>next</code> 15.5.7 → 15.5.28 and <code>eslint-config-next</code> 15.5.6 → 15.5.28. The lockfile moved only the Next.js family. The lockfile's own copy of the app version resynced from 1.9.3 to 1.12.1, matching <code>package.json</code>; the version itself was not changed.</td></tr>
+  <tr><td>B. Dependencies</td><td>Removed <code>ai</code> and <code>@supabase/auth-helpers-nextjs</code>; moved <code>@google/generative-ai</code> to dev dependencies. <code>npm audit fix</code> (no <code>--force</code>) updated transitive packages within their allowed ranges, including <code>sharp</code> 0.34 → 0.35.5, which Next.js 15.5.28 declares support for. Runtime audit: <strong>20 findings (1 critical, 9 high) → 5 (0 critical, 2 high)</strong>. What remains needs Next.js 16 (the bundled <code>postcss</code> 8.4.31 is build-time only) or a breaking <code>exceljs</code> downgrade (<code>brace-expansion</code>/<code>uuid</code>, not reachable from how we use it).</td></tr>
+  <tr><td>C. Service worker (CLI-01)</td><td>
+    <ul>
+      <li><code>/api/*</code> responses are never cached.</li>
+      <li>When the new worker activates, it deletes any <code>/api/*</code> entries already cached, without a version bump.</li>
+      <li>A new <code>CLEAR_USER_DATA</code> message keeps only <code>/_next/static</code> and the offline shell, and clears everything else, including weather and geocoding lookups that carry coordinates.</li>
+      <li>The rules were checked against sample URLs.</li>
+    </ul>
+  </td></tr>
+  <tr><td>C. Sign-out (CLI-02)</td><td>
+    <ul>
+      <li><code>clearLocalUserData()</code> (<code>src/lib/sign-out-cleanup.ts</code>) removes the stored admin impersonation session and asks the active worker to clear user data.</li>
+      <li>It runs on every <code>SIGNED_OUT</code> in <code>AuthContext</code>, which covers the navbar, deactivation, account deletion and impersonation exit, and from the reset-password page.</li>
+    </ul>
+  </td></tr>
+  <tr><td>QA</td><td>No Critical or High issues. Fixed a Medium (message the registration's active worker, not <code>controller</code>, which is null on uncontrolled pages) and a Low (the banner tolerates corrupted stored data). Type-check of <code>src/</code> and ESLint on all of <code>src</code> are clean.</td></tr>
+</table>
+<p><strong>Registers:</strong> SUP-11, SUP-12, CLI-01 and CLI-02 are marked fixed in <code>full-app-audit-report.md</code>. <strong>Still to do:</strong> check the new build is live.</p>
+</body>
+</html>

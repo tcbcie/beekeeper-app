@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { clearLocalUserData } from '@/lib/sign-out-cleanup'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -63,6 +64,8 @@ export default function ResetPassword() {
 
       // Sign out and redirect to login after 2 seconds
       setTimeout(async () => {
+        // Outside the dashboard there is no AuthProvider to catch SIGNED_OUT, so clean up here.
+        clearLocalUserData()
         await supabase.auth.signOut({ scope: 'local' })
         router.push('/login')
       }, 2000)
