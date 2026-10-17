@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 3: API Key Migration</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 880px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    .warn { background: #fef2f2; border-left: 3px solid #dc2626; padding: 0.8rem; margin: 1rem 0; }
+    .who { display: inline-block; font-size: 0.8em; font-weight: 700; padding: 0 0.4rem; border-radius: 4px; background: #dbeafe; color: #1e3a8a; }
+    .me { background: #dcfce7; color: #14532d; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 3: Supabase API Key Migration</h1>
+<p><strong>Status:</strong> Done 17/10/2026; the leaked key is dead. <code>auto-accept-invitations</code> deleted 17/10 (404). Left for the owner: revoke the Codex token and delete the old env file (both are git-ignored). <strong>Findings:</strong> SEC-H9 (and the remainder of SEC-H5).<br>
+<strong>Deadline:</strong> Supabase retires the legacy <code>anon</code>/<code>service_role</code> keys at the <strong>end of 2026</strong>, so this has to happen anyway.</p>
+
+<div class="warn"><strong>Resolved 17/10/2026:</strong> the leaked key below is now refused everywhere (see Review).<br><strong>Why it mattered:</strong> the service-role key that sat in the old trigger can still open the whole database, bypassing every access rule. Supabase no longer lets you rotate the legacy keys. The only way to kill that key is to move to the new keys and then <em>deactivate</em> the legacy ones.</div>
+
+<h2>What I found (from Supabase's current docs and the codebase)</h2>
+<ul>
+  <li>The new keys are <code>sb_publishable_…</code> (replaces <code>anon</code>, safe in the browser) and <code>sb_secret_…</code> (replaces <code>service_role</code>, server only; refused if used from a browser). Your project already has a publishable key.</li>
+  <li><strong>The app reads only two environment variables:</strong> <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> (5 files) and <code>SUPABASE_SERVICE_ROLE_KEY</code> (25 server files). <strong>We keep the variable names and change only their values</strong>, so no app code changes.</li>
+  <li><strong>Edge functions:</strong> the 5 in the repo read <code>SUPABASE_SERVICE_ROLE_KEY</code>. After deactivation they must read the new key from <code>SUPABASE_SECRET_KEYS</code>, a JSON list that Supabase adds automatically. The two invitation functions also need <code>verify_jwt</code> off, because the new keys aren't JWTs; they already check the signed-in user themselves.</li>
+  <li><strong>Hard-coded key:</strong> <code>public/embed/tcbc-research-widget.js</code> contains the legacy anon JWT. It must switch to the publishable key, which is public by design, so this is safe.</li>
+  <li><strong>Scheduled jobs</strong> still send the legacy anon key as a leftover. It can be removed: both functions now use the webhook secret.</li>
+  <li><strong>Local scripts</strong> (<code>add-changelog</code>, <code>bump-version</code>, <code>sync-storage</code>, <code>ingest</code>, <code>reset-local</code>) read the service key from your local <code>.env</code> files. They keep working once you update those values.</li>
+  <li><strong>Unused function:</strong> <code>generate-vegetation-info</code> is deployed but nothing in the app calls it, and its source isn't in the repo.</li>
+  <li>Your supabase-js 2.75 and @supabase/ssr 0.7 already support the new keys.</li>
+</ul>
+
+<h2>Plan</h2>
+<p>The order is chosen so nothing breaks: both key types work side by side until the final step, and deactivation can be undone.</p>
+
+<h3>1. Prepare (no user impact)</h3>
+<div class="task"><input type="checkbox" checked disabled> <span class="who">You</span> Supabase → <strong>Settings → API Keys → Publishable and secret API keys</strong>: confirm a <code>default</code> <strong>secret</strong> key exists (create one if not). Don't paste it here.</div>
+<div class="task"><input type="checkbox" checked disabled> <span class="who me">Me</span> The 5 edge functions read the secret key from <code>SUPABASE_SECRET_KEYS</code>, falling back to the legacy variable until the switch-over. The invitation functions get <code>verify_jwt</code> off (they already check the user). Redeploy and re-run the 401 checks.</div>
+<div class="task"><input type="checkbox" checked disabled> <span class="who me">Me</span> Embed widget: replace the hard-coded anon JWT with the publishable key.</div>
+<div class="task"><input type="checkbox" checked disabled> <span class="who me">Me</span> The pre-commit secret scanner also blocks <code>sb_secret_</code> keys.</div>
+<div class="task"><input type="checkbox" checked disabled> <span class="who me">Me</span> Confirm with you, then delete the unused <code>generate-vegetation-info</code> function (you, in the dashboard). Confirmed gone 16/10/2026.</div>
+
+<h3>2. Switch the app (one redeploy)</h3>
+<div class="task"><input type="checkbox" checked disabled> <span class="who">You</span> Vercel → Project → Settings → Environment Variables, for <strong>Production and Preview</strong>:<br>
+  <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> = your <code>sb_publishable_…</code> key<br>
+  <code>SUPABASE_SERVICE_ROLE_KEY</code> = your <code>sb_secret_…</code> key<br>
+  Then redeploy.</div>
+<div class="task"><input type="checkbox" checked disabled> <span class="who">You</span> Update the same two values in your local <code>.env.local</code> and <code>.env</code>. Decide what to do with <code>.env - github contributoe.local</code>: whose keys these are, and whether that file should be deleted.</div>
+<div class="task"><input type="checkbox" checked disabled> <span class="who">You</span> Test: log in, dashboard, a hive record, scales, the AI assistant, admin user list, a CRM invoice email, the public jar trace page and a Stripe test checkout if possible.</div>
+
+<h3>3. Clean up (no user impact)</h3>
+<div class="task"><input type="checkbox" checked disabled> <span class="who me">Me</span> Remove the leftover anon header from both scheduled jobs and the <code>anon_key</code> secret from Vault. Then check the next reminder run still gets a 200.</div>
+
+<h3>4. Deactivate the legacy keys (this is what kills the leaked key)</h3>
+<div class="task"><input type="checkbox" checked disabled> <span class="who">You</span> Supabase → <strong>Settings → API Keys → Legacy API keys → Deactivate</strong>. Done 16/10/2026 18:30:46 UTC (the first attempt didn't save).</div>
+<div class="task"><input type="checkbox" checked disabled> <span class="who me">Me</span> Verify: the legacy anon key in the <code>apikey</code> header is refused (401, "Legacy API keys are disabled") on REST and Auth. The publishable key and the site still work.</div>
+<div class="task"><input type="checkbox" checked disabled> <span class="who me">Me</span> Confirm the scheduled jobs still work and watch the logs. From 18:30 to 09:00 there were 50 reminder runs, all 200, and no failures except one stale tab.</div>
+
+<div class="warn"><strong>Found while verifying:</strong> deactivation only blocks legacy keys used <em>as API keys</em>. A legacy JWT sent as <code>Authorization: Bearer</code> is still trusted. With the publishable key as <code>apikey</code> on REST, or on its own on Storage, it returns 200. That's because the legacy anon/service_role keys are JWTs signed with the legacy <strong>JWT secret</strong>, which still signs every user session. So the leaked service-role JWT very likely still has full access until that secret is revoked (step 4b).</div>
+
+<h3>4b. Move to JWT signing keys and revoke the legacy JWT secret (this is what actually kills the leaked key)</h3>
+<p>Checked first: nothing in the app depends on the legacy secret. All edge functions run with <code>verify_jwt</code> off. No code verifies tokens locally; it uses <code>getUser()</code> against the auth server. No signed storage URLs are used. Impersonation uses <code>generateLink</code>, which the auth server handles.</p>
+<div class="task"><input type="checkbox" checked disabled> <span class="who">You</span> Supabase → <strong>Project Settings → JWT Keys</strong> → <strong>Migrate JWT secret</strong>. This imports the legacy secret and creates a standby ES256 key. No user impact.</div>
+<div class="task"><input type="checkbox" checked disabled> <span class="who">You</span> Wait about 5 minutes (Supabase throttles key changes), then click <strong>Rotate keys</strong>. New logins get ES256 tokens and nobody is signed out.</div>
+<div class="task"><input type="checkbox" checked disabled> <span class="who">You</span> About 1 hour 15 minutes later (the access-token lifetime), <strong>Revoke</strong> the legacy JWT secret under "Previously used". Doing it sooner only signs out users who are active at that moment; they just log in again.</div>
+<div class="task"><input type="checkbox" checked disabled> <span class="who me">Me</span> Verify: the legacy JWT as Bearer is refused on REST and Storage, and login, the dashboard, scheduled jobs and edge functions all still work.</div>
+
+<h3>5. Separate but related (recommended)</h3>
+<div class="task"><input type="checkbox" disabled> <span class="who">You</span> Revoke the Supabase <strong>personal access token</strong> stored in plain text in <code>.codex/config.toml</code>, which sits in OneDrive. Create a new one only if Codex still needs it.</div>
+<div class="task"><input type="checkbox" checked disabled> <span class="who me">Me</span> Docs, findings register and memory note. Commit the code; the audit docs can be committed once this batch is complete.</div>
+
+<div class="note"><strong>Not included (optional, later):</strong> moving user-session signing to the new asymmetric JWT signing keys. It isn't needed to retire the leaked key and can be its own small task.</div>
+
+<h2>Review</h2>
+<p><strong>Outcome:</strong> the legacy <code>anon</code> and <code>service_role</code> keys, including the service-role JWT that leaked through the old trigger, are refused everywhere. The project runs entirely on the new key system. No users were signed out and nothing broke.</p>
+<table>
+  <tr><th>Check (17/10/2026 08:57 UTC)</th><th>Result</th></tr>
+  <tr><td>Legacy key in <code>apikey</code> header</td><td>401 "Legacy API keys are disabled"</td></tr>
+  <tr><td>Legacy JWT as Bearer on REST</td><td>401 PGRST301 "No suitable key"</td></tr>
+  <tr><td>Legacy JWT as Bearer on Storage</td><td>403 "signature verification failed"</td></tr>
+  <tr><td>Legacy JWT as Bearer on Auth</td><td>403 <code>bad_jwt</code>, "HS256 is invalid"</td></tr>
+  <tr><td>Publishable key (REST, Storage, Auth) and site</td><td>200</td></tr>
+  <tr><td>JWKS</td><td>One ES256 key published</td></tr>
+  <tr><td>Traffic 16/10 18:30 to 17/10 09:00</td><td>Secret key: 6,823 requests, all 200. User requests with ES256 tokens: 839, all 200. Reminders job: 50 runs, all 200. The only failure was one stale tab still using the legacy anon key.</td></tr>
+</table>
+<p><strong>What changed in the repo:</strong></p>
+<ul>
+  <li><code>d328db4</code>: the edge functions read <code>SUPABASE_SECRET_KEYS</code>, the embed widget uses the publishable key, and the secret scanner blocks <code>sb_secret_</code>.</li>
+  <li><code>5b49c20</code>: the cron jobs no longer send the anon key, and its Vault entry was deleted.</li>
+</ul>
+<p>The app code was unchanged: only the values of the two Vercel variables changed.</p>
+<p><strong>Lesson:</strong> on Supabase, "Deactivate legacy API keys" only stops the legacy keys being used <em>as API keys</em>. Because they are JWTs signed with the legacy JWT secret, they stayed valid as <code>Authorization: Bearer</code> tokens until that secret was revoked through the JWT signing keys migration. Any future leak of a legacy-style JWT needs both steps.</p>
+<p><strong>Left over (owner):</strong> <code>auto-accept-invitations</code> was deleted 17/10 and verified 404. Still to do: revoke the personal access token in <code>.codex/config.toml</code>; delete <code>.env - github contributoe.local</code>. Optional: drop the legacy-key fallback in the 5 edge functions, which is dead code now.</p>
+
+</body>
+</html>

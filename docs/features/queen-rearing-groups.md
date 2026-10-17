@@ -21,7 +21,7 @@ This feature is **separate from the existing team system** — teams handle apia
 2. If the user already has a HiveCraic account, they are added directly
 3. If the user does not have an account, a pending invitation is created and an email is sent
 4. The email contains **Accept** and **Decline** links
-5. New users who sign up with a matching email are auto-accepted via the `auto-accept-invitations` webhook
+5. New users accept through the email link. If they have no account, the accept page sends them to sign up (`/login?signup=true&redirect=…`), brings them back, and adds them to the group. There is no automatic accept on sign-up for rearing groups. The old `auto-accept-invitations` webhook was never wired to a trigger and was removed for security (SEC-H1).
 
 ### Monthly Report
 - Available only to group **owners**
@@ -65,7 +65,7 @@ This feature is **separate from the existing team system** — teams handle apia
 ### RLS Policies
 - `rearing_groups`: owners and members can view; only owners can create/update/delete
 - `rearing_group_members`: members can view members of their groups; owners can manage
-- `rearing_group_invitations`: publicly readable (UUID-protected); owners can create/delete; invitees can update their own
+- `rearing_group_invitations`: readable only by the inviting owner or the invitee; the accept and decline links use the `get_rearing_group_invitation` and `decline_rearing_group_invitation` RPCs (security batches 1–2); owners can create/delete; invitees can update their own
 - `rearing_batches`: additive SELECT policy allowing group owners to read member batches
 
 ## Files
@@ -81,7 +81,6 @@ This feature is **separate from the existing team system** — teams handle apia
 
 ### Edge Functions
 - `send-rearing-group-invitation` — sends invitation email via Resend
-- `auto-accept-invitations` — updated to also handle rearing group invitations on signup
 
 ## Location in UI
 

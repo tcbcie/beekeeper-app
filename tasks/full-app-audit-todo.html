@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Full Application Audit: Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2.2rem; }
+    h3 { color: #78350f; margin-top: 1.4rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    .warn { background: #fef2f2; border-left: 3px solid #dc2626; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+    .flow { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 1rem 0; }
+    .flow div { background: #fff; border: 2px solid #f59e0b; border-radius: 8px; padding: 0.5rem 0.7rem; font-weight: 600; }
+    .flow span { font-size: 1.4rem; color: #b45309; }
+    .tag { display: inline-block; font-size: 0.8em; font-weight: 700; padding: 0 0.4rem; border-radius: 4px; }
+    .crit { background: #fecaca; color: #7f1d1d; }
+    .high { background: #fed7aa; color: #7c2d12; }
+    .med { background: #fef08a; color: #713f12; }
+  </style>
+</head>
+<body>
+
+<h1>Full Application Audit: Plan</h1>
+<p><strong>Status:</strong> Approved 15/10/2026 with the recommended D1–D8. <strong>Paused:</strong> security hotfix batch 1 applied (see <code>tasks/security-hotfix-batch1-todo.html</code>); resumes after you deploy and test it.<br>
+<strong>Date:</strong> 15/10/2026 · <strong>App version:</strong> 1.12.1 · <strong>Reference doc:</strong> <code>docs/features/full-app-audit-plan.md</code> · <strong>Findings:</strong> <code>docs/features/full-app-audit-report.md</code></p>
+
+<h2>1. Scope</h2>
+<ol>
+  <li><strong>Best practice:</strong> check the code against every skill we are meant to apply (<code>qa-engineer</code>, <code>vercel-react-best-practices</code>, <code>ui</code>, <code>web-design-guidelines</code>, <code>ai tools</code>, <code>supabase-postgres-best-practices</code>), the project rules in <code>CLAUDE.md</code>/<code>AGENTS.md</code>, and the 20 lessons from earlier bugs held in memory.</li>
+  <li><strong>Security:</strong> the full attack surface. That covers 25 route handlers, 7 edge functions, 78 RLS tables, SECURITY DEFINER functions and views, storage, the service worker, headers, the AI assistant, secrets and dependencies.</li>
+  <li><strong>Mobile first and 50+:</strong> compliance with the rules we set (16px body/inputs, 14px floor, 48px targets, WCAG AA in both themes, no hover-only controls, no horizontal scroll at 320–430px).</li>
+  <li><strong>Mobile UI improvements:</strong> proposals for how the app could work better one-handed on a phone in the field.</li>
+</ol>
+
+<h3>How it runs</h3>
+<div class="flow">
+  <div>0. Decisions</div><span>→</span>
+  <div>1. Security</div><span>→</span>
+  <div>2. Best practice</div><span>→</span>
+  <div>3. Mobile / 50+</div><span>→</span>
+  <div>4. UI proposals</div><span>→</span>
+  <div>5. Report + backlog</div><span>→</span>
+  <div>Fix in small approved batches</div>
+</div>
+<div class="note">
+  <strong>Audit first, fix later.</strong> Phases 1–4 are read-only: they produce findings, not code changes. The one exception: if a <span class="tag crit">Critical</span> security issue is <em>confirmed</em>, I stop and report it straight away so you can decide on a hotfix.<br>
+  Each phase is split across several parallel agents (one per code chunk), as the project rules require, and builds on the existing docs in <code>docs/features</code> so finished work is not repeated.<br>
+  After the report, each fix batch gets its own small plan and your approval. Each batch then gets a <code>qa-engineer</code> audit, a docs update and your build test. I will not run the production build or change the version number.
+</div>
+
+<h2>2. What exploration already found (baseline)</h2>
+<table>
+  <tr><th>Area</th><th>Key facts</th></tr>
+  <tr><td>Size</td><td>About 124k LOC in <code>src/</code> across 428 files. 20 files are over 1,000 lines; the largest is <code>InspectionForm.tsx</code> at 2,373.</td></tr>
+  <tr><td>Type safety</td><td>Strong: <code>strict</code> is on, with 15 <code>any</code> and 0 <code>@ts-ignore</code>. However there are 26 <code>as unknown as</code> casts, 39 <code>eslint-disable</code> comments and no generated Supabase types.</td></tr>
+  <tr><td>Architecture</td><td>47 of 53 pages are client components. There is no middleware, about 420 Supabase calls sit directly in UI files, and 75 queries use <code>select('*')</code>. None of the API routes validate input with a schema.</td></tr>
+  <tr><td>CI</td><td>Runs only the tests: no lint, typecheck or build check. The baseline has 137 failing tests, and the coverage thresholds are probably not enforced.</td></tr>
+  <tr><td>Earlier audit (Feb 2026)</td><td>67 issues. Most P0–P2 items are closed. Still open: rate limiting, plaintext BEEP/Wolf tokens, admin audit trail, SQL export, a logger, pagination, and the <code>/api/users/list</code> scoping decision.</td></tr>
+  <tr><td>Mobile programme</td><td>Phases 1–4, the typography floor and the bottom-sheet navigation are implemented, but about 9 browser checks are outstanding. <strong>Queen Rearing and Mating Nucs were never covered</strong> and are now the highest-risk field flows.</td></tr>
+  <tr><td>Security headline</td><td>Route-level hardening is mature. The risk now sits mainly in the <strong>database layer and edge functions</strong> (see 3.1).</td></tr>
+</table>
+
+<h2>3. Plan</h2>
+
+<h3>Phase 0: Agree the standards (needs your answers)</h3>
+<p>The skills, memory and <code>CLAUDE.md</code> contradict each other in places. An audit needs one yardstick. My recommendation is in <em>italics</em>.</p>
+<table>
+  <tr><th>#</th><th>Question</th><th>Recommendation</th></tr>
+  <tr><td>D1</td><td>Touch-target minimum: 44px or 48px?</td><td><em>48px standard; 44px allowed only for compact/icon hit areas (what the Phase 1–4 plans set). 56px for primary field actions.</em></td></tr>
+  <tr><td>D2</td><td>Text: should body/form content be 16px everywhere, or 16px only in field workflows?</td><td><em>Keep the 14px floor. Require 16px for inputs, values and body text in field workflows only. Flag the rest as Medium.</em></td></tr>
+  <tr><td>D3</td><td>Dark mode: the <code>ui</code> skill wants time-based auto switching; the app uses an in-app toggle.</td><td><em>Keep the in-app toggle and drop the time-based rule from the skill.</em></td></tr>
+  <tr><td>D4</td><td>Copy style: web-design-guidelines wants Chicago Title Case and curly quotes.</td><td><em>British English, sentence case, straight quotes are fine. Ignore those two guideline rules.</em></td></tr>
+  <tr><td>D5</td><td>Data scoping: "every query filters by <code>user_id</code>" conflicts with team/shared access.</td><td><em>I draft a per-table "owner-only / team-shared / public" map in Phase 1 for you to confirm. Security findings are judged against it.</em></td></tr>
+  <tr><td>D6</td><td>Schema source of truth: <code>sql/</code>, <code>migrations/</code>, <code>supabase/migrations/</code> and the live DB all differ.</td><td><em>The live DB (via MCP) is the truth for this audit. Repo drift is recorded as a finding, not fixed during the audit.</em></td></tr>
+  <tr><td>D7</td><td>Browser checks: which account may I use for read-only checks at 360px in Chrome (production)?</td><td><em>The demo account, navigating only, with no saves or deletes.</em></td></tr>
+  <tr><td>D8</td><td>Fast-track the five most serious <em>suspected</em> security issues (3.1) before everything else?</td><td><em>Yes. They are quick to verify with read-only SQL, and if any are real they matter more than the rest of the audit.</em></td></tr>
+</table>
+<div class="task"><input type="checkbox" checked disabled> D1–D8 answered by you (all recommendations accepted).</div>
+<div class="task"><input type="checkbox" checked disabled> Record the agreed standards in <code>docs/features/full-app-audit-plan.md</code> (single yardstick).</div>
+
+<h3>3.1 Phase 1: Security audit</h3>
+<div class="warn">
+  <strong>Suspected issues to verify first (none confirmed yet):</strong>
+  <ol>
+    <li><code>auto-accept-invitations</code> edge function: <code>verify_jwt=false</code> and no secret check in the repo source, so a forged request might be able to join someone else's team.</li>
+    <li>SECURITY DEFINER functions that take a <code>p_user_id</code> without checking <code>auth.uid()</code>: <code>get_dashboard_overview</code>, <code>get_recent_activity</code>, <code>get_batch_feedback_*</code>, <code>get_user_email</code>, <code>lookup_user_by_email</code>, <code>get_recipient_*</code>, <code>get_app_statistics</code>.</li>
+    <li><code>profiles</code>: users may be able to update their own <code>subscription_expires_at</code>/<code>is_active</code>. "Related" users may be able to read BEEP/Wolf tokens, and anon can read deleted profiles.</li>
+    <li><code>team_invitations</code> and <code>rearing_group_invitations</code> are readable by anyone (<code>USING true</code> for the public role), which exposes invitee emails.</li>
+    <li><code>registration_codes</code> is readable by every logged-in user, and three admin policies compare against lowercase <code>'admin'</code>, so they never match.</li>
+  </ol>
+</div>
+<h4>1A: Database (Supabase MCP, read-only SQL)</h4>
+<div class="task"><input type="checkbox" checked disabled> Verify suspicions 2–5 above with read-only queries (policies, grants, function bodies). <strong>All confirmed</strong>, see <code>docs/features/full-app-audit-report.md</code> (SEC-C1, C2, H2–H4, M1).</div>
+<div class="task"><input type="checkbox" disabled> Draft the per-table access map (D5) and review all 78 tables' policies against it, including the 119 overlapping permissive policies.</div>
+<div class="task"><input type="checkbox" disabled> Review every SECURITY DEFINER function: anon-executable (22), authenticated-executable (57), <code>search_path</code>, trigger-only functions still exposed. Also the 4 SECURITY DEFINER views.</div>
+<div class="task"><input type="checkbox" disabled> Column-level exposure in <code>profiles</code> (tokens, subscription fields) and the <code>prevent_role_self_change</code> coverage.</div>
+<div class="task"><input type="checkbox" disabled> Storage: both buckets are public. Check whether inspection/apiary images reveal locations or private data, and whether URLs can be guessed.</div>
+<div class="task"><input type="checkbox" disabled> Live-only objects (queen_assignments, archive_hive_cascade, ensure_reared_queen_record, trace_labels and others) audited from the live DB. Leftover <code>*_backup_20260829</code> tables noted.</div>
+<div class="task"><input type="checkbox" disabled> Security and performance advisors snapshot recorded.</div>
+<h4>1B: Edge functions</h4>
+<div class="task"><input type="checkbox" checked disabled> Verify suspicion 1 against the <em>deployed</em> version (<code>get_edge_function</code>). <strong>Confirmed</strong> (SEC-H1); also found a service-role key in a DB trigger (SEC-H5).</div>
+<div class="task"><input type="checkbox" disabled> Find the source for the 2 deployed functions that are missing from the repo (<code>generate-vegetation-info</code>, <code>send-rearing-group-invitation</code>).</div>
+<div class="task"><input type="checkbox" disabled> CORS <code>*</code> and caller-supplied names in the invitation and notification emails (phishing relay risk).</div>
+<h4>1C: API routes (25 handlers)</h4>
+<div class="task"><input type="checkbox" disabled> Per route: auth check, how the service-role queries are scoped to the user, input validation, error-message leaks, rate limiting.</div>
+<div class="task"><input type="checkbox" disabled> Specific checks: <code>beep/data</code>/<code>wolf-waagen/data</code> device ID not tied to the hive, invoice email HTML injection, <code>auth/verify</code> <code>redirect_to</code> and the Supabase redirect allow-list, <code>update-user-role</code> last-admin race, <code>stripe/checkout</code> code-use race.</div>
+<div class="task"><input type="checkbox" disabled> Cost and abuse: no rate limits on chat, voice transcription, news search or geocode.</div>
+<h4>1D: Client, PWA and headers</h4>
+<div class="task"><input type="checkbox" disabled> Service worker caches <code>/api/*</code> GET responses with no per-user key and no purge on logout (shared-device leak).</div>
+<div class="task"><input type="checkbox" disabled> No Content-Security-Policy or Permissions-Policy on the main app. Draft a CSP that works with Mapbox, Stripe and Supabase.</div>
+<div class="task"><input type="checkbox" disabled> No middleware: confirm every protected page fails safely without a session (data protection relies on RLS).</div>
+<h4>1E: AI assistant</h4>
+<div class="task"><input type="checkbox" disabled> Audit the 13 AI tools against the <code>ai tools</code> skill (they run on the service role, so every query's <code>user_id</code> scoping is checked by hand).</div>
+<div class="task"><input type="checkbox" disabled> Prompt injection: client-supplied assistant turns in the chat history, knowledge-base content and team members' notes. Gaps in the admin URL-fetch SSRF guard (redirects, IPv6, DNS rebinding).</div>
+<h4>1F: Secrets and supply chain</h4>
+<div class="task"><input type="checkbox" disabled> Secrets scan over the full git history (gitleaks or similar), plus <code>npm audit</code>.</div>
+<div class="task"><input type="checkbox" disabled> Local exposure in OneDrive: <code>.codex/config.toml</code> holds a Supabase access token (<strong>recommend rotating</strong>). Also <code>.env - github contributoe.local</code> (whose keys?) and a 22MB production DB export in <code>sql/</code>.</div>
+<div class="task"><input type="checkbox" disabled> Tracked <code>supabase/.temp/</code>; deprecated or unused dependencies (<code>@supabase/auth-helpers-nextjs</code>, <code>@google/generative-ai</code>); <code>.env.example</code> is git-ignored.</div>
+<div class="task"><input type="checkbox" disabled> Recheck open items from the February audit: SEC-4/18 (rate limits), SEC-5 (plaintext tokens), SEC-6 (CSRF decision), SEC-7 (admin audit trail), C3 (<code>/api/users/list</code>).</div>
+
+<h3>3.2 Phase 2: Best-practice code audit</h3>
+<p>One agent per chunk. Each agent applies the same lenses: the <code>qa-engineer</code> protocol (defensive coding, state and concurrency, error handling), <code>vercel-react-best-practices</code> (waterfalls, dynamic imports, effects), the project rules (no <code>any</code>, British English, team-access helper) and the memory regression checks (PostgREST embed normalisation, the multi-breeder mother lookup, named FK embeds, dnd-kit scope, the three hive-edit gates).</p>
+<div class="task"><input type="checkbox" disabled> <strong>Batch 0, tooling:</strong> CI gaps (lint, <code>tsc --noEmit</code>), the 137 failing tests, coverage threshold config, the case for generated Supabase types, dead files and folders (<code>WolfHistoryChart.tsx</code>, empty route folders, root scripts), and stale docs (<code>CLAUDE.md</code> still says v1.4.11 / Next 14).</div>
+<table>
+  <tr><th>Chunk</th><th>Area</th><th>≈LOC</th></tr>
+  <tr><td>1</td><td>App shell, auth, PWA, contexts, <code>components/ui</code></td><td>9k</td></tr>
+  <tr><td>2</td><td>API routes and edge functions (code quality; the security side is Phase 1)</td><td>7k</td></tr>
+  <tr><td>3</td><td>Dashboard home, hives, scales</td><td>10k</td></tr>
+  <tr><td>4</td><td>Records, inspections, tasks, logbook</td><td>11k</td></tr>
+  <tr><td>5a</td><td>Queen Tracker and Mating Nucs</td><td>7.5k</td></tr>
+  <tr><td>5b</td><td>Batches, grafts, distributions</td><td>8.5k</td></tr>
+  <tr><td>6</td><td>Queens, lineage, teams</td><td>9k</td></tr>
+  <tr><td>7a</td><td>Apiaries, maps, community map</td><td>8k</td></tr>
+  <tr><td>7b</td><td>Research, GDD, embed</td><td>7k</td></tr>
+  <tr><td>8a</td><td>Tools</td><td>10k</td></tr>
+  <tr><td>8b</td><td>CRM, traceability, QR and labels</td><td>7.5k</td></tr>
+  <tr><td>9a</td><td>Settings, admin, profile, about, support</td><td>11k</td></tr>
+  <tr><td>9b</td><td>Reports and AI assistant code</td><td>8.5k</td></tr>
+</table>
+<div class="task"><input type="checkbox" disabled> Chunks 1–9b audited, with findings recorded by severity and file:line.</div>
+<div class="task"><input type="checkbox" disabled> Cross-cutting patterns pulled out: data access inside UI files, <code>select('*')</code>, sequential awaits, statically imported mapbox and chart.js, inconsistent error handling, 569 <code>console.error</code> calls and no logger.</div>
+
+<h3>3.3 Phase 3: Mobile-first and 50+ compliance</h3>
+<div class="task"><input type="checkbox" disabled> <strong>Pay down verification debt first:</strong> run the outstanding browser checks (11a, 12b, 12e, 7d/7e where possible, contrast on a phone, tasks triage) at 360×740 in Chrome, light and dark.</div>
+<div class="task"><input type="checkbox" disabled> Walk each field workflow at 360px against the D1–D2 rules: start an inspection, feeding, harvest, varroa, QR-tag landing page, nuc inspection, grafting/tracker, wild colony report.</div>
+<div class="task"><input type="checkbox" disabled> <strong>Queen Rearing and Mating Nucs</strong> (never covered): <code>MatingNucsTab</code>, <code>NucInspectionPanel</code>, <code>QueenTrackerTab</code>, <code>CellFrame</code>, <code>DistributeGraftModal</code>.</div>
+<div class="task"><input type="checkbox" disabled> Public pages that consumers open on phones: <code>/j/[code]</code>, <code>/trace/[batchCode]</code>.</div>
+<div class="task"><input type="checkbox" disabled> Refresh the sweep counts and map them to findings:</div>
+<ul>
+  <li>392 <code>text-xs</code> and 3 <code>text-[10px]</code></li>
+  <li>About 60 native <code>confirm()</code> calls in 32 files</li>
+  <li>14 icon buttons with no label</li>
+  <li>9 hover-only controls</li>
+  <li>2 <code>inputMode</code> uses against 82 number inputs</li>
+  <li>About 326 inputs but only 72 linked labels</li>
+  <li>18 tables with no mobile card view</li>
+</ul>
+<div class="task"><input type="checkbox" disabled> <code>web-design-guidelines</code> pass on the main screens (focus states, reduced motion, autocomplete, safe areas).</div>
+
+<h3>3.4 Phase 4: Mobile UI improvement proposals</h3>
+<p>These are evidence-based ideas to be evaluated. Each one that survives becomes its own feature plan for you to approve or decline.</p>
+<div class="task"><input type="checkbox" disabled> <strong>Thumb-zone action bar for record forms:</strong> a sticky Next/Save bar in the same place on every step, replacing three stacked buttons at the bottom of a long scroll.</div>
+<div class="task"><input type="checkbox" disabled> <strong>Glove-friendly number entry:</strong> steppers or presets (the existing <code>NumberSelector</code>) and the correct numeric keypad.</div>
+<div class="task"><input type="checkbox" disabled> <strong>Bring Queen Rearing and Mating Nucs up to the Phase 1–4 standard:</strong> card views, dirty-state guard, the shared confirm dialog.</div>
+<div class="task"><input type="checkbox" disabled> <strong>Dashboard Quick Actions:</strong> the "tap action, then tap apiary" pattern is hard to discover (ties into the planned Phase 5 user sessions).</div>
+<div class="task"><input type="checkbox" disabled> <strong>Table to card patterns</strong> for the queen compare table, wild colonies and the GDD tables.</div>
+<div class="task"><input type="checkbox" disabled> <strong>Mobile screenshots (before) captured</strong> at 360px for each proposal, as visual evidence.</div>
+
+<h3>3.5 Phase 5: Report and backlog</h3>
+<div class="task"><input type="checkbox" disabled> Write <code>docs/features/full-app-audit-report.md</code>: a single findings register (ID, area, severity, verified yes/no, file:line, proposed fix, effort).</div>
+<div class="task"><input type="checkbox" disabled> Write a prioritised remediation backlog split into small, independent fix batches (security <span class="tag crit">Critical</span>/<span class="tag high">High</span> first).</div>
+<div class="task"><input type="checkbox" disabled> Fix the guidance documents: <code>CLAUDE.md</code> (version, stack), the <code>ui</code> skill (Tailwind v4, the agreed D1–D4 rules), memory <code>user_audience.md</code> (still says 12px is fine), the stale <code>dashboard-field-ux-improvements.md</code> status, and a <code>docs/features</code> index (245 files with none).</div>
+<div class="task"><input type="checkbox" disabled> Review with you, then agree the order of the fix batches.</div>
+
+<h2>4. Out of scope</h2>
+<ul>
+  <li>Fixing anything during Phases 1–4 (except stopping to report a confirmed Critical).</li>
+  <li>Production builds, version bumps, commits (unless you ask), and any write to the live database.</li>
+  <li>Penetration testing against production with forged requests: suspicions are verified by reading code, policies and function bodies.</li>
+  <li>The <code>varroa-detector/</code> Python project.</li>
+</ul>
+
+<h2>Review</h2>
+<p><em>To be completed when the audit finishes.</em></p>
+
+</body>
+</html>

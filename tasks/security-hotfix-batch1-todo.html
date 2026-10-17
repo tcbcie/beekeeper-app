@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Security Hotfix Batch 1: Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Security Hotfix Batch 1</h1>
+<p><strong>Status:</strong> Implemented 15/10/2026. Database is live; the app code is awaiting deployment. <strong>Source:</strong> <code>docs/features/full-app-audit-report.md</code>, findings SEC-C1, C2, H1, H2, H4 and a related sign-up hole.<br>
+<strong>Deferred to batch 2:</strong> SEC-H3 (scale tokens: needs <code>select('*')</code> changes in <code>auth.ts</code> and the profile page), SEC-H5 (service-role key in a trigger: needs you to rotate the key), and SEC-M1 / L1.</p>
+
+<div class="note">The principle throughout is to fix it in the database, where the hole is, and change app code only where a page relied on the hole. Every database change is a single MCP migration with a matching rollback. The app stays the same for normal users.</div>
+
+<h2>1. SEC-C1: users editing their own subscription and status</h2>
+<p>There is already a trigger, <code>prevent_role_self_change</code>, that protects <code>role</code>. I will add the same kind of guard for the money and status columns.</p>
+<div class="task"><input type="checkbox" checked disabled> New BEFORE UPDATE trigger on <code>profiles</code>. When the caller is a normal logged-in user (not an admin, not the service role, not an internal SECURITY DEFINER function such as <code>activate_subscription</code>), it rejects any change to:
+  <code>is_active</code>, <code>subscription_expires_at</code>, <code>subscription_type</code>, <code>subscription_price</code>, <code>used_registration_code_id</code>, <code>current_subscription_code_id</code>, <code>is_association_member</code>, <code>stripe_customer_id</code>, <code>deleted_at</code>, <code>original_email</code>, <code>email</code>, <code>last_subscription_reminder_sent</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> Unchanged: names, mobile, address, breeder code, association choice, memberships, reminders and every <code>enable_*</code> preference stay user-editable (checked against <code>profile/page.tsx</code>). The admin edits in User Management still work through <code>is_admin()</code>, and Stripe and code activation still work because they run with elevated rights.</div>
+<div class="task"><input type="checkbox" checked disabled> Drop the unused "Users can insert own profile" policy. Profiles are only ever created by the sign-up trigger; no app code inserts them.</div>
+
+<h2>2. Sign-up trusting browser data</h2>
+<div class="task"><input type="checkbox" checked disabled> <code>handle_new_user</code> stops reading <code>registration_code_id</code> from sign-up metadata. The app never sends it, so only a crafted sign-up could use it. Codes are still redeemed through <code>activate_subscription</code> and Stripe, which check whether a code is active and how often it has been used.</div>
+
+<h2>3. SEC-C2: reading other users' data through functions</h2>
+<div class="task"><input type="checkbox" checked disabled> <code>get_dashboard_overview</code> and <code>get_recent_activity</code>: refuse unless <code>p_user_id</code> is the caller. The dashboard always passes its own ID, so no app change is needed.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>get_user_email</code>: return the email only for the caller, an admin, or someone the caller shares a team or rearing group with (owner or member). Otherwise return <code>'Unknown'</code>, as it already does for missing users. That covers both callers (the apiary team page and rearing groups).</div>
+
+<h2>4. SEC-H1: forgeable <code>auto-accept-invitations</code> edge function</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> (done 17/10/2026, verified 404) delete it in the Supabase dashboard (Edge Functions → auto-accept-invitations → Delete). The MCP tools cannot delete functions.</div>
+<div class="task"><input type="checkbox" checked disabled> Me: remove <code>supabase/functions/auto-accept-invitations/</code> from the repo. Nothing calls the function; team auto-accept is already done by a safe database trigger. Behaviour does not change.</div>
+
+<h2>5. SEC-H2: invitations readable by anyone</h2>
+<div class="task"><input type="checkbox" checked disabled> Replace both <code>USING (true)</code> read rules with: the team or group owner, or the invitee (their login email matches).</div>
+<div class="task"><input type="checkbox" checked disabled> The accept and decline links open before login, so add two small functions, <code>get_team_invitation(id)</code> and <code>get_rearing_group_invitation(id)</code>. Each returns one invitation by its unguessable ID, in the same shape the pages already use (including the team or group name).</div>
+<div class="task"><input type="checkbox" checked disabled> Swap the single read query in 4 pages to call these: <code>accept-invitation</code>, <code>decline-invitation</code>, <code>accept-rearing-group-invitation</code>, <code>decline-rearing-group-invitation</code>.</div>
+
+<h2>6. SEC-H4: all registration codes readable</h2>
+<div class="task"><input type="checkbox" checked disabled> Make <code>registration_codes</code> readable by admins only. Drop the "read all codes" rule and the three dead lowercase <code>'admin'</code> rules; the existing <code>'Admin'</code> rule already covers admins.</div>
+<div class="task"><input type="checkbox" checked disabled> Add a small function, <code>lookup_registration_code(code)</code>, that returns one code by its exact text, in the same shape. Swap the 2 queries in <code>RenewSubscriptionModal.tsx</code> to use it.</div>
+
+<h2>7. Checks and docs</h2>
+<div class="task"><input type="checkbox" checked disabled> Every new function: <code>search_path = public</code>, with explicit <code>GRANT EXECUTE</code> (both learned from earlier bugs). Then run <code>get_advisors</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> Verify the guards with read-only queries and dry-runs inside a transaction that is rolled back, so no data changes.</div>
+<div class="task"><input type="checkbox" checked disabled> Lint and type-check the 5 changed files, then run the <code>qa-engineer</code> audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Update the docs: this plan in <code>docs/features/security-hotfix-batch1-plan.md</code>, the findings register, and memory notes for the new live-only database objects.</div>
+
+<h2>What you will need to test afterwards</h2>
+<table>
+  <tr><th>Flow</th><th>Expected</th></tr>
+  <tr><td>Dashboard loads</td><td>Unchanged</td></tr>
+  <tr><td>Profile page: edit name, mobile, association, toggle CRM/logbook</td><td>Saves as before</td></tr>
+  <tr><td>Admin → User Management: change a user's expiry</td><td>Saves as before</td></tr>
+  <tr><td>Renew subscription with an individual code / association code</td><td>Works as before</td></tr>
+  <tr><td>Apiary team and rearing team pages: member emails, send/cancel invite</td><td>Unchanged</td></tr>
+  <tr><td>Open an invitation link while logged out, then accept or decline it</td><td>Shows the invitation as before</td></tr>
+</table>
+
+<h2>Review</h2>
+<ul>
+  <li><strong>Database:</strong> one migration, <code>security_hotfix_batch1</code>, applied to production (copy in <code>supabase/migrations/20261015120000_security_hotfix_batch1.sql</code>). It adds a profile guard trigger, hardens 4 functions, adds 3 small lookup functions, and tightens the policies on invitations and registration codes.</li>
+  <li><strong>Code:</strong> 5 files, each a single query swapped for an RPC call with the same result shape. The unused edge function folder was removed.</li>
+  <li><strong>Proof that nothing else changed:</strong> the md5 fingerprints of the two large dashboard functions match the originals once the added guard lines are removed.</li>
+  <li><strong>Behaviour tests (all rolled back, no data changed):</strong> 23 checks passed.
+    <ul>
+      <li>A user's own edits to subscription expiry, <code>is_active</code> and the registration code are blocked.</li>
+      <li>Normal profile edits and preferences still save.</li>
+      <li>Another user's dashboard data, email, codes and invitations are hidden.</li>
+      <li>Logged-out invitation links still load.</li>
+      <li>Admin expiry edits and full code management still work.</li>
+      <li>Team owners and invitees see their invitations.</li>
+      <li>Code activation still succeeds.</li>
+    </ul>
+  </li>
+  <li><strong>Checks:</strong> security advisors show nothing new (only the 3 intended lookup functions). ESLint is clean and there are 0 type errors in <code>src/</code>. QA found no Critical or High issues. One existing Medium issue was logged: decline while logged out shows a false success.</li>
+  <li><strong>Tool note:</strong> the Supabase migration tool failed twice with an expired-session error before succeeding. Nothing was partially applied.</li>
+</ul>
+<div class="note"><strong>Action needed:</strong> deploy the code now. Until it ships, invitation links and code-based renewal are broken in production, because the database is already updated. Then delete <code>auto-accept-invitations</code> in the Supabase dashboard.</div>
+<h3>Please test after deploying</h3>
+<ol>
+  <li>Dashboard loads with your apiaries and recent activity.</li>
+  <li>Profile: edit your name or mobile number and toggle CRM; it saves.</li>
+  <li>Admin, User Management: change a user's expiry; it saves.</li>
+  <li>Renew subscription with an individual code and with an association code (stop at the Stripe page).</li>
+  <li>Apiary team and rearing team pages: member emails show; send and cancel an invite.</li>
+  <li>Open an invitation link in a private window (logged out); the invitation shows.</li>
+</ol>
+
+</body>
+</html>

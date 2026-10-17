@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Security Hotfix Batch 2: Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 880px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    .warn { background: #fef2f2; border-left: 3px solid #dc2626; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Security Hotfix Batch 2</h1>
+<p><strong>Status:</strong> Implemented 15–16/10/2026. Key rotation is moving to batch 3 (see Review). <strong>Source:</strong> <code>docs/features/full-app-audit-report.md</code> plus three new findings from the batch 2 investigation (marked <em>new</em>).</p>
+
+<div class="note"><strong>Committed 17/10/2026, after every hole in this plan was closed.</strong> SEC-H8 was fixed 16/10, and the key rotation was completed in batch 3. This file had been kept out of git because the repository is public.</div>
+
+<h2>What the investigation established</h2>
+<table>
+  <tr><th>Item</th><th>Finding</th><th>Severity</th></tr>
+  <tr><td>Invitation emails <em>(new)</em></td><td><code>send-team-invitation</code> and <code>send-rearing-group-invitation</code> accept any recipient, team name and inviter name from the request body, with no check that the caller sent that invitation. Anyone holding the public key can make <code>info@hivecraic.com</code> email anyone with their own text, unescaped. That is an open phishing relay that also damages your email domain's reputation.</td><td>High</td></tr>
+  <tr><td>Admin sign-up email <em>(new)</em></td><td><code>notify-admin-new-user</code> only checks for <em>any</em> valid key, and the public one works. Anyone can send fake "new user" emails to the admins, with their own text inserted.</td><td>Medium</td></tr>
+  <tr><td>SEC-H5</td><td>The <code>notify_admin_new_user</code> trigger carries the full service-role key, but the function above only needs a low-privilege secret.</td><td>High</td></tr>
+  <tr><td>SEC-H3</td><td>Teammates, group co-members and distribution partners can read each other's BEEP and Wolf API tokens. The app itself only uses these to show "connected", and <code>*_connected_at</code> matches the tokens exactly (2 BEEP, 2 Wolf, no mismatches).</td><td>High</td></tr>
+  <tr><td>User search <em>(new)</em></td><td><code>search_users_for_distribution</code> returns the full name and <strong>email</strong> of anyone whose name or email contains the 2+ characters typed, 20 at a time. Repeated searches can collect every member's email.</td><td>High</td></tr>
+  <tr><td>SEC-M1</td><td><code>get_batch_feedback_summary/details</code> trust a caller-supplied user ID. The app always passes your own ID.</td><td>Medium</td></tr>
+  <tr><td>SEC-M2</td><td>Declining an invitation while logged out shows success but saves nothing.</td><td>Medium (bug)</td></tr>
+  <tr><td>CRM invoice email</td><td>The seller name and order number are inserted into the email HTML unescaped. Rate-limited and only for paying users, but it is the same class of problem as the invitation emails.</td><td>Medium</td></tr>
+  <tr><td>SEC-L1</td><td>Anonymous visitors can read whole deleted-profile rows. Only the login page's "is this account deleted?" check needs this. There are currently 0 such rows.</td><td>Low</td></tr>
+  <tr><td>SEC-M3</td><td><strong>Checked and fine:</strong> all 10 admin-type functions refuse non-admins, and apiary transfer requires the owner or an admin.</td><td>Closed</td></tr>
+</table>
+
+<h2>Decisions needed (my recommendation first)</h2>
+<table>
+  <tr><th>#</th><th>Question</th><th>Recommendation</th></tr>
+  <tr><td>B1</td><td>How to hide the scale tokens?</td><td><strong>A: column permissions.</strong> The database stops handing those two columns to the app, and 4 files switch to explicit column lists or <code>*_connected_at</code>. The catch: any <em>new</em> profiles column must also be granted, otherwise the app gets a clear "permission denied" error. I'll record that as a memory note.<br>B, the alternative, moves the tokens to a server-only table: tidier long-term, but about 11 files change.</td></tr>
+  <tr><td>B2</td><td>Distribution recipient search</td><td><strong>Keep name search, need 3+ characters, and mask emails</strong> in results (for example <code>j•••@gmail.com</code>). You still see enough to pick the right person; nobody can harvest addresses. The alternative is exact-email-only search, which is stricter but harder to use.</td></tr>
+  <tr><td>B3</td><td>Rotating the leaked service-role key (done by you, after step 1)</td><td>Decide when we get there. Your project has both legacy JWT keys and the new <code>sb_publishable_</code>/<code>sb_secret_</code> keys. Before you rotate, I'll confirm the exact steps against Supabase's current docs, including the effect on the embed widget and the edge functions.</td></tr>
+  <tr><td>B4</td><td>Accept these low-risk items with no change?</td><td><strong>Yes.</strong>
+    <ul>
+      <li><code>lookup_user_by_email</code>: the invite flow needs it, and it only confirms whether an exact email has an account.</li>
+      <li><code>get_recipient_apiaries/hives</code>: needed for distribution by design; they expose apiary names and hive numbers only.</li>
+      <li><code>get_user_role</code>, <code>has_valid_invitation</code>, <code>get_rearing_group_member_user_ids</code>: return IDs, booleans or role only, and are used inside access rules.</li>
+      <li><code>check_queen_assignment</code>: needs an unguessable queen ID.</li>
+    </ul>
+  </td></tr>
+</table>
+
+<h2>Plan</h2>
+
+<h3>1. Lock down the three email functions and remove the key from the trigger (High)</h3>
+<div class="task"><input type="checkbox" checked disabled> Generate a random webhook secret locally (never printed) and store it as an edge function secret.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>notify-admin-new-user</code>: accept the call only with the matching <code>x-webhook-secret</code> header, and escape the name and email in the email body. Redeploy, and put the source in the repo.</div>
+<div class="task"><input type="checkbox" checked disabled> Recreate the <code>notify_admin_new_user</code> trigger so it sends that secret instead of the service-role key.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>send-team-invitation</code> and <code>send-rearing-group-invitation</code>:
+  <ul>
+    <li>Require a logged-in user.</li>
+    <li>Load the invitation by its ID and check that the caller sent it and that it is pending.</li>
+    <li>Take the recipient, team or group name and inviter name <strong>from the database</strong>, ignoring the request body.</li>
+    <li>Escape all text.</li>
+  </ul>
+  The app keeps sending the same request, so no app change is needed. First pull the rearing-group function's deployed source into the repo; it is currently missing.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>/api/crm/invoice-email</code>: escape the seller name and order number in the HTML.</div>
+
+<h3>2. Hide the scale tokens (High, option A)</h3>
+<div class="task"><input type="checkbox" checked disabled> Database: withdraw table-wide read access on <code>profiles</code> from app users, then grant read on every column except <code>beep_api_token</code> and <code>wolf_api_token</code>. The server-side scale routes and the AI tools use the service role and are unaffected.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>hives/[id]/page.tsx</code> and <code>scales/page.tsx</code>: decide "connected" from <code>beep_connected_at</code> / <code>wolf_connected_at</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>src/lib/auth.ts</code> and <code>profile/page.tsx</code>: replace <code>select('*')</code> with the explicit column list.</div>
+
+<h3>3. User search and batch feedback (High, Medium)</h3>
+<div class="task"><input type="checkbox" checked disabled> <code>search_users_for_distribution</code>: require 3+ characters and return a masked email. Same columns, so no app change is needed beyond raising the search minimum from 2 to 3 characters.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>get_batch_feedback_summary/details</code>: only answer for the caller's own ID.</div>
+
+<h3>4. Logged-out decline (Medium bug)</h3>
+<div class="task"><input type="checkbox" checked disabled> Two small functions, <code>decline_team_invitation(id)</code> and <code>decline_rearing_group_invitation(id)</code>, which decline only a pending, unexpired invitation. Swap the single update call in the 2 decline pages.</div>
+
+<h3>5. Deleted-account check (Low)</h3>
+<div class="task"><input type="checkbox" checked disabled> Replace the "anon can read deleted profiles" rule with a yes/no function, <code>is_deleted_account(email)</code>. Swap the one query on the login page.</div>
+
+<h3>6. Rotate the service-role key (you, guided)</h3>
+<div class="task"><input type="checkbox" checked disabled> After step 1, I research the current Supabase steps and write you a short checklist covering the Vercel env vars, local <code>.env</code> files, the contributor env file and the embed widget. You do the rotation in the dashboard.</div>
+
+<h3>7. Verify and document</h3>
+<div class="task"><input type="checkbox" checked disabled> Rolled-back behaviour tests as real users and as anon; advisors; ESLint; type-check; the <code>qa-engineer</code> audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: this plan in <code>docs/features/security-hotfix-batch2-plan.md</code>, the findings register, and a memory note about the profiles column grant.</div>
+<div class="task"><input type="checkbox" checked disabled> Commit and push the code only. The audit docs stay local until rotation is done, then everything is committed.</div>
+
+<h2>Expected footprint</h2>
+<ul>
+  <li>1 database migration</li>
+  <li>3 edge functions redeployed</li>
+  <li>About 9 app files with small, local edits: <code>hives/[id]</code>, <code>scales</code>, <code>auth.ts</code>, <code>profile</code>, 2 decline pages, the login page, <code>DistributeGraftModal</code> (search minimum), and the invoice-email route</li>
+</ul>
+
+<h2>What you will need to test afterwards</h2>
+<ol>
+  <li>Sign up a test account: the admins still receive the "new user" email.</li>
+  <li>Invite someone to a team and to a rearing group: the invitation email arrives with the right names.</li>
+  <li>Hive detail and Scales pages still show BEEP/Wolf as connected, and scale data still loads.</li>
+  <li>Profile page loads and saves; the dashboard header and role checks behave as before.</li>
+  <li>Distribute a graft: search for a recipient (3+ letters) and pick them from the masked results.</li>
+  <li>Open a decline link while logged out: it really declines (the owner sees "declined").</li>
+  <li>Try signing up with a deleted account's email: you are redirected to reactivation.</li>
+  <li>Send a CRM invoice email: it looks the same as before.</li>
+</ol>
+
+<h2>Review</h2>
+<ul>
+  <li><strong>Email functions (live):</strong>
+    <ul>
+      <li>Both invitation functions now require the signed-in inviter and take every detail from the database. A live call with the public key gets 401, so the phishing relay is closed.</li>
+      <li>The admin-alert function accepts only the webhook secret: live checks give 401 without it and accept it with it.</li>
+      <li>The trigger no longer contains any JWT.</li>
+      <li>The invoice email escapes its text.</li>
+    </ul>
+  </li>
+  <li><strong>Scale tokens (live):</strong> app users and anon can no longer read <code>beep_api_token</code>/<code>wolf_api_token</code>. The app reads profiles through <code>PROFILE_COLUMNS</code> and decides "connected" from <code>*_connected_at</code>. The order was additive migration, then code deploy, then lockdown, so production never broke.</li>
+  <li><strong>Search, feedback, decline, deleted check (live):</strong>
+    <ul>
+      <li>Search needs 3+ characters and matches a name fragment or a <em>complete</em> email, with masked results. I tightened this from your B2 answer so addresses can't be rebuilt from fragments.</li>
+      <li>Feedback answers only for your own ID.</li>
+      <li>Declining works while logged out.</li>
+      <li>The deleted-account check is yes/no.</li>
+    </ul>
+  </li>
+  <li><strong>Checks:</strong> rolled-back tests for every path, live permission checks, and advisors (nothing new). ESLint is clean and there are 0 type errors in <code>src/</code>. QA found no Critical or High issues. I also fixed a hidden type error: <code>UserProfile.updated_at</code> pointed at a column that doesn't exist.</li>
+  <li><strong>Step 6 changed after research:</strong> Supabase no longer allows rotating the legacy JWT keys, and they stop working at the end of 2026. The real fix is migrating to <code>sb_publishable_</code>/<code>sb_secret_</code> keys and then deactivating the legacy keys. That becomes batch 3.</li>
+  <li><strong>New finding while researching (SEC-H8):</strong> <code>weekly-email-digest</code> and <code>task-event-reminders</code> accept the public key and <em>return the email addresses</em> they sent to. That is not yet fixed and is awaiting your decision.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>Hive detail and Scales: BEEP/Wolf still show as connected and scale data loads.</li>
+  <li>Profile page loads and saves.</li>
+  <li>Invite someone to a team and to a rearing group: the email arrives with the right names.</li>
+  <li>Distribute a graft: search 3+ letters of a name and pick from the masked results.</li>
+  <li>Open a decline link while logged out: the owner then sees "declined".</li>
+  <li>Sign up a test account: the admins get the "new user" email.</li>
+  <li>Send a CRM invoice email.</li>
+</ol>
+
+</body>
+</html>
