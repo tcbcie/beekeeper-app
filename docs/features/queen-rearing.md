@@ -236,7 +236,7 @@ Located in `src/lib/ai/tools/queens.ts` and `src/lib/ai/tools/nucs.ts`:
 |------|---------|
 | `getQueenInventory` | List all queens with status, age, location |
 | `getActiveBatches` | Batches currently in progress |
-| `getBatchDetails` | Full batch with timeline and progress |
+| `getRearingBatchDetails` | Full batch with timeline and progress (renamed from `getBatchDetails` on 17/10/2026; the old name clashed with the honey traceability tool, so Mel could never call it) |
 | `getUpcomingBatchEvents` | Events due in next 7/14/30 days |
 | `getMatingNucs` | Active nucs with status and inspection counts |
 | `getMatingNucSummary` | Counts by nuc status |

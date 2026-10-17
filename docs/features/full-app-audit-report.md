@@ -51,6 +51,7 @@
 | API-06 | **Fixed 17/10/2026 (batch 7).** The admin export included password hashes and tokens with one click. Secrets are now left out unless ticked, and a full export needs the admin's password. |
 | API-07 | **Fixed 17/10/2026 (batch 7).** Paid AI, transcription, news search and geocoding routes had no limits. Per-user hourly and daily limits now apply. |
 | API-08 | **Fixed 17/10/2026 (batch 7).** Admin actions were only in console logs. There is now an append-only admin audit log, impersonation start and exit are recorded, and the user is emailed. |
+| AI-01 | **Fixed 17/10/2026 (batch 8).** Mel's data tools used the secret key, so only hand-written filters protected users' data, and two colony tools leaked other users' colony numbers. The tools now query as the signed-in user, so the database rules apply; only the caller's own scale tokens use the secret key. |
 | Other Phase 1 findings | The remaining Medium and Low findings from the Phase 1 database, API, client, AI and supply-chain audits are kept in a local register until they are fixed, because this repository is public. |
 
 All checks so far were read-only: SQL catalogue queries over the Supabase MCP connection, reading the deployed edge-function source, and searching the codebase. No data, schema or code was changed. No exploit was attempted against production.

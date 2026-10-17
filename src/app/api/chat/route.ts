@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { handleChatQuery } from '@/lib/rag'
 import { ChatMessage } from '@/types/chat'
 import { consumeRateLimits, RATE_LIMITS, RATE_LIMITED_MESSAGE } from '@/lib/rate-limit'
+import { createUserSupabase, runWithUserSupabase } from '@/lib/ai/tools/utils'
 
 // Fail-fast at module init so a missing env surfaces at deploy time, not in a
 // per-request 500 with a misleading 'Chat API error' log line.
@@ -145,8 +146,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, { status: 429 })
     }
 
-    // Process the chat query
-    const result = await handleChatQuery(message, user.id, history)
+    // Process the chat query. The AI tools query the database as this user (their own token),
+    // so RLS applies to everything Mel looks up.
+    const result = await runWithUserSupabase(createUserSupabase(token), () =>
+      handleChatQuery(message, user.id, history)
+    )
 
     return NextResponse.json({
       message: result.response,

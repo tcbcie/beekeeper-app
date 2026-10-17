@@ -9,9 +9,10 @@ When creating a new tool, you **MUST** adhere to these non-negotiable rules to e
 
 1.  **Strict Tenancy Isolation (CRITICAL):**
     * The LLM is never allowed to see data outside the current user's scope.
-    * Every database query executed within a tool **MUST** include a filter using the current user's ID.
-    * The user ID must be retrieved from the execution context (e.g., session context), NEVER from an LLM parameter.
-    * *Pattern:* `.eq('user_id', context.session.user.id)`
+    * Always get the database client from `getSupabase()` in `src/lib/ai/tools/utils.ts`. It is the signed-in user's own client (set per chat request by `runWithUserSupabase` in `src/app/api/chat/route.ts`), so the database's RLS rules apply. Never create a secret-key client in a tool.
+    * Still filter every query by the current user (`.eq('user_id', userId)` or the `getOwnApiaryIds` / `getAccessibleApiaryIds` / `getAccessibleHiveIds` helpers). RLS is wider than "my apiaries" (it also shows, for example, distribution recipients' apiaries), so the filters define what Mel should talk about.
+    * The user ID comes from the `userId` argument the dispatcher passes in, NEVER from an LLM parameter.
+    * `getServiceSupabase()` (secret key) is only for data the caller may not read through RLS but a tool needs for themselves, such as their own BEEP/Wolf token. Never use it for rows chosen by tool arguments.
 
 2.  **Human-Readable Outputs:**
     * Never return raw database UUIDs to the LLM. The LLM cannot use them effectively and might expose them to the user.
@@ -29,65 +30,43 @@ Only use data either based on the users data or on the Knowledge in the database
 All tools must follow this TypeScript structure, utilizing the project's tool definition helper (assumed to be based on Vercel AI SDK standards).
 
 ```typescript
-import { z } from 'zod';
-// Import necessary project types for context, e.g.:
-// import { ToolExecutionOptions } from '@/lib/ai/types';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { z } from 'zod'
+import type { Tool } from './index'
+import { getSupabase } from './utils'
 
-// 1. Define descriptive name and what the tool does
-export const toolName = defineTool({
+// 1. Export name = registry key = `name`. It must be unique across ALL tool files (the
+//    registry spreads every module, so a duplicate silently replaces the earlier tool).
+export const getExampleRecords: Tool = {
+  name: 'getExampleRecords',
   description: 'A clear, concise description for the LLM telling it WHAT this tool does and WHEN to use it.',
 
-  // 2. Define parameters the LLM needs to provide via Zod
+  // 2. Parameters the LLM provides, validated by the dispatcher
   parameters: z.object({
-    // Example: parameterName: z.string().describe('Description of parameter purpose'),
-    // If no parameters are needed, use z.object({})
+    // parameterName: z.string().describe('Description of parameter purpose'),
   }),
 
-  // 3. The execution logic
-  execute: async (args, options: ToolExecutionOptions) => {
-    // 3a. Secure Context Retrieval
-    const { context } = options;
-    // Ensure session exists before proceeding (middleware should usually handle this, but be safe)
-    if (!context?.session?.user?.id) {
-      return "Error: Unauthorized execution context.";
+  // 3. The execution logic: userId is the authenticated caller, never an LLM argument
+  execute: async (_rawArgs: unknown, userId: string) => {
+    const supabase = getSupabase() // the user's own client: RLS applies
+
+    const { data, error } = await supabase
+      .from('your_table_name')
+      .select('field1, field2, joined_table(name_field)')
+      .eq('user_id', userId) // still scope explicitly
+      .limit(20)
+
+    if (error) {
+      console.error('Tool execution error:', error)
+      return 'An error occurred while attempting to fetch the data.'
     }
-    const userId = context.session.user.id;
-
-    // Initialize DB client
-    const supabase = createSupabaseServerClient();
-
-    try {
-      // 3b. Secure Database Query
-      const { data, error } = await supabase
-        .from('your_table_name')
-        .select('field1, field2, joined_table(name_field)')
-        // CRITICAL: Tenancy enforcement
-        .eq('user_id', userId)
-        // Apply any filters based on args
-        // .eq('some_col', args.parameterName)
-        .single(); // or .limit(x) depending on needs
-
-      if (error) throw error;
-
-      // 3c. Graceful Handling
-      if (!data) {
-        return "No relevant data found matching that request.";
-      }
-
-      // 3d. Formatted Human-Readable Output
-      // Transform DB result into simple JSON for the LLM. NO UUIDs.
-      return {
-        readableField1: data.field1,
-        relatedName: data.joined_table?.name_field ?? 'Unknown',
-        // ...
-      };
-
-    } catch (err) {
-      // Log error centrally if needed
-      console.error('Tool execution error:', err);
-      // Return safe error message to LLM
-      return "An error occurred while attempting to fetch the data.";
+    if (!data || data.length === 0) {
+      return 'No relevant data found matching that request.'
     }
+
+    // Human-readable output for the LLM. NO UUIDs.
+    return data.map((row) => ({
+      readableField1: row.field1,
+    }))
   },
-});
+}
+```

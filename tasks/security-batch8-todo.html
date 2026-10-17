@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 8: AI Tools</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Security Batch 8: AI Tools Under Database Rules (AI-01)</h1>
+<p><strong>Status:</strong> Done 17/10/2026; tested by you, committed and pushed. <strong>Finding:</strong> AI-01 (Medium), the last Medium from Phase 1.</p>
+
+<h2>What I found</h2>
+<ul>
+  <li>Mel's 55 data tools (hives, inspections, varroa, queens, nucs, scales, traceability and so on) all use <strong>one secret-key database client</strong> (<code>getSupabase()</code> in <code>src/lib/ai/tools/utils.ts</code>). The database's access rules don't apply, so every tool's own <code>user_id</code> filter is the only protection.</li>
+  <li>Most tools filter correctly. But <code>getColonyDetails</code> and <code>getColonyLineage</code> look up parent and child colonies <strong>without</strong> a user filter, so another user's colony numbers can appear in the answer. That is exactly the kind of slip AI-01 is about.</li>
+  <li>None of the tools write anything. Only two things need the secret key: reading the caller's <strong>own</strong> BEEP/Wolf token (users can't read those columns), and logging unanswered questions for the admin "tool suggestions" list.</li>
+  <li>No code path runs AI-written SQL any more. The old <code>execute_safe_query</code> function can only be called with the secret key, and only the admin export uses it.</li>
+</ul>
+
+<h2>Plan (three files, no tool rewrites)</h2>
+<div class="task"><input type="checkbox" checked disabled> <code>utils.ts</code>: <code>getSupabase()</code> returns a <strong>user-scoped client</strong> built from the caller's own sign-in token with the public key, so the database rules apply to every tool query. The client is held for the length of one chat request (Node's request-local storage). If a tool runs without one, it fails rather than falling back to the secret key.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>src/app/api/chat/route.ts</code>: create that client from the request's token and run the chat request inside it (<code>runWithUserSupabase</code>). The tools' own code and the 55 tool signatures stay as they are, and their existing filters stay on top of the database rules.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>scales.ts</code>: only the two token look-ups (the caller's own BEEP/Wolf token) use a clearly named secret-key helper, <code>getServiceSupabase()</code>. The knowledge-base search, news search and unanswered-question log in <code>rag.ts</code> stay as they are: they only read shared content or write admin analytics.</div>
+<div class="task"><input type="checkbox" checked disabled> Verify: type-check and lint, <code>qa-engineer</code> review, docs (AI tools doc and findings register).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> build, then ask Mel a few questions (your hives, the last inspection of a hive, varroa counts, queens, a hive with a scale, a colony's lineage, a beekeeping knowledge question). Then commit and push.</div>
+
+<div class="task"><input type="checkbox" checked disabled> <strong>Added at your request:</strong> the queen-rearing tool is renamed <code>getRearingBatchDetails</code>. It used to share the name <code>getBatchDetails</code> with the honey traceability tool, which replaced it in the registry, so Mel could never call it. The traceability tool's description now says "honey bottling batch" so Mel picks the right one.</div>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>User-scoped client</td><td><code>utils.ts</code>: <code>createUserSupabase(token)</code> (public key plus the user's token), <code>runWithUserSupabase(client, fn)</code> (request-local), and <code>getSupabase()</code> now returns the request's user client and throws without one. There is no secret-key fallback. The 55 tools are unchanged and keep their own filters.</td></tr>
+  <tr><td>Chat route</td><td>Runs <code>handleChatQuery</code> inside <code>runWithUserSupabase(createUserSupabase(token), …)</code>.</td></tr>
+  <tr><td>Secret key</td><td>Only <code>getWolfToken</code> / <code>getBeepToken</code> (the caller's own row) use <code>getServiceSupabase()</code>. The knowledge base and news search (shared content) and the unanswered-question log (admin analytics) stay as they were in <code>rag.ts</code>.</td></tr>
+  <tr><td>Effect</td><td>Colony parent and child look-ups can no longer show another user's colonies. Every tool query is now limited by the database rules as well as by its own filter.</td></tr>
+  <tr><td>getBatchDetails</td><td>The queen-rearing tool is now <code>getRearingBatchDetails</code>, so both batch tools are usable. <code>queen-rearing.md</code> is updated.</td></tr>
+  <tr><td>Docs</td><td>The project's "ai tools" skill now shows the real pattern (<code>Tool</code> type, <code>getSupabase()</code> user client, unique export names). Before, it pointed to a file that doesn't exist. Findings register updated.</td></tr>
+  <tr><td>QA</td><td>No type errors in <code>src/</code>; ESLint clean on <code>src/lib/ai/tools</code> and the chat route. No Critical, High or Medium issues; the AI modules are only used on the server, so request-local storage is safe.</td></tr>
+</table>
+<p><strong>Done:</strong> tested by you, committed and pushed.</p>
+</body>
+</html>

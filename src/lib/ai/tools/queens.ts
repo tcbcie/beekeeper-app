@@ -95,8 +95,10 @@ export const getActiveBatches: Tool = {
 }
 
 // Get batch details
-export const getBatchDetails: Tool = {
-  name: 'getBatchDetails',
+// Named apart from traceability's getBatchDetails (honey bottling batches): both used to be
+// called getBatchDetails and the registry spread kept only the traceability one.
+export const getRearingBatchDetails: Tool = {
+  name: 'getRearingBatchDetails',
   description: 'Get full details of a specific queen rearing batch including timeline',
   parameters: z.object({
     batchName: z.string().describe('Name of the rearing batch')

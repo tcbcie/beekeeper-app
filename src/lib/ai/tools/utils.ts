@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 // Fail-fast at module init. Returns a non-nullable string so the values can
@@ -10,22 +11,49 @@ function requireEnv(name: string): string {
   return value
 }
 const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
+const supabasePublicKey = requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
 const supabaseServiceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
 
-let supabaseInstance: SupabaseClient | null = null
+// The signed-in user's client for the current chat request (see runWithUserSupabase).
+const requestSupabase = new AsyncLocalStorage<SupabaseClient>()
 
-// NOTE (audit): this client uses the service role key and bypasses RLS. Every
-// tool that queries user data MUST manually scope by user_id -- either via
-// .eq('user_id', userId) on user-owned tables, or via the accessor helpers
-// below (getOwnApiaryIds / getAccessibleApiaryIds / getAccessibleHiveIds).
-// The structural fix (switching to a user-scoped client so RLS applies)
-// is flagged as a follow-up; for now, every PR adding a tool must verify
-// scoping in code review.
+/** A client that acts as the signed-in user, so the database's RLS rules apply to every query. */
+export function createUserSupabase(accessToken: string): SupabaseClient {
+  return createClient(supabaseUrl, supabasePublicKey, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+}
+
+/** Run one chat request with `client` as the client every tool's getSupabase() returns. */
+export function runWithUserSupabase<T>(client: SupabaseClient, fn: () => Promise<T>): Promise<T> {
+  return requestSupabase.run(client, fn)
+}
+
+// The tools' database client: the signed-in user's own, so RLS applies on top of each tool's
+// own user_id / accessible-apiary filters (keep those: RLS alone is wider than "my apiaries",
+// e.g. it also shows distribution recipients' apiaries). There is deliberately no fallback to
+// the secret key: a tool called outside runWithUserSupabase fails instead of bypassing RLS.
 export function getSupabase(): SupabaseClient {
-  if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseServiceKey)
+  const client = requestSupabase.getStore()
+  if (!client) {
+    throw new Error('AI tools must run inside runWithUserSupabase (no user-scoped client)')
   }
-  return supabaseInstance
+  return client
+}
+
+let serviceInstance: SupabaseClient | null = null
+
+// Secret-key client that bypasses RLS. Only for data users may not read through RLS but a tool
+// legitimately needs for the CALLER themselves (their own BEEP/Wolf token). Never use it for a
+// query whose rows depend on tool arguments.
+export function getServiceSupabase(): SupabaseClient {
+  if (!serviceInstance) {
+    serviceInstance = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  }
+  return serviceInstance
 }
 
 // Get list of apiary IDs owned by user only (excludes shared)

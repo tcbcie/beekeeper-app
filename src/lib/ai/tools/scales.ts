@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, findHiveByName, formatDate } from './utils'
+import { getSupabase, getServiceSupabase, findHiveByName, formatDate } from './utils'
 import { wolfGetMeasurements } from '../../wolf-waagen-api'
 import { beepGetMeasurements } from '../../beep-api'
 
@@ -17,8 +17,10 @@ interface ScaleReading {
 }
 
 // Helper to get Wolf API token for a user
+// Scale tokens aren't readable through RLS (profiles column grants), so these two look-ups use
+// the secret key. They only ever read the CALLER's own row: userId is the authenticated user.
 async function getWolfToken(userId: string): Promise<string | null> {
-  const supabase = getSupabase()
+  const supabase = getServiceSupabase()
   const { data } = await supabase
     .from('profiles')
     .select('wolf_api_token')
@@ -29,7 +31,7 @@ async function getWolfToken(userId: string): Promise<string | null> {
 
 // Helper to get BEEP API token for a user
 async function getBeepToken(userId: string): Promise<string | null> {
-  const supabase = getSupabase()
+  const supabase = getServiceSupabase()
   const { data } = await supabase
     .from('profiles')
     .select('beep_api_token')

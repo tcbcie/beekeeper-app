@@ -214,7 +214,7 @@ export const getBatchRuns: Tool = {
 // Get details of a specific batch by code
 export const getBatchDetails: Tool = {
   name: 'getBatchDetails',
-  description: 'Get detailed information about a specific bottling batch by batch code or trace code, including linked containers, origin percentages, and public profile info.',
+  description: 'Get detailed information about a specific honey bottling batch by batch code or trace code, including linked containers, origin percentages, and public profile info.',
   parameters: z.object({
     batchCode: z.string().describe('The batch code (L-YYYY-MM-NNN) or trace code')
   }),
