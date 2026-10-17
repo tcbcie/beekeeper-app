@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 7: API Routes</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    .warn { background: #fef2f2; border-left: 3px solid #dc2626; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Security Batch 7: API Routes (API-02 to API-08)</h1>
+<p><strong>Status:</strong> Done 17/10/2026; tested by you, committed and pushed. <strong>Findings:</strong> seven Medium API findings from the Phase 1 audit.</p>
+<div class="warn"><strong>Keep out of git until shipped:</strong> the repository is public and these holes are open.</div>
+
+<h2>What I found</h2>
+<p>Every route below uses the secret key, so database rules don't apply and each route must do its own checks.</p>
+<table>
+  <tr><th>ID</th><th>Problem</th></tr>
+  <tr><td>API-02</td><td>The BEEP and Wolf <code>data</code> routes check that you can access a hive, then use the <strong>hive owner's</strong> BEEP/Wolf token with whatever device ID you send. They never compare it with the hive's own device. A team member could read any scale in the owner's BEEP/Wolf account, including ones not shared. Team members can also set a shared hive's device ID themselves, so the route fix needs a database guard as well.</td></tr>
+  <tr><td>API-03</td><td>The invoice email goes to <strong>any address the user types</strong>, from <code>info@hivecraic.com</code>, with user-written content (spam and phishing risk). The 25-an-hour limit can be beaten by sending in parallel, because it counts first and only records after sending. If the count fails, the email goes anyway. The seller name has no length cap.</td></tr>
+  <tr><td>API-04</td><td><code>/api/users/list</code> gives <strong>every logged-in user</strong> the ID and name of every user. It has two callers: the admin transfer screen, and the apiary-owner "Transfer Ownership" picker, which only needs one person.</td></tr>
+  <tr><td>API-05</td><td>Registration codes can be guessed without limit, through checkout and through the <code>lookup_registration_code</code> / <code>activate_subscription</code> database functions. A correct free individual code means a free subscription. Error messages tell a typo apart from a real code.</td></tr>
+  <tr><td>API-06</td><td>The admin "Export Complete Database" includes every user's <strong>password hash</strong>, sign-in and recovery tokens, and BEEP/Wolf tokens. It runs with one click, with no password re-entry. If the error path fails, it also returns internal error text.</td></tr>
+  <tr><td>API-07</td><td>No rate limits on AI chat, voice transcription (OpenAI, paid per use), news search or geocoding (Google, paid). News and geocoding don't even need a subscription.</td></tr>
+  <tr><td>API-08</td><td>Admin actions are only written to console logs. Impersonation isn't recorded in the database, exiting isn't logged at all, and the user is never told.</td></tr>
+</table>
+
+<h2>Plan</h2>
+<h3>A. One shared, race-proof rate limiter (used by B, C and F)</h3>
+<div class="task"><input type="checkbox" checked disabled> A new table <code>api_rate_events</code> (user, bucket, time; RLS on, no client access) and a function <code>consume_rate_limit(user, bucket, limit, window)</code>. It locks per user and bucket, counts, and records in one step, so parallel requests can't slip past. It is called with the secret key only.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>src/lib/rate-limit.ts</code>: a short helper the routes call. It <strong>fails closed</strong>: if the check itself errors, the request is refused with a "try again shortly" message.</div>
+
+<h3>B. API-07: limits on paid routes</h3>
+<div class="task"><input type="checkbox" checked disabled> Chat <strong>30 an hour, 150 a day</strong>. Voice transcription <strong>20 an hour, 60 a day</strong>. News search and geocoding <strong>60 an hour</strong> each. Over the limit returns 429 with a plain message, which the screens already show as an error.</div>
+
+<h3>C. API-03: invoice email</h3>
+<div class="task"><input type="checkbox" checked disabled> The server only sends to the <strong>customer's saved email</strong> or <strong>your own account email</strong> (a copy for yourself). The invoice screen shows the recipient as a choice between those two instead of a free text box. If the customer has no email, it says to add one to the customer first.</div>
+<div class="task"><input type="checkbox" checked disabled> The 25-an-hour limit moves to the shared limiter and is reserved <strong>before</strong> sending. The seller name is capped at 100 characters.</div>
+
+<h3>D. API-02: scale data</h3>
+<div class="task"><input type="checkbox" checked disabled> In both <code>data</code> routes: when a <code>hiveId</code> is given (which uses the owner's token), the device or scale ID must match that hive's own <code>beep_device_id</code> / <code>wolf_scale_id</code>, otherwise 403. Without <code>hiveId</code>, the route still uses your own token, so it can only reach your own account; the history charts use this.</div>
+<div class="task"><input type="checkbox" checked disabled> Database guard: only the hive's owner can change its scale columns (<code>beep_device_*</code>, <code>wolf_scale_*</code>). Team members can't point a shared hive at a different device.</div>
+<div class="task"><input type="checkbox" checked disabled> Return a generic error instead of passing on raw BEEP/Wolf error text.</div>
+
+<h3>E. API-04 and API-05</h3>
+<div class="task"><input type="checkbox" checked disabled> API-04: <code>/api/users/list</code> becomes admin-only. The apiary owner's "Transfer Ownership" changes from a list of all users to <strong>"enter the new owner's email"</strong>, checked against the existing exact-match lookup, before the same transfer function runs.</div>
+<div class="task"><input type="checkbox" checked disabled> API-05: <code>lookup_registration_code</code>, <code>activate_subscription</code> and checkout share a limit of <strong>10 code attempts per user per hour</strong>. Checkout uses one message for "no such code / wrong kind of code / not linked".</div>
+
+<h3>F. API-06 and API-08: admin export and audit trail</h3>
+<div class="task"><input type="checkbox" checked disabled> New <code>admin_audit_log</code> table: append-only, and readable by admins only. Each row records who did what to whom, and when.</div>
+<div class="task"><input type="checkbox" checked disabled> Logged from the server routes: impersonation start, impersonation <strong>exit</strong> (through a new small call when the banner's Exit is used), role change, database export, and viewing a user's apiaries.</div>
+<div class="task"><input type="checkbox" checked disabled> Logged by database triggers, so nothing can bypass them: an admin changing another user's account status, deletion, restore, subscription expiry or role (on <code>profiles</code>), hard deletes, and apiary ownership transfers.</div>
+<div class="task"><input type="checkbox" checked disabled> The user gets an email when an admin starts impersonating them: "An administrator signed in to your account on … to help with support".</div>
+<div class="task"><input type="checkbox" checked disabled> Export: password hashes, sign-in and recovery tokens, and BEEP/Wolf tokens are <strong>left out by default</strong>. An "include sign-in secrets (needed for a full restore)" tick box puts them back. Any full export requires you to <strong>re-enter your password</strong>, which the server checks. The error response no longer includes internal details.</div>
+
+<h3>G. Verify and close</h3>
+<div class="task"><input type="checkbox" checked disabled> Database changes through MCP, with rolled-back tests (limiter under parallel load; scale-column guard; audit triggers; code-attempt limit). Then the security advisors.</div>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint, <code>qa-engineer</code> review, docs (BEEP, Wolf, CRM, ownership transfer, impersonation, export) and the findings register.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> build and test (listed when ready). Then commit and push.</div>
+
+<div class="note"><strong>Confirmed by you (17/10):</strong> all four as proposed.
+  <ol>
+    <li><strong>Invoice recipient:</strong> customer's saved email or yourself only. (Today it's any address.)</li>
+    <li><strong>Limits:</strong> chat 30/hour and 150/day; voice 20/hour and 60/day; news and geocoding 60/hour; 10 code attempts/hour; invoices 25/hour.</li>
+    <li><strong>Impersonation email</strong> to the user each time an admin signs in as them (recommended for GDPR transparency).</li>
+    <li><strong>Export:</strong> secrets left out unless ticked, and a password re-check for full exports. If you sign in with Google rather than a password, tell me and I'll use an emailed code instead.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>A. Limiter</td><td><code>api_rate_events</code> + <code>consume_rate_limit</code> (advisory lock, count and record in one step; secret key only; daily purge). <code>src/lib/rate-limit.ts</code> refuses the request if the check fails.</td></tr>
+  <tr><td>B. API-07</td><td>Chat 30/h and 150/day; voice 20/h and 60/day; news and geocoding 60/h. The screens already show the server's message; geocoding quietly falls back to the free city lookup.</td></tr>
+  <tr><td>C. API-03</td><td>Recipient: the customer's saved email or yourself (enforced on the server; the screen offers a choice). Atomic 25/h limit reserved before sending; seller name capped at 100 characters.</td></tr>
+  <tr><td>D. API-02</td><td>The device or scale must match the hive whenever the owner's token is used. A trigger allows only the owner to change scale columns. Vendor errors are no longer passed on.</td></tr>
+  <tr><td>E. API-04/05</td><td><code>/api/users/list</code> is admin-only; owner transfer works by exact email. Code attempts share a limit of 20 calls an hour across lookup, activate and checkout; checkout gives one "Invalid association code" message.</td></tr>
+  <tr><td>F. API-06/08</td><td>Append-only <code>admin_audit_log</code>. Routes record impersonation start (required) and exit, role changes, exports (required) and apiary views; triggers record admin account changes, deletions and apiary transfers. The user is emailed on impersonation. Export: password re-check, and secrets left out unless ticked.</td></tr>
+  <tr><td>Tests</td><td>11 rolled-back database checks all pass (limiter, scale guard, code limit, audit triggers, log access and append-only). No type errors in <code>src/</code>; ESLint clean on all 20 changed files. Advisors: only the expected "no policies" note on <code>api_rate_events</code>.</td></tr>
+  <tr><td>QA</td><td>No Critical, High or Medium issues. Notes: a slot is used even if the paid call then fails (intended); signing in the admin for the export check updates their "last sign-in" time.</td></tr>
+</table>
+<p><strong>Done:</strong> tested by you, committed and pushed.</p>
+</body>
+</html>

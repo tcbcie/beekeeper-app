@@ -7,6 +7,8 @@ import { useToast } from '@/components/ui/Toast'
 import InfoPanel from '@/components/ui/InfoPanel'
 import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
+import TextInput from '@/components/ui/TextInput'
+import CheckboxInput from '@/components/ui/CheckboxInput'
 import { buildInsertSql, DATABASE_EXPORT_TABLES } from '@/lib/database-export'
 
 interface ProfileExportProps {
@@ -19,9 +21,16 @@ type AdminExportMode = 'complete' | 'schema_admin_only'
 export default function ProfileExport({ isAdmin, hasActiveSubscription }: ProfileExportProps) {
   const toast = useToast()
   const [exporting, setExporting] = useState(false)
+  // Admin export: password re-check for the complete export, and opt-in for sign-in secrets.
+  const [adminPassword, setAdminPassword] = useState('')
+  const [includeSecrets, setIncludeSecrets] = useState(false)
 
   const exportDatabase = async (adminMode: AdminExportMode = 'complete') => {
     if (exporting) {
+      return
+    }
+    if (isAdmin && adminMode === 'complete' && !adminPassword) {
+      toast.warning('Enter your password to export the complete database')
       return
     }
 
@@ -47,7 +56,11 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
             'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ mode: adminMode }),
+          body: JSON.stringify({
+            mode: adminMode,
+            includeSecrets,
+            ...(adminMode === 'complete' ? { password: adminPassword } : {}),
+          }),
           signal: controller.signal
         })
 
@@ -72,6 +85,7 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
 
         // Get the SQL content from response
         const sqlContent = await response.text()
+        setAdminPassword('')
 
         // Create and download file
         const blob = new Blob([sqlContent], { type: 'text/sql' })
@@ -212,25 +226,49 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
         )}
         {(isAdmin || hasActiveSubscription) && (
           isAdmin ? (
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={() => { void exportDatabase('complete') }}
-                disabled={exporting}
-                tone="success"
-                className="disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Download size={16} />
-                {exporting ? 'Exporting...' : 'Export Complete Database (All Users)'}
-              </Button>
-              <Button
-                onClick={() => { void exportDatabase('schema_admin_only') }}
-                disabled={exporting}
-                tone="blue"
-                className="disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Download size={16} />
-                {exporting ? 'Exporting...' : 'Export Empty Database (Schema + Admin)'}
-              </Button>
+            <div className="space-y-4">
+              <div className="space-y-3 max-w-md">
+                <TextInput
+                  type="password"
+                  label="Your password (needed for the complete export)"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  autoComplete="current-password"
+                  disabled={exporting}
+                />
+                <label className="flex items-start gap-3 text-sm text-text-secondary cursor-pointer">
+                  <CheckboxInput
+                    checked={includeSecrets}
+                    onChange={(e) => setIncludeSecrets(e.target.checked)}
+                    disabled={exporting}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Include sign-in secrets (password hashes, sign-in tokens and scale connections).
+                    Only needed for a full restore; without them, users reset their passwords and reconnect scales after a restore.
+                  </span>
+                </label>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => { void exportDatabase('complete') }}
+                  disabled={exporting}
+                  tone="success"
+                  className="disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download size={16} />
+                  {exporting ? 'Exporting...' : 'Export Complete Database (All Users)'}
+                </Button>
+                <Button
+                  onClick={() => { void exportDatabase('schema_admin_only') }}
+                  disabled={exporting}
+                  tone="blue"
+                  className="disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download size={16} />
+                  {exporting ? 'Exporting...' : 'Export Empty Database (Schema + Admin)'}
+                </Button>
+              </div>
             </div>
           ) : (
             <Button

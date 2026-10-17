@@ -66,6 +66,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Hive not found' }, { status: 404 })
       }
 
+      // The owner's token is used below, so only the device assigned to this hive may be read.
+      if (hive.beep_device_id !== deviceId) {
+        return NextResponse.json({ error: 'This scale is not assigned to the hive' }, { status: 403 })
+      }
+
       // Verify user has access (is owner or has team access via apiary)
       const isOwner = hive.user_id === user.id
       if (!isOwner) {
@@ -247,8 +252,8 @@ export async function GET(request: NextRequest) {
       prevWeightChange30d,
     })
   } catch (error) {
+    // Log the vendor's error server-side only; never pass its raw text to the browser.
     console.error('BEEP data error:', error)
-    const message = error instanceof Error ? error.message : 'Failed to fetch sensor data'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch sensor data' }, { status: 500 })
   }
 }

@@ -46,3 +46,10 @@ Profile page > "Export My Data" section (requires active subscription).
 
 ## File
 `src/app/dashboard/profile/page.tsx` — `exportMyDataAsJSON()` and `exportMyDataAsCSV()` functions.
+
+## Admin export security (batch 7, 17/10/2026)
+
+- **Password re-check:** "Export Complete Database (All Users)" requires the admin to re-enter their password. The server checks it with a throwaway sign-in that doesn't affect any session.
+- **Sign-in secrets are left out by default:** `auth.users` password hashes and sign-in, recovery and confirmation tokens are blanked, as are `profiles.beep_api_token` / `wolf_api_token`. The "Include sign-in secrets" tick box puts them back, which is only needed for a full restore. Without them, users reset their passwords and reconnect scales after a restore, and the file header says so.
+- Every admin export is recorded in `admin_audit_log` (`database_export`, with the mode and whether secrets were included). No record, no export.
+- The error response no longer includes internal error text.

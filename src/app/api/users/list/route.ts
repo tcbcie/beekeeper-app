@@ -41,25 +41,21 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Gate on the caller's is_active flag. Soft-deleted accounts must lose
-    // the directory access even if their JWT is still valid.
+    // The full user directory is for admins only (the admin apiary-transfer picker). Apiary
+    // owners transfer by entering the new owner's exact email instead.
     const { data: callerProfile } = await supabaseAdmin
       .from('profiles')
-      .select('is_active')
+      .select('role, is_active')
       .eq('id', user.id)
       .single()
-    if (callerProfile?.is_active === false) {
+    if (!callerProfile || callerProfile.role !== 'Admin' || callerProfile.is_active === false) {
       return NextResponse.json(
-        { error: 'Account is not active' },
+        { error: 'Admin access required' },
         { status: 403 }
       )
     }
 
-    // Fetch active users (not deleted). Deliberately omit `email` from the
-    // response -- the apiary-transfer picker only needs to display a name
-    // and use the id. Returning email exposed every registered user's
-    // contact address to any logged-in caller, enabling harvesting for
-    // spam / phishing prep. If a user has neither first_name nor
+    // Fetch active users (not deleted). If a user has neither first_name nor
     // last_name, the client renders a generic placeholder.
     const { data: users, error: usersError } = await supabaseAdmin
       .from('profiles')

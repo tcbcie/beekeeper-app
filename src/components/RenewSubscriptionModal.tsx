@@ -13,6 +13,9 @@ import FormActionRow from '@/components/ui/FormActionRow'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 
+// SQLSTATE raised by lookup_registration_code when the per-user code-attempt limit is reached.
+const CODE_ATTEMPT_LIMIT_ERROR = 'P0429'
+
 interface RenewSubscriptionModalProps {
   isOpen: boolean
   onClose: () => void
@@ -81,7 +84,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
 
       if (codeError) {
         console.error('Error validating code:', codeError)
-        setError('Error validating code. Please try again.')
+        setError(codeError.code === CODE_ATTEMPT_LIMIT_ERROR ? codeError.message : 'Error validating code. Please try again.')
         setLoading(false)
         return
       }
@@ -195,7 +198,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
 
       if (codeError) {
         console.error('Error validating association code:', codeError)
-        setError('Error validating code. Please try again.')
+        setError(codeError.code === CODE_ATTEMPT_LIMIT_ERROR ? codeError.message : 'Error validating code. Please try again.')
         setLoading(false)
         return
       }

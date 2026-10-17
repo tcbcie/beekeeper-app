@@ -9,7 +9,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
 import ModalShell from '@/components/ui/ModalShell'
 import FieldLabel from '@/components/ui/FieldLabel'
-import TextInput from '@/components/ui/TextInput'
+import SelectField from '@/components/ui/SelectField'
 import { useToast } from '@/components/ui/Toast'
 import { formatMoney } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
@@ -82,16 +82,20 @@ export default function OrderInvoicePage() {
     init()
   }, [router, load])
 
+  // The server only sends to the customer's saved email or to the seller (a copy).
+  const customerEmail = customer?.email?.trim() || ''
+  const sellerEmail = seller?.email?.trim() || ''
+  const showSellerOption = !!sellerEmail && sellerEmail.toLowerCase() !== customerEmail.toLowerCase()
+
   const openEmail = () => {
-    // Pre-fill the customer's email when one is on file; still editable.
-    setRecipient(customer?.email || '')
+    setRecipient(customerEmail || sellerEmail)
     setEmailOpen(true)
   }
 
   const handleSendEmail = async () => {
     if (!order) return
     const to = recipient.trim()
-    if (!to) { toast.warning('Enter a recipient email'); return }
+    if (!to) { toast.warning('Add an email address to the customer first'); return }
     setSending(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -159,17 +163,21 @@ export default function OrderInvoicePage() {
           <p className="text-sm text-text-secondary mb-3">
             Send invoice <strong className="text-foreground">{order.order_number}</strong> as a PDF attachment.
           </p>
-          <FieldLabel>Recipient email</FieldLabel>
-          <TextInput
-            type="email"
+          <FieldLabel>Send to</FieldLabel>
+          <SelectField
             value={recipient}
             onChange={(e) => setRecipient(e.target.value)}
-            placeholder="name@example.com"
             className="rounded-md"
-            disabled={sending}
-          />
-          {!customer?.email && (
-            <p className="text-sm text-text-tertiary mt-2">This customer has no email on file — enter one above.</p>
+            disabled={sending || (!customerEmail && !sellerEmail)}
+          >
+            {customerEmail && <option value={customerEmail}>Customer: {customerEmail}</option>}
+            {showSellerOption && <option value={sellerEmail}>Myself (a copy): {sellerEmail}</option>}
+            {!customerEmail && !sellerEmail && <option value="">No email address available</option>}
+          </SelectField>
+          {!customerEmail && (
+            <p className="text-sm text-text-tertiary mt-2">
+              This customer has no email on file. Add one to the customer&apos;s details to email them the invoice.
+            </p>
           )}
         </ModalShell>
       )}

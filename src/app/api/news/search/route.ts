@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { consumeRateLimits, RATE_LIMITS, RATE_LIMITED_MESSAGE } from '@/lib/rate-limit'
 import { searchNewsArticles } from '@/lib/rag'
 
 // Fail-fast at module init.
@@ -51,6 +52,10 @@ export async function GET(request: NextRequest) {
       { error: 'Query must be at most 500 characters' },
       { status: 400 }
     )
+  }
+
+  if (!(await consumeRateLimits(supabaseAdmin, user.id, [RATE_LIMITS.newsSearch]))) {
+    return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, { status: 429 })
   }
 
   try {

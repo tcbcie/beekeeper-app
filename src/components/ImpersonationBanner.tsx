@@ -66,6 +66,24 @@ export default function ImpersonationBanner() {
         return
       }
 
+      // Record the end of the impersonation in the admin audit log (best-effort: a failed
+      // call must not strand the admin in a half-restored session).
+      try {
+        const { data: { session: adminSession } } = await supabase.auth.getSession()
+        if (adminSession?.access_token) {
+          await fetch('/api/admin/impersonate', {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${adminSession.access_token}`,
+            },
+            body: JSON.stringify({ targetEmail: impersonationData.targetUserEmail }),
+          })
+        }
+      } catch (logError) {
+        console.error('Error recording impersonation exit:', logError)
+      }
+
       // Clear impersonation data
       clearImpersonationData()
 

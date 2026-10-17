@@ -31,7 +31,7 @@ import { useImageUpload } from '@/hooks/useImageUpload'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useListPositionMemory } from '@/hooks/useListPositionMemory'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
-import { Apiary, ApiaryFormData, UserOption } from '@/types/apiary'
+import { Apiary, ApiaryFormData } from '@/types/apiary'
 import ApiaryCard from '@/components/apiaries/ApiaryCard'
 import { fetchElevation } from '@/lib/elevation'
 import { toIrishGridRef } from '@/lib/irish-grid'
@@ -76,9 +76,7 @@ export default function ApiariesPage() {
 
   // Transfer ownership state
   const [showTransferModal, setShowTransferModal] = useState(false)
-  const [transferTargetUser, setTransferTargetUser] = useState<string>('')
-  const [availableUsers, setAvailableUsers] = useState<UserOption[]>([])
-  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [transferEmail, setTransferEmail] = useState('')
   const [transferring, setTransferring] = useState(false)
 
   const [isTeamMember, setIsTeamMember] = useState(false)
@@ -669,62 +667,46 @@ export default function ApiariesPage() {
     })
   }
 
-  // Fetch users for transfer dropdown
-  const fetchUsersForTransfer = async () => {
-    setLoadingUsers(true)
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) return
-
-      const response = await fetch('/api/users/list', {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        // Filter out current user
-        setAvailableUsers(data.users.filter((u: UserOption) => u.id !== userId))
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error)
-      toast.error('Failed to load users')
-    } finally {
-      setLoadingUsers(false)
-    }
-  }
-
   // Handle opening transfer modal
   const openTransferModal = () => {
     setShowTransferModal(true)
-    setTransferTargetUser('')
-    fetchUsersForTransfer()
+    setTransferEmail('')
   }
 
-  // Handle transfer ownership
+  // Handle transfer ownership. The new owner is found by their exact account email (there is no
+  // user directory for non-admins).
   const handleTransferOwnership = async () => {
-    if (!editingApiary || !transferTargetUser) return
-
-    const selectedUser = availableUsers.find(u => u.id === transferTargetUser)
-    const userName = selectedUser?.first_name && selectedUser?.last_name
-      ? `${selectedUser.first_name} ${selectedUser.last_name}`
-      : selectedUser?.email || 'this user'
-
-    if (!confirm(`Are you sure you want to transfer "${editingApiary.name}" to ${userName}?\n\nYou will lose access to this apiary and all its hives.`)) {
-      return
-    }
+    const email = transferEmail.trim()
+    if (!editingApiary || !email) return
 
     setTransferring(true)
     try {
+      const { data: lookupResult, error: lookupError } = await supabase
+        .rpc('lookup_user_by_email', { search_email: email })
+      if (lookupError) throw lookupError
+
+      const newOwnerId: string | undefined = Array.isArray(lookupResult) ? lookupResult[0]?.user_id : undefined
+      if (!newOwnerId) {
+        toast.error('No HiveCraic account uses that email address')
+        return
+      }
+      if (newOwnerId === userId) {
+        toast.error('You already own this apiary')
+        return
+      }
+
+      if (!confirm(`Are you sure you want to transfer "${editingApiary.name}" to ${email}?\n\nYou will lose access to this apiary and all its hives.`)) {
+        return
+      }
+
       const { error } = await supabase.rpc('transfer_apiary_ownership', {
         p_apiary_id: editingApiary.id,
-        p_new_owner_id: transferTargetUser
+        p_new_owner_id: newOwnerId
       })
 
       if (error) throw error
 
-      toast.success(`Apiary transferred to ${userName}`)
+      toast.success(`Apiary transferred to ${email}`)
       setShowTransferModal(false)
       resetForm()
       fetchApiaries()
@@ -1148,7 +1130,7 @@ export default function ApiariesPage() {
               </Button>
               <Button
                 onClick={handleTransferOwnership}
-                disabled={!transferTargetUser || transferring}
+                disabled={!transferEmail.trim() || transferring}
                 className="fj-btn fj-btn-blue disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {transferring ? (
@@ -1173,27 +1155,18 @@ export default function ApiariesPage() {
           </div>
 
           <div>
-            <FieldLabel className="mb-2">Select New Owner</FieldLabel>
-            {loadingUsers ? (
-              <div className="flex items-center gap-2 text-text-tertiary">
-                <Loader2 size={16} className="animate-spin" />
-                Loading users...
-              </div>
-            ) : (
-              <SelectField
-                value={transferTargetUser}
-                onChange={(e) => setTransferTargetUser(e.target.value)}
-              >
-                <option value="">Select a user...</option>
-                {availableUsers.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.first_name && user.last_name
-                      ? `${user.first_name} ${user.last_name} (${user.email})`
-                      : user.email}
-                  </option>
-                ))}
-              </SelectField>
-            )}
+            <FieldLabel className="mb-2">New owner&apos;s email address</FieldLabel>
+            <TextInput
+              type="email"
+              value={transferEmail}
+              onChange={(e) => setTransferEmail(e.target.value)}
+              placeholder="name@example.com"
+              autoComplete="off"
+              disabled={transferring}
+            />
+            <p className="text-sm text-text-tertiary mt-2">
+              Enter the email address the new owner uses to sign in to HiveCraic.
+            </p>
           </div>
         </ModalShell>
       )}

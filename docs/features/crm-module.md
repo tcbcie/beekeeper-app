@@ -356,3 +356,9 @@ Amounts use the same EUR/GBP rule as the finance module
 - Orders are standalone — not wired to specific queen/hive records.
 - Smallest footprint: one additive column on `financial_records`, an isolated
   `crm/` route tree, and a separate gated nav array.
+
+## Invoice email security (batch 7, 17/10/2026)
+
+- Invoices can only be emailed to the **customer's saved email** or to **the seller's own account email** (a copy). The server enforces this, and the invoice screen offers just those two choices. To email a different address, update the customer's details first.
+- The limit of 25 invoice emails per user per hour now uses the shared atomic limiter (`consume_rate_limit`). It is reserved before the PDF is rendered and sent, so parallel requests can't exceed it, and it refuses the send if the check fails. The old `crm_invoice_email_log` table is no longer written.
+- The seller name in the email is capped at 100 characters.

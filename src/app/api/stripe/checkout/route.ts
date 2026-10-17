@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
+import { consumeRateLimits, RATE_LIMITS } from '@/lib/rate-limit'
 
 // Fail-fast at module init so a missing env surfaces at deploy time. The
 // helper returns a non-nullable `string` so the consts can be used inside the
@@ -100,6 +101,14 @@ export async function POST(request: NextRequest) {
     let isAssociationMember = false
 
     if (associationCode) {
+      // Code guesses share one per-user limit with the lookup/activate database functions.
+      if (!(await consumeRateLimits(supabase, user.id, [RATE_LIMITS.codeAttempt]))) {
+        return NextResponse.json(
+          { error: 'Too many code attempts. Please wait an hour and try again.' },
+          { status: 429 },
+        )
+      }
+
       const { data: codeRow, error: codeError } = await supabase
         .from('registration_codes')
         .select('id, code, code_type, association_id, is_active, max_uses, current_uses, subscription_expires_at')
@@ -110,14 +119,10 @@ export async function POST(request: NextRequest) {
         console.error('Stripe checkout: code lookup error:', codeError.message)
         return NextResponse.json({ error: 'Failed to validate code' }, { status: 500 })
       }
-      if (!codeRow) {
+      // One message for "no such code", "not an association code" and "not linked", so the
+      // response doesn't reveal which codes exist or what kind they are.
+      if (!codeRow || codeRow.code_type !== ASSOCIATION_CODE_TYPE || !codeRow.association_id) {
         return NextResponse.json({ error: 'Invalid association code' }, { status: 400 })
-      }
-      if (codeRow.code_type !== ASSOCIATION_CODE_TYPE) {
-        return NextResponse.json({ error: 'This is not an association code' }, { status: 400 })
-      }
-      if (!codeRow.association_id) {
-        return NextResponse.json({ error: 'This association code is not linked to an association' }, { status: 400 })
       }
       if (codeRow.is_active === false) {
         return NextResponse.json({ error: 'This association code has been disabled' }, { status: 400 })

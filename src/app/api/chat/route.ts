@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { handleChatQuery } from '@/lib/rag'
 import { ChatMessage } from '@/types/chat'
+import { consumeRateLimits, RATE_LIMITS, RATE_LIMITED_MESSAGE } from '@/lib/rate-limit'
 
 // Fail-fast at module init so a missing env surfaces at deploy time, not in a
 // per-request 500 with a misleading 'Chat API error' log line.
@@ -138,6 +139,11 @@ export async function POST(request: NextRequest) {
           ? m.content.slice(0, MAX_HISTORY_CHARS_PER_MESSAGE)
           : m.content
       }))
+
+    // Each message costs several paid OpenAI calls: cap per user, per hour and per day.
+    if (!(await consumeRateLimits(supabaseAdmin, user.id, [RATE_LIMITS.chatHourly, RATE_LIMITS.chatDaily]))) {
+      return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, { status: 429 })
+    }
 
     // Process the chat query
     const result = await handleChatQuery(message, user.id, history)

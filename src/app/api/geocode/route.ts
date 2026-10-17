@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { consumeRateLimits, RATE_LIMITS } from '@/lib/rate-limit'
 
 /**
  * Server-side Eircode/postcode geocoding.
@@ -28,8 +29,8 @@ type GeocodeFailure = 'not-configured' | 'denied' | 'not-found'
 const MAX_ADDRESS_LENGTH = 200
 const REQUEST_TIMEOUT_MS = 10_000
 
-function failure(reason: GeocodeFailure, detail?: string) {
-  return NextResponse.json({ ok: false, reason, detail: detail ?? null })
+function failure(reason: GeocodeFailure, detail?: string, status = 200) {
+  return NextResponse.json({ ok: false, reason, detail: detail ?? null }, { status })
 }
 
 export async function GET(request: NextRequest) {
@@ -50,6 +51,11 @@ export async function GET(request: NextRequest) {
   // forwarded to a metered upstream service.
   if (!address || address.length > MAX_ADDRESS_LENGTH) {
     return failure('not-found')
+  }
+
+  // Over the limit, report not-found so the page falls back to its free city-level lookup.
+  if (!(await consumeRateLimits(supabaseAdmin, user.id, [RATE_LIMITS.geocode]))) {
+    return failure('not-found', 'Geocoding limit reached', 429)
   }
 
   const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY

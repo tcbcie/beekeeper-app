@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { logAdminAction } from '@/lib/admin-audit'
 
 // Fail-fast at module init so a missing env surfaces at deploy time.
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -17,6 +18,44 @@ const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     persistSession: false
   }
 })
+
+const RESEND_API_KEY = process.env.RESEND_API_KEY
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/** Tell the user an administrator signed in to their account (best-effort; never blocks support). */
+async function notifyImpersonatedUser(email: string, firstName: string | null): Promise<void> {
+  if (!RESEND_API_KEY) {
+    console.warn('[AUDIT] Impersonation notice not sent: RESEND_API_KEY is not set')
+    return
+  }
+  const when = new Date().toLocaleString('en-IE', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Europe/Dublin' })
+  const greeting = firstName ? `Hello ${firstName},` : 'Hello,'
+  const text = `${greeting}\n\nA HiveCraic administrator signed in to your account on ${when} to help with support.\n\nIf you did not ask for help and have questions, reply to this email.\n\nHiveCraic`
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
+      body: JSON.stringify({
+        from: 'HiveCraic <info@hivecraic.com>',
+        to: [email],
+        subject: 'An administrator accessed your HiveCraic account',
+        text,
+        html: `<p>${escapeHtml(greeting)}</p><p>A HiveCraic administrator signed in to your account on ${escapeHtml(when)} to help with support.</p><p>If you did not ask for help and have questions, reply to this email.</p><p>HiveCraic</p>`,
+      }),
+    })
+    if (!response.ok) console.error('Impersonation notice failed:', response.status)
+  } catch (error) {
+    console.error('Impersonation notice failed:', error)
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -148,6 +187,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Record the impersonation before handing out the session; no record, no session.
+    const logged = await logAdminAction(supabaseAdmin, {
+      adminId: user.id,
+      action: 'impersonation_started',
+      targetUserId,
+    })
+    if (!logged) {
+      return NextResponse.json(
+        { error: 'Could not record the impersonation; please try again' },
+        { status: 500 }
+      )
+    }
+
     // Get target user's profile for display name
     const { data: targetProfile } = await supabaseAdmin
       .from('profiles')
@@ -160,6 +212,8 @@ export async function POST(request: NextRequest) {
       : targetUser.user.email
 
     console.warn(`[AUDIT] Admin impersonation: admin=${user.id} target=${targetUserId} status=success timestamp=${new Date().toISOString()}`)
+
+    await notifyImpersonatedUser(targetUser.user.email, targetProfile?.first_name ?? null)
 
     // Return the token_hash for client to use with verifyOtp. The response
     // body contains a single-use credential -- mark it uncacheable so it
@@ -188,5 +242,49 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to impersonate user' },
       { status: 500 }
     )
+  }
+}
+
+/**
+ * Called by the impersonation banner after it restores the admin's own session, so the end of
+ * an impersonation is recorded too.
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Missing authorization header' }, { status: 401 })
+    }
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
+    }
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('role, is_active')
+      .eq('id', user.id)
+      .single()
+    if (!profile || profile.role !== 'Admin' || profile.is_active === false) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    }
+
+    let targetEmail: string | null = null
+    try {
+      const body = await request.json()
+      if (typeof body?.targetEmail === 'string') targetEmail = body.targetEmail.trim().slice(0, 254) || null
+    } catch {
+      // No body: still record the exit.
+    }
+
+    await logAdminAction(supabaseAdmin, {
+      adminId: user.id,
+      action: 'impersonation_ended',
+      details: targetEmail ? { target_email: targetEmail } : {},
+    })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error recording impersonation exit:', error)
+    return NextResponse.json({ error: 'Failed to record impersonation exit' }, { status: 500 })
   }
 }

@@ -114,3 +114,12 @@ Key: `hivecraic_impersonation`
 - [ ] Time-limited impersonation tokens
 - [ ] Notification to impersonated user
 - [ ] Impersonation history in admin panel
+
+## Audit and notification (security batch 7, 17/10/2026)
+
+Replaces "No audit logging" above.
+
+- **Start:** before handing out the session, `/api/admin/impersonate` writes `impersonation_started` (admin, target) to `admin_audit_log`. If that write fails, no session is issued.
+- **The user is emailed** ("An administrator accessed your HiveCraic account") each time it starts. This is best-effort: a failed email doesn't block support, and the failure is logged.
+- **Exit:** after the banner restores the admin's own session, it calls `DELETE /api/admin/impersonate`, which writes `impersonation_ended` with the target's email.
+- `admin_audit_log` is append-only (a trigger refuses updates and deletes) and only admins can read it. Database triggers also record admin changes to another user's account status, deletion, restore, subscription and role, and admin apiary transfers. Server routes record role changes, exports and views of a user's apiaries.

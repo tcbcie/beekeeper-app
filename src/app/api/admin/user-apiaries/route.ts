@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { logAdminAction } from '@/lib/admin-audit'
 
 // Fail-fast at module init so a missing env surfaces at deploy time.
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -98,6 +99,12 @@ export async function GET(request: NextRequest) {
     )
 
     console.warn(`[AUDIT] Admin user data access: admin=${user.id} target=${targetUserId} resource=apiaries count=${apiariesWithCounts.length} status=success timestamp=${new Date().toISOString()}`)
+    await logAdminAction(supabaseAdmin, {
+      adminId: user.id,
+      action: 'user_apiaries_viewed',
+      targetUserId,
+      details: { count: apiariesWithCounts.length },
+    })
 
     return NextResponse.json({ apiaries: apiariesWithCounts })
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { renderInvoicePdf, type InvoicePdfData } from '@/components/crm/InvoicePdf'
 import type { ProductType } from '@/types/crm'
+import { consumeRateLimits, RATE_LIMITS } from '@/lib/rate-limit'
 
 // @react-pdf/renderer needs the Node runtime (not Edge).
 export const runtime = 'nodejs'
@@ -20,8 +21,7 @@ const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 // Pragmatic single-@ check — full RFC validation belongs to the mail server.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MAX_EMAIL_LEN = 254 // RFC 5321 max address length
-const RATE_LIMIT = 25 // invoice emails per user per hour
-const RATE_WINDOW_MS = 60 * 60 * 1000
+const MAX_SELLER_NAME_LEN = 100
 
 // The seller name and order number are user-controlled; escape them before they go into the email HTML.
 function escapeHtml(value: unknown): string {
@@ -93,21 +93,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'A valid recipient email is required' }, { status: 400 })
     }
 
-    // Rate limit per user (protects the sending domain's reputation). Checked
-    // before the expensive PDF render so abuse fails fast.
-    const since = new Date(Date.now() - RATE_WINDOW_MS).toISOString()
-    const { count: recentSends } = await supabaseAdmin
-      .from('crm_invoice_email_log')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('sent_at', since)
-    if ((recentSends || 0) >= RATE_LIMIT) {
-      return NextResponse.json(
-        { error: 'Too many invoice emails sent in the last hour. Please try again later.' },
-        { status: 429 },
-      )
-    }
-
     // Load the order + items + customer, scoped to the authenticated user so a
     // crafted orderId cannot reach another account's data.
     const { data: order } = await supabaseAdmin
@@ -120,7 +105,29 @@ export async function POST(request: NextRequest) {
       supabaseAdmin.from('crm_customers').select('*').eq('id', order.customer_id).eq('user_id', user.id).maybeSingle(),
     ])
 
-    const sellerName = [profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'HiveCraic Beekeeper'
+    // Mail goes out from info@hivecraic.com, so it may only reach the customer's saved address or
+    // the seller themselves (a copy) — never an arbitrary address typed into the request.
+    const allowedRecipients = [customer?.email, profile.email, user.email]
+      .filter((e): e is string => typeof e === 'string' && e.trim() !== '')
+      .map((e) => e.trim().toLowerCase())
+    if (!allowedRecipients.includes(to.toLowerCase())) {
+      return NextResponse.json(
+        { error: "Invoices can only be sent to the customer's saved email address or to yourself." },
+        { status: 400 },
+      )
+    }
+
+    // Rate limit per user (protects the sending domain's reputation). Reserved atomically before
+    // the PDF render and send, so parallel requests can't exceed it.
+    if (!(await consumeRateLimits(supabaseAdmin, user.id, [RATE_LIMITS.invoiceEmail]))) {
+      return NextResponse.json(
+        { error: 'Too many invoice emails sent in the last hour. Please try again later.' },
+        { status: 429 },
+      )
+    }
+
+    const sellerName = ([profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'HiveCraic Beekeeper')
+      .slice(0, MAX_SELLER_NAME_LEN)
 
     const data: InvoicePdfData = {
       isUkNi: !!profile.is_uk_ni_resident,
@@ -187,12 +194,6 @@ export async function POST(request: NextRequest) {
       console.error('invoice-email: Resend error:', detail)
       return NextResponse.json({ error: 'Failed to send the email' }, { status: 502 })
     }
-
-    // Record the send for the rate limit (best-effort — never fail the request).
-    const { error: logError } = await supabaseAdmin
-      .from('crm_invoice_email_log')
-      .insert({ user_id: user.id })
-    if (logError) console.error('invoice-email: failed to log send:', logError)
 
     return NextResponse.json({ success: true })
   } catch (err) {

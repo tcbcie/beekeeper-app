@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { buildInsertSql, DATABASE_EXPORT_TABLES, sqlIdentifier, sqlValue } from '@/lib/database-export'
+import { logAdminAction } from '@/lib/admin-audit'
 
 const PUBLIC_SCHEMA = 'public'
 
@@ -130,6 +131,60 @@ const AUTH_USER_EMPTY_STRING_FIELDS = [
   'email_change_token_current',
   'reauthentication_token'
 ] as const
+
+// Sign-in secrets: left out of exports unless the admin explicitly includes them (needed only
+// for a full restore where users keep their passwords and scale connections).
+const AUTH_USER_SECRET_FIELDS = [
+  'encrypted_password',
+  'confirmation_token',
+  'recovery_token',
+  'email_change_token_new',
+  'phone_change_token',
+  'email_change_token_current',
+  'reauthentication_token'
+] as const
+const PROFILE_SECRET_COLUMNS = ['beep_api_token', 'wolf_api_token'] as const
+
+function stripAuthUserSecrets(row: AuthUserSeedRow): AuthUserSeedRow {
+  const stripped: AuthUserSeedRow = { ...row }
+  for (const field of AUTH_USER_SECRET_FIELDS) stripped[field] = ''
+  return stripped
+}
+
+function stripTableSecrets(table: string, row: Record<string, unknown>): Record<string, unknown> {
+  if (table !== 'profiles') return row
+  const stripped = { ...row }
+  for (const column of PROFILE_SECRET_COLUMNS) {
+    if (column in stripped) stripped[column] = null
+  }
+  return stripped
+}
+
+/** The password (re-entered for a full export) and whether to include sign-in secrets. */
+function parseExportOptions(rawBody: string): { password: string | null; includeSecrets: boolean } {
+  try {
+    const parsed = JSON.parse(rawBody || '{}') as { password?: unknown; includeSecrets?: unknown }
+    return {
+      password: typeof parsed.password === 'string' && parsed.password ? parsed.password : null,
+      includeSecrets: parsed.includeSecrets === true,
+    }
+  } catch {
+    return { password: null, includeSecrets: false }
+  }
+}
+
+/** Check the admin's password without touching any session (a throwaway public-key client). */
+async function verifyPassword(email: string, password: string): Promise<boolean> {
+  const publicKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!SUPABASE_URL || !publicKey) return false
+  const client = createClient(SUPABASE_URL, publicKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  const { data, error } = await client.auth.signInWithPassword({ email, password })
+  if (error || !data.session) return false
+  await client.auth.signOut({ scope: 'local' }).catch(() => undefined)
+  return true
+}
 
 function normaliseAuthUserSeedRow(row: SqlRow): AuthUserSeedRow {
   const normalisedRow: SqlRow = { ...row }
@@ -513,8 +568,33 @@ export async function POST(request: NextRequest) {
       )
     }
     exportMode = parsedMode
+    const { password, includeSecrets } = parseExportOptions(rawBody)
 
-    console.warn(`[AUDIT] Admin data export: admin=${user.id} mode=${exportMode} status=started timestamp=${new Date().toISOString()}`)
+    // A complete export holds every user's data: require the admin to re-enter their password.
+    if (exportMode === 'complete') {
+      if (!password || !user.email || !(await verifyPassword(user.email, password))) {
+        console.warn(`[AUDIT] Admin data export: admin=${user.id} mode=${exportMode} status=forbidden reason=password_check_failed timestamp=${new Date().toISOString()}`)
+        return NextResponse.json(
+          { error: 'Please re-enter your password correctly to export the complete database' },
+          { status: 403 }
+        )
+      }
+    }
+
+    // No record, no export.
+    const logged = await logAdminAction(supabaseAdmin, {
+      adminId: user.id,
+      action: 'database_export',
+      details: { mode: exportMode, include_secrets: includeSecrets },
+    })
+    if (!logged) {
+      return NextResponse.json(
+        { error: 'Could not record the export; please try again' },
+        { status: 500 }
+      )
+    }
+
+    console.warn(`[AUDIT] Admin data export: admin=${user.id} mode=${exportMode} include_secrets=${includeSecrets} status=started timestamp=${new Date().toISOString()}`)
 
     const tables: string[] = [...DATABASE_EXPORT_TABLES]
     const tableOrder = new Map<string, number>(tables.map((table, index) => [table, index]))
@@ -699,6 +779,7 @@ export async function POST(request: NextRequest) {
     const authSeedUserId = exportMode === 'schema_admin_only' ? user.id : undefined
     try {
       authUsers = await fetchAuthUserSeedRows(authSeedUserId)
+      if (!includeSecrets) authUsers = authUsers.map(stripAuthUserSecrets)
     } catch (authError) {
       authUsersExportError = authError instanceof Error ? authError.message : 'Unknown auth.users export error'
       console.error('Error exporting auth.users:', authError)
@@ -1047,7 +1128,8 @@ export async function POST(request: NextRequest) {
             break
           }
 
-          const rows = (data as Record<string, unknown>[] | null) || []
+          const rows = ((data as Record<string, unknown>[] | null) || [])
+            .map(row => (includeSecrets ? row : stripTableSecrets(table, row)))
           if (rows.length === 0) {
             break
           }
@@ -1236,6 +1318,7 @@ export async function POST(request: NextRequest) {
     sqlContent += `-- EXPORT SUMMARY\n`
     sqlContent += `-- =====================================================\n`
     sqlContent += `-- Mode: ${exportMode}\n`
+    sqlContent += `-- Sign-in secrets: ${includeSecrets ? 'included' : 'excluded (users must reset passwords and reconnect scales after a restore)'}\n`
     sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}, functions=${filteredFunctionMetadata.length}, views=${viewMetadata.length}, rls_tables=${filteredRlsTableMetadata.length}, rls_policies=${filteredPolicyMetadata.length}, storage_buckets=${storageBuckets.length}, storage_policies=${storagePolicies.length}\n`
     sqlContent += `-- auth.users rows exported: ${authUsers.length}\n`
     if (authUsersExportError) {
@@ -1278,7 +1361,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error in admin export:', error)
     return NextResponse.json(
-      { error: 'Failed to export database', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to export database' },
       { status: 500 }
     )
   }

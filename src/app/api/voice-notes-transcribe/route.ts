@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { consumeRateLimits, RATE_LIMITS, RATE_LIMITED_MESSAGE } from '@/lib/rate-limit'
 import { openai as getOpenAI } from '@/lib/openai'
 
 // Fail-fast at module init so a missing env surfaces at deploy time, not in a
@@ -130,6 +131,11 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       console.error('voice-notes-transcribe: malformed multipart body:', err)
       return NextResponse.json({ error: 'Malformed request body' }, { status: 400 })
+    }
+
+    // Transcription is billed per audio minute: cap per user, per hour and per day.
+    if (!(await consumeRateLimits(supabaseAdmin, user.id, [RATE_LIMITS.voiceHourly, RATE_LIMITS.voiceDaily]))) {
+      return NextResponse.json({ error: RATE_LIMITED_MESSAGE }, { status: 429 })
     }
 
     const client = getOpenAI()

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { logAdminAction } from '@/lib/admin-audit'
 
 // Fail-fast at module init so a missing env surfaces at deploy time, not in a
 // per-request 500 with a generic 'update-user-role error' log line.
@@ -155,6 +156,13 @@ export async function POST(request: NextRequest) {
     }
 
     console.warn(`[AUDIT] Admin role change: admin=${user.id} target=${targetUserId} old_role=${previousRole} new_role=${newRole} status=success timestamp=${new Date().toISOString()}`)
+    // The profile trigger can't see the admin here (secret-key write), so record it explicitly.
+    await logAdminAction(supabaseAdmin, {
+      adminId: user.id,
+      action: 'role_changed',
+      targetUserId,
+      details: { role: [previousRole, newRole] },
+    })
 
     return NextResponse.json({
       success: true,

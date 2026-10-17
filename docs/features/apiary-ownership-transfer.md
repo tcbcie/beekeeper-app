@@ -154,3 +154,9 @@ Requires: Bearer token authentication
 - [ ] Email notification to new owner
 - [ ] Bulk transfer multiple apiaries at once
 - [ ] Transfer history visible in apiary details
+
+## Change (security batch 7, 17/10/2026)
+
+- An apiary owner now transfers by entering the **new owner's sign-in email**. The app looks it up with `lookup_user_by_email` (exact match) and then calls `transfer_apiary_ownership` as before.
+- `/api/users/list`, the full user directory, is now **admin-only**. Only the admin "Manage" transfer picker in User Management uses it. Ordinary users can no longer list every user's name and ID.
+- When an admin transfers someone else's apiary, it is recorded in `admin_audit_log` (`apiary_transferred`) by a database trigger.

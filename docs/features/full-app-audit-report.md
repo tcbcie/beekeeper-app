@@ -44,6 +44,13 @@
 | DB-10 | **Fixed 17/10/2026 (batch 6).** Any user could change terminology and add hive history rows for any hive. Terminology is now power users and admins only; history rows need access to the hive. |
 | DB-11 | **Fixed 17/10/2026 (batch 6).** All QR tags were readable without a login. Now only your own, team-shared and accessible-hive tags, when logged in. |
 | DB-15 | **Fixed 17/10/2026 (batch 6).** Any user could publish a changelog entry. Admins only now. |
+| API-02 | **Fixed 17/10/2026 (batch 7).** The scale data routes used the hive owner's BEEP/Wolf token with any device ID sent. The device must now match the hive, and only the owner can change a hive's scale. |
+| API-03 | **Fixed 17/10/2026 (batch 7).** Invoice emails could go to any address and the hourly limit could be raced. Now only the customer's saved email or the seller, with an atomic limit. |
+| API-04 | **Fixed 17/10/2026 (batch 7).** Every user could list all users. The list is admin-only; owners transfer apiaries by exact email. |
+| API-05 | **Fixed 17/10/2026 (batch 7).** Registration codes could be guessed without limit. Code attempts are limited per user across checkout and the database functions, and checkout no longer reveals which codes exist. |
+| API-06 | **Fixed 17/10/2026 (batch 7).** The admin export included password hashes and tokens with one click. Secrets are now left out unless ticked, and a full export needs the admin's password. |
+| API-07 | **Fixed 17/10/2026 (batch 7).** Paid AI, transcription, news search and geocoding routes had no limits. Per-user hourly and daily limits now apply. |
+| API-08 | **Fixed 17/10/2026 (batch 7).** Admin actions were only in console logs. There is now an append-only admin audit log, impersonation start and exit are recorded, and the user is emailed. |
 | Other Phase 1 findings | The remaining Medium and Low findings from the Phase 1 database, API, client, AI and supply-chain audits are kept in a local register until they are fixed, because this repository is public. |
 
 All checks so far were read-only: SQL catalogue queries over the Supabase MCP connection, reading the deployed edge-function source, and searching the codebase. No data, schema or code was changed. No exploit was attempted against production.
