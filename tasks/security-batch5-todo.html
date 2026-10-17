@@ -57,7 +57,7 @@
 <div class="task"><input type="checkbox" checked disabled> Check how the worker update reaches installed copies of the app (cache name and activate step) without changing the version number. Version bumps stay manual.</div>
 
 <h3>D. Verify and close</h3>
-<div class="task"><input type="checkbox" disabled> <code>qa-engineer</code> review and docs are done; still to do: commit, push and check it went live. Then check the new build actually went live, given last time's promote-to-production issue.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>qa-engineer</code> review, docs, commit (<code>b0768fee</code>, <code>ad80221a</code>), push, and live check: the new worker is served at <code>www.hivecraic.com/service-worker.js</code>.</div>
 
 <div class="note"><strong>Not in this batch:</strong> Next.js 16. It's a major upgrade with breaking changes (async request APIs, middleware renamed to proxy, Turbopack by default) and deserves its own plan. 15.5 still gets security patches.</div>
 
@@ -82,6 +82,6 @@
   </td></tr>
   <tr><td>QA</td><td>No Critical or High issues. Fixed a Medium (message the registration's active worker, not <code>controller</code>, which is null on uncontrolled pages) and a Low (the banner tolerates corrupted stored data). Type-check of <code>src/</code> and ESLint on all of <code>src</code> are clean.</td></tr>
 </table>
-<p><strong>Registers:</strong> SUP-11, SUP-12, CLI-01 and CLI-02 are marked fixed in <code>full-app-audit-report.md</code>. <strong>Still to do:</strong> check the new build is live.</p>
+<p><strong>Registers:</strong> SUP-11, SUP-12, CLI-01 and CLI-02 are marked fixed in <code>full-app-audit-report.md</code>. <strong>Live:</strong> verified 17/10/2026 from the served service worker; this time production auto-deployed without a manual promote.</p>
 </body>
 </html>
