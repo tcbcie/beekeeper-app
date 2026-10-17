@@ -39,9 +39,9 @@ All coordinates are obfuscated to ~5km accuracy server-side before reaching the 
 **Security batch 4 (17/10/2026):**
 - The obfuscation used to be seeded with the public apiary ID, and both helper functions could be called without logging in, so the offset could be recomputed and reversed to about 1 km.
 - Every community-map source now seeds it with `coord_obfuscation_seed(id)`, which combines the ID with a secret in Vault (`coord_obfuscation_salt`) and can't be called by clients.
-- The community map reads shared apiaries and wild colonies through the SECURITY DEFINER RPCs `get_shared_apiaries_obfuscated()` and `get_wild_colonies_obfuscated()` (power users only), instead of the old `shared_apiaries_obfuscated` and `wild_colonies_obfuscated` views. Those views have no anonymous access and will be dropped once the new app version is deployed.
+- The community map reads shared apiaries and wild colonies through the SECURITY DEFINER RPCs `get_shared_apiaries_obfuscated()` and `get_wild_colonies_obfuscated()` (power users only), instead of the old `shared_apiaries_obfuscated` and `wild_colonies_obfuscated` views. Those views were dropped on 17/10/2026, after the new app version went live.
 
 ## Notes
 
-- When both "Shared apiaries" and "All apiaries" layers are active simultaneously, apiaries with `share_location = true` will appear under both layers. Their obfuscated positions are deterministic (seed = apiary ID), so they coincide at the same map point.
+- When both "Shared apiaries" and "All apiaries" layers are active simultaneously, apiaries with `share_location = true` will appear under both layers. Their obfuscated positions are deterministic (seeded from the apiary ID plus the secret Vault seed), so they coincide at the same map point.
 - The layer is hidden by default, consistent with the existing pattern for privileged overlays (wild colonies, conservation areas).

@@ -1,6 +1,6 @@
 # Security Hotfix Batch 4: Sharing-Rule Holes and Coordinate Privacy
 
-**Status:** Database applied and verified on 17/10/2026. The app changes are awaiting the owner's test and deploy.
+**Status:** Complete on 17/10/2026. Database applied and verified; app deployed (build `TOzlc_0DH5vSBHyCdzbvW`); old map views dropped.
 **Checklist:** `tasks/security-hotfix-batch4-todo.html`
 **Migration (repo copy):** `supabase/migrations/20261017100000_security_batch4.sql`
 **Decisions:** D9 (existing users must accept invitations) and D10 (outsider recipients see name and apiary name only). The owner approved both.
@@ -55,4 +55,4 @@ Anonymous REST requests to the coordinate views are refused, and the public Galw
 
 ## After deploy
 
-Drop `shared_apiaries_obfuscated` and `wild_colonies_obfuscated` once the new community map is live.
+Done on 17/10/2026: once the live build used the new RPCs, `shared_apiaries_obfuscated` and `wild_colonies_obfuscated` were dropped (migration `security_batch4_drop_old_map_views`). Both now return 404, and the public Galway embed still returns 200.

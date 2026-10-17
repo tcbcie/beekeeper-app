@@ -421,3 +421,10 @@ CREATE POLICY "Owners can update their groups" ON public.rearing_groups FOR UPDA
     OR EXISTS (SELECT 1 FROM public.rearing_group_members m
                WHERE m.group_id = rearing_groups.id AND m.user_id = rearing_groups.owner_id)
   );
+
+-- ===== 7. security_batch4_drop_old_map_views (after deploy) ===================
+
+-- DB-06 follow-up: the community map now uses get_shared_apiaries_obfuscated() and
+-- get_wild_colonies_obfuscated(), so the reversible SECURITY DEFINER views are dropped.
+DROP VIEW IF EXISTS public.shared_apiaries_obfuscated;
+DROP VIEW IF EXISTS public.wild_colonies_obfuscated;
