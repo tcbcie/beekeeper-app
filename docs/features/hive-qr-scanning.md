@@ -53,3 +53,7 @@ Record Form (InspectionForm, etc.)
 ## Shared Hive Support
 
 Team members with shared access can scan QR codes for shared hives and create records against them, since the Supabase RLS policies already handle shared hive visibility.
+
+## Tag Visibility (security batch 6, 17/10/2026)
+
+`qr_tags` is readable only when logged in, and only for: your own tags, tags shared with one of your teams (`team_id`), and tags assigned to a hive you can access (`can_access_hive`). Before this, every tag was readable without a login. Scanning always happens under `/dashboard`, so the scan flow is unchanged.

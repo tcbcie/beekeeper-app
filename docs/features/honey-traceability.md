@@ -369,13 +369,15 @@ Click the feedback icon (speech bubble) on a batch card to open a modal showing:
 - `get_batch_feedback_details(batch_id, user_id)` - Returns detailed feedback for a specific batch
 - `replace_batch_links(batch_id, container_ids[], jars jsonb)` - Atomically replaces a batch's container links **and** jar rows in a single transaction, so an edit can never leave the batch half-written if a step fails. Used by both create and edit. `SECURITY DEFINER` with an explicit `auth.uid()` ownership check; EXECUTE granted to `authenticated` only.
 - `replace_container_harvests(container_id, harvest_ids[])` - Atomically replaces a bulk container's harvest links in a single transaction. Same ownership/grant model as above.
+- Both functions also check the links themselves (security batch 6): a batch may only use the caller's own containers, and a container may only hold harvests on hives the caller can access. The direct table rules on `batch_containers` and `container_harvests` enforce the same.
+- `next_batch_code(batch_date)` - Returns the next free `L-YYYY-MM-NNN` lot number across **all** users (the code is globally unique) without exposing anyone else's batches. Used by `src/lib/batch-code.ts`; EXECUTE granted to `authenticated` only.
 
 ### Privacy & Security
 
-- Only batches marked as **Public** (`is_public = true`) are visible
+- Only batches marked as **Public** (`is_public = true`) are visible, and only through the functions: the `batch_runs` table itself is not readable by anyone but the owner (security batch 6), so trace codes can't be listed
 - Non-existent and non-public batches show the same "Batch Not Found" message (prevents enumeration)
 - No user IDs, notes, or sensitive data is exposed
-- GPS coordinates are only shown if `share_location = true` on the apiary, and are fuzzed by ±0.01° for privacy
+- GPS coordinates are only returned if `share_location = true` on the apiary, and then only as the same approximate point the community map shows (secret per-apiary seed, up to 5 km away, rounded to 2 decimals). The exact location never leaves the database. `TraceCard` still adds its own small display offset on top
 - Database function uses `SECURITY DEFINER` to safely bypass RLS
 
 ### Database Function
@@ -387,7 +389,7 @@ The `get_public_batch_info(trace_code)` function:
 4. Traverses the traceability chain: `batch_runs` → `batch_containers` → `bulk_containers` → `container_harvests` → `harvests` → `hives` → `apiaries`
 5. Calculates origin percentages based on harvest weights
 6. Aggregates unique floral sources from linked harvests
-7. Includes map coordinates (fuzzed) if share_location is enabled
+7. Includes approximate map coordinates (server-side, same point as the community map) only if share_location is enabled; otherwise `latitude`/`longitude` are null and `show_map` is false
 8. Returns consumer-safe JSON or NULL
 
 ### QR Code Generation
@@ -430,6 +432,12 @@ When editing an existing public batch, a QR code preview is shown at the top of 
 - [Printable Labels](./print-labels.md) — opt-in thermal printing for balkani (bulk container) labels via Brother QL-820NWB.
 
 ## Changelog
+
+### October 17, 2026 (security batch 6)
+- The public trace functions no longer send exact apiary coordinates: none when share location is off, and the community map's approximate point when it is on. Previously the exact spot was sent and only blurred in the browser
+- The "anyone can read public batches" table rule was removed; the public pages read through `get_public_batch_info` / `get_public_jar_label_info` only
+- New `next_batch_code` function picks the next lot number across all users, which also fixes a possible clash when another user's batch for the month was private
+- Batches and containers can only link your own containers and harvests you can access
 
 ### August 27, 2026
 - Added [Jar Label QR Codes](./jar-label-qr-codes.md) — a permanent per-design code (`trace_labels`) that resolves to the batch currently being bottled, so labels can be printed in bulk ahead of the batches they carry

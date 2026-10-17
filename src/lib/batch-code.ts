@@ -14,30 +14,18 @@ export async function generateBatchCode(_userId: string, batchDate: Date): Promi
   const month = String(batchDate.getMonth() + 1).padStart(2, '0')
   const prefix = `L-${year}-${month}-`
 
-  // Find the highest sequence number globally for this month
-  // Note: batch_code has a global UNIQUE constraint, so we check all users
-  const { data, error } = await supabase
-    .from('batch_runs')
-    .select('batch_code')
-    .like('batch_code', `${prefix}%`)
-    .order('batch_code', { ascending: false })
-    .limit(1)
+  // batch_code has a global UNIQUE constraint, but other users' batches aren't readable,
+  // so the database works out the next number across all users.
+  const { data, error } = await supabase.rpc('next_batch_code', {
+    p_batch_date: `${year}-${month}-01`,
+  })
 
-  if (error) {
-    console.error('Error fetching batch codes:', error)
+  if (error || typeof data !== 'string' || !data.startsWith(prefix)) {
+    console.error('Error generating batch code:', error)
     return `${prefix}001`
   }
 
-  let nextSequence = 1
-
-  if (data && data.length > 0) {
-    const lastCode = data[0].batch_code
-    const lastSequence = parseInt(lastCode.split('-').pop() || '0', 10)
-    nextSequence = lastSequence + 1
-  }
-
-  const sequenceStr = String(nextSequence).padStart(3, '0')
-  return `${prefix}${sequenceStr}`
+  return data
 }
 
 /**

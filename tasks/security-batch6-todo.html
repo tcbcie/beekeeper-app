@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 6: Database Rules</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    .warn { background: #fef2f2; border-left: 3px solid #dc2626; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Security Batch 6: Database Rules (DB-04, DB-07, DB-08, DB-10, DB-11, DB-15)</h1>
+<p><strong>Status:</strong> Done 17/10/2026; tested by you, committed and pushed. <strong>Findings:</strong> six Medium database findings from the Phase 1 audit.</p>
+<div class="warn"><strong>Keep out of git until shipped:</strong> the repository is public and these holes are open. The plan and todo are committed together with the fix.</div>
+
+<h2>What I found (live database, checked 17/10/2026)</h2>
+<table>
+  <tr><th>ID</th><th>Problem</th><th>Who uses it in the app</th></tr>
+  <tr><td>DB-04</td><td>
+    <ul>
+      <li>The public trace functions (<code>/trace/…</code> and <code>/j/…</code> jar pages) send the apiary's <strong>exact</strong> coordinates to anyone, even when "share location" is off. The page only blurs them in the browser, with an offset anyone can reverse.</li>
+      <li>Separately, a "public batches" rule lets anyone without a login list every public batch row and its trace code straight from the table.</li>
+    </ul>
+  </td><td>
+    <ul>
+      <li>Both public pages use only the functions, never the table.</li>
+      <li>One catch: when you create a batch, the app reads other users' public batch codes to pick the next free <code>L-YYYY-MM-NNN</code> number. That number must be unique across all users. Other users' private batches are already invisible to that read, so collisions can already happen today.</li>
+    </ul>
+  </td></tr>
+  <tr><td>DB-07</td><td>When editing, a user can move their own inspection, feeding, harvest, varroa check, treatment, bench or hive into <strong>someone else's</strong> hive or apiary. The edit rules check only "it's mine", while the create rules also check access to the hive. The same gap exists in three related places: linking a harvest to a honey container (any harvest ID is accepted), GDD records (any apiary), and a hive's apiary.</td><td>The record edit forms let you change the hive, which is legitimate between your own and team-shared hives. Nothing in the app moves a bench to another apiary.</td></tr>
+  <tr><td>DB-08</td><td>The account reactivation request (no login) tells anyone whether an email belongs to a deleted account, and returns its user ID.</td><td><code>/reactivate</code> only reads <code>success</code> and <code>message</code>.</td></tr>
+  <tr><td>DB-10</td><td>Any logged-in user can add, edit or delete <code>terminology</code> entries. Hive history accepts a row for <strong>any</strong> hive, from anyone logged in.</td><td>Terminology is edited only in Settings, which only power users and admins can open. History rows are added only for a hive the user has just created.</td></tr>
+  <tr><td>DB-11</td><td>Every QR tag (code, hive, nuc, label, owner) can be read by anyone, without a login.</td><td>Scanning happens under <code>/dashboard</code>, so it always needs a login. Tag pages read your own tags, team-shared tags, and tags on hives you can see.</td></tr>
+  <tr><td>DB-15</td><td>Any logged-in user can publish a changelog entry on the About page.</td><td>Only the CLI script writes it, using the secret key. No page in the app writes it.</td></tr>
+</table>
+<p>The data check found no existing record that the new rules would block: only four inspections fail it, and those belong to team members on hives that were later archived, which they can't see anyway.</p>
+
+<h2>Plan: one database migration, plus one small code change</h2>
+<h3>A. DB-07: edits must stay within hives and apiaries you can access</h3>
+<div class="task"><input type="checkbox" checked disabled> In the edit rules (<code>WITH CHECK</code>) for <code>inspections</code>, <code>feedings</code>, <code>harvests</code>, <code>varroa_checks</code> and <code>varroa_treatments</code>, add the same <code>can_access_hive(hive_id)</code> check the create rules already use. <code>yard_benches</code> gets <code>can_access_apiary(apiary_id)</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>hives</code> edit: the new apiary must be one you can access (or none). Owners and team members keep their current edit rights.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>gdd_records</code> create and edit: the apiary must be one you can access (or none).</div>
+<div class="task"><input type="checkbox" checked disabled> <code>container_harvests</code>: you may only link a harvest you can see. The rule just checks the harvest exists for you, so the harvest table's own access rules decide.</div>
+
+<h3>B. DB-04: public trace pages</h3>
+<div class="task"><input type="checkbox" checked disabled> <code>get_public_batch_info</code> returns coordinates only when the apiary's "share location" is on. Even then it sends the <strong>same approximate point the community map already shows</strong> (same secret seed, same 5 km radius). Using one point everywhere means nobody can combine two different blurred points to work out the real spot. The page code stays as it is.</div>
+<div class="task"><input type="checkbox" checked disabled> Remove the "anyone can read public batches" table rule. The public pages keep working through the functions.</div>
+<div class="task"><input type="checkbox" checked disabled> New <code>next_batch_code(date)</code> function that finds the next free number across <strong>all</strong> users without revealing anything else. <code>src/lib/batch-code.ts</code> calls it instead of reading the table. This also fixes the existing collision when another user's batch is private.</div>
+
+<h3>C. DB-08, DB-10, DB-11, DB-15</h3>
+<div class="task"><input type="checkbox" checked disabled> DB-08: <code>request_account_reactivation</code> always returns the same success message ("If a deleted account exists for this email, your request has been sent to an administrator") and no user ID. One pending request per account is already enforced, so repeats add nothing.</div>
+<div class="task"><input type="checkbox" checked disabled> DB-10: <code>terminology</code> stays readable by logged-in users. Adding, editing and deleting is limited to power users and admins, which matches who can open Settings today.</div>
+<div class="task"><input type="checkbox" checked disabled> DB-10: <code>hive_configuration_history</code> insert requires <code>changed_by</code> to be you and the hive to be one you can access.</div>
+<div class="task"><input type="checkbox" checked disabled> DB-11: <code>qr_tags</code> is readable only when logged in, and only for your own tags, tags shared with your team, and tags on hives you can access. Scanning a team-mate's tag on a shared hive still works.</div>
+<div class="task"><input type="checkbox" checked disabled> DB-15: <code>changelog</code>: drop the "any user can create or edit" rules. The admin rule and the CLI script (secret key) stay.</div>
+
+<h3>D. Verify and close</h3>
+<div class="task"><input type="checkbox" checked disabled> Apply through MCP. Run rolled-back tests as real users (move into a foreign hive is blocked; move to own or team hive works; foreign tag unreadable; anon trace call has no coordinates when sharing is off). Then run the security advisors.</div>
+<div class="task"><input type="checkbox" checked disabled> Repo copy of the migration; <code>qa-engineer</code> review; docs (<code>honey-traceability.md</code>, <code>hive-qr-scanning.md</code>, findings register, batch 6 plan).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> quick test (edit a record and change its hive, create a honey batch, scan or open a QR tag, open a public <code>/trace</code> page, terminology in Settings). Then commit and push.</div>
+
+<div class="note"><strong>Confirmed by you (17/10):</strong> both as recommended.
+  <ol>
+    <li><strong>Terminology:</strong> power users and admins (as Settings today), or admins only? I recommend power users and admins.</li>
+    <li><strong>Trace map:</strong> the honey buyer sees the same approximate 5 km area as the community map, centred on a point up to 5 km from the apiary, and only when share location is on. Today they get the near-exact spot. OK?</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>A. DB-07</td><td>Edit rules on the five record tables, benches, hives and GDD records now require access to the target hive or apiary. Container links require a harvest you can see; batch links require your own container. <strong>Extra find:</strong> the definer functions <code>replace_container_harvests</code> and <code>replace_batch_links</code> skipped those rules (anyone's harvest could end up in your public batch, showing the victim's apiary name and photo). Both now check every ID.</td></tr>
+  <tr><td>B. DB-04</td><td>The trace functions send coordinates only when sharing is on, and then the community map's point (tested: 4.6 km from the real spot, identical to the map; sharing off gives none). The public batch table rule is gone (anon sees 0 batches). The new <code>next_batch_code</code> function is used by <code>src/lib/batch-code.ts</code>, the only code change.</td></tr>
+  <tr><td>C. Others</td><td>Reactivation always gives the same reply. Terminology: power users and admins only. History inserts need access to the hive. QR tags: own, team and accessible-hive tags only, when logged in (anon sees 0). Changelog writes: admins only.</td></tr>
+  <tr><td>Tests</td><td>29 rolled-back checks as real users, all passing (the first T8 run failed only because my test row left out a required column; the rerun passed). Security advisors: nothing new. Type-check of <code>src/</code> and ESLint clean.</td></tr>
+  <tr><td>QA</td><td>No Critical, High or Medium issues. Note: an edit that RLS now refuses raises an error, which the record forms already show as a toast, so it can't fail silently. The hive dropdowns only list accessible hives anyway.</td></tr>
+</table>
+<p><strong>Done:</strong> tested by you, committed and pushed.</p>
+</body>
+</html>

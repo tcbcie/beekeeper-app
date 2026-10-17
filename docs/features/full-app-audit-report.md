@@ -38,6 +38,12 @@
 | SUP-11 | **Fixed 17/10/2026 (batch 5).** Unused and deprecated packages (`ai`, `@supabase/auth-helpers-nextjs`) were removed and `npm audit fix` applied: runtime audit 20 findings (1 critical) down to 5 (0 critical); the rest need Next.js 16 or a breaking `exceljs` downgrade and aren't reachable. |
 | CLI-01 | **Fixed 17/10/2026 (batch 5).** The service worker cached `/api/*` responses and kept them after logout. It no longer caches them, deletes old copies when it updates, and clears cached user data on sign-out. |
 | CLI-02 | **Fixed 17/10/2026 (batch 5).** The admin's stored session from an impersonation stayed on the device unless the banner's Exit was used. Every sign-out now removes it. |
+| DB-04 | **Fixed 17/10/2026 (batch 6).** The public trace pages received exact apiary coordinates even with location sharing off, and anyone could list public batches. Coordinates are now only the community map's approximate point, and only when sharing is on; the batch table is no longer listable. |
+| DB-07 | **Fixed 17/10/2026 (batch 6).** Users could move their own records (inspections, feedings, harvests, varroa checks and treatments, benches, hives, GDD records) into someone else's hive or apiary, and link other users' harvests or containers into their honey batches. Edits and links now require access. |
+| DB-08 | **Fixed 17/10/2026 (batch 6).** The anonymous reactivation request revealed whether an email belonged to a deleted account. It now always returns the same message and no user ID. |
+| DB-10 | **Fixed 17/10/2026 (batch 6).** Any user could change terminology and add hive history rows for any hive. Terminology is now power users and admins only; history rows need access to the hive. |
+| DB-11 | **Fixed 17/10/2026 (batch 6).** All QR tags were readable without a login. Now only your own, team-shared and accessible-hive tags, when logged in. |
+| DB-15 | **Fixed 17/10/2026 (batch 6).** Any user could publish a changelog entry. Admins only now. |
 | Other Phase 1 findings | The remaining Medium and Low findings from the Phase 1 database, API, client, AI and supply-chain audits are kept in a local register until they are fixed, because this repository is public. |
 
 All checks so far were read-only: SQL catalogue queries over the Supabase MCP connection, reading the deployed edge-function source, and searching the codebase. No data, schema or code was changed. No exploit was attempted against production.
