@@ -4,6 +4,7 @@ import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
+import { fetchRecipientLabels } from '@/lib/distribution-recipients'
 import { ArrowLeft, Save, Trash2, CheckCircle, RotateCcw, Ban, FileText } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import FieldLabel from '@/components/ui/FieldLabel'
@@ -120,7 +121,8 @@ export default function OrderDetailPage() {
     setItems(toFormItems((itemsRes.data || []) as OrderItem[]))
     setIsUkNi(profileRes.data?.is_uk_ni_resident || false)
 
-    setDistributions(((distRes.data || []) as Record<string, unknown>[]).map((d) => {
+    const rawDistributions = (distRes.data || []) as Record<string, unknown>[]
+    const linked: LinkedDistribution[] = rawDistributions.map((d) => {
       const graft = firstOf<Record<string, unknown>>(d.graft)
       const batch = firstOf<{ batch_name?: string; emergence_date?: string; mother?: unknown }>(d.batch)
       const recip = firstOf<{ full_name?: string; email?: string }>(d.recipient)
@@ -160,7 +162,23 @@ export default function OrderDetailPage() {
         weight_mg: latestWeight?.weight_mg ?? null,
         batch_name: batch?.batch_name ?? null,
       }
-    }))
+    })
+    // App-user recipients outside the seller's teams/groups don't resolve through the embed
+    // (same fallback order as `recipient` above), so fetch just their name.
+    const unnamedIds = rawDistributions
+      .filter((d) => {
+        const recip = firstOf<{ full_name?: string; email?: string }>(d.recipient)
+        return !d.external_recipient_name && !recip?.full_name && !recip?.email
+      })
+      .map((d) => d.id as string)
+    if (unnamedIds.length > 0) {
+      const labels = await fetchRecipientLabels(unnamedIds)
+      for (const l of linked) {
+        const name = labels.get(l.id)?.recipientName
+        if (name) l.recipient = name
+      }
+    }
+    setDistributions(linked)
 
     const [custRes, custOrdersRes, creditRes] = await Promise.all([
       supabase.from('crm_customers').select('*').eq('id', ord.customer_id).eq('user_id', uid).maybeSingle(),

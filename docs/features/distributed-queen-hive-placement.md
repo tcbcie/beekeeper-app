@@ -38,6 +38,13 @@ single distribution. On save, `create_queen_for_distribution` (SECURITY DEFINER 
 All hive/queen writes are guarded to the recipient's own rows. The hive-config-history trigger
 logs the change automatically. Bulk distribution never auto-places (one hive can't hold many).
 
+**Consent rule (security batch 4, 17/10/2026):**
+- A queen is placed into the recipient's hive only when the recipient is you or shares an apiary team or rearing group with you (`shares_group_or_team_with_me`). For anyone else the queen is still created in their account, but unplaced.
+- A trigger (`guard_distribution_recipient`) refuses a recipient apiary or hive that doesn't belong to the recipient.
+- What a distributor can see about the recipient:
+  - **Fellow members or yourself:** full details, meaning name, email, apiary location and Eircode, through the normal embeds.
+  - **Everyone else:** only their name and apiary name, through `get_distribution_recipient_labels` (`src/lib/distribution-recipients.ts`).
+
 ### Duplicate prevention (one graft → one queen per account)
 
 The RPC is **idempotent**: a graft may only ever produce a single queen per account. Before

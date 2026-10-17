@@ -153,6 +153,10 @@ Add a toggle switch to show/hide community data:
 
 ## Data Privacy Considerations
 
+> **Security batch 4 (17/10/2026):**
+> - The original `shared_gdd_records_community` view returned exact apiary coordinates and was readable without logging in. It is now internal only: no client grants, and the public embed view `public_galway_gdd` reads it as its owner and exposes no coordinates or user IDs.
+> - `get_shared_gdd_records()` is signed-in only and returns coordinates obfuscated by up to 5 km with a secret seed (Vault `coord_obfuscation_salt`), so the 20 km "nearby" filter still works but exact locations never leave the database.
+
 1. **No exact coordinates exposed** - Only city/county shown
 2. **No user identification** - No names, usernames, or profile links
 3. **Distance calculated server-side** - User coords not sent to other clients

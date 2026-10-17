@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import AppIcon from '@/components/icons/AppIcon'
 import AlertPanel from '@/components/ui/AlertPanel'
+import PendingInvitationsCard from '@/components/dashboard/PendingInvitationsCard'
 import { Skeleton, SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
 import Panel from '@/components/ui/Panel'
 import Button from '@/components/ui/Button'
@@ -288,6 +289,8 @@ export default function DashboardPage() {
  </div>
 </div>
 </div>
+
+<PendingInvitationsCard />
 
 {dashboardError && (
  <AlertPanel

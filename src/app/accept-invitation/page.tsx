@@ -118,45 +118,26 @@ function AcceptInvitationContent() {
 
         // Verify the logged-in user's email matches the invitation
         const { data: { user: currentUser } } = await supabase.auth.getUser()
-        if (currentUser?.email !== invitation.email) {
+        if (currentUser?.email?.toLowerCase() !== invitation.email?.toLowerCase()) {
           setStatus('error')
           setMessage(`This invitation was sent to ${invitation.email}. Please log in with that email address or sign out and create a new account.`)
           setLoading(false)
           return
         }
 
-        // Add user to team FIRST (before updating invitation status)
-        const { error: memberError } = await supabase
-          .from('team_members')
-          .insert({
-            team_id: invitation.team_id,
-            user_id: userId,
-            role: 'member',
-          })
+        // Join through the RPC: it checks the invitation is pending, unexpired and addressed
+        // to this account, then adds the membership and marks the invitation accepted.
+        const { data: acceptResult, error: acceptError } = await supabase
+          .rpc('accept_team_invitation', { p_invitation_id: invitationId })
 
-        if (memberError) {
-          // Check if user is already a member
-          if (memberError.code === '23505') {
-            setStatus('already-accepted')
-            setMessage(`You are already a member of ${extractedTeamName || 'this team'}`)
-          } else {
-            throw memberError
-          }
+        if (acceptError) throw acceptError
+
+        if (acceptResult === 'already_member') {
+          setStatus('already-accepted')
+          setMessage(`You are already a member of ${extractedTeamName || 'this team'}`)
         } else {
           // New membership changes which apiaries this user can access
           clearTeamAccessCache()
-
-          // Only update invitation status AFTER successfully adding to team
-          const { error: updateError } = await supabase
-            .from('team_invitations')
-            .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-            .eq('id', invitationId)
-
-          if (updateError) {
-            console.error('Warning: Failed to update invitation status:', updateError)
-            // Don't throw - user is already added to team, this is just audit trail
-          }
-
           setStatus('success')
           setMessage(`Successfully joined ${extractedTeamName || 'the team'}!`)
         }

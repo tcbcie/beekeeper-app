@@ -107,40 +107,24 @@ function AcceptRearingGroupInvitationContent() {
 
         // Verify the logged-in user's email matches the invitation
         const { data: { user: currentUser } } = await supabase.auth.getUser()
-        if (currentUser?.email !== invitation.email) {
+        if (currentUser?.email?.toLowerCase() !== invitation.email?.toLowerCase()) {
           setStatus('error')
           setMessage(`This invitation was sent to ${invitation.email}. Please log in with that email address or sign out and create a new account.`)
           setLoading(false)
           return
         }
 
-        // Add user to rearing group FIRST
-        const { error: memberError } = await supabase
-          .from('rearing_group_members')
-          .insert({
-            group_id: invitation.group_id,
-            user_id: userId,
-            role: 'member',
-          })
+        // Join through the RPC: it checks the invitation is pending, unexpired and addressed
+        // to this account, then adds the membership and marks the invitation accepted.
+        const { data: acceptResult, error: acceptError } = await supabase
+          .rpc('accept_rearing_group_invitation', { p_invitation_id: invitationId })
 
-        if (memberError) {
-          if (memberError.code === '23505') {
-            setStatus('already-accepted')
-            setMessage(`You are already a member of ${extractedGroupName || 'this rearing group'}`)
-          } else {
-            throw memberError
-          }
+        if (acceptError) throw acceptError
+
+        if (acceptResult === 'already_member') {
+          setStatus('already-accepted')
+          setMessage(`You are already a member of ${extractedGroupName || 'this rearing group'}`)
         } else {
-          // Update invitation status AFTER successfully adding to group
-          const { error: updateError } = await supabase
-            .from('rearing_group_invitations')
-            .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-            .eq('id', invitationId)
-
-          if (updateError) {
-            console.error('Warning: Failed to update invitation status:', updateError)
-          }
-
           setStatus('success')
           setMessage(`Successfully joined ${extractedGroupName || 'the rearing group'}!`)
         }

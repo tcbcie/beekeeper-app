@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchRecipientLabels } from '@/lib/distribution-recipients'
 import type { Hive } from '@/types/records'
 import type {
   ApiaryWithEircode,
@@ -446,9 +447,18 @@ export function useReportsData(): UseReportsDataReturn {
     })
 
     // Period filtering on the effective failure date (ISO strings compare correctly).
-    return records
+    const inPeriod = records
       .filter((r) => r.failure_date !== null && r.failure_date >= startDate && r.failure_date <= endDate)
       .sort((a, b) => (b.failure_date || '').localeCompare(a.failure_date || ''))
+
+    // Recipients outside the user's teams/groups don't resolve through the embed;
+    // look up only the rows the report will actually show.
+    const unnamed = inPeriod.filter((r) => !r.recipient_name)
+    if (unnamed.length > 0) {
+      const labels = await fetchRecipientLabels(unnamed.map((r) => r.id))
+      for (const r of unnamed) r.recipient_name = labels.get(r.id)?.recipientName ?? null
+    }
+    return inPeriod
   }, [])
 
   return {

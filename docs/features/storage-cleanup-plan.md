@@ -107,6 +107,12 @@ The 24 already-orphaned objects were **queued, not deleted directly**, so they p
 
 **Low** - constant-time comparison of the cron secret, de-duplication of two URLs resolving to one object key (query strings are stripped), and a set rather than a linear scan when reconciling failures.
 
+**Security batch 4 (17/10/2026), API-01 · High: the reference guard could be bypassed with a variant URL.**
+- The reference check compares raw strings, but the delete step parsed the URL into an object key, dropping `?…`/`#…`, decoding `%xx` and resolving `../`.
+- A user could therefore queue a variant spelling of another user's photo URL, for example by appending `?x=1` in one of their own records and then clearing it. The variant passed as "unreferenced" and resolved to the victim's object.
+- The sweeper now deletes only when the queued URL equals `canonicalStoragePublicUrl(ref)` (`src/lib/storage-url.ts`) exactly. Anything else is dropped from the queue without deleting.
+- All 198 stored photo URLs were confirmed canonical before the change.
+
 ---
 
 ## 4. Before this works in production

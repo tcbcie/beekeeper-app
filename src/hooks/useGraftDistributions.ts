@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/Toast'
 import { getQueenColorFromYear, formatQueenSnapshot } from '@/types/queen'
 import { buildLineageString, damLabelFromSnapshot, lineageYear, type DroneSourceType } from '@/lib/lineage'
 import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
+import { fillMissingRecipientLabels } from '@/lib/distribution-recipients'
 
 export interface GraftDistribution {
   id: string
@@ -718,6 +719,9 @@ export function useGraftDistributions() {
           recipient_is_club_member: d.recipient_is_club_member === true,
         }
       })
+
+      // Recipients outside the caller's teams/groups don't resolve through the embeds.
+      await fillMissingRecipientLabels(mapped)
 
       if (requestId !== fetchCounter.current) return // stale response — discard
       setDistributions(mapped)

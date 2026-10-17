@@ -458,78 +458,52 @@ export default function ApiaryTeamPage() {
         }
       }
 
-      // If user exists, auto-accept and add to team_members
-      if (existingUser) {
-        // Add user to team_members directly
-        const { error: memberError } = await supabase
-          .from('team_members')
-          .insert({
-            team_id: selectedTeam.id,
-            user_id: existingUser.user_id,
-            role: 'member',
-          })
+      // Everyone, including existing users, gets a pending invitation and must accept it
+      // (the database only lets members join through accept_team_invitation).
+      const { data: newInvite, error: inviteError } = await supabase
+        .from('team_invitations')
+        .insert({
+          team_id: selectedTeam.id,
+          email: inviteEmail.toLowerCase(),
+          invited_by: userId,
+          status: 'pending',
+        })
+        .select()
+        .single()
 
-        if (memberError) throw memberError
+      if (inviteError) throw inviteError
 
-        // Create invitation record as 'accepted' for audit trail
-        await supabase
-          .from('team_invitations')
-          .insert({
-            team_id: selectedTeam.id,
-            email: inviteEmail.toLowerCase(),
-            invited_by: userId,
-            status: 'accepted',
-            accepted_at: new Date().toISOString(),
-          })
+      // Send invitation email via Edge Function
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-team-invitation', {
+          body: {
+            invitationId: newInvite.id,
+            inviteeEmail: inviteEmail.toLowerCase(),
+            teamName: selectedTeam.name,
+            inviterName: userProfile?.first_name && userProfile?.last_name
+              ? `${userProfile.first_name} ${userProfile.last_name}`
+              : undefined,
+            inviterEmail: userEmail,
+            expiresAt: newInvite.expires_at,
+          },
+        })
 
-        toast.success(`${inviteEmail} has been added to the team!`)
-      } else {
-        // User doesn't exist yet - create pending invitation
-        const { data: newInvite, error: inviteError } = await supabase
-          .from('team_invitations')
-          .insert({
-            team_id: selectedTeam.id,
-            email: inviteEmail.toLowerCase(),
-            invited_by: userId,
-            status: 'pending',
-          })
-          .select()
-          .single()
+        if (emailError) {
+          console.error('Failed to send invitation email:', emailError)
+          console.error('Error details:', emailError)
 
-        if (inviteError) throw inviteError
-
-        // Send invitation email via Edge Function
-        try {
-          const { error: emailError } = await supabase.functions.invoke('send-team-invitation', {
-            body: {
-              invitationId: newInvite.id,
-              inviteeEmail: inviteEmail.toLowerCase(),
-              teamName: selectedTeam.name,
-              inviterName: userProfile?.first_name && userProfile?.last_name
-                ? `${userProfile.first_name} ${userProfile.last_name}`
-                : undefined,
-              inviterEmail: userEmail,
-              expiresAt: newInvite.expires_at,
-            },
-          })
-
-          if (emailError) {
-            console.error('Failed to send invitation email:', emailError)
-            console.error('Error details:', emailError)
-
-            // Check if it's a "function not found" error
-            if (emailError.message?.includes('FunctionsRelayError') || emailError.message?.includes('not found')) {
-              toast.info(`Invitation created! Email system not configured yet. ${inviteEmail} will be added when they sign up.`)
-            } else {
-              toast.warning(`Invitation created but email failed to send. Please contact ${inviteEmail} directly.`)
-            }
+          // Check if it's a "function not found" error
+          if (emailError.message?.includes('FunctionsRelayError') || emailError.message?.includes('not found')) {
+            toast.info(`Invitation created! Email system not configured yet. ${inviteEmail} can accept it from their dashboard.`)
           } else {
-            toast.success(`Invitation email sent to ${inviteEmail}!`)
+            toast.warning(`Invitation created but email failed to send. ${inviteEmail} can accept it from their dashboard.`)
           }
-        } catch (emailException) {
-          console.error('Exception sending invitation email:', emailException)
-          toast.info(`Invitation created! Email system not configured. Please contact ${inviteEmail} directly.`)
+        } else {
+          toast.success(`Invitation email sent to ${inviteEmail}!`)
         }
+      } catch (emailException) {
+        console.error('Exception sending invitation email:', emailException)
+        toast.info(`Invitation created! Email system not configured. ${inviteEmail} can accept it from their dashboard.`)
       }
 
       setInviteEmail('')

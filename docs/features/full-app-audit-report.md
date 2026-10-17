@@ -2,7 +2,7 @@
 
 **Plan:** `docs/features/full-app-audit-plan.md`
 **Checklist:** `tasks/full-app-audit-todo.html`
-**Status:** Phase 1 fast-track complete. **Batch 3 (API key and JWT secret migration) completed 17/10/2026; SEC-H5 and SEC-H9 are closed.** **Hotfix batches 1 and 2 applied 15–16/10/2026** (batch 2: `docs/features/security-hotfix-batch2-plan.md`). **Hotfix batch 1 applied 15/10/2026** (`docs/features/security-hotfix-batch1-plan.md`), fixing SEC-C1, C2, H1 (pending dashboard deletion), H2 and H4. SEC-H3, H5, M1 and L1 are open for batch 2. The rest of the audit resumes once batch 1 is deployed and tested.
+**Status:** Phase 1 audit complete (17/10/2026). **Batch 4 (sharing rules, coordinate privacy, storage clean-up) applied 17/10/2026.** **Batch 3 (API key and JWT secret migration) completed 17/10/2026; SEC-H5 and SEC-H9 are closed.** **Hotfix batches 1 and 2 applied 15–16/10/2026** (batch 2: `docs/features/security-hotfix-batch2-plan.md`). **Hotfix batch 1 applied 15/10/2026** (`docs/features/security-hotfix-batch1-plan.md`), fixing SEC-C1, C2, H1 (pending dashboard deletion), H2 and H4. SEC-H3, H5, M1 and L1 are open for batch 2. The rest of the audit resumes once batch 1 is deployed and tested.
 
 | ID | Status |
 |---|---|
@@ -24,6 +24,17 @@
 | Accepted (Low) | `lookup_user_by_email` (exact-match existence check, needed by invites); `get_recipient_apiaries/hives` (distribution by design; names and numbers only); `get_user_role`, `has_valid_invitation`, `get_rearing_group_member_user_ids` (IDs, booleans or role, used in RLS); `check_queen_assignment` (needs an unguessable UUID). Confirmed by owner (B4) |
 | SEC-H8 | **Fixed 16/10/2026.** Both functions now require the internal webhook secret (`verify_jwt` off); the cron jobs send it from Vault (`internal_webhook_secret`); responses carry counts only. Verified: the public key gets 401, and the 14:00 cron run returned 200 in the new format. Original finding: `weekly-email-digest` and `task-event-reminders` check no caller (`verify_jwt` accepts the public anon key) and **return the list of recipient email addresses** in the response. Anyone can trigger mass emails to users and harvest addresses. The digest cron job sends the anon JWT; the reminder job reads a key from Vault |
 | SEC-H9 | **Fixed 16–17/10/2026 (batch 3, `docs/features/supabase-api-key-migration-plan.md`).** The app, edge functions and embed widget use `sb_publishable_`/`sb_secret_` keys; the legacy keys are deactivated. User sessions are signed with an ES256 signing key and the legacy JWT secret is revoked. Lesson: deactivating the legacy keys alone left them valid as `Authorization: Bearer` tokens, and only revoking the legacy JWT secret retired them. Original finding: the legacy `anon`/`service_role` keys cannot be rotated and stop working at the end of 2026 |
+
+| DB-01 | **Fixed 17/10/2026 (batch 4).** Team and rearing-group owners could add any user as a member without consent, which exposed the member's profile and whole queen-rearing record. Membership now needs an accepted invitation. |
+| DB-02 | **Fixed 17/10/2026 (batch 4).** A batch's unchecked mating apiary granted group members read and write access to someone else's apiary and hives. |
+| DB-03 | **Fixed 17/10/2026 (batch 4).** Unchecked distribution recipient columns exposed recipients' apiaries and profiles. |
+| DB-05 | **Fixed 17/10/2026 (batch 4).** Support-ticket and treatment-product admin rights trusted a user-writable legacy table. |
+| DB-06 | **Fixed 17/10/2026 (batch 4).** Shared GDD records exposed exact apiary coordinates without login, and map obfuscation was reversible. |
+| DB-09 | **Fixed 17/10/2026 (batch 4).** Members could move their membership row to another group. |
+| API-01 | **Fixed 17/10/2026 (batch 4).** The storage clean-up could be tricked into deleting another user's photo with a variant URL. |
+| SUP-01 | **Fixed 17/10/2026.** A Supabase personal access token in git history (Feb 2026) was revoked by the owner. |
+| SUP-02 | **Fixed 17/10/2026.** Production database exports in git history were removed by a history rewrite and force-push. GitHub's cached copies of the old commits still need a purge request to GitHub Support. |
+| Other Phase 1 findings | The remaining Medium and Low findings from the Phase 1 database, API, client, AI and supply-chain audits are kept in a local register until they are fixed, because this repository is public. |
 
 All checks so far were read-only: SQL catalogue queries over the Supabase MCP connection, reading the deployed edge-function source, and searching the codebase. No data, schema or code was changed. No exploit was attempted against production.
 

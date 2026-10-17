@@ -3,7 +3,7 @@ import { timingSafeEqual } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-import { storagePathFromPublicUrl } from '@/lib/storage-url'
+import { canonicalStoragePublicUrl, storagePathFromPublicUrl } from '@/lib/storage-url'
 
 // Fail-fast at module init so a missing env surfaces at deploy time.
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -133,6 +133,15 @@ export async function GET(request: NextRequest) {
       // Not a public storage URL of this project - most likely a legacy row
       // carrying an older Supabase hostname, whose object lives in a different
       // project. There is nothing here to delete, so stop re-examining it.
+      unresolvableRowIds.push(row.id)
+      continue
+    }
+
+    if (canonicalStoragePublicUrl(ref) !== row.image_url) {
+      // A variant spelling of an object URL. The reference check matched the raw
+      // string only, so the object may still be in use under its real URL (for
+      // example another user's photo). Never delete on a non-canonical URL.
+      console.warn('storage-cleanup: skipping non-canonical URL')
       unresolvableRowIds.push(row.id)
       continue
     }

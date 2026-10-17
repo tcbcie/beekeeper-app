@@ -18,7 +18,7 @@ This feature is **separate from the existing team system** — teams handle apia
 
 ### Invitation Flow
 1. Owner enters an email address to invite
-2. If the user already has a HiveCraic account, they are added directly
+2. Everyone gets a pending invitation, including users who already have an account. Nobody is added without accepting (security batch 4, 17/10/2026). Existing users can accept from the email link or from the **Invitations for you** card on the dashboard (`PendingInvitationsCard`, backed by `get_my_pending_invitations`). Joining goes through the `accept_rearing_group_invitation` RPC, which checks the invitation is pending, unexpired and addressed to the caller's email. The database only lets an owner insert their own membership row.
 3. If the user does not have an account, a pending invitation is created and an email is sent
 4. The email contains **Accept** and **Decline** links
 5. New users accept through the email link. If they have no account, the accept page sends them to sign up (`/login?signup=true&redirect=…`), brings them back, and adds them to the group. There is no automatic accept on sign-up for rearing groups. The old `auto-accept-invitations` webhook was never wired to a trigger and was removed for security (SEC-H1).
@@ -64,7 +64,9 @@ This feature is **separate from the existing team system** — teams handle apia
 
 ### RLS Policies
 - `rearing_groups`: owners and members can view; only owners can create/update/delete
-- `rearing_group_members`: members can view members of their groups; owners can manage
+- `rearing_group_members`: members can view members of their groups. Owners can only insert themselves; everyone else joins via `accept_rearing_group_invitation`. Owners can update roles and remove members. A trigger (`guard_membership_columns`) stops any row being moved to another user or group, and stops non-owners changing roles except to step down to `member`.
+- `rearing_groups`: ownership can only be transferred to an existing member of the group (the UPDATE policy previously had no `WITH CHECK`, so transfer always failed).
+- `rearing_batches`: a trigger (`guard_rearing_batch_links`) only allows a group the batch owner belongs to, and a mating apiary the owner can access directly. A batch's mating apiary grants group members access only when the batch owner can access it directly (`can_access_apiary`).
 - `rearing_group_invitations`: readable only by the inviting owner or the invitee; the accept and decline links use the `get_rearing_group_invitation` and `decline_rearing_group_invitation` RPCs (security batches 1–2); owners can create/delete; invitees can update their own
 - `rearing_batches`: additive SELECT policy allowing group owners to read member batches
 

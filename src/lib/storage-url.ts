@@ -43,6 +43,20 @@ export interface StorageObjectRef {
 }
 
 /**
+ * The exact public URL Supabase issues for an object of THIS project.
+ *
+ * The storage clean-up only deletes a queued URL when it matches this string
+ * exactly. Its reference check compares raw strings, so a variant spelling of
+ * someone else's photo URL (query string, fragment, %-encoding, dot segments)
+ * would otherwise pass as "unreferenced" and still resolve to their object.
+ */
+export function canonicalStoragePublicUrl(ref: StorageObjectRef): string | null {
+  const currentSupabaseOrigin = getCurrentSupabaseOrigin()
+  if (!currentSupabaseOrigin) return null
+  return `${currentSupabaseOrigin}${STORAGE_PUBLIC_PATH}${encodeURI(ref.bucket)}/${encodeURI(ref.path)}`
+}
+
+/**
  * Resolve a Supabase public URL back to the bucket and object key it points at,
  * so the object can be removed.
  *

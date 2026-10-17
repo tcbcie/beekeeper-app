@@ -36,6 +36,11 @@ New RPC function: `get_all_apiaries_obfuscated()`
 
 All coordinates are obfuscated to ~5km accuracy server-side before reaching the client. The exact location of any apiary is never exposed, regardless of whether the owner has enabled sharing.
 
+**Security batch 4 (17/10/2026):**
+- The obfuscation used to be seeded with the public apiary ID, and both helper functions could be called without logging in, so the offset could be recomputed and reversed to about 1 km.
+- Every community-map source now seeds it with `coord_obfuscation_seed(id)`, which combines the ID with a secret in Vault (`coord_obfuscation_salt`) and can't be called by clients.
+- The community map reads shared apiaries and wild colonies through the SECURITY DEFINER RPCs `get_shared_apiaries_obfuscated()` and `get_wild_colonies_obfuscated()` (power users only), instead of the old `shared_apiaries_obfuscated` and `wild_colonies_obfuscated` views. Those views have no anonymous access and will be dropped once the new app version is deployed.
+
 ## Notes
 
 - When both "Shared apiaries" and "All apiaries" layers are active simultaneously, apiaries with `share_location = true` will appear under both layers. Their obfuscated positions are deterministic (seed = apiary ID), so they coincide at the same map point.

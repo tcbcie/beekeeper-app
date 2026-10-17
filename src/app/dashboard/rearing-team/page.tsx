@@ -283,61 +283,45 @@ export default function RearingTeamPage() {
         }
       }
 
-      if (existingUser) {
-        // Auto-accept: add directly
-        const { error: memberError } = await supabase
-          .from('rearing_group_members')
-          .insert({ group_id: selectedRg.id, user_id: existingUser.user_id, role: 'member' })
-        if (memberError) throw memberError
-
-        await supabase.from('rearing_group_invitations').insert({
+      // Everyone, including existing users, gets a pending invitation and must accept it
+      // (the database only lets members join through accept_rearing_group_invitation).
+      const { data: newInvite, error: inviteError } = await supabase
+        .from('rearing_group_invitations')
+        .insert({
           group_id: selectedRg.id,
           email: rgInviteEmail.toLowerCase(),
           invited_by: userId,
-          status: 'accepted',
-          accepted_at: new Date().toISOString(),
+          status: 'pending',
         })
-        toast.success(`${rgInviteEmail} has been added to the group!`)
-      } else {
-        // Create pending invitation and send email
-        const { data: newInvite, error: inviteError } = await supabase
-          .from('rearing_group_invitations')
-          .insert({
-            group_id: selectedRg.id,
-            email: rgInviteEmail.toLowerCase(),
-            invited_by: userId,
-            status: 'pending',
-          })
-          .select()
-          .single()
-        if (inviteError) throw inviteError
+        .select()
+        .single()
+      if (inviteError) throw inviteError
 
-        try {
-          const { error: emailError } = await supabase.functions.invoke('send-rearing-group-invitation', {
-            body: {
-              invitationId: newInvite.id,
-              inviteeEmail: rgInviteEmail.toLowerCase(),
-              groupName: selectedRg.name,
-              inviterName: userProfile?.first_name && userProfile?.last_name
-                ? `${userProfile.first_name} ${userProfile.last_name}`
-                : undefined,
-              inviterEmail: userEmail,
-              expiresAt: newInvite.expires_at,
-            },
-          })
-          if (emailError) {
-            if (emailError.message?.includes('FunctionsRelayError') || emailError.message?.includes('not found')) {
-              toast.info(`Invitation created! Email system not configured yet. ${rgInviteEmail} will be added when they sign up.`)
-            } else {
-              toast.warning(`Invitation created but email failed to send. Please contact ${rgInviteEmail} directly.`)
-            }
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-rearing-group-invitation', {
+          body: {
+            invitationId: newInvite.id,
+            inviteeEmail: rgInviteEmail.toLowerCase(),
+            groupName: selectedRg.name,
+            inviterName: userProfile?.first_name && userProfile?.last_name
+              ? `${userProfile.first_name} ${userProfile.last_name}`
+              : undefined,
+            inviterEmail: userEmail,
+            expiresAt: newInvite.expires_at,
+          },
+        })
+        if (emailError) {
+          if (emailError.message?.includes('FunctionsRelayError') || emailError.message?.includes('not found')) {
+            toast.info(`Invitation created! Email system not configured yet. ${rgInviteEmail} can accept it from their dashboard.`)
           } else {
-            toast.success(`Invitation email sent to ${rgInviteEmail}!`)
+            toast.warning(`Invitation created but email failed to send. ${rgInviteEmail} can accept it from their dashboard.`)
           }
-        } catch (emailException) {
-          console.error('Exception sending invitation email:', emailException)
-          toast.info(`Invitation created! Email system not configured. Please contact ${rgInviteEmail} directly.`)
+        } else {
+          toast.success(`Invitation email sent to ${rgInviteEmail}!`)
         }
+      } catch (emailException) {
+        console.error('Exception sending invitation email:', emailException)
+        toast.info(`Invitation created! Email system not configured. ${rgInviteEmail} can accept it from their dashboard.`)
       }
 
       setRgInviteEmail('')

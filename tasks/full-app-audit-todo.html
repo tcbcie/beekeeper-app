@@ -101,14 +101,14 @@
 <div class="task"><input type="checkbox" checked disabled> Verify suspicions 2–5 above with read-only queries (policies, grants, function bodies). <strong>All confirmed</strong>, see <code>docs/features/full-app-audit-report.md</code> (SEC-C1, C2, H2–H4, M1).</div>
 <div class="task"><input type="checkbox" disabled> Draft the per-table access map (D5) and review all 78 tables' policies against it, including the 119 overlapping permissive policies.</div>
 <div class="task"><input type="checkbox" disabled> Review every SECURITY DEFINER function: anon-executable (22), authenticated-executable (57), <code>search_path</code>, trigger-only functions still exposed. Also the 4 SECURITY DEFINER views.</div>
-<div class="task"><input type="checkbox" disabled> Column-level exposure in <code>profiles</code> (tokens, subscription fields) and the <code>prevent_role_self_change</code> coverage.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Done (SEC-C1, SEC-H3):</strong> Column-level exposure in <code>profiles</code> (tokens, subscription fields) and the <code>prevent_role_self_change</code> coverage.</div>
 <div class="task"><input type="checkbox" disabled> Storage: both buckets are public. Check whether inspection/apiary images reveal locations or private data, and whether URLs can be guessed.</div>
 <div class="task"><input type="checkbox" disabled> Live-only objects (queen_assignments, archive_hive_cascade, ensure_reared_queen_record, trace_labels and others) audited from the live DB. Leftover <code>*_backup_20260829</code> tables noted.</div>
 <div class="task"><input type="checkbox" disabled> Security and performance advisors snapshot recorded.</div>
 <h4>1B: Edge functions</h4>
 <div class="task"><input type="checkbox" checked disabled> Verify suspicion 1 against the <em>deployed</em> version (<code>get_edge_function</code>). <strong>Confirmed</strong> (SEC-H1); also found a service-role key in a DB trigger (SEC-H5).</div>
-<div class="task"><input type="checkbox" disabled> Find the source for the 2 deployed functions that are missing from the repo (<code>generate-vegetation-info</code>, <code>send-rearing-group-invitation</code>).</div>
-<div class="task"><input type="checkbox" disabled> CORS <code>*</code> and caller-supplied names in the invitation and notification emails (phishing relay risk).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Done:</strong> <code>send-rearing-group-invitation</code> source is now in the repo (batch 2); <code>generate-vegetation-info</code> was deleted (batch 3). Find the source for the 2 deployed functions that are missing from the repo (<code>generate-vegetation-info</code>, <code>send-rearing-group-invitation</code>).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Done (SEC-H6, SEC-M4):</strong> CORS <code>*</code> and caller-supplied names in the invitation and notification emails (phishing relay risk).</div>
 <h4>1C: API routes (25 handlers)</h4>
 <div class="task"><input type="checkbox" disabled> Per route: auth check, how the service-role queries are scoped to the user, input validation, error-message leaks, rate limiting.</div>
 <div class="task"><input type="checkbox" disabled> Specific checks: <code>beep/data</code>/<code>wolf-waagen/data</code> device ID not tied to the hive, invoice email HTML injection, <code>auth/verify</code> <code>redirect_to</code> and the Supabase redirect allow-list, <code>update-user-role</code> last-admin race, <code>stripe/checkout</code> code-use race.</div>
@@ -122,7 +122,7 @@
 <div class="task"><input type="checkbox" disabled> Prompt injection: client-supplied assistant turns in the chat history, knowledge-base content and team members' notes. Gaps in the admin URL-fetch SSRF guard (redirects, IPv6, DNS rebinding).</div>
 <h4>1F: Secrets and supply chain</h4>
 <div class="task"><input type="checkbox" disabled> Secrets scan over the full git history (gitleaks or similar), plus <code>npm audit</code>.</div>
-<div class="task"><input type="checkbox" disabled> Local exposure in OneDrive: <code>.codex/config.toml</code> holds a Supabase access token (<strong>recommend rotating</strong>). Also <code>.env - github contributoe.local</code> (whose keys?) and a 22MB production DB export in <code>sql/</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Mostly done 17/10:</strong> the token was revoked and the env file deleted; the DB export in <code>sql/</code> is checked in 1F. Local exposure in OneDrive: <code>.codex/config.toml</code> holds a Supabase access token (<strong>recommend rotating</strong>). Also <code>.env - github contributoe.local</code> (whose keys?) and a 22MB production DB export in <code>sql/</code>.</div>
 <div class="task"><input type="checkbox" disabled> Tracked <code>supabase/.temp/</code>; deprecated or unused dependencies (<code>@supabase/auth-helpers-nextjs</code>, <code>@google/generative-ai</code>); <code>.env.example</code> is git-ignored.</div>
 <div class="task"><input type="checkbox" disabled> Recheck open items from the February audit: SEC-4/18 (rate limits), SEC-5 (plaintext tokens), SEC-6 (CSRF decision), SEC-7 (admin audit trail), C3 (<code>/api/users/list</code>).</div>
 

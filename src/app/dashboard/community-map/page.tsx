@@ -190,12 +190,10 @@ export default function CommunityMapPage() {
         return
       }
 
-      // Fetch shared apiaries (excluding user's own) from obfuscated view
-      // Coordinates are already obfuscated server-side for privacy
+      // Fetch shared apiaries (excluding user's own). Coordinates are obfuscated
+      // server-side with a secret seed, so they cannot be reversed.
       const { data: sharedData, error: sharedError } = await supabase
-        .from('shared_apiaries_obfuscated')
-        .select('id, city, latitude, longitude, created_at, hive_count')
-        .neq('user_id', id)
+        .rpc('get_shared_apiaries_obfuscated')
 
       if (cancelled) return
       if (!sharedError && sharedData) {
@@ -222,11 +220,10 @@ export default function CommunityMapPage() {
       if (powerUser) {
         setShowWildColonies(false)
 
-        // Fetch wild colonies from obfuscated view
-        // Coordinates are already obfuscated server-side for privacy
+        // Fetch wild colonies (power users only). Coordinates are obfuscated
+        // server-side with a secret seed.
         const { data: wildData, error: wildError } = await supabase
-          .from('wild_colonies_obfuscated')
-          .select('id, latitude, longitude, status, nesting_type, observation_date')
+          .rpc('get_wild_colonies_obfuscated')
 
         if (cancelled) return
         if (!wildError && wildData) {

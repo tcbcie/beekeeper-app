@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
 import { setDistributionMatingConfirmation, updateDistributionMatingDate } from '@/hooks/useGraftDistributions'
+import { fillMissingRecipientLabels } from '@/lib/distribution-recipients'
 
 export interface TrackedQueen {
   id: string
@@ -592,6 +593,9 @@ export function useQueenTracker() {
           mother_queen_birth_date: motherQueen?.birth_date ?? null,
         })
       }
+
+      // Recipients outside the caller's teams/groups don't resolve through the embeds.
+      await fillMissingRecipientLabels(mapped)
 
       if (requestId !== fetchCounter.current) return
       setDistributions(mapped)
