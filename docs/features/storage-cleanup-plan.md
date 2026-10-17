@@ -148,3 +148,10 @@ The record then saved with the *previous* photo still attached (or none), and th
 `WildColonyInspectionPanel` was also adjusted: its post-save tidy-up is wrapped so it cannot throw, because the form treats a thrown error as "not saved" and would otherwise delete the photograph of a record that had in fact been written. Its refetch is now awaited so a failure there is logged rather than becoming an unhandled rejection.
 
 The repeated pattern across six call sites is a deliberate trade-off: each flow's control flow differs enough (two uploads, a form/panel split, differing early-return points) that a shared abstraction would have touched more code than the duplication costs.
+
+## 6. Bucket hardening (security batch 10, 17/10/2026)
+
+- **No public listing.** The two `{public}` SELECT policies were replaced by "Users can see their own uploads" (`owner = auth.uid()`, both buckets). Public image URLs still work, because public buckets serve them without RLS. The owner-only SELECT is what the browser's `remove()` in `deleteUploadedImages` needs to undo a failed save.
+- **Upload folders:** `apiary-images` must go under `<auth.uid()>/…`. `inspection-images` must go under `inspections/`, `varroa-checks/`, `diagnoses/`, `wild-colonies/` or `wild-colony-inspections/`. **A new upload folder must be added to the "Allow authenticated users to upload inspection images" policy**, or uploads to it will fail.
+- **Limits:** both buckets accept only `image/jpeg`, `image/png`, `image/gif` and `image/webp`, up to 10 MB. That matches `src/lib/upload-image.ts` (`MAX_IMAGE_BYTES` and its allowed types).
+- The cleanup cron uses the secret key and is unaffected.

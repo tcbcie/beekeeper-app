@@ -58,6 +58,12 @@
 | CLI-06 | **Fixed 17/10/2026 (batch 6, DB-04).** The public trace functions no longer return exact coordinates. |
 | CLI-07 | **Fixed 17/10/2026 (batch 9).** The tag code is now escaped in the QR print window. |
 | CLI-08 | **Fixed 17/10/2026 (batch 9).** The TCBC widget loads Chart.js with a Subresource Integrity hash. |
+| DB-12 | **Fixed 17/10/2026 (batch 6).** Batch and container links now require your own containers and harvests you can access. |
+| DB-13 | **Fixed 17/10/2026 (batch 10).** A task's owner can no longer be changed to a third user (trigger). |
+| DB-14 | **Fixed 17/10/2026 (batch 6).** Public batches are only readable through the trace functions. |
+| DB-16 | **Fixed 17/10/2026 (batch 10).** Diagnosis photo comments are readable only by people who can see the photo. |
+| DB-17 | **Fixed 17/10/2026 (batch 10).** Photo buckets can no longer be listed, uploads are limited to the app's folders and to images up to 10 MB. |
+| DB-18 | **Fixed 17/10/2026 (batch 10).** Anonymous write grants and user-ID oracles were revoked, subscription codes are locked during redemption, honey feedback is capped and rate-limited, and old backup tables were dropped. |
 | Other Phase 1 findings | The remaining Medium and Low findings from the Phase 1 database, API, client, AI and supply-chain audits are kept in a local register until they are fixed, because this repository is public. |
 
 All checks so far were read-only: SQL catalogue queries over the Supabase MCP connection, reading the deployed edge-function source, and searching the codebase. No data, schema or code was changed. No exploit was attempted against production.

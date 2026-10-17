@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 10: Database Lows</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Security Batch 10: Database Low Findings (DB-13, DB-16, DB-17, DB-18)</h1>
+<p><strong>Status:</strong> Done 17/10/2026; tested by you, committed and pushed. DB-12 and DB-14 were already closed in batch 6. <strong>Database only: no app code changes.</strong></p>
+
+<h2>What I found (live database, 17/10/2026)</h2>
+<table>
+  <tr><th>ID</th><th>Problem</th></tr>
+  <tr><td>DB-13</td><td>When editing a task on a shared hive, the owner (<code>user_id</code>) can be set to <strong>any</strong> user. The app itself always sets it to the person editing.</td></tr>
+  <tr><td>DB-16</td><td>Comments on diagnosis photos can be read by every logged-in user, while the photos themselves are limited to their owner, power users and admins.</td></tr>
+  <tr><td>DB-17</td><td>
+    <ul>
+      <li>Both photo buckets let <strong>anyone, without a login, list every file</strong>. The <code>apiary-images</code> folder names are user IDs, and wild-colony photos may carry GPS data.</li>
+      <li>There are no file-type limits, and <code>apiary-images</code> has no size limit. Any logged-in user can upload any file to any path.</li>
+      <li>The app only uploads JPEG, PNG, GIF and WebP up to 10 MB, and never lists files. It deletes with <code>remove()</code> only to undo a failed save, and that needs the uploader to be able to "see" their own file.</li>
+    </ul>
+  </td></tr>
+  <tr><td>DB-18</td><td>
+    <ul>
+      <li>Anonymous visitors hold 480 table write permissions. The database rules block every one of them today (I checked that no write rule works without a sign-in), but the permissions shouldn't exist.</li>
+      <li>Anonymous visitors can call helper functions such as <code>can_access_hive(hive, user)</code> or <code>is_team_member(team, user)</code>. These answer yes or no about other users' data.</li>
+      <li><code>activate_subscription</code> doesn't lock the code, so two simultaneous redemptions can exceed its maximum uses.</li>
+      <li>Honey feedback (anonymous) has no comment length limit and no rate limit, and is accepted even when the beekeeper turned feedback off.</li>
+      <li>Two leftover backup tables from 29/08/2026 (<code>changelog_dupe_backup_20260829</code>, <code>queen_assignments_nuc_fix_backup_20260829</code>).</li>
+    </ul>
+  </td></tr>
+</table>
+
+<h2>Plan (one migration through MCP)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>DB-13:</strong> a trigger on <code>tasks_events</code> means a task's owner can stay the same or become the person editing it, never someone else. This matches what the app already does.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>DB-16:</strong> a comment is readable only if you can see its photo: the photo's owner, power users and admins, as for the photos themselves.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>DB-17, storage:</strong>
+  <ul>
+    <li>Replace the "anyone can read" rules with "you can see your own files". Public image links keep working, because public buckets serve them without these rules. Listing other people's files stops. The undo-delete keeps working because it only touches your own upload.</li>
+    <li>Both buckets accept only JPEG, PNG, GIF and WebP, up to <strong>10 MB</strong>, the same limits the app already enforces.</li>
+    <li>Uploads must go into the folders the app uses: <code>apiary-images</code> into your own user-ID folder; <code>inspection-images</code> into <code>inspections/</code>, <code>varroa-checks/</code>, <code>diagnoses/</code>, <code>wild-colonies/</code> or <code>wild-colony-inspections/</code>.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>DB-18:</strong>
+  <ul>
+    <li>Revoke all table write permissions from anonymous visitors, including for future tables. Read permissions stay: the public trace, jar and embed pages and the community GDD view use them.</li>
+    <li>Revoke the yes/no helper functions that take a user ID (<code>can_access_*</code>, <code>check_user_owns_apiary</code>, <code>is_team_*</code>, <code>is_rearing_group_*</code>, <code>has_valid_invitation</code>, <code>get_user_role</code>, <code>is_admin(user)</code>, <code>get_rearing_group_member_user_ids</code>) from anonymous visitors. Logged-in users keep them, because the database rules use them. The logged-out pages only call public functions, never these.</li>
+    <li><code>activate_subscription</code> locks the code row (<code>FOR UPDATE</code>), so its maximum uses can't be exceeded.</li>
+    <li>Feedback: comments are capped at 1,000 characters, a batch accepts at most 30 feedback entries an hour, and feedback is refused when the beekeeper turned it off.</li>
+    <li>Drop the two backup tables from 29/08/2026.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> Rolled-back tests as real users and as anonymous: task reassignment blocked; own and team edits work; comments hidden; storage listing; anonymous writes and oracles refused; feedback cap. Then the advisors. Repo copy of the migration, docs and the findings register.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> quick test: upload an apiary photo, inspection photos and a diagnosis photo; check existing photos still show; edit a task on a shared hive; give honey feedback on a <code>/trace</code> page. Then commit and push.</div>
+
+<div class="note"><strong>Confirmed by you (17/10):</strong> the two backup tables have been dropped.</div>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>DB-13</td><td>Trigger <code>guard_task_owner_change</code>. Tested: a team member reassigning to a third user is blocked (42501); a team member's normal edit (the owner becomes the editor, as the app does) works.</td></tr>
+  <tr><td>DB-16</td><td>The comment SELECT checks that the photo is visible to you through the <code>diagnosis_images</code> rules. Tested: a normal user sees 0 of 2 comments.</td></tr>
+  <tr><td>DB-17</td><td>Public list rules replaced by owner-only. Tested: anonymous sees 0 objects, a normal user sees 0, and an uploader sees all 122 of their own. Uploads into another user's folder or an unknown folder are blocked; own folder and <code>inspections/</code> work. Buckets: 4 image types, 10 MB.</td></tr>
+  <tr><td>DB-18</td><td>Anonymous table writes revoked (all tables, future tables, and <code>profiles</code> column grants). Tested: an anonymous insert is denied. 13 user-ID oracles revoked from anonymous and kept for signed-in users. Tested: an anonymous call is denied; signed-in hive queries still work. <code>activate_subscription</code> now uses <code>FOR UPDATE</code>. Feedback: a 1,500-character comment is stored as 1,000; 30 per batch per hour; refused when feedback is off. Both backup tables dropped.</td></tr>
+  <tr><td>Advisors</td><td>Anonymous-callable definer functions went from 27 to 14. The rest are the intended public ones (trace, jar, feedback, invitations, reactivation) and argument-less checks.</td></tr>
+</table>
+<p><strong>Done:</strong> tested by you, committed and pushed (repo copy of the migration and docs only; no app code changed).</p>
+</body>
+</html>
