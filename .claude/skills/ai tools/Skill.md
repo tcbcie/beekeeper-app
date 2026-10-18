@@ -23,6 +23,11 @@ When creating a new tool, you **MUST** adhere to these non-negotiable rules to e
 
 4.  **Graceful Failure:**
     * The `execute` function should handle cases where data is not found gracefully, returning a descriptive string rather than throwing an unhandled error or returning null.
+    * Never put raw database errors in the returned text: use `` `Error fetching X: ${logToolError(error)}` `` (`./utils`), which logs the detail on the server.
+
+5.  **Treat LLM arguments as data:**
+    * Wrap AI-written search text in `escapeLike()` (`./utils`) before using it in `.ilike()`.
+    * Never interpolate an argument into a PostgREST filter string (`.or(...)`, `.filter(...)`). If you must, restrict the Zod schema to safe characters (e.g. `.regex(/^[A-Za-z0-9-]+$/)`).
 Only use data either based on the users data or on the Knowledge in the database. Never use any data that is part of the model.
 
 ## Tool Structure Template

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, formatDate } from './utils'
+import { getSupabase, formatDate, logToolError, escapeLike } from './utils'
 
 // Get all bulk honey containers for user
 export const getBulkContainers: Tool = {
@@ -35,7 +35,7 @@ export const getBulkContainers: Tool = {
 
     const { data: containers, error } = await query
 
-    if (error) return `Error fetching containers: ${error.message}`
+    if (error) return `Error fetching containers: ${logToolError(error)}`
     if (!containers?.length) return 'No bulk containers found.'
 
     return {
@@ -90,11 +90,11 @@ export const getContainerDetails: Tool = {
         )
       `)
       .eq('user_id', userId)
-      .ilike('container_code', `%${args.containerCode}%`)
+      .ilike('container_code', `%${escapeLike(args.containerCode)}%`)
       .limit(1)
       .single()
 
-    if (error) return `Container not found: ${error.message}`
+    if (error) return `Container not found: ${logToolError(error)}`
     if (!container) return `No container found matching "${args.containerCode}"`
 
     // Calculate origin percentages
@@ -185,7 +185,7 @@ export const getBatchRuns: Tool = {
 
     const { data: batches, error } = await query
 
-    if (error) return `Error fetching batches: ${error.message}`
+    if (error) return `Error fetching batches: ${logToolError(error)}`
     if (!batches?.length) return 'No batch runs found.'
 
     const totalJars = batches.reduce((sum, b) => sum + (b.jar_count || 0), 0)
@@ -216,7 +216,7 @@ export const getBatchDetails: Tool = {
   name: 'getBatchDetails',
   description: 'Get detailed information about a specific honey bottling batch by batch code or trace code, including linked containers, origin percentages, and public profile info.',
   parameters: z.object({
-    batchCode: z.string().describe('The batch code (L-YYYY-MM-NNN) or trace code')
+    batchCode: z.string().max(40).regex(/^[A-Za-z0-9-]+$/, 'Batch and trace codes contain only letters, digits and hyphens').describe('The batch code (L-YYYY-MM-NNN) or trace code')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { batchCode: string }
@@ -247,7 +247,7 @@ export const getBatchDetails: Tool = {
       .limit(1)
       .single()
 
-    if (error) return `Batch not found: ${error.message}`
+    if (error) return `Batch not found: ${logToolError(error)}`
     if (!batch) return `No batch found matching "${args.batchCode}"`
 
     // Calculate origin percentages from linked containers

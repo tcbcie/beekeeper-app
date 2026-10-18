@@ -42,6 +42,19 @@ export function getSupabase(): SupabaseClient {
   return client
 }
 
+// The AI writes the search text, so treat it as data: cap its length and escape LIKE wildcards
+// (%, _ and backslash) so a bare '%' can't match every row.
+export function escapeLike(value: string): string {
+  return value.slice(0, 100).replace(/[\\%_]/g, (ch) => '\\' + ch)
+}
+
+// Log a tool's database error on the server and give the AI only a generic phrase, so raw
+// database text never reaches the model (or, through it, the user).
+export function logToolError(error: unknown): string {
+  console.error('AI tool database error:', error)
+  return 'a database error occurred'
+}
+
 let serviceInstance: SupabaseClient | null = null
 
 // Secret-key client that bypasses RLS. Only for data users may not read through RLS but a tool
@@ -114,7 +127,7 @@ export async function findHiveByName(userId: string, hiveName: string): Promise<
     .from('hives')
     .select('id, hive_number, apiaries(name)')
     .in('apiary_id', apiaryIds)
-    .ilike('hive_number', `%${hiveName}%`)
+    .ilike('hive_number', `%${escapeLike(hiveName)}%`)
     .limit(1)
     .single()
 
@@ -143,7 +156,7 @@ export async function findQueenByNumber(userId: string, queenNumber: string): Pr
     .from('queens')
     .select('id, queen_number')
     .eq('user_id', userId)
-    .ilike('queen_number', `%${queenNumber}%`)
+    .ilike('queen_number', `%${escapeLike(queenNumber)}%`)
     .limit(1)
     .single()
 
@@ -160,7 +173,7 @@ export async function findBatchByName(userId: string, batchName: string): Promis
     .from('rearing_batches')
     .select('id, batch_name')
     .eq('user_id', userId)
-    .ilike('batch_name', `%${batchName}%`)
+    .ilike('batch_name', `%${escapeLike(batchName)}%`)
     .limit(1)
     .single()
 

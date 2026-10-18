@@ -73,6 +73,17 @@
 | API-15 | **Fixed 18/10/2026 (batch 11).** The Stripe webhook only activates paid sessions. |
 | API-16 | **Fixed 18/10/2026 (batch 11).** Deactivated accounts are refused by the remaining routes. |
 | API-17 | **Fixed 18/10/2026 (batch 11).** The sign-in callback no longer logs email addresses. |
+| AI-02 / AI-03 / AI-04 | **Fixed 17/10/2026 (batch 8).** Mel's tools run as the signed-in user, so the database rules decide what they can see (AI-03 now matches the app's own task list). The shadowed queen-rearing tool was renamed. |
+| AI-05 | **Fixed 18/10/2026 (batch 12).** The honey-batch look-up accepts only code characters; name look-ups escape LIKE wildcards and cap length. |
+| AI-06 | **Fixed 18/10/2026 (batch 12).** Looked-up records and knowledge-base text go inside a marked block that Mel is told to treat as information only, never as instructions. Mel's tools are read-only. |
+| AI-07 | **Fixed 17/10/2026 (batch 7).** Per-user chat limits. |
+| AI-08 | **Fixed 18/10/2026 (batch 12).** Database error text no longer reaches the model; it goes to the server log. |
+| AI-09 | **Fixed 18/10/2026 (batch 11, API-11).** Hardened URL fetcher. |
+| SUP-07 | **Fixed 18/10/2026 (batch 12).** The association email list is no longer tracked; copies remain in old git history. |
+| SUP-08 | **Fixed 18/10/2026 (batch 12).** `supabase/.temp` untracked; dumps, keys and backup files ignored; `.env.example` (placeholders) committed. |
+| SUP-09 | **Fixed 18/10/2026 (batch 12).** The secret scanner knows the leaked key types and many more, blocks new data files and files over 1 MB, and also runs in GitHub Actions on every push. |
+| SUP-10 | **Fixed 18/10/2026 (batch 12).** Workflow permissions limited; actions pinned to commit SHAs. |
+| npm audit (dev) | **Accepted for now (18/10/2026).** Production: 4 findings, 0 critical. The 4 critical findings are dev-only (Vitest 2); upgrading to Vitest 5 is a separate task. |
 | Other Phase 1 findings | The remaining Medium and Low findings from the Phase 1 database, API, client, AI and supply-chain audits are kept in a local register until they are fixed, because this repository is public. |
 
 All checks so far were read-only: SQL catalogue queries over the Supabase MCP connection, reading the deployed edge-function source, and searching the codebase. No data, schema or code was changed. No exploit was attempted against production.

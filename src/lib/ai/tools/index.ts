@@ -82,7 +82,8 @@ export async function executeTool(
   // Validate args
   const parsed = tool.parameters.safeParse(args)
   if (!parsed.success) {
-    return `Invalid arguments: ${parsed.error.message}`
+    console.error(`Tool ${name} rejected its arguments:`, parsed.error.message)
+    return `Invalid arguments for ${name}`
   }
 
   try {
@@ -90,7 +91,8 @@ export async function executeTool(
     return result as ToolResult
   } catch (error) {
     console.error(`Tool ${name} execution error:`, error)
-    return `Error executing ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`
+    // The detail is logged above; the model only learns that the tool failed.
+    return `Error executing ${name}`
   }
 }
 

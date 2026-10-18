@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleHiveIds, findHiveByName, formatDate } from './utils'
+import { getSupabase, getAccessibleHiveIds, findHiveByName, formatDate, logToolError } from './utils'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -41,7 +41,7 @@ export const getFeedingHistory: Tool = {
       .order('feed_date', { ascending: false })
       .limit(args.limit || 10)
 
-    if (error) return `Error fetching feedings: ${error.message}`
+    if (error) return `Error fetching feedings: ${logToolError(error)}`
     if (!data?.length) return `No feeding records found for hive "${hive.hive_number}".`
 
     return {
@@ -84,7 +84,7 @@ export const getHivesNeedingFeeding: Tool = {
       .gte('inspection_date', cutoffDate.toISOString().split('T')[0])
       .order('inspection_date', { ascending: false })
 
-    if (error) return `Error fetching inspections: ${error.message}`
+    if (error) return `Error fetching inspections: ${logToolError(error)}`
     if (!data?.length) return `No inspections found in the last ${daysBack} days.`
 
     const lowStoresKeywords = ['low', 'empty', 'light', 'needs feeding', 'starving', 'minimal']

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getOwnApiaryIds, getAccessibleApiaryIds, findHiveByName, formatDate } from './utils'
+import { getSupabase, getOwnApiaryIds, getAccessibleApiaryIds, findHiveByName, formatDate, logToolError } from './utils'
 
 // Helper to extract apiary name from Supabase join
 function getApiaryName(apiaries: unknown): string {
@@ -35,7 +35,7 @@ export const getApiaryStats: Tool = {
       .in('id', apiaryIds)
       .order('name')
 
-    if (error) return `Error fetching apiaries: ${error.message}`
+    if (error) return `Error fetching apiaries: ${logToolError(error)}`
     if (!apiaries?.length) return 'No apiaries found.'
 
     let totalActive = 0
@@ -101,7 +101,7 @@ export const getHiveOverview: Tool = {
 
     const { data, error } = await query
 
-    if (error) return `Error fetching hives: ${error.message}`
+    if (error) return `Error fetching hives: ${logToolError(error)}`
     if (!data?.length) return 'No hives found.'
 
     return data.map(h => ({

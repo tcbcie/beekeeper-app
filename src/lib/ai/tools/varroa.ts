@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getOwnApiaryIds, getAccessibleApiaryIds, findHiveByName, formatDate, daysSince } from './utils'
+import { getSupabase, getOwnApiaryIds, getAccessibleApiaryIds, findHiveByName, formatDate, daysSince, logToolError } from './utils'
 
 // Helper to extract apiary name from Supabase join
 function getApiaryName(apiaries: unknown): string {
@@ -36,7 +36,7 @@ export const getLatestVarroaCounts: Tool = {
       .is('archived_at', null)
       .order('hive_number')
 
-    if (error) return `Error fetching hives: ${error.message}`
+    if (error) return `Error fetching hives: ${logToolError(error)}`
     if (!hives?.length) return 'No active hives found.'
 
     const results: Array<{
@@ -106,7 +106,7 @@ export const getVarroaTrend: Tool = {
       .order('check_date', { ascending: false })
       .limit(args.limit || 10)
 
-    if (error) return `Error fetching varroa checks: ${error.message}`
+    if (error) return `Error fetching varroa checks: ${logToolError(error)}`
     if (!data?.length) return `No varroa checks found for hive "${hive.hive_number}".`
 
     return {
@@ -151,7 +151,7 @@ export const getHivesAboveThreshold: Tool = {
       .in('apiary_id', apiaryIds)
       .is('archived_at', null)
 
-    if (error) return `Error fetching hives: ${error.message}`
+    if (error) return `Error fetching hives: ${logToolError(error)}`
     if (!hives?.length) return 'No active hives found.'
 
     const aboveThreshold = []
@@ -219,7 +219,7 @@ export const getTreatmentHistory: Tool = {
       .order('treatment_date', { ascending: false })
       .limit(args.limit || 10)
 
-    if (error) return `Error fetching treatments: ${error.message}`
+    if (error) return `Error fetching treatments: ${logToolError(error)}`
     if (!data?.length) return `No treatments found for hive "${hive.hive_number}".`
 
     return {
@@ -266,7 +266,7 @@ export const getHivesNeedingTreatment: Tool = {
       .in('apiary_id', apiaryIds)
       .is('archived_at', null)
 
-    if (error) return `Error fetching hives: ${error.message}`
+    if (error) return `Error fetching hives: ${logToolError(error)}`
     if (!hives?.length) return 'No active hives found.'
 
     const needingTreatment = []
@@ -353,7 +353,7 @@ export const getTreatmentCounts: Tool = {
       .in('apiary_id', apiaryIds)
       .is('archived_at', null)
 
-    if (error) return `Error fetching hives: ${error.message}`
+    if (error) return `Error fetching hives: ${logToolError(error)}`
     if (!hives?.length) return 'No active hives found.'
 
     const hiveCounts: Array<{
@@ -427,7 +427,7 @@ export const getLastTreatmentDates: Tool = {
       .in('apiary_id', apiaryIds)
       .is('archived_at', null)
 
-    if (error) return `Error fetching hives: ${error.message}`
+    if (error) return `Error fetching hives: ${logToolError(error)}`
     if (!hives?.length) return 'No active hives found.'
 
     const hiveResults: Array<{

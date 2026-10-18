@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, findHiveByName, formatDate, daysUntil, daysSince } from './utils'
+import { getSupabase, findHiveByName, formatDate, daysUntil, daysSince, logToolError } from './utils'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -42,7 +42,7 @@ export const getUpcomingTasks: Tool = {
       .lte('start_date', cutoff.toISOString().split('T')[0])
       .order('start_date', { ascending: true })
 
-    if (error) return `Error fetching tasks: ${error.message}`
+    if (error) return `Error fetching tasks: ${logToolError(error)}`
     if (!data?.length) return `No tasks due in the next ${lookAhead} days.`
 
     return {
@@ -83,7 +83,7 @@ export const getOverdueTasks: Tool = {
       .lt('start_date', today)
       .order('start_date', { ascending: true })
 
-    if (error) return `Error fetching tasks: ${error.message}`
+    if (error) return `Error fetching tasks: ${logToolError(error)}`
     if (!data?.length) return 'No overdue tasks.'
 
     return {
@@ -135,7 +135,7 @@ export const getTasksForHive: Tool = {
 
     const { data, error } = await query
 
-    if (error) return `Error fetching tasks: ${error.message}`
+    if (error) return `Error fetching tasks: ${logToolError(error)}`
     if (!data?.length) return `No tasks found for hive "${hive.hive_number}".`
 
     const pending = data.filter(t => !t.completed)

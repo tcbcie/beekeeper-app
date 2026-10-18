@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getServiceSupabase, findHiveByName, formatDate } from './utils'
+import { getSupabase, getServiceSupabase, findHiveByName, formatDate, logToolError } from './utils'
 import { wolfGetMeasurements } from '../../wolf-waagen-api'
 import { beepGetMeasurements } from '../../beep-api'
 
@@ -109,7 +109,7 @@ export const getScaleData: Tool = {
       .single()
 
     if (error || !hiveData) {
-      return `Error fetching hive data: ${error?.message || 'Unknown error'}`
+      return `Error fetching hive data: ${logToolError(error)}`
     }
 
     // Check if hive has any scale
@@ -179,7 +179,7 @@ export const getScaleData: Tool = {
       return 'No scale data available.'
     } catch (err) {
       console.error('Scale data fetch error:', err)
-      return `Error fetching scale data: ${err instanceof Error ? err.message : 'Unknown error'}`
+      return `Error fetching scale data: ${logToolError(err)}`
     }
   }
 }
@@ -211,7 +211,7 @@ export const getScaleHistory: Tool = {
       .single()
 
     if (error || !hiveData) {
-      return `Error fetching hive data: ${error?.message || 'Unknown error'}`
+      return `Error fetching hive data: ${logToolError(error)}`
     }
 
     if (!hiveData.beep_device_id && !hiveData.wolf_scale_id) {
@@ -278,7 +278,7 @@ export const getScaleHistory: Tool = {
       }
     } catch (err) {
       console.error('Scale history fetch error:', err)
-      return `Error fetching scale history: ${err instanceof Error ? err.message : 'Unknown error'}`
+      return `Error fetching scale history: ${logToolError(err)}`
     }
   }
 }
@@ -318,7 +318,7 @@ export const getHivesWithScales: Tool = {
       .or('beep_device_id.not.is.null,wolf_scale_id.not.is.null')
       .order('hive_number')
 
-    if (error) return `Error fetching hives: ${error.message}`
+    if (error) return `Error fetching hives: ${logToolError(error)}`
     if (!hives?.length) return 'No hives with scales found.'
 
     return hives.map(h => {

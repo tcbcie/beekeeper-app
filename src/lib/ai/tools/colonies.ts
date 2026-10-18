@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, formatDate, daysSince } from './utils'
+import { getSupabase, formatDate, daysSince, logToolError, escapeLike } from './utils'
 
 // Helper to get hive info from join
 function getHiveInfo(hive: unknown): { hive_number: string; apiary_name: string } {
@@ -26,7 +26,7 @@ async function findColonyByNumber(userId: string, colonyNumber: string): Promise
     .from('colonies')
     .select('id, colony_number')
     .eq('user_id', userId)
-    .ilike('colony_number', `%${colonyNumber}%`)
+    .ilike('colony_number', `%${escapeLike(colonyNumber)}%`)
     .limit(1)
     .maybeSingle()
 
@@ -84,7 +84,7 @@ export const getColonyOverview: Tool = {
 
     const { data, error } = await query
 
-    if (error) return `Error fetching colonies: ${error.message}`
+    if (error) return `Error fetching colonies: ${logToolError(error)}`
     if (!data?.length) return 'No colonies found.'
 
     const results = []
@@ -137,7 +137,7 @@ export const getColonyDetails: Tool = {
       .eq('id', colony.id)
       .single()
 
-    if (error || !data) return `Error fetching colony: ${error?.message || 'Not found'}`
+    if (error || !data) return `Error fetching colony: ${logToolError(error)}`
 
     // Get current hive
     const currentHive = await getCurrentHiveForColony(data.id)
@@ -225,7 +225,7 @@ export const getColonyHistory: Tool = {
       .order('movement_date', { ascending: false })
       .limit(limit)
 
-    if (error) return `Error fetching movements: ${error.message}`
+    if (error) return `Error fetching movements: ${logToolError(error)}`
     if (!data?.length) return `No movement history found for colony "${colony.colony_number}".`
 
     return {
@@ -273,7 +273,7 @@ export const getColonyLineage: Tool = {
       .eq('id', colony.id)
       .single()
 
-    if (error || !colonyData) return `Error fetching colony: ${error?.message || 'Not found'}`
+    if (error || !colonyData) return `Error fetching colony: ${logToolError(error)}`
 
     // Handle self-referencing joins
     type ParentType = { id: string; colony_number: string; status: string; origin_type: string; origin_date: string }
@@ -404,7 +404,7 @@ export const getColonyInHive: Tool = {
       .from('hives')
       .select('id, hive_number, apiaries(name)')
       .eq('user_id', userId)
-      .ilike('hive_number', `%${args.hiveName}%`)
+      .ilike('hive_number', `%${escapeLike(args.hiveName)}%`)
       .limit(1)
       .maybeSingle()
 
@@ -488,7 +488,7 @@ export const getDeceasedColonies: Tool = {
       .order('status_date', { ascending: false })
       .limit(limit)
 
-    if (error) return `Error fetching colonies: ${error.message}`
+    if (error) return `Error fetching colonies: ${logToolError(error)}`
     if (!data?.length) return 'No deceased or lost colonies found.'
 
     return {
@@ -521,7 +521,7 @@ export const getColonyStats: Tool = {
       .select('status, origin_type, origin_date, status_date')
       .eq('user_id', userId)
 
-    if (error) return `Error fetching colonies: ${error.message}`
+    if (error) return `Error fetching colonies: ${logToolError(error)}`
     if (!data?.length) return 'No colonies found.'
 
     // Count by status
@@ -598,7 +598,7 @@ export const searchWildColonies: Tool = {
 
     const { data, error } = await query
 
-    if (error) return `Error searching wild colonies: ${error.message}`
+    if (error) return `Error searching wild colonies: ${logToolError(error)}`
     if (!data?.length) return 'No wild colonies found matching those criteria.'
 
     return {

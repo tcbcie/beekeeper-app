@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate } from './utils'
+import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate, logToolError } from './utils'
 
 // Helper to extract apiary name from Supabase join
 function getApiaryName(apiaries: unknown): string {
@@ -123,7 +123,7 @@ export const getBestPerformingHives: Tool = {
       .in('apiary_id', apiaryIds)
       .is('archived_at', null)
 
-    if (error) return `Error fetching hives: ${error.message}`
+    if (error) return `Error fetching hives: ${logToolError(error)}`
     if (!hives?.length) return 'No active hives found.'
 
     if (args.metric === 'honey_production') {

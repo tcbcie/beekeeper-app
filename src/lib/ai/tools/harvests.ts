@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleHiveIds } from './utils'
+import { getSupabase, getAccessibleHiveIds, logToolError } from './utils'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -45,7 +45,7 @@ export const getHarvestSummary: Tool = {
       .lte('harvest_date', endDate)
       .order('harvest_date', { ascending: false })
 
-    if (error) return `Error fetching harvests: ${error.message}`
+    if (error) return `Error fetching harvests: ${logToolError(error)}`
 
     if (!harvests?.length) {
       return `No harvests recorded for ${year}.`

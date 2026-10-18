@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, findQueenByNumber, findBatchByName, formatDate, daysSince, daysUntil } from './utils'
+import { getSupabase, findQueenByNumber, findBatchByName, formatDate, daysSince, daysUntil, logToolError } from './utils'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -40,7 +40,7 @@ export const getQueenInventory: Tool = {
 
     const { data, error } = await query
 
-    if (error) return `Error fetching queens: ${error.message}`
+    if (error) return `Error fetching queens: ${logToolError(error)}`
     if (!data?.length) return 'No queens found.'
 
     return data.map(q => {
@@ -75,7 +75,7 @@ export const getActiveBatches: Tool = {
       .in('status', ['Active', 'In Progress', 'Grafted', 'Cells Capped', 'Virgins', 'Mating'])
       .order('graft_date', { ascending: false })
 
-    if (error) return `Error fetching batches: ${error.message}`
+    if (error) return `Error fetching batches: ${logToolError(error)}`
     if (!data?.length) return 'No active rearing batches found.'
 
     return data.map(b => ({
@@ -118,7 +118,7 @@ export const getRearingBatchDetails: Tool = {
       .eq('id', batch.id)
       .single()
 
-    if (error || !data) return `Error fetching batch details: ${error?.message || 'Not found'}`
+    if (error || !data) return `Error fetching batch details: ${logToolError(error)}`
 
     const { data: queens } = await supabase
       .from('queens')
@@ -174,7 +174,7 @@ export const getUpcomingBatchEvents: Tool = {
       .eq('user_id', userId)
       .in('status', ['Active', 'In Progress', 'Grafted', 'Cells Capped', 'Virgins', 'Mating'])
 
-    if (error) return `Error fetching batches: ${error.message}`
+    if (error) return `Error fetching batches: ${logToolError(error)}`
     if (!data?.length) return 'No active batches found.'
 
     const today = new Date()
@@ -255,7 +255,7 @@ export const getQueenLineage: Tool = {
       .eq('id', queen.id)
       .single()
 
-    if (error || !queenData) return `Error fetching queen: ${error?.message || 'Not found'}`
+    if (error || !queenData) return `Error fetching queen: ${logToolError(error)}`
 
     // Fetch 3 generations of ancestors
     const mother = await fetchQueen(queenData.mother_id)

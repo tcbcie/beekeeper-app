@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate, daysSince } from './utils'
+import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate, daysSince, logToolError } from './utils'
 
 // Helper to extract names from Supabase joins
 function getApiaryName(apiaries: unknown): string {
@@ -45,7 +45,7 @@ export const getAllInspections: Tool = {
       .order('inspection_date', { ascending: false })
       .limit(limit)
 
-    if (error) return `Error fetching inspections: ${error.message}`
+    if (error) return `Error fetching inspections: ${logToolError(error)}`
     if (!data?.length) return 'No inspections found.'
 
     return {
@@ -139,7 +139,7 @@ export const getInspectionHistory: Tool = {
       .order('inspection_date', { ascending: false })
       .limit(args.limit || 10)
 
-    if (error) return `Error fetching inspections: ${error.message}`
+    if (error) return `Error fetching inspections: ${logToolError(error)}`
     if (!data?.length) return `No inspections found for hive "${hive.hive_number}".`
 
     return {
@@ -183,7 +183,7 @@ export const getHivesNeedingInspection: Tool = {
       .in('apiary_id', apiaryIds)
       .is('archived_at', null)
 
-    if (hivesError) return `Error fetching hives: ${hivesError.message}`
+    if (hivesError) return `Error fetching hives: ${logToolError(hivesError)}`
     if (!hives?.length) return 'No active hives found.'
 
     const hivesNeedingInspection: Array<{
@@ -253,7 +253,7 @@ export const getQueenStatus: Tool = {
       .is('archived_at', null)
       .order('hive_number')
 
-    if (error) return `Error fetching hives: ${error.message}`
+    if (error) return `Error fetching hives: ${logToolError(error)}`
     if (!hives?.length) return 'No active hives found.'
 
     const results = []
@@ -322,7 +322,7 @@ export const getDiseaseAlerts: Tool = {
       .neq('disease_issues', '')
       .order('inspection_date', { ascending: false })
 
-    if (error) return `Error fetching inspections: ${error.message}`
+    if (error) return `Error fetching inspections: ${logToolError(error)}`
     if (!data?.length) return `No disease signs reported in the last ${lookback} days.`
 
     return {
@@ -369,7 +369,7 @@ export const getSwarmRiskHives: Tool = {
       .or('queen_cups.eq.true,swarm_cells.eq.true,supercedure_cells.eq.true')
       .order('inspection_date', { ascending: false })
 
-    if (error) return `Error fetching inspections: ${error.message}`
+    if (error) return `Error fetching inspections: ${logToolError(error)}`
     if (!data?.length) return `No swarm risk indicators in the last ${lookback} days.`
 
     return {
@@ -414,7 +414,7 @@ export const getInspectionCounts: Tool = {
       .in('apiary_id', apiaryIds)
       .is('archived_at', null)
 
-    if (error) return `Error fetching hives: ${error.message}`
+    if (error) return `Error fetching hives: ${logToolError(error)}`
     if (!hives?.length) return 'No active hives found.'
 
     const hiveCounts: Array<{

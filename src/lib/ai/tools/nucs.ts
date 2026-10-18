@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, formatDate, daysSince } from './utils'
+import { getSupabase, formatDate, daysSince, logToolError, escapeLike } from './utils'
 
 // Get all mating nucs with status summary
 export const getMatingNucs: Tool = {
@@ -36,7 +36,7 @@ export const getMatingNucs: Tool = {
 
     const { data, error } = await query.order('setup_date', { ascending: false })
 
-    if (error) return `Error fetching mating nucs: ${error.message}`
+    if (error) return `Error fetching mating nucs: ${logToolError(error)}`
     if (!data?.length) return 'No mating nucs found.'
 
     return data.map(nuc => {
@@ -74,7 +74,7 @@ export const getMatingNucSummary: Tool = {
       .eq('user_id', userId)
       .is('retired_at', null)
 
-    if (error) return `Error fetching mating nucs: ${error.message}`
+    if (error) return `Error fetching mating nucs: ${logToolError(error)}`
     if (!data?.length) return 'No mating nucs found.'
 
     const statusCounts: Record<string, number> = {}
@@ -110,7 +110,7 @@ export const getNucDetails: Tool = {
         queens!mating_nucs_queen_id_fkey(queen_number)
       `)
       .eq('user_id', userId)
-      .ilike('nuc_number', `%${args.nucNumber}%`)
+      .ilike('nuc_number', `%${escapeLike(args.nucNumber)}%`)
       .limit(1)
       .single()
 
@@ -173,7 +173,7 @@ export const getNucsReadyForHarvest: Tool = {
       .is('retired_at', null)
       .order('updated_at', { ascending: true })
 
-    if (error) return `Error fetching nucs: ${error.message}`
+    if (error) return `Error fetching nucs: ${logToolError(error)}`
     if (!data?.length) return 'No laying queens ready for harvest.'
 
     return data.map(nuc => {
@@ -214,7 +214,7 @@ export const getNucsNeedingInspection: Tool = {
       .is('retired_at', null)
       .order('setup_date')
 
-    if (error) return `Error fetching nucs: ${error.message}`
+    if (error) return `Error fetching nucs: ${logToolError(error)}`
     if (!nucs?.length) return 'No active mating nucs found.'
 
     const overdue: Array<{
