@@ -64,6 +64,15 @@
 | DB-16 | **Fixed 17/10/2026 (batch 10).** Diagnosis photo comments are readable only by people who can see the photo. |
 | DB-17 | **Fixed 17/10/2026 (batch 10).** Photo buckets can no longer be listed, uploads are limited to the app's folders and to images up to 10 MB. |
 | DB-18 | **Fixed 17/10/2026 (batch 10).** Anonymous write grants and user-ID oracles were revoked, subscription codes are locked during redemption, honey feedback is capped and rate-limited, and old backup tables were dropped. |
+| API-09 | **Fixed 18/10/2026 (batch 11).** Role changes no longer return the profile row, and a database trigger keeps at least one active admin, even under concurrent changes. |
+| API-10 | **Fixed 18/10/2026 (batch 11).** Association-code uses are counted atomically; a payment past the limit is honoured and recorded in the admin audit log (owner decision). |
+| API-11 | **Fixed 18/10/2026 (batch 11).** The admin URL fetcher re-checks every redirect, resolves DNS and refuses private, loopback, link-local, CGNAT and IPv6-private addresses. |
+| API-12 | **Fixed 18/10/2026 (batch 11, partly batch 7).** API routes return plain messages; internal and vendor error text stays in the server log. |
+| API-13 | **Fixed 18/10/2026 (batch 11).** `/auth/verify` accepts only known link types and same-site redirects. Owner to confirm the Supabase redirect allow-list has no wildcards. |
+| API-14 | **Fixed 18/10/2026 (batch 11).** BEEP and Wolf connect are limited to 5 attempts per hour with a generic failure message. |
+| API-15 | **Fixed 18/10/2026 (batch 11).** The Stripe webhook only activates paid sessions. |
+| API-16 | **Fixed 18/10/2026 (batch 11).** Deactivated accounts are refused by the remaining routes. |
+| API-17 | **Fixed 18/10/2026 (batch 11).** The sign-in callback no longer logs email addresses. |
 | Other Phase 1 findings | The remaining Medium and Low findings from the Phase 1 database, API, client, AI and supply-chain audits are kept in a local register until they are fixed, because this repository is public. |
 
 All checks so far were read-only: SQL catalogue queries over the Supabase MCP connection, reading the deployed edge-function source, and searching the codebase. No data, schema or code was changed. No exploit was attempted against production.

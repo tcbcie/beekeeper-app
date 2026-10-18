@@ -44,6 +44,14 @@ export async function GET(request: NextRequest) {
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const { data: callerProfile } = await supabaseAdmin
+    .from('profiles')
+    .select('is_active')
+    .eq('id', user.id)
+    .single()
+  if (callerProfile?.is_active === false) {
+    return NextResponse.json({ error: 'Account is not active' }, { status: 403 })
+  }
 
   const address = request.nextUrl.searchParams.get('address')?.trim()
   const country = request.nextUrl.searchParams.get('country') === 'GB' ? 'GB' : 'IE'
@@ -82,10 +90,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (data?.status === 'REQUEST_DENIED' || data?.status === 'OVER_QUERY_LIMIT') {
-      // Surfaced to the caller: these are deployment/config problems, not a bad postcode, and the
-      // exact wording (invalid key, referer restrictions, API not enabled) is what makes them fixable.
+      // A deployment/config problem, not a bad postcode. Google's exact wording (invalid key,
+      // referer restrictions, API not enabled) goes to the server log, not to the browser.
       console.error('Google Geocoding rejected the request:', data.status, data.error_message)
-      return failure('denied', data.error_message || data.status)
+      return failure('denied', 'details are in the server log')
     }
 
     if (data?.status !== 'ZERO_RESULTS') {

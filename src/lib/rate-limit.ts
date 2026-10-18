@@ -19,6 +19,8 @@ export const RATE_LIMITS = {
   newsSearch: { bucket: 'news_search', limit: 60, windowSeconds: HOUR },
   geocode: { bucket: 'geocode', limit: 60, windowSeconds: HOUR },
   invoiceEmail: { bucket: 'invoice_email', limit: 25, windowSeconds: HOUR },
+  // BEEP / Wolf connect: stops the routes being used to test credentials against the vendors.
+  scaleConnect: { bucket: 'scale_connect', limit: 5, windowSeconds: HOUR },
   // Shared with the lookup_registration_code / activate_subscription database functions.
   codeAttempt: { bucket: 'code_attempt', limit: 20, windowSeconds: HOUR },
 } satisfies Record<string, RateLimit>

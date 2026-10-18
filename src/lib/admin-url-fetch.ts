@@ -4,15 +4,62 @@
 // accept a URL from an admin, fetch it, and pass the HTML through cheerio.
 // Two safety levers live here so they cannot drift between the two callers:
 //
-// 1. assertSafePublicUrl  -- SSRF guard. Rejects non-HTTPS, loopback,
-//    .local, RFC1918, and 169.254.* (cloud metadata) targets.
-// 2. fetchHtmlWithBounds  -- request with explicit timeout AND a streamed
-//    body-size cap, so an adversarial server cannot OOM the function with a
-//    multi-hundred-megabyte response.
+// 1. assertSafePublicUrl  -- SSRF guard. Rejects non-HTTPS, localhost/.local and
+//    any IP literal in a private, loopback, link-local (cloud metadata),
+//    carrier-grade NAT or IPv6 private range. The URL parser normalises decimal
+//    and hex IPv4 ("https://2130706433") to dotted form first, so those are caught.
+// 2. fetchHtmlWithBounds  -- resolves the hostname and refuses private addresses,
+//    follows redirects itself (re-checking every hop), with an explicit timeout
+//    AND a streamed body-size cap, so an adversarial server cannot OOM the
+//    function with a multi-hundred-megabyte response.
+//    (A hostile DNS server could still answer differently between our lookup and
+//    the connection; acceptable for these admin-only routes.)
+
+import { lookup } from 'node:dns/promises'
+import { isIP } from 'node:net'
 
 const DEFAULT_FETCH_TIMEOUT_MS = 30_000
+const MAX_REDIRECTS = 5
 const DEFAULT_MAX_BYTES = 5 * 1024 * 1024  // 5 MB
 const DEFAULT_USER_AGENT = 'Mozilla/5.0 (compatible; HiveCraic/1.0; +https://hivecraic.com)'
+
+function ipv4ToNumber(ip: string): number {
+  return ip.split('.').reduce((acc, part) => acc * 256 + Number(part), 0)
+}
+
+function inIpv4Range(ip: string, base: string, bits: number): boolean {
+  const size = 2 ** (32 - bits)
+  return Math.floor(ipv4ToNumber(ip) / size) === Math.floor(ipv4ToNumber(base) / size)
+}
+
+// True for addresses an admin-supplied URL must never reach.
+export function isPrivateAddress(address: string): boolean {
+  const ip = address.replace(/^\[|\]$/g, '').toLowerCase()
+  const version = isIP(ip)
+  if (version === 4) {
+    return [
+      ['0.0.0.0', 8], ['10.0.0.0', 8], ['100.64.0.0', 10], ['127.0.0.0', 8],
+      ['169.254.0.0', 16], ['172.16.0.0', 12], ['192.0.0.0', 24], ['192.168.0.0', 16],
+      ['198.18.0.0', 15], ['224.0.0.0', 4], ['240.0.0.0', 4],
+    ].some(([base, bits]) => inIpv4Range(ip, base as string, bits as number))
+  }
+  if (version === 6) {
+    if (ip === '::' || ip === '::1') return true
+    // IPv4-mapped addresses, dotted ("::ffff:127.0.0.1") or as the URL parser writes them ("::ffff:7f00:1")
+    const mapped = ip.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/)
+    if (mapped) return isPrivateAddress(mapped[1])
+    const mappedHex = ip.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/)
+    if (mappedHex) {
+      const high = parseInt(mappedHex[1], 16)
+      const low = parseInt(mappedHex[2], 16)
+      return isPrivateAddress(`${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`)
+    }
+    return /^f[cd]/.test(ip)            // fc00::/7 unique local
+      || /^fe[89ab]/.test(ip)            // fe80::/10 link-local
+      || ip.startsWith('ff')             // multicast
+  }
+  return false
+}
 
 export function assertSafePublicUrl(
   rawUrl: string
@@ -29,13 +76,9 @@ export function assertSafePublicUrl(
   const hostname = parsed.hostname.toLowerCase()
   const isPrivate =
     hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname === '0.0.0.0' ||
+    hostname.endsWith('.localhost') ||
     hostname.endsWith('.local') ||
-    hostname.startsWith('10.') ||
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('169.254.') ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname)
+    isPrivateAddress(hostname)
   if (isPrivate) {
     return { ok: false, reason: 'Internal/private URLs are not allowed' }
   }
@@ -71,10 +114,28 @@ export async function fetchHtmlWithBounds(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': userAgent }
-    })
+    // Follow redirects ourselves so every hop is checked like the first URL.
+    let currentUrl = url
+    let response: Response | null = null
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+      await assertFetchablePublicUrl(currentUrl)
+      response = await fetch(currentUrl, {
+        signal: controller.signal,
+        headers: { 'User-Agent': userAgent },
+        redirect: 'manual',
+      })
+      const location = response.headers.get('location')
+      if (response.status >= 300 && response.status < 400 && location) {
+        await response.body?.cancel()
+        currentUrl = new URL(location, currentUrl).toString()
+        response = null
+        continue
+      }
+      break
+    }
+    if (!response) {
+      throw new Error('Too many redirects')
+    }
 
     if (!response.ok) {
       throw new Error(`Failed to fetch URL: ${response.status}`)
@@ -124,6 +185,23 @@ export async function fetchHtmlWithBounds(
     return Buffer.concat(chunks.map(c => Buffer.from(c))).toString('utf-8')
   } finally {
     clearTimeout(timeoutId)
+  }
+}
+
+// The URL must pass assertSafePublicUrl AND its hostname must resolve only to public addresses.
+async function assertFetchablePublicUrl(rawUrl: string): Promise<void> {
+  const check = assertSafePublicUrl(rawUrl)
+  if (!check.ok) throw new Error(check.reason)
+  const hostname = check.url.hostname.replace(/^\[|\]$/g, '')
+  if (isIP(hostname)) return // literal already checked above
+  let addresses: { address: string }[]
+  try {
+    addresses = await lookup(hostname, { all: true })
+  } catch {
+    throw new Error('Could not resolve the URL host')
+  }
+  if (addresses.length === 0 || addresses.some(({ address }) => isPrivateAddress(address))) {
+    throw new Error('Internal/private URLs are not allowed')
   }
 }
 

@@ -227,3 +227,11 @@ Copy these templates into **Supabase Dashboard** → **Project Settings** → **
 - Amber button color: `#f59e0b`
 - All links use the custom `/auth/verify` endpoint
 - Templates are mobile-responsive
+
+## Security note: `/auth/verify` (security batch 11, 18/10/2026)
+
+`src/app/auth/verify/route.ts` now:
+- accepts only `type` = `signup`, `recovery`, `magiclink`, `email_change` or `invite` (others go to `/login?error=invalid_verification_link`);
+- forwards `redirect_to` only when it points back to this site (the request's own origin, `https://www.hivecraic.com` or `https://hivecraic.com`). Otherwise it is dropped and Supabase uses the default Site URL.
+
+A new email template with another `type` must be added to `ALLOWED_TYPES`. Also keep the Supabase **Auth → URL Configuration → Redirect URLs** free of wildcards such as `*.vercel.app`.

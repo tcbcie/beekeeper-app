@@ -85,7 +85,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Wolf Waagen scales error:', error)
-    const message = error instanceof Error ? error.message : 'Failed to fetch scales'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch scales' }, { status: 500 })
   }
 }

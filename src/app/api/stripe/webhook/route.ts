@@ -105,6 +105,13 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
 
+        // Only activate on a paid session. Checkout is card-only today, so this is always 'paid',
+        // but a delayed payment method would complete with 'unpaid' and must not activate.
+        if (session.payment_status !== 'paid') {
+          console.warn(`[AUDIT] Stripe subscription activation: event=${event.id} status=skipped reason=payment_status_${session.payment_status} timestamp=${new Date().toISOString()}`)
+          return NextResponse.json({ received: true, activated: false })
+        }
+
         // Extract metadata
         const userId = session.metadata?.userId
         const isAssociationMember = session.metadata?.isAssociationMember === 'true'
@@ -197,8 +204,11 @@ export async function POST(request: NextRequest) {
         // A failure here does NOT fail the webhook -- the subscription is
         // already activated and Stripe must not redeliver.
         if (associationCode) {
+          // Counted atomically; a payment past the code's max_uses is honoured and recorded in
+          // admin_audit_log (association_code_over_limit) by the function itself.
           const { error: updateError } = await supabase.rpc('increment_code_uses', {
-            p_code: associationCode
+            p_code: associationCode,
+            p_user_id: userId
           })
 
           if (updateError) {

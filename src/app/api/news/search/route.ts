@@ -34,6 +34,14 @@ export async function GET(request: NextRequest) {
   if (authError || !user) {
     return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
   }
+  const { data: callerProfile } = await supabaseAdmin
+    .from('profiles')
+    .select('is_active')
+    .eq('id', user.id)
+    .single()
+  if (callerProfile?.is_active === false) {
+    return NextResponse.json({ error: 'Account is not active' }, { status: 403 })
+  }
 
   const searchParams = request.nextUrl.searchParams
   const query = searchParams.get('q')

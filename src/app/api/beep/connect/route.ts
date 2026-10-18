@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { consumeRateLimits, RATE_LIMITS } from '@/lib/rate-limit'
 import { beepLogin } from '@/lib/beep-api'
 
 // Fail-fast at module init.
@@ -48,6 +49,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
     }
 
+    if (!(await consumeRateLimits(supabaseAdmin, user.id, [RATE_LIMITS.scaleConnect]))) {
+      return NextResponse.json(
+        { error: 'Too many connection attempts. Please wait an hour and try again.' },
+        { status: 429 }
+      )
+    }
+
     // Login to BEEP API
     const beepResponse = await beepLogin(email, password)
 
@@ -76,8 +84,11 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
+    // Details stay in the log; never echo BEEP's response back to the browser.
     console.error('BEEP connect error:', error)
-    const message = error instanceof Error ? error.message : 'Connection failed'
-    return NextResponse.json({ error: message }, { status: 400 })
+    return NextResponse.json(
+      { error: 'Could not connect to BEEP. Check your email and password.' },
+      { status: 400 }
+    )
   }
 }

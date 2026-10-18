@@ -29,6 +29,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Deactivated accounts can't use this route.
+    const { data: callerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('is_active')
+      .eq('id', user.id)
+      .single()
+    if (callerProfile?.is_active === false) {
+      return NextResponse.json({ error: 'Account is not active' }, { status: 403 })
+    }
+
     // Clear BEEP token from profile
     const { error: updateError } = await supabaseAdmin
       .from('profiles')

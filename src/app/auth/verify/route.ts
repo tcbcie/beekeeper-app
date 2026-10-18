@@ -9,13 +9,30 @@ import { NextRequest, NextResponse } from 'next/server'
  * Usage in Supabase email templates:
  * https://www.hivecraic.com/auth/verify?token={{ .TokenHash }}&type={{ .Type }}&redirect_to={{ .RedirectTo }}
  */
+// Link types our auth emails use.
+const ALLOWED_TYPES = new Set(['signup', 'recovery', 'magiclink', 'email_change', 'invite'])
+const SITE_ORIGINS = new Set(['https://www.hivecraic.com', 'https://hivecraic.com'])
+
+// Only forward a redirect back to this site; anything else is dropped so Supabase falls back to
+// its default Site URL (defence in depth on top of Supabase's own redirect allow-list).
+function safeRedirect(raw: string | null, requestOrigin: string): string | null {
+  if (!raw) return null
+  try {
+    const url = new URL(raw)
+    return url.origin === requestOrigin || SITE_ORIGINS.has(url.origin) ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
+  const { searchParams, origin } = new URL(request.url)
 
   // Get all verification parameters
   const token = searchParams.get('token')
-  const type = searchParams.get('type')
-  const redirectTo = searchParams.get('redirect_to')
+  const rawType = searchParams.get('type')
+  const type = rawType && ALLOWED_TYPES.has(rawType) ? rawType : null
+  const redirectTo = safeRedirect(searchParams.get('redirect_to'), origin)
 
   // Validate required parameters
   if (!token || !type) {

@@ -106,14 +106,17 @@ export async function POST(request: NextRequest) {
     const previousRole = targetProfile.role as string
     const isDemotionFromAdmin = previousRole === 'Admin' && newRole !== 'Admin'
 
-    // Last-Admin guard: if the change would demote the only remaining Admin,
-    // refuse. Without this, two admins can collude (or one compromised admin
-    // can act unilaterally) to lock everyone out of the admin surface.
+    // Last-Admin guard: if the change would demote the only remaining active Admin,
+    // refuse. This check gives the friendly message; the database trigger
+    // guard_last_active_admin enforces it atomically (two admins demoting each other
+    // at the same moment can't both pass).
     if (isDemotionFromAdmin) {
       const { count: adminCount, error: countError } = await supabaseAdmin
         .from('profiles')
         .select('id', { count: 'exact', head: true })
         .eq('role', 'Admin')
+        .is('deleted_at', null)
+        .not('is_active', 'is', false)
 
       if (countError) {
         console.error('Error counting admins:', countError)
@@ -137,10 +140,17 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .update({ role: newRole })
       .eq('id', targetUserId)
-      .select()
+      .select('id')
 
     if (error) {
       console.error('Error updating role:', error)
+      if (error.code === '42501') {
+        // Raised by guard_last_active_admin.
+        return NextResponse.json(
+          { error: 'Cannot demote the last remaining administrator' },
+          { status: 409 }
+        )
+      }
       console.warn(`[AUDIT] Admin role change: admin=${user.id} target=${targetUserId} old_role=${previousRole} new_role=${newRole} status=failed timestamp=${new Date().toISOString()}`)
       return NextResponse.json(
         { error: 'Failed to update role' },
@@ -164,16 +174,13 @@ export async function POST(request: NextRequest) {
       details: { role: [previousRole, newRole] },
     })
 
-    return NextResponse.json({
-      success: true,
-      data: data[0],
-      message: `User role updated to ${newRole} successfully`
-    })
+    // Only a success flag: the profile row holds tokens the browser has no use for.
+    return NextResponse.json({ success: true })
 
   } catch (error) {
     console.error('Error in update-user-role:', error)
     return NextResponse.json(
-      { error: 'Failed to update user role', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to update user role' },
       { status: 500 }
     )
   }

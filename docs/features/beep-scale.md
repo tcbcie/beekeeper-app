@@ -316,3 +316,7 @@ Uses `weight_kg_corrected` if available, falls back to `weight_kg`.
 - When the data route is called with a `hiveId`, it reads with the **hive owner's** vendor token. So the requested `deviceId` must equal that hive's own `beep_device_id`; otherwise it returns 403. Without a `hiveId`, the route uses the caller's own token and can only reach the caller's own account.
 - Only the hive's owner can change its scale columns (`beep_device_*`, `wolf_scale_*`); a database trigger enforces this (`guard_hive_scale_columns`). Team members can still view a shared hive's scale but can't point the hive at a different device.
 - Errors from the vendor are logged on the server only. The browser gets a generic "Failed to fetch sensor data".
+
+## Connect limits (security batch 11, 18/10/2026)
+
+`/api/beep/connect` and `/api/wolf-waagen/connect` allow 5 attempts per user per hour (`RATE_LIMITS.scaleConnect`), so they can't be used to test credentials against the vendors. Failures return a generic message ("Could not connect to BEEP. Check your email and password."), and the vendor's own error goes to the server log only. The disconnect routes now refuse deactivated accounts.

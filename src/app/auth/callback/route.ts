@@ -48,7 +48,7 @@ export async function GET(request: Request) {
         .eq('id', sessionData.user.id)
         .single()
 
-      console.log('OAuth callback - profile check:', { profile, profileError })
+      if (profileError) console.error('OAuth callback - profile check failed:', profileError.message)
 
       // If account is deleted, sign them out and redirect to reactivation
       if (profile && profile.deleted_at) {

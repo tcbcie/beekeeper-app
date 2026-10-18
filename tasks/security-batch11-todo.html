@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 11: API Lows</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Security Batch 11: API Low Findings (API-09 to API-17)</h1>
+<p><strong>Status:</strong> Done 18/10/2026; committed and pushed at your request.</p>
+
+<h2>What's open</h2>
+<table>
+  <tr><th>ID</th><th>Problem</th></tr>
+  <tr><td>API-09</td><td>A role change sends the target's <strong>whole profile row</strong> back to the admin's browser (including scale tokens and the Stripe customer ID). The page never uses it. The "can't demote the last admin" check can be beaten by two admins demoting each other at the same moment, and it counts deactivated admins. The error response also includes internal error text.</td></tr>
+  <tr><td>API-10</td><td>An association code's maximum uses is checked at checkout but only counted after payment, so simultaneous checkouts can go over the limit. Each extra use still pays €12; the loss is the discount.</td></tr>
+  <tr><td>API-11</td><td>The admin "add from URL" fetcher (knowledge base and news) checks the address text only. It follows redirects without re-checking them, never resolves DNS, and misses IPv6, most of <code>127.x</code>, <code>0.x</code> and <code>100.64/10</code>. An admin-supplied URL could therefore reach internal addresses. Admin-only.</td></tr>
+  <tr><td>API-12</td><td>About 20 places return raw error text to the browser: BEEP and Wolf connect, devices, scales and disconnect; the admin knowledge-base routes (which also return the caller's role on a 403); admin news; update-user-role; the storage clean-up cron; and Google's error text in geocoding.</td></tr>
+  <tr><td>API-13</td><td><code>/auth/verify</code> passes <code>type</code> and <code>redirect_to</code> straight to Supabase. Whether that becomes an open redirect depends on the Supabase redirect allow-list, which isn't visible from the repo.</td></tr>
+  <tr><td>API-14</td><td><code>beep/connect</code> can be used to test BEEP email and password pairs from our servers: there's no attempt limit, and BEEP's own error message is echoed back.</td></tr>
+  <tr><td>API-15</td><td>The Stripe webhook activates on "checkout completed" without checking <code>payment_status === 'paid'</code>. It's safe today (card only), but it would break if a delayed payment method were ever added.</td></tr>
+  <tr><td>API-16</td><td><code>beep/disconnect</code>, <code>wolf-waagen/disconnect</code>, <code>geocode</code> and <code>news/search</code> don't refuse deactivated accounts.</td></tr>
+  <tr><td>API-17</td><td>The sign-in callback logs the profile's email and original email.</td></tr>
+</table>
+
+<h2>Plan</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>API-09:</strong> return only <code>{ success }</code>. A database trigger refuses any change that would leave <strong>no active admin</strong>, locked so simultaneous changes are checked one at a time. The route's own check stays for the friendly message. No more error details in the response.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>API-10:</strong> the code counter (<code>increment_code_uses</code>) locks the code and reports when the payment pushed it over its limit. The customer has already paid €12 in good faith, so the subscription is still honoured. The overrun is <strong>recorded in the admin audit log</strong> (<code>association_code_over_limit</code>) so you can see it.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>API-11:</strong> the fetcher follows redirects itself (at most 5), re-checking every hop. It resolves the hostname and refuses private, loopback, link-local, carrier-grade NAT and IPv6 private or loopback addresses. It also refuses raw IPs written in decimal or hex.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>API-12:</strong> every listed route returns a short, plain message ("Could not connect to BEEP. Check your email and password.", "Failed to fetch scales" and so on). The details go to the server log only. The knowledge-base 403 no longer includes the role.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>API-13:</strong> <code>type</code> must be one of <code>signup</code>, <code>recovery</code>, <code>magiclink</code>, <code>email_change</code> or <code>invite</code>. <code>redirect_to</code> must be on our own site; otherwise it's dropped and Supabase uses the default. <strong>You:</strong> check that the Supabase Auth → URL Configuration "Redirect URLs" has no wildcards such as <code>*.vercel.app</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>API-14:</strong> BEEP and Wolf connect allow <strong>5 attempts per user per hour</strong> (the shared limiter), with a generic failure message.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>API-15:</strong> the webhook only activates when <code>payment_status</code> is <code>paid</code>; anything else is logged and acknowledged without activating.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>API-16:</strong> add the deactivated-account check to those four routes.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>API-17:</strong> remove the profile log line.</div>
+<div class="task"><input type="checkbox" checked disabled> Verify: rolled-back tests for the two database changes, type-check and lint, <code>qa-engineer</code>, docs and the findings register.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong> build and test: change a test user's role; connect or disconnect BEEP or Wolf (and a wrong password); add a knowledge-base article from a URL; sign-in email link or password reset. Then commit and push.</div>
+
+<div class="note"><strong>Confirmed by you:</strong> honour and log. when two people pay with the last remaining use of an association code at the same moment, the second one has <em>already paid €12</em>. I suggest we honour it and record it in the audit log, rather than refunding or charging the difference automatically. OK?</div>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>API-09</td><td>The route returns only <code>{ success }</code>, counts only active admins for the friendly message, and maps the trigger's refusal to 409. The new trigger <code>guard_last_active_admin</code> (advisory lock) covers demote, deactivate, soft delete and delete. Tested with 2 admins: demoting one is OK; demoting or deactivating the last is refused (42501).</td></tr>
+  <tr><td>API-10</td><td><code>increment_code_uses(code, user)</code> counts atomically; past <code>max_uses</code> it writes <code>association_code_over_limit</code> to the audit log. Tested: one audit row. The webhook passes the user ID; the old one-argument call still works until this deploy.</td></tr>
+  <tr><td>API-11</td><td><code>isPrivateAddress</code> covers IPv4 private, loopback, link-local, CGNAT, multicast and reserved; IPv6 loopback, ULA, link-local, multicast and IPv4-mapped (dotted and hex). Redirects are followed manually (max 5), and each hop gets a DNS check. Tested: decimal and hex <code>127</code>, <code>[::1]</code>, <code>[::ffff:7f00:1]</code> and metadata are blocked; a public redirect to <code>169.254.169.254</code> is refused. Remaining limit: DNS rebinding between our check and the connection (admin-only, documented).</td></tr>
+  <tr><td>API-12</td><td>Generic messages in BEEP connect and devices, Wolf connect, scales and disconnect, admin knowledge-base (including no role in the 403), admin news, update-user-role, storage-cleanup and geocode (Google's text to the log only).</td></tr>
+  <tr><td>API-13</td><td><code>type</code> allow-list; <code>redirect_to</code> only to the same origin or hivecraic.com, otherwise dropped. Documented in <code>docs/supabase-email-templates.md</code>.</td></tr>
+  <tr><td>API-14/15/16/17</td><td>Connect limit of 5 per hour (<code>RATE_LIMITS.scaleConnect</code>); the webhook skips unpaid sessions; <code>is_active</code> checked in BEEP and Wolf disconnect, geocode and news search; profile email log removed.</td></tr>
+  <tr><td>QA</td><td>No type errors; ESLint clean on all 17 files. No Critical, High or Medium issues.</td></tr>
+</table>
+<p><strong>Committed and pushed.</strong> <strong>You:</strong> check that Supabase → Auth → URL Configuration → Redirect URLs has no wildcards.</p>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { consumeRateLimits, RATE_LIMITS } from '@/lib/rate-limit'
 import { wolfGetScales } from '@/lib/wolf-waagen-api'
 
 // Fail-fast at module init.
@@ -49,13 +50,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'API token is required' }, { status: 400 })
     }
 
+    if (!(await consumeRateLimits(supabaseAdmin, user.id, [RATE_LIMITS.scaleConnect]))) {
+      return NextResponse.json(
+        { error: 'Too many connection attempts. Please wait an hour and try again.' },
+        { status: 429 }
+      )
+    }
+
     // Validate the token by trying to fetch scales
     let scales
     try {
       scales = await wolfGetScales(apiToken)
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Invalid API token'
-      return NextResponse.json({ error: message }, { status: 400 })
+      console.error('Wolf Waagen token check failed:', err)
+      return NextResponse.json(
+        { error: 'Could not connect to Wolf Waagen. Check your API token.' },
+        { status: 400 }
+      )
     }
 
     // Store the token in the user's profile
@@ -82,7 +93,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Wolf Waagen connect error:', error)
-    const message = error instanceof Error ? error.message : 'Connection failed'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ error: 'Connection failed' }, { status: 500 })
   }
 }

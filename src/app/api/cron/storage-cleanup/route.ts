@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
 
   if (fetchError) {
     console.error('storage-cleanup: could not read the queue:', fetchError)
-    return NextResponse.json({ error: fetchError.message }, { status: 500 })
+    return NextResponse.json({ error: 'Could not read the clean-up queue' }, { status: 500 })
   }
 
   const queued = (rows ?? []) as QueueRow[]
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
 
   if (refError) {
     console.error('storage-cleanup: reference check failed, deleting nothing:', refError)
-    return NextResponse.json({ error: refError.message }, { status: 500 })
+    return NextResponse.json({ error: 'Reference check failed; nothing deleted' }, { status: 500 })
   }
 
   const unreferenced = new Set(

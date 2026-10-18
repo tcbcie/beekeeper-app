@@ -29,6 +29,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Deactivated accounts can't use this route.
+    const { data: callerProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('is_active')
+      .eq('id', user.id)
+      .single()
+    if (callerProfile?.is_active === false) {
+      return NextResponse.json({ error: 'Account is not active' }, { status: 403 })
+    }
+
     // Clear Wolf Waagen token from profile
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -66,7 +76,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Wolf Waagen disconnect error:', error)
-    const message = error instanceof Error ? error.message : 'Disconnect failed'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ error: 'Disconnect failed' }, { status: 500 })
   }
 }

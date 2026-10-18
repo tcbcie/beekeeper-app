@@ -348,9 +348,9 @@ export async function POST(request: NextRequest) {
           { status: 413 }
         )
       }
-      const detail = fetchError instanceof Error ? fetchError.message : 'Unknown fetch error'
+      console.error('News articles: URL fetch failed:', fetchError)
       return NextResponse.json(
-        { error: `Could not fetch URL: ${detail}` },
+        { error: 'Could not fetch that URL' },
         { status: 422 }
       )
     }
@@ -413,10 +413,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('News articles POST error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
     console.warn(`[AUDIT] Admin news article add: admin=${adminId} status=failed reason=exception timestamp=${new Date().toISOString()}`)
     return NextResponse.json(
-      { error: `Failed to add article: ${message}` },
+      { error: 'Failed to add article' },
       { status: 500 }
     )
   }

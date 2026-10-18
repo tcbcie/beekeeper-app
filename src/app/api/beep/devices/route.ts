@@ -77,7 +77,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ devices: enrichedDevices })
   } catch (error) {
     console.error('BEEP devices error:', error)
-    const message = error instanceof Error ? error.message : 'Failed to fetch devices'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch devices' }, { status: 500 })
   }
 }

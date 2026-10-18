@@ -53,7 +53,7 @@ async function verifyAdmin(request: NextRequest): Promise<{ userId: string } | N
 
   if (authError || !user) {
     console.error('Auth error:', authError?.message, 'User:', user?.id)
-    return NextResponse.json({ error: 'Invalid authentication', details: authError?.message }, { status: 401 })
+    return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
   }
 
   const { data: profile, error: profileError } = await supabase
@@ -64,13 +64,14 @@ async function verifyAdmin(request: NextRequest): Promise<{ userId: string } | N
 
   if (profileError) {
     console.error('Profile fetch error:', profileError.message, 'User ID:', user.id)
-    return NextResponse.json({ error: 'Failed to fetch profile', details: profileError.message }, { status: 500 })
+    console.error('Knowledge base: profile lookup failed:', profileError)
+    return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 })
   }
 
   // Soft-deleted admin must lose access even if their JWT is still valid.
   if (!profile || profile.role !== 'Admin' || profile.is_active === false) {
     console.error('Admin check failed. User:', user.id, 'Email:', user.email, 'Role:', profile?.role, 'Active:', profile?.is_active)
-    return NextResponse.json({ error: 'Admin access required', role: profile?.role }, { status: 403 })
+    return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
   }
 
   return { userId: user.id }
@@ -134,7 +135,8 @@ export async function GET(request: NextRequest) {
       .range(offset, offset + limit - 1)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('Knowledge base database error:', error)
+      return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
     return NextResponse.json({ data, total: count, view: 'sources' })
@@ -148,7 +150,8 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Knowledge base database error:', error)
+    return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
 
   return NextResponse.json({ data, total: count, view: 'entries' })
@@ -227,7 +230,7 @@ async function processAndStoreContent(
 
   if (sourceError) {
     console.error('Error creating source:', sourceError)
-    return { success: false, chunks_created: 0, message: `Failed to create source: ${sourceError.message}` }
+    return { success: false, chunks_created: 0, message: 'Failed to create source' }
   }
 
   const sourceId = sourceRecord.id
@@ -384,7 +387,7 @@ export async function POST(request: NextRequest) {
     console.error('Knowledge base POST error:', error)
     console.warn(`[AUDIT] Admin KB ingest: admin=${adminId} status=failed reason=exception timestamp=${new Date().toISOString()}`)
     return NextResponse.json(
-      { error: 'Failed to add content', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to add content' },
       { status: 500 }
     )
   }
@@ -431,7 +434,8 @@ export async function PATCH(request: NextRequest) {
 
     if (error) {
       console.warn(`[AUDIT] Admin KB source update: admin=${adminId} source_id=${source_id} status=failed timestamp=${new Date().toISOString()}`)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('Knowledge base database error:', error)
+      return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
     // Also update metadata in linked chunks if name changed (best-effort)
@@ -456,7 +460,7 @@ export async function PATCH(request: NextRequest) {
     console.error('Knowledge base PATCH error:', error)
     console.warn(`[AUDIT] Admin KB source update: admin=${adminId} status=failed reason=exception timestamp=${new Date().toISOString()}`)
     return NextResponse.json(
-      { error: 'Failed to update source', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to update source' },
       { status: 500 }
     )
   }
@@ -492,7 +496,8 @@ export async function DELETE(request: NextRequest) {
 
     if (error) {
       console.warn(`[AUDIT] Admin KB source delete: admin=${adminId} source_id=${sourceId} status=failed timestamp=${new Date().toISOString()}`)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('Knowledge base database error:', error)
+      return NextResponse.json({ error: 'Database error' }, { status: 500 })
     }
 
     console.warn(`[AUDIT] Admin KB source delete: admin=${adminId} source_id=${sourceId} name=${JSON.stringify(source.name)} chunks_deleted=${source.chunks_count} status=success timestamp=${new Date().toISOString()}`)
@@ -517,7 +522,8 @@ export async function DELETE(request: NextRequest) {
 
   if (error) {
     console.warn(`[AUDIT] Admin KB entry delete: admin=${adminId} entry_id=${id} status=failed timestamp=${new Date().toISOString()}`)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('Knowledge base database error:', error)
+    return NextResponse.json({ error: 'Database error' }, { status: 500 })
   }
 
   console.warn(`[AUDIT] Admin KB entry delete: admin=${adminId} entry_id=${id} status=success timestamp=${new Date().toISOString()}`)
