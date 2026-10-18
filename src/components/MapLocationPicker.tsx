@@ -432,13 +432,17 @@ export default function MapLocationPicker({
               <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
             </div>`
 
-            // Create popup with apiary name
+            // Create popup with apiary name. The list includes team-shared apiaries, so the name
+            // is set as text (never HTML): a crafted name must not run script in this session.
+            const label = document.createElement('div')
+            label.className = 'font-semibold px-2 py-1'
+            label.textContent = apiary.name
             const popup = new mapboxgl.Popup({
               offset: 25,
               closeButton: false,
               closeOnClick: true,
               className: 'apiary-popup'
-            }).setHTML(`<div style="font-weight: 600; padding: 4px 8px;">${apiary.name}</div>`)
+            }).setDOMContent(label)
 
             const existingMarker = new mapboxgl.Marker({ element: el })
               .setLngLat([apiary.longitude, apiary.latitude])

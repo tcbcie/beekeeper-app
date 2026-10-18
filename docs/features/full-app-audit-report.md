@@ -84,6 +84,9 @@
 | SUP-09 | **Fixed 18/10/2026 (batch 12).** The secret scanner knows the leaked key types and many more, blocks new data files and files over 1 MB, and also runs in GitHub Actions on every push. |
 | SUP-10 | **Fixed 18/10/2026 (batch 12).** Workflow permissions limited; actions pinned to commit SHAs. |
 | npm audit (dev) | **Accepted for now (18/10/2026).** Production: 4 findings, 0 critical. The 4 critical findings are dev-only (Vitest 2); upgrading to Vitest 5 is a separate task. |
+| C7a-02 (Phase 2) | **Fixed 18/10/2026 (batch 13).** The apiary map picker inserted apiary names, including team members', into popups as HTML (stored XSS). The name is now set as text. |
+| C9a-01 (Phase 2) | **Fixed 18/10/2026 (batch 13).** Change Password didn't check the current password. It is now verified first. |
+| C2-31 (Phase 2) | **Fixed 18/10/2026 (batch 13).** The reminder and digest emails now escape user-written text. |
 | Other Phase 1 findings | The remaining Medium and Low findings from the Phase 1 database, API, client, AI and supply-chain audits are kept in a local register until they are fixed, because this repository is public. |
 
 All checks so far were read-only: SQL catalogue queries over the Supabase MCP connection, reading the deployed edge-function source, and searching the codebase. No data, schema or code was changed. No exploit was attempted against production.

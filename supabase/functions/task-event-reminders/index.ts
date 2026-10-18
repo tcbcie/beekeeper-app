@@ -223,6 +223,17 @@ async function getUpcomingReminders(supabase: any, frequency: string): Promise<M
   return eventsByUser
 }
 
+// User-written text (task titles, notes, batch names, names) goes into email HTML: escape it.
+function escapeHtml(value: unknown): string {
+  if (value == null) return ''
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 // Generate HTML email content
 function generateEmailHTML(userName: string, reminders: ReminderItem[], frequency: string): string {
   const reminderRows = reminders.map(reminder => {
@@ -246,14 +257,14 @@ function generateEmailHTML(userName: string, reminders: ReminderItem[], frequenc
       <tr style="border-bottom: 1px solid #e5e7eb;">
         <td style="padding: 12px;">
           <div style="font-weight: 600; display: flex; align-items: center; gap: 8px;">
-            ${typeIcon} ${reminder.title}
+            ${typeIcon} ${escapeHtml(reminder.title)}
           </div>
-          ${reminder.description ? `<div style="font-size: 12px; color: #6b7280; margin-top: 4px;">${reminder.description}</div>` : ''}
-          ${reminder.location ? `<div style="font-size: 12px; color: #6b7280; margin-top: 4px;">📍 ${reminder.location}</div>` : ''}
+          ${reminder.description ? `<div style="font-size: 12px; color: #6b7280; margin-top: 4px;">${escapeHtml(reminder.description)}</div>` : ''}
+          ${reminder.location ? `<div style="font-size: 12px; color: #6b7280; margin-top: 4px;">📍 ${escapeHtml(reminder.location)}</div>` : ''}
         </td>
         <td style="padding: 12px;">
           <span style="background-color: #f3f4f6; color: #374151; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
-            ${reminder.category}
+            ${escapeHtml(reminder.category)}
           </span>
         </td>
         <td style="padding: 12px; text-align: center;">
@@ -289,7 +300,7 @@ function generateEmailHTML(userName: string, reminders: ReminderItem[], frequenc
       </div>
 
       <div style="background-color: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
-        <p style="font-size: 16px; margin-top: 0;">Hello ${userName || 'Beekeeper'},</p>
+        <p style="font-size: 16px; margin-top: 0;">Hello ${escapeHtml(userName || 'Beekeeper')},</p>
 
         <p style="font-size: 14px; color: #6b7280;">
           You have <strong>${reminders.length}</strong> upcoming ${reminders.length === 1 ? 'reminder' : 'reminders'} for your beekeeping tasks and events:

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { fetchUserExportData, USER_EXPORT_TABLES } from '@/lib/database-export'
 import { getCurrentUserId, getUserRole, PROFILE_COLUMNS, type UserRole } from '@/lib/auth'
+import { verifyCurrentPassword } from '@/lib/verify-password'
 import { Edit2, Save, Download, Trash2, Scale, Users, Crown, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
@@ -478,6 +479,14 @@ export default function ProfilePage() {
  setChangingPassword(true)
 
  try {
+ // Check the current password first: an unlocked session alone must not be enough to
+ // change it.
+ const { data: { user } } = await supabase.auth.getUser()
+ if (!user?.email || !(await verifyCurrentPassword(user.email, currentPassword))) {
+ setPasswordError('Your current password is incorrect')
+ return
+ }
+
  // Update password using Supabase Auth
  const { error } = await supabase.auth.updateUser({
  password: newPassword

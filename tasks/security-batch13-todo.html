@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 13: Security Hotfix</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Security Batch 13: Phase 2 Security Hotfix (C7a-02, C9a-01, C2-31)</h1>
+<p><strong>Status:</strong> Done 18/10/2026. Tested by you; committed and pushed. Phase 2 fix batch 1.</p>
+
+<h2>Plan</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7a-02 (High), stored XSS:</strong> the apiary map picker built its marker popups from raw HTML containing apiary names, including team members' apiaries. The name is now set as text (<code>textContent</code> plus <code>setDOMContent</code>).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9a-01 (Medium):</strong> Change Password now checks the current password before saving the new one. <code>src/lib/verify-password.ts</code> signs in with a throwaway client that keeps nothing in storage, so the real session isn't touched, and the temporary session is revoked straight away. A wrong password shows "Your current password is incorrect".</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C2-31 (Low):</strong> the reminder and weekly digest emails escape user-written text (task title, notes, location, category, batch name, event, first name) with the same <code>escapeHtml</code> as the other email functions. Both are deployed through MCP (<code>task-event-reminders</code> v13, <code>weekly-email-digest</code> v16, <code>verify_jwt</code> off as before); each still returns 401 without the secret.</div>
+<div class="task"><input type="checkbox" checked disabled> Type-check and lint clean; docs and findings register updated.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> test (see Review), then commit and push.</div>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>Map picker</td><td>One change in <code>MapLocationPicker.tsx</code>. All the other popups in the app already escape their text (Phase 1 checked them).</td></tr>
+  <tr><td>Password</td><td>New <code>verifyCurrentPassword()</code>; Profile → Change Password calls it first. Note: accounts created with Google and no password can't use this form; they set a password with "Forgot password", as before.</td></tr>
+  <tr><td>Emails</td><td>The deployed versions matched the repo before deploying, so nothing live was overwritten. Plain-text parts and subjects are unaffected.</td></tr>
+  <tr><td>Test</td><td>Apiaries: edit an apiary and open the location picker; markers for your other apiaries show their names when clicked. Profile → Change Password: a wrong current password is refused; the right one works (then change it back if you like).</td></tr>
+</table>
+</body>
+</html>

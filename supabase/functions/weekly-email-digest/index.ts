@@ -96,6 +96,17 @@ function getUpcomingEvents(batch: Batch): UpcomingEvent[] {
   return events.sort((a, b) => a.daysUntil - b.daysUntil)
 }
 
+// User-written text (task titles, notes, batch names, names) goes into email HTML: escape it.
+function escapeHtml(value: unknown): string {
+  if (value == null) return ''
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 // Generate HTML email content
 function generateEmailHTML(userName: string, events: UpcomingEvent[]): string {
   const eventRows = events.map(event => {
@@ -109,8 +120,8 @@ function generateEmailHTML(userName: string, events: UpcomingEvent[]): string {
 
     return `
       <tr style="border-bottom: 1px solid #e5e7eb;">
-        <td style="padding: 12px; font-weight: 600;">${event.batchName}</td>
-        <td style="padding: 12px;">${event.eventType}</td>
+        <td style="padding: 12px; font-weight: 600;">${escapeHtml(event.batchName)}</td>
+        <td style="padding: 12px;">${escapeHtml(event.eventType)}</td>
         <td style="padding: 12px;">${formatDateIrish(event.date)}</td>
         <td style="padding: 12px;">
           <span style="background-color: ${urgencyColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">
@@ -137,7 +148,7 @@ function generateEmailHTML(userName: string, events: UpcomingEvent[]): string {
       </div>
 
       <div style="background-color: #ffffff; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
-        <p style="font-size: 16px; margin-top: 0;">Hello ${userName || 'Beekeeper'},</p>
+        <p style="font-size: 16px; margin-top: 0;">Hello ${escapeHtml(userName || 'Beekeeper')},</p>
 
         <p style="font-size: 14px; color: #6b7280;">
           Here's your weekly summary of upcoming queen rearing dates for the next 7 days:
