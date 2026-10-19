@@ -23,6 +23,7 @@ import { buildDeleteRecordPrompt } from '@/lib/record-delete-prompts'
 import { syncTreatmentReminder } from '@/lib/treatment-reminder'
 import { isSyrupFeed } from '@/lib/feeding'
 import { useNavigationGuard } from '@/hooks/useNavigationGuard'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { updateManager } from '@/lib/update-manager'
 import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters } from '@/hooks/useRecordFilters'
@@ -1373,8 +1374,15 @@ export default function RecordsPage() {
   }
 
   // Archive handler
-  const handleArchiveSubmit = async (e: React.FormEvent) => {
+  // One archive at a time: a double tap must not run the archive cascade twice.
+  const { submitting: archiving, run: runArchive } = useSubmitLock()
+
+  const handleArchiveSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    void runArchive(archiveHive)
+  }
+
+  const archiveHive = async () => {
     if (!userId || !archiveData.hive_id) return
 
     try {
@@ -1677,8 +1685,9 @@ export default function RecordsPage() {
                     type="submit"
                     tone="danger"
                     className="flex-1"
+                    disabled={archiving}
                   >
-                    Archive Hive
+                    {archiving ? 'Archiving…' : 'Archive Hive'}
                   </Button>
                 </FormActionRow>
               </form>

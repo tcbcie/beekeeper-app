@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { ChevronDown, ChevronUp, Camera, X, Mic, Square, Loader2, Plus, Trash2, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import type { Hive, Apiary, InspectionFormData, FollowUpTaskDraft, FollowUpTaskPriority, BroodBoxFrames, BroodBoxType } from '@/types/records'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { getDefaultInspectionFormData, getDefaultFollowUpTaskDraft, LEVEL_NOT_RECORDED, getLevelLabel } from '@/types/records'
 import { useStagedPhotos } from '@/hooks/useStagedPhotos'
 import { validateImageFile } from '@/lib/upload-image'
@@ -184,7 +185,8 @@ export default function InspectionForm({
     () => createGivenTakenDrafts(buildInitialFormData())
   )
   const [formApiaryId, setFormApiaryId] = useState<string>(selectedApiaryId)
-  const [submitting, setSubmitting] = useState(false)
+  // One save at a time: a double tap on Save must not file the inspection twice.
+  const { submitting, run } = useSubmitLock()
   const previousInitialDataRef = useRef<InspectionFormData | null>(null)
   const lastRightSizedPrefillKeyRef = useRef<string | null>(null)
   const lastSuperFullnessPrefillKeyRef = useRef<string | null>(null)
@@ -1050,8 +1052,7 @@ export default function InspectionForm({
     const submitData = normaliseGivenTakenValues(formData, givenTakenDrafts)
     setFormData(submitData)
     setGivenTakenDrafts(createGivenTakenDrafts(submitData))
-    setSubmitting(true)
-    try {
+    await run(async () => {
       const tasks = followUpDrafts
         .map(draft => ({
           ...draft,
@@ -1061,9 +1062,7 @@ export default function InspectionForm({
         }))
         .filter(draft => draft.title !== '')
       await onSubmit(submitData, stagedPhotos.map(photo => photo.file), tasks)
-    } finally {
-      setSubmitting(false)
-    }
+    })
   }
 
   const addFollowUpTask = useCallback(() => {

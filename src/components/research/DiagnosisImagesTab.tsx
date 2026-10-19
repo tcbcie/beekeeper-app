@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Camera, Trash2, Calendar, Tag, RefreshCw, Download, MessageSquare, Send, User, Eye, LayoutGrid, List, X, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
 import Button from '@/components/ui/Button'
 
@@ -43,7 +44,8 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  const [deleting, setDeleting] = useState<string | null>(null)
  const [selectedImage, setSelectedImage] = useState<DiagnosisImage | null>(null)
  const [newComment, setNewComment] = useState('')
- const [submittingComment, setSubmittingComment] = useState(false)
+ // One comment at a time: Enter (or key repeat) plus a click must not post it twice.
+ const { submitting: submittingComment, run: runComment } = useSubmitLock()
  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null)
 
@@ -140,10 +142,12 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  }
  }
 
- const handleAddComment = async () => {
- if (!selectedImage || !newComment.trim()) return
+ const handleAddComment = () => {
+ void runComment(addComment)
+ }
 
- setSubmittingComment(true)
+ const addComment = async () => {
+ if (!selectedImage || !newComment.trim()) return
 
  try {
  const { data, error: insertError } = await supabase
@@ -177,8 +181,6 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  } catch (err) {
  console.error('Failed to add comment:', err)
  setError('Failed to add comment')
- } finally {
- setSubmittingComment(false)
  }
  }
 

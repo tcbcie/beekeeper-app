@@ -14,6 +14,7 @@ import { COLOUR_DOTS } from './graftConstants'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
 import type { CreateDistributionData } from '@/hooks/useGraftDistributions'
 import { useMatingNucBulk } from '@/hooks/useMatingNucBulk'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import type { AvailableSealedGraft, MatingNucBulkMode } from '@/hooks/useMatingNucBulk'
 import DistributeGraftModal from './DistributeGraftModal'
 
@@ -163,7 +164,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [mintingNucId, setMintingNucId] = useState<string | null>(null)
  const [distributeGroupMemberIds, setDistributeGroupMemberIds] = useState<string[]>([])
  const [showBulkForm, setShowBulkForm] = useState(false)
- const [bulkLoading, setBulkLoading] = useState(false)
+ // One save at a time for each form: a double tap must not create nucs twice.
+ const { submitting: bulkLoading, run: runBulkCreate } = useSubmitLock()
+ const { submitting, run } = useSubmitLock()
  const [batchSummaries, setBatchSummaries] = useState<BatchSummary[]>([])
  const [activeBatchId, setActiveBatchId] = useState<string | null>(null)
  const [availableBulkGrafts, setAvailableBulkGrafts] = useState<AvailableSealedGraft[]>([])
@@ -640,7 +643,11 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .map((value) => value.trim())
  .filter((value) => value.length > 0)
 
- const handleCreateBulkNucs = async () => {
+ const handleCreateBulkNucs = () => {
+ void runBulkCreate(createBulkNucsFromForm)
+ }
+
+ const createBulkNucsFromForm = async () => {
  if (!bulkFormData.source_batch_id) {
  toast.error('Select a source batch')
  return
@@ -656,7 +663,6 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  : []
 
  try {
- setBulkLoading(true)
  const result = await createBulkNucs({
  userId,
  sourceBatchId: bulkFormData.source_batch_id,
@@ -677,8 +683,6 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  } catch (error) {
  console.error('Error creating bulk mating nucs:', error)
  toast.error(error instanceof Error ? error.message : 'Failed to create bulk mating nucs')
- } finally {
- setBulkLoading(false)
  }
  }
 
@@ -715,9 +719,12 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  setShowForm(true)
  }
 
- const handleSubmit = async (e: React.FormEvent) => {
+ const handleSubmit = (e: React.FormEvent) => {
  e.preventDefault()
+ void run(saveNuc)
+ }
 
+ const saveNuc = async () => {
  if (!formData.mating_location.trim()) {
  toast.error('Mating location is required. Select an apiary or enter a custom location.')
  return
@@ -1303,9 +1310,10 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <div className="md:col-span-2 flex gap-3">
  <Button
  type="submit"
+ disabled={submitting}
  className="px-6 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700"
  >
- {editingNuc ? 'Update Nuc' : 'Create Nuc'}
+ {submitting ? 'Saving…' : editingNuc ? 'Update Nuc' : 'Create Nuc'}
  </Button>
  <Button
  type="button"

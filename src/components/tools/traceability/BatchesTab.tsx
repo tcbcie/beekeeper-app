@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download, MapPin, AlertCircle, Star, MessageSquare, Tag } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { useToast } from '@/components/ui/Toast'
@@ -441,9 +442,16 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
     setShowBatchForm(true)
   }
 
-  const handleBatchSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // One save at a time: each create uses up a lot number and a trace code, so a double
+  // tap must not create a second batch.
+  const { submitting, run } = useSubmitLock()
 
+  const handleBatchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    void run(saveBatch)
+  }
+
+  const saveBatch = async () => {
     // Require at least one bulk honey source
     if (batchForm.container_ids.length === 0) {
       toast.error('Please select at least one bulk honey source')
@@ -1291,9 +1299,10 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
               </Button>
               <Button
                 type="submit"
+                disabled={submitting}
                 className="flex-1 px-4 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors"
               >
-                {editingBatch ? 'Update' : 'Create'} Batch
+                {submitting ? 'Saving…' : `${editingBatch ? 'Update' : 'Create'} Batch`}
               </Button>
             </div>
           </form>

@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { getCurrentUserId } from '@/lib/auth'
 import { MessageCircle, Plus, Edit2, X, AlertCircle, Lightbulb, Clock, CheckCircle, XCircle, CreditCard } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -72,8 +73,15 @@ export default function SupportPage() {
     initUser()
   }, [router, fetchTickets])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // One submission at a time: a double tap must not open the ticket twice.
+  const { submitting, run } = useSubmitLock()
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    void run(saveTicket)
+  }
+
+  const saveTicket = async () => {
     if (!userId) return
 
     try {
@@ -309,9 +317,10 @@ export default function SupportPage() {
             <div className="flex gap-3">
               <Button
                 type="submit"
+                disabled={submitting}
                 className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600"
               >
-                {editingTicket ? 'Update Ticket' : 'Submit Ticket'}
+                {submitting ? 'Sending…' : editingTicket ? 'Update Ticket' : 'Submit Ticket'}
               </Button>
               <Button
                 type="button"

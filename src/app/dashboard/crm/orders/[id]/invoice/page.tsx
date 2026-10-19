@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { getCurrentUserId } from '@/lib/auth'
 import { ArrowLeft, Printer, Mail } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -37,7 +38,8 @@ export default function OrderInvoicePage() {
   const [loading, setLoading] = useState(true)
   const [emailOpen, setEmailOpen] = useState(false)
   const [recipient, setRecipient] = useState('')
-  const [sending, setSending] = useState(false)
+  // One send at a time: a double tap must not email the invoice twice.
+  const { submitting: sending, run } = useSubmitLock()
 
   const load = useCallback(async (uid: string) => {
     const [orderRes, itemsRes, profileRes] = await Promise.all([
@@ -92,11 +94,14 @@ export default function OrderInvoicePage() {
     setEmailOpen(true)
   }
 
-  const handleSendEmail = async () => {
+  const handleSendEmail = () => {
+    void run(sendInvoiceEmail)
+  }
+
+  const sendInvoiceEmail = async () => {
     if (!order) return
     const to = recipient.trim()
     if (!to) { toast.warning('Add an email address to the customer first'); return }
-    setSending(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { toast.error('Your session has expired — please sign in again'); return }
@@ -114,8 +119,6 @@ export default function OrderInvoicePage() {
       setEmailOpen(false)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to send the invoice')
-    } finally {
-      setSending(false)
     }
   }
 

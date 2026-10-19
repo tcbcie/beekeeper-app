@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button'
 import { Hive, HiveFormData } from '@/types/hive'
 import { QUEENLESS_REASONS, mapReasonToQueenStatus } from '@/lib/queenless'
 import { HiveListApiary, HiveListQueen } from '@/hooks/useHivesList'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 
 interface HiveFormSectionProps {
  userId: string | null
@@ -115,8 +116,15 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  onClose()
  }
 
- const handleSubmit = async (e: React.FormEvent) => {
+ // One save at a time: a double tap must not create two hives.
+ const { submitting, run } = useSubmitLock()
+
+ const handleSubmit = (e: React.FormEvent) => {
  e.preventDefault()
+ void run(saveHive)
+ }
+
+ const saveHive = async () => {
  if (!userId) return
 
  // Validate: hive number must not be blank once trimmed (the input's
@@ -367,9 +375,10 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  <Button
  type="submit"
  form="hive-form"
+ disabled={submitting}
  className="px-6 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 active:bg-forest-800 dark:active:bg-forest-700 touch-manipulation font-medium"
  >
- {editingHive ? 'Update' : 'Add'} Hive
+ {submitting ? 'Saving…' : `${editingHive ? 'Update' : 'Add'} Hive`}
  </Button>
  <Button
  type="button"
@@ -960,9 +969,10 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  <div className="md:col-span-2 flex flex-col sm:flex-row gap-3">
  <Button
  type="submit"
+ disabled={submitting}
  className="px-6 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 active:bg-forest-800 dark:active:bg-forest-700 touch-manipulation font-medium"
  >
- {editingHive ? 'Update' : 'Add'} Hive
+ {submitting ? 'Saving…' : `${editingHive ? 'Update' : 'Add'} Hive`}
  </Button>
  <Button
  type="button"

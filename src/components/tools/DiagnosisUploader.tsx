@@ -5,6 +5,7 @@ import { Camera, X, CheckCircle, Upload } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { deleteUploadedImages } from '@/lib/upload-image'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
@@ -23,7 +24,8 @@ const DIAGNOSIS_TYPES = [
 export default function DiagnosisUploader({ userId }: DiagnosisUploaderProps) {
   const [diagnosisType, setDiagnosisType] = useState('')
   const [description, setDescription] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  // One upload at a time: a double tap must not save the photo twice.
+  const { submitting, run } = useSubmitLock()
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -49,8 +51,12 @@ export default function DiagnosisUploader({ userId }: DiagnosisUploaderProps) {
     resetImage()
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    void run(saveDiagnosis)
+  }
+
+  const saveDiagnosis = async () => {
     setError(null)
     setSuccess(false)
 
@@ -68,8 +74,6 @@ export default function DiagnosisUploader({ userId }: DiagnosisUploaderProps) {
       setError('Please provide a description')
       return
     }
-
-    setSubmitting(true)
 
     try {
       // Upload image to storage
@@ -104,8 +108,6 @@ export default function DiagnosisUploader({ userId }: DiagnosisUploaderProps) {
     } catch (err) {
       console.error('Failed to save diagnosis image:', err)
       setError(err instanceof Error ? err.message : 'Failed to save diagnosis image')
-    } finally {
-      setSubmitting(false)
     }
   }
 

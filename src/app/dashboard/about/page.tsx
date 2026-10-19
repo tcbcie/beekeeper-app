@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { Info, Newspaper, FileEdit, AlertTriangle, Shield, MessageCircle, Plus, Edit2, X, Lightbulb, Clock, CheckCircle, XCircle, CreditCard, Users, MapPin, Hexagon, Globe, ExternalLink, Search, ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ChangelogDisplay from '@/components/ChangelogDisplay'
@@ -235,8 +236,15 @@ function AboutPageContent() {
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [router])
 
- const handleSubmit = async (e: React.FormEvent) => {
+ // One submission at a time: a double tap must not open the ticket twice.
+ const { submitting, run } = useSubmitLock()
+
+ const handleSubmit = (e: React.FormEvent) => {
  e.preventDefault()
+ void run(saveTicket)
+ }
+
+ const saveTicket = async () => {
  if (!userId) return
 
  try {
@@ -766,8 +774,9 @@ function AboutPageContent() {
  <Button
  type="submit"
  tone="blue"
+ disabled={submitting}
  >
- {editingTicket ? 'Update Ticket' : 'Submit Ticket'}
+ {submitting ? 'Sending…' : editingTicket ? 'Update Ticket' : 'Submit Ticket'}
  </Button>
  <Button
  type="button"

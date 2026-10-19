@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import type { GraftDistribution, BulkDistributionData } from '@/hooks/useGraftDistributions'
 import { getQueenColorFromYear } from '@/types/queen'
 import { Graft, GRAFT_STATUSES, FRAME_STATUS_VALUES, buildNucSignalSets, NucSignalRow, BatchBreederQueen } from '@/components/batches/graftConstants'
@@ -295,7 +296,11 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   // If `ranges` is provided (multi-breeder case), each new cell's breeder_queen_id
   // is set from the range it falls into. Ranges are 1-indexed against the slice of
   // cells being created now (1..cellCount), not against absolute cell numbers.
-  const generateGrafts = useCallback(async (opts?: { ranges?: BreederRange[] }) => {
+  // One generate at a time, held until the refreshed list is in: a second tap would number
+  // its cells from the stale list and fail on the unique cell number.
+  const { submitting: generating, run: runGenerate } = useSubmitLock()
+
+  const generateGrafts = useCallback((opts?: { ranges?: BreederRange[] }) => runGenerate(async () => {
     if (!cellCount || cellCount <= 0) {
       toast.error('Populate Batch Quantities')
       return
@@ -337,12 +342,12 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
       if (error) throw error
       toast.success(`${cellCount} grafts created`)
-      fetchGrafts()
+      await fetchGrafts()
     } catch (error) {
       console.error('Error creating grafts:', error)
       toast.error('Failed to create grafts')
     }
-  }, [cellCount, grafts, batchId, userId, graftDate, toast, fetchGrafts])
+  }), [cellCount, grafts, batchId, userId, graftDate, toast, fetchGrafts, runGenerate])
 
   const updateGraftBreederQueen = useCallback(async (graftId: string, queenId: string | null) => {
     const previous = grafts.find(g => g.id === graftId)?.breeder_queen_id ?? null
@@ -860,6 +865,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     bulkStatusDraft,
     bulkDateDraft,
     savingFrameBulkEdits,
+    generating,
     tableSelectMode,
     setTableSelectMode,
     tableSelectedIds,

@@ -103,12 +103,13 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
             <Button
               type="button"
               onClick={handleGenerateClick}
+              disabled={hook.generating}
               tone="success"
               size="sm"
               className="inline-flex items-center gap-1"
             >
               <Plus size={14} />
-              Generate Cell Records
+              {hook.generating ? 'Generating…' : 'Generate Cell Records'}
             </Button>
           </div>
         )}

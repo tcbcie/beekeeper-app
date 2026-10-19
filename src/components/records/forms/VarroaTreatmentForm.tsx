@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { HelpCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import type { VarroaTreatment, Hive, Apiary, TreatmentProduct, DropdownValue } from '@/types/records'
 import { computePlannedRemovalDate } from '@/lib/treatment-removal'
 import { toLocalDateString } from '@/lib/date-utils'
@@ -65,7 +66,8 @@ export default function VarroaTreatmentForm({
   const [otherTreatmentType, setOtherTreatmentType] = useState('')
   const [selectedHiveHasHoneySupers, setSelectedHiveHasHoneySupers] = useState(false)
   const [fetchingWeather, setFetchingWeather] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  // One save at a time: a double tap must not save the record twice.
+  const { submitting, run } = useSubmitLock()
   const [showAllProducts, setShowAllProducts] = useState(false)
   const isEditing = Boolean(treatment?.id)
 
@@ -241,12 +243,7 @@ export default function VarroaTreatmentForm({
       return
     }
 
-    setSubmitting(true)
-    try {
-      await onSubmit(formData, isOtherTreatment, otherTreatmentType)
-    } finally {
-      setSubmitting(false)
-    }
+    await run(() => onSubmit(formData, isOtherTreatment, otherTreatmentType))
   }
 
   const filteredHives = hives

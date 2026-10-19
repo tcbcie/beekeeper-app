@@ -1030,6 +1030,19 @@ function buildDerivedRow(distribution: TrackedQueen, groupName: string): Derived
   }
 }
 
+// Per-row save lock for the tracker. The ref is updated synchronously so a second tap on the
+// same row sees it straight away; the state copy is what the rows read to disable themselves.
+type RowLockRef = { current: Set<string> }
+type RowLockSetter = (ids: Set<string>) => void
+const lockRow = (ref: RowLockRef, setIds: RowLockSetter, id: string) => {
+  ref.current.add(id)
+  setIds(new Set(ref.current))
+}
+const unlockRow = (ref: RowLockRef, setIds: RowLockSetter, id: string) => {
+  ref.current.delete(id)
+  setIds(new Set(ref.current))
+}
+
 export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   const toast = useToast()
   const confirm = useConfirm()
@@ -1068,9 +1081,10 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [actionDraft, setActionDraft] = useState<OutcomeActionDraft | null>(null)
+  // Rows with a save in flight. The ref is the lock: it changes at once, so a second tap on
+  // the same row is refused before React re-renders. The state copy only drives the UI.
+  const updatingIdsRef = useRef<Set<string>>(new Set())
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set())
-  const updatingIdsRef = useRef(updatingIds)
-  updatingIdsRef.current = updatingIds
 
   useEffect(() => {
     fetchDistributions(userId)
@@ -1305,7 +1319,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       return
     }
 
-    setUpdatingIds((prev) => new Set(prev).add(distribution.id))
+    lockRow(updatingIdsRef, setUpdatingIds, distribution.id)
     try {
       const success = await updateMating(distribution.id, false)
       if (success) {
@@ -1315,11 +1329,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         toast.error('Failed to update mating status')
       }
     } finally {
-      setUpdatingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(distribution.id)
-        return next
-      })
+      unlockRow(updatingIdsRef, setUpdatingIds, distribution.id)
     }
   }, [openOutcomeActionDraft, updateMating, toast])
 
@@ -1332,7 +1342,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       return false
     }
 
-    setUpdatingIds((prev) => new Set(prev).add(id))
+    lockRow(updatingIdsRef, setUpdatingIds, id)
     try {
       const success = await updateMatingDate(id, nextDate)
       if (success) {
@@ -1342,11 +1352,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       }
       return success
     } finally {
-      setUpdatingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
+      unlockRow(updatingIdsRef, setUpdatingIds, id)
     }
   }, [updateMatingDate, toast])
 
@@ -1355,7 +1361,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
 
     const nextDate = date.trim()
 
-    setUpdatingIds((prev) => new Set(prev).add(id))
+    lockRow(updatingIdsRef, setUpdatingIds, id)
     try {
       const success = await updateOverwinteredDate(id, nextDate === '' ? null : nextDate)
       if (success) {
@@ -1365,11 +1371,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       }
       return success
     } finally {
-      setUpdatingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
+      unlockRow(updatingIdsRef, setUpdatingIds, id)
     }
   }, [updateOverwinteredDate, toast])
 
@@ -1393,7 +1395,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     if (!confirmed) return
     if (updatingIdsRef.current.has(distribution.id)) return
 
-    setUpdatingIds((prev) => new Set(prev).add(distribution.id))
+    lockRow(updatingIdsRef, setUpdatingIds, distribution.id)
     try {
       const success = await updateFailure(distribution.id, false)
       if (success) {
@@ -1403,11 +1405,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         toast.error('Failed to update queen failure status')
       }
     } finally {
-      setUpdatingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(distribution.id)
-        return next
-      })
+      unlockRow(updatingIdsRef, setUpdatingIds, distribution.id)
     }
   }, [openOutcomeActionDraft, updateFailure, toast, confirm])
 
@@ -1422,7 +1420,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       return
     }
 
-    setUpdatingIds((prev) => new Set(prev).add(rowId))
+    lockRow(updatingIdsRef, setUpdatingIds, rowId)
     try {
       let success = false
 
@@ -1459,11 +1457,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         toast.error('Failed to update outcome')
       }
     } finally {
-      setUpdatingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(rowId)
-        return next
-      })
+      unlockRow(updatingIdsRef, setUpdatingIds, rowId)
     }
   }, [actionDraft, toast, updateFailure, updateHybridisation, updateMating, updateOverwintered])
 
@@ -1472,7 +1466,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
 
     const nextDate = date.trim()
 
-    setUpdatingIds((prev) => new Set(prev).add(id))
+    lockRow(updatingIdsRef, setUpdatingIds, id)
     try {
       const success = await updateHybridisationDate(id, nextDate === '' ? null : nextDate)
       if (success) {
@@ -1482,11 +1476,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       }
       return success
     } finally {
-      setUpdatingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
+      unlockRow(updatingIdsRef, setUpdatingIds, id)
     }
   }, [updateHybridisationDate, toast])
 
@@ -1495,7 +1485,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
 
     const nextDate = date.trim()
 
-    setUpdatingIds((prev) => new Set(prev).add(id))
+    lockRow(updatingIdsRef, setUpdatingIds, id)
     try {
       const success = await updateFailureDate(id, nextDate === '' ? null : nextDate)
       if (success) {
@@ -1505,18 +1495,14 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       }
       return success
     } finally {
-      setUpdatingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
+      unlockRow(updatingIdsRef, setUpdatingIds, id)
     }
   }, [updateFailureDate, toast])
 
   const handleFailureReasonChange = useCallback(async (id: string, reason: string): Promise<boolean> => {
     if (updatingIdsRef.current.has(id)) return false
 
-    setUpdatingIds((prev) => new Set(prev).add(id))
+    lockRow(updatingIdsRef, setUpdatingIds, id)
     try {
       const success = await updateFailureReason(id, reason.trim() === '' ? null : reason)
       if (success) {
@@ -1526,18 +1512,14 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       }
       return success
     } finally {
-      setUpdatingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
+      unlockRow(updatingIdsRef, setUpdatingIds, id)
     }
   }, [updateFailureReason, toast])
 
   const handleFailureCommentChange = useCallback(async (id: string, comment: string): Promise<boolean> => {
     if (updatingIdsRef.current.has(id)) return false
 
-    setUpdatingIds((prev) => new Set(prev).add(id))
+    lockRow(updatingIdsRef, setUpdatingIds, id)
     try {
       const success = await updateFailureComment(id, comment)
       if (success) {
@@ -1547,11 +1529,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       }
       return success
     } finally {
-      setUpdatingIds((prev) => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
+      unlockRow(updatingIdsRef, setUpdatingIds, id)
     }
   }, [updateFailureComment, toast])
 

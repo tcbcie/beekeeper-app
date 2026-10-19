@@ -1,14 +1,14 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
 ### High
 - **C3-01** `hooks/useHivesList.ts:211-272`: the list fetches full record history for all hives in one query. Supabase caps a query at 1000 rows, so with about 293 hives the older hives' cards show "Never" and lose their queen, egg, super and treatment data. Fix: one RPC returning per-hive aggregates (`DISTINCT ON (hive_id)`).
 - **C3-02** `app/dashboard/hives/page.tsx:639-642` with `useHivesList.ts:57,532`: the ownership filter fires a fetch with the old value and then another, so the last response wins and the list can be wrong. Fix: remove the manual call, and ignore stale responses with a request ID.
-- **C3-03** `components/hive/HiveFormSection.tsx:118-345, 367-373, 961-966`: there's no in-flight guard, so a double tap creates duplicate hives. Fix: a `submittingRef`, and disable the submit buttons while saving.
+- **C3-03** `components/hive/HiveFormSection.tsx:118-345, 367-373, 961-966`: there's no in-flight guard, so a double tap creates duplicate hives. Fix: a `submittingRef`, and disable the submit buttons while saving. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
 - **C3-04** `components/dashboard/ApiaryWeatherRow.tsx:458`: reads the `dropdown_values` embed as an array, but it's an object, so the user's own bloom records never show as confirmed. Fix: handle both shapes and name the FK.
 
 ### Medium, key items
@@ -41,7 +41,7 @@ Covers missing try/finally, a misleading RLS comment, touch targets and inputs b
 
 ### Medium, key items
 - **C7a-06:** setState during render resets the saved "Shared" filter.
-- **C7a-07:** a double tap creates duplicate apiaries.
+- **C7a-07:** a double tap creates duplicate apiaries. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
 - **C7a-08:** the conservation area uses the form's coordinates instead of the resolved ones.
 - **C7a-09 / C7a-10:** a stale click closure means overlap zones never draw, and `flyTo` resets the zoom on every tap.
 - **C7a-11:** unbounded inspection fetch, hitting the 1000-row cap.
@@ -68,7 +68,7 @@ Covers native `confirm()`, bench delete with no confirmation, the rollback race,
 ### Medium, key items
 - **C5a-06 / C5a-07:** multi-breeder breeder leakage, and the card has no fallback breeder.
 - **C5a-08 / C5a-09:** moving or deleting a nuc wipes the graft data, and the order of writes and ignored errors.
-- **C5a-10:** the double-tap guard ref is set during render.
+- **C5a-10:** the double-tap guard ref is set during render. *Fixed in batch 16 (19/10/2026): the ref is now the lock and is updated by `lockRow`/`unlockRow`.*
 - **C5a-11:** clearing Mated has no confirmation and wipes the location.
 - **C5a-12 / C5a-13 / C5a-14:** sync errors are hidden, there's no try/catch, and a stale fetch race.
 - **C5a-15 / C5a-16 / C5a-17:** over-fetching, `select('*')`, and an unpaginated ledger.
@@ -124,7 +124,7 @@ One shell-profile hook with a cache, one `safeInternalPath()` redirect helper, s
 - **C5b-08:** mated-date edits never sync to the recipient queen.
 - **C5b-09:** distributed grafts can be deleted or have their status changed, and `sold` can be set by hand.
 - **C5b-10 / C5b-11:** double initial fetch, and the tab bounces.
-- **C5b-12 / C5b-14:** double tap on save and on generate, and the save is not atomic.
+- **C5b-12 / C5b-14:** double tap on save and on generate, and the save is not atomic. *Double taps fixed in batch 16 (19/10/2026); the non-atomic save is still open.*
 - **C5b-13:** single-breeder cells don't stamp the mother, and the dropdown isn't locked.
 - **C5b-15:** stuck on "Loading grafts…" with no retry.
 - **C5b-16:** the selection scoring refetches on every tap and counts missing ratings as 0.
@@ -147,7 +147,7 @@ Covers UTC "today", the sequential list fetches, the distribution list disappear
 - **C7b-06:** no abort or stale guard.
 - **C7b-07:** the embed calls Open-Meteo directly from every browser. It should be server-fetched and cached.
 - **C7b-08:** state is sorted in place during render.
-- **C7b-09:** double tap creates duplicate colonies.
+- **C7b-09:** double tap creates duplicate colonies. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
 - **C7b-10:** lat/lng are not validated.
 - **C7b-11 / C7b-12 / C7b-13:** the weather fetch loops, 0°C shows as blank or a stray "0", and setState during render.
 - **C7b-14:** the research page gets stuck, or goes blank on disallowed sections.
@@ -157,7 +157,7 @@ Covers UTC "today", the sequential list fetches, the distribution list disappear
 - **C7b-19:** chart.js is loaded on every research tab.
 - **C7b-20 / C7b-21:** N+1 profile lookups, and the diagnosis list is unpaged with an `.in()` URL limit.
 - **C7b-22 (check):** `get_shared_gdd_records` returns every shared record nationally with `user_id`, then filters to 20 km in the browser. The coordinates are already obfuscated (batch 4); the leftover `user_id` and scale issues should move to SQL.
-- **C7b-23 / C7b-24 / C7b-25 / C7b-26:** touch targets of 20–28px, 12px text and 9–10px chart labels with no dark mode, a 12-column table with no phone layout, and the diagnosis modal can double-post.
+- **C7b-23 / C7b-24 / C7b-25 / C7b-26:** touch targets of 20–28px, 12px text and 9–10px chart labels with no dark mode, a 12-column table with no phone layout, and the diagnosis modal can double-post. *The double-post was fixed in batch 16 (19/10/2026).*
 
 ### Low
 Covers Wolf battery NaN, being unable to deselect the last year, date locale and UTC handling, "Behavior" spelling, `select('*')`, quadratic chart lookups, the KeyEventsOverlay hook returning JSX, `minTemperature &&` treating 0 as false, and foraging-hours NaN guards with the iframe `postMessage` target.
@@ -181,7 +181,7 @@ Covers Wolf battery NaN, being unable to deselect the last year, date locale and
 - **C9a-15:** the KB and news lists are capped at 100.
 - **C9a-16:** PDFs are uploaded as base64 JSON, exceeding the 4.5 MB body limit.
 - **C9a-17:** search has no abort.
-- **C9a-18:** double tap creates duplicate tickets.
+- **C9a-18:** double tap creates duplicate tickets. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
 - **C9a-19:** CSV export has no escaping (formula injection).
 - **C9a-20 / C9a-21 / C9a-23:** request waterfalls and N+1 queries.
 - **C9a-22:** 13 managers imported statically.
@@ -223,8 +223,8 @@ Covers falsy-zero display, `classifyQuery` validation, harvests merged by hive n
 ## Chunk 8b: CRM, traceability, QR, labels, public trace (34 findings: 2 High, 16 Medium, 16 Low)
 
 ### High
-- **C8b-01:** `BatchesTab.tsx:444-553`. No submit lock, so a double tap creates two batches that each use up a lot number and trace code.
-- **C8b-02:** `crm/orders/page.tsx:130-165`. Order create is guarded only by state, so duplicate orders are possible.
+- **C8b-01:** `BatchesTab.tsx:444-553`. No submit lock, so a double tap creates two batches that each use up a lot number and trace code. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
+- **C8b-02:** `crm/orders/page.tsx:130-165`. Order create is guarded only by state, so duplicate orders are possible. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
 
 ### Medium, key items
 - **C8b-03 / C8b-04:** duplicate jar-sale income rows, duplicate containers, and harvests linked to every bucket (weight counted N times).
@@ -253,7 +253,7 @@ Covers the due-date update, invoice email double send, customer double insert, f
 - **C4-07:** RLS-blocked edits and deletes look like they worked.
 - **C4-08:** varroa auto-task faults.
 - **C4-09:** the tasks window and the 1000-row limit.
-- **C4-10 / C4-11:** double submits.
+- **C4-10 / C4-11:** double submits. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
 - **C4-12:** a refetch resets the form and drops the photo.
 - **C4-13:** the microphone can stay on.
 - **C4-14:** a wasted weather call.
@@ -277,8 +277,8 @@ Covers the UTC end date, period counts, the toggle race, `confirm()`, UTC defaul
 ### Medium, key items
 - **C6-05:** double init fetch.
 - **C6-06:** redistribute is not atomic.
-- **C6-07 / C6-08:** queen form double submit, and the cycle check runs after the RPC.
-- **C6-09:** duplicate invites.
+- **C6-07 / C6-08:** queen form double submit, and the cycle check runs after the RPC. *C6-07 fixed in batch 16 (19/10/2026). C6-08 is still open; it's worse than first reported, because a reared daughter can be saved as her own mother's mother.*
+- **C6-09:** duplicate invites. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.* A unique index on pending invitations is still to do.
 - **C6-10:** stale team detail race.
 - **C6-11 to C6-15:** N+1 queries and waterfalls (lineage up to 8 sequential queries; the report hits the URL length limit).
 - **C6-16:** errors show as empty.

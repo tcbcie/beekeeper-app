@@ -9,6 +9,7 @@ import NotificationStatusCard from '@/components/NotificationStatusCard'
 import BatchGraftsSection from '@/components/batches/BatchGraftsSection'
 import { ChevronDown, ChevronUp, Loader2, MessageCircle, Mic, Minus, Plus, Square } from 'lucide-react'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import type { useRearingGroups } from '@/hooks/useRearingGroups'
 import { getDayName, toLocalDateString } from '@/hooks/useBatchesList'
 import type { Queen, Apiary, Hive, Batch, FormData } from '@/hooks/useBatchesList'
@@ -211,8 +212,16 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  }
  }, [formData.starter_apiary_id, hives])
 
- const handleSubmit = async (e: React.FormEvent) => {
+ // One save at a time: a double tap must not save the batch twice (the second create
+ // would fail on the unique name and show a false "name already used" error).
+ const { submitting, run } = useSubmitLock()
+
+ const handleSubmit = (e: React.FormEvent) => {
  e.preventDefault()
+ void run(saveBatch)
+ }
+
+ const saveBatch = async () => {
  if (!userId) return
 
  if (isGroupBatch && !formData.mating_apiary_id) {
@@ -1144,8 +1153,8 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  </div>
 
  <div className="md:col-span-2 flex gap-3">
- <Button type="submit" tone="blue">
- {editingBatch ? 'Update' : 'Create'} Batch
+ <Button type="submit" tone="blue" disabled={submitting}>
+ {submitting ? 'Saving…' : `${editingBatch ? 'Update' : 'Create'} Batch`}
  </Button>
  <Button type="button" onClick={resetForm} tone="neutral">
  Cancel

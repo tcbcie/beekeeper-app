@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import type { Harvest, Hive, Apiary } from '@/types/records'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import Button from '@/components/ui/Button'
 import { useFormDirtyState } from '@/hooks/useFormDirtyState'
 
@@ -44,7 +45,8 @@ export default function HarvestForm({
   })
 
   const [formApiaryId, setFormApiaryId] = useState<string>('')
-  const [submitting, setSubmitting] = useState(false)
+  // One save at a time: a double tap must not save the record twice.
+  const { submitting, run } = useSubmitLock()
   const isEditing = Boolean(harvest?.id)
 
   // Every exit guard on the records page asks one question: is there
@@ -102,12 +104,7 @@ export default function HarvestForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitting(true)
-    try {
-      await onSubmit(formData)
-    } finally {
-      setSubmitting(false)
-    }
+    await run(() => onSubmit(formData))
   }
 
   const filteredHives = hives

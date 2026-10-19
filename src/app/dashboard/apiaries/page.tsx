@@ -28,6 +28,7 @@ const MapLocationPicker = dynamic(() => import('@/components/MapLocationPicker')
 import { useToast } from '@/components/ui/Toast'
 import { useRouter } from 'next/navigation'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useListPositionMemory } from '@/hooks/useListPositionMemory'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
@@ -410,8 +411,15 @@ export default function ApiariesPage() {
     initUser()
   }, [router, fetchApiaries])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // One save at a time: a double tap must not create two apiaries.
+  const { submitting, run } = useSubmitLock()
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    void run(saveApiary)
+  }
+
+  const saveApiary = async () => {
     if (!userId) return
 
     // Photos uploaded during this attempt. If the save then fails they belong to
@@ -1092,8 +1100,8 @@ export default function ApiariesPage() {
             )}
 
             <div className="flex gap-3 flex-wrap">
-              <Button type="submit" className="fj-btn fj-btn-success min-h-[48px] px-6">
-                {editingApiary ? 'Update' : 'Add'} Apiary
+              <Button type="submit" disabled={submitting || uploading} className="fj-btn fj-btn-success min-h-[48px] px-6">
+                {submitting ? 'Saving…' : `${editingApiary ? 'Update' : 'Add'} Apiary`}
               </Button>
               <Button type="button" onClick={resetForm} className="fj-btn fj-btn-neutral min-h-[48px] px-6">
                 Cancel

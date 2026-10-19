@@ -7,6 +7,7 @@ import { MapPin, Camera, TreeDeciduous, X, CheckCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import dynamic from 'next/dynamic'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import Image from 'next/image'
 
 const MapLocationPicker = dynamic(() => import('@/components/MapLocationPicker'), {
@@ -49,7 +50,8 @@ export default function SubmitColonyPage() {
   const toast = useToast()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [submitting, setSubmitting] = useState(false)
+  // One submission at a time: a double tap must not report the sighting twice.
+  const { submitting, run } = useSubmitLock()
   const [submitted, setSubmitted] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [showMapPicker, setShowMapPicker] = useState(false)
@@ -113,16 +115,18 @@ export default function SubmitColonyPage() {
     initUser()
   }, [router])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    void run(submitSighting)
+  }
+
+  const submitSighting = async () => {
     if (!userId) return
 
     if (!formData.latitude || !formData.longitude) {
       toast.error('Please select a location on the map')
       return
     }
-
-    setSubmitting(true)
 
     // Photos uploaded during this attempt. If the submission then fails they
     // belong to no row and nothing else will ever collect them.
@@ -196,8 +200,6 @@ export default function SubmitColonyPage() {
       if (!recordSaved) await deleteUploadedImages(uploadedUrls)
       const errorMessage = error instanceof Error ? error.message : 'An error occurred'
       toast.error(errorMessage)
-    } finally {
-      setSubmitting(false)
     }
   }
 

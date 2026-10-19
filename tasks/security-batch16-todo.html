@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 16: Double-Submit Guards</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    pre { background: #fef3c7; padding: 0.8rem; border-radius: 6px; overflow-x: auto; font-size: 0.85em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+    .note { background: #fff7ed; border-left: 4px solid #f59e0b; padding: 0.6rem 0.9rem; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 16: Double-Submit Guards</h1>
+<p><strong>Status:</strong> Done 19/10/2026. Tested by you; committed and pushed. Approved with the recommendations: A, the orphan support page gets the guard; B, the lineage cycle goes to a later queens batch; C, the invitation index comes later. This is Phase 2 fix batch 4.</p>
+<p>Three agents checked every double-submit finding. They are all real. Most handlers have no guard at all. The rest use a React state flag (<code>if (saving) return</code>), which two quick taps can both get past, because the second tap lands before React re-renders. The results are duplicate hives, apiaries, queens, nucs, tasks, colonies, tickets, invitations and traceability batches, the last of which each use up a lot number and trace code.</p>
+
+<h2>The shared fix</h2>
+<p>One new hook, <code>src/hooks/useSubmitLock.ts</code>. A ref is the real lock, because it changes instantly with no re-render needed. The state copy only drives <code>disabled</code> and "Saving…". The lock is released in <code>finally</code>, so an error or early return can never leave it stuck.</p>
+<pre>const { submitting, run } = useSubmitLock()
+
+const handleSubmit = (e: React.FormEvent) =&gt; {
+  e.preventDefault()               // always outside run(): a locked second submit must not reload the page
+  if (!valid) return               // quick validation stays outside
+  void run(async () =&gt; { ...the existing save code, unchanged... })
+}
+&lt;Button type="submit" disabled={submitting}&gt;</pre>
+<p>Each site then gets the same three-line change: wrap the save in <code>run()</code>, disable the button, and drop the old state flag where there was one. Save logic is otherwise untouched.</p>
+
+<h2>Sites</h2>
+<table>
+  <tr><th>#</th><th>Area</th><th>Handler (file)</th><th>Today</th><th>Finding</th></tr>
+  <tr><td>1</td><td>Hives</td><td><code>HiveFormSection.tsx</code> handleSubmit (both submit buttons)</td><td>No guard, buttons never disabled</td><td>C3-03</td></tr>
+  <tr><td>2</td><td>Apiaries</td><td><code>apiaries/page.tsx</code> handleSubmit</td><td>No guard</td><td>C7a-07</td></tr>
+  <tr><td>3</td><td>Wild colonies</td><td><code>WildColoniesTab.tsx</code> (3 buttons) and <code>submit-colony/page.tsx</code></td><td>None / state only</td><td>C7b-09</td></tr>
+  <tr><td>4</td><td>Diagnosis</td><td><code>DiagnosisImagesTab.tsx</code> comment (Enter key bypassed the button) and <code>DiagnosisUploader.tsx</code></td><td>State only</td><td>C7b-26</td></tr>
+  <tr><td>5</td><td>Queens</td><td><code>QueenFormSection.tsx</code> handleSubmit</td><td>No guard; duplicate queens</td><td>C6-07</td></tr>
+  <tr><td>6</td><td>Rearing batch</td><td><code>BatchFormSection.tsx</code> handleSubmit</td><td>No guard; second save shows a false "name already used"</td><td>C5b-12</td></tr>
+  <tr><td>7</td><td>Graft generate</td><td><code>useBatchGrafts.ts</code> generateGrafts (lock inside the hook, also <code>await fetchGrafts()</code>) and its button</td><td>No guard; second tap shows "Failed to create grafts"</td><td>C5b-14</td></tr>
+  <tr><td>8</td><td>Queen Tracker rows</td><td><code>QueenTrackerTab.tsx</code>: per-row lock. The ref becomes the source of truth through <code>beginUpdate(id)</code>/<code>endUpdate(id)</code>, and the ref is no longer written during render</td><td>Ref copied from state during render (doesn't lock)</td><td>C5a-10</td></tr>
+  <tr><td>9</td><td>Mating nucs</td><td><code>MatingNucsTab.tsx</code>: single create/edit, bulk create, bulk change mating site</td><td>None / state only; duplicate nucs</td><td>C5a (related)</td></tr>
+  <tr><td>10</td><td>Distribute graft</td><td><code>DistributeGraftModal.tsx</code>: hand-made ref lock with no <code>finally</code> (an error locks it for good). Moves to the hook</td><td>Can get stuck</td><td>related</td></tr>
+  <tr><td>11</td><td>Records</td><td>Inspection, Varroa Treatment, Varroa Check, Feeding and Harvest forms (the lock sits in the form, which owns the button), plus the page's Archive form</td><td>State only / none</td><td>C4-10 / C4-11</td></tr>
+  <tr><td>12</td><td>Tasks</td><td><code>tasks/page.tsx</code> handleSubmit</td><td>No guard, button never disabled</td><td>C4-10</td></tr>
+  <tr><td>13</td><td>Support</td><td><code>about/page.tsx</code> support form (the live one)</td><td>No guard, button never disabled</td><td>C9a-18</td></tr>
+  <tr><td>14</td><td>Traceability</td><td><code>tools/traceability/BatchesTab.tsx</code> handleBatchSubmit</td><td>No guard; burns lot numbers and trace codes</td><td>C8b-01</td></tr>
+  <tr><td>15</td><td>CRM</td><td>New customer, new order, send invoice email</td><td>State only</td><td>C8b-02 + Low</td></tr>
+  <tr><td>16</td><td>Invitations</td><td><code>apiary-team/page.tsx</code> (button stays enabled for a whole round trip before the flag is set) and <code>rearing-team/page.tsx</code></td><td>Late or state-only</td><td>C6-09 + Low</td></tr>
+</table>
+<p>Also: a small label bug in <code>WildColoniesTab.tsx</code>, where the button reads "Uploading... Colony" because " Colony" sits outside the ternary.</p>
+
+<h2>Todo</h2>
+<div class="task"><input type="checkbox" checked disabled> Add <code>useSubmitLock</code> (ref lock, <code>submitting</code> state, stable <code>run</code>, returns <code>fn()</code>'s result or <code>undefined</code> when locked).</div>
+<div class="task"><input type="checkbox" checked disabled> Apply to sites 1–7 and 9–16; fix the per-row lock in site 8.</div>
+<div class="task"><input type="checkbox" checked disabled> Type-check and lint; qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/double-submit-guard.md</code> (the hook and the rule "every create/save button uses it"); Phase 2 register; memory note.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>Decisions for you</h2>
+<table>
+  <tr><th>Item</th><th>Recommendation</th></tr>
+  <tr><td><strong>A.</strong> <code>/dashboard/support</code> is an orphan support page that nothing links to, with the same bug</td><td>Give it the same guard (3 lines) and leave deleting the route for later. Or say "delete it".</td></tr>
+  <tr><td><strong>B.</strong> C6-08, the queen lineage cycle. Picking a "Reared" daughter from a queen's own batch as that queen's mother can save a real cycle (the queen ends up her own grandmother), because the check can't see the record the RPC creates</td><td>Fix it in a later queens batch (about 15 lines in 2 files, check before the RPC). It's a correctness bug, not a double submit.</td></tr>
+  <tr><td><strong>C.</strong> Pending invitations have no unique index, so once duplicates exist the "already invited" check stops working</td><td>Add a partial unique index later (after checking for existing duplicates), as the database backstop.</td></tr>
+</table>
+
+<h2>Out of scope (later)</h2>
+<ul>
+  <li>CRM order detail page actions (<code>busy</code> flag, state only) and the due-date update. These were outside the audit items.</li>
+  <li>Logbook save: it's an upsert, so a double save is harmless.</li>
+  <li>The non-atomic batch insert plus breeder RPC (C5b-12, second half). It belongs to the "saves not atomic" work.</li>
+</ul>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>Hook</td><td><code>src/hooks/useSubmitLock.ts</code>, 33 lines: ref lock, <code>submitting</code> state, stable <code>run</code>, released in <code>finally</code>.</td></tr>
+  <tr><td>Sites</td><td>28 files. Each handler becomes <code>preventDefault()</code> then <code>run(save…)</code>, and the save code is otherwise unchanged. Old <code>saving</code>/<code>sending</code> states were replaced under the same name. Guarded buttons are disabled and show "Saving…" (or "Sending…", "Archiving…", "Generating…").</td></tr>
+  <tr><td>Queen Tracker</td><td>The ref is now the per-row lock (<code>lockRow</code>/<code>unlockRow</code>) and is no longer written during render.</td></tr>
+  <tr><td>Extras</td><td>The distribute modal's stuck-lock bug is fixed. Graft generation now waits for the refreshed list. The "Uploading... Colony" label is fixed. The Enter-key bypass in diagnosis comments is closed.</td></tr>
+  <tr><td>Checks</td><td>tsc shows nothing in <code>src/</code> and ESLint is clean on all 28 files. qa-engineer found no issues.</td></tr>
+</table>
+<h3>Please test (<code>npm run build</code>, then the app)</h3>
+<ol>
+  <li>For each of these, <strong>tap Save/Add twice quickly</strong> (or double-click). Only one record is created, and the button shows "Saving…" while it works: <strong>hive</strong>, <strong>apiary</strong>, <strong>queen</strong>, <strong>task</strong>, a <strong>record</strong> (feeding or harvest), <strong>mating nuc</strong>.</li>
+  <li><strong>Batch editor:</strong> double-tap "Update Batch"; there's no false "name already used" error. Double-tap "Generate Cell Records"; only one set of cells is made and there's no "Failed to create grafts".</li>
+  <li><strong>Support:</strong> double-tap "Submit Ticket" on About → Support; one ticket.</li>
+  <li><strong>Traceability:</strong> double-tap "Create Batch"; one batch, one lot number.</li>
+  <li><strong>Queen Tracker:</strong> double-tap a row action (for example clear mating); it runs once, and the row is usable again afterwards.</li>
+  <li><strong>Normal saves still work</strong> everywhere you try, and a failed save (for example going offline) lets you try again.</li>
+</ol>
+</body>
+</html>

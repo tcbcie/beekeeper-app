@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import type { Feeding, Hive, Apiary } from '@/types/records'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import Button from '@/components/ui/Button'
 import { useFormDirtyState } from '@/hooks/useFormDirtyState'
 import { isSyrupFeed } from '@/lib/feeding'
@@ -45,7 +46,8 @@ export default function FeedingForm({
   const [formApiaryId, setFormApiaryId] = useState<string>('')
   const [isOtherFeedType, setIsOtherFeedType] = useState(false)
   const [otherFeedType, setOtherFeedType] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  // One save at a time: a double tap must not save the record twice.
+  const { submitting, run } = useSubmitLock()
   const isEditing = Boolean(feeding?.id)
 
   // Every exit guard on the records page asks one question: is there
@@ -111,12 +113,7 @@ export default function FeedingForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitting(true)
-    try {
-      await onSubmit(formData, isOtherFeedType, otherFeedType)
-    } finally {
-      setSubmitting(false)
-    }
+    await run(() => onSubmit(formData, isOtherFeedType, otherFeedType))
   }
 
   const filteredHives = hives

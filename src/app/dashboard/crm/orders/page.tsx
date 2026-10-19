@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, X, ShoppingCart, ChevronRight, Search, PackageCheck, Banknote, Download } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -70,7 +71,8 @@ export default function OrdersPage() {
   const actionLock = useRef(false)
 
   const [showForm, setShowForm] = useState(false)
-  const [saving, setSaving] = useState(false)
+  // One create at a time: a double tap must not create the order twice.
+  const { submitting: saving, run } = useSubmitLock()
   const [customerId, setCustomerId] = useState('')
   const [orderDate, setOrderDate] = useState(today())
   const [dueDate, setDueDate] = useState('')
@@ -127,14 +129,17 @@ export default function OrdersPage() {
     setItems([emptyOrderItem()])
   }
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
+    void run(createOrder)
+  }
+
+  const createOrder = async () => {
     if (!userId) return
     if (!customerId) { toast.warning('Please select a customer'); return }
     const validItems = items.filter((i) => Number(i.quantity) > 0)
     if (validItems.length === 0) { toast.warning('Add at least one line item with a quantity'); return }
 
-    setSaving(true)
     try {
       // Atomic: allocates the order number, inserts order + items in one
       // transaction, and returns the new order id.
@@ -159,8 +164,6 @@ export default function OrdersPage() {
       router.push(`/dashboard/crm/orders/${orderId}`)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to create order')
-    } finally {
-      setSaving(false)
     }
   }
 

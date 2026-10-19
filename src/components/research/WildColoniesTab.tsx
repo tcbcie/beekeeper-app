@@ -5,6 +5,7 @@ import { deleteUploadedImages } from '@/lib/upload-image'
 import { Plus, Edit2, X, MapPin, Camera, TreeDeciduous, CheckCircle, XCircle, Clock, ChevronDown, ChevronUp, ClipboardList, User, Filter } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { useImageUpload } from '@/hooks/useImageUpload'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import Image from 'next/image'
 
 const MapLocationPicker = dynamic(() => import('@/components/MapLocationPicker'), {
@@ -191,8 +192,15 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  fetchColonies()
  }, [fetchColonies])
 
- const handleSubmit = async (e: React.FormEvent, overrideStatus?: string) => {
+ // One save at a time: a double tap must not create two colonies.
+ const { submitting, run } = useSubmitLock()
+
+ const handleSubmit = (e: React.FormEvent, overrideStatus?: string) => {
  e.preventDefault()
+ void run(() => saveColony(overrideStatus))
+ }
+
+ const saveColony = async (overrideStatus?: string) => {
 
  if (!formData.latitude || !formData.longitude) {
  toast.error('Please select a location on the map')
@@ -644,20 +652,20 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <Button
  type="button"
  onClick={(e) => handleSubmit(e, 'confirmed')}
- disabled={locationUploading || colonyUploading}
+ disabled={locationUploading || colonyUploading || submitting}
  className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 min-h-[48px] disabled:opacity-50 flex items-center gap-2"
  >
  <CheckCircle size={18} />
- {locationUploading || colonyUploading ? 'Uploading...' : 'Confirm'}
+ {locationUploading || colonyUploading ? 'Uploading...' : submitting ? 'Saving…' : 'Confirm'}
  </Button>
  <Button
  type="button"
  onClick={(e) => handleSubmit(e, 'unconfirmed')}
- disabled={locationUploading || colonyUploading}
+ disabled={locationUploading || colonyUploading || submitting}
  className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 min-h-[48px] disabled:opacity-50 flex items-center gap-2"
  >
  <XCircle size={18} />
- {locationUploading || colonyUploading ? 'Uploading...' : 'Unconfirmed'}
+ {locationUploading || colonyUploading ? 'Uploading...' : submitting ? 'Saving…' : 'Unconfirmed'}
  </Button>
  <Button type="button" onClick={resetForm} className="px-6 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated min-h-[48px]">
  Cancel
@@ -667,10 +675,10 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <>
  <Button
  type="submit"
- disabled={locationUploading || colonyUploading}
+ disabled={locationUploading || colonyUploading || submitting}
  className="px-6 py-2 bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 min-h-[48px] disabled:opacity-50"
  >
- {locationUploading || colonyUploading ? 'Uploading...' : editingColony ? 'Update' : 'Add'} Colony
+ {locationUploading || colonyUploading ? 'Uploading...' : submitting ? 'Saving…' : `${editingColony ? 'Update' : 'Add'} Colony`}
  </Button>
  <Button type="button" onClick={resetForm} className="px-6 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated min-h-[48px]">
  Cancel

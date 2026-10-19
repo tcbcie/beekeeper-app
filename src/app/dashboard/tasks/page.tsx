@@ -22,6 +22,7 @@ import Card from '@/components/ui/Card'
 import Surface from '@/components/ui/Surface'
 import { formatLocalDate, toLocalDateString } from '@/lib/date-utils'
 import { usePersistentState } from '@/hooks/usePersistentState'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { useSelection } from '@/contexts/SelectionContext'
 import FilterDisclosure from '@/components/ui/FilterDisclosure'
 import {
@@ -395,9 +396,15 @@ export default function TasksEventsPage() {
   }, [searchParams, tasks, hives, setFilterType, setFilterCategory, setFilterOwnership, setFilterHive, setFilterApiary])
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // One save at a time: a double tap must not create the task twice.
+  const { submitting, run } = useSubmitLock()
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    void run(saveTask)
+  }
+
+  const saveTask = async () => {
     // Validate end date is not before start date
     if (formData.end_date && formData.end_date < formData.start_date) {
       toast.error('End date cannot be before start date.')
@@ -1525,8 +1532,8 @@ export default function TasksEventsPage() {
 
               {/* Actions */}
               <FormActionRow className="pt-4">
-                <Button type="submit" tone="success" fullWidth>
-                  {editingTask ? 'Update' : 'Create'}
+                <Button type="submit" tone="success" fullWidth disabled={submitting}>
+                  {submitting ? 'Saving…' : editingTask ? 'Update' : 'Create'}
                 </Button>
                 <Button
                   type="button"

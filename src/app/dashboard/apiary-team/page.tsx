@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { getCurrentUserId } from '@/lib/auth'
 import { clearTeamAccessCache } from '@/lib/team-access'
 import { User, Mail, Edit2, Users, Plus, X, Trash2, UserPlus, Clock, Send, MapPin, Share2 } from 'lucide-react'
@@ -80,7 +81,9 @@ export default function ApiaryTeamPage() {
   const [newTeamName, setNewTeamName] = useState('')
   const [inviteEmail, setInviteEmail] = useState('')
   const [creatingTeam, setCreatingTeam] = useState(false)
-  const [sendingInvite, setSendingInvite] = useState(false)
+  // One invite at a time, covering the shared-apiary check too: a double tap must not send
+  // the invitation twice.
+  const { submitting: sendingInvite, run: runInvite } = useSubmitLock()
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const [teamInvitations, setTeamInvitations] = useState<TeamInvitation[]>([])
   const [acceptedInvitations, setAcceptedInvitations] = useState<TeamInvitation[]>([])
@@ -367,7 +370,11 @@ export default function ApiaryTeamPage() {
   }, [fetchTeamApiaries])
 
   // Send invitation to join team
-  const handleSendInvite = async () => {
+  const handleSendInvite = () => {
+    void runInvite(sendInvite)
+  }
+
+  const sendInvite = async () => {
     if (!selectedTeam || !inviteEmail.trim()) {
       toast.warning('Please enter an email address.')
       return
@@ -398,7 +405,6 @@ export default function ApiaryTeamPage() {
       return
     }
 
-    setSendingInvite(true)
     try {
       // Check if user already exists using RPC function
       // This function queries auth.users which is not directly accessible from client
@@ -422,7 +428,6 @@ export default function ApiaryTeamPage() {
 
         if (existingMember) {
           toast.warning('This user is already a member of the team.')
-          setSendingInvite(false)
           return
         }
       }
@@ -439,7 +444,6 @@ export default function ApiaryTeamPage() {
       if (existingInvite) {
         if (existingInvite.status === 'pending') {
           toast.warning('An invitation has already been sent to this email.')
-          setSendingInvite(false)
           return
         } else if (existingInvite.status === 'declined') {
           // Delete the old declined invitation so we can send a new one
@@ -451,7 +455,6 @@ export default function ApiaryTeamPage() {
           if (deleteError) {
             console.error('Error deleting declined invitation:', deleteError)
             toast.error('Failed to resend invitation. Please try again.')
-            setSendingInvite(false)
             return
           }
           // Continue to send new invitation below
@@ -512,8 +515,6 @@ export default function ApiaryTeamPage() {
     } catch (error) {
       console.error('Error sending invitation:', error)
       toast.error('Failed to send invitation. Please try again.')
-    } finally {
-      setSendingInvite(false)
     }
   }
 

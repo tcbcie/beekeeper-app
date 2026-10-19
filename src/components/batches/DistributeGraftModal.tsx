@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { X, Search, User, Users, UserPlus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { RecipientUser, RecipientApiary, RecipientHive, CreateDistributionData, BulkDistributionData } from '@/hooks/useGraftDistributions'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { TYPE_LABELS } from './graftConstants'
 import Button from '@/components/ui/Button'
 
@@ -126,8 +127,8 @@ export default function DistributeGraftModal({
   const [distributionDate, setDistributionDate] = useState(today)
   const [clubMember, setClubMember] = useState(false)
   const [notes, setNotes] = useState('')
-  const [saving, setSaving] = useState(false)
-  const submittingRef = useRef(false)
+  // One save at a time; released in finally, so an error in onSave can't leave it stuck.
+  const { submitting: saving, run } = useSubmitLock()
 
   const switchMode = (mode: RecipientMode) => {
     setRecipientMode(mode)
@@ -289,8 +290,12 @@ export default function DistributeGraftModal({
       (!!ownIdentity.email && ownIdentity.email.toLowerCase() === needle)
   }, [searchText, ownIdentity])
 
-  const handleSubmit = async () => {
-    if (!canSubmit || saving || submittingRef.current) return
+  const handleSubmit = () => {
+    void run(saveDistribution)
+  }
+
+  const saveDistribution = async () => {
+    if (!canSubmit) return
 
     // Every distribution needs exactly one source. Without one the insert would fail the
     // graft_distributions source CHECK anyway — fail fast with a message instead.
@@ -307,16 +312,11 @@ export default function DistributeGraftModal({
       return
     }
 
-    submittingRef.current = true
-    setSaving(true)
-
     let success: boolean | null
     if (isBulk && onBulkSave) {
       // Bulk distribution is always batch-scoped. A missing batch is a wiring bug, not user
       // error, so refuse rather than write rows that violate the source CHECK constraint.
       if (!batchId) {
-        setSaving(false)
-        submittingRef.current = false
         setLocationError('Missing batch for bulk distribution')
         return
       }
@@ -364,8 +364,6 @@ export default function DistributeGraftModal({
       success = await onSave(data)
     }
 
-    setSaving(false)
-    submittingRef.current = false
     if (success) onClose()
   }
 

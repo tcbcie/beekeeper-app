@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { getCurrentUserId } from '@/lib/auth'
 import { Plus, X, Contact, Mail, Phone, Pencil, Trash2, Search, Download } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -37,7 +38,8 @@ export default function CustomersPage() {
   const [isUkNi, setIsUkNi] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Customer | null>(null)
-  const [saving, setSaving] = useState(false)
+  // One save at a time: a double tap must not add the customer twice.
+  const { submitting: saving, run } = useSubmitLock()
   const [formData, setFormData] = useState<CustomerFormData>(EMPTY_FORM)
   // Free-text search stays ephemeral by convention; the sort choice persists.
   const [search, setSearch] = useState('')
@@ -121,8 +123,12 @@ export default function CustomersPage() {
     }
   }, [customers])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    void run(saveCustomer)
+  }
+
+  const saveCustomer = async () => {
     if (!userId) return
     const firstName = formData.first_name.trim()
     const surname = formData.surname.trim()
@@ -147,7 +153,6 @@ export default function CustomersPage() {
       notes: formData.notes.trim() || null,
     }
 
-    setSaving(true)
     try {
       if (editing) {
         const { error } = await supabase
@@ -168,8 +173,6 @@ export default function CustomersPage() {
       fetchCustomers(userId)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to save customer')
-    } finally {
-      setSaving(false)
     }
   }
 

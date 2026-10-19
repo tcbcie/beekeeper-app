@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { getCurrentUserId } from '@/lib/auth'
 import { User, Mail, Edit2, Users, Plus, X, Trash2, UserPlus, Clock, Send, Share2, Crown, HelpCircle } from 'lucide-react'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
@@ -47,7 +48,8 @@ export default function RearingTeamPage() {
   const [newRgName, setNewRgName] = useState('')
   const [rgInviteEmail, setRgInviteEmail] = useState('')
   const [creatingRg, setCreatingRg] = useState(false)
-  const [sendingRgInvite, setSendingRgInvite] = useState(false)
+  // One invite at a time: a double tap must not send the invitation twice.
+  const { submitting: sendingRgInvite, run: runRgInvite } = useSubmitLock()
   const [expandedRgId, setExpandedRgId] = useState<string | null>(null)
   const [expandedMemberRgId, setExpandedMemberRgId] = useState<string | null>(null)
   const [renameRgName, setRenameRgName] = useState('')
@@ -230,7 +232,11 @@ export default function RearingTeamPage() {
     }
   }
 
-  const handleSendRgInvite = async () => {
+  const handleSendRgInvite = () => {
+    void runRgInvite(sendRgInvite)
+  }
+
+  const sendRgInvite = async () => {
     if (!selectedRg || !rgInviteEmail.trim()) {
       toast.warning('Please enter an email address.')
       return
@@ -240,7 +246,6 @@ export default function RearingTeamPage() {
       toast.warning('Please enter a valid email address.')
       return
     }
-    setSendingRgInvite(true)
     try {
       // Check if user already exists
       const { data: lookupResult, error: lookupError } = await supabase
@@ -259,7 +264,6 @@ export default function RearingTeamPage() {
           .maybeSingle()
         if (existingMember) {
           toast.warning('This user is already a member of the group.')
-          setSendingRgInvite(false)
           return
         }
       }
@@ -276,7 +280,6 @@ export default function RearingTeamPage() {
       if (existingInvite) {
         if (existingInvite.status === 'pending') {
           toast.warning('An invitation has already been sent to this email.')
-          setSendingRgInvite(false)
           return
         } else if (existingInvite.status === 'declined') {
           await supabase.from('rearing_group_invitations').delete().eq('id', existingInvite.id)
@@ -330,8 +333,6 @@ export default function RearingTeamPage() {
     } catch (error) {
       console.error('Error sending rearing group invitation:', error)
       toast.error('Failed to send invitation. Please try again.')
-    } finally {
-      setSendingRgInvite(false)
     }
   }
 

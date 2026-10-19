@@ -9,6 +9,7 @@ import { Queen, QueenFormData, Batch, getQueenColorFromYear, QUEEN_ROLE_OPTIONS 
 import { isValidEircode } from '@/lib/eircode'
 import { buildLineageString, damLabelFromQueen, damLabelFromSnapshot, lineageYear, DRONE_SOURCE_OPTIONS, type DroneSourceType } from '@/lib/lineage'
 import type { RearedQueenCandidate } from '@/hooks/useQueensList'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 
 interface QueenFormSectionProps {
  userId: string | null
@@ -173,8 +174,15 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  }
  }, [formData.birth_date, formData.marking_color, editingQueen?.distributed_by_name])
 
- const handleSubmit = async (e: React.FormEvent) => {
+ // One save at a time: a double tap must not create two queens.
+ const { submitting, run } = useSubmitLock()
+
+ const handleSubmit = (e: React.FormEvent) => {
  e.preventDefault()
+ void run(saveQueen)
+ }
+
+ const saveQueen = async () => {
  if (!userId) return
 
  // Pure validation runs first: promoting a reared queen below inserts a register record,
@@ -636,9 +644,10 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  <div className="md:col-span-2 flex gap-3">
  <Button
  type="submit"
+ disabled={submitting}
  className="px-6 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 min-h-[48px]"
  >
- {editingQueen ? 'Update' : 'Add'} Queen
+ {submitting ? 'Saving…' : `${editingQueen ? 'Update' : 'Add'} Queen`}
  </Button>
  <Button
  type="button"

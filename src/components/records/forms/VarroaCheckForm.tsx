@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Camera, X, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import type { VarroaCheck, Hive, Apiary } from '@/types/records'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
@@ -55,7 +56,8 @@ export default function VarroaCheckForm({
 
   const [formApiaryId, setFormApiaryId] = useState<string>('')
   const [otherCheckMethod, setOtherCheckMethod] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  // One save at a time: a double tap must not save the record twice.
+  const { submitting, run } = useSubmitLock()
   const isEditing = Boolean(check?.id)
 
   const {
@@ -239,12 +241,7 @@ export default function VarroaCheckForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitting(true)
-    try {
-      await onSubmit(formData, imageFile)
-    } finally {
-      setSubmitting(false)
-    }
+    await run(() => onSubmit(formData, imageFile))
   }
 
   const handleCancel = () => {
