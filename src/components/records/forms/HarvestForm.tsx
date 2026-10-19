@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Harvest, Hive, Apiary } from '@/types/records'
 import Button from '@/components/ui/Button'
 import { useFormDirtyState } from '@/hooks/useFormDirtyState'
@@ -52,9 +52,12 @@ export default function HarvestForm({
   // always no, so its contents could be discarded without a prompt.
   useFormDirtyState({ value: formData, onDirtyChange })
 
-  // Update form data when harvest prop changes
+  // Load the record once per harvest being edited. A refreshed hive list or apiary filter
+  // must not reset the form and lose unsaved edits.
+  const loadedHarvestRef = useRef<typeof harvest>(null)
   useEffect(() => {
-    if (harvest) {
+    if (harvest && harvest !== loadedHarvestRef.current) {
+      loadedHarvestRef.current = harvest
       setFormData(harvest)
       // Find apiary for selected hive
       const hive = hives.find(h => h.id === harvest.hive_id)

@@ -95,9 +95,12 @@ export default function VarroaTreatmentForm({
     return () => { isMountedRef.current = false }
   }, [])
 
-  // Update form data when treatment prop changes
+  // Load the record once per treatment being edited. A refreshed hive list, apiary filter or
+  // product list must not reset the form and lose unsaved edits.
+  const loadedTreatmentRef = useRef<typeof treatment>(null)
   useEffect(() => {
-    if (treatment) {
+    if (treatment && treatment !== loadedTreatmentRef.current) {
+      loadedTreatmentRef.current = treatment
       setFormData(treatment)
       removalDateTouchedRef.current = true
       // Find apiary for selected hive

@@ -36,14 +36,36 @@ const stepperButtonClassName = 'w-10 h-10 shrink-0 border border-border bg-surfa
 const stepperRowClassName = 'grid grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-2'
 const stepperInputClassName = 'w-full min-w-0 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground text-center'
 
-const emptyFormData = (): FormData => ({
+// Standard timeline from a graft date. Used only when the graft date is set or changed, so
+// dates the beekeeper adjusts by hand (or saved custom dates) are never overwritten.
+type TimelineDates = Partial<Pick<FormData, 'acceptance_check_date' | 'first_option_to_cage_date' | 'second_option_to_cage_date' | 'emergence_date'>>
+
+const timelineFromGraftDate = (graftDate: string): TimelineDates => {
+ if (!graftDate) return {}
+ const graft = new Date(graftDate + 'T00:00:00')
+ const addDays = (days: number): string => {
+ const result = new Date(graft)
+ result.setDate(result.getDate() + days)
+ return toLocalDateString(result)
+ }
+ return {
+ acceptance_check_date: addDays(1),
+ first_option_to_cage_date: addDays(5),
+ second_option_to_cage_date: addDays(10),
+ emergence_date: addDays(12),
+ }
+}
+
+const emptyFormData = (): FormData => {
+ const graftDate = toLocalDateString(new Date())
+ return {
  batch_name: '',
  mother_queen_id: '',
  multiple_breeders: false,
  breeder_queen_ids: [],
  starter_apiary_id: '',
  starter_colony_hive_id: '',
- graft_date: toLocalDateString(new Date()),
+ graft_date: graftDate,
  cell_count: '',
  frame_rows: '',
  cells_per_row: '',
@@ -61,7 +83,9 @@ const emptyFormData = (): FormData => ({
  enable_email_digest: false,
  enable_batch_event_reminders: false,
  batch_reminder_minutes_before: '60',
-})
+ ...timelineFromGraftDate(graftDate),
+ }
+}
 
 /**
  * Create/edit batch form incl. voice notes and the grafts section for an
@@ -134,6 +158,8 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  }
  setEditingBatchHasGrafts(hasGrafts)
 
+ // Saved dates win; the standard timeline only fills dates that were never set.
+ const timeline = timelineFromGraftDate(batch.graft_date)
  setFormData({
  batch_name: batch.batch_name,
  mother_queen_id: batch.mother_queen_id || '',
@@ -148,10 +174,10 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  grafts_accepted: batch.grafts_accepted?.toString() || '',
  queens_hatched: batch.queens_hatched?.toString() || '',
  queens_mated: batch.queens_mated?.toString() || '',
- acceptance_check_date: batch.acceptance_check_date || '',
- first_option_to_cage_date: batch.first_option_to_cage_date || '',
- second_option_to_cage_date: batch.second_option_to_cage_date || '',
- emergence_date: batch.emergence_date || '',
+ acceptance_check_date: batch.acceptance_check_date || timeline.acceptance_check_date || '',
+ first_option_to_cage_date: batch.first_option_to_cage_date || timeline.first_option_to_cage_date || '',
+ second_option_to_cage_date: batch.second_option_to_cage_date || timeline.second_option_to_cage_date || '',
+ emergence_date: batch.emergence_date || timeline.emergence_date || '',
  notes: batch.notes || '',
  mating_apiary_id: batch.mating_apiary_id || '',
  rearing_group_id: batch.rearing_group_id || '',
@@ -184,40 +210,6 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  setFilteredHives([])
  }
  }, [formData.starter_apiary_id, hives])
-
- // Auto-calculate all timeline dates from graft_date
- useEffect(() => {
- if (!formData.graft_date) return
-
- const graft = new Date(formData.graft_date + 'T00:00:00')
-
- const addDays = (d: Date, days: number): string => {
- const result = new Date(d)
- result.setDate(result.getDate() + days)
- return toLocalDateString(result)
- }
-
- const acceptance = addDays(graft, 1)
- const firstCage = addDays(graft, 5)
- const secondCage = addDays(graft, 10)
- const emergence = addDays(graft, 12)
-
- // Only update if any date differs to prevent unnecessary re-renders
- if (
- formData.acceptance_check_date !== acceptance ||
- formData.first_option_to_cage_date !== firstCage ||
- formData.second_option_to_cage_date !== secondCage ||
- formData.emergence_date !== emergence
- ) {
- setFormData(prev => ({
- ...prev,
- acceptance_check_date: acceptance,
- first_option_to_cage_date: firstCage,
- second_option_to_cage_date: secondCage,
- emergence_date: emergence,
- }))
- }
- }, [formData.graft_date, formData.acceptance_check_date, formData.first_option_to_cage_date, formData.second_option_to_cage_date, formData.emergence_date])
 
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault()
@@ -534,7 +526,10 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  <input
  type="date"
  value={formData.graft_date}
- onChange={(e) => setFormData({...formData, graft_date: e.target.value})}
+ onChange={(e) => {
+ const graftDate = e.target.value
+ setFormData(prev => ({ ...prev, graft_date: graftDate, ...timelineFromGraftDate(graftDate) }))
+ }}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
  required
  />
@@ -971,7 +966,18 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
 
  {/* Individual Grafts Section - Only show when editing existing batch */}
  {editingBatch && userId && (
- <div className="md:col-span-2 rounded-xl border border-border bg-surface-secondary/70 p-4 shadow-sm dark:bg-surface/40">
+ <div
+ className="md:col-span-2 rounded-xl border border-border bg-surface-secondary/70 p-4 shadow-sm dark:bg-surface/40"
+ // The grafts section and its modals sit inside the batch <form>. Enter (or "Go" on a
+ // phone) in one of their inputs would submit and close the whole editor, losing what
+ // was typed, so it commits the field instead. Textareas keep Enter for new lines.
+ onKeyDown={(e) => {
+ if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
+ e.preventDefault()
+ e.target.blur()
+ }
+ }}
+ >
  <BatchGraftsSection
  batchId={editingBatch.id}
  userId={userId}

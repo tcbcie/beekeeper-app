@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { Feeding, Hive, Apiary } from '@/types/records'
 import Button from '@/components/ui/Button'
 import { useFormDirtyState } from '@/hooks/useFormDirtyState'
@@ -53,9 +53,12 @@ export default function FeedingForm({
   // always no, so its contents could be discarded without a prompt.
   useFormDirtyState({ value: formData, onDirtyChange })
 
-  // Update form data when feeding prop changes
+  // Load the record once per feeding being edited. A refreshed hive list, apiary filter or
+  // option list must not reset the form and lose unsaved edits.
+  const loadedFeedingRef = useRef<typeof feeding>(null)
   useEffect(() => {
-    if (feeding) {
+    if (feeding && feeding !== loadedFeedingRef.current) {
+      loadedFeedingRef.current = feeding
       setFormData(feeding)
       // Find apiary for selected hive
       const hive = hives.find(h => h.id === feeding.hive_id)

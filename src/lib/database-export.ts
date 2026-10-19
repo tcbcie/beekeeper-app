@@ -2,9 +2,11 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const DATABASE_EXPORT_TABLES = [
   'apiaries',
+  'batch_breeder_queens',
   'batch_containers',
   'batch_feedback',
   'batch_grafts',
+  'batch_jars',
   'batch_runs',
   'beekeeping_associations',
   'bulk_containers',
@@ -13,6 +15,10 @@ export const DATABASE_EXPORT_TABLES = [
   'colony_movements',
   'conservation_areas',
   'container_harvests',
+  'crm_customer_credit',
+  'crm_customers',
+  'crm_order_items',
+  'crm_orders',
   'dca_confirmations',
   'del_user_profiles',
   'diagnosis_image_comments',
@@ -41,6 +47,8 @@ export const DATABASE_EXPORT_TABLES = [
   'purchase_items',
   'push_subscriptions',
   'qr_tags',
+  'queen_assignments',
+  'queen_weights',
   'queens',
   'reactivation_requests',
   'rearing_batches',
@@ -57,12 +65,14 @@ export const DATABASE_EXPORT_TABLES = [
   'teams',
   'terminology',
   'tool_suggestions',
+  'trace_labels',
   'varroa_checks',
   'varroa_treatment_products',
   'varroa_treatments',
   'vegetation_info',
   'wild_colonies',
-  'wild_colony_inspections'
+  'wild_colony_inspections',
+  'yard_benches'
 ] as const
 
 export type ExportTableName = (typeof DATABASE_EXPORT_TABLES)[number]
@@ -152,6 +162,7 @@ export const USER_EXPORT_TABLES: ReadonlyArray<{ table: string; label: string }>
   { table: 'bulk_containers', label: 'Bulk Containers' },
   { table: 'purchase_items', label: 'Purchase Items' },
   { table: 'batch_runs', label: 'Batch Runs' },
+  { table: 'trace_labels', label: 'Jar Trace Labels' },
   { table: 'push_subscriptions', label: 'Push Subscriptions' },
   { table: 'support_tickets', label: 'Support Tickets' },
   { table: 'reactivation_requests', label: 'Reactivation Requests' },

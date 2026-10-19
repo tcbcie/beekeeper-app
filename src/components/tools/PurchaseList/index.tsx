@@ -271,6 +271,9 @@ export default function PurchaseList({ userId }: PurchaseListProps) {
       {/* Form */}
       {showForm && (
         <PurchaseItemForm
+          // Remount per item: the form copies its props into state once, so without a key
+          // editing another item while one is open would save the first item's values.
+          key={editingItem?.id ?? 'new'}
           item={editingItem}
           categories={categories}
           onSubmit={handleSubmit}

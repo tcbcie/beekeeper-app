@@ -404,8 +404,9 @@ export default function TasksEventsPage() {
       return
     }
 
+    // Owner and completion are set on create only: an edit must not reopen a done task or
+    // hand a team-mate's task to whoever edited it.
     const taskData = {
-      user_id: userId,
       title: formData.title,
       description: formData.description || null,
       event_type: formData.event_type,
@@ -423,7 +424,6 @@ export default function TasksEventsPage() {
       reminder_minutes_before: formData.reminder_minutes_before,
       notes: formData.notes || null,
       equipment_needed: formData.equipment_needed || null,
-      completed: false
     }
 
     if (editingTask) {
@@ -441,7 +441,7 @@ export default function TasksEventsPage() {
     } else {
       const { error } = await supabase
         .from('tasks_events')
-        .insert([taskData])
+        .insert([{ ...taskData, user_id: userId, completed: false }])
 
       if (error) {
         toast.error('Error creating task: ' + error.message)

@@ -79,5 +79,5 @@ Single-box hives show just `Brood: 7`.
 
 - No backfill of historical inspections.
 - No change to `right_sized_frames` (stays hive-level).
-- No history-aware box list (we always use the hive's *current* configuration to determine box count for the form).
+- No history-aware box list for **new** inspections (they use the hive's *current* configuration). Since batch 14 (19/10/2026), **editing** an inspection of the same hive uses the boxes it was saved with, so a hive that has since gained or lost boxes can't reshape it or wipe its recorded total. Old inspections with no per-box data still seed Box 1 from the total, and switching the edit to another hive reconciles to that hive's current boxes.
 - No reports/AI changes — they keep using the `brood_frames` total which we maintain server-correct as the sum.

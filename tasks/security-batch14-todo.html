@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 14: Data-Loss Bugs</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    h3 { color: #78350f; margin-bottom: 0.3rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+    .note { background: #fff7ed; border-left: 4px solid #f59e0b; padding: 0.6rem 0.9rem; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 14: Phase 2 Data-Loss Bugs</h1>
+<p><strong>Status:</strong> Done 19/10/2026. Tested by you; committed and pushed. You chose batch 14 first, so part E moves to batch 15. You said no to dropping push keys from the export. This is Phase 2 fix batch 2.</p>
+<p>Four agents checked all 15 findings against the code and the live database (read-only). Every one is real; none was already fixed. They also found three more data-loss bugs next to them (marked <em>new</em>). Each fix is a few lines in the place that causes the bug, with no refactors. The one exception is bulk nuc creation, which needs a database function to be atomic.</p>
+
+<div class="note"><strong>Proposed split.</strong> <strong>Batch 14</strong> is parts A–D, all small app-only changes. <strong>Batch 15</strong> is part E, mating nucs, which includes a migration and a data repair. That keeps each test round short. Or say "all in one" and I'll do both together.</div>
+
+<h2>A. Records (Records page and Tasks)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-01:</strong> every refetch put the skeleton back, which unmounted an open record form and silently lost your edits (for example when you change the ownership filter). Fix: delete the <code>setLoading(true)</code> in <code>fetchAllData</code> (<code>useRecordsData.ts:628</code>). The first load still shows the skeleton; later refetches keep the list on screen.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-01b (new):</strong> the five record forms reset themselves when the hive list or the apiary filter changes, which also wipes the open form and drops a varroa photo. Fix: re-load a form only when the record being edited changes. Remove <code>hives, selectedApiaryId</code> from the four simple forms' effect dependencies. In <code>InspectionForm</code>, skip the reset when <code>initialData</code> is the same object as before (two lines).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-03:</strong> editing an inspection overwrote its weather with today's, or with nothing if the weather call failed. Fix: fetch and write weather only for new inspections (<code>records/page.tsx:790-836</code>).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-04:</strong> harvest moisture was shown and editable but never saved. Fix: add <code>moisture_content</code> to the harvest payload (<code>records/page.tsx:1303</code>).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-05:</strong> editing a task set <code>completed: false</code> and <code>user_id</code> to the editor, so done tasks reopened and a team-mate's edit took ownership of the task. Fix: set those two fields on insert only (<code>tasks/page.tsx:407-444</code>).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-06:</strong> opening an old inspection reshaped its brood frames to the hive's <em>current</em> boxes. That could wipe the recorded brood total, or drop boxes that have since been removed. Fix: when editing the same hive, the brood box list comes from the inspection's saved boxes (<code>InspectionForm.tsx:1105</code>). New inspections and hive changes work as before.</div>
+
+<h2>B. Rearing batches (batch editor)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5b-01:</strong> pressing Enter (or "Go" on a phone) in a queen number, weight or date field, or in any of the four graft modals, submitted the batch form and closed the editor, losing what you typed. Fix: one <code>onKeyDown</code> on the grafts section wrapper (<code>BatchFormSection.tsx:974</code>). Enter in an input there just commits the field. Notes boxes still accept new lines.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5b-02:</strong> the timeline recalculated every date on any change, so manual Acceptance, Cage and Hatch dates never stuck, and saved custom dates were replaced when an old batch was opened. Fix: work out the timeline only when you change the graft date, and for a new batch's defaults. The effect is replaced by a small helper called from the graft date field.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5b-03:</strong> the hatched and mated counts (they feed NIHBS) were saved before distributions had loaded, or after their fetch failed, so they were written too low. Fix: <code>useGraftDistributions</code> also returns an <code>error</code> flag, and the count save waits until distributions have loaded without error.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5b-03b (new):</strong> if the grafts fetch failed, the batch counts were saved as 0. Fix: <code>return</code> after the error toast, as the other two fetches already do (<code>useBatchGrafts.ts:114</code>).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5b-04:</strong> if creating the recipient's queen failed, the error was ignored and the queen went missing while the app said "Distribution recorded". Fix: check the RPC error and show a warning: "Distribution recorded, but the recipient's queen record could not be created." The RPC is safe to re-run, so a retry can't make duplicates.</div>
+
+<h2>C. Tools</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C8a-01 / C8a-02:</strong> with a P&amp;L or Purchases edit form open, clicking Edit on another record saved the first record's values onto the second. Fix: <code>key={record?.id ?? 'new'}</code> on both forms, so they reload for each record (one line each). No other Tools form has this bug.</div>
+
+<h2>D. Complete export</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C2-03:</strong> the complete (SQL) export, both the admin export and the personal one in Settings, left out 10 tables of real data, so a restore would lose them, schema included. Fix: add <code>batch_breeder_queens</code>, <code>batch_jars</code>, <code>crm_customer_credit</code>, <code>crm_customers</code>, <code>crm_order_items</code>, <code>crm_orders</code>, <code>queen_assignments</code>, <code>queen_weights</code>, <code>trace_labels</code> and <code>yard_benches</code> to <code>DATABASE_EXPORT_TABLES</code>. Five system tables stay out on purpose: rate-limit events, the admin audit log, the invoice send log, the storage cleanup queue and Stripe webhook events. The personal JSON/CSV export also gets <code>trace_labels</code>.</div>
+
+<h2>E. Mating nucs: moved to batch 15 (see <code>tasks/security-batch15-todo.html</code>)</h2>
+<div class="task"><input type="checkbox" disabled> <strong>C5a-01:</strong> every time the nuc list loaded, a "self-heal" set grafts back from <code>emerged</code> to <code>in_nuc</code>, so "virgin seen" never stuck. The live data shows the damage: 15 grafts are <code>in_nuc</code> while their nuc says virgin. Fix: the self-heal moves only <code>sealed</code>/<code>caged</code> cells (drop <code>'emerged'</code>, <code>MatingNucsTab.tsx:312</code>).</div>
+<div class="task"><input type="checkbox" disabled> <strong>C5a-01 repair (needs your OK):</strong> set those 15 grafts back to <code>emerged</code>, via MCP, after a count check.</div>
+<div class="task"><input type="checkbox" disabled> <strong>C5a-02:</strong> saving or editing an inspection applied only <em>that</em> inspection's status, so a backdated "virgin" moved a laying nuc (and its mated graft) backwards. Delete already replays all inspections in date order. Fix: move that replay into one helper used by save, edit and delete. It also:
+  <ul>
+    <li>stops if the read fails, instead of resetting the nuc to "setup";</li>
+    <li>never resets a hand-set status on save;</li>
+    <li>breaks same-day ties by entry order;</li>
+    <li>leaves <code>sold</code> grafts alone (3 live nucs are exposed to that today).</li>
+  </ul></div>
+<div class="task"><input type="checkbox" disabled> <strong>C5a-03:</strong> bulk nuc creation is four separate writes, so a failure part-way leaves orphan rows, and a retry is then blocked. Fix: one database function, <code>create_mating_nuc_bulk</code>. It runs as the user (RLS still applies), re-checks ownership, graft status and duplicate numbers, and does all the writes in one transaction. The hook makes a single call. Execute is granted to signed-in users only.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check and lint; qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/data-loss-batch14-plan.md</code>; update <code>per-box-brood-frames.md</code> (history-aware box list), <code>nuc-inspection-status-sync.md</code> (batch 15), the database export coverage doc and the Phase 2 register.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>Out of scope (noted for later batches)</h2>
+<table>
+  <tr><th>Item</th><th>Why later</th></tr>
+  <tr><td>New inspection with a past date gets today's weather</td><td>Needs historical weather; not data loss.</td></tr>
+  <tr><td>Silent RLS-blocked updates (no <code>.select()</code>), e.g. task edit</td><td>Recurring pattern across the app (C4-07 and others); its own batch.</td></tr>
+  <tr><td><code>push_subscriptions</code> keys in the personal JSON export</td><td>Kept (your decision, 19/10/2026).</td></tr>
+</table>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Files</th><th>Result</th></tr>
+  <tr><td>A. Records</td><td><code>useRecordsData.ts</code>, the five record forms, <code>records/page.tsx</code>, <code>tasks/page.tsx</code></td><td>No skeleton on refetch. Forms load once per record. Weather is written on create only. Moisture is saved. Task owner and completion are set on create only. Edits keep the inspection's saved brood box layout.</td></tr>
+  <tr><td>B. Batches</td><td><code>BatchFormSection.tsx</code>, <code>useBatchGrafts.ts</code>, <code>useGraftDistributions.ts</code></td><td>Enter in the grafts section commits the field. The timeline is set only from the graft date. Counts wait for distributions, and a failed grafts fetch no longer saves zeros. A failed queen creation shows a warning.</td></tr>
+  <tr><td>C. Tools</td><td><code>ProfitLoss/index.tsx</code>, <code>PurchaseList/index.tsx</code></td><td><code>key</code> on both edit forms.</td></tr>
+  <tr><td>D. Export</td><td><code>database-export.ts</code></td><td>10 tables added to the complete export, and <code>trace_labels</code> to the personal one. All 10 checked live for owner read access.</td></tr>
+  <tr><td>Checks</td><td></td><td>tsc shows nothing in <code>src/</code> and ESLint is clean. qa-engineer: no Critical, High or Medium findings.</td></tr>
+</table>
+<h3>Please test (<code>npm run build</code>, then the app)</h3>
+<ol>
+  <li><strong>Records:</strong> open an inspection to edit, change a field, then change the ownership or apiary filter. Your edit stays. Save it; the weather on the card is unchanged.</li>
+  <li><strong>Records:</strong> add or edit a harvest with a moisture value; it shows on the card after saving.</li>
+  <li><strong>Records:</strong> edit an old inspection of a hive whose boxes have changed since; the brood boxes and total match what was recorded.</li>
+  <li><strong>Tasks:</strong> edit a completed task (for example its notes); it stays completed.</li>
+  <li><strong>Batches:</strong> edit a batch, type a queen number or weight in the grafts section and press Enter. The editor stays open and the value is saved. Change the Acceptance or Cage date by hand; it stays. Change the graft date; all four dates recalculate.</li>
+  <li><strong>Tools:</strong> in P&amp;L (and Purchases), open record A to edit, then click Edit on record B. The form shows B's values.</li>
+  <li><strong>Export (optional):</strong> Settings → SQL export includes <code>crm_customers</code>, <code>trace_labels</code> and the others.</li>
+</ol>
+</body>
+</html>

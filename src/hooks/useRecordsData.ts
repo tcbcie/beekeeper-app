@@ -625,7 +625,8 @@ export function useRecordsData(): UseRecordsDataReturn {
     }
     fetchInProgressRef.current = true
 
-    setLoading(true)
+    // No setLoading(true) here: `loading` starts true for the first load, and showing the
+    // skeleton on a refetch would unmount an open record form and lose unsaved edits.
     try {
       // Fetch accessible hive IDs once and pass to all record fetchers
       const hiveIds = await getAccessibleHiveIds(userId)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Camera, X, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import type { VarroaCheck, Hive, Apiary } from '@/types/records'
@@ -74,9 +74,12 @@ export default function VarroaCheckForm({
   // always no, so its contents could be discarded without a prompt.
   useFormDirtyState({ value: formData, onDirtyChange, extraDirty: imageFile !== null })
 
-  // Update form data when check prop changes
+  // Load the record once per check being edited. A refreshed hive list, apiary filter or
+  // option list must not reset the form (and drop a new photo) and lose unsaved edits.
+  const loadedCheckRef = useRef<typeof check>(null)
   useEffect(() => {
-    if (check) {
+    if (check && check !== loadedCheckRef.current) {
+      loadedCheckRef.current = check
       // Ensure date format is compatible with datetime-local input (YYYY-MM-DDTHH:mm)
       const formattedCheck = {
         ...check,

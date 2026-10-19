@@ -185,7 +185,7 @@ export default function InspectionForm({
   )
   const [formApiaryId, setFormApiaryId] = useState<string>(selectedApiaryId)
   const [submitting, setSubmitting] = useState(false)
-  const previousInitialDataRef = useRef<InspectionFormData | null>(initialData)
+  const previousInitialDataRef = useRef<InspectionFormData | null>(null)
   const lastRightSizedPrefillKeyRef = useRef<string | null>(null)
   const lastSuperFullnessPrefillKeyRef = useRef<string | null>(null)
 
@@ -708,6 +708,10 @@ export default function InspectionForm({
       return
     }
 
+    // Same inspection as last time: this run came from a refreshed hive list or apiary
+    // filter, and resetting now would wipe the user's unsaved edits.
+    if (initialData === previousInitialDataRef.current) return
+
     // Switching the form to a different inspection must also tear down any
     // in-flight voice transcription from the previous one — otherwise its
     // cleaned text will land in the new inspection's notes via setFormData.
@@ -1102,13 +1106,19 @@ export default function InspectionForm({
     ?? selectedHive?.configuration?.brood_boxes
     ?? 0
   const broodBoxHalfCount = selectedHive?.configuration?.brood_boxes_half ?? 0
+  // Editing an inspection of the same hive keeps the boxes it was saved with: the hive may
+  // have gained or lost boxes since, and reshaping would change the recorded brood total.
+  const savedBroodBoxes = isEditing && formData.hive_id === initialData?.hive_id
+    ? initialData?.brood_frames_per_box
+    : null
   const broodBoxList = useMemo<{ box: number; type: BroodBoxType }[]>(() => {
+    if (savedBroodBoxes?.length) return savedBroodBoxes.map(({ box, type }) => ({ box, type }))
     const boxes: { box: number; type: BroodBoxType }[] = []
     let idx = 1
     for (let i = 0; i < broodBoxFullCount; i++) boxes.push({ box: idx++, type: 'full' })
     for (let i = 0; i < broodBoxHalfCount; i++) boxes.push({ box: idx++, type: 'half' })
     return boxes
-  }, [broodBoxFullCount, broodBoxHalfCount])
+  }, [broodBoxFullCount, broodBoxHalfCount, savedBroodBoxes])
   const isMultiBox = broodBoxList.length > 1
 
   // Frames a box of the given depth holds, from the hive's configuration.

@@ -63,6 +63,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   const {
     distributions,
     loading: distLoading,
+    error: distError,
     fetchDistributions,
     createDistribution,
     createBulkDistributions,
@@ -114,6 +115,9 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     if (error) {
       console.error('Error fetching grafts:', error)
       toast.error('Failed to load grafts')
+      // Bail like the breeder and nuc fetches: falling through with no grafts would let the
+      // persist effect write zero counts over the batch's real ones.
+      return
     } else if (data) {
       // Fetch latest weights and nuc timestamps in parallel. Filtering mating_nucs by
       // batch_id (rather than graft_id IN …) keeps the URL bounded and picks up nucs
@@ -229,7 +233,9 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   // Sync counts to parent and persist to DB when grafts change
   const lastPersistedCounts = useRef<string>('')
   useEffect(() => {
-    if (loading) return
+    // Hatched/mated counts depend on distributions (sold grafts). Persisting before they've
+    // loaded, or after their fetch failed, would write too-low counts to rearing_batches.
+    if (loading || distLoading || distError) return
     const accepted = grafts.length === 0 ? 0 : grafts.filter(g => !['grafted', 'failed'].includes(g.status)).length
     const distributionByGraftId = new Map(distributions.map((distribution) => [distribution.graft_id, distribution]))
 
@@ -281,7 +287,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
           if (error) console.error('Failed to persist batch counts:', error)
         })
     }
-  }, [grafts, loading, distributions, hatchedViaNuc, matedViaNuc, batchId])
+  }, [grafts, loading, distLoading, distError, distributions, hatchedViaNuc, matedViaNuc, batchId])
 
   // --- CRUD ---
 

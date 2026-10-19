@@ -34,7 +34,8 @@ No `.sql` file parsing is used as a source of truth.
 
 ## 6. Implementation Notes
 * Added a shared export module (`src/lib/database-export.ts`) used by both admin and personal export paths.
-* Expanded coverage to include all current `public` base tables (60/60).
+* Expanded coverage to include all current `public` base tables (60/60 at the time).
+* 19/10/2026 (batch 14, C2-03): 10 tables added since then were missing and are now included: `batch_breeder_queens`, `batch_jars`, `crm_customer_credit`, `crm_customers`, `crm_order_items`, `crm_orders`, `queen_assignments`, `queen_weights`, `trace_labels`, `yard_benches` (72 of 77). The other five are left out on purpose, as system data: `api_rate_events`, `admin_audit_log`, `crm_invoice_email_log`, `storage_cleanup_queue`, `stripe_webhook_events`. The personal JSON/CSV export also gained `trace_labels`. **Rule:** a new table that holds user data must be added to `DATABASE_EXPORT_TABLES` (and to `USER_EXPORT_TABLES` if it has a `user_id`).
 * Removed reliance on missing `exec_sql` RPC in the admin export route and switched to shared table metadata.
 * Added restore-oriented SQL framing (`BEGIN/COMMIT`) and best-effort trigger disable/enable blocks to reduce FK-order restore failures.
 * Added explicit restore prerequisites and limitations in export headers, including `auth.users` dependency notes.

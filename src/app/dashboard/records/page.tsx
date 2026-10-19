@@ -787,15 +787,20 @@ export default function RecordsPage() {
       }
       const imageUrls = [...formData.image_urls, ...uploadedUrls]
 
+      // Weather is captured once, when the inspection is first recorded. An edit keeps the
+      // stored weather rather than overwriting it with today's (or with nothing on failure).
+      const isEdit = Boolean(editingInspection?.id)
       let weatherData = null
-      setFetchingWeather(true)
-      try {
-        const selectedHive = hives.find(h => h.id === formData.hive_id)
-        if (selectedHive?.apiary_id) {
-          weatherData = await fetchWeatherForApiary(selectedHive.apiary_id)
+      if (!isEdit) {
+        setFetchingWeather(true)
+        try {
+          const selectedHive = hives.find(h => h.id === formData.hive_id)
+          if (selectedHive?.apiary_id) {
+            weatherData = await fetchWeatherForApiary(selectedHive.apiary_id)
+          }
+        } finally {
+          setFetchingWeather(false)
         }
-      } finally {
-        setFetchingWeather(false)
       }
 
       // The hive's current super count is the authority for how many readings may be stored.
@@ -830,10 +835,12 @@ export default function RecordsPage() {
         // image_urls is the only writable photo column. inspections.image_url is a
         // GENERATED mirror of image_urls[1] and Postgres rejects any write to it.
         image_urls: imageUrls,
-        weather_temp: weatherData?.temp ?? null,
-        weather_condition: weatherData?.condition ?? null,
-        weather_humidity: weatherData?.humidity ?? null,
-        weather_wind_speed: weatherData?.wind_speed ?? null
+        ...(isEdit ? {} : {
+          weather_temp: weatherData?.temp ?? null,
+          weather_condition: weatherData?.condition ?? null,
+          weather_humidity: weatherData?.humidity ?? null,
+          weather_wind_speed: weatherData?.wind_speed ?? null
+        })
       }
 
       if (editingInspection?.id) {
@@ -1301,6 +1308,7 @@ export default function RecordsPage() {
         unit: harvest.unit,
         frames_harvested: harvest.frames_harvested,
         floral_source: harvest.floral_source,
+        moisture_content: harvest.moisture_content,
         notes: harvest.notes || ''
       }
 

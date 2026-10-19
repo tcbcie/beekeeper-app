@@ -333,6 +333,9 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
       {/* Form */}
       {showForm && (
         <FinancialRecordForm
+          // Remount per record: the form copies its props into state once, so without a key
+          // editing another record while one is open would save the first record's values.
+          key={editingRecord?.id ?? 'new'}
           record={editingRecord}
           incomeCategories={incomeCategories}
           expenseCategories={expenseCategories}

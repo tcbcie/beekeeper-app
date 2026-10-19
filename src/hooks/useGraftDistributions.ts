@@ -299,7 +299,7 @@ async function createQueenForRecipient(
   destinationApiaryName: string | null = null,
   matedStationOverride: string | null = null,
   matedEircodeOverride: string | null = null
-): Promise<void> {
+): Promise<boolean> {
   try {
     const { data: graft, error: graftError } = await supabase
       .from('batch_grafts')
@@ -309,7 +309,7 @@ async function createQueenForRecipient(
 
     if (graftError || !graft) {
       console.error('Non-blocking: failed to fetch graft for queen creation:', graftError)
-      return
+      return false
     }
 
     type BreederQueen = { queen_number: string; marking_color: string | null; birth_date: string | null; subspecies: string | null }
@@ -364,7 +364,7 @@ async function createQueenForRecipient(
       breeder: batch.distributedByName,
     }) || null
 
-    await supabase.rpc('create_queen_for_distribution', {
+    const { error: rpcError } = await supabase.rpc('create_queen_for_distribution', {
       p_recipient_user_id: recipientUserId,
       p_queen_number: queenNumber,
       p_birth_date: birthDate,
@@ -395,8 +395,14 @@ async function createQueenForRecipient(
       // Destination apiary drives the mating station/eircode for distributed cells & virgins.
       p_recipient_apiary_id: recipientApiaryId,
     })
+    if (rpcError) {
+      console.error('Non-blocking: failed to create queen for recipient:', rpcError)
+      return false
+    }
+    return true
   } catch (err) {
     console.error('Non-blocking: failed to create queen for recipient:', err)
+    return false
   }
 }
 
@@ -410,7 +416,7 @@ async function createQueensForRecipient(
   installedDate: string | null = null,
   recipientApiaryId: string | null = null,
   matingLocationOverride: string | null = null
-): Promise<void> {
+): Promise<boolean> {
   try {
     // Resolve auth user ID first so a failure doesn't abort the entire batch fetch
     const { data: authData } = await supabase.auth.getUser()
@@ -424,7 +430,7 @@ async function createQueensForRecipient(
 
     if (batchRes.error || !batchRes.data) {
       console.error('Non-blocking: failed to fetch batch for queen creation:', batchRes.error)
-      return
+      return false
     }
 
     const raw = batchRes.data as {
@@ -494,11 +500,14 @@ async function createQueensForRecipient(
       }
     }
 
-    await Promise.allSettled(
+    // createQueenForRecipient never throws; it reports failure as false.
+    const results = await Promise.all(
       graftIds.map(id => createQueenForRecipient(recipientUserId, id, batchDetails, distributionType, isSelfDistribution, hiveForPlacement, installedDate, recipientApiaryId, destinationApiaryName, matedStationOverride, matedEircodeOverride))
     )
+    return results.every(Boolean)
   } catch (err) {
     console.error('Non-blocking: failed to create queens for recipient:', err)
+    return false
   }
 }
 
@@ -518,14 +527,14 @@ async function createQueenForRecipientFromQueen(
   installedDate: string | null = null,
   recipientApiaryId: string | null = null,
   matingLocationOverride: string | null = null
-): Promise<void> {
+): Promise<boolean> {
   try {
     const { data: authData } = await supabase.auth.getUser()
     const callerId = authData?.user?.id ?? ''
 
     if (!callerId) {
       console.error('Non-blocking: no authenticated user for queen creation')
-      return
+      return false
     }
 
     const [queenRes, profileRes] = await Promise.all([
@@ -542,7 +551,7 @@ async function createQueenForRecipientFromQueen(
 
     if (queenRes.error || !queenRes.data) {
       console.error('Non-blocking: failed to fetch source queen for queen creation:', queenRes.error)
-      return
+      return false
     }
 
     const donor = queenRes.data as {
@@ -610,7 +619,7 @@ async function createQueenForRecipientFromQueen(
 
     const isSelfDistribution = !!callerId && recipientUserId === callerId
 
-    await supabase.rpc('create_queen_for_distribution', {
+    const { error: rpcError } = await supabase.rpc('create_queen_for_distribution', {
       p_recipient_user_id: recipientUserId,
       p_queen_number: donor.queen_number,
       p_birth_date: donor.birth_date,
@@ -643,8 +652,14 @@ async function createQueenForRecipientFromQueen(
       p_recipient_apiary_id: recipientApiaryId,
       p_source_distribution_id: distributionId,
     })
+    if (rpcError) {
+      console.error('Non-blocking: failed to create queen for recipient from registry queen:', rpcError)
+      return false
+    }
+    return true
   } catch (err) {
     console.error('Non-blocking: failed to create queen for recipient from registry queen:', err)
+    return false
   }
 }
 
@@ -652,11 +667,22 @@ export function useGraftDistributions() {
   const toast = useToast()
   const [distributions, setDistributions] = useState<GraftDistribution[]>([])
   const [loading, setLoading] = useState(false)
+  // True when the last distributions fetch failed, so callers don't treat [] as "none".
+  const [error, setError] = useState(false)
   const fetchCounter = useRef(0)
+
+  // Queen creation stays non-blocking, but a failure must not pass silently as "recorded":
+  // the recipient would be left without their queen. The RPC is idempotent, so a retry is safe.
+  const warnIfQueenMissing = useCallback((created: Promise<boolean>) => {
+    created.then(ok => {
+      if (!ok) toast.warning("Distribution recorded, but the recipient's queen record could not be created.")
+    })
+  }, [toast])
 
   const fetchDistributions = useCallback(async (batchId: string) => {
     const requestId = ++fetchCounter.current
     setLoading(true)
+    setError(false)
     try {
       const { data, error } = await supabase
         .from('graft_distributions')
@@ -727,7 +753,10 @@ export function useGraftDistributions() {
       setDistributions(mapped)
     } catch (err) {
       console.error('Error fetching distributions:', err)
-      if (requestId === fetchCounter.current) setDistributions([])
+      if (requestId === fetchCounter.current) {
+        setDistributions([])
+        setError(true)
+      }
     } finally {
       if (requestId === fetchCounter.current) setLoading(false)
     }
@@ -773,7 +802,7 @@ export function useGraftDistributions() {
       // the queen is also placed into it (installed on the distribution date).
       if (data.recipient_user_id) {
         if (data.graft_id && data.batch_id) {
-          createQueensForRecipient(
+          warnIfQueenMissing(createQueensForRecipient(
             data.recipient_user_id,
             data.batch_id,
             [data.graft_id],
@@ -782,9 +811,9 @@ export function useGraftDistributions() {
             data.distribution_date,
             data.recipient_apiary_id,
             data.mating_location,
-          )
+          ))
         } else if (data.source_queen_id && distributionId) {
-          createQueenForRecipientFromQueen(
+          warnIfQueenMissing(createQueenForRecipientFromQueen(
             data.recipient_user_id,
             data.source_queen_id,
             distributionId,
@@ -793,7 +822,7 @@ export function useGraftDistributions() {
             data.distribution_date,
             data.recipient_apiary_id,
             data.mating_location,
-          )
+          ))
         }
       }
 
@@ -809,7 +838,7 @@ export function useGraftDistributions() {
       console.error('Error creating distribution:', err)
       return null
     }
-  }, [])
+  }, [warnIfQueenMissing])
 
   const createBulkDistributions = useCallback(async (data: BulkDistributionData): Promise<boolean | null> => {
     try {
@@ -861,7 +890,7 @@ export function useGraftDistributions() {
 
       // Create queen records for recipient (non-blocking, single batch fetch)
       if (data.recipient_user_id) {
-        createQueensForRecipient(data.recipient_user_id, data.batch_id, graftIds, data.distribution_type, null, null, data.recipient_apiary_id)
+        warnIfQueenMissing(createQueensForRecipient(data.recipient_user_id, data.batch_id, graftIds, data.distribution_type, null, null, data.recipient_apiary_id))
       }
 
       return true
@@ -876,7 +905,7 @@ export function useGraftDistributions() {
       console.error('Error creating bulk distributions:', err)
       return null
     }
-  }, [])
+  }, [warnIfQueenMissing])
 
   const deleteDistribution = useCallback(async (id: string, graftId: string | null, previousStatus: string): Promise<boolean> => {
     try {
@@ -982,7 +1011,7 @@ export function useGraftDistributions() {
       // Mint the queen in an app-user recipient's account (external recipients are record-only).
       if (data.recipient_user_id) {
         if (data.graft_id && data.batch_id) {
-          createQueensForRecipient(
+          warnIfQueenMissing(createQueensForRecipient(
             data.recipient_user_id,
             data.batch_id,
             [data.graft_id],
@@ -991,11 +1020,11 @@ export function useGraftDistributions() {
             data.distribution_date,
             data.recipient_apiary_id,
             data.mating_location,
-          )
+          ))
         } else if (data.source_queen_id) {
           const distributionId = (updated as { id: string }[] | null)?.[0]?.id ?? null
           if (distributionId) {
-            createQueenForRecipientFromQueen(
+            warnIfQueenMissing(createQueenForRecipientFromQueen(
               data.recipient_user_id,
               data.source_queen_id,
               distributionId,
@@ -1004,7 +1033,7 @@ export function useGraftDistributions() {
               data.distribution_date,
               data.recipient_apiary_id,
               data.mating_location,
-            )
+            ))
           }
         }
       }
@@ -1014,7 +1043,7 @@ export function useGraftDistributions() {
       console.error('Error redistributing queen:', err)
       return null
     }
-  }, [])
+  }, [warnIfQueenMissing])
 
   const searchUsers = useCallback(async (searchText: string): Promise<RecipientUser[]> => {
     // The RPC needs 3+ characters (name fragment or a complete email) and returns masked emails
@@ -1060,6 +1089,7 @@ export function useGraftDistributions() {
   return {
     distributions,
     loading,
+    error,
     fetchDistributions,
     createDistribution,
     createBulkDistributions,
