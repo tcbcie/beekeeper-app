@@ -151,6 +151,89 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
     setShowForm(true)
   }
 
+  // Replays every inspection of this nuc in date order (same-day ties by entry order) and
+  // writes the derived fields to the nuc and its graft. Save, edit and delete all use it, so a
+  // backdated or edited inspection can never roll the status backwards.
+  //  - 'dates': only the date fields (the inspection carried no queen status).
+  //  - 'status': also the nuc/graft status, when the inspections yield one.
+  //  - 'reset': as 'status', but with no status left the nuc returns to setup and the graft
+  //    to in_nuc (used when a status-bearing inspection is deleted).
+  // A sold graft is never changed. Returns false if the inspections could not be read.
+  const syncNucFromInspections = async (mode: 'dates' | 'status' | 'reset'): Promise<boolean> => {
+    const { data: rows, error } = await supabase
+      .from('mating_nuc_inspections')
+      .select('inspection_date, queen_seen, queen_status, eggs_present, larvae_present')
+      .eq('nuc_id', nucId)
+      .order('inspection_date', { ascending: true })
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      console.error('Error reading inspections to sync nuc status:', error)
+      return false
+    }
+
+    const nucUpdate: Record<string, string | null> = {
+      queen_emerged_at: null,
+      mating_confirmed_at: null,
+      queen_last_seen_at: null,
+      failed_at: null,
+    }
+    let nucStatus: string | null = null
+    let graftStatus: string | null = null
+    let graftStatusDate: string | null = null
+
+    for (const insp of rows ?? []) {
+      if (insp.queen_seen) {
+        nucUpdate.queen_last_seen_at = insp.inspection_date
+      }
+      const qs = deriveQueenStatus(insp.queen_status, insp.eggs_present ?? false, insp.larvae_present ?? false)
+      if (qs === 'virgin') {
+        nucStatus = 'virgin'
+        nucUpdate.queen_emerged_at = nucUpdate.queen_emerged_at || insp.inspection_date
+        graftStatus = 'emerged'
+      } else if (qs === 'mated') {
+        nucStatus = 'mating'
+        nucUpdate.mating_confirmed_at = nucUpdate.mating_confirmed_at || insp.inspection_date
+        graftStatus = 'mated'
+      } else if (qs === 'laying') {
+        nucStatus = 'laying'
+        nucUpdate.mating_confirmed_at = nucUpdate.mating_confirmed_at || insp.inspection_date
+        graftStatus = 'mated'
+      } else if (qs === 'dead' || qs === 'missing') {
+        nucStatus = 'failed'
+        nucUpdate.failed_at = insp.inspection_date
+        graftStatus = 'failed'
+      } else {
+        continue
+      }
+      graftStatusDate = insp.inspection_date
+    }
+
+    if (mode !== 'dates') {
+      if (nucStatus) nucUpdate.status = nucStatus
+      else if (mode === 'reset') nucUpdate.status = 'setup'
+    }
+
+    const { error: nucSyncError } = await supabase
+      .from('mating_nucs')
+      .update(nucUpdate)
+      .eq('id', nucId)
+      .eq('user_id', userId)
+    if (nucSyncError) console.error('Error syncing nuc status:', nucSyncError)
+
+    if (graftId && mode !== 'dates' && (graftStatus || mode === 'reset')) {
+      const { error: graftSyncError } = await supabase
+        .from('batch_grafts')
+        .update(graftStatus ? { status: graftStatus, status_date: graftStatusDate } : { status: 'in_nuc' })
+        .eq('id', graftId)
+        .eq('user_id', userId)
+        .neq('status', 'sold')
+      if (graftSyncError) console.error('Error syncing graft status:', graftSyncError)
+    }
+
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (formSaving) return
@@ -189,53 +272,15 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
         toast.success('Inspection recorded')
       }
 
-      // Auto-update nuc status and linked graft status based on queen status
-      const qs = deriveQueenStatus(formData.queen_status || null, formData.eggs_present, formData.larvae_present)
-      const nucUpdate: Record<string, string> = {}
-      let syncGraftStatus: string | null = null
-
-      const inspectionDate = formData.inspection_date
-
-      if (formData.queen_seen) {
-        nucUpdate.queen_last_seen_at = inspectionDate
-      }
-
-      if (qs === 'virgin') {
-        nucUpdate.status = 'virgin'
-        nucUpdate.queen_emerged_at = inspectionDate
-        syncGraftStatus = 'emerged'
-      } else if (qs === 'mated') {
-        nucUpdate.status = 'mating'
-        nucUpdate.mating_confirmed_at = inspectionDate
-        syncGraftStatus = 'mated'
-      } else if (qs === 'laying') {
-        nucUpdate.status = 'laying'
-        nucUpdate.mating_confirmed_at = inspectionDate
-        syncGraftStatus = 'mated'
-      } else if (qs === 'dead' || qs === 'missing') {
-        nucUpdate.status = 'failed'
-        nucUpdate.failed_at = inspectionDate
-        syncGraftStatus = 'failed'
-      }
-
-      if (Object.keys(nucUpdate).length > 0) {
-        const { error: nucSyncError } = await supabase
-          .from('mating_nucs')
-          .update(nucUpdate)
-          .eq('id', nucId)
-          .eq('user_id', userId)
-
-        if (nucSyncError) console.error('Error syncing nuc status:', nucSyncError)
-      }
-
-      if (syncGraftStatus && graftId) {
-        const { error: graftSyncError } = await supabase
-          .from('batch_grafts')
-          .update({ status: syncGraftStatus, status_date: inspectionDate })
-          .eq('id', graftId)
-          .eq('user_id', userId)
-
-        if (graftSyncError) console.error('Error syncing graft status:', graftSyncError)
+      // Status only moves when this inspection carries (or, on edit, carried) a queen status;
+      // a notes-only inspection must not override a status set by hand.
+      const carriesStatus = (status: string | null, eggs: boolean, larvae: boolean) =>
+        deriveQueenStatus(status, eggs, larvae) !== null
+      const touchesStatus =
+        carriesStatus(formData.queen_status || null, formData.eggs_present, formData.larvae_present) ||
+        (!!editingInspection && carriesStatus(editingInspection.queen_status, editingInspection.eggs_present, editingInspection.larvae_present))
+      if (!(await syncNucFromInspections(touchesStatus ? 'status' : 'dates'))) {
+        toast.error('Inspection saved, but the nuc status could not be updated. Please refresh.')
       }
 
       resetForm()
@@ -264,60 +309,13 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       return
     }
 
-    // Recalculate nuc derived fields from remaining inspections
-    const { data: remaining } = await supabase
-      .from('mating_nuc_inspections')
-      .select('inspection_date, queen_seen, queen_status, eggs_present, larvae_present')
-      .eq('nuc_id', nucId)
-      .order('inspection_date', { ascending: true })
-
-    const nucReset: Record<string, string | null> = {
-      status: 'setup',
-      queen_emerged_at: null,
-      mating_confirmed_at: null,
-      queen_last_seen_at: null,
-      failed_at: null,
-    }
-    let syncGraftStatus: string | null = null
-
-    if (remaining && remaining.length > 0) {
-      for (const insp of remaining) {
-        if (insp.queen_seen) {
-          nucReset.queen_last_seen_at = insp.inspection_date
-        }
-        const qs = deriveQueenStatus(insp.queen_status, insp.eggs_present ?? false, insp.larvae_present ?? false)
-        if (qs === 'virgin') {
-          nucReset.status = 'virgin'
-          nucReset.queen_emerged_at = nucReset.queen_emerged_at || insp.inspection_date
-          syncGraftStatus = 'emerged'
-        } else if (qs === 'mated') {
-          nucReset.status = 'mating'
-          nucReset.mating_confirmed_at = nucReset.mating_confirmed_at || insp.inspection_date
-          syncGraftStatus = 'mated'
-        } else if (qs === 'laying') {
-          nucReset.status = 'laying'
-          nucReset.mating_confirmed_at = nucReset.mating_confirmed_at || insp.inspection_date
-          syncGraftStatus = 'mated'
-        } else if (qs === 'dead' || qs === 'missing') {
-          nucReset.status = 'failed'
-          nucReset.failed_at = insp.inspection_date
-          syncGraftStatus = 'failed'
-        }
-      }
-    }
-
-    await supabase
-      .from('mating_nucs')
-      .update(nucReset)
-      .eq('id', nucId)
-      .eq('user_id', userId)
-
-    if (graftId) {
-      await supabase
-        .from('batch_grafts')
-        .update({ status: syncGraftStatus || 'in_nuc' })
-        .eq('id', graftId)
-        .eq('user_id', userId)
+    // Recalculate the nuc (and graft) from the remaining inspections. Only a deleted
+    // inspection that carried a queen status can move the status back.
+    const deleted = inspections.find(i => i.id === id)
+    const deletedCarriedStatus = !deleted ||
+      deriveQueenStatus(deleted.queen_status, deleted.eggs_present ?? false, deleted.larvae_present ?? false) !== null
+    if (!(await syncNucFromInspections(deletedCarriedStatus ? 'reset' : 'dates'))) {
+      toast.error('Inspection deleted, but the nuc status could not be updated. Please refresh.')
     }
 
     toast.success('Inspection deleted')

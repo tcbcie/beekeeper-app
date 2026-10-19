@@ -191,37 +191,24 @@ export function useMatingNucBulk() {
       finalNucNumbers = new Array(requestedCount).fill('')
     }
 
-    const { data: createdBatch, error: createdBatchError } = await supabase
-      .from('mating_nuc_batches')
-      .insert({
-        user_id: userId,
-        source_rearing_batch_id: sourceBatchId,
-        mode,
-        requested_count: requestedCount,
-        created_count: 0,
-        notes: notes || null,
-      })
-      .select('id')
-      .single()
-
-    if (createdBatchError) throw createdBatchError
+    // The bulk-run id is made here so the reference codes can be built from it; all the writes
+    // (run row, nucs, cell statuses) then happen in one transaction in create_mating_nuc_bulk,
+    // so a failure part-way can't leave orphan rows.
+    const creationBatchId = crypto.randomUUID()
 
     // The mother for each nuc is the breeder of its specific cell (multi-breeder batches);
     // fall back to the batch-level mother queen for single-breeder/legacy batches or
     // nucs created without a cell.
     const breederByGraftId = new Map(availableGrafts.map((g) => [g.id, g.breeder_queen_id]))
 
-    const rowsToInsert = Array.from({ length: requestedCount }, (_, index) => {
-      const referenceCode = buildReferenceCode(createdBatch.id, index)
+    const nucsToCreate = Array.from({ length: requestedCount }, (_, index) => {
+      const referenceCode = buildReferenceCode(creationBatchId, index)
       const nucNumber = mode === 'numbered' ? finalNucNumbers[index] : referenceCode
       const graftId = finalGraftIds[index] || null
       const cellBreederId = graftId ? breederByGraftId.get(graftId) ?? null : null
       return {
-        user_id: userId,
         nuc_number: nucNumber,
         reference_code: referenceCode,
-        creation_batch_id: createdBatch.id,
-        batch_id: sourceBatchId,
         graft_id: graftId,
         queen_id: cellBreederId || sourceBatch.mother_queen_id || null,
         mating_location: matingLocation || null,
@@ -230,35 +217,25 @@ export function useMatingNucBulk() {
       }
     })
 
-    const { data: createdNucs, error: createdNucsError } = await supabase
-      .from('mating_nucs')
-      .insert(rowsToInsert)
-      .select('id, graft_id')
+    const { data: createdNucIds, error: createError } = await supabase.rpc('create_mating_nuc_bulk', {
+      p_batch_id: creationBatchId,
+      p_source_batch_id: sourceBatchId,
+      p_mode: mode,
+      p_notes: notes || null,
+      p_nucs: nucsToCreate,
+    })
 
-    if (createdNucsError) throw createdNucsError
+    // The function's messages (duplicate numbers, cells no longer available) are written for
+    // the beekeeper, so pass them through as a plain Error for the toast.
+    if (createError) throw new Error(createError.message)
 
-    const graftIdsToUpdate = (createdNucs || []).map((n) => n.graft_id).filter(Boolean) as string[]
-    if (graftIdsToUpdate.length > 0) {
-      const { error: graftStatusError } = await supabase
-        .from('batch_grafts')
-        .update({ status: 'in_nuc', status_date: new Date().toISOString().split('T')[0] })
-        .in('id', graftIdsToUpdate)
-      if (graftStatusError) throw graftStatusError
-    }
-
-    const createdCount = (createdNucs || []).length
-    const { error: batchUpdateError } = await supabase
-      .from('mating_nuc_batches')
-      .update({ created_count: createdCount, updated_at: new Date().toISOString() })
-      .eq('id', createdBatch.id)
-
-    if (batchUpdateError) throw batchUpdateError
+    const nucIds = (createdNucIds as string[] | null) ?? []
 
     return {
-      batchId: createdBatch.id,
-      createdCount,
+      batchId: creationBatchId,
+      createdCount: nucIds.length,
       requestedCount,
-      createdNucIds: (createdNucs || []).map((n) => n.id),
+      createdNucIds: nucIds,
     }
   }, [fetchAvailableSealedGrafts])
 

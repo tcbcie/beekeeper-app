@@ -1,7 +1,7 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
@@ -60,9 +60,9 @@ Covers native `confirm()`, bench delete with no confirmation, the rollback race,
 ## Chunk 5a: Queen Tracker and Mating Nucs (35 findings: 5 High, 16 Medium, 14 Low)
 
 ### High
-- **C5a-01:** `MatingNucsTab.tsx:301-318`. Every `fetchNucs` (a read) sets sealed, caged and emerged grafts to `in_nuc`, so the graft status 'emerged' never persists.
-- **C5a-02:** `NucInspectionPanel.tsx:192-239`. Insert and edit apply *that* inspection's status, so a backdated or edited inspection rolls the nuc and graft backwards. Fix: derive the status from all inspections, as delete already does.
-- **C5a-03:** `useMatingNucBulk.ts:194-255`. Bulk create is four writes with no transaction, which leaves orphan rows. Fix: an RPC.
+- **C5a-01:** `MatingNucsTab.tsx:301-318`. Every `fetchNucs` (a read) sets sealed, caged and emerged grafts to `in_nuc`, so the graft status 'emerged' never persists. *Fixed in batch 15 (19/10/2026).* 15 affected grafts repaired, with the owner's approval.
+- **C5a-02:** `NucInspectionPanel.tsx:192-239`. Insert and edit apply *that* inspection's status, so a backdated or edited inspection rolls the nuc and graft backwards. Fix: derive the status from all inspections, as delete already does. *Fixed in batch 15 (19/10/2026).*
+- **C5a-03:** `useMatingNucBulk.ts:194-255`. Bulk create is four writes with no transaction, which leaves orphan rows. Fix: an RPC. *Fixed in batch 15 (19/10/2026).* Uses `create_mating_nuc_bulk`.
 - **C5a-04 / C5a-05:** field actions are 28px icons, and the cell controls are 10px text with a ~22px Fail button.
 
 ### Medium, key items
@@ -112,10 +112,10 @@ One shell-profile hook with a cache, one `safeInternalPath()` redirect helper, s
 ## Chunk 5b: batches, grafts, distributions (32 findings: 4 High, 16 Medium, 12 Low)
 
 ### High
-- **C5b-01:** `BatchFormSection.tsx:431,975` and the modals. The grafts section and three modals are inside the batch `<form>`, so pressing Enter (or "Go" on a phone) in any queen number, weight or modal field submits and closes the batch editor. Fix: render the grafts outside the form and portal the modals.
-- **C5b-02:** `BatchFormSection.tsx:189-220`. The timeline effect recalculates every date on any change, so manual edits to Acceptance, Cage and Hatch are overwritten. Saved custom dates are replaced on re-save.
-- **C5b-03:** `useBatchGrafts.ts:231-284`. Counts are saved before distributions load (or after their fetch fails), so the hatched and mated counts in `rearing_batches`, which feed NIHBS, are written too low.
-- **C5b-04:** `useGraftDistributions.ts:367,613`. The `create_queen_for_distribution` error is never checked, so the recipient's queen can go missing while the UI says "recorded".
+- **C5b-01:** `BatchFormSection.tsx:431,975` and the modals. The grafts section and three modals are inside the batch `<form>`, so pressing Enter (or "Go" on a phone) in any queen number, weight or modal field submits and closes the batch editor. Fix: render the grafts outside the form and portal the modals. *Fixed in batch 14 (19/10/2026).* Enter in an input inside the grafts section now commits the field instead.
+- **C5b-02:** `BatchFormSection.tsx:189-220`. The timeline effect recalculates every date on any change, so manual edits to Acceptance, Cage and Hatch are overwritten. Saved custom dates are replaced on re-save. *Fixed in batch 14 (19/10/2026).*
+- **C5b-03:** `useBatchGrafts.ts:231-284`. Counts are saved before distributions load (or after their fetch fails), so the hatched and mated counts in `rearing_batches`, which feed NIHBS, are written too low. *Fixed in batch 14 (19/10/2026).* Also fixed: a failed grafts fetch no longer saves zero counts.
+- **C5b-04:** `useGraftDistributions.ts:367,613`. The `create_queen_for_distribution` error is never checked, so the recipient's queen can go missing while the UI says "recorded". *Fixed in batch 14 (19/10/2026).*
 
 ### Medium, key items
 - **C5b-05:** the recipient queen's birth date is a day early in summer time (UTC).
@@ -242,12 +242,12 @@ Covers the due-date update, invoice email double send, customer double insert, f
 ## Chunk 4: records, inspections, tasks, logbook (32 findings: 6 High, 14 Medium, 12 Low)
 
 ### High
-- **C4-01:** a refetch shows the skeleton, which unmounts an open record form, so unsaved work is lost with no prompt.
+- **C4-01:** a refetch shows the skeleton, which unmounts an open record form, so unsaved work is lost with no prompt. *Fixed in batch 14 (19/10/2026).* Also fixed: the five record forms no longer reset when the hive list or apiary filter changes.
 - **C4-02:** the in-progress guard drops later calls, so a shared-hive deep link shows the wrong data.
-- **C4-03:** editing an inspection overwrites its weather with today's.
-- **C4-04:** harvest `moisture_content` is never saved.
-- **C4-05:** editing a task resets `completed:false` and changes `user_id`, so done tasks reopen.
-- **C4-06:** the brood-box sync runs in edit mode and reshapes old frames.
+- **C4-03:** editing an inspection overwrites its weather with today's. *Fixed in batch 14 (19/10/2026).*
+- **C4-04:** harvest `moisture_content` is never saved. *Fixed in batch 14 (19/10/2026).*
+- **C4-05:** editing a task resets `completed:false` and changes `user_id`, so done tasks reopen. *Fixed in batch 14 (19/10/2026).*
+- **C4-06:** the brood-box sync runs in edit mode and reshapes old frames. *Fixed in batch 14 (19/10/2026).*
 
 ### Medium, key items
 - **C4-07:** RLS-blocked edits and deletes look like they worked.
@@ -292,7 +292,7 @@ Covers `text-xs`, `any`, `select('*')`, data access in UI files, the StrictMode 
 ### High
 - **C2-01:** task reminders re-query all tasks per profile (users × tasks), so who gets reminded depends on loop order.
 - **C2-02:** knowledge-base and news ingestion make one embedding and insert per chunk in sequence, so large PDFs time out half-loaded.
-- **C2-03:** `database-export.ts:3-66`. The "complete" export's table list leaves out `crm_*`, `queen_assignments`, `queen_weights`, `yard_benches`, `batch_breeder_queens` and others, so a restore would lose data.
+- **C2-03:** `database-export.ts:3-66`. The "complete" export's table list leaves out `crm_*`, `queen_assignments`, `queen_weights`, `yard_benches`, `batch_breeder_queens` and others, so a restore would lose data. *Fixed in batch 14 (19/10/2026).*
 
 ### Medium, key items
 - **C2-04:** reminders query a non-existent `team_hive_access` table, so team members never get them.
@@ -318,7 +318,7 @@ The auth block is copied in 22 routes. Proposal: `requireUser()` plus one servic
 ## Chunk 8a: Tools (31 findings: 4 High, 13 Medium, 14 Low)
 
 ### High
-- **C8a-01 / C8a-02:** the P&L and Purchases edit forms have no `key`. Editing record B while A's form is open saves A's values onto B.
+- **C8a-01 / C8a-02:** the P&L and Purchases edit forms have no `key`. Editing record B while A's form is open saves A's values onto B. *Fixed in batch 14 (19/10/2026).*
 - **C8a-03:** VarroaWeather refetches and unmounts on each apiary change, and can show the wrong apiary's forecast.
 - **C8a-04:** all 8 tool panels (chart.js and QR included) are imported statically into the Tools landing page.
 

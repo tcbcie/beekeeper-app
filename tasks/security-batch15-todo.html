@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 15: Mating Nuc Fixes</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+    .note { background: #fff7ed; border-left: 4px solid #f59e0b; padding: 0.6rem 0.9rem; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 15: Mating Nuc Data-Loss Fixes (C5a-01, C5a-02, C5a-03)</h1>
+<p><strong>Status:</strong> Done 19/10/2026. Tested by you; committed and pushed. The data repair and the database function are already live. Planned as part E of <code>tasks/security-batch14-todo.html</code>; you approved repairing all 15 grafts.</p>
+
+<div class="note"><strong>Until this batch is deployed:</strong> the live site still has the old self-heal, so opening Mating Nucs there will set your 4 active repaired grafts back to "in nuc". The other beekeeper's 11 are retired and safe. After deploying, I'll re-check the 15 and re-apply the repair to any that were reset.</div>
+
+<h2>Plan</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-01:</strong> the nuc list self-heal moves only <code>sealed</code>/<code>caged</code> cells to <code>in_nuc</code>, so <code>emerged</code> sticks (<code>MatingNucsTab.tsx</code>).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-01 repair:</strong> 15 grafts set back from <code>in_nuc</code> to <code>emerged</code> by ID. It ran in one statement that rolls back unless exactly 15 rows change. Afterwards, all 15 nucs with status virgin have emerged grafts.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-02:</strong> save, edit and delete all use one replay of every inspection (<code>syncNucFromInspections</code>):
+  <ul>
+    <li>A backdated or edited inspection can't move the nuc or graft backwards.</li>
+    <li>A notes-only inspection keeps a status you set by hand.</li>
+    <li>A failed read changes nothing.</li>
+    <li>Same-day inspections go in entry order.</li>
+    <li>Sold grafts are left alone.</li>
+  </ul></div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-03:</strong> new database function <code>create_mating_nuc_bulk</code>. It runs as you, so RLS still applies, and only signed-in users can call it. It does the whole bulk create in one transaction, and first re-checks duplicate numbers and that each cell is still available. The hook makes one call.</div>
+<div class="task"><input type="checkbox" checked disabled> Type-check and lint; QA review; docs (<code>mating-nuc-batch15-plan.md</code>, <code>nuc-inspection-status-sync.md</code>, Phase 2 register).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> test, then commit and push (together with batch 14 or separately).</div>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>Self-heal</td><td>One line: <code>'emerged'</code> dropped from the status filter.</td></tr>
+  <tr><td>Inspection sync</td><td>The separate insert, edit and delete code is now one helper (about the same number of lines). It fixes three more problems: a failed read reset the nuc to "setup", sold grafts could be set back to "mated", and the doc said dead/missing left the graft unchanged.</td></tr>
+  <tr><td>Bulk create</td><td>Migration <code>20261019100000_mating_nuc_bulk_create.sql</code> (applied through MCP). Checked live: SECURITY INVOKER, <code>search_path=public</code>, no anon execute. The security advisor has nothing new.</td></tr>
+  <tr><td>Repair</td><td>Your 4 grafts now show "Emerged". The other beekeeper's Round 1 now counts 7 more hatched queens in NIHBS. Their stored batch counts update the next time that batch is opened in the editor.</td></tr>
+</table>
+
+<h3>Please test (<code>npm run build</code>, then the app)</h3>
+<ol>
+  <li><strong>Emerged sticks:</strong> open Queen Rearing → Mating Nucs, then open nuc 135's batch (TQRQB_UG01). Its cell shows <em>Emerged</em> and stays so after reloading the nuc list.</li>
+  <li><strong>No roll-back:</strong> on a nuc whose latest inspection is "laying", add an inspection dated <em>earlier</em> with queen status "virgin". The nuc stays "Laying".</li>
+  <li><strong>Notes only:</strong> add an inspection with only a note; the nuc's status doesn't change.</li>
+  <li><strong>Delete:</strong> delete that backdated inspection; the nuc is still "Laying".</li>
+  <li><strong>Bulk create:</strong> create 2–3 nucs from a batch with sealed cells. They appear, and the cells show "In nuc". Then try a nuc number that's already active: the message names the duplicate and nothing is created.</li>
+</ol>
+
+<h2>Repaired grafts (to reverse: set these IDs back to <code>in_nuc</code>)</h2>
+<p><code>348300e5-c109-432b-914e-51bfee2deab3, 9f351dd9-7203-4793-8ad3-0e56149cba02, 613f9827-e376-4573-a91a-920043e0415c, 8cac38d7-8457-4552-bb05-b46a4704613c, c8049ca0-057f-4bb9-87f9-d57c13fdf64d, 0017fab1-9619-41ae-afe8-fafdaa596c12, 765944e7-4752-4bbe-a300-301fe575c29c, 146c4ab0-0dae-41be-b3c3-3153708582d1, 42de495a-9b81-4a12-9308-90ca3e72dfdb, 6d0e781d-804b-4df0-ba63-5b060da6b269, 4a492bbe-24fd-45f6-ac67-9daa86a93893, efca6b11-1592-4a1a-a41d-27e368e57b72, 0eb0ea6e-75fa-4667-9e85-5fc0e09caef5, 919599fa-de4b-4dcf-be92-247631e5dcc0, a153b125-f246-42f9-880c-d4f50c0f7324</code></p>
+</body>
+</html>

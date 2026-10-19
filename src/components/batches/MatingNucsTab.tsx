@@ -298,7 +298,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
    setNucWeights({})
  }
 
- // Sync graft statuses: only when viewing active nucs without bulk filter
+ // Sync graft statuses: only when viewing active nucs without bulk filter. Only un-hatched
+ // cells (sealed/caged) move to in_nuc: 'emerged' is set by a virgin inspection and must stick.
  if (!showRetired && !activeBatchId) {
    const activeGraftIds = data
      .filter(n => !n.retired_at && n.graft_id && n.status !== 'failed')
@@ -309,7 +310,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
        .from('batch_grafts')
        .update({ status: 'in_nuc' })
        .in('id', activeGraftIds)
-       .in('status', ['sealed', 'caged', 'emerged'])
+       .in('status', ['sealed', 'caged'])
        .eq('user_id', userId)
        .then(({ error: syncError }) => {
          if (syncError) console.error('Failed to sync graft statuses:', syncError)
