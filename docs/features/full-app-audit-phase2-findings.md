@@ -1,7 +1,7 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
@@ -194,11 +194,11 @@ Covers `window.prompt` and `confirm`, the subscription-history prefetch, dead fi
 ## Chunk 9b: reports and AI assistant (35 findings: 7 High, 20 Medium, 8 Low)
 
 ### High
-- **C9b-01 / C9b-02 / C9b-03:** Mel's status filters don't match the stored values. `getQueenInventory` uses 'Active' but the app stores 'active'. Batch tools use capitalised or invented statuses, and `getNucsNeedingInspection` uses 'pending', which doesn't exist. These tools always answer "none". (Confirm with `SELECT DISTINCT status`.)
-- **C9b-04:** `useReportFilters.ts:39` saves fixed dates for relative periods, so a week later the DAFM report silently leaves out recent treatments.
-- **C9b-05:** the varroa monitoring report ignores the apiary filter when "All Hives" is chosen.
-- **C9b-06:** the archived-hives report compares a timestamp with `lte(date)`, so today's archives are missing.
-- **C9b-07:** raw UUIDs (`colony_id`, `mother_queen_id`) reach the model.
+- **C9b-01 / C9b-02 / C9b-03:** Mel's status filters don't match the stored values. `getQueenInventory` uses 'Active' but the app stores 'active'. Batch tools use capitalised or invented statuses, and `getNucsNeedingInspection` uses 'pending', which doesn't exist. These tools always answer "none". (Confirm with `SELECT DISTINCT status`.) *Fixed in batch 17 (19/10/2026).*
+- **C9b-04:** `useReportFilters.ts:39` saves fixed dates for relative periods, so a week later the DAFM report silently leaves out recent treatments. *Fixed in batch 17 (19/10/2026).*
+- **C9b-05:** the varroa monitoring report ignores the apiary filter when "All Hives" is chosen. *Fixed in batch 17 (19/10/2026).*
+- **C9b-06:** the archived-hives report compares a timestamp with `lte(date)`, so today's archives are missing. *Fixed in batch 17 (19/10/2026).* `varroa_checks.check_date` had the same bug and is fixed too.
+- **C9b-07:** raw UUIDs (`colony_id`, `mother_queen_id`) reach the model. *Fixed in batch 17 (19/10/2026).*
 
 ### Medium, key items
 - **C9b-08 / C9b-09:** no cancel or try/finally in the report effects, and query errors show as "no data" on a compliance report.
@@ -209,7 +209,7 @@ Covers `window.prompt` and `confirm`, the subscription-history prefetch, dead fi
 - **C9b-17:** the router runs at temperature 0.7 with no JSON mode, and `tools[name]` accepts built-in object keys.
 - **C9b-18:** three LLM calls per message.
 - **C9b-19:** tool error strings are passed to the model as data.
-- **C9b-20:** UTC "today" and `daysUntil` rounding.
+- **C9b-20:** UTC "today" and `daysUntil` rounding. *Fixed in batch 17 (19/10/2026).*
 - **C9b-21:** dead colonies show as still in their hive.
 - **C9b-22:** inconsistent tool scoping.
 - **C9b-23:** low-stores keywords also match "flow" and "flight".

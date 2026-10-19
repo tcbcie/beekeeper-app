@@ -2,12 +2,16 @@ import { z } from 'zod'
 import { Tool } from './index'
 import { getSupabase, formatDate, daysSince, logToolError, escapeLike } from './utils'
 
+// Nuc statuses where a queen is still on the way to laying (mating_nucs.status check
+// constraint). Laying, failed, sold and merged nucs are past this stage.
+const ACTIVE_NUC_STATUSES = ['setup', 'cell_introduced', 'graft_introduced', 'virgin', 'mating']
+
 // Get all mating nucs with status summary
 export const getMatingNucs: Tool = {
   name: 'getMatingNucs',
   description: 'Get list of active mating nucs with their status, queen info, and inspection counts (excludes retired nucs)',
   parameters: z.object({
-    status: z.enum(['all', 'active', 'laying', 'failed']).optional().describe('Filter by status (default all active)'),
+    status: z.enum(['all', 'active', 'setup', 'cell_introduced', 'graft_introduced', 'virgin', 'mating', 'laying', 'failed', 'sold', 'merged']).optional().describe("Filter by status: 'active' means not yet laying (setup to mating); 'mating' is shown as Mated in the app. Default all."),
     includeRetired: z.boolean().optional().describe('Include retired nucs (default false)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
@@ -30,7 +34,9 @@ export const getMatingNucs: Tool = {
       query = query.is('retired_at', null)
     }
 
-    if (args.status && args.status !== 'all') {
+    if (args.status === 'active') {
+      query = query.in('status', ACTIVE_NUC_STATUSES)
+    } else if (args.status && args.status !== 'all') {
       query = query.eq('status', args.status)
     }
 
@@ -205,12 +211,12 @@ export const getNucsNeedingInspection: Tool = {
     const cutoffDays = args.days || 7
     const supabase = getSupabase()
 
-    // Get all active nucs (not failed, not laying, not retired)
+    // Get all active nucs (not laying, failed, sold, merged or retired)
     const { data: nucs, error } = await supabase
       .from('mating_nucs')
       .select('id, nuc_number, status, setup_date, mating_location')
       .eq('user_id', userId)
-      .in('status', ['pending', 'virgin', 'mating'])
+      .in('status', ACTIVE_NUC_STATUSES)
       .is('retired_at', null)
       .order('setup_date')
 

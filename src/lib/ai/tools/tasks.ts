@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, findHiveByName, formatDate, daysUntil, daysSince, logToolError } from './utils'
+import { getSupabase, findHiveByName, formatDate, daysUntil, daysSince, logToolError, todayInDublin, addDaysISO } from './utils'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -29,17 +29,17 @@ export const getUpcomingTasks: Tool = {
     const supabase = getSupabase()
     const lookAhead = args.days || 7
 
-    const today = new Date()
-    const cutoff = new Date()
-    cutoff.setDate(cutoff.getDate() + lookAhead)
+    // Calendar dates in Ireland (the server runs on UTC).
+    const today = todayInDublin()
+    const cutoff = addDaysISO(today, lookAhead)
 
     const { data, error } = await supabase
       .from('tasks_events')
       .select('title, description, start_date, priority, completed, category, hives(hive_number, apiaries(name))')
       .eq('user_id', userId)
       .eq('completed', false)
-      .gte('start_date', today.toISOString().split('T')[0])
-      .lte('start_date', cutoff.toISOString().split('T')[0])
+      .gte('start_date', today)
+      .lte('start_date', cutoff)
       .order('start_date', { ascending: true })
 
     if (error) return `Error fetching tasks: ${logToolError(error)}`
@@ -73,7 +73,7 @@ export const getOverdueTasks: Tool = {
   parameters: z.object({}),
   execute: async (_args: unknown, userId: string) => {
     const supabase = getSupabase()
-    const today = new Date().toISOString().split('T')[0]
+    const today = todayInDublin()
 
     const { data, error } = await supabase
       .from('tasks_events')

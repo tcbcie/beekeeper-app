@@ -37,12 +37,12 @@ export default function VarroaMonitoringReport({ userId }: VarroaMonitoringRepor
   useEffect(() => {
     const loadData = async () => {
       setDataLoading(true)
-      const data = await fetchVarroaMonitoring(userId, filters.hiveId, filters.startDate, filters.endDate)
+      const data = await fetchVarroaMonitoring(userId, filters.apiaryId, filters.hiveId, filters.startDate, filters.endDate)
       setRecords(data)
       setDataLoading(false)
     }
     loadData()
-  }, [userId, filters.hiveId, filters.startDate, filters.endDate, fetchVarroaMonitoring])
+  }, [userId, filters.apiaryId, filters.hiveId, filters.startDate, filters.endDate, fetchVarroaMonitoring])
 
   const handleTimePeriodChange = (period: TimePeriod) => {
     const today = new Date()

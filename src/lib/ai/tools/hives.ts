@@ -86,7 +86,7 @@ export const getHiveOverview: Tool = {
       .select(`
         hive_number,
         status,
-        colony_id,
+        colony:colonies!hives_colony_id_fkey(colony_number),
         queen_marked,
         queen_marking_color,
         archived_at,
@@ -108,7 +108,8 @@ export const getHiveOverview: Tool = {
       hive: h.hive_number,
       apiary: getApiaryName(h.apiaries),
       status: h.status || 'Unknown',
-      colonyId: h.colony_id || 'None',
+      // The colony's number, never its raw ID.
+      colony: (Array.isArray(h.colony) ? h.colony[0] : h.colony)?.colony_number || 'None',
       queenMarked: h.queen_marked ? 'Yes' : 'No',
       queenColor: h.queen_marking_color || 'None',
       archived: h.archived_at ? 'Yes' : 'No'

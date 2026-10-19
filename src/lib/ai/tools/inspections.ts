@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate, daysSince, logToolError } from './utils'
+import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate, daysSince, logToolError, todayInDublin, addDaysISO } from './utils'
 
 // Helper to extract names from Supabase joins
 function getApiaryName(apiaries: unknown): string {
@@ -310,14 +310,13 @@ export const getDiseaseAlerts: Tool = {
     }
 
     const lookback = args.days || 30
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - lookback)
+    const cutoffDate = addDaysISO(todayInDublin(), -lookback)
 
     const { data, error } = await supabase
       .from('inspections')
       .select('inspection_date, disease_issues, notes, hives(hive_number, apiaries(name))')
       .in('hive_id', hiveIds)
-      .gte('inspection_date', cutoffDate.toISOString().split('T')[0])
+      .gte('inspection_date', cutoffDate)
       .not('disease_issues', 'is', null)
       .neq('disease_issues', '')
       .order('inspection_date', { ascending: false })
@@ -358,14 +357,13 @@ export const getSwarmRiskHives: Tool = {
     }
 
     const lookback = args.days || 14
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - lookback)
+    const cutoffDate = addDaysISO(todayInDublin(), -lookback)
 
     const { data, error } = await supabase
       .from('inspections')
       .select('inspection_date, queen_cups, swarm_cells, supercedure_cells, notes, hives(hive_number, apiaries(name))')
       .in('hive_id', hiveIds)
-      .gte('inspection_date', cutoffDate.toISOString().split('T')[0])
+      .gte('inspection_date', cutoffDate)
       .or('queen_cups.eq.true,swarm_cells.eq.true,supercedure_cells.eq.true')
       .order('inspection_date', { ascending: false })
 

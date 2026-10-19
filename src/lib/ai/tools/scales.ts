@@ -140,7 +140,7 @@ export const getScaleData: Tool = {
           hive: hive.hive_number,
           apiary: hive.apiary_name,
           scaleType: 'Wolf Waagen',
-          scaleName: hiveData.wolf_scale_name || hiveData.wolf_scale_id,
+          scaleName: hiveData.wolf_scale_name || 'Unnamed scale',
           timestamp: formatDate(latest.time),
           weight: latest.weight_kg ? `${latest.weight_kg.toFixed(1)} kg` : 'N/A',
           dailyChange: latest.yield_kg ? `${latest.yield_kg >= 0 ? '+' : ''}${latest.yield_kg.toFixed(2)} kg` : 'N/A',
@@ -168,7 +168,7 @@ export const getScaleData: Tool = {
           hive: hive.hive_number,
           apiary: hive.apiary_name,
           scaleType: 'BEEP',
-          scaleName: hiveData.beep_device_name || hiveData.beep_device_id,
+          scaleName: hiveData.beep_device_name || 'Unnamed scale',
           timestamp: formatDate(latest.time),
           weight: latest.weight_kg ? `${latest.weight_kg.toFixed(1)} kg` : 'N/A',
           temperature: latest.temperature_c ? `${latest.temperature_c.toFixed(1)}°C` : 'N/A',
@@ -327,7 +327,7 @@ export const getHivesWithScales: Tool = {
         hive: h.hive_number,
         apiary: apiary?.name || 'Unknown',
         scaleType: h.wolf_scale_id ? 'Wolf Waagen' : 'BEEP',
-        scaleName: h.wolf_scale_name || h.wolf_scale_id || h.beep_device_name || h.beep_device_id
+        scaleName: h.wolf_scale_name || h.beep_device_name || 'Unnamed scale'
       }
     })
   }

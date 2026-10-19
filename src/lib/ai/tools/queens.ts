@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, findQueenByNumber, findBatchByName, formatDate, daysSince, daysUntil, logToolError } from './utils'
+import { getSupabase, findQueenByNumber, findBatchByName, formatDate, daysSince, daysUntil, logToolError, todayInDublin, addDaysISO } from './utils'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -35,7 +35,8 @@ export const getQueenInventory: Tool = {
       .order('queen_number')
 
     if (args.status !== 'all') {
-      query = query.eq('status', 'Active')
+      // Stored lower case; the same meaning as the Queens page's default filter.
+      query = query.eq('status', 'active')
     }
 
     const { data, error } = await query
@@ -72,7 +73,8 @@ export const getActiveBatches: Tool = {
       .from('rearing_batches')
       .select('batch_name, status, graft_date, emergence_date, cell_count, grafts_accepted, queens_hatched, queens_mated, notes')
       .eq('user_id', userId)
-      .in('status', ['Active', 'In Progress', 'Grafted', 'Cells Capped', 'Virgins', 'Mating'])
+      // Any batch not completed is running, the same rule as the Batches page.
+      .neq('status', 'completed')
       .order('graft_date', { ascending: false })
 
     if (error) return `Error fetching batches: ${logToolError(error)}`
@@ -114,7 +116,8 @@ export const getRearingBatchDetails: Tool = {
 
     const { data, error } = await supabase
       .from('rearing_batches')
-      .select('*')
+      // Explicit columns: the mother is sent as her queen number, never as a raw ID.
+      .select('batch_name, status, graft_date, emergence_date, acceptance_check_date, cell_count, grafts_accepted, queens_hatched, queens_mated, notes, mother:queens!rearing_batches_mother_queen_id_fkey(queen_number)')
       .eq('id', batch.id)
       .single()
 
@@ -125,10 +128,11 @@ export const getRearingBatchDetails: Tool = {
       .select('queen_number, status, hives(hive_number)')
       .eq('batch_id', batch.id)
 
+    const mother = (Array.isArray(data.mother) ? data.mother[0] : data.mother) as { queen_number?: string } | null | undefined
     return {
       batchName: data.batch_name,
       status: data.status,
-      motherQueenId: data.mother_queen_id || 'Unknown',
+      motherQueen: mother?.queen_number || 'Unknown',
       graftDate: formatDate(data.graft_date),
       daysSinceGraft: daysSince(data.graft_date),
       timeline: {
@@ -172,14 +176,14 @@ export const getUpcomingBatchEvents: Tool = {
       .from('rearing_batches')
       .select('batch_name, status, emergence_date, acceptance_check_date, first_option_to_cage_date, second_option_to_cage_date')
       .eq('user_id', userId)
-      .in('status', ['Active', 'In Progress', 'Grafted', 'Cells Capped', 'Virgins', 'Mating'])
+      .neq('status', 'completed')
 
     if (error) return `Error fetching batches: ${logToolError(error)}`
     if (!data?.length) return 'No active batches found.'
 
-    const today = new Date()
-    const cutoff = new Date()
-    cutoff.setDate(cutoff.getDate() + lookAhead)
+    // Calendar dates in Ireland, so an event due today is included.
+    const today = todayInDublin()
+    const cutoff = addDaysISO(today, lookAhead)
 
     const upcomingEvents: Array<{ batchName: string; event: string; date: string; daysUntil: number }> = []
 
@@ -193,8 +197,7 @@ export const getUpcomingBatchEvents: Tool = {
 
       for (const event of events) {
         if (!event.date) continue
-        const eventDate = new Date(event.date)
-        if (eventDate >= today && eventDate <= cutoff) {
+        if (event.date >= today && event.date <= cutoff) {
           upcomingEvents.push({
             batchName: batch.batch_name,
             event: event.type,

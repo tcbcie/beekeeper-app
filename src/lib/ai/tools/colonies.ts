@@ -484,7 +484,8 @@ export const getDeceasedColonies: Tool = {
       .from('colonies')
       .select('colony_number, status, status_date, status_reason, origin_type, origin_date, notes')
       .eq('user_id', userId)
-      .neq('status', 'active')
+      // Died or lost only: sold, given-away and combined colonies were not lost.
+      .in('status', ['deceased', 'swarmed'])
       .order('status_date', { ascending: false })
       .limit(limit)
 
@@ -559,7 +560,7 @@ export const searchWildColonies: Tool = {
   name: 'searchWildColonies',
   description: 'Search for wild or feral bee colonies. Can filter by status (observed, confirmed, etc.) or nesting type (tree_cavity, building, etc.). Returns recent observations.',
   parameters: z.object({
-    status: z.enum(['observed', 'confirmed', 'lost', 'removed', 'relocated', 'unknown']).optional().describe('Filter by colony status'),
+    status: z.enum(['observed', 'confirmed', 'lost', 'removed', 'relocated', 'unknown', 'pending_review', 'unconfirmed']).optional().describe('Filter by colony status'),
     nestingType: z.enum(['tree_cavity', 'wall_cavity', 'ground', 'building', 'rock_crevice', 'other']).optional().describe('Filter by nesting type'),
     limit: z.number().optional().describe('Maximum number of results (default 5)')
   }),

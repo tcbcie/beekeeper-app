@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 17: Mel Filters and Report Dates</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 17: Mel's Status Filters and Report Dates</h1>
+<p><strong>Status:</strong> Done 19/10/2026. Tested by you; committed and pushed. Approved with the recommendations: laying nucs stay out, the queen inventory counts active queens only, deceased colonies means deceased or swarmed. This is Phase 2 fix batch 5.</p>
+<p>Two agents checked the Chunk 9b High findings against the code and the live database (read-only; only status counts across all users, no personal data). All of them are real. Two are wider than reported: varroa checks also lose today's records, and Mel's "days until" is off by one day <em>all the time</em>, not just near midnight.</p>
+
+<h2>A. Mel's status filters (C9b-01/02/03)</h2>
+<p>Supabase filters are case-sensitive, so <code>'Active'</code> never matches the stored <code>'active'</code>. All files are in <code>src/lib/ai/tools/</code>.</p>
+<table>
+  <tr><th>Tool</th><th>Today</th><th>Effect</th><th>Fix</th></tr>
+  <tr><td><code>getQueenInventory</code> (queens.ts)</td><td><code>'Active'</code></td><td>Always "no queens"</td><td><code>'active'</code>, the same as the Queens page</td></tr>
+  <tr><td><code>getActiveBatches</code>, <code>getUpcomingBatchEvents</code> (queens.ts)</td><td>Six invented statuses ("In Progress", "Cells Capped", …)</td><td>Always "no batches"</td><td><code>.neq('status', 'completed')</code>, the same rule as the Batches page (also covers 5 older "grafted" batches)</td></tr>
+  <tr><td><code>getNucsNeedingInspection</code> (nucs.ts)</td><td><code>'pending'</code> (doesn't exist), virgin, mating</td><td>Misses 44 of 63 active nucs</td><td>setup, cell_introduced, graft_introduced, virgin, mating</td></tr>
+  <tr><td><code>getMatingNucs</code> (nucs.ts)</td><td>The model can ask for <code>'active'</code>, which doesn't exist</td><td>"None"</td><td>Treat <code>'active'</code> as the active list above; accept the real status names</td></tr>
+  <tr><td><code>searchWildColonies</code> (colonies.ts)</td><td>Allowed statuses miss pending_review and unconfirmed</td><td>Can't search those</td><td>Add both</td></tr>
+  <tr><td><code>getDeceasedColonies</code> (colonies.ts)</td><td>Everything not active</td><td>"Died or lost" also lists sold, given away and combined colonies</td><td><code>.in('status', ['deceased', 'swarmed'])</code></td></tr>
+</table>
+
+<h2>B. Raw IDs sent to Mel (C9b-07)</h2>
+<div class="task"><input type="checkbox" checked disabled> <code>getHiveOverview</code> sent <code>colony_id</code> (a UUID). Fix: send the colony number instead, using an embed that names its foreign key.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>getRearingBatchDetails</code> sent <code>mother_queen_id</code> (a UUID, from <code>select('*')</code>). Fix: send the mother queen's number, from an explicit select with a named embed.</div>
+<div class="task"><input type="checkbox" checked disabled> Scales fall back to the maker's device ID when unnamed. Fix: show "Unnamed scale".</div>
+
+<h2>C. Reports</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-04, frozen dates:</strong> the six reports save their dates on the first visit, so "last year" never moves forward. A week later the DAFM report silently drops that week's treatments. Fix, in <code>useReportFilters</code> only: for the preset periods (all, 3 months, 6 months, 1 year), work the dates out fresh each time from a new <code>getPresetRange()</code> in <code>date-utils.ts</code>. Only "custom" keeps its saved dates.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-05:</strong> Varroa Monitoring with "All hives" ignored the apiary filter. Fix: filter by the apiary through the hive join, as the DAFM report already does. Archived hives' history stays in.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-06:</strong> archived hives, and now also varroa checks, are saved with a time, but the end date was compared as midnight, so anything from the last day was missing. Fix: <code>.lt(column, nextDay(endDate))</code> at both places.</div>
+
+<h2>D. "Today" in Irish time (C9b-20)</h2>
+<div class="task"><input type="checkbox" checked disabled> Mel runs on Vercel, which uses UTC. Add <code>todayInDublin()</code>, <code>addDaysISO()</code>, and corrected <code>daysUntil</code>/<code>daysSince</code> (they compare calendar days in Europe/Dublin) to <code>src/lib/ai/tools/utils.ts</code>. <code>formatDate</code> also uses Dublin time. Then use them in the tasks, queens, analysis, feeding and inspections tools.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>getUpcomingBatchEvents</code> also dropped events due <em>today</em>. It now compares calendar dates.</div>
+<div class="task"><input type="checkbox" checked disabled> The report pages' "today" uses the existing local-date helper, through <code>getPresetRange()</code> from part C.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check and lint; qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/mel-filters-report-dates-batch17-plan.md</code>; Phase 2 register.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>Decisions for you</h2>
+<table>
+  <tr><th>Question</th><th>Recommendation</th></tr>
+  <tr><td>Should "nucs needing inspection" include <strong>laying</strong> nucs? Today they're left out because "ready for harvest" covers them.</td><td>Leave them out (no change in meaning).</td></tr>
+  <tr><td>Should Mel's "queen inventory" count only <strong>active</strong> queens, or also cells and virgins?</td><td>Active only, the same as the Queens page.</td></tr>
+  <tr><td>Should "deceased colonies" leave out sold, given away and combined?</td><td>Yes: deceased and swarmed only, which matches the tool's description.</td></tr>
+</table>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>Mel filters</td><td>queens.ts, nucs.ts and colonies.ts now use the stored lower-case values and the same rules as the app pages. The new <code>ACTIVE_NUC_STATUSES</code> list is shared by the two nuc tools.</td></tr>
+  <tr><td>Raw IDs</td><td>The colony number and mother queen number are sent instead of UUIDs (named-FK embeds); scales fall back to "Unnamed scale".</td></tr>
+  <tr><td>Irish today</td><td><code>todayInDublin</code>, <code>addDaysISO</code>, and calendar-day <code>daysSince</code>/<code>daysUntil</code> in utils.ts, used in 5 tool files.</td></tr>
+  <tr><td>Reports</td><td><code>getPresetRange</code> and <code>nextDay</code> in date-utils.ts. The report filters hook recalculates presets. The varroa report filters by apiary through the hive join. Timestamp end bounds use <code>.lt(nextDay)</code>.</td></tr>
+  <tr><td>Checks</td><td>tsc and ESLint are clean; qa-engineer found no issues. The AI tools skill gains rule 6.</td></tr>
+</table>
+<h3>Please test (<code>npm run build</code>, then the app)</h3>
+<ol>
+  <li><strong>Mel:</strong> ask "What queens do I have?", "Which rearing batches are active?" and "Which nucs need inspecting?". You get real answers rather than "none", and the nuc list includes nucs at setup or cell stage.</li>
+  <li><strong>Mel:</strong> ask "What tasks are due this week?" or "Any batch events coming up?". Something due tomorrow says 1 day, and something due today is included.</li>
+  <li><strong>Mel:</strong> ask about a rearing batch's details. The mother shows as a queen number, not a long code.</li>
+  <li><strong>Reports → DAFM / Varroa:</strong> the default "last year" ends <em>today</em> (look at the date range shown), including on a report you opened days ago.</li>
+  <li><strong>Reports → Varroa Monitoring:</strong> pick an apiary with "All hives". Only that apiary's records show.</li>
+  <li><strong>Reports → Archived Hives:</strong> a hive archived today appears.</li>
+</ol>
+</body>
+</html>

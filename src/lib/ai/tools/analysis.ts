@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate, logToolError } from './utils'
+import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate, logToolError, todayInDublin, addDaysISO } from './utils'
 
 // Helper to extract apiary name from Supabase join
 function getApiaryName(apiaries: unknown): string {
@@ -225,9 +225,7 @@ export const getRecentActivitySummary: Tool = {
     }
 
     const days = args.days || 7
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - days)
-    const cutoff = cutoffDate.toISOString().split('T')[0]
+    const cutoff = addDaysISO(todayInDublin(), -days)
 
     const [inspections, varroaChecks, treatments, feedings, harvests] = await Promise.all([
       supabase.from('inspections').select('id, inspection_date, hives(hive_number)').in('hive_id', hiveIds).gte('inspection_date', cutoff),

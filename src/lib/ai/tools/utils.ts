@@ -180,30 +180,62 @@ export async function findBatchByName(userId: string, batchName: string): Promis
   return data
 }
 
+// The tools run on the server (UTC), but "today" and day counts must follow the beekeeper's
+// calendar in Ireland, or they are a day out around midnight and all summer evening long.
+const BEEKEEPER_TIME_ZONE = 'Europe/Dublin'
+const dublinDateFormat = new Intl.DateTimeFormat('en-CA', {
+  timeZone: BEEKEEPER_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit'
+})
+
+// Calendar date (YYYY-MM-DD) in Ireland for an instant
+export function toDublinDate(instant: Date = new Date()): string {
+  return dublinDateFormat.format(instant)
+}
+
+// Today's calendar date in Ireland (YYYY-MM-DD)
+export function todayInDublin(): string {
+  return toDublinDate()
+}
+
+// Add whole days to a YYYY-MM-DD date
+export function addDaysISO(isoDate: string, days: number): string {
+  const d = new Date(`${isoDate}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+// A stored value as an Irish calendar date: date columns pass through, timestamps convert
+function toCalendarDay(value: string): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : toDublinDate(new Date(value))
+}
+
+// Whole calendar days from `from` to `to`
+function calendarDaysBetween(from: string, to: string): number {
+  return Math.round((Date.parse(toCalendarDay(to)) - Date.parse(toCalendarDay(from))) / 86_400_000)
+}
+
 // Format date for display
 export function formatDate(date: string | null): string {
   if (!date) return 'N/A'
   return new Date(date).toLocaleDateString('en-IE', {
+    timeZone: BEEKEEPER_TIME_ZONE,
     year: 'numeric',
     month: 'short',
     day: 'numeric'
   })
 }
 
-// Calculate days since a date
+// Calendar days since a date (0 = today)
 export function daysSince(date: string | null): number | null {
   if (!date) return null
-  const then = new Date(date)
-  const now = new Date()
-  const diffTime = now.getTime() - then.getTime()
-  return Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  return calendarDaysBetween(date, todayInDublin())
 }
 
-// Calculate days until a date
+// Calendar days until a date (0 = today, 1 = tomorrow)
 export function daysUntil(date: string | null): number | null {
   if (!date) return null
-  const then = new Date(date)
-  const now = new Date()
-  const diffTime = then.getTime() - now.getTime()
-  return Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  return calendarDaysBetween(todayInDublin(), date)
 }

@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchRecipientLabels } from '@/lib/distribution-recipients'
+import { nextDay } from '@/lib/date-utils'
 import type { Hive } from '@/types/records'
 import type {
   ApiaryWithEircode,
@@ -26,7 +27,7 @@ interface UseReportsDataReturn {
   // Fetch functions
   fetchBaseData: (userId: string) => Promise<void>
   fetchDAFMTreatments: (userId: string, apiaryId: string, startDate: string, endDate: string) => Promise<DAFMTreatmentRecord[]>
-  fetchVarroaMonitoring: (userId: string, hiveId: string, startDate: string, endDate: string) => Promise<VarroaMonitoringRecord[]>
+  fetchVarroaMonitoring: (userId: string, apiaryId: string, hiveId: string, startDate: string, endDate: string) => Promise<VarroaMonitoringRecord[]>
   fetchInspectionSummary: (userId: string, hiveId: string, startDate: string, endDate: string) => Promise<InspectionSummaryRecord[]>
   fetchApiaryOverview: (userId: string, apiaryId: string) => Promise<HiveOverviewRecord[]>
   fetchHarvestData: (userId: string, apiaryId: string, startDate: string, endDate: string) => Promise<HarvestRecord[]>
@@ -141,22 +142,31 @@ export function useReportsData(): UseReportsDataReturn {
 
   const fetchVarroaMonitoring = useCallback(async (
     userId: string,
+    apiaryId: string,
     hiveId: string,
     startDate: string,
     endDate: string
   ): Promise<VarroaMonitoringRecord[]> => {
     const records: VarroaMonitoringRecord[] = []
 
-    // Fetch checks
+    // "All hives" in one apiary filters through the hive join (as the DAFM report does), so
+    // archived hives' history stays in the report.
+    const byApiary = !hiveId && !!apiaryId
+    const hiveEmbed = byApiary ? 'hives!inner(hive_number, apiary_id)' : 'hives(hive_number)'
+
+    // Fetch checks. check_date is a timestamp, so the end bound is the start of the next day:
+    // .lte(endDate) would mean midnight and drop the last day's checks.
     let checksQuery = supabase
       .from('varroa_checks')
-      .select('check_date, method, mites_count, infestation_rate, action_threshold_reached, hives(hive_number)')
+      .select(`check_date, method, mites_count, infestation_rate, action_threshold_reached, ${hiveEmbed}`)
       .eq('user_id', userId)
       .gte('check_date', startDate)
-      .lte('check_date', endDate)
+      .lt('check_date', nextDay(endDate))
 
     if (hiveId) {
       checksQuery = checksQuery.eq('hive_id', hiveId)
+    } else if (byApiary) {
+      checksQuery = checksQuery.eq('hives.apiary_id', apiaryId)
     }
 
     const { data: checksData } = await checksQuery.order('check_date', { ascending: false })
@@ -179,13 +189,15 @@ export function useReportsData(): UseReportsDataReturn {
     // Fetch treatments
     let treatmentsQuery = supabase
       .from('varroa_treatments')
-      .select('treatment_date, treatment_type, dosage, hives(hive_number)')
+      .select(`treatment_date, treatment_type, dosage, ${hiveEmbed}`)
       .eq('user_id', userId)
       .gte('treatment_date', startDate)
       .lte('treatment_date', endDate)
 
     if (hiveId) {
       treatmentsQuery = treatmentsQuery.eq('hive_id', hiveId)
+    } else if (byApiary) {
+      treatmentsQuery = treatmentsQuery.eq('hives.apiary_id', apiaryId)
     }
 
     const { data: treatmentsData } = await treatmentsQuery.order('treatment_date', { ascending: false })
@@ -352,7 +364,8 @@ export function useReportsData(): UseReportsDataReturn {
       .eq('user_id', userId)
       .not('archived_at', 'is', null)
       .gte('archived_at', startDate)
-      .lte('archived_at', endDate)
+      // archived_at is a timestamp: end at the start of the next day, or today's archives drop out.
+      .lt('archived_at', nextDay(endDate))
 
     if (apiaryId) {
       query = query.eq('apiary_id', apiaryId)

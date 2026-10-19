@@ -28,6 +28,11 @@ When creating a new tool, you **MUST** adhere to these non-negotiable rules to e
 5.  **Treat LLM arguments as data:**
     * Wrap AI-written search text in `escapeLike()` (`./utils`) before using it in `.ilike()`.
     * Never interpolate an argument into a PostgREST filter string (`.or(...)`, `.filter(...)`). If you must, restrict the Zod schema to safe characters (e.g. `.regex(/^[A-Za-z0-9-]+$/)`).
+
+6.  **Status filters and dates (batch 17):**
+    * Status values are stored in lower case and filters are case-sensitive. Use the exact stored values: check the column's check constraint or `SELECT DISTINCT status`, and match the app page's own rule (e.g. batches: `.neq('status', 'completed')`; nucs: the `ACTIVE_NUC_STATUSES` list in `nucs.ts`). Never invent display names such as 'Active' or 'In Progress'.
+    * The tools run on the server in UTC. For "today" and date windows use `todayInDublin()` and `addDaysISO()` (`./utils`), never `new Date().toISOString().split('T')[0]`. `daysSince`/`daysUntil` count calendar days in Ireland (0 = today).
+    * Never return raw IDs (`*_id` UUIDs, device IDs). Return the human label (queen number, colony number) through a named-FK embed, or drop the field.
 Only use data either based on the users data or on the Knowledge in the database. Never use any data that is part of the model.
 
 ## Tool Structure Template

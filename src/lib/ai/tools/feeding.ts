@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleHiveIds, findHiveByName, formatDate, logToolError } from './utils'
+import { getSupabase, getAccessibleHiveIds, findHiveByName, formatDate, logToolError, todayInDublin, addDaysISO } from './utils'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -74,14 +74,13 @@ export const getHivesNeedingFeeding: Tool = {
     }
 
     const daysBack = args.daysBack || 14
-    const cutoffDate = new Date()
-    cutoffDate.setDate(cutoffDate.getDate() - daysBack)
+    const cutoffDate = addDaysISO(todayInDublin(), -daysBack)
 
     const { data, error } = await supabase
       .from('inspections')
       .select('inspection_date, honey_supers, honey_stores, notes, hives(hive_number, apiaries(name))')
       .in('hive_id', hiveIds)
-      .gte('inspection_date', cutoffDate.toISOString().split('T')[0])
+      .gte('inspection_date', cutoffDate)
       .order('inspection_date', { ascending: false })
 
     if (error) return `Error fetching inspections: ${logToolError(error)}`

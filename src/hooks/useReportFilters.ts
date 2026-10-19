@@ -2,6 +2,7 @@
 
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useSelection } from '@/contexts/SelectionContext'
+import { getPresetRange } from '@/lib/date-utils'
 import type { ReportFilters as ReportFiltersState, TimePeriod } from '@/types/reports'
 
 interface DateFilters {
@@ -38,12 +39,19 @@ export function useReportFilters(
   const { selectedApiaryId, setSelectedApiaryId, selectedHiveId, setSelectedHiveId } = useSelection()
   const [dates, setDates] = usePersistentState<DateFilters>(`reports:${storageKey}`, defaultDates)
 
+  // Only a custom window keeps its saved dates. A preset ("last year" etc.) is worked out
+  // from today every time; saved preset dates froze on the first visit, so a week later the
+  // report silently left out that week's records.
+  const dateWindow = dates.timePeriod === 'custom'
+    ? { startDate: dates.startDate, endDate: dates.endDate }
+    : getPresetRange(dates.timePeriod)
+
   const filters: ReportFiltersState = {
     apiaryId: selectedApiaryId,
     hiveId: selectedHiveId,
     timePeriod: dates.timePeriod,
-    startDate: dates.startDate,
-    endDate: dates.endDate
+    startDate: dateWindow.startDate,
+    endDate: dateWindow.endDate
   }
 
   const setFilters: SetReportFilters = (update) => {

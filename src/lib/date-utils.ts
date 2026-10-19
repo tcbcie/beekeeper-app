@@ -196,3 +196,31 @@ export const formatDateIrish = (dateString: string | null): string => {
 export function formatDateForInput(date: Date): string {
   return date.toISOString().split('T')[0]
 }
+
+/**
+ * The day after a YYYY-MM-DD date. Use it as an exclusive end bound (`.lt(col, nextDay(end))`)
+ * on timestamp columns: `.lte(col, end)` means midnight at the start of `end` and drops that day.
+ * @param dateString - YYYY-MM-DD
+ * @returns The next calendar day, YYYY-MM-DD
+ */
+export function nextDay(dateString: string): string {
+  const date = parseLocalDate(dateString)
+  date.setDate(date.getDate() + 1)
+  return toLocalDateString(date)
+}
+
+/**
+ * Date window for a report's preset period, worked out from today (local calendar).
+ * Presets are always recalculated so a saved "last year" keeps moving with the calendar.
+ * @param period - 'all' | '3months' | '6months' | '1year'
+ * @returns Start and end dates, YYYY-MM-DD
+ */
+export function getPresetRange(period: 'all' | '3months' | '6months' | '1year'): { startDate: string; endDate: string } {
+  const today = new Date()
+  const endDate = toLocalDateString(today)
+  if (period === 'all') return { startDate: '2000-01-01', endDate }
+  const start = new Date(today)
+  if (period === '1year') start.setFullYear(start.getFullYear() - 1)
+  else start.setMonth(start.getMonth() - (period === '3months' ? 3 : 6))
+  return { startDate: toLocalDateString(start), endDate }
+}
