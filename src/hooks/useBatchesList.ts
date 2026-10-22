@@ -186,15 +186,24 @@ export function useBatchesList(onUserReady?: (userId: string) => void) {
  } else if (data) {
  setBatches(data)
 
- // Fetch sealed queen cell distribution counts per batch
+ // Sealed queen cell distribution counts and breeder queen names both need only the batch
+ // ids, so they load together.
  const batchIds = data.map((b: Batch) => b.id)
- if (batchIds.length > 0) {
- const { data: distData } = await supabase
-   .from('graft_distributions')
-   .select('batch_id')
-   .eq('distribution_type', 'queen_cell')
-   .in('batch_id', batchIds)
+ const [{ data: distData }, { data: bbqData }] = batchIds.length > 0
+ ? await Promise.all([
+   supabase
+     .from('graft_distributions')
+     .select('batch_id')
+     .eq('distribution_type', 'queen_cell')
+     .in('batch_id', batchIds),
+   supabase
+     .from('batch_breeder_queens')
+     .select('batch_id, queens(queen_number)')
+     .in('batch_id', batchIds),
+ ])
+ : [{ data: null }, { data: null }]
 
+ if (batchIds.length > 0) {
  const counts: Record<string, number> = {}
  if (distData) {
    for (const d of distData) {
@@ -207,13 +216,8 @@ export function useBatchesList(onUserReady?: (userId: string) => void) {
  setSealedCellCounts({})
  }
 
- // Fetch breeder queen names from junction table
+ // Breeder queen names from the junction table
  if (batchIds.length > 0) {
- const { data: bbqData } = await supabase
-   .from('batch_breeder_queens')
-   .select('batch_id, queens(queen_number)')
-   .in('batch_id', batchIds)
-
  const names: Record<string, string> = {}
  if (bbqData) {
    for (const row of bbqData) {
@@ -331,8 +335,10 @@ export function useBatchesList(onUserReady?: (userId: string) => void) {
  setUserHasActiveSubscription(hasSubscription)
  }
  initUser()
+ // Runs once per mount. Listing the fetchers re-ran it: setUserId gives them new identities,
+ // so every first-load request went out twice. They receive the id as an argument.
  // eslint-disable-next-line react-hooks/exhaustive-deps
- }, [router, fetchBatches, fetchQueens, fetchApiaries, fetchHives])
+ }, [router])
 
  return {
  batches,

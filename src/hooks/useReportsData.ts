@@ -44,12 +44,29 @@ export function useReportsData(): UseReportsDataReturn {
   const fetchBaseData = useCallback(async (userId: string) => {
     setLoading(true)
     try {
-      // Fetch apiaries with eircode
-      const { data: apiariesData, error: apiariesError } = await supabase
-        .from('apiaries')
-        .select('id, name, eircode, location')
-        .eq('user_id', userId)
-        .order('name')
+      // Apiaries, hives and profile are independent, so they load together (one round trip).
+      const [
+        { data: apiariesData, error: apiariesError },
+        { data: hivesData, error: hivesError },
+        { data: profileData, error: profileError },
+      ] = await Promise.all([
+        supabase
+          .from('apiaries')
+          .select('id, name, eircode, location')
+          .eq('user_id', userId)
+          .order('name'),
+        supabase
+          .from('hives')
+          .select('id, hive_number, apiary_id, status, archived_at, configuration')
+          .eq('user_id', userId)
+          .is('archived_at', null)
+          .order('hive_number'),
+        supabase
+          .from('profiles')
+          .select('first_name, last_name, email')
+          .eq('id', userId)
+          .single(),
+      ])
 
       if (apiariesError) {
         console.error('Error fetching apiaries for reports:', apiariesError)
@@ -57,26 +74,11 @@ export function useReportsData(): UseReportsDataReturn {
         setApiaries(apiariesData)
       }
 
-      // Fetch hives
-      const { data: hivesData, error: hivesError } = await supabase
-        .from('hives')
-        .select('id, hive_number, apiary_id, status, archived_at, configuration')
-        .eq('user_id', userId)
-        .is('archived_at', null)
-        .order('hive_number')
-
       if (hivesError) {
         console.error('Error fetching hives for reports:', hivesError)
       } else if (hivesData) {
         setHives(hivesData as Hive[])
       }
-
-      // Fetch profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, email')
-        .eq('id', userId)
-        .single()
 
       if (profileError) {
         console.error('Error fetching profile for reports:', profileError)
@@ -169,22 +171,8 @@ export function useReportsData(): UseReportsDataReturn {
       checksQuery = checksQuery.eq('hives.apiary_id', apiaryId)
     }
 
-    const { data: checksData } = await checksQuery.order('check_date', { ascending: false })
-
-    if (checksData) {
-      checksData.forEach((c) => {
-        const hive = c.hives as unknown as { hive_number: string } | null
-        records.push({
-          date: c.check_date,
-          type: 'check',
-          hive_number: hive?.hive_number || '',
-          method: c.method,
-          mites_count: c.mites_count,
-          infestation_rate: c.infestation_rate,
-          action_threshold_reached: c.action_threshold_reached
-        })
-      })
-    }
+    // Treatments are built below; both queries are awaited together.
+    const checksRequest = checksQuery.order('check_date', { ascending: false })
 
     // Fetch treatments
     let treatmentsQuery = supabase
@@ -200,7 +188,26 @@ export function useReportsData(): UseReportsDataReturn {
       treatmentsQuery = treatmentsQuery.eq('hives.apiary_id', apiaryId)
     }
 
-    const { data: treatmentsData } = await treatmentsQuery.order('treatment_date', { ascending: false })
+    // Checks and treatments are independent: one round trip for both.
+    const [{ data: checksData }, { data: treatmentsData }] = await Promise.all([
+      checksRequest,
+      treatmentsQuery.order('treatment_date', { ascending: false }),
+    ])
+
+    if (checksData) {
+      checksData.forEach((c) => {
+        const hive = c.hives as unknown as { hive_number: string } | null
+        records.push({
+          date: c.check_date,
+          type: 'check',
+          hive_number: hive?.hive_number || '',
+          method: c.method,
+          mites_count: c.mites_count,
+          infestation_rate: c.infestation_rate,
+          action_threshold_reached: c.action_threshold_reached
+        })
+      })
+    }
 
     if (treatmentsData) {
       treatmentsData.forEach((t) => {

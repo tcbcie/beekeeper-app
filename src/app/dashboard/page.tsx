@@ -134,6 +134,11 @@ export default function DashboardPage() {
  }
  setUserId(id)
 
+ // Start the dashboard data and ticket status first: neither needs the role, so they no
+ // longer wait behind the role lookup.
+ fetchDashboardData(id)
+ fetchUserTicketStatus(id)
+
  // Fetch user role
  const role = await getUserRole()
  setUserRole(role)
@@ -142,12 +147,6 @@ export default function DashboardPage() {
  if (role === 'Admin') {
  fetchOpenTicketsCount()
  }
-
- // Fetch user's own ticket status (for non-admins)
- fetchUserTicketStatus(id)
-
- // Fetch dashboard data
- fetchDashboardData(id)
  }
  initUser()
  }, [router, fetchDashboardData, fetchOpenTicketsCount, fetchUserTicketStatus])

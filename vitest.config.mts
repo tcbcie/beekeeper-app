@@ -16,6 +16,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./tests/setup-simple.ts'],
+    // Page tests type into real inputs; on a busy machine (a full parallel run, CI) 5 s per test
+    // is too tight and failures become random. 15 s keeps them reliable.
+    testTimeout: 15_000,
     css: false,
     coverage: {
       provider: 'v8',

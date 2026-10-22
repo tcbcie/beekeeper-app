@@ -84,40 +84,23 @@ export default function HiveDetailPage() {
   const [showWolfModal, setShowWolfModal] = useState(false)
   const [wolfConnected, setWolfConnected] = useState(false)
 
-  // Check if user has BEEP connected
-  const checkBeepConnection = useCallback(async () => {
+  // Whether the user has BEEP and/or Wolf Waagen connected: one read of the profile for both.
+  // The tokens themselves are server-only; connected_at is set and cleared with them.
+  const checkScaleConnections = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('beep_connected_at')
+        .select('beep_connected_at, wolf_connected_at')
         .eq('id', session.user.id)
         .single()
 
-      // The token itself is server-only; connected_at is set and cleared with it.
       setBeepConnected(!!profile?.beep_connected_at)
-    } catch (error) {
-      console.error('Error checking BEEP connection:', error)
-    }
-  }, [])
-
-  // Check if user has Wolf Waagen connected
-  const checkWolfConnection = useCallback(async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('wolf_connected_at')
-        .eq('id', session.user.id)
-        .single()
-
       setWolfConnected(!!profile?.wolf_connected_at)
     } catch (error) {
-      console.error('Error checking Wolf Waagen connection:', error)
+      console.error('Error checking scale connections:', error)
     }
   }, [])
 
@@ -160,9 +143,8 @@ export default function HiveDetailPage() {
   }, [hiveId, fetchHiveData])
 
   useEffect(() => {
-    checkBeepConnection()
-    checkWolfConnection()
-  }, [checkBeepConnection, checkWolfConnection])
+    checkScaleConnections()
+  }, [checkScaleConnections])
 
   useEffect(() => {
     const initAuth = async () => {

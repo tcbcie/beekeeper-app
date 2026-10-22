@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchInChunks } from '@/lib/supabase-chunk'
 import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
 import { setDistributionMatingConfirmation, updateDistributionMatingDate } from '@/hooks/useGraftDistributions'
 import { fillMissingRecipientLabels } from '@/lib/distribution-recipients'
@@ -355,22 +356,20 @@ export function useQueenTracker() {
               .select('group_id, user_id')
               .in('group_id', groupIds)
           : Promise.resolve({ data: [] as { group_id: string; user_id: string }[], error: null }),
-        graftIds.length > 0
-          ? supabase
-              .from('queen_weights')
-              .select('graft_id, weight_mg, weighed_at')
-              .in('graft_id', graftIds)
-              .order('weighed_at', { ascending: false })
-          : Promise.resolve({ data: [] as { graft_id: string; weight_mg: number; weighed_at: string }[], error: null }),
-        sourceQueenIds.length > 0
-          ? supabase
-              .from('queens')
-              .select('id, queen_number, subspecies, marking_color, birth_date, mother_id')
-              .in('id', sourceQueenIds)
-              // Registry-queen rows only ever come from your own distributions, so the donor is
-              // always you. Scope explicitly rather than relying on RLS alone.
-              .eq('user_id', userId)
-          : Promise.resolve({ data: [] as SourceQueenRow[], error: null }),
+        // Graft and source-queen id lists grow with every distribution, so they are sent in
+        // chunks to stay under the URL length limit.
+        fetchInChunks<{ graft_id: string; weight_mg: number; weighed_at: string }>(graftIds, (chunk) => supabase
+          .from('queen_weights')
+          .select('graft_id, weight_mg, weighed_at')
+          .in('graft_id', chunk)
+          .order('weighed_at', { ascending: false })),
+        fetchInChunks<SourceQueenRow>(sourceQueenIds, (chunk) => supabase
+          .from('queens')
+          .select('id, queen_number, subspecies, marking_color, birth_date, mother_id')
+          .in('id', chunk)
+          // Registry-queen rows only ever come from your own distributions, so the donor is
+          // always you. Scope explicitly rather than relying on RLS alone.
+          .eq('user_id', userId)),
       ])
 
       if (sourceQueensResult.error) {
@@ -389,11 +388,11 @@ export function useQueenTracker() {
           .filter((motherId): motherId is string => motherId !== null)
       ))
       if (motherIds.length > 0) {
-        const { data: motherRows, error: motherError } = await supabase
+        const { data: motherRows, error: motherError } = await fetchInChunks<MotherQueenRow>(motherIds, (chunk) => supabase
           .from('queens')
           .select('id, queen_number, subspecies, marking_color, birth_date')
-          .in('id', motherIds)
-          .eq('user_id', userId)
+          .in('id', chunk)
+          .eq('user_id', userId))
         if (motherError) {
           console.error('Error fetching mother queens for tracker:', motherError)
         } else {
@@ -420,7 +419,10 @@ export function useQueenTracker() {
       if (weightsResult.error) {
         console.error('Error fetching queen weights for tracker:', weightsResult.error)
       } else {
-        for (const weight of weightsResult.data || []) {
+        // Chunks are each newest-first, so re-sort the merged rows before taking the latest.
+        const weightsNewestFirst = [...(weightsResult.data || [])].sort((a, b) =>
+          a.weighed_at < b.weighed_at ? 1 : a.weighed_at > b.weighed_at ? -1 : 0)
+        for (const weight of weightsNewestFirst) {
           if (!latestWeights.has(weight.graft_id)) {
             latestWeights.set(weight.graft_id, {
               weight_mg: weight.weight_mg,

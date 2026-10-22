@@ -1,7 +1,7 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). The main page request chains and double loads were fixed in batch 23 (22/10/2026); the rest are batch 24. Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
@@ -17,7 +17,7 @@
 - **C3-07 / C3-29:** UTC dates via `toISOString`, so "today" is yesterday just after midnight in Irish Summer Time. *Fixed in batch 19 (22/10/2026).* Client side; the dashboard's "due today" count comes from the `get_dashboard_overview` RPC (`current_date` in UTC), which is still open.
 - **C3-08 / C3-09:** stale responses aren't discarded in `useHiveDetail`, and a refetch unmounts the whole page.
 - **C3-10:** the QR ordering puts nulls first. **C3-11:** a scale can end up assigned to two hives. **C3-12:** scale charts don't cancel or debounce their requests. **C3-13:** failed results are cached as empty.
-- **C3-14 / C3-15 / C3-16:** sequential request waterfalls. **C3-17:** chart.js is loaded statically on the hive detail page. *Fixed in batch 21 (22/10/2026), load on demand.*
+- **C3-14 / C3-15 / C3-16:** sequential request waterfalls. *Fixed in batch 23 (22/10/2026).* **C3-17:** chart.js is loaded statically on the hive detail page. *Fixed in batch 21 (22/10/2026), load on demand.*
 - **C3-18:** the QR code uses `window.location.origin` instead of a canonical site URL. **C3-19:** buttons are nested inside a `<Link>`. **C3-20:** the tag page says "not assigned" when the real problem is no access.
 
 ### Low
@@ -123,7 +123,7 @@ One shell-profile hook with a cache, one `safeInternalPath()` redirect helper, s
 - **C5b-07:** a mixed bulk selection records every graft as a mated queen.
 - **C5b-08:** mated-date edits never sync to the recipient queen.
 - **C5b-09:** distributed grafts can be deleted or have their status changed, and `sold` can be set by hand.
-- **C5b-10 / C5b-11:** double initial fetch, and the tab bounces.
+- **C5b-10 / C5b-11:** double initial fetch, and the tab bounces. *Fixed in batch 23 (22/10/2026).*
 - **C5b-12 / C5b-14:** double tap on save and on generate, and the save is not atomic. *Double taps fixed in batch 16 (19/10/2026); the non-atomic save is still open.*
 - **C5b-13:** single-breeder cells don't stamp the mother, and the dropdown isn't locked.
 - **C5b-15:** stuck on "Loading grafts…" with no retry.
@@ -202,7 +202,7 @@ Covers `window.prompt` and `confirm`, the subscription-history prefetch, dead fi
 
 ### Medium, key items
 - **C9b-08 / C9b-09:** no cancel or try/finally in the report effects, and query errors show as "no data" on a compliance report.
-- **C9b-10 / C9b-11 / C9b-12:** report waterfalls.
+- **C9b-10 / C9b-11 / C9b-12:** report waterfalls. *C9b-10 fixed in batch 23 (22/10/2026); C9b-11/12 in batch 24.*
 - **C9b-13 / C9b-14:** N+1 in 12 tools, and sequential scale calls.
 - **C9b-15:** fuzzy `ilike` with `limit(1)` matches "hive 1" to "Hive 12".
 - **C9b-16:** unbounded number arguments, and `year` is silently dropped.
@@ -275,12 +275,12 @@ Covers the UTC end date, period counts, the toggle race, `confirm()`, UTC defaul
 - **C6-04:** `useQueenDetail.ts:330-342`. The sightings hive embed is an object, so the hive number is always blank. *Fixed in batch 19 (22/10/2026).*
 
 ### Medium, key items
-- **C6-05:** double init fetch.
+- **C6-05:** double init fetch. *Fixed in batch 23 (22/10/2026).*
 - **C6-06:** redistribute is not atomic.
 - **C6-07 / C6-08:** queen form double submit, and the cycle check runs after the RPC. *C6-07 fixed in batch 16 (19/10/2026). C6-08 is still open; it's worse than first reported, because a reared daughter can be saved as her own mother's mother.*
 - **C6-09:** duplicate invites. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.* A unique index on pending invitations is still to do.
 - **C6-10:** stale team detail race.
-- **C6-11 to C6-15:** N+1 queries and waterfalls (lineage up to 8 sequential queries; the report hits the URL length limit).
+- **C6-11 to C6-15:** N+1 queries and waterfalls (lineage up to 8 sequential queries; the report hits the URL length limit). *C6-11, C6-13, C6-14 and C6-15 fixed in batch 23 (22/10/2026); C6-12 (Mel's lineage tool) in batch 24.*
 - **C6-16:** errors show as empty.
 - **C6-17 to C6-19:** touch targets and 14px inputs.
 

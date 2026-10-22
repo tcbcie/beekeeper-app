@@ -124,43 +124,6 @@ export function useHivesList() {
  .filter((id): id is string => id !== null)
  )]
 
- // Map for shared apiaries (viewing others' hives)
- const teamDataMap = new Map<string, { name: string }>()
- // Map for owner's apiaries that are shared with teams
- const ownerSharedMap = new Map<string, { name: string }>()
-
- if (allApiaryIds.length > 0) {
- const { data: teamApiaryData, error: teamApiaryError } = await supabase
- .from('team_apiaries')
- .select('apiary_id, teams(name)')
- .in('apiary_id', allApiaryIds)
-
- if (teamApiaryError) {
- console.error('Error fetching team apiary data:', teamApiaryError)
- }
-
- if (teamApiaryData) {
- teamApiaryData.forEach((ta) => {
- const typedData = ta as { apiary_id: string; teams: { name: string } | { name: string }[] | null }
- if (typedData.teams) {
- const teamName = Array.isArray(typedData.teams)
- ? typedData.teams[0]?.name || ''
- : typedData.teams.name
- if (teamName) {
- // Check if this apiary belongs to current user or someone else
- const hiveForApiary = data.find(h => h.apiary_id === typedData.apiary_id)
- if (hiveForApiary && hiveForApiary.user_id !== currentUserId) {
- teamDataMap.set(typedData.apiary_id, { name: teamName })
- } else {
- ownerSharedMap.set(typedData.apiary_id, { name: teamName })
- }
- }
- }
- })
- }
- }
-
- // Batch query for queens
  const queenIds = [...new Set(
  data
  .filter(h => h.queen_id)
@@ -168,82 +131,53 @@ export function useHivesList() {
  .filter((id): id is string => id !== null)
  )]
 
- const queensMap = new Map<string, { id: string; queen_number: string; marking_color?: string; status?: string; queen_clipped?: boolean }>()
- if (queenIds.length > 0) {
- const { data: queensData } = await supabase
- .from('queens')
- // queen_clipped is read here because a hive with a linked queen can only
- // have its clipping recorded on the queen — the hive form hides its own
- // toggle in that state. See isQueenClipped in lib/queen-clipped.
- .select('id, queen_number, marking_color, status, queen_clipped')
- .in('id', queenIds)
-
- queensData?.forEach(queen => {
- queensMap.set(queen.id, queen)
- })
- }
-
- // Batch query for QR tags assigned to these hives.
- // Order deterministically so the "most recently assigned" tag wins
- // when a hive has multiple rows (prevents flickering codes on reload).
- const { data: qrTagsData, error: qrTagsError } = await supabase
- .from('qr_tags')
- .select('hive_id, code, assigned_at, created_at')
- .in('hive_id', hiveIds)
- .order('assigned_at', { ascending: false, nullsFirst: false })
- .order('created_at', { ascending: false, nullsFirst: false })
-
- if (qrTagsError) {
- console.error('Error fetching qr_tags for hive cards:', qrTagsError)
- }
-
- const qrTagByHive = new Map<string, string>()
- qrTagsData?.forEach(tag => {
- if (tag.hive_id && !qrTagByHive.has(tag.hive_id)) {
- qrTagByHive.set(tag.hive_id, tag.code)
- }
- })
-
- // Batch query for all inspections for these hives.
- // RLS already restricts to records the user can see (own + shared apiary);
- // do NOT add .eq('user_id', currentUserId) here or team-mate inspections on
- // shared hives are hidden from the hive card aggregates.
- const { data: allInspections } = await supabase
- .from('inspections')
- .select('hive_id, inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength, queen_seen, eggs_present, honey_super_fullness')
- .in('hive_id', hiveIds)
- .order('inspection_date', { ascending: false })
-
- // Group inspections by hive_id
- const inspectionsByHive = new Map<string, typeof allInspections>()
- allInspections?.forEach(inspection => {
- if (!inspectionsByHive.has(inspection.hive_id)) {
- inspectionsByHive.set(inspection.hive_id, [])
- }
- inspectionsByHive.get(inspection.hive_id)!.push(inspection)
- })
-
- // Batch query for last record of each type across all hives.
- // Notes:
- //   - No .eq('user_id', currentUserId): RLS already restricts the result to
- //     records the user is allowed to see (own + shared via team_apiaries).
- //     Filtering client-side on user_id wrongly hides team-mate records on
- //     shared hives (e.g. badges showed "Never" because a team-mate's
- //     inspection was filtered out).
- //   - No .limit(hiveIds.length): PostgREST's limit is a total row cap, not a
- //     per-hive cap. With the limit set, hives whose latest record is older
- //     than the global top N would silently disappear from the dedupe map.
- //     We rely on the dedupe-first-hit loop below to keep one row per hive.
- // Last inspection per hive is derived from allInspections (already
- // fetched newest-first above) instead of re-fetching the inspections table.
- const lastInspections = allInspections
+ // Every query below needs only the hive rows, so they all go out together: one round trip
+ // instead of five in a row. RLS already restricts each result to records the user may see.
+ const noRows = Promise.resolve({ data: null, error: null })
  const [
+ { data: teamApiaryData, error: teamApiaryError },
+ { data: queensData },
+ { data: qrTagsData, error: qrTagsError },
+ { data: allInspections },
  { data: lastTreatments },
  { data: lastChecks },
  { data: lastFeedings },
  { data: lastHarvests },
  { data: activeTasks }
  ] = await Promise.all([
+ allApiaryIds.length > 0
+ ? supabase
+ .from('team_apiaries')
+ .select('apiary_id, teams(name)')
+ .in('apiary_id', allApiaryIds)
+ : noRows,
+ queenIds.length > 0
+ ? supabase
+ .from('queens')
+ // queen_clipped is read here because a hive with a linked queen can only
+ // have its clipping recorded on the queen (the hive form hides its own
+ // toggle in that state). See isQueenClipped in lib/queen-clipped.
+ .select('id, queen_number, marking_color, status, queen_clipped')
+ .in('id', queenIds)
+ : noRows,
+ // QR tags ordered deterministically so the most recently assigned tag wins
+ // when a hive has multiple rows (prevents flickering codes on reload).
+ supabase
+ .from('qr_tags')
+ .select('hive_id, code, assigned_at, created_at')
+ .in('hive_id', hiveIds)
+ .order('assigned_at', { ascending: false, nullsFirst: false })
+ .order('created_at', { ascending: false, nullsFirst: false }),
+ // All inspections for these hives. Do NOT add .eq('user_id', currentUserId):
+ // team-mate inspections on shared hives must count in the card aggregates.
+ supabase
+ .from('inspections')
+ .select('hive_id, inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength, queen_seen, eggs_present, honey_super_fullness')
+ .in('hive_id', hiveIds)
+ .order('inspection_date', { ascending: false }),
+ // Last record of each type. No user_id filter (RLS scopes it, and team-mates' records
+ // count) and no .limit (it is a total row cap, not per hive); the dedupe loop below keeps
+ // one row per hive.
  supabase
  .from('varroa_treatments')
  .select('hive_id, treatment_date, treatment_type, planned_removal_date, removed_date')
@@ -270,6 +204,66 @@ export function useHivesList() {
  .in('hive_id', hiveIds)
  .eq('completed', false)
  ])
+
+ // Map for shared apiaries (viewing others' hives)
+ const teamDataMap = new Map<string, { name: string }>()
+ // Map for owner's apiaries that are shared with teams
+ const ownerSharedMap = new Map<string, { name: string }>()
+
+ if (allApiaryIds.length > 0) {
+ if (teamApiaryError) {
+ console.error('Error fetching team apiary data:', teamApiaryError)
+ }
+
+ if (teamApiaryData) {
+ teamApiaryData.forEach((ta) => {
+ const typedData = ta as { apiary_id: string; teams: { name: string } | { name: string }[] | null }
+ if (typedData.teams) {
+ const teamName = Array.isArray(typedData.teams)
+ ? typedData.teams[0]?.name || ''
+ : typedData.teams.name
+ if (teamName) {
+ // Check if this apiary belongs to current user or someone else
+ const hiveForApiary = data.find(h => h.apiary_id === typedData.apiary_id)
+ if (hiveForApiary && hiveForApiary.user_id !== currentUserId) {
+ teamDataMap.set(typedData.apiary_id, { name: teamName })
+ } else {
+ ownerSharedMap.set(typedData.apiary_id, { name: teamName })
+ }
+ }
+ }
+ })
+ }
+ }
+
+ const queensMap = new Map<string, { id: string; queen_number: string; marking_color?: string; status?: string; queen_clipped?: boolean }>()
+ ;(queensData as { id: string; queen_number: string; marking_color?: string; status?: string; queen_clipped?: boolean }[] | null)?.forEach(queen => {
+ queensMap.set(queen.id, queen)
+ })
+
+ if (qrTagsError) {
+ console.error('Error fetching qr_tags for hive cards:', qrTagsError)
+ }
+
+ const qrTagByHive = new Map<string, string>()
+ qrTagsData?.forEach(tag => {
+ if (tag.hive_id && !qrTagByHive.has(tag.hive_id)) {
+ qrTagByHive.set(tag.hive_id, tag.code)
+ }
+ })
+
+ // Group inspections by hive_id
+ const inspectionsByHive = new Map<string, typeof allInspections>()
+ allInspections?.forEach(inspection => {
+ if (!inspectionsByHive.has(inspection.hive_id)) {
+ inspectionsByHive.set(inspection.hive_id, [])
+ }
+ inspectionsByHive.get(inspection.hive_id)!.push(inspection)
+ })
+
+ // Last inspection per hive is derived from allInspections (fetched newest-first above)
+ // instead of re-fetching the inspections table.
+ const lastInspections = allInspections
 
  // Build map of last inspection date per hive
  const lastInspectionByHive = new Map<string, string>()

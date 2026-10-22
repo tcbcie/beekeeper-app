@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 23: Faster Page Loads</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 23: Faster Page Loads (Request Chains)</h1>
+<p><strong>Status:</strong> Done 22/10/2026. Tested by you; committed and pushed. This is Phase 2 fix batch 10; the rest of the request-chain work is batch 24.</p>
+<p>Many pages wait for one database request to finish before starting the next, even when the second doesn't need the first's answer. Each wait is a full round trip to the server, which is noticeable on mobile data. Two pages also load all their data <strong>twice</strong>. The fixes regroup existing queries with <code>Promise.all</code>. Each query and its error handling stay as they are; only the waiting order changes.</p>
+
+<h2>A. Pages that load everything twice</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Queen rearing (batches)</strong> (C5b-10): setting the user id gave the fetch functions new identities, which re-ran the start-up effect, so about 9 requests ran twice. Fix: the effect depends on <code>[router]</code> only, the same pattern as the hives list.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Queens</strong> (C6-05): the same cause, about 11 requests twice. Same fix.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Queen rearing tab bounce</strong> (C5b-11): changing tab briefly switched back to the old tab before the address caught up, which mounted the tab twice and fetched twice. Fix: the tab follows the address only.</div>
+
+<h2>B. Back-to-back requests that can run together</h2>
+<table>
+  <tr><th>Page</th><th>Before → after (round trips)</th><th>Finding</th></tr>
+  <tr><td>Hives list</td><td>7 → 3</td><td>C3-15</td></tr>
+  <tr><td>Hive detail</td><td>3 → 2; the duplicate profile read (scale connections) becomes one read</td><td>C3-14</td></tr>
+  <tr><td>Dashboard</td><td>the main data no longer waits for the role check</td><td>C3-16</td></tr>
+  <tr><td>Queen rearing list</td><td>3 → 2</td><td>C5b</td></tr>
+  <tr><td>Queens list</td><td>4 → 3</td><td>C6</td></tr>
+  <tr><td>Reports (every report's base data)</td><td>3 → 1; Varroa Monitoring checks and treatments 2 → 1</td><td>C9b-10</td></tr>
+  <tr><td>Queen page</td><td>4 → 2</td><td>C6-13</td></tr>
+  <tr><td>Queen compare (per queen)</td><td>4 → 2</td><td>C6-14</td></tr>
+  <tr><td>Queen lineage tree</td><td>9 → 4: one request per generation instead of one per ancestor. The tree, its order and its warnings are unchanged.</td><td>C6-11</td></tr>
+</table>
+
+<h2>C. Lists too long for the web address (queen report error)</h2>
+<div class="task"><input type="checkbox" checked disabled> A breeder queen with hundreds of daughters made the sister-ratings request so long that the server refused it (C6-15). New small helper <code>src/lib/supabase-chunk.ts</code> → <code>fetchInChunks(ids, query)</code>: it splits long id lists into groups of 100, runs them together, and merges the results. Where the old query used <code>order</code> or <code>limit</code>, the merged result is re-sorted and re-cut, so averages and "latest" values stay correct.</div>
+<div class="task"><input type="checkbox" checked disabled> Used at the five places that can grow with the account: queen sister ratings, the queens list's hive lookup, and the queen tracker's weights, source queens and mothers.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint, the test suite (including the hives page tests); qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/request-chains-batch23-plan.md</code>; Phase 2 register; memory note (<code>Promise.all</code> for independent queries, <code>fetchInChunks</code> for long <code>.in()</code> lists, start-up effects keyed on <code>[router]</code>).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>How you'll test</h2>
+<ul>
+  <li>Open the dashboard, hives list, a hive, queen rearing (switch tabs), queens, a queen page with its lineage, queen compare and two reports. Everything shows the same data as before, just sooner.</li>
+  <li>Optional: in the browser's Network tab, Queen rearing and Queens now make each request once, not twice.</li>
+  <li>If you have a breeder queen with many daughters, its report now loads instead of erroring.</li>
+</ul>
+
+<h2>Batch 24 (next)</h2>
+<p>NIHBS and rearing-group report restructures (C9b-11/12), Mel's lineage tool and its other one-request-per-item tools (C6-12, C9b-13/14), the admin and Tools pages (C9a-20/21/23, C8a-08..10), the CRM order page, and the public GDD embed's weather calls (C7b-04).</p>
+
+<h2>Review</h2>
+<p>Double loads were fixed on Queen rearing and Queens, and the tab bounce is gone. Waterfalls were regrouped on the hives list (7→3), hive detail (3→2, plus one profile read), dashboard, queen rearing, queens, reports (3→1 and 2→1), queen page (4→2), queen report and compare (4→2) and lineage tree (9→4). <code>fetchInChunks</code> was added and used at the five growing <code>.in()</code> lists. Test timing was made reliable (15 s test and 3 s wait limits; three green full runs). tsc and ESLint (src) are clean, 818 tests pass, and qa-engineer found no issues. Details are in <code>docs/features/request-chains-batch23-plan.md</code>.</p>
+</body>
+</html>

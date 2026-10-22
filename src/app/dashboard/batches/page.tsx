@@ -104,19 +104,19 @@ export default function BatchesPage() {
  router.replace(nextSearch ? `${pathname}?${nextSearch}` : pathname, { scroll: false })
  }, [pathname, router, searchParams])
 
+ // Follow the address only. With activeTab in the deps, a tab click ran this while the URL
+ // still held the old ?tab, switched back, then forward again: the tab mounted (and fetched) twice.
  useEffect(() => {
  const rawTab = searchParams.get('tab')
  const nextTab = getValidTab(rawTab)
- if (nextTab !== activeTab) {
- setActiveTab(nextTab)
- }
+ setActiveTab(prev => (prev === nextTab ? prev : nextTab))
 
  if (rawTab && rawTab !== nextTab) {
  const params = new URLSearchParams(searchParams.toString())
  params.set('tab', nextTab)
  router.replace(`${pathname}?${params.toString()}`, { scroll: false })
  }
- }, [activeTab, pathname, router, searchParams])
+ }, [pathname, router, searchParams])
 
  // Selection tab states. Persisted so the tab is not reset every time the page is revisited;
  // the custom dates travel with timePeriod because 'custom' is meaningless without them.

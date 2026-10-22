@@ -48,17 +48,59 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
   const fetchHiveData = useCallback(async (currentUserId: string) => {
     setLoading(true)
     try {
-      // Fetch hive details with queen join
-      const { data: hiveData, error: hiveError } = await supabase
-        .from('hives')
-        .select(`
-          *,
-          apiaries(name),
-          archive_reason_value:dropdown_values!archive_reason_id(value),
-          queens(id, queen_number, marking_color, status, source, subspecies, birth_date, queen_clipped, performance_notes)
-        `)
-        .eq('id', hiveId)
-        .single()
+      // The hive and its records need only the hive id, so they load together: one round trip
+      // instead of two. The team lookup below needs the hive's apiary, so it follows.
+      const [
+        { data: hiveData, error: hiveError },
+        { data: inspectionsData },
+        { data: varroaChecksData },
+        { data: varroaTreatmentsData },
+        { data: feedingsData },
+        { data: harvestsData },
+        { data: tasksData }
+      ] = await Promise.all([
+        supabase
+          .from('hives')
+          .select(`
+            *,
+            apiaries(name),
+            archive_reason_value:dropdown_values!archive_reason_id(value),
+            queens(id, queen_number, marking_color, status, source, subspecies, birth_date, queen_clipped, performance_notes)
+          `)
+          .eq('id', hiveId)
+          .single(),
+        supabase
+          .from('inspections')
+          .select('*')
+          .eq('hive_id', hiveId)
+          .order('inspection_date', { ascending: false }),
+        supabase
+          .from('varroa_checks')
+          .select('*')
+          .eq('hive_id', hiveId)
+          .order('check_date', { ascending: false }),
+        supabase
+          .from('varroa_treatments')
+          .select('*')
+          .eq('hive_id', hiveId)
+          .order('treatment_date', { ascending: false }),
+        supabase
+          .from('feedings')
+          .select('*')
+          .eq('hive_id', hiveId)
+          .order('feed_date', { ascending: false }),
+        supabase
+          .from('harvests')
+          .select('*')
+          .eq('hive_id', hiveId)
+          .order('harvest_date', { ascending: false }),
+        supabase
+          .from('tasks_events')
+          .select('*')
+          .eq('hive_id', hiveId)
+          .eq('completed', false)
+          .order('start_date', { ascending: true })
+      ])
 
       if (hiveError) throw hiveError
 
@@ -95,47 +137,6 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
       setHive(hiveData)
       setIsOwner(hiveData.user_id === currentUserId)
 
-      // Fetch all records for this hive
-      const [
-        { data: inspectionsData },
-        { data: varroaChecksData },
-        { data: varroaTreatmentsData },
-        { data: feedingsData },
-        { data: harvestsData },
-        { data: tasksData }
-      ] = await Promise.all([
-        supabase
-          .from('inspections')
-          .select('*')
-          .eq('hive_id', hiveId)
-          .order('inspection_date', { ascending: false }),
-        supabase
-          .from('varroa_checks')
-          .select('*')
-          .eq('hive_id', hiveId)
-          .order('check_date', { ascending: false }),
-        supabase
-          .from('varroa_treatments')
-          .select('*')
-          .eq('hive_id', hiveId)
-          .order('treatment_date', { ascending: false }),
-        supabase
-          .from('feedings')
-          .select('*')
-          .eq('hive_id', hiveId)
-          .order('feed_date', { ascending: false }),
-        supabase
-          .from('harvests')
-          .select('*')
-          .eq('hive_id', hiveId)
-          .order('harvest_date', { ascending: false }),
-        supabase
-          .from('tasks_events')
-          .select('*')
-          .eq('hive_id', hiveId)
-          .eq('completed', false)
-          .order('start_date', { ascending: true })
-      ])
 
       setInspections(inspectionsData || [])
       setVarroaChecks(varroaChecksData || [])

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { fetchInChunks } from '@/lib/supabase-chunk'
 import { getCurrentUserId } from '@/lib/auth'
 import { getTeamAccess } from '@/lib/team-access'
 import { Queen, Batch } from '@/types/queen'
@@ -74,9 +75,19 @@ export function useQueensList() {
  const queensMap = new Map(queensData.map(q => [q.id, q]))
  const queenIds = queensData.map(q => q.id).filter(Boolean)
 
- // Find hives housing these queens (mine or shared), any status,
- // in a single query
- const { data: hivesData, error: hivesError } = await supabase
+ // Any mother/father not already in the current results, fetched batched
+ // (never embed queens->queens self-joins)
+ const missingParentIds = [...new Set(
+ queensData
+ .flatMap(q => [q.mother_id, q.father_id])
+ .filter((id): id is string => Boolean(id) && !queensMap.has(id))
+ )]
+
+ // Hives housing these queens (mine or shared, any status) and the missing parents load
+ // together. Both id lists grow with the account, so they are fetched in chunks to stay under
+ // the URL length limit.
+ const [{ data: hivesData, error: hivesError }, { data: parentsData }] = await Promise.all([
+ fetchInChunks(queenIds, chunk => supabase
  .from('hives')
  .select(`
  id,
@@ -87,7 +98,12 @@ export function useQueensList() {
  name
  )
  `)
- .in('queen_id', queenIds)
+ .in('queen_id', chunk)),
+ fetchInChunks(missingParentIds, chunk => supabase
+ .from('queens')
+ .select('id, queen_number, marking_color')
+ .in('id', chunk)),
+ ])
 
  if (hivesError) {
  console.error('Error fetching hives for queens:', hivesError)
@@ -97,22 +113,8 @@ export function useQueensList() {
  (hivesData || []).map(h => [h.queen_id, h])
  )
 
- // Fetch any mother/father not already in the current results,
- // batched (never embed queens->queens self-joins)
- const missingParentIds = [...new Set(
- queensData
- .flatMap(q => [q.mother_id, q.father_id])
- .filter((id): id is string => Boolean(id) && !queensMap.has(id))
- )]
-
- if (missingParentIds.length > 0) {
- const { data: parentsData } = await supabase
- .from('queens')
- .select('id, queen_number, marking_color')
- .in('id', missingParentIds)
- for (const parent of parentsData || []) {
+ for (const parent of parentsData) {
  queensMap.set(parent.id, parent)
- }
  }
 
  const toParentRef = (parentId: string | null) => {
@@ -309,7 +311,10 @@ export function useQueensList() {
  })
  }
  initUser()
- }, [router, fetchQueens, fetchSubspeciesOptions, fetchSourceOptions, fetchBatches, fetchMatingStations, fetchRearedCandidates])
+ // Runs once per mount. Listing the fetchers re-ran it: setUserId gives them new identities,
+ // so every first-load request went out twice. They receive the id as an argument.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, [router])
 
  return {
  queens,
