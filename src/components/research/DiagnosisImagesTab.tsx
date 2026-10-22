@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Camera, Trash2, Calendar, Tag, RefreshCw, Download, MessageSquare, Send, User, Eye, LayoutGrid, List, X, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
+import { fetchInChunks } from '@/lib/supabase-chunk'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
 import Button from '@/components/ui/Button'
@@ -53,42 +54,45 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  setLoading(true)
  setError(null)
 
- const { data: imagesData, error: fetchError } = await supabase
+ try {
+ // Images and comments load together. The comments need no list of image ids (it went in the
+ // URL and broke after a few hundred images): the database only returns comments on images this
+ // user can see, which are exactly the images loaded here.
+ const [{ data: imagesData, error: fetchError }, { data: commentsData, error: commentsError }] = await Promise.all([
+ supabase
  .from('diagnosis_images')
  .select('*')
- .order('created_at', { ascending: false })
+ .order('created_at', { ascending: false }),
+ supabase
+ .from('diagnosis_image_comments')
+ .select('*')
+ .order('created_at', { ascending: true }),
+ ])
 
  if (fetchError) {
  console.error('Failed to fetch diagnosis images:', fetchError)
  setError('Failed to load images')
- setLoading(false)
  return
  }
 
  setImages(imagesData || [])
+ if (commentsError) console.error('Failed to fetch diagnosis comments:', commentsError)
 
- // Fetch all comments for all images
- if (imagesData && imagesData.length > 0) {
- const imageIds = imagesData.map(img => img.id)
- const { data: commentsData } = await supabase
- .from('diagnosis_image_comments')
- .select('*')
- .in('diagnosis_image_id', imageIds)
- .order('created_at', { ascending: true })
+ // Only comments on the loaded images (one may be deleted between the two reads)
+ const imageIds = new Set((imagesData || []).map(img => img.id))
+ const comments = ((commentsData || []) as Comment[]).filter(c => imageIds.has(c.diagnosis_image_id))
 
- if (commentsData && commentsData.length > 0) {
- // Fetch user names for comments
- const userIds = [...new Set(commentsData.map(c => c.user_id))]
- const { data: profiles } = await supabase
- .from('profiles')
- .select('id, full_name')
- .in('id', userIds)
+ if (comments.length > 0) {
+ // Fetch user names for comments (chunked, as the list grows with the commenters)
+ const userIds = [...new Set(comments.map(c => c.user_id))]
+ const { data: profiles } = await fetchInChunks<{ id: string; full_name: string | null }>(userIds, (chunk) =>
+ supabase.from('profiles').select('id, full_name').in('id', chunk))
 
- const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || [])
+ const profileMap = new Map(profiles.map(p => [p.id, p.full_name]))
 
  // Group comments by image
  const commentsByImage: Record<string, Comment[]> = {}
- commentsData.forEach(c => {
+ comments.forEach(c => {
  if (!commentsByImage[c.diagnosis_image_id]) {
  commentsByImage[c.diagnosis_image_id] = []
  }
@@ -101,9 +105,10 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  } else {
  setAllComments({})
  }
- }
-
+ } finally {
+ // Always stop the spinner, also on an unexpected failure
  setLoading(false)
+ }
  }, [])
 
  useEffect(() => {

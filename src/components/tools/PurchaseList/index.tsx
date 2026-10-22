@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { ShoppingCart, Plus, Loader2, Info } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { PurchaseItem, DropdownValue } from '@/types/records'
+import { fetchDropdownValues } from '@/lib/dropdown-values'
 import PurchaseItemForm from './PurchaseItemForm'
 import PurchaseItemCard from './PurchaseItemCard'
 import PurchaseSummary from './PurchaseSummary'
@@ -31,22 +32,9 @@ export default function PurchaseList({ userId }: PurchaseListProps) {
   // Fetch categories
   const fetchCategories = useCallback(async () => {
     try {
-      const { data: category } = await supabase
-        .from('dropdown_categories')
-        .select('id')
-        .eq('category_key', 'purchase_category')
-        .single()
-
-      if (category) {
-        const { data: values } = await supabase
-          .from('dropdown_values')
-          .select('id, value')
-          .eq('category_id', category.id)
-          .eq('is_active', true)
-          .order('display_order')
-
-        setCategories(values || [])
-      }
+      const { data: values, error } = await fetchDropdownValues('purchase_category')
+      if (error) console.error('Error fetching categories:', error)
+      else setCategories(values)
     } catch (error) {
       console.error('Error fetching categories:', error)
     }

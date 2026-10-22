@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { firstOf } from '@/lib/embed'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { getCurrentUserId } from '@/lib/auth'
 import { ArrowLeft, Printer, Mail } from 'lucide-react'
@@ -43,7 +44,8 @@ export default function OrderInvoicePage() {
 
   const load = useCallback(async (uid: string) => {
     const [orderRes, itemsRes, profileRes] = await Promise.all([
-      supabase.from('crm_orders').select('*').eq('id', id).eq('user_id', uid).maybeSingle(),
+      // The customer comes with the order (one link, same owner) instead of a second round trip.
+      supabase.from('crm_orders').select('*, customer:crm_customers(*)').eq('id', id).eq('user_id', uid).maybeSingle(),
       supabase.from('crm_order_items').select('*').eq('order_id', id).eq('user_id', uid).order('created_at'),
       supabase.from('profiles').select('first_name, last_name, producer_address, email, mobile_number, breeder_code, is_uk_ni_resident').eq('id', uid).maybeSingle(),
     ])
@@ -53,8 +55,9 @@ export default function OrderInvoicePage() {
       return
     }
 
-    const ord = orderRes.data as Order
+    const { customer: cust, ...ord } = orderRes.data as Omit<Order, 'customer'> & { customer: Customer | Customer[] | null }
     setOrder(ord)
+    setCustomer(firstOf<Customer>(cust) ?? null)
     setItems((itemsRes.data || []) as OrderItem[])
 
     const p = profileRes.data
@@ -69,9 +72,6 @@ export default function OrderInvoicePage() {
       })
     }
 
-    const { data: cust } = await supabase
-      .from('crm_customers').select('*').eq('id', ord.customer_id).eq('user_id', uid).maybeSingle()
-    setCustomer((cust as Customer) || null)
     setLoading(false)
   }, [id, router])
 

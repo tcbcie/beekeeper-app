@@ -29,10 +29,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch apiaries for the target user (bypasses RLS)
+    // Fetch apiaries for the target user (bypasses RLS), each with its hive count in the same
+    // query (one link from hives to apiaries, so the embedded count is unambiguous).
     const { data: apiaries, error: apiariesError } = await supabaseAdmin
       .from('apiaries')
-      .select('id, name, city')
+      .select('id, name, city, hives(count)')
       .eq('user_id', targetUserId)
       .order('name')
 
@@ -45,20 +46,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get hive counts for each apiary
-    const apiariesWithCounts = await Promise.all(
-      (apiaries || []).map(async (apiary) => {
-        const { count } = await supabaseAdmin
-          .from('hives')
-          .select('*', { count: 'exact', head: true })
-          .eq('apiary_id', apiary.id)
-
-        return {
-          ...apiary,
-          hives_count: count || 0
-        }
-      })
-    )
+    const apiariesWithCounts = (apiaries || []).map(({ hives, ...apiary }) => ({
+      ...apiary,
+      hives_count: (hives as { count: number }[] | null)?.[0]?.count ?? 0
+    }))
 
     console.warn(`[AUDIT] Admin user data access: admin=${user.id} target=${targetUserId} resource=apiaries count=${apiariesWithCounts.length} status=success timestamp=${new Date().toISOString()}`)
     await logAdminAction(supabaseAdmin, {

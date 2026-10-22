@@ -3,6 +3,7 @@ import { getServiceSupabase, requireAdmin } from '@/lib/server/api-auth'
 import { createClient } from '@supabase/supabase-js'
 import { buildInsertSql, DATABASE_EXPORT_TABLES, sqlIdentifier, sqlValue } from '@/lib/database-export'
 import { logAdminAction } from '@/lib/admin-audit'
+import { mapInGroups } from '@/lib/supabase-chunk'
 
 const PUBLIC_SCHEMA = 'public'
 
@@ -303,6 +304,16 @@ async function runSafeSelect<T>(query: string): Promise<T[]> {
   return data as T[]
 }
 
+// Optional export parts: a failure is recorded in the summary instead of failing the export.
+async function optionalRead<T>(read: Promise<T[]>, label: string): Promise<{ rows: T[]; error: string | null }> {
+  try {
+    return { rows: await read, error: null }
+  } catch (readError) {
+    console.error(`Error exporting ${label}:`, readError)
+    return { rows: [], error: readError instanceof Error ? readError.message : `Unknown ${label} export error` }
+  }
+}
+
 function topoSortViews(views: MetadataViewRow[]): MetadataViewRow[] {
   const byName = new Map(views.map(v => [v.view_name, v]))
   const visited = new Set<string>()
@@ -563,7 +574,7 @@ export async function POST(request: NextRequest) {
     const tableOrder = new Map<string, number>(tables.map((table, index) => [table, index]))
     const tableSet = new Set<string>(tables)
 
-    const columnMetadata = await runSafeSelect<MetadataColumnRow>(`
+    const columnMetadataQuery = runSafeSelect<MetadataColumnRow>(`
       SELECT
         c.relname AS table_name,
         a.attname AS column_name,
@@ -584,7 +595,7 @@ export async function POST(request: NextRequest) {
       ORDER BY c.relname, a.attnum
     `)
 
-    const constraintMetadata = await runSafeSelect<MetadataConstraintRow>(`
+    const constraintMetadataQuery = runSafeSelect<MetadataConstraintRow>(`
       SELECT
         tbl.relname AS table_name,
         con.conname AS constraint_name,
@@ -602,7 +613,7 @@ export async function POST(request: NextRequest) {
       ORDER BY tbl.relname, con.contype, con.conname
     `)
 
-    const indexMetadata = await runSafeSelect<MetadataIndexRow>(`
+    const indexMetadataQuery = runSafeSelect<MetadataIndexRow>(`
       SELECT
         tbl.relname AS table_name,
         idx.relname AS index_name,
@@ -621,7 +632,7 @@ export async function POST(request: NextRequest) {
       ORDER BY tbl.relname, idx.relname
     `)
 
-    const sequenceMetadata = await runSafeSelect<MetadataSequenceRow>(`
+    const sequenceMetadataQuery = runSafeSelect<MetadataSequenceRow>(`
       SELECT
         seq_ns.nspname AS sequence_schema,
         seq.relname AS sequence_name,
@@ -638,7 +649,7 @@ export async function POST(request: NextRequest) {
       ORDER BY tbl.relname, seq.relname
     `)
 
-    const enumMetadata = await runSafeSelect<MetadataEnumRow>(`
+    const enumMetadataQuery = runSafeSelect<MetadataEnumRow>(`
       SELECT
         n.nspname AS schema_name,
         t.typname AS type_name,
@@ -651,7 +662,7 @@ export async function POST(request: NextRequest) {
       ORDER BY t.typname, e.enumsortorder
     `)
 
-    const rlsTableMetadata = await runSafeSelect<MetadataRlsTableRow>(`
+    const rlsTableMetadataQuery = runSafeSelect<MetadataRlsTableRow>(`
       SELECT
         c.relname AS table_name,
         c.relrowsecurity AS rls_enabled,
@@ -663,7 +674,7 @@ export async function POST(request: NextRequest) {
       ORDER BY c.relname
     `)
 
-    const policyMetadata = await runSafeSelect<MetadataPolicyRow>(`
+    const policyMetadataQuery = runSafeSelect<MetadataPolicyRow>(`
       SELECT
         tbl.relname AS table_name,
         pol.polname AS policy_name,
@@ -692,7 +703,7 @@ export async function POST(request: NextRequest) {
       ORDER BY tbl.relname, pol.polname
     `)
 
-    const functionMetadata = await runSafeSelect<MetadataFunctionRow>(`
+    const functionMetadataQuery = runSafeSelect<MetadataFunctionRow>(`
       SELECT
         p.proname AS function_name,
         pg_get_function_identity_arguments(p.oid) AS identity_arguments,
@@ -704,7 +715,7 @@ export async function POST(request: NextRequest) {
       ORDER BY p.proname, pg_get_function_identity_arguments(p.oid)
     `)
 
-    const viewMetadataRaw = await runSafeSelect<MetadataViewRow>(`
+    const viewMetadataRawQuery = runSafeSelect<MetadataViewRow>(`
       SELECT
         v.viewname AS view_name,
         v.definition AS view_definition,
@@ -733,83 +744,68 @@ export async function POST(request: NextRequest) {
       ORDER BY v.viewname
     `)
 
-    const viewMetadata = topoSortViews(viewMetadataRaw)
-
-    let authUsers: AuthUserSeedRow[] = []
-    let authUsersExportError: string | null = null
-    let authIdentities: AuthIdentitySeedRow[] = []
-    let authIdentitiesExportError: string | null = null
+    // The schema look-ups don't depend on each other, so all 13 run together. The nine required
+    // ones still fail the export on error; the four optional ones record their error in the summary.
     const authSeedUserId = exportMode === 'schema_admin_only' ? user.id : undefined
-    try {
-      authUsers = await fetchAuthUserSeedRows(authSeedUserId)
-      if (!includeSecrets) authUsers = authUsers.map(stripAuthUserSecrets)
-    } catch (authError) {
-      authUsersExportError = authError instanceof Error ? authError.message : 'Unknown auth.users export error'
-      console.error('Error exporting auth.users:', authError)
-    }
+    const [
+      columnMetadata, constraintMetadata, indexMetadata, sequenceMetadata, enumMetadata,
+      rlsTableMetadata, policyMetadata, functionMetadata, viewMetadataRaw,
+      authUsersRead, authIdentitiesRead, storageBucketsRead, storagePoliciesRead,
+    ] = await Promise.all([
+      columnMetadataQuery, constraintMetadataQuery, indexMetadataQuery, sequenceMetadataQuery, enumMetadataQuery,
+      rlsTableMetadataQuery, policyMetadataQuery, functionMetadataQuery, viewMetadataRawQuery,
+      optionalRead(fetchAuthUserSeedRows(authSeedUserId), 'auth.users'),
+      optionalRead(fetchAuthIdentitySeedRows(authSeedUserId), 'auth.identities'),
+      optionalRead(runSafeSelect<StorageBucketRow>(`
+          SELECT
+            id,
+            name,
+            "public" AS is_public,
+            file_size_limit,
+            allowed_mime_types,
+            avif_autodetection
+          FROM storage.buckets
+          ORDER BY name
+      `), 'storage.buckets'),
+      optionalRead(runSafeSelect<MetadataPolicyRow>(`
+          SELECT
+            tbl.relname AS table_name,
+            pol.polname AS policy_name,
+            pol.polpermissive AS policy_permissive,
+            pol.polcmd AS policy_command_key,
+            (
+              SELECT string_agg(
+                CASE
+                  WHEN role_oid = 0 THEN 'PUBLIC'
+                  ELSE quote_ident(pg_get_userbyid(role_oid))
+                END,
+                ', '
+                ORDER BY CASE
+                  WHEN role_oid = 0 THEN 'PUBLIC'
+                  ELSE quote_ident(pg_get_userbyid(role_oid))
+                END
+              )
+              FROM unnest(pol.polroles) AS role_oid
+            ) AS policy_roles,
+            pg_get_expr(pol.polqual, pol.polrelid) AS using_expr,
+            pg_get_expr(pol.polwithcheck, pol.polrelid) AS with_check_expr
+          FROM pg_policy pol
+          JOIN pg_class tbl ON tbl.oid = pol.polrelid
+          JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+          WHERE ns.nspname = 'storage'
+          ORDER BY tbl.relname, pol.polname
+      `), 'storage policies'),
+    ])
 
-    try {
-      authIdentities = await fetchAuthIdentitySeedRows(authSeedUserId)
-    } catch (authIdentityError) {
-      authIdentitiesExportError = authIdentityError instanceof Error ? authIdentityError.message : 'Unknown auth.identities export error'
-      console.error('Error exporting auth.identities:', authIdentityError)
-    }
-
-    let storageBuckets: StorageBucketRow[] = []
-    let storageBucketsExportError: string | null = null
-    let storagePolicies: MetadataPolicyRow[] = []
-    let storagePoliciesExportError: string | null = null
-
-    try {
-      storageBuckets = await runSafeSelect<StorageBucketRow>(`
-        SELECT
-          id,
-          name,
-          "public" AS is_public,
-          file_size_limit,
-          allowed_mime_types,
-          avif_autodetection
-        FROM storage.buckets
-        ORDER BY name
-      `)
-    } catch (storageError) {
-      storageBucketsExportError = storageError instanceof Error ? storageError.message : 'Unknown storage.buckets export error'
-      console.error('Error exporting storage.buckets:', storageError)
-    }
-
-    try {
-      storagePolicies = await runSafeSelect<MetadataPolicyRow>(`
-        SELECT
-          tbl.relname AS table_name,
-          pol.polname AS policy_name,
-          pol.polpermissive AS policy_permissive,
-          pol.polcmd AS policy_command_key,
-          (
-            SELECT string_agg(
-              CASE
-                WHEN role_oid = 0 THEN 'PUBLIC'
-                ELSE quote_ident(pg_get_userbyid(role_oid))
-              END,
-              ', '
-              ORDER BY CASE
-                WHEN role_oid = 0 THEN 'PUBLIC'
-                ELSE quote_ident(pg_get_userbyid(role_oid))
-              END
-            )
-            FROM unnest(pol.polroles) AS role_oid
-          ) AS policy_roles,
-          pg_get_expr(pol.polqual, pol.polrelid) AS using_expr,
-          pg_get_expr(pol.polwithcheck, pol.polrelid) AS with_check_expr
-        FROM pg_policy pol
-        JOIN pg_class tbl ON tbl.oid = pol.polrelid
-        JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
-        WHERE ns.nspname = 'storage'
-        ORDER BY tbl.relname, pol.polname
-      `)
-    } catch (storagePolicyError) {
-      storagePoliciesExportError = storagePolicyError instanceof Error ? storagePolicyError.message : 'Unknown storage policies export error'
-      console.error('Error exporting storage policies:', storagePolicyError)
-    }
+    const viewMetadata = topoSortViews(viewMetadataRaw)
+    const authUsers = includeSecrets ? authUsersRead.rows : authUsersRead.rows.map(stripAuthUserSecrets)
+    const authUsersExportError = authUsersRead.error
+    const authIdentities = authIdentitiesRead.rows
+    const authIdentitiesExportError = authIdentitiesRead.error
+    const storageBuckets = storageBucketsRead.rows
+    const storageBucketsExportError = storageBucketsRead.error
+    const storagePolicies = storagePoliciesRead.rows
+    const storagePoliciesExportError = storagePoliciesRead.error
 
     const filteredColumnMetadata = columnMetadata.filter(column => tableSet.has(column.table_name))
     const filteredConstraintMetadata = constraintMetadata.filter(constraint => tableSet.has(constraint.table_name))
@@ -1054,18 +1050,17 @@ export async function POST(request: NextRequest) {
     const exportResults: Record<string, number> = {}
     const exportErrors: Record<string, string> = {}
 
-    for (const table of tables) {
+    // One table's SQL. Pages within a table stay in order; a failing table gives no SQL and an error.
+    const exportTable = async (table: string): Promise<{ count: number; sql: string; error: string | null }> => {
       try {
         if (isSchemaAdminOnlyExport && table !== 'profiles') {
-          exportResults[table] = 0
-          continue
+          return { count: 0, sql: '', error: null }
         }
 
         const insertableColumns = insertableColumnsByTable.get(table) || []
         let totalRows = 0
         let pageStart = 0
         let tableSql = ''
-        let hasTableError = false
 
         while (true) {
           let query = supabaseAdmin
@@ -1085,10 +1080,7 @@ export async function POST(request: NextRequest) {
           const { data, error } = await query
           if (error) {
             console.error(`Error fetching ${table}:`, error)
-            exportResults[table] = 0
-            exportErrors[table] = error.message
-            hasTableError = true
-            break
+            return { count: 0, sql: '', error: error.message }
           }
 
           const rows = ((data as Record<string, unknown>[] | null) || [])
@@ -1127,21 +1119,21 @@ export async function POST(request: NextRequest) {
           pageStart += TABLE_EXPORT_PAGE_SIZE
         }
 
-        if (hasTableError) {
-          continue
-        }
-
-        exportResults[table] = totalRows
-        if (totalRows > 0) {
-          sqlContent += tableSql
-          sqlContent += '\n'
-        }
+        return { count: totalRows, sql: totalRows > 0 ? `${tableSql}\n` : '', error: null }
       } catch (tableError) {
         console.error(`Error exporting table ${table}:`, tableError)
-        exportResults[table] = 0
-        exportErrors[table] = tableError instanceof Error ? tableError.message : 'Unknown export error'
+        return { count: 0, sql: '', error: tableError instanceof Error ? tableError.message : 'Unknown export error' }
       }
     }
+
+    // Four tables at a time (one database under export load); the SQL keeps the table order.
+    const tableExports = await mapInGroups(tables, exportTable, 4)
+    tables.forEach((table, index) => {
+      const { count, sql, error } = tableExports[index]
+      exportResults[table] = count
+      if (error) exportErrors[table] = error
+      sqlContent += sql
+    })
 
     sqlContent += `\n-- Best effort: re-enable triggers after data load\n`
     sqlContent += buildTriggerToggleBlock(tables, 'ENABLE')

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchDropdownValues } from '@/lib/dropdown-values'
 import { CalendarDays, Plus, Pencil, Trash2, Loader2, X } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
@@ -120,30 +121,14 @@ export function useKeyEvents({
   // Fetch event types from dropdown_values
   useEffect(() => {
     const fetchTypes = async () => {
-      const { data, error } = await supabase
-        .from('dropdown_categories')
-        .select('id')
-        .eq('category_key', 'key_event_type')
-        .single()
+      const { data: values, error } = await fetchDropdownValues('key_event_type')
 
-      if (error || !data) {
-        console.error('Failed to fetch key event category:', error?.message ?? 'not found')
+      if (error) {
+        console.error('Failed to fetch key event types:', error.message)
         return
       }
 
-      const { data: values, error: valuesError } = await supabase
-        .from('dropdown_values')
-        .select('id, value')
-        .eq('category_id', data.id)
-        .eq('is_active', true)
-        .order('display_order')
-
-      if (valuesError) {
-        console.error('Failed to fetch key event types:', valuesError.message)
-        return
-      }
-
-      if (values) setEventTypes(values)
+      setEventTypes(values)
     }
     fetchTypes()
   }, [])

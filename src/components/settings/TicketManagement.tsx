@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchInChunks } from '@/lib/supabase-chunk'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { useToast } from '@/components/ui/Toast'
 import FieldLabel from '@/components/ui/FieldLabel'
@@ -85,39 +86,34 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
         }
         console.warn('Join failed, falling back to manual lookup:', ticketsError)
 
-        const { data: fallbackData, error: fallbackError } = await supabase
+        let fallbackQuery = supabase
           .from('support_tickets')
           .select('*')
           .order('created_at', { ascending: false })
+        // Same status filter as the main query.
+        if (ticketFilter !== 'all') {
+          fallbackQuery = fallbackQuery.eq('status', ticketFilter)
+        }
+
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery
 
         if (fallbackError) throw fallbackError
 
         if (fallbackData && fallbackData.length > 0) {
-          const enrichedTickets = await Promise.all(
-            fallbackData.map(async (ticket) => {
-              const { data: authUser } = await supabase
-                .from('profiles')
-                .select('email, first_name, last_name')
-                .eq('id', ticket.user_id)
-                .maybeSingle()
+          // All submitter and resolver names in one (chunked) look-up instead of one or two per ticket.
+          type TicketPerson = { id: string; email: string | null; first_name: string | null; last_name: string | null }
+          const personIds = [...new Set(
+            fallbackData.flatMap((ticket) => [ticket.user_id, ticket.resolved_by]).filter((id): id is string => Boolean(id))
+          )]
+          const { data: people } = await fetchInChunks<TicketPerson>(personIds, (chunk) =>
+            supabase.from('profiles').select('id, email, first_name, last_name').in('id', chunk))
+          const personById = new Map(people.map(({ id, ...person }) => [id, person]))
 
-              let resolverData = null
-              if (ticket.resolved_by) {
-                const { data: authResolver } = await supabase
-                  .from('profiles')
-                  .select('email, first_name, last_name')
-                  .eq('id', ticket.resolved_by)
-                  .maybeSingle()
-                resolverData = authResolver
-              }
-
-              return {
-                ...ticket,
-                user_profiles: authUser || null,
-                resolver: resolverData || null,
-              }
-            })
-          )
+          const enrichedTickets = fallbackData.map((ticket) => ({
+            ...ticket,
+            user_profiles: personById.get(ticket.user_id) || null,
+            resolver: (ticket.resolved_by && personById.get(ticket.resolved_by)) || null,
+          }))
           setTickets(enrichedTickets)
         } else {
           setTickets([])

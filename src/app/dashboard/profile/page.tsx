@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { fetchUserExportData, USER_EXPORT_TABLES } from '@/lib/database-export'
-import { getCurrentUserId, getUserRole, PROFILE_COLUMNS, type UserRole } from '@/lib/auth'
+import { getCurrentUserId, PROFILE_COLUMNS } from '@/lib/auth'
 import { verifyCurrentPassword } from '@/lib/verify-password'
 import { Edit2, Save, Download, Trash2, Scale, Users, Crown, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
@@ -68,8 +68,6 @@ interface Association {
 
 export default function ProfilePage() {
  const [userId, setUserId] = useState<string | null>(null)
- const [, setUserRole] = useState<UserRole>('User')
- const [, setCreatedAt] = useState<string>('')
  const [loading, setLoading] = useState(true)
  const router = useRouter()
  const searchParams = useSearchParams()
@@ -584,17 +582,6 @@ export default function ProfilePage() {
  return
  }
  setUserId(id)
-
- // Get user email from Supabase auth
- const { data: { user } } = await supabase.auth.getUser()
- if (user) {
- setCreatedAt(user.created_at || '')
- }
-
- // Get user role
- const role = await getUserRole()
- setUserRole(role)
-
  setLoading(false)
  }
  initUser()

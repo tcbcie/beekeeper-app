@@ -10,7 +10,8 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import TextInput from '@/components/ui/TextInput'
 import CheckboxInput from '@/components/ui/CheckboxInput'
-import { buildInsertSql, DATABASE_EXPORT_TABLES } from '@/lib/database-export'
+import { buildInsertSql, DATABASE_EXPORT_TABLES, fetchAllRows } from '@/lib/database-export'
+import { mapInGroups } from '@/lib/supabase-chunk'
 
 interface ProfileExportProps {
   isAdmin: boolean
@@ -123,11 +124,11 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
         sqlContent += `-- Tables: ${tables.join(', ')}\n\n`
         sqlContent += `BEGIN;\n\n`
 
-        // Fetch and export data from each table (RLS will filter to user's data)
-        for (const table of tables) {
-          const { data, error } = await supabase
-            .from(table)
-            .select('*')
+        // Fetch every row of each table (RLS will filter to user's data), six tables at a time.
+        // The SQL is still written in table order below.
+        const fetchedTables = await mapInGroups(tables, (table) => fetchAllRows(supabase, table), 6)
+        for (const [index, table] of tables.entries()) {
+          const { data, error } = fetchedTables[index]
 
           if (error) {
             console.error(`Error fetching ${table}:`, error)
@@ -136,14 +137,14 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
             continue
           }
 
-          exportResults[table] = data?.length || 0
+          exportResults[table] = data.length
 
-          if (data && data.length > 0) {
+          if (data.length > 0) {
             sqlContent += `\n-- Table: ${table}\n`
             sqlContent += `-- Records: ${data.length}\n\n`
 
             for (const row of data) {
-              sqlContent += `${buildInsertSql('public', table, row as Record<string, unknown>)}\n`
+              sqlContent += `${buildInsertSql('public', table, row)}\n`
             }
 
             sqlContent += '\n'

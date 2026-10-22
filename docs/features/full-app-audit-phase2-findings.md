@@ -1,7 +1,7 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). The main page request chains and double loads were fixed in batch 23 (22/10/2026). The public GDD embed, Mel's tools and the group reports followed in batch 24 (22/10/2026). Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). The main page request chains and double loads were fixed in batch 23 (22/10/2026). The public GDD embed, Mel's tools and the group reports followed in batch 24 (22/10/2026), and the admin, Tools, research and export chains in batch 25 (22/10/2026). Batch 25 also fixed a new data-loss bug: the settings and member exports stopped at 1,000 rows per table. Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
@@ -138,7 +138,7 @@ Covers UTC "today", the sequential list fetches, the distribution list disappear
 
 ### High
 - **C7b-01:** `GDDDataTab.tsx:403` and `PublicGDDTab.tsx:293`. The monthly average treats a `null` temperature as 0, so the current month reads too low. This shows on the public tcbc.ie embed. *Fixed in batch 24 (22/10/2026).*
-- **C7b-02:** `WildColoniesTab.tsx:161-164`. An early return skips `setLoading(false)`, so the spinner never stops.
+- **C7b-02:** `WildColoniesTab.tsx:161-164`. An early return skips `setLoading(false)`, so the spinner never stops. *Fixed in batch 25 (22/10/2026).*
 - **C7b-03:** `ForagingHoursTab.tsx:239,245`. Deselecting the last year during a load leaves the spinner stuck.
 - **C7b-04:** GDD and public tabs. Up to 11 sequential Open-Meteo calls per view (the same archive is fetched three times), for every anonymous embed visitor. *Fixed in batch 24 (22/10/2026): shared `fetchArchiveDaily`, one call per year.*
 - **C7b-05:** `KeyEventsOverlay.tsx:390-403`. Edit and delete are about 21px, with no label, and delete has no confirmation.
@@ -155,7 +155,7 @@ Covers UTC "today", the sequential list fetches, the distribution list disappear
 - **C7b-16 / C7b-17:** the GDD formula is copied five times, and `PublicGDDTab` is a ~1k-line clone.
 - **C7b-18:** a stale chart stays when no year is selected.
 - **C7b-19:** chart.js is loaded on every research tab. *Fixed in batch 21 (22/10/2026), load on demand.*
-- **C7b-20 / C7b-21:** N+1 profile lookups, and the diagnosis list is unpaged with an `.in()` URL limit.
+- **C7b-20 / C7b-21:** N+1 profile lookups, and the diagnosis list is unpaged with an `.in()` URL limit. *The request chain and the `.in()` limit were fixed in batch 25 (22/10/2026); the list is still unpaged.*
 - **C7b-22 (check):** `get_shared_gdd_records` returns every shared record nationally with `user_id`, then filters to 20 km in the browser. The coordinates are already obfuscated (batch 4); the leftover `user_id` and scale issues should move to SQL.
 - **C7b-23 / C7b-24 / C7b-25 / C7b-26:** touch targets of 20–28px, 12px text and 9–10px chart labels with no dark mode, a 12-column table with no phone layout, and the diagnosis modal can double-post. *The double-post was fixed in batch 16 (19/10/2026).*
 
@@ -183,7 +183,7 @@ Covers Wolf battery NaN, being unable to deselect the last year, date locale and
 - **C9a-17:** search has no abort.
 - **C9a-18:** double tap creates duplicate tickets. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
 - **C9a-19:** CSV export has no escaping (formula injection).
-- **C9a-20 / C9a-21 / C9a-23:** request waterfalls and N+1 queries.
+- **C9a-20 / C9a-21 / C9a-23:** request waterfalls and N+1 queries. *Fixed in batch 25 (22/10/2026).*
 - **C9a-22:** 13 managers imported statically. *Fixed in batch 21 (22/10/2026), load on demand.*
 - **C9a-24:** `UserManagement` is 1,693 lines.
 - **C9a-25 / C9a-26:** xs admin buttons, 14px inputs and 16px checkboxes.
@@ -232,9 +232,9 @@ Covers falsy-zero display, `classifyQuery` validation, harvests merged by hive n
 - **C8b-07:** UTC "today" for order dates and the overdue check. *Fixed in batch 19 (22/10/2026).*
 - **C8b-08:** a cleared number field snaps to 0, and negative prices are allowed.
 - **C8b-09 / C8b-10 / C8b-11:** trace-code RPC errors are ignored, the `001` lot-code fallback collides, and batch create is not atomic.
-- **C8b-12 / C8b-13:** the auto-tally overwrites the saved total on edit, and the preview race with missing lb→kg conversion.
+- **C8b-12 / C8b-13:** the auto-tally overwrites the saved total on edit, and the preview race with missing lb→kg conversion. *The preview race was fixed in batch 25 (22/10/2026); the lb→kg conversion and C8b-12 are open.*
 - **C8b-14:** "Ireland" is hard-coded on public trace pages, including for UK and NI producers.
-- **C8b-15 / C8b-16 / C8b-17 / C8b-18:** buttons inside a Link, 34px icons, every QR rendered hidden, and the order waterfall.
+- **C8b-15 / C8b-16 / C8b-17 / C8b-18:** buttons inside a Link, 34px icons, every QR rendered hidden, and the order waterfall. *The order waterfall (C8b-18) was fixed in batch 25 (22/10/2026).*
 
 ### Low
 Covers the due-date update, invoice email double send, customer double insert, float line totals, enum labels, the `InvoicePdf` server-only guard, the category lookup by name, `useCrmEnabled` caching errors, the date locale, trace metadata, a second Supabase client, a duplicated QR download, the QR modal, three label layouts, insights totals, and the 50+ rules.
@@ -300,10 +300,10 @@ Covers `text-xs`, `any`, `select('*')`, data access in UI files, the StrictMode 
 - **C2-06 / C2-07:** 7 vendor calls per scale view.
 - **C2-08:** custom dates are not validated.
 - **C2-09:** no `maxDuration` on any route.
-- **C2-10 / C2-11:** export waterfall and in-memory string.
+- **C2-10 / C2-11:** export waterfall and in-memory string. *C2-10 fixed in batch 25 (22/10/2026); C2-11 open.*
 - **C2-12 / C2-13:** fetch timeouts don't cover reading the body, and Resend has no timeout.
 - **C2-14:** malformed JSON returns 500.
-- **C2-15:** N+1 hive counts.
+- **C2-15:** N+1 hive counts. *Fixed in batch 25 (22/10/2026).*
 - **C2-16:** a new client per call.
 - **C2-17:** orphan knowledge-base sources.
 - **C2-30:** email settings links point at the Supabase host.
@@ -325,7 +325,7 @@ The auth block is copied in 22 routes. Proposal: `requireUser()` plus one servic
 ### Medium, key items
 - **C8a-05:** 8 dead tool components (~1,750 lines).
 - **C8a-06 / C8a-07:** the GDD archive doesn't check `ok` (recent blooms get a null GDD), and silent delete and toggle failures.
-- **C8a-08 to C8a-10:** waterfalls and `select('*')`.
+- **C8a-08 to C8a-10:** waterfalls and `select('*')`. *Fixed in batch 25 (22/10/2026); the small user-scoped `select('*')` reads stay.*
 - **C8a-11 / C8a-12:** two CSV writers have no formula-injection guard or BOM.
 - **C8a-13:** export-to-image cleanup only runs on success.
 - **C8a-14:** NIHBS drops saved overrides on a query failure.

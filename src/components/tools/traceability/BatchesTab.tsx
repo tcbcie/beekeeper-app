@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
+import { fetchDropdownValues } from '@/lib/dropdown-values'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { Milk, Plus, X, Edit2, Trash2, Check, QrCode, Download, MapPin, AlertCircle, Star, MessageSquare, Tag } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
@@ -76,24 +77,12 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
 
   // Fetch jar size options from database
   const fetchJarSizes = useCallback(async () => {
-    const { data: category } = await supabase
-      .from('dropdown_categories')
-      .select('id')
-      .eq('category_key', 'jar_size')
-      .single()
-
-    if (category) {
-      const { data: values } = await supabase
-        .from('dropdown_values')
-        .select('value')
-        .eq('category_id', category.id)
-        .eq('is_active', true)
-        .order('display_order')
-
-      if (values) {
-        setJarSizeOptions(values.map(v => v.value))
-      }
+    const { data: values, error } = await fetchDropdownValues('jar_size')
+    if (error) {
+      console.error('Error fetching jar sizes:', error)
+      return
     }
+    setJarSizeOptions(values.map(v => v.value))
   }, [])
 
   // Fetch jar sizes on mount
@@ -127,6 +116,8 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
 
   // Fetch public preview data when containers change or when editing
   useEffect(() => {
+    // An older preview (containers changed meanwhile) must not overwrite a newer one.
+    let cancelled = false
     const fetchPreviewData = async () => {
       // Use form container_ids, or fall back to editing batch's containers
       const containerIds = batchForm.container_ids.length > 0
@@ -137,15 +128,6 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
         setPublicPreview(null)
         return
       }
-
-      // Get beekeeper name
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('first_name, full_name')
-        .eq('id', userId)
-        .single()
-
-      const beekeeperName = profile?.first_name || profile?.full_name || 'Local Beekeeper'
 
       // Get selected containers with their harvests
       const selectedContainers = containers.filter(c => containerIds.includes(c.id))
@@ -161,8 +143,8 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
           const harvest = harvestLink.harvest
           if (!harvest) continue
 
-          // Get floral source
-          // Note: floral_source not in current query, would need to add - for now skip
+          // Floral source comes with the containers' harvests
+          if (harvest.floral_source) floralSourcesSet.add(harvest.floral_source)
 
           // Get apiary info
           const hivesRaw = harvest.hives as unknown
@@ -189,51 +171,36 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
         }
       }
 
-      // Fetch apiary share_location status and image
+      // Beekeeper name and the apiaries' share_location status and image load together
       const apiaryNames = Array.from(originMap.keys())
+      const [{ data: profile }, { data: apiaries }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('first_name, full_name')
+          .eq('id', userId)
+          .single(),
+        apiaryNames.length > 0
+          ? supabase
+              .from('apiaries')
+              .select('name, share_location, latitude, longitude, image_url')
+              .eq('user_id', userId)
+              .in('name', apiaryNames)
+          : Promise.resolve({ data: null }),
+      ])
+      if (cancelled) return
+
+      const beekeeperName = profile?.first_name || profile?.full_name || 'Local Beekeeper'
+
       let apiaryImageUrl: string | null = null
-      if (apiaryNames.length > 0) {
-        const { data: apiaries } = await supabase
-          .from('apiaries')
-          .select('name, share_location, latitude, longitude, image_url')
-          .eq('user_id', userId)
-          .in('name', apiaryNames)
-
-        if (apiaries) {
-          for (const apiary of apiaries) {
-            const origin = originMap.get(apiary.name)
-            if (origin) {
-              origin.hasLocation = apiary.share_location === true && apiary.latitude != null && apiary.longitude != null
-            }
-            // Get first apiary with an image
-            if (!apiaryImageUrl && apiary.image_url) {
-              apiaryImageUrl = normaliseStoragePublicUrl(apiary.image_url)
-            }
+      if (apiaries) {
+        for (const apiary of apiaries) {
+          const origin = originMap.get(apiary.name)
+          if (origin) {
+            origin.hasLocation = apiary.share_location === true && apiary.latitude != null && apiary.longitude != null
           }
-        }
-      }
-
-      // Fetch floral sources from harvests
-      const harvestIds: string[] = []
-      for (const container of selectedContainers) {
-        if (container.harvests) {
-          for (const h of container.harvests) {
-            harvestIds.push(h.harvest_id)
-          }
-        }
-      }
-
-      if (harvestIds.length > 0) {
-        const { data: harvests } = await supabase
-          .from('harvests')
-          .select('floral_source')
-          .in('id', harvestIds)
-
-        if (harvests) {
-          for (const h of harvests) {
-            if (h.floral_source) {
-              floralSourcesSet.add(h.floral_source)
-            }
+          // Get first apiary with an image
+          if (!apiaryImageUrl && apiary.image_url) {
+            apiaryImageUrl = normaliseStoragePublicUrl(apiary.image_url)
           }
         }
       }
@@ -301,6 +268,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
     }
 
     fetchPreviewData()
+    return () => { cancelled = true }
   }, [batchForm.is_public, batchForm.container_ids, containers, userId, editingBatch])
 
   // Fetch containers
@@ -313,8 +281,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
         containers:batch_containers(
           id,
           container_id,
-          weight_used_kg,
-          container:bulk_containers(*)
+          weight_used_kg
         ),
         jars:batch_jars(
           id,

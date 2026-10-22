@@ -471,10 +471,16 @@ export default function UserManagement() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) return
 
-      // Fetch user's apiaries via admin endpoint (bypasses RLS)
-      const apiariesResponse = await fetch(`/api/admin/user-apiaries?userId=${user.id}`, {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
-      })
+      // The user's apiaries (admin endpoint, bypasses RLS) and the users available for transfer
+      // don't depend on each other, so both load together.
+      const [apiariesResponse, response] = await Promise.all([
+        fetch(`/api/admin/user-apiaries?userId=${user.id}`, {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        }),
+        fetch('/api/users/list', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        }),
+      ])
 
       if (!apiariesResponse.ok) {
         throw new Error('Failed to fetch apiaries')
@@ -483,10 +489,6 @@ export default function UserManagement() {
       const apiariesData = await apiariesResponse.json()
       setUserApiaries(apiariesData.apiaries || [])
 
-      // Fetch available users for transfer
-      const response = await fetch('/api/users/list', {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
-      })
       if (response.ok) {
         const data = await response.json()
         // Filter out the current user we're transferring FROM

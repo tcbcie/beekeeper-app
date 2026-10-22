@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo, Fragment } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchDropdownValues } from '@/lib/dropdown-values'
 import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw, Pencil, Save, ChevronUp, ChevronDown, Layers } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
@@ -81,35 +82,36 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      // Fetch apiaries with coordinates
-      const { data: apiaryData } = await supabase
-        .from('apiaries')
-        .select('id, name, eircode, latitude, longitude, is_uk_ni')
-        .eq('user_id', userId)
-        .order('name')
-
-      // Fetch vegetation types from dropdown_values
-      const { data: vegData } = await supabase
-        .from('dropdown_values')
-        .select('id, value, dropdown_categories!inner(category_key)')
-        .eq('dropdown_categories.category_key', 'vegetation_type')
-        .eq('is_active', true)
-        .order('display_order')
-
-      // Fetch user's GDD records
-      const { data: recordData } = await supabase
-        .from('gdd_records')
-        .select(`
-          *,
-          apiaries(name, eircode),
-          dropdown_values(value)
-        `)
-        .eq('user_id', userId)
-        .order('year', { ascending: false })
-        .order('start_date', { ascending: false })
+      // Apiaries with coordinates, vegetation types and the user's GDD records don't depend on
+      // each other, so all three load together.
+      const [
+        { data: apiaryData, error: apiaryError },
+        { data: vegData, error: vegError },
+        { data: recordData, error: recordError },
+      ] = await Promise.all([
+        supabase
+          .from('apiaries')
+          .select('id, name, eircode, latitude, longitude, is_uk_ni')
+          .eq('user_id', userId)
+          .order('name'),
+        fetchDropdownValues('vegetation_type'),
+        supabase
+          .from('gdd_records')
+          .select(`
+            *,
+            apiaries(name, eircode),
+            dropdown_values(value)
+          `)
+          .eq('user_id', userId)
+          .order('year', { ascending: false })
+          .order('start_date', { ascending: false }),
+      ])
+      if (apiaryError) console.error('Error fetching apiaries:', apiaryError)
+      if (vegError) console.error('Error fetching vegetation types:', vegError)
+      if (recordError) console.error('Error fetching GDD records:', recordError)
 
       setApiaries(apiaryData || [])
-      setVegetationTypes(vegData?.map(v => ({ id: v.id, value: v.value })) || [])
+      setVegetationTypes(vegData)
       setRecords(recordData || [])
     } catch (error) {
       console.error('Error fetching GDD data:', error)

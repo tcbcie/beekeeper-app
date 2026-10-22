@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 25: Admin, Tools and Exports</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 25: Admin, Tools and Exports</h1>
+<p><strong>Status:</strong> Implemented 22/10/2026, waiting for your test. This is Phase 2 fix batch 12 and the last request-chain batch. Three agents explored the admin, Tools/finance and research/profile areas, and the key facts were checked against the live database.</p>
+
+<div class="warn"><strong>Found while exploring: two exports lose data.</strong> The settings export for regular users and the member export on the profile page both read each table without paging. Supabase returns at most 1,000 rows per request, so any larger table is cut to 1,000 rows with no error. The live database already has tables over that size: knowledge base 5,609, changelog 2,397 and inspections 1,888. A busy beekeeper's backup would be missing records. Fixed in part A.</div>
+
+<h2>A. Exports (C2-10, plus the 1,000-row data loss)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Shared helper <code>fetchAllRows(client, table, filter?)</code></strong> in <code>src/lib/database-export.ts</code>. It reads a table 1,000 rows at a time, ordered by <code>id</code>, until a short page comes back. <code>batch_breeder_queens</code> has no <code>id</code>, so it's ordered by its key (<code>batch_id, queen_id</code>). This was checked: it's the only one of the 72 tables without <code>id</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Settings export (regular users):</strong> 72 tables one after another → 6 at a time, every row. The output keeps the same table order, so restores are unchanged.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Member export (profile page, JSON and CSV):</strong> it already loads its tables together. Each table is now read in full.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Admin export route:</strong> the 13 schema look-ups run together instead of one after another, and the 72 tables run 4 at a time (pages inside a table stay in order). The output order and error handling are unchanged.</div>
+<div class="task"><input type="checkbox" checked disabled> Shared <code>mapInGroups(items, fn, size)</code> moves from Mel's scale tools into <code>src/lib/supabase-chunk.ts</code>, so the exports and the scale tools use the same helper.</div>
+
+<h2>B. Admin (C9a-20, C9a-21, C9a-23, C2-15)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Ticket list fallback:</strong> 1–2 profile look-ups per ticket → one chunked look-up for all names. The fallback also ignored the status filter (All, Open, ...); it now applies it.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Transfer apiaries dialog:</strong> the apiary list and the user list load together instead of one after the other.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Apiary hive counts (admin):</strong> one count query per apiary → a single query with an embedded count (<code>hives(count)</code>). There's exactly one link from hives to apiaries (checked).</div>
+
+<h2>C. Tools, finance and traceability (C8a-08 to C8a-10, C8b-18)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Category look-ups</strong> in Profit &amp; Loss (4 round trips → 1), Purchases, jar sizes (Traceability), jar sales and research key events. Each first looked up the category id, then its values. Now there's one query each, using the existing join already proven in the GDD tracker. There's exactly one link between the two tables (checked). Errors are logged instead of silently giving empty lists.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>GDD tracker</strong> and <strong>containers</strong>: their independent loads run together.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Traceability batch preview:</strong> the producer and apiary look-ups run together. The extra harvest look-up is removed, because the floral source is already loaded with the containers. A cancel flag stops an older preview overwriting a newer one (C8b-13). The batch list stops loading full container records it never uses.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>CRM order page:</strong> recipient labels load together with the customer, stats and credit (3 steps → 2). <strong>Invoice:</strong> the customer comes with the order (2 → 1).</div>
+
+<h2>D. Research and profile (C7b-20, C7b-21, C7b-02)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Diagnosis images:</strong> images and comments load together. The comments query no longer sends every image id in the URL, which broke after a few hundred images; the database already limits comments to images you can see. Names use a chunked look-up. The spinner always stops, even on errors.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Wild colonies:</strong> both lists load together. <strong>C7b-02:</strong> an error no longer leaves the spinner running for ever.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Profile page:</strong> two start-up look-ups (role and account date) are removed. The page never uses either result, but waited for both before showing.</div>
+
+<h2>Not changed (noted)</h2>
+<ul>
+  <li><strong>Queen productivity tracker:</strong> nothing uses it. It reads a <code>harvest_records</code> table and queen columns that don't exist (checked), so it could never have worked. It belongs to the dead-component clean-up (C8a-05), not a speed fix.</li>
+  <li><strong>Transfer dialog:</strong> the user list shows no e-mail address, because <code>/api/users/list</code> doesn't return one. This is minor and separate.</li>
+</ul>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and tests; qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/request-chains-batch25-plan.md</code>, Phase 2 register, memory note (exports must page past 1,000 rows).</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>How you'll test</h2>
+<ul>
+  <li><strong>Settings → Export</strong> as a normal user (or the demo account): the file now has every inspection and knowledge-base row, and the summary counts are above 1,000 where expected. As admin: the complete export works as before, faster.</li>
+  <li><strong>Profile → Export my data</strong> (JSON and CSV): works as before.</li>
+  <li><strong>Admin:</strong> ticket list (each filter, names shown), the transfer apiaries dialog, the apiary hive counts.</li>
+  <li><strong>Tools:</strong> P&amp;L and Purchases category drop-downs, the GDD tracker, Traceability (containers, batch preview, jar sizes, record jar sale), a CRM order and its invoice.</li>
+  <li><strong>Research:</strong> diagnosis images with comments, wild colonies, key events on charts. <strong>Profile page</strong> loads.</li>
+</ul>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Area</th><th>Before</th><th>After</th></tr>
+  <tr><td>Settings export (users)</td><td>72 tables one by one, each cut at 1,000 rows</td><td>6 at a time, every row, same order</td></tr>
+  <tr><td>Member export</td><td>Each table cut at 1,000 rows</td><td>Every row</td></tr>
+  <tr><td>Admin export</td><td>13 schema look-ups and 72 tables one by one</td><td>Look-ups together; tables 4 at a time</td></tr>
+  <tr><td>Ticket list fallback</td><td>1–2 name look-ups per ticket; status filter ignored</td><td>One look-up; filter applied</td></tr>
+  <tr><td>Transfer dialog / hive counts</td><td>2 calls in a row / one count per apiary</td><td>Together / one query</td></tr>
+  <tr><td>Category drop-downs (5 places)</td><td>2 queries each (P&amp;L 4 in a row)</td><td>1 each (P&amp;L 1 round trip)</td></tr>
+  <tr><td>GDD tracker, containers</td><td>3 / 2 in a row</td><td>Together</td></tr>
+  <tr><td>Batch preview</td><td>3 in a row, older result could win</td><td>1 round trip, newest wins</td></tr>
+  <tr><td>CRM order / invoice</td><td>3 / 2 steps</td><td>2 / 1</td></tr>
+  <tr><td>Diagnosis images</td><td>3 in a row; image-id list in the URL</td><td>2; no list; spinner always stops</td></tr>
+  <tr><td>Wild colonies</td><td>2 in a row; spinner stuck on error</td><td>Together; spinner always stops</td></tr>
+  <tr><td>Profile page</td><td>Waited for 2 unused look-ups</td><td>Removed</td></tr>
+</table>
+<ul>
+  <li><strong>Checked against the live database:</strong>
+    <ul>
+      <li>One table of the 72 has no <code>id</code> (paged by its key).</li>
+      <li>There's one link each for hives→apiaries, values→categories and orders→customers.</li>
+      <li>Orders and customers share an owner (11 of 11).</li>
+      <li>You can only read comments on images you can see.</li>
+      <li><code>harvest_records</code> doesn't exist (queen productivity tracker).</li>
+    </ul>
+  </li>
+  <li><strong>New shared helpers:</strong> <code>fetchAllRows</code> (exports), <code>fetchDropdownValues</code> (category values), and <code>mapInGroups</code> (now shared, no longer only in the scale tools).</li>
+  <li><strong>Already broken, not changed:</strong> the settings export's <code>profiles</code> table is refused, because that table only allows chosen columns. It shows under "tables with export errors", as before.</li>
+  <li><strong>Checks:</strong> type-check 0 errors; lint clean on all 21 files; tests 818 passed, 23 skipped. qa-engineer found no Critical or High issues.</li>
+  <li><strong>Docs:</strong> <code>docs/features/request-chains-batch25-plan.md</code>, the Phase 2 register, and a memory note.</li>
+</ul>
+</body>
+</html>

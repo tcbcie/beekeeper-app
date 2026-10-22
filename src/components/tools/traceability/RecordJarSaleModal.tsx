@@ -57,22 +57,16 @@ export default function RecordJarSaleModal({
   const [categoryChecked, setCategoryChecked] = useState(false)
 
   const fetchCategory = useCallback(async () => {
-    const { data: category } = await supabase
-      .from('dropdown_categories')
-      .select('id')
-      .eq('category_key', 'income_category')
+    // The income category's "Honey Sales" value in one query (join filter on the category key).
+    const { data: value, error } = await supabase
+      .from('dropdown_values')
+      .select('id, dropdown_categories!inner(category_key)')
+      .eq('dropdown_categories.category_key', 'income_category')
+      .eq('value', CATEGORY_NAME)
+      .eq('is_active', true)
       .maybeSingle()
-
-    if (category) {
-      const { data: value } = await supabase
-        .from('dropdown_values')
-        .select('id')
-        .eq('category_id', category.id)
-        .eq('value', CATEGORY_NAME)
-        .eq('is_active', true)
-        .maybeSingle()
-      if (value) setCategoryId(value.id)
-    }
+    if (error) console.error('Error fetching the honey sales category:', error)
+    if (value) setCategoryId(value.id)
     setCategoryChecked(true)
   }, [])
 

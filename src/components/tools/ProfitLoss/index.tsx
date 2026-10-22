@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Wallet, Plus, Loader2, Info, Download } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { FinancialRecord, DropdownValue } from '@/types/records'
+import { fetchDropdownValues } from '@/lib/dropdown-values'
 import FinancialRecordForm from './FinancialRecordForm'
 import FinancialRecordCard from './FinancialRecordCard'
 import FinancialSummary from './FinancialSummary'
@@ -32,41 +33,15 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
   // Fetch dropdown categories
   const fetchCategories = useCallback(async () => {
     try {
-      // Fetch income categories
-      const { data: incomeCategory } = await supabase
-        .from('dropdown_categories')
-        .select('id')
-        .eq('category_key', 'income_category')
-        .single()
-
-      if (incomeCategory) {
-        const { data: incomeValues } = await supabase
-          .from('dropdown_values')
-          .select('id, value')
-          .eq('category_id', incomeCategory.id)
-          .eq('is_active', true)
-          .order('display_order')
-
-        setIncomeCategories(incomeValues || [])
-      }
-
-      // Fetch expense categories
-      const { data: expenseCategory } = await supabase
-        .from('dropdown_categories')
-        .select('id')
-        .eq('category_key', 'expense_category')
-        .single()
-
-      if (expenseCategory) {
-        const { data: expenseValues } = await supabase
-          .from('dropdown_values')
-          .select('id, value')
-          .eq('category_id', expenseCategory.id)
-          .eq('is_active', true)
-          .order('display_order')
-
-        setExpenseCategories(expenseValues || [])
-      }
+      // Income and expense categories together (each was two look-ups, one after the other).
+      const [income, expense] = await Promise.all([
+        fetchDropdownValues('income_category'),
+        fetchDropdownValues('expense_category'),
+      ])
+      if (income.error) console.error('Error fetching income categories:', income.error)
+      else setIncomeCategories(income.data)
+      if (expense.error) console.error('Error fetching expense categories:', expense.error)
+      else setExpenseCategories(expense.data)
     } catch (error) {
       console.error('Error fetching categories:', error)
     }

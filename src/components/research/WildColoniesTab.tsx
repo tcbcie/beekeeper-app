@@ -150,22 +150,28 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  }
 
  const fetchColonies = useCallback(async () => {
- // Fetch confirmed/observed colonies (exclude pending) with inspection counts
- const { data, error } = await supabase
+ try {
+ // Confirmed/observed colonies (exclude pending) with inspection counts, and the pending
+ // colonies for review, load together
+ const [{ data, error }, { data: pendingData, error: pendingError }] = await Promise.all([
+ supabase
  .from('wild_colonies')
  .select(`
  *,
  wild_colony_inspections(count)
  `)
  .neq('status', 'pending_review')
- .order('observation_date', { ascending: false })
+ .order('observation_date', { ascending: false }),
+ supabase
+ .from('wild_colonies')
+ .select('*')
+ .eq('status', 'pending_review')
+ .order('created_at', { ascending: false }),
+ ])
 
  if (error) {
  console.error('Error fetching colonies:', error)
- return
- }
-
- if (data) {
+ } else if (data) {
  // Transform data to include inspection_count
  const coloniesWithCounts = data.map((colony: WildColony & { wild_colony_inspections: { count: number }[] }) => ({
  ...colony,
@@ -175,18 +181,15 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  setColonies(coloniesWithCounts)
  }
 
- // Fetch pending colonies for review
- const { data: pendingData, error: pendingError } = await supabase
- .from('wild_colonies')
- .select('*')
- .eq('status', 'pending_review')
- .order('created_at', { ascending: false })
-
- if (!pendingError && pendingData) {
+ if (pendingError) {
+ console.error('Error fetching pending colonies:', pendingError)
+ } else if (pendingData) {
  setPendingColonies(pendingData)
  }
-
+ } finally {
+ // An error must not leave the spinner running (it used to return before this)
  setLoading(false)
+ }
  }, [])
 
  useEffect(() => {

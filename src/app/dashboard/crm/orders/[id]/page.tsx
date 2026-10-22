@@ -174,8 +174,15 @@ export default function OrderDetailPage() {
         return !d.external_recipient_name && !recip?.full_name && !recip?.email
       })
       .map((d) => d.id as string)
-    if (unnamedIds.length > 0) {
-      const labels = await fetchRecipientLabels(unnamedIds)
+    // The labels (when needed) and the customer, their order totals and credit depend only on
+    // the order and its distributions, so they load together.
+    const [labels, custRes, custOrdersRes, creditRes] = await Promise.all([
+      unnamedIds.length > 0 ? fetchRecipientLabels(unnamedIds) : Promise.resolve(null),
+      supabase.from('crm_customers').select('*').eq('id', ord.customer_id).eq('user_id', uid).maybeSingle(),
+      supabase.from('crm_orders').select('status, total_amount, amount_paid').eq('customer_id', ord.customer_id).eq('user_id', uid),
+      supabase.from('crm_customer_credit').select('*').eq('customer_id', ord.customer_id).eq('user_id', uid),
+    ])
+    if (labels) {
       for (const l of linked) {
         const name = labels.get(l.id)?.recipientName
         if (name) l.recipient = name
@@ -183,11 +190,6 @@ export default function OrderDetailPage() {
     }
     setDistributions(linked)
 
-    const [custRes, custOrdersRes, creditRes] = await Promise.all([
-      supabase.from('crm_customers').select('*').eq('id', ord.customer_id).eq('user_id', uid).maybeSingle(),
-      supabase.from('crm_orders').select('status, total_amount, amount_paid').eq('customer_id', ord.customer_id).eq('user_id', uid),
-      supabase.from('crm_customer_credit').select('*').eq('customer_id', ord.customer_id).eq('user_id', uid),
-    ])
     setCustomer((custRes.data as Customer) || null)
     setCustomerStats(summariseCustomerOrders((custOrdersRes.data || []) as Order[]))
     const entries = (creditRes.data || []) as CustomerCreditEntry[]

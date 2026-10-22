@@ -46,31 +46,34 @@ export default function ContainersTab({ userId, containers, fetchContainers, lab
   const [availableHarvests, setAvailableHarvests] = useState<HarvestWithApiary[]>([])
 
   const fetchAvailableHarvests = useCallback(async () => {
-    // Get all harvests with hive/apiary info
-    const { data: harvests, error: harvestsError } = await supabase
-      .from('harvests')
-      .select(`
-        id,
-        harvest_date,
-        honey_weight,
-        unit,
-        hives(
-          hive_number,
-          apiaries(name, city)
-        )
-      `)
-      .eq('user_id', userId)
-      .order('harvest_date', { ascending: false })
+    // All harvests with hive/apiary info, and the already linked harvest IDs, load together
+    const [{ data: harvests, error: harvestsError }, { data: linked, error: linkedError }] = await Promise.all([
+      supabase
+        .from('harvests')
+        .select(`
+          id,
+          harvest_date,
+          honey_weight,
+          unit,
+          hives(
+            hive_number,
+            apiaries(name, city)
+          )
+        `)
+        .eq('user_id', userId)
+        .order('harvest_date', { ascending: false }),
+      supabase
+        .from('container_harvests')
+        .select('harvest_id, container_id'),
+    ])
 
     if (harvestsError) {
       console.error('Error fetching harvests:', harvestsError)
       return
     }
+    if (linkedError) console.error('Error fetching linked harvests:', linkedError)
 
-    // Get already linked harvest IDs (excluding current container being edited)
-    const { data: linked } = await supabase
-      .from('container_harvests')
-      .select('harvest_id, container_id')
+    // Already linked harvest IDs (excluding current container being edited)
 
     const linkedHarvestIds = new Set(
       (linked || [])

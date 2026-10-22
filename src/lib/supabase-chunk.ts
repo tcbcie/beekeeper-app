@@ -23,3 +23,16 @@ export async function fetchInChunks<T>(
   const error = results.find(r => r.error)?.error ?? null
   return { data: results.flatMap(r => r.data ?? []), error }
 }
+
+/**
+ * Run `fn` over `items` a few at a time and return the results in the original order.
+ * Much faster than one after another, without firing every request at once (vendor APIs,
+ * the browser's connection limit, or one database under export load).
+ */
+export async function mapInGroups<T, R>(items: readonly T[], fn: (item: T) => Promise<R>, size = 5): Promise<R[]> {
+  const out: R[] = []
+  for (let i = 0; i < items.length; i += size) {
+    out.push(...await Promise.all(items.slice(i, i + size).map(fn)))
+  }
+  return out
+}

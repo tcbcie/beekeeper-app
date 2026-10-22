@@ -3,6 +3,7 @@ import { Tool } from './index'
 import { getSupabase, getServiceSupabase, findHiveByName, formatDate, logToolError } from './utils'
 import { wolfGetMeasurements } from '../../wolf-waagen-api'
 import { beepGetMeasurements } from '../../beep-api'
+import { mapInGroups } from '../../supabase-chunk'
 
 // Local shape the tool surfaces to the LLM. Maps from the hardened API
 // libs so we inherit their timeouts, retries, and value parsing instead
@@ -50,16 +51,6 @@ async function getScaleTokens(userId: string): Promise<ScaleTokens> {
     .eq('id', userId)
     .single()
   return { wolf: data?.wolf_api_token || null, beep: data?.beep_api_token || null }
-}
-
-// Run fn over items five at a time: much faster than one hive after another, without firing
-// every request at a vendor API at once.
-async function mapInGroups<T, R>(items: T[], fn: (item: T) => Promise<R>, size = 5): Promise<R[]> {
-  const out: R[] = []
-  for (let i = 0; i < items.length; i += size) {
-    out.push(...await Promise.all(items.slice(i, i + size).map(fn)))
-  }
-  return out
 }
 
 // One hive's readings from whichever scale it has. Never throws: a failing scale gives no

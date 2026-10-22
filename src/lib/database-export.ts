@@ -126,6 +126,39 @@ export function buildInsertSql(
 }
 
 
+// Supabase returns at most this many rows per request, so exports read every table in pages.
+export const EXPORT_PAGE_SIZE = 1000
+
+// Paging needs a stable order. Every export table has an `id` except these.
+const EXPORT_ORDER_COLUMNS: Record<string, string[]> = {
+  batch_breeder_queens: ['batch_id', 'queen_id'],
+}
+
+/**
+ * Read every row of a table (optionally `column = value`), page by page. A plain
+ * `select('*')` stops silently at 1,000 rows, which cut large tables short in exports.
+ * Returns the first error, if any, in the usual `{ data, error }` shape.
+ */
+export async function fetchAllRows(
+  client: SupabaseClient,
+  table: string,
+  filter?: { column: string; value: string }
+): Promise<{ data: Record<string, unknown>[]; error: { message: string } | null }> {
+  const rows: Record<string, unknown>[] = []
+  for (let from = 0; ; from += EXPORT_PAGE_SIZE) {
+    let query = client.from(table).select('*')
+    if (filter) query = query.eq(filter.column, filter.value)
+    for (const column of EXPORT_ORDER_COLUMNS[table] ?? ['id']) {
+      query = query.order(column, { ascending: true })
+    }
+    const { data, error } = await query.range(from, from + EXPORT_PAGE_SIZE - 1)
+    if (error) return { data: [], error }
+    const page = (data as Record<string, unknown>[] | null) ?? []
+    rows.push(...page)
+    if (page.length < EXPORT_PAGE_SIZE) return { data: rows, error: null }
+  }
+}
+
 /**
  * User-scoped tables included in a member's own data export (Profile page).
  * `label` is the section heading used by the CSV export. Both the JSON and
@@ -195,7 +228,7 @@ export async function fetchUserExportData(
 ): Promise<Record<string, Record<string, unknown>[]>> {
   const results = await Promise.all(
     USER_EXPORT_TABLES.map(({ table }) =>
-      client.from(table).select('*').eq('user_id', userId)
+      fetchAllRows(client, table, { column: 'user_id', value: userId })
     )
   )
 
@@ -205,7 +238,7 @@ export async function fetchUserExportData(
     if (error) {
       throw new Error(`Export failed for ${table}: ${error.message}`)
     }
-    byTable[table] = (data as Record<string, unknown>[] | null) ?? []
+    byTable[table] = data
   })
   return byTable
 }
