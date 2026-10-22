@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from '@/lib/server/api-auth'
 import { logAdminAction } from '@/lib/admin-audit'
 
 // Fail-fast at module init so a missing env surfaces at deploy time.
@@ -10,14 +10,6 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     'impersonate: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.'
   )
 }
-
-// Create admin client with service role key to bypass RLS
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY
 
@@ -60,42 +52,14 @@ async function notifyImpersonatedUser(email: string, firstName: string | null): 
 export async function POST(request: NextRequest) {
   try {
     // Verify the requesting user is an admin
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Missing authorization header' },
-        { status: 401 }
-      )
+    const auth = await requireAdmin(request)
+    if ('response' in auth) {
+      // Failed impersonation attempts stay in the audit trail.
+      const outcome = auth.response.status === 401 ? 'auth=failed status=unauthorized' : 'status=forbidden reason=not_admin_or_inactive'
+      console.warn(`[AUDIT] Admin impersonation: ${outcome} timestamp=${new Date().toISOString()}`)
+      return auth.response
     }
-
-    const token = authHeader.replace('Bearer ', '')
-
-    // Verify the token and check user role
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-
-    if (authError || !user) {
-      console.warn(`[AUDIT] Admin impersonation: auth=failed status=unauthorized timestamp=${new Date().toISOString()}`)
-      return NextResponse.json(
-        { error: 'Invalid authentication' },
-        { status: 401 }
-      )
-    }
-
-    // Check if user is admin AND active. A soft-deleted admin with a still-
-    // valid JWT must lose impersonation powers immediately.
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('role, is_active')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile || profile.role !== 'Admin' || profile.is_active === false) {
-      console.warn(`[AUDIT] Admin impersonation: admin=${user.id} status=forbidden reason=not_admin_or_inactive timestamp=${new Date().toISOString()}`)
-      return NextResponse.json(
-        { error: 'Admin access required' },
-        { status: 403 }
-      )
-    }
+    const { user, supabaseAdmin } = auth
 
     // Parse request body
     const body = await request.json()
@@ -251,23 +215,9 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Missing authorization header' }, { status: 401 })
-    }
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
-    }
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('role, is_active')
-      .eq('id', user.id)
-      .single()
-    if (!profile || profile.role !== 'Admin' || profile.is_active === false) {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
-    }
+    const auth = await requireAdmin(request)
+    if ('response' in auth) return auth.response
+    const { user, supabaseAdmin } = auth
 
     let targetEmail: string | null = null
     try {

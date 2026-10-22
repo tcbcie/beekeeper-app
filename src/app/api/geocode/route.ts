@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireUser } from '@/lib/server/api-auth'
 import { consumeRateLimits, RATE_LIMITS } from '@/lib/rate-limit'
 
 /**
@@ -14,16 +14,6 @@ import { consumeRateLimits, RATE_LIMITS } from '@/lib/rate-limit'
  * Prefers a server-only `GOOGLE_MAPS_API_KEY`; falls back to the existing public key so this keeps
  * working without new configuration.
  */
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('api/geocode: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.')
-}
-
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
-})
-
 type GeocodeFailure = 'not-configured' | 'denied' | 'not-found'
 
 const MAX_ADDRESS_LENGTH = 200
@@ -35,23 +25,9 @@ function failure(reason: GeocodeFailure, detail?: string, status = 200) {
 
 export async function GET(request: NextRequest) {
   // Authenticated only — this spends a metered third-party quota.
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  const token = authHeader.replace('Bearer ', '')
-  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  const { data: callerProfile } = await supabaseAdmin
-    .from('profiles')
-    .select('is_active')
-    .eq('id', user.id)
-    .single()
-  if (callerProfile?.is_active === false) {
-    return NextResponse.json({ error: 'Account is not active' }, { status: 403 })
-  }
+  const auth = await requireUser(request, { requireActive: true })
+  if ('response' in auth) return auth.response
+  const { user, supabaseAdmin } = auth
 
   const address = request.nextUrl.searchParams.get('address')?.trim()
   const country = request.nextUrl.searchParams.get('country') === 'GB' ? 'GB' : 'IE'

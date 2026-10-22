@@ -1,34 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireUser } from '@/lib/server/api-auth'
 import { wolfGetScales } from '@/lib/wolf-waagen-api'
-
-// Fail-fast at module init.
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error(
-    'wolf-waagen/scales: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.'
-  )
-}
-
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false }
-})
 
 export async function GET(request: NextRequest) {
   try {
     // Get auth token from request
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    // Signed-in caller; is_active is checked in this route's own profile query below.
+    const auth = await requireUser(request)
+    if ('response' in auth) return auth.response
+    const { user, supabaseAdmin } = auth
 
     // Get Wolf Waagen API token + is_active gate from user's profile.
     const { data: profile } = await supabaseAdmin

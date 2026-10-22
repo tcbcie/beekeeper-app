@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireUser } from '@/lib/server/api-auth'
 import Stripe from 'stripe'
 import { consumeRateLimits, RATE_LIMITS } from '@/lib/rate-limit'
 
@@ -14,19 +14,10 @@ function requireEnv(name: string): string {
   return value
 }
 const STRIPE_SECRET_KEY = requireEnv('STRIPE_SECRET_KEY')
-const SUPABASE_URL = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
-const SUPABASE_SERVICE_ROLE_KEY = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
 const APP_URL = requireEnv('NEXT_PUBLIC_APP_URL')
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2025-10-29.clover'
-})
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
 })
 
 // Pricing is the source of truth. The webhook prefers Stripe's authoritative
@@ -42,15 +33,9 @@ export async function POST(request: NextRequest) {
     // user's profile. Previously it trusted body.userId, which let any
     // client create a checkout against any user's email -- both a griefing
     // vector and the entry point for the pricing trust gap (C2 / C3 below).
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Missing authorization header' }, { status: 401 })
-    }
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
-    }
+    const auth = await requireUser(request)
+    if ('response' in auth) return auth.response
+    const { user, supabaseAdmin: supabase } = auth
 
     // Parse body in an inner try/catch so a malformed payload returns 400.
     let parsed: unknown

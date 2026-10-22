@@ -1,26 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireUser } from '@/lib/server/api-auth'
 import { handleChatQuery } from '@/lib/rag'
 import { ChatMessage } from '@/types/chat'
 import { consumeRateLimits, RATE_LIMITS, RATE_LIMITED_MESSAGE } from '@/lib/rate-limit'
 import { createUserSupabase, runWithUserSupabase } from '@/lib/ai/tools/utils'
-
-// Fail-fast at module init so a missing env surfaces at deploy time, not in a
-// per-request 500 with a misleading 'Chat API error' log line.
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error(
-    'chat route: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.'
-  )
-}
-
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
 
 const MAX_MESSAGE_CHARS = 2000
 const MAX_HISTORY_MESSAGES = 20
@@ -29,23 +12,10 @@ const MAX_HISTORY_CHARS_PER_MESSAGE = 4000
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Missing authorization header' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Invalid authentication' },
-        { status: 401 }
-      )
-    }
+    // Signed-in caller; is_active is checked in this route's own profile query below.
+    const auth = await requireUser(request)
+    if ('response' in auth) return auth.response
+    const { user, supabaseAdmin, token } = auth
 
     // Check if user has active subscription (premium feature)
     const { data: profile, error: profileError } = await supabaseAdmin

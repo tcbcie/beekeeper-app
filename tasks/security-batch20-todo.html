@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 20: Shared API Auth</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    pre { background: #fef3c7; padding: 0.8rem; border-radius: 6px; overflow-x: auto; font-size: 0.85em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 20: Shared API Sign-in Check</h1>
+<p><strong>Status:</strong> Done 22/10/2026. Tested by you; committed and pushed. Approved with the helper unit test. This is Phase 2 fix batch 8.</p>
+<p>21 API route files each repeat the same 25–35 lines:</p>
+<ul>
+  <li>build a secret-key Supabase client, with a fail-fast environment check;</li>
+  <li>read the <code>Authorization</code> header and verify the token;</li>
+  <li>often, check that the account is active, or that the caller is an admin.</li>
+</ul>
+<p>The copies have drifted. There are three wordings for the same 401, and none of them checks that the header really starts with <code>Bearer</code>. The project rules ask for less duplication, but this batch is mainly so the next fix to sign-in happens in one place.</p>
+
+<h2>The helper: <code>src/lib/server/api-auth.ts</code></h2>
+<pre>getServiceSupabase()                       // one secret-key client (moved from the AI tools, which re-export it)
+requireUser(request, { requireActive })    // → { user, supabaseAdmin } or { response: 401/403 }
+requireAdmin(request)                      // → same, plus role = Admin and active (403 otherwise)
+
+const auth = await requireUser(request, { requireActive: true })
+if ('response' in auth) return auth.response
+const { user, supabaseAdmin } = auth</pre>
+<ul>
+  <li>The token is only accepted as <code>Authorization: Bearer &lt;token&gt;</code>.</li>
+  <li>One British wording: 401 <code>Unauthorised</code>, and 403 <code>Account is not active</code> / <code>Admin access required</code>. No client code reads these strings.</li>
+  <li><code>requireActive</code> runs the same <code>is_active</code> lookup the routes run today. Routes that already read <code>is_active</code> in a wider profile query (chat, voice notes, invoice email, checkout, scale device lists) keep their query and skip the extra one.</li>
+</ul>
+
+<h2>Routes</h2>
+<table>
+  <tr><th>Group</th><th>Routes</th><th>Uses</th></tr>
+  <tr><td>Admin (7)</td><td>export-all-data, impersonate (both handlers), knowledge-base and news-articles (replace their local <code>verifyAdmin</code>), update-user-role, user-apiaries, users/list</td><td><code>requireAdmin</code></td></tr>
+  <tr><td>Signed-in and active (8)</td><td>beep connect/data/disconnect, wolf-waagen connect/data/disconnect, geocode, news/search</td><td><code>requireUser({ requireActive: true })</code></td></tr>
+  <tr><td>Signed in, own profile query (6)</td><td>chat, voice-notes-transcribe, crm/invoice-email, stripe/checkout, beep/devices, wolf-waagen/scales</td><td><code>requireUser()</code> plus their existing profile query</td></tr>
+  <tr><td><strong>Not touched</strong></td><td>cron/storage-cleanup (cron secret), stripe/webhook (Stripe signature), csp-report (public)</td><td>Their own checks stay.</td></tr>
+</table>
+<p>Everything after the sign-in check stays exactly as it is in every route: rate limits, the audit log, impersonation's checks on the target user, the Resend calls.</p>
+
+<h2>Todo</h2>
+<div class="task"><input type="checkbox" checked disabled> Add <code>src/lib/server/api-auth.ts</code>; the AI tools re-export <code>getServiceSupabase</code> from it (one secret-key client).</div>
+<div class="task"><input type="checkbox" checked disabled> Adopt it in the 21 route files, one group at a time, with type-check and lint after each group.</div>
+<div class="task"><input type="checkbox" checked disabled> Update the admin role test for the new wording; add a small unit test for <code>requireUser</code> and <code>requireAdmin</code>: missing header, a non-Bearer header, an invalid token, inactive, not admin, success.</div>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint, full test suite; qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/api-auth-batch20-plan.md</code>; Phase 2 register (C2 cross-cutting); update the API route conventions in the skill or memory.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>How you'll test</h2>
+<ul>
+  <li><strong>Mel (chat), signed in:</strong> it answers.</li>
+  <li><strong>Address lookup:</strong> add or edit an apiary with an Eircode; the location is found.</li>
+  <li><strong>Settings → User Management (admin):</strong> the list loads; change a test user's role.</li>
+  <li><strong>Scales:</strong> if you have one connected, its data loads.</li>
+  <li><strong>CRM:</strong> optionally, email an invoice to yourself.</li>
+</ul>
+
+<h2>Decision for you</h2>
+<table>
+  <tr><th>Question</th><th>Recommendation</th></tr>
+  <tr><td>Should the batch include a unit test for the helper? (The project rule for code changes is "verify with tsc and lint, no new tests", but this helper now guards every API route.)</td><td><strong>Yes.</strong> A small test of the six cases above. It's the one place where a mistake would open every route.</td></tr>
+</table>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>Helper</td><td><code>src/lib/server/api-auth.ts</code>: <code>getServiceSupabase</code>, <code>requireUser</code> (Bearer only, case-insensitive; optional active check; returns user, client and token) and <code>requireAdmin</code>. Mel's tools re-export the shared client.</td></tr>
+  <tr><td>Routes</td><td>21 files: 7 admin, 8 active-user, 6 with their own profile query. Existing files lost 768 lines and gained 112. Cron, Stripe webhook and csp-report are untouched.</td></tr>
+  <tr><td>Care points</td><td>Impersonation's <code>[AUDIT]</code> warning for refused attempts was restored. Chat still gets the caller's token for Mel's RLS-scoped tools. The invoice route's Resend key, which the transform had removed, was restored.</td></tr>
+  <tr><td>Tests</td><td>New <code>tests/lib/api-auth.test.ts</code> (10 cases); the admin role test was updated. 818 pass, 23 skipped. tsc and ESLint (src) are clean; qa-engineer found no issues.</td></tr>
+</table>
+</body>
+</html>

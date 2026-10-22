@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireUser } from '@/lib/server/api-auth'
 import { renderInvoicePdf, type InvoicePdfData } from '@/components/crm/InvoicePdf'
 import type { ProductType } from '@/types/crm'
 import { consumeRateLimits, RATE_LIMITS } from '@/lib/rate-limit'
@@ -7,16 +7,7 @@ import { consumeRateLimits, RATE_LIMITS } from '@/lib/rate-limit'
 // @react-pdf/renderer needs the Node runtime (not Edge).
 export const runtime = 'nodejs'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const RESEND_API_KEY = process.env.RESEND_API_KEY
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('invoice-email: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.')
-}
-
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
-})
 
 // Pragmatic single-@ check — full RFC validation belongs to the mail server.
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -46,15 +37,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email is not configured' }, { status: 503 })
     }
 
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Missing authorization header' }, { status: 401 })
-    }
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
-    }
+    // Signed-in caller; is_active is checked in this route's own profile query below.
+    const auth = await requireUser(request)
+    if ('response' in auth) return auth.response
+    const { user, supabaseAdmin } = auth
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')

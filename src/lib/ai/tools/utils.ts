@@ -12,7 +12,6 @@ function requireEnv(name: string): string {
 }
 const supabaseUrl = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
 const supabasePublicKey = requireEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
-const supabaseServiceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
 
 // The signed-in user's client for the current chat request (see runWithUserSupabase).
 const requestSupabase = new AsyncLocalStorage<SupabaseClient>()
@@ -55,19 +54,10 @@ export function logToolError(error: unknown): string {
   return 'a database error occurred'
 }
 
-let serviceInstance: SupabaseClient | null = null
-
 // Secret-key client that bypasses RLS. Only for data users may not read through RLS but a tool
 // legitimately needs for the CALLER themselves (their own BEEP/Wolf token). Never use it for a
-// query whose rows depend on tool arguments.
-export function getServiceSupabase(): SupabaseClient {
-  if (!serviceInstance) {
-    serviceInstance = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
-  }
-  return serviceInstance
-}
+// query whose rows depend on tool arguments. One shared instance with the API routes.
+export { getServiceSupabase } from '@/lib/server/api-auth'
 
 // Get list of apiary IDs owned by user only (excludes shared)
 export async function getOwnApiaryIds(userId: string): Promise<string[]> {

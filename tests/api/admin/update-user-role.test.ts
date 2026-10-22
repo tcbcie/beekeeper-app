@@ -75,7 +75,7 @@ describe('Admin Update User Role API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(401)
-      expect(data.error).toBe('Missing authorization header')
+      expect(data.error).toBe('Unauthorised')
     })
 
     it('should return 401 when token is invalid', async () => {
@@ -96,7 +96,7 @@ describe('Admin Update User Role API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(401)
-      expect(data.error).toBe('Invalid authentication')
+      expect(data.error).toBe('Unauthorised')
     })
 
     it('should return 403 when user is not an admin', async () => {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServiceSupabase, requireAdmin } from '@/lib/server/api-auth'
 import { createClient } from '@supabase/supabase-js'
 import { buildInsertSql, DATABASE_EXPORT_TABLES, sqlIdentifier, sqlValue } from '@/lib/database-export'
 import { logAdminAction } from '@/lib/admin-audit'
@@ -13,14 +14,6 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     'export-all-data: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.'
   )
 }
-
-// Create admin client with service role key to bypass RLS
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
 
 interface MetadataColumnRow {
   table_name: string
@@ -297,7 +290,7 @@ function escapeSqlLiteral(value: string): string {
 }
 
 async function runSafeSelect<T>(query: string): Promise<T[]> {
-  const { data, error } = await supabaseAdmin.rpc('execute_safe_query', { query_text: query.trim() })
+  const { data, error } = await getServiceSupabase().rpc('execute_safe_query', { query_text: query.trim() })
 
   if (error) {
     throw new Error(`Failed metadata query: ${error.message}`)
@@ -525,39 +518,9 @@ export async function POST(request: NextRequest) {
     let exportMode: AdminExportMode = 'complete'
 
     // Verify the requesting user is an admin
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Missing authorization header' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-
-    // Verify the token and check user role
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Invalid authentication' },
-        { status: 401 }
-      )
-    }
-
-    // Check if user is admin AND active. Soft-deleted admin must lose access.
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('role, is_active')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile || profile.role !== 'Admin' || profile.is_active === false) {
-      return NextResponse.json(
-        { error: 'Admin access required' },
-        { status: 403 }
-      )
-    }
+    const auth = await requireAdmin(request)
+    if ('response' in auth) return auth.response
+    const { user, supabaseAdmin } = auth
 
     const rawBody = await request.text()
     const parsedMode = parseExportMode(rawBody)

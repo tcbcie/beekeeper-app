@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getServiceSupabase, requireAdmin } from '@/lib/server/api-auth'
 import { generateEmbedding } from '@/lib/openai'
 import {
   assertSafePublicUrl,
@@ -10,49 +10,14 @@ import * as cheerio from 'cheerio'
 
 const URL_FETCH_MAX_BYTES = 5 * 1024 * 1024
 
-// Create admin client with service role key
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+// One shared secret-key client (src/lib/server/api-auth.ts).
+const getSupabaseAdmin = getServiceSupabase
 
-  if (!url || !key) {
-    throw new Error('Missing Supabase environment variables')
-  }
-
-  return createClient(url, key, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  })
-}
-
-// Helper to verify admin access
+// Admin check shared by every handler in this route.
 async function verifyAdmin(request: NextRequest): Promise<{ userId: string } | NextResponse> {
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader) {
-    return NextResponse.json({ error: 'Missing authorization header' }, { status: 401 })
-  }
-
-  const token = authHeader.replace('Bearer ', '')
-  const supabase = getSupabaseAdmin()
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, is_active')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile || profile.role !== 'Admin' || profile.is_active === false) {
-    return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
-  }
-
-  return { userId: user.id }
+  const auth = await requireAdmin(request)
+  if ('response' in auth) return auth.response
+  return { userId: auth.user.id }
 }
 
 // Extract metadata from URL (Open Graph, Twitter Cards, meta tags)

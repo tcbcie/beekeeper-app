@@ -1,24 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireUser } from '@/lib/server/api-auth'
 import { consumeRateLimits, RATE_LIMITS, RATE_LIMITED_MESSAGE } from '@/lib/rate-limit'
 import { openai as getOpenAI } from '@/lib/openai'
-
-// Fail-fast at module init so a missing env surfaces at deploy time, not in a
-// per-request 500 with a misleading `voice-notes-transcribe error` log line.
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error(
-    'voice-notes-transcribe: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.'
-  )
-}
-
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
 
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024
 const TRANSCRIPTION_TIMEOUT_MS = 60_000
@@ -75,16 +58,10 @@ Return only the cleaned note text with no preamble, quotes, or labels.`
 
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Missing authorization header' }, { status: 401 })
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
-    }
+    // Signed-in caller; is_active is checked in this route's own profile query below.
+    const auth = await requireUser(request)
+    if ('response' in auth) return auth.response
+    const { user, supabaseAdmin } = auth
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')

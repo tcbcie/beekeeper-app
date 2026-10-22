@@ -1,23 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { requireUser } from '@/lib/server/api-auth'
 import { consumeRateLimits, RATE_LIMITS, RATE_LIMITED_MESSAGE } from '@/lib/rate-limit'
 import { searchNewsArticles } from '@/lib/rag'
-
-// Fail-fast at module init.
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error(
-    'news/search: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.'
-  )
-}
-
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
 
 export async function GET(request: NextRequest) {
   // Require auth: searchNewsArticles internally calls OpenAI embeddings,
@@ -25,23 +9,9 @@ export async function GET(request: NextRequest) {
   // page (already auth-gated at the page level), but the route itself was
   // open to unauthenticated callers -- a cost-amplification vector for
   // anyone who finds the URL.
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader) {
-    return NextResponse.json({ error: 'Missing authorization header' }, { status: 401 })
-  }
-  const token = authHeader.replace('Bearer ', '')
-  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Invalid authentication' }, { status: 401 })
-  }
-  const { data: callerProfile } = await supabaseAdmin
-    .from('profiles')
-    .select('is_active')
-    .eq('id', user.id)
-    .single()
-  if (callerProfile?.is_active === false) {
-    return NextResponse.json({ error: 'Account is not active' }, { status: 403 })
-  }
+  const auth = await requireUser(request, { requireActive: true })
+  if ('response' in auth) return auth.response
+  const { user, supabaseAdmin } = auth
 
   const searchParams = request.nextUrl.searchParams
   const query = searchParams.get('q')

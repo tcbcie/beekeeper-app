@@ -1,43 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Fail-fast at module init.
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error(
-    'beep/disconnect: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.'
-  )
-}
-
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false }
-})
+import { requireUser } from '@/lib/server/api-auth'
 
 export async function POST(request: NextRequest) {
   try {
-    // Get auth token from request
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Deactivated accounts can't use this route.
-    const { data: callerProfile } = await supabaseAdmin
-      .from('profiles')
-      .select('is_active')
-      .eq('id', user.id)
-      .single()
-    if (callerProfile?.is_active === false) {
-      return NextResponse.json({ error: 'Account is not active' }, { status: 403 })
-    }
+    // Signed-in, active caller (src/lib/server/api-auth.ts)
+    const auth = await requireUser(request, { requireActive: true })
+    if ('response' in auth) return auth.response
+    const { user, supabaseAdmin } = auth
 
     // Clear BEEP token from profile
     const { error: updateError } = await supabaseAdmin

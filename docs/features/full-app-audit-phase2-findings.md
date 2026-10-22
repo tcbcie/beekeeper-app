@@ -1,7 +1,7 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
@@ -313,7 +313,7 @@ Covers `text-xs`, `any`, `select('*')`, data access in UI files, the StrictMode 
 Covers limit clamping, admin email in logs, an ineffective try/catch, the duplicate impersonation query, OpenAI error detection, a BEEP array guard, beep disconnect error handling, the Wolf comment and battery lookup, the rate-limit bucket order, `classifyQuery`, `any`, "Unauthorized" spelling, email HTML logged, deprecated Deno std with mixed supabase-js pins, duplicated invitation functions, and the empty `auto-accept-invitations` folder.
 
 ### Cross-cutting
-The auth block is copied in 22 routes. Proposal: `requireUser()` plus one service-role client singleton (about 500–600 fewer lines), `apiError`/`apiOk`, `audit()`, `fetchWithTimeout`, and shared email and chunking helpers.
+The auth block is copied in 22 routes. Proposal: `requireUser()` plus one service-role client singleton (about 500–600 fewer lines), *(done in batch 20, 22/10/2026: `src/lib/server/api-auth.ts`, 21 route files, about 650 lines removed)* `apiError`/`apiOk`, `audit()`, `fetchWithTimeout`, and shared email and chunking helpers.
 
 ## Chunk 8a: Tools (31 findings: 4 High, 13 Medium, 14 Low)
 
