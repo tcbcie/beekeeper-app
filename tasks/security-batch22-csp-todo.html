@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 22: Enforce the CSP</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+    .note { background: #fff7ed; border-left: 4px solid #f59e0b; padding: 0.6rem 0.9rem; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 22: Switch the Content Security Policy to Enforcing</h1>
+<p><strong>Status:</strong> Done 22/10/2026. Tested by you; committed and pushed. This is CSP step 2, deferred from security batch 9.</p>
+
+<p>Since batch 9 (17/10/2026), the CSP has run in <em>report-only</em> mode. Browsers report what it <em>would</em> block, but nothing is blocked. Enforcing it is the main defence if a script ever gets injected: the browser refuses to send data anywhere that isn't on the list.</p>
+
+<div class="note"><strong>The reports can't be used.</strong> Vercel's Hobby plan keeps runtime logs for only one hour, so the week of <code>[CSP]</code> reports has gone, and the last hour had none. Instead I checked the policy against every external address the code uses.</div>
+
+<h2>Check: is everything the browser calls on the list?</h2>
+<table>
+  <tr><th>Service</th><th>Called from</th><th>Covered?</th></tr>
+  <tr><td>Supabase (data, sign-in, storage, realtime)</td><td>Browser</td><td>Yes: <code>connect-src</code> https plus wss, from the environment variable</td></tr>
+  <tr><td>Mapbox (maps, tiles, styles, events, map workers)</td><td>Browser</td><td>Yes: api, events and tiles hosts; <code>worker-src blob:</code>; images via <code>https:</code></td></tr>
+  <tr><td>Open-Meteo forecast and archive (weather, GDD, foraging)</td><td>Browser</td><td>Yes</td></tr>
+  <tr><td>Nominatim, postcodes.io (address lookup), Wikipedia</td><td>Browser</td><td>Yes</td></tr>
+  <tr><td>Google geocoding</td><td>Server only (<code>/api/geocode</code>)</td><td>Not needed</td></tr>
+  <tr><td>BEEP and Wolf scales, Resend email, OpenAI, Stripe API</td><td>Server only (API routes; the browser imports only their types)</td><td>Not needed</td></tr>
+  <tr><td>Stripe checkout, Google Maps, BEEP, Wolf and Revolut links</td><td>Ordinary links or redirects (navigation)</td><td>Not affected by <code>connect-src</code></td></tr>
+  <tr><td>Photos (Supabase storage), data/blob images, voice notes</td><td>Browser</td><td>Yes: <code>img-src https: data: blob:</code>, <code>media-src blob:</code></td></tr>
+  <tr><td>The tcbc.ie embed</td><td><code>/embed/*</code></td><td>It has its own policy (allowed parent sites), so it's unchanged</td></tr>
+</table>
+<p>Nothing is missing.</p>
+
+<h2>Todo</h2>
+<div class="task"><input type="checkbox" checked disabled> <code>next.config.ts</code>: change the header name from <code>Content-Security-Policy-Report-Only</code> to <code>Content-Security-Policy</code>. It's the same policy, and it keeps <code>report-uri /api/csp-report</code>, so anything blocked is still logged.</div>
+<div class="task"><input type="checkbox" checked disabled> Update the comments, the CSP memory note and <code>docs/features/security-batch9-plan.md</code> or the full-app-audit register: CSP enforced from today.</div>
+<div class="task"><input type="checkbox" checked disabled> Type-check and lint.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> test after deploying (below), then confirm.</div>
+
+<h2>How you'll test (on the live site after the deploy, or with <code>npm run build &amp;&amp; npm start</code>)</h2>
+<ul>
+  <li>Sign in and open the dashboard. The weather row and upcoming events load.</li>
+  <li>Apiaries: open the map picker and look up an Eircode. Open an apiary's map and the community map.</li>
+  <li>A hive with a scale: the scale data loads.</li>
+  <li>Research: the GDD and foraging charts load. Tools: Varroa Weather loads.</li>
+  <li>Mel answers. Add a photo to an inspection. Record a voice note.</li>
+  <li>If anything fails to load, press F12 and look in the Console for "Refused to connect/load … Content Security Policy". Send me the line. Reverting is a one-word change.</li>
+</ul>
+
+<h2>Review</h2>
+<p>The <code>next.config.ts</code> header is now <code>Content-Security-Policy</code>. The policy is unchanged and <code>report-uri</code> is kept. <code>/embed/*</code> keeps its own policy, because the main block excludes it by its route pattern. The comments, batch 9 plan, audit register (CLI-03) and CSP memory note are updated. tsc is clean.</p>
+</body>
+</html>

@@ -51,9 +51,9 @@ function buildStorageRemotePatterns(): RemotePattern[] {
   })
 }
 
-// Content Security Policy for the app (everything except /embed/*). Shipped as Report-Only
-// first: browsers block nothing and report would-be violations to /api/csp-report (Vercel logs).
-// Switch the header key to 'Content-Security-Policy' once the reports are clean.
+// Content Security Policy for the app (everything except /embed/*). Enforced since 22/10/2026
+// (report-only from 17/10/2026). Browsers block anything not listed and report it to
+// /api/csp-report (Vercel logs). A new browser-side service must be added here first.
 // 'unsafe-inline' scripts: Next.js hydration and the theme script need it (nonces would be the
 // stricter route). img-src https: covers news images, map tiles and Supabase Storage.
 function buildContentSecurityPolicy(): string {
@@ -137,7 +137,7 @@ const nextConfig: NextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
           { key: 'Permissions-Policy', value: permissionsPolicy },
-          { key: 'Content-Security-Policy-Report-Only', value: buildContentSecurityPolicy() },
+          { key: 'Content-Security-Policy', value: buildContentSecurityPolicy() },
         ],
       },
       {

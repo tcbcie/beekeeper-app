@@ -1,6 +1,6 @@
 # Security Batch 9: Browser Hardening
 
-**Status:** Step 1 done on 17/10/2026: the owner tested it, and it is committed and pushed. The CSP is in report-only mode; step 2 (enforcing) is still to do.
+**Status:** Step 1 done on 17/10/2026 (report-only). Step 2 done on 22/10/2026: the CSP is **enforced** (`Content-Security-Policy`), see `tasks/security-batch22-csp-todo.html`. The report-only logs had expired (Vercel Hobby keeps 1 hour), so the allowlist was checked against every external address in the code instead; nothing was missing.
 **Checklist:** `tasks/security-batch9-todo.html`
 **Findings:** CLI-03 to CLI-08 (Low)
 
@@ -31,7 +31,7 @@ upgrade-insecure-requests; report-uri /api/csp-report
 - The Supabase origins come from `NEXT_PUBLIC_SUPABASE_URL`. In dev mode `script-src` also has `'unsafe-eval'`, which fast refresh needs.
 - `'unsafe-inline'` for scripts is needed by Next.js hydration and the theme script. Dropping it would need per-request nonces through middleware.
 - These are only reached from the server or by full-page navigation, so they need no CSP entry: Stripe, BEEP, Wolf, Resend, Google Geocoding and Google Maps links. Vercel Analytics and Speed Insights are same-origin.
-- **When adding a new browser-side external call or embed**, add its origin here, or the CSP will block it once enforced.
+- **When adding a new browser-side external call or embed**, add its origin here, or the CSP will block it.
 
 ### Step 2: enforcing
 
