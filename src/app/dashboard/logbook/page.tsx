@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
@@ -19,7 +20,7 @@ export default function LogbookPage() {
  const [formData, setFormData] = useState<LogbookEntryFormData>({
  assessor_name: '',
  assessor_fibka_number: '',
- completed_date: new Date().toISOString().split('T')[0],
+ completed_date: getCurrentDate(),
  notes: '',
  })
  const [saving, setSaving] = useState(false)
@@ -70,7 +71,7 @@ export default function LogbookPage() {
  setFormData({
  assessor_name: '',
  assessor_fibka_number: '',
- completed_date: new Date().toISOString().split('T')[0],
+ completed_date: getCurrentDate(),
  notes: '',
  })
  }
@@ -250,7 +251,7 @@ export default function LogbookPage() {
  <input
  type="date"
  value={formData.completed_date}
- max={new Date().toISOString().split('T')[0]}
+ max={getCurrentDate()}
  onChange={e => setFormData(prev => ({ ...prev, completed_date: e.target.value }))}
  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-surface text-foreground focus:ring-2 focus:ring-forest-500 focus:border-transparent"
  />

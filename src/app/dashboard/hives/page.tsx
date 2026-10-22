@@ -1,4 +1,5 @@
 'use client'
+import { getCurrentDate } from '@/lib/date-utils'
 import { useEffect, useState, useRef } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -243,7 +244,7 @@ export default function HivesPage() {
  }
 
  const usedNumbers = new Set((existingRows || []).map((r) => r.hive_number))
- const today = new Date().toISOString().split('T')[0]
+ const today = getCurrentDate()
  const nowIso = new Date().toISOString()
 
  const newRows = sources.map((h) => {

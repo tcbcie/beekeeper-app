@@ -1,6 +1,7 @@
 // Type definitions for the Reports feature
 
 import type { Apiary, Hive } from './records'
+import { toLocalDateString } from '@/lib/date-utils'
 
 export type ReportType = 'dafm-varroa' | 'varroa-monitoring' | 'hive-inspection' | 'apiary-overview' | 'harvest' | 'archived-hives' | 'queen-failures'
 
@@ -128,7 +129,7 @@ export function getDefaultReportFilters(): ReportFilters {
     apiaryId: '',
     hiveId: '',
     timePeriod: '1year',
-    startDate: oneYearAgo.toISOString().split('T')[0],
-    endDate: today.toISOString().split('T')[0]
+    startDate: toLocalDateString(oneYearAgo),
+    endDate: toLocalDateString(today)
   }
 }

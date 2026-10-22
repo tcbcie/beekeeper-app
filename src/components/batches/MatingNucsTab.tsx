@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getTeamAccess } from '@/lib/team-access'
-import { formatDateIrish } from '@/lib/date-utils'
+import { formatDateIrish, getCurrentDate } from '@/lib/date-utils'
 import { Plus, Edit2, Archive, Trash2, X, ClipboardList, ChevronDown, ChevronUp, History, Eye, EyeOff, Send, Search } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
@@ -205,7 +205,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  queen_id: '',
  mating_location: '',
  status: 'cell_introduced',
- setup_date: new Date().toISOString().split('T')[0],
+ setup_date: getCurrentDate(),
  queen_marked_at: '',
  notes: '',
  })
@@ -694,7 +694,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  queen_id: '',
  mating_location: '',
  status: 'cell_introduced',
- setup_date: new Date().toISOString().split('T')[0],
+ setup_date: getCurrentDate(),
  queen_marked_at: '',
  notes: '',
  })
@@ -782,7 +782,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (newGraftId && newGraftId !== oldGraftId) {
    await supabase
      .from('batch_grafts')
-     .update({ status: 'in_nuc', status_date: formData.setup_date || new Date().toISOString().split('T')[0] })
+     .update({ status: 'in_nuc', status_date: formData.setup_date || getCurrentDate() })
      .eq('id', newGraftId)
      .eq('user_id', userId)
  }
@@ -799,7 +799,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (formData.graft_id) {
  await supabase
  .from('batch_grafts')
- .update({ status: 'in_nuc', status_date: formData.setup_date || new Date().toISOString().split('T')[0] })
+ .update({ status: 'in_nuc', status_date: formData.setup_date || getCurrentDate() })
  .eq('id', formData.graft_id)
  .eq('user_id', userId)
  }
@@ -1230,7 +1230,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  // cell rather than linger from the one that was there before. Key it on queen_marked alone:
  // a queen can be marked in any of MARKABLE_STATUSES, not just 'emerged'.
  updates.queen_marked_at = selectedGraft?.queen_marked
-   ? (formData.setup_date || new Date().toISOString().split('T')[0])
+   ? (formData.setup_date || getCurrentDate())
    : ''
  setFormData({ ...formData, ...updates })
  }}

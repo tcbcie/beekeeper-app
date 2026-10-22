@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useState, useEffect } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
@@ -28,7 +29,7 @@ export default function FinancialRecordForm({
   const toast = useToast()
   const [recordType, setRecordType] = useState<'income' | 'expense'>(record?.record_type || 'expense')
   const [transactionDate, setTransactionDate] = useState(
-    record?.transaction_date || new Date().toISOString().split('T')[0]
+    record?.transaction_date || getCurrentDate()
   )
   const [amount, setAmount] = useState(record?.amount?.toString() || '')
   const [categoryId, setCategoryId] = useState(record?.category_id || '')

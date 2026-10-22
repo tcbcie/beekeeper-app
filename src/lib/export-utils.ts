@@ -1,3 +1,5 @@
+import { getCurrentDate } from '@/lib/date-utils'
+
 /**
  * Utility functions for exporting data to CSV format
  */
@@ -52,7 +54,7 @@ export function exportToCSV<T extends object>(
     // Create download link
     const url = URL.createObjectURL(blob)
     link.setAttribute('href', url)
-    link.setAttribute('download', `${filename}-${new Date().toISOString().split('T')[0]}.csv`)
+    link.setAttribute('download', `${filename}-${getCurrentDate()}.csv`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
@@ -107,7 +109,7 @@ export async function exportToImage(
     document.head.removeChild(style)
 
     const link = document.createElement('a')
-    link.download = `${filename}-${new Date().toISOString().split('T')[0]}.${format}`
+    link.download = `${filename}-${getCurrentDate()}.${format}`
     link.href = dataUrl
     link.click()
   } catch (error) {

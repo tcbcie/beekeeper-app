@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, ClipboardList, Tag, Scale, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -86,9 +87,9 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
   const [formSaving, setFormSaving] = useState(false)
   const [showMarkForm, setShowMarkForm] = useState(false)
   const [markQueenNumber, setMarkQueenNumber] = useState('')
-  const [markDate, setMarkDate] = useState(new Date().toISOString().split('T')[0])
+  const [markDate, setMarkDate] = useState(getCurrentDate())
   const [formData, setFormData] = useState<NucInspectionFormData>({
-    inspection_date: new Date().toISOString().split('T')[0],
+    inspection_date: getCurrentDate(),
     queen_seen: false,
     queen_status: '',
     eggs_present: false,
@@ -121,7 +122,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
 
   const resetForm = () => {
     setFormData({
-      inspection_date: new Date().toISOString().split('T')[0],
+      inspection_date: getCurrentDate(),
       queen_seen: false,
       queen_status: '',
       eggs_present: false,
@@ -334,7 +335,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
   // Weight Queen state
   const [showWeightForm, setShowWeightForm] = useState(false)
   const [weightValue, setWeightValue] = useState('')
-  const [weightDate, setWeightDate] = useState(new Date().toISOString().split('T')[0])
+  const [weightDate, setWeightDate] = useState(getCurrentDate())
   const [weightNotes, setWeightNotes] = useState('')
   const [weightSaving, setWeightSaving] = useState(false)
   const [weightHistory, setWeightHistory] = useState<QueenWeight[]>([])
@@ -374,7 +375,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       if (error) throw error
       toast.success('Queen weight recorded')
       setWeightValue('')
-      setWeightDate(new Date().toISOString().split('T')[0])
+      setWeightDate(getCurrentDate())
       setWeightNotes('')
       fetchWeightHistory()
       onInspectionChange?.()
@@ -442,7 +443,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       toast.success('Queen marked successfully')
       setShowMarkForm(false)
       setMarkQueenNumber('')
-      setMarkDate(new Date().toISOString().split('T')[0])
+      setMarkDate(getCurrentDate())
       onInspectionChange?.()
     } catch (error) {
       console.error('Error marking queen:', error)
@@ -484,7 +485,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
         {!readOnly && (graftId || canMarkRearedQueen) && !showForm && !showMarkForm && !showWeightForm && (
           <Button
             onClick={() => {
-              setMarkDate(existingQueenMarkedAt ? existingQueenMarkedAt.split('T')[0] : new Date().toISOString().split('T')[0])
+              setMarkDate(existingQueenMarkedAt ? existingQueenMarkedAt.split('T')[0] : getCurrentDate())
               setMarkQueenNumber(existingQueenNumber || '')
               setShowMarkForm(true)
             }}
@@ -558,7 +559,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                 {markSaving ? 'Saving...' : 'Save'}
               </Button>
               <Button
-                onClick={() => { setShowMarkForm(false); setMarkQueenNumber(''); setMarkDate(new Date().toISOString().split('T')[0]) }}
+                onClick={() => { setShowMarkForm(false); setMarkQueenNumber(''); setMarkDate(getCurrentDate()) }}
                 tone="neutral"
                 size="sm"
               >
@@ -615,7 +616,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                 {weightSaving ? 'Saving...' : 'Save'}
               </Button>
               <Button
-                onClick={() => { setShowWeightForm(false); setWeightValue(''); setWeightDate(new Date().toISOString().split('T')[0]); setWeightNotes('') }}
+                onClick={() => { setShowWeightForm(false); setWeightValue(''); setWeightDate(getCurrentDate()); setWeightNotes('') }}
                 tone="neutral"
                 size="sm"
               >

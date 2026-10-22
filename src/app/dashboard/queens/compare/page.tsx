@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast'
 import { fetchQueenReportData } from '@/hooks/useQueenDetail'
 import QueenCompareTable, { type CompareColumn } from '@/components/queens/QueenCompareTable'
 import type { Queen, QueenReport, ReportTimeWindow } from '@/types/queen'
+import { firstOf } from '@/lib/embed'
 
 const COMPARE_MAX = 4
 
@@ -43,11 +44,6 @@ interface ParentQueen {
   id: string
   queen_number: string
   marking_color: string
-}
-
-const firstOf = <T,>(v: T | T[] | null | undefined): T | null => {
-  if (v == null) return null
-  return Array.isArray(v) ? (v[0] ?? null) : v
 }
 
 export default function QueenComparePage() {

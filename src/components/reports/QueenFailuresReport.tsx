@@ -1,5 +1,6 @@
 'use client'
 
+import { toLocalDateString } from '@/lib/date-utils'
 import { useEffect, useState } from 'react'
 import { useReportsData } from '@/hooks/useReportsData'
 import { exportToCSV, printReport } from '@/lib/export-utils'
@@ -25,8 +26,8 @@ export default function QueenFailuresReport({ userId }: QueenFailuresReportProps
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
     return {
       timePeriod: '1year' as TimePeriod,
-      startDate: oneYearAgo.toISOString().split('T')[0],
-      endDate: today.toISOString().split('T')[0]
+      startDate: toLocalDateString(oneYearAgo),
+      endDate: toLocalDateString(today)
     }
   })())
 
@@ -56,15 +57,15 @@ export default function QueenFailuresReport({ userId }: QueenFailuresReportProps
     if (period === '3months') {
       const date = new Date(today)
       date.setMonth(date.getMonth() - 3)
-      startDate = date.toISOString().split('T')[0]
+      startDate = toLocalDateString(date)
     } else if (period === '6months') {
       const date = new Date(today)
       date.setMonth(date.getMonth() - 6)
-      startDate = date.toISOString().split('T')[0]
+      startDate = toLocalDateString(date)
     } else if (period === '1year') {
       const date = new Date(today)
       date.setFullYear(date.getFullYear() - 1)
-      startDate = date.toISOString().split('T')[0]
+      startDate = toLocalDateString(date)
     } else if (period === 'all') {
       startDate = '2000-01-01'
     }
@@ -73,7 +74,7 @@ export default function QueenFailuresReport({ userId }: QueenFailuresReportProps
       ...prev,
       timePeriod: period,
       startDate,
-      endDate: today.toISOString().split('T')[0]
+      endDate: toLocalDateString(today)
     }))
   }
 

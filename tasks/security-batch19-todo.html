@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 19: Shared Foundations</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 19: Shared Foundations</h1>
+<p><strong>Status:</strong> Done 22/10/2026. Tested by you; committed and pushed. Approved with the recommendations: <code>requireUser()</code> moves to batch 20, and the extra-small buttons go to 48px. This is Phase 2 fix batch 7.</p>
+<p>Three agents checked the cross-cutting findings. All the user-visible bugs below are still in the code. The API sign-in clean-up (<code>requireUser()</code>, 21 route files) is a large refactor with no visible change, so I propose it as its own batch 20.</p>
+
+<h2>A. Linked records read the wrong way (5 visible bugs)</h2>
+<p>Supabase returns a to-one link (a hive's queen, a record's hive) as a single object, but these places read it as a list, so the value is always blank.</p>
+<div class="task"><input type="checkbox" checked disabled> New tiny helper <code>src/lib/embed.ts</code>: <code>firstOf(value)</code> accepts an object or a list. The two local copies (queen compare, order detail) switch to it.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Apiary page</strong> (C7a-04): each hive's queen never showed. Fixed in <code>useApiaryDetail</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Apiary page, Recent Activity</strong> (C7a-03): rows had no hive number.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Dashboard weather row</strong> (C3-04): your own bloom records never showed as confirmed. The link also gets its foreign key named.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Upcoming events</strong> (C9a-06): the apiary name never showed.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Queen page, sightings</strong> (C6-04): the hive number was always blank.</div>
+
+<h2>B. "Today" in UTC instead of Irish time</h2>
+<p>There are 130 client sites in 54 files. Most use <code>new Date().toISOString().split('T')[0]</code>, which is the UTC date, so it's yesterday between midnight and 1am in summer time. One is wrong all summer.</p>
+<div class="task"><input type="checkbox" checked disabled> <strong>Recipient queen birth date</strong> (C5b-05): when a batch has no emergence date, the date was <strong>a day early from late March to late October</strong>. Fix in <code>useGraftDistributions</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>getCurrentDate()</code> and <code>formatDateForInput()</code> in <code>date-utils.ts</code> become local. One has no app callers, and the other's 10 callers all want local. Then every exact <code>new Date().toISOString().split('T')[0]</code> ("now" only) becomes <code>getCurrentDate()</code>. That covers about 80 default form dates and status dates: nucs, queen tracker, grafts, records, colonies, logbook, CRM and more.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Reports:</strong> the six report pages' own period maths (36 sites) use the existing <code>getPresetRange()</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Shifted dates fixed by hand:</strong> registration-code expiry options, best-before date, scale chart ranges, the "tomorrow" varroa task, team invite expiry.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>CRM</strong> (C8b-07): both <code>today()</code> helpers become local. The order detail page's overdue badge could disagree with the list page.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Left alone on purpose:</strong> 9 sites that are deliberately UTC or convert stored values. Changing those would introduce bugs.</div>
+
+<h2>C. Touch targets: 48px</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Tokens</strong> (C1-25): <code>.fj-icon-btn</code> (all 53 IconButton users), <code>.fj-btn-sm</code> and <code>.min-touch-target</code> go from 44px to 48px. The small button keeps its compact padding and font.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Confirm dialog</strong> (C1-24): its two buttons go from 40px to 48px. They were hand-sized, so the tokens didn't reach them.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Record cards:</strong> the Edit/Delete buttons on the Feeding, Harvest, Treatment and Varroa cards go from 40px to 48px.</div>
+
+<h2>D. User management expiry date (C9a-04)</h2>
+<div class="task"><input type="checkbox" checked disabled> Typing a date saved on every keystroke: typing the year "2026" wrote 0002, 0020, 0202 and 2026, each followed by a list refresh. Fix: keep a draft while typing, and save on blur or Enter.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint, the full test suite (the date-utils tests may need updating) and the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/shared-foundations-batch19-plan.md</code>; Phase 2 register; memory note (<code>firstOf</code>, local dates).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>Decisions for you</h2>
+<table>
+  <tr><th>Question</th><th>Recommendation</th></tr>
+  <tr><td><strong>1.</strong> <code>requireUser()</code> for the 21 API routes (about 500 lines removed, no visible change): here, or its own batch?</td><td><strong>Its own batch 20.</strong> It touches every signed-in API route, and keeping it separate makes it easy to test and roll back.</td></tr>
+  <tr><td><strong>2.</strong> The extra-small button size (<code>fj-btn-xs</code>, 44px, used for dense row actions): raise it to 48px too?</td><td><strong>Yes, raise it.</strong> The app's rule for over-50 users is 48px, and 4px won't break any layout. If any row looks cramped, it gets fixed when you test.</td></tr>
+</table>
+
+<h2>Out of scope (noted)</h2>
+<ul>
+  <li>The dashboard's "tasks due today" comes from a database function using the database's UTC date. That's server-side; I'll handle it with the server date work.</li>
+  <li>The 56 hand-written <code>min-h-[44px]</code> classes in 19 files get a later sweep.</li>
+</ul>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Part</th><th>Result</th></tr>
+  <tr><td>A. Linked records</td><td><code>src/lib/embed.ts</code> <code>firstOf()</code>; 5 blank fields fixed; queen compare reuses it.</td></tr>
+  <tr><td>B. Local dates</td><td>Both helpers are local; 52 "now" sites in 28 files now use <code>getCurrentDate()</code>; reports, GDD and scale charts, expiry options, the varroa task and the team window use <code>toLocalDateString</code>; the birth-date-a-day-early bug and the CRM overdue badge are fixed; 9 deliberate UTC sites are untouched.</td></tr>
+  <tr><td>C. Touch targets</td><td>sm, xs and icon buttons plus <code>.min-touch-target</code> are 48px; the confirm dialog and record-card buttons are 48px; the style test was updated.</td></tr>
+  <tr><td>D. Expiry date</td><td>Saves once on blur or Enter, only when changed.</td></tr>
+  <tr><td>Checks</td><td>tsc 0 errors, ESLint (src) clean, 808 tests pass; qa-engineer found no issues.</td></tr>
+</table>
+<h3>Please test (<code>npm run build</code>, then the app)</h3>
+<ol>
+  <li><strong>Apiary page:</strong> open an apiary. Each hive with a queen shows "Queen: …", and Recent Activity rows show hive numbers.</li>
+  <li><strong>Queen page:</strong> the sightings list shows hive numbers.</li>
+  <li><strong>Dashboard:</strong> Upcoming Events show the apiary name. If you've recorded a bloom this year, it shows as confirmed on the weather row.</li>
+  <li><strong>Buttons:</strong> small buttons, icon buttons and the confirm dialog look right at the slightly larger size, with no row looking cramped. Check a records card and a delete confirmation.</li>
+  <li><strong>Settings → User Management:</strong> type a new expiry date. Nothing saves until you leave the field or press Enter, and then it saves once.</li>
+  <li><strong>Optional:</strong> a new inspection, task or nuc form defaults to today's date.</li>
+</ol>
+</body>
+</html>

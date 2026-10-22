@@ -1,4 +1,5 @@
 'use client'
+import { getCurrentDate } from '@/lib/date-utils'
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -26,7 +27,9 @@ import { PRODUCT_TYPE_LABELS } from '@/types/crm'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import type { Customer, Order, OrderItemFormData, OrderStatus, ProductType } from '@/types/crm'
 
-const today = () => new Date().toISOString().slice(0, 10)
+// The user's calendar date. UTC gave yesterday just after midnight in summer, and the
+// detail page's overdue badge could disagree with the list (which already used local dates).
+const today = () => getCurrentDate()
 
 // Local calendar date as YYYY-MM-DD — avoids the UTC shift of toISOString(),
 // which can misclassify dates by a day for users behind UTC late in the day.

@@ -1,4 +1,5 @@
 'use client'
+import { getCurrentDate } from '@/lib/date-utils'
 import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { deleteUploadedImages } from '@/lib/upload-image'
@@ -135,7 +136,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  status: 'observed',
  nesting_type: '',
  estimated_size: '',
- observation_date: new Date().toISOString().split('T')[0],
+ observation_date: getCurrentDate(),
  entrance_description: '',
  notes: '',
  })
@@ -357,7 +358,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  status: 'observed',
  nesting_type: '',
  estimated_size: '',
- observation_date: new Date().toISOString().split('T')[0],
+ observation_date: getCurrentDate(),
  entrance_description: '',
  notes: '',
  })

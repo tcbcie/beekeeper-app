@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
@@ -36,8 +37,8 @@ const emptyFormData = (): HiveFormData => ({
  queenless_reason: '',
  status: 'active',
  notes: '',
- colony_established_date: new Date().toISOString().split('T')[0],
- queen_installed_date: new Date().toISOString().split('T')[0],
+ colony_established_date: getCurrentDate(),
+ queen_installed_date: getCurrentDate(),
  hive_type: '',
  configuration: {
  brood_boxes: 1, // Legacy field
@@ -539,7 +540,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  setFormData({
  ...formData,
  queen_id: newQueenId,
- ...(changedQueen ? { queen_installed_date: new Date().toISOString().split('T')[0] } : {}),
+ ...(changedQueen ? { queen_installed_date: getCurrentDate() } : {}),
  })
  }}
  className="w-full fj-control"

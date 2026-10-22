@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useState, useEffect, useRef } from 'react'
 import type { Feeding, Hive, Apiary } from '@/types/records'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
@@ -35,7 +36,7 @@ export default function FeedingForm({
     id: '',
     hive_id: '',
     user_id: '',
-    feed_date: new Date().toISOString().split('T')[0],
+    feed_date: getCurrentDate(),
     feed_type: '',
     syrup_inverted: false,
     quantity: null,

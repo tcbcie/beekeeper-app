@@ -1,4 +1,5 @@
 'use client'
+import { getCurrentDate } from '@/lib/date-utils'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -378,7 +379,7 @@ export default function QueensPage() {
  const url = URL.createObjectURL(blob)
  const a = document.createElement('a')
  a.href = url
- a.download = `queens-${new Date().toISOString().split('T')[0]}.csv`
+ a.download = `queens-${getCurrentDate()}.csv`
  a.click()
  }
 

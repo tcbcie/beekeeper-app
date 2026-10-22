@@ -1,4 +1,5 @@
 'use client'
+import { toLocalDateString } from '@/lib/date-utils'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink, Sun, Cloud, CloudRain, CloudSnow, CloudFog, Sprout } from 'lucide-react'
@@ -199,7 +200,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  const today = new Date()
  const year = today.getFullYear()
  const janFirst = `${year}-01-01`
- const todayStr = today.toISOString().split('T')[0]
+ const todayStr = toLocalDateString(today)
 
  const response = await fetch(
  `https://archive-api.open-meteo.com/v1/archive?latitude=${apiaryLat}&longitude=${apiaryLon}&start_date=${janFirst}&end_date=${todayStr}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`

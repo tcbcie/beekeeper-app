@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Download } from 'lucide-react'
@@ -95,7 +96,7 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
         const filePrefix = adminMode === 'schema_admin_only'
           ? 'hivecraic-empty-schema-admin-export'
           : 'hivecraic-complete-export'
-        a.download = `${filePrefix}-${new Date().toISOString().split('T')[0]}.sql`
+        a.download = `${filePrefix}-${getCurrentDate()}.sql`
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
@@ -174,7 +175,7 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = `my-beekeeping-data-${new Date().toISOString().split('T')[0]}.sql`
+        a.download = `my-beekeeping-data-${getCurrentDate()}.sql`
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)

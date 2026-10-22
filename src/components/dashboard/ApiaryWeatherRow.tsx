@@ -1,5 +1,6 @@
 'use client'
 
+import { firstOf } from '@/lib/embed'
 import { useEffect, useState, useCallback, useRef, startTransition, memo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -446,7 +447,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
       // User's own bloom records for this apiary, current year, still active
       const { data: userRecords } = await supabase
         .from('gdd_records')
-        .select('dropdown_values(value), end_date')
+        .select('dropdown_values:vegetation_type_id(value), end_date')
         .eq('apiary_id', apiary.id)
         .eq('year', currentYear)
         .lte('start_date', todayStr)
@@ -455,7 +456,8 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
         for (const rec of userRecords) {
           const endDate = (rec as Record<string, unknown>).end_date as string | null
           if (endDate && endDate < todayStr) continue
-          const vegName = ((rec as Record<string, unknown>).dropdown_values as Record<string, unknown>[] | null)?.[0]?.value as string | undefined
+          // A to-one embed: one object, not an array.
+          const vegName = firstOf((rec as Record<string, unknown>).dropdown_values as { value?: string } | { value?: string }[] | null)?.value
           if (vegName && !confirmedNames.includes(vegName)) {
             confirmedNames.push(vegName)
           }

@@ -1,7 +1,7 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
@@ -9,12 +9,12 @@
 - **C3-01** `hooks/useHivesList.ts:211-272`: the list fetches full record history for all hives in one query. Supabase caps a query at 1000 rows, so with about 293 hives the older hives' cards show "Never" and lose their queen, egg, super and treatment data. Fix: one RPC returning per-hive aggregates (`DISTINCT ON (hive_id)`).
 - **C3-02** `app/dashboard/hives/page.tsx:639-642` with `useHivesList.ts:57,532`: the ownership filter fires a fetch with the old value and then another, so the last response wins and the list can be wrong. Fix: remove the manual call, and ignore stale responses with a request ID.
 - **C3-03** `components/hive/HiveFormSection.tsx:118-345, 367-373, 961-966`: there's no in-flight guard, so a double tap creates duplicate hives. Fix: a `submittingRef`, and disable the submit buttons while saving. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
-- **C3-04** `components/dashboard/ApiaryWeatherRow.tsx:458`: reads the `dropdown_values` embed as an array, but it's an object, so the user's own bloom records never show as confirmed. Fix: handle both shapes and name the FK.
+- **C3-04** `components/dashboard/ApiaryWeatherRow.tsx:458`: reads the `dropdown_values` embed as an array, but it's an object, so the user's own bloom records never show as confirmed. Fix: handle both shapes and name the FK. *Fixed in batch 19 (22/10/2026).*
 
 ### Medium, key items
 - **C3-05:** a `JSON.stringify` comparison means almost every save counts as a configuration change, so "Last changed by" is wrong.
 - **C3-06:** updates have no `.select()`, so an update RLS blocks fails silently.
-- **C3-07 / C3-29:** UTC dates via `toISOString`, so "today" is yesterday just after midnight in Irish Summer Time.
+- **C3-07 / C3-29:** UTC dates via `toISOString`, so "today" is yesterday just after midnight in Irish Summer Time. *Fixed in batch 19 (22/10/2026).* Client side; the dashboard's "due today" count comes from the `get_dashboard_overview` RPC (`current_date` in UTC), which is still open.
 - **C3-08 / C3-09:** stale responses aren't discarded in `useHiveDetail`, and a refetch unmounts the whole page.
 - **C3-10:** the QR ordering puts nulls first. **C3-11:** a scale can end up assigned to two hives. **C3-12:** scale charts don't cancel or debounce their requests. **C3-13:** failed results are cached as empty.
 - **C3-14 / C3-15 / C3-16:** sequential request waterfalls. **C3-17:** chart.js is loaded statically on the hive detail page.
@@ -35,8 +35,8 @@ Covers missing try/finally, a misleading RLS comment, touch targets and inputs b
 ### High
 - **C7a-02 (SECURITY, new; confirmed):** `src/components/MapLocationPicker.tsx:441`. The popup uses `setHTML` with an unescaped `apiary.name`. The list includes team-shared apiaries, so a team member's apiary name can run script in your session (stored XSS). Fix: build the popup with `textContent` and `setDOMContent`. **Fixed in batch 13.**
 - **C7a-01:** `community-map/page.tsx:1068-1109`. Fullscreen renders a different tree, so the Mapbox container is destroyed and the map stays blank. Fix: one stable tree, switching with classes.
-- **C7a-03:** `useApiaryDetail.ts:124-139`. The `hives(hive_number)` embed is an object, so `?.[0]` is undefined and every Recent Activity row has no hive number.
-- **C7a-04:** `useApiaryDetail.ts:14-18,95` and `apiaries/[id]/page.tsx:211`. The `queens` embed is an object, so the queen never shows in the apiary's hive list.
+- **C7a-03:** `useApiaryDetail.ts:124-139`. The `hives(hive_number)` embed is an object, so `?.[0]` is undefined and every Recent Activity row has no hive number. *Fixed in batch 19 (22/10/2026).*
+- **C7a-04:** `useApiaryDetail.ts:14-18,95` and `apiaries/[id]/page.tsx:211`. The `queens` embed is an object, so the queen never shows in the apiary's hive list. *Fixed in batch 19 (22/10/2026).*
 - **C7a-05:** `community-map/page.tsx:756-774`. `setStyle` wipes all overlay layers and they are never re-added. Toggles during style load throw, and the terrain source is added twice.
 
 ### Medium, key items
@@ -72,7 +72,7 @@ Covers native `confirm()`, bench delete with no confirmation, the rollback race,
 - **C5a-11:** clearing Mated has no confirmation and wipes the location.
 - **C5a-12 / C5a-13 / C5a-14:** sync errors are hidden, there's no try/catch, and a stale fetch race.
 - **C5a-15 / C5a-16 / C5a-17:** over-fetching, `select('*')`, and an unpaginated ledger.
-- **C5a-18:** UTC dates.
+- **C5a-18:** UTC dates. *Fixed in batch 19 (22/10/2026).*
 - **C5a-19 / C5a-20:** 14px inputs, and the table only works on desktop.
 - **C5a-21:** about 6k lines of tabs are imported statically.
 
@@ -98,7 +98,7 @@ Covers the breeder option list, hand-rolled modals, native `confirm()`, equipmen
 - **C1-18:** the shell components make 5–7 duplicate profile, role and subscription requests on each load.
 - **C1-19:** the Navbar warnings are hover-only, so they can't be read on a phone.
 - **C1-23:** the theme provider causes a hydration mismatch.
-- **C1-24 / C1-25:** ConfirmDialog buttons are 40px, and the design tokens set a 44px minimum rather than 48px.
+- **C1-24 / C1-25:** ConfirmDialog buttons are 40px, and the design tokens set a 44px minimum rather than 48px. *Fixed in batch 19 (22/10/2026).*
 - **C1-26:** ImageZoomModal can't be panned on touch, and has no dialog semantics.
 - **C1-27:** `en-US` dates and "expiration date" in the subscription UI.
 - **C1-30:** the offline toast covers the Logout button.
@@ -118,7 +118,7 @@ One shell-profile hook with a cache, one `safeInternalPath()` redirect helper, s
 - **C5b-04:** `useGraftDistributions.ts:367,613`. The `create_queen_for_distribution` error is never checked, so the recipient's queen can go missing while the UI says "recorded". *Fixed in batch 14 (19/10/2026).*
 
 ### Medium, key items
-- **C5b-05:** the recipient queen's birth date is a day early in summer time (UTC).
+- **C5b-05:** the recipient queen's birth date is a day early in summer time (UTC). *Fixed in batch 19 (22/10/2026).*
 - **C5b-06:** bulk distribution drops the mating location and installed date.
 - **C5b-07:** a mixed bulk selection records every graft as a mated queen.
 - **C5b-08:** mated-date edits never sync to the recipient queen.
@@ -168,11 +168,11 @@ Covers Wolf battery NaN, being unable to deselect the last year, date locale and
 - **C9a-01 (SECURITY, new):** `profile/page.tsx:454-484`. The Change Password form asks for the current password but never checks it, so anyone with an unlocked session can change the password. Fix: re-authenticate (verify the current password, or use Supabase's reauthenticate nonce or "secure password change").
 - **C9a-02:** `ProfileExport.tsx:126-130`. The user export runs `select('*')` on every table. The user's own `profiles` row fails because of the column grants, so it is silently missing. The export also includes global and team-visible rows and is truncated at max-rows. Fix: reuse the user-scoped export with `PROFILE_COLUMNS`, and page through results.
 - **C9a-03:** `UserManagement.tsx:430-448`. Impersonation data is saved before `verifyOtp`, so it's left behind on failure.
-- **C9a-04:** `UserManagement.tsx:1329-1332`. The expiry date input writes on every keystroke (several writes and refetches) and shows the UTC date.
+- **C9a-04:** `UserManagement.tsx:1329-1332`. The expiry date input writes on every keystroke (several writes and refetches) and shows the UTC date. *Fixed in batch 19 (22/10/2026).* It now saves on blur or Enter.
 
 ### Medium, key items
 - **C9a-05:** a null RPC payload makes a successful toggle show an error.
-- **C9a-06:** the `UpcomingEvents` apiary embed is read as an array, so the name never shows.
+- **C9a-06:** the `UpcomingEvents` apiary embed is read as an array, so the name never shows. *Fixed in batch 19 (22/10/2026).*
 - **C9a-07:** the subscription cache can leak across sign-in and out, and caches errors.
 - **C9a-08:** profile preferences are stale and undo doesn't work.
 - **C9a-09 / C9a-10:** the ticket fallback ignores the filter, and the stats are counted from the filtered list.
@@ -229,7 +229,7 @@ Covers falsy-zero display, `classifyQuery` validation, harvests merged by hive n
 ### Medium, key items
 - **C8b-03 / C8b-04:** duplicate jar-sale income rows, duplicate containers, and harvests linked to every bucket (weight counted N times).
 - **C8b-05 / C8b-06:** order actions discard unsaved item edits, and an items fetch error leads to an empty editor that wipes the items on save.
-- **C8b-07:** UTC "today" for order dates and the overdue check.
+- **C8b-07:** UTC "today" for order dates and the overdue check. *Fixed in batch 19 (22/10/2026).*
 - **C8b-08:** a cleared number field snaps to 0, and negative prices are allowed.
 - **C8b-09 / C8b-10 / C8b-11:** trace-code RPC errors are ignored, the `001` lot-code fallback collides, and batch create is not atomic.
 - **C8b-12 / C8b-13:** the auto-tally overwrites the saved total on edit, and the preview race with missing lb→kg conversion.
@@ -272,7 +272,7 @@ Covers the UTC end date, period counts, the toggle race, `confirm()`, UTC defaul
 - **C6-01:** team delete, remove member and leave never call `clearTeamAccessCache()`, so a leaver still sees shared queens and hives.
 - **C6-02:** remove and unshare only refresh `selectedTeam`, not the expanded panel, so a repeat remove deletes 0 rows and says "removed".
 - **C6-03:** rearing-group ownership transfer is three updates with no transaction, so a failure leaves two owners.
-- **C6-04:** `useQueenDetail.ts:330-342`. The sightings hive embed is an object, so the hive number is always blank.
+- **C6-04:** `useQueenDetail.ts:330-342`. The sightings hive embed is an object, so the hive number is always blank. *Fixed in batch 19 (22/10/2026).*
 
 ### Medium, key items
 - **C6-05:** double init fetch.

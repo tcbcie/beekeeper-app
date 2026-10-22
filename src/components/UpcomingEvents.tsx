@@ -1,4 +1,5 @@
 'use client'
+import { firstOf } from '@/lib/embed'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { differenceInCalendarDays, formatLocalDate, parseLocalDate, toLocalDateString } from '@/lib/date-utils'
@@ -68,7 +69,7 @@ export default function UpcomingEvents({ userId }: { userId: string }) {
         batch_id: task.batch_id || undefined,
         hive_id: task.hive_id || undefined,
         apiary_id: task.apiary_id || undefined,
-        apiary_name: (task.apiaries as { name: string }[] | null)?.[0]?.name || undefined
+        apiary_name: firstOf(task.apiaries as { name: string } | { name: string }[] | null)?.name || undefined
       }
     })
 

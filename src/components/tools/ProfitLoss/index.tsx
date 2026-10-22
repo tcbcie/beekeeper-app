@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Wallet, Plus, Loader2, Info, Download } from 'lucide-react'
@@ -253,7 +254,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `pl-records-${timePeriod}-${new Date().toISOString().split('T')[0]}.csv`
+    link.download = `pl-records-${timePeriod}-${getCurrentDate()}.csv`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)

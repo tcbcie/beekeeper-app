@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { X, Search, User, Users, UserPlus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -123,7 +124,7 @@ export default function DistributeGraftModal({
   const [openOrders, setOpenOrders] = useState<OpenOrder[]>([])
   const [selectedOrderId, setSelectedOrderId] = useState('')
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getCurrentDate()
   const [distributionDate, setDistributionDate] = useState(today)
   const [clubMember, setClubMember] = useState(false)
   const [notes, setNotes] = useState('')

@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
@@ -372,7 +373,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       return
     }
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = getCurrentDate()
       const { error } = await supabase
         .from('batch_grafts')
         .update({ status: newStatus, status_date: today })
@@ -510,7 +511,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
           user_id: userId,
           graft_id: graftId,
           weight_mg: weightMg,
-          weighed_at: new Date().toISOString().split('T')[0],
+          weighed_at: getCurrentDate(),
         }])
       if (error) throw error
     } catch (error) {
@@ -730,7 +731,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     const ids = Array.from(tableSelectedIds)
     if (ids.length === 0) return
     try {
-      const statusDate = date || new Date().toISOString().split('T')[0]
+      const statusDate = date || getCurrentDate()
       const { error } = await supabase
         .from('batch_grafts')
         .update({ status: newStatus, status_date: statusDate })

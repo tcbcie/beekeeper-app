@@ -60,7 +60,7 @@ export default function FeedingCard({
           <IconButton
             onClick={() => onEdit(feeding)}
             tone="blue"
-            className="min-h-[40px] min-w-[40px] touch-manipulation"
+            className="min-h-12 min-w-12 touch-manipulation"
             aria-label="Edit feeding"
           >
             <Edit2 size={18} />
@@ -68,7 +68,7 @@ export default function FeedingCard({
           <IconButton
             onClick={() => onDelete(feeding)}
             tone="danger"
-            className="min-h-[40px] min-w-[40px] touch-manipulation"
+            className="min-h-12 min-w-12 touch-manipulation"
             aria-label="Delete feeding"
           >
             <Trash2 size={18} />

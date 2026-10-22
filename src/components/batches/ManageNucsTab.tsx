@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -180,7 +181,7 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
         notes: createNucNotes.trim() || null,
         equipment_status: 'ready',
         status: 'setup',
-        setup_date: new Date().toISOString().split('T')[0],
+        setup_date: getCurrentDate(),
         user_id: userId,
         is_inventory: true,
       }])

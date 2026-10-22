@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getQueenColorFromYear, formatQueenSnapshot } from '@/types/queen'
 import { buildLineageString, damLabelFromSnapshot, lineageYear, type DroneSourceType } from '@/lib/lineage'
-import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
+import { parseLocalDate, toLocalDateString, getCurrentDate } from '@/lib/date-utils'
 import { fillMissingRecipientLabels } from '@/lib/distribution-recipients'
 
 export interface GraftDistribution {
@@ -281,7 +281,7 @@ function deriveBirthDate(batch: BatchDetails): string | null {
   if (batch.graft_date) {
     const d = new Date(batch.graft_date + 'T00:00:00')
     d.setDate(d.getDate() + 12)
-    return d.toISOString().split('T')[0]
+    return toLocalDateString(d)
   }
   return null
 }
@@ -781,7 +781,7 @@ export function useGraftDistributions() {
       // Graft-sourced distributions mark the graft sold; registry-queen distributions have no
       // graft to update (the donor queen is marked distributed by the calling page instead).
       if (data.graft_id) {
-        const today = new Date().toISOString().split('T')[0]
+        const today = getCurrentDate()
         const { error: graftError } = await supabase
           .from('batch_grafts')
           .update({ status: 'sold', status_date: today })
@@ -872,7 +872,7 @@ export function useGraftDistributions() {
       if (error) throw error
 
       const graftIds = data.grafts.map((g) => g.id)
-      const today = new Date().toISOString().split('T')[0]
+      const today = getCurrentDate()
       const { error: graftError } = await supabase
         .from('batch_grafts')
         .update({ status: 'sold', status_date: today })

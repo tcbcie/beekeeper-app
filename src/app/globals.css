@@ -232,9 +232,10 @@ body {
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* 48px: the app's minimum touch target for over-50 users. */
   .min-touch-target {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 48px;
+    min-width: 48px;
   }
 
   /* ============================================
@@ -604,15 +605,16 @@ textarea::placeholder {
       box-shadow 0.2s ease;
   }
 
+  /* Compact padding and text, but the full 48px touch target. */
   :where(.fj-btn-sm) {
-    min-height: 2.75rem;
+    min-height: 3rem;
     padding: 0.375rem 0.75rem;
     font-size: 0.875rem;
     line-height: 1.25rem;
   }
 
   :where(.fj-btn-xs) {
-    min-height: 2.75rem;
+    min-height: 3rem;
     padding: 0.125rem 0.5rem;
     font-size: 0.875rem;
     line-height: 1.25rem;
@@ -692,11 +694,11 @@ textarea::placeholder {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    /* Minimum 44x44px hit area. min-* wins over the explicit width/height
-       on .fj-icon-btn-xs, so the small visual size is preserved while the
-       touch target meets WCAG 2.2 target size. */
-    min-width: 2.75rem;
-    min-height: 2.75rem;
+    /* Minimum 48x48px hit area (the app's rule for over-50 users). min-* wins over the
+       explicit width/height on .fj-icon-btn-xs, so the small visual size is preserved while
+       the touch target stays large. */
+    min-width: 3rem;
+    min-height: 3rem;
     border-radius: 0.5rem;
     color: var(--text-secondary);
     transition:

@@ -1,4 +1,5 @@
 'use client'
+import { toLocalDateString } from '@/lib/date-utils'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Sun, Loader2, TrendingUp, BarChart3, Filter, CalendarDays } from 'lucide-react'
@@ -154,7 +155,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
         const isCurrentYear = year === currentYear
         const startDate = `${year}-01-01`
         const endDate = isCurrentYear
-          ? today.toISOString().split('T')[0]
+          ? toLocalDateString(today)
           : `${year}-12-31`
 
         const response = await fetch(

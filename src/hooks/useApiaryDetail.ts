@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import type { Apiary } from '@/types/apiary'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
+import { firstOf } from '@/lib/embed'
 
 interface ApiaryHive {
   id: string
@@ -92,7 +93,14 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
       if (hivesError) throw hivesError
       if (!mountedRef.current) return
 
-      const hivesArr = (hivesData || []) as ApiaryHive[]
+      // hives.queen_id → queens is a to-one embed: it arrives as one object (or null), while
+      // the page reads `queens[0]`. Normalise it to the array shape here, as useApiaryMap does.
+      type QueenRef = NonNullable<ApiaryHive['queens']>[number]
+      type HiveRow = Omit<ApiaryHive, 'queens'> & { queens?: QueenRef | QueenRef[] | null }
+      const hivesArr: ApiaryHive[] = ((hivesData || []) as HiveRow[]).map(h => {
+        const queen = firstOf(h.queens)
+        return { ...h, queens: queen ? [queen] : [] }
+      })
       setHives(hivesArr)
 
       // Calculate stats
@@ -121,22 +129,23 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
         if (feedRes.error) console.error('Failed to fetch feedings:', feedRes.error)
         if (harvestRes.error) console.error('Failed to fetch harvests:', harvestRes.error)
 
-        type RecordRow = { id: string; hive_id: string; hives: { hive_number: string }[] }
+        // record.hive_id → hives is a to-one embed, so it arrives as one object.
+        type RecordRow = { id: string; hive_id: string; hives: { hive_number: string } | { hive_number: string }[] | null }
 
         ;(inspRes.data || []).forEach((r: RecordRow & { inspection_date: string }) => {
-          records.push({ id: r.id, date: r.inspection_date, type: 'Inspection', hive_number: r.hives?.[0]?.hive_number || '', hive_id: r.hive_id })
+          records.push({ id: r.id, date: r.inspection_date, type: 'Inspection', hive_number: firstOf(r.hives)?.hive_number || '', hive_id: r.hive_id })
         })
         ;(treatRes.data || []).forEach((r: RecordRow & { treatment_date: string }) => {
-          records.push({ id: r.id, date: r.treatment_date, type: 'Treatment', hive_number: r.hives?.[0]?.hive_number || '', hive_id: r.hive_id })
+          records.push({ id: r.id, date: r.treatment_date, type: 'Treatment', hive_number: firstOf(r.hives)?.hive_number || '', hive_id: r.hive_id })
         })
         ;(checkRes.data || []).forEach((r: RecordRow & { check_date: string }) => {
-          records.push({ id: r.id, date: r.check_date, type: 'Varroa Check', hive_number: r.hives?.[0]?.hive_number || '', hive_id: r.hive_id })
+          records.push({ id: r.id, date: r.check_date, type: 'Varroa Check', hive_number: firstOf(r.hives)?.hive_number || '', hive_id: r.hive_id })
         })
         ;(feedRes.data || []).forEach((r: RecordRow & { feed_date: string }) => {
-          records.push({ id: r.id, date: r.feed_date, type: 'Feeding', hive_number: r.hives?.[0]?.hive_number || '', hive_id: r.hive_id })
+          records.push({ id: r.id, date: r.feed_date, type: 'Feeding', hive_number: firstOf(r.hives)?.hive_number || '', hive_id: r.hive_id })
         })
         ;(harvestRes.data || []).forEach((r: RecordRow & { harvest_date: string }) => {
-          records.push({ id: r.id, date: r.harvest_date, type: 'Harvest', hive_number: r.hives?.[0]?.hive_number || '', hive_id: r.hive_id })
+          records.push({ id: r.id, date: r.harvest_date, type: 'Harvest', hive_number: firstOf(r.hives)?.hive_number || '', hive_id: r.hive_id })
         })
 
         records.sort((a, b) => {

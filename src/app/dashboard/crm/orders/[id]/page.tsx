@@ -1,4 +1,5 @@
 'use client'
+import { getCurrentDate } from '@/lib/date-utils'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -23,7 +24,9 @@ import type { Customer, Order, OrderItem, OrderItemFormData, CustomerCreditEntry
 import { TYPE_LABELS, COLOUR_DOTS, formatDateIrish } from '@/components/batches/graftConstants'
 import { getQueenColorFromYear } from '@/types/queen'
 
-const today = () => new Date().toISOString().slice(0, 10)
+// The user's calendar date. UTC gave yesterday just after midnight in summer, and the
+// detail page's overdue badge could disagree with the list (which already used local dates).
+const today = () => getCurrentDate()
 
 // A queen/cell distribution recorded against this order (informational link), with the
 // provenance a customer actually cares about: her breeder, where she mated, her marking,

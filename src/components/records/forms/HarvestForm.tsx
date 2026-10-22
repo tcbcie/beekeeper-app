@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useState, useEffect, useRef } from 'react'
 import type { Harvest, Hive, Apiary } from '@/types/records'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
@@ -34,7 +35,7 @@ export default function HarvestForm({
     id: '',
     hive_id: '',
     user_id: '',
-    harvest_date: new Date().toISOString().split('T')[0],
+    harvest_date: getCurrentDate(),
     honey_weight: null,
     wax_weight: null,
     unit: 'kg',

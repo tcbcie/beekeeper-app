@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { ShoppingCart, Plus, Loader2, Info } from 'lucide-react'
@@ -165,7 +166,7 @@ export default function PurchaseList({ userId }: PurchaseListProps) {
         .from('purchase_items')
         .update({
           status: 'purchased',
-          purchased_date: new Date().toISOString().split('T')[0],
+          purchased_date: getCurrentDate(),
           updated_at: new Date().toISOString()
         })
         .eq('id', item.id)

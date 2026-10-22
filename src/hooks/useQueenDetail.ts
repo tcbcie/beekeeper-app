@@ -1,3 +1,4 @@
+import { firstOf } from '@/lib/embed'
 import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
@@ -333,13 +334,13 @@ export function useQueenDetail(queenId: string): UseQueenDetailReturn {
           queen_seen: boolean
           eggs_present: boolean
           hive_id: string
-          hives: { hive_number: string }[]
+          hives: { hive_number: string } | { hive_number: string }[] | null
         }>).map(s => ({
           id: s.id,
           inspection_date: s.inspection_date,
           queen_seen: s.queen_seen,
           eggs_present: s.eggs_present,
-          hive_number: s.hives?.[0]?.hive_number || '',
+          hive_number: firstOf(s.hives)?.hive_number || '',
           hive_id: s.hive_id,
         }))
 

@@ -1,4 +1,5 @@
 'use client'
+import { getCurrentDate } from '@/lib/date-utils'
 import { useState } from 'react'
 import Link from 'next/link'
 import { Plus, Pencil, Trash2, ExternalLink, MapPin } from 'lucide-react'
@@ -34,7 +35,7 @@ function formatDuration(startIso: string, endIso: string | null): string {
 const EMPTY_FORM: QueenAssignmentInput = {
   location_type: 'hive',
   location_label: '',
-  started_at: new Date().toISOString().split('T')[0],
+  started_at: getCurrentDate(),
   ended_at: null,
   notes: null,
 }

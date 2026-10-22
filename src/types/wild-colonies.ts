@@ -1,3 +1,5 @@
+import { getCurrentDate } from '@/lib/date-utils'
+
 // Types for wild colony inspections
 
 export interface WildColonyInspectionProfile {
@@ -92,7 +94,7 @@ export interface WildColonyInspectionFormData {
 }
 
 export const getDefaultInspectionFormData = (): WildColonyInspectionFormData => ({
-  inspection_date: new Date().toISOString().split('T')[0],
+  inspection_date: getCurrentDate(),
   inspection_time: new Date().toTimeString().slice(0, 5),
   activity_level: 0,
   population_estimate: '',

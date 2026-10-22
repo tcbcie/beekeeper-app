@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate, toLocalDateString } from '@/lib/date-utils'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, X, Edit, Trash2, Shield, Check } from 'lucide-react'
@@ -67,7 +68,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
     code: '',
     description: '',
     max_uses: '',
-    subscription_expires_at: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+    subscription_expires_at: toLocalDateString(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
     code_type: 'individual' as 'individual' | 'association',
     association_id: '',
   })
@@ -77,7 +78,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
       code: '',
       description: '',
       max_uses: '',
-      subscription_expires_at: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+      subscription_expires_at: toLocalDateString(new Date(new Date().setFullYear(new Date().getFullYear() + 1))),
       code_type: 'individual',
       association_id: '',
     })
@@ -357,7 +358,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                             value={editingCodeData.subscription_expires_at}
                             onChange={(e) => setEditingCodeData({...editingCodeData, subscription_expires_at: e.target.value})}
                             className="fj-control-inline px-2 py-1 text-sm"
-                            min={new Date().toISOString().split('T')[0]}
+                            min={getCurrentDate()}
                           />
                         ) : isLifetime ? (
                           <div className="flex flex-col">
@@ -586,7 +587,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                   type="date"
                   value={newCodeData.subscription_expires_at}
                   onChange={(e) => setNewCodeData({ ...newCodeData, subscription_expires_at: e.target.value })}
-                  min={new Date().toISOString().split('T')[0]}
+                  min={getCurrentDate()}
                   tone="purple"
                   required
                 />
@@ -597,7 +598,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                     onClick={() => {
                       const date = new Date()
                       date.setMonth(date.getMonth() + 1)
-                      setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
+                      setNewCodeData({ ...newCodeData, subscription_expires_at: toLocalDateString(date) })
                     }}
                     tone="neutral"
                     size="xs"
@@ -609,7 +610,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                     onClick={() => {
                       const date = new Date()
                       date.setMonth(date.getMonth() + 6)
-                      setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
+                      setNewCodeData({ ...newCodeData, subscription_expires_at: toLocalDateString(date) })
                     }}
                     tone="neutral"
                     size="xs"
@@ -621,7 +622,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                     onClick={() => {
                       const date = new Date()
                       date.setFullYear(date.getFullYear() + 1)
-                      setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
+                      setNewCodeData({ ...newCodeData, subscription_expires_at: toLocalDateString(date) })
                     }}
                     tone="neutral"
                     size="xs"
@@ -633,7 +634,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                     onClick={() => {
                       const date = new Date()
                       date.setFullYear(date.getFullYear() + 100)
-                      setNewCodeData({ ...newCodeData, subscription_expires_at: date.toISOString().split('T')[0] })
+                      setNewCodeData({ ...newCodeData, subscription_expires_at: toLocalDateString(date) })
                     }}
                     tone="purple"
                     size="xs"

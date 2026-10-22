@@ -1,3 +1,4 @@
+import { getCurrentDate } from '@/lib/date-utils'
 import { Dispatch, SetStateAction, useState } from 'react'
 import { Trash2, Send, CheckSquare, Square, Lock, LockOpen, ChevronDown, ChevronUp } from 'lucide-react'
 import Button from '@/components/ui/Button'
@@ -75,7 +76,7 @@ export default function QueenTrackingSection({
   deleteGraft,
   setDistributeGraft,
 }: QueenTrackingSectionProps) {
-  const [bulkDate, setBulkDate] = useState(() => new Date().toISOString().split('T')[0])
+  const [bulkDate, setBulkDate] = useState(() => getCurrentDate())
   const [collapsed, setCollapsed] = useState(false)
 
   if (tableGrafts.length === 0) return null

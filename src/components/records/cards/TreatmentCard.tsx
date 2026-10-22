@@ -61,7 +61,7 @@ export default function TreatmentCard({
           <IconButton
             onClick={() => onEdit(treatment)}
             tone="blue"
-            className="min-h-[40px] min-w-[40px] touch-manipulation"
+            className="min-h-12 min-w-12 touch-manipulation"
             aria-label="Edit treatment"
           >
             <Edit2 size={18} />
@@ -69,7 +69,7 @@ export default function TreatmentCard({
           <IconButton
             onClick={() => onDelete(treatment)}
             tone="danger"
-            className="min-h-[40px] min-w-[40px] touch-manipulation"
+            className="min-h-12 min-w-12 touch-manipulation"
             aria-label="Delete treatment"
           >
             <Trash2 size={18} />

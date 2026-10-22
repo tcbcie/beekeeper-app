@@ -140,9 +140,10 @@ describe('shared control size floors', () => {
     expect(ruleBody(':where(.fj-btn)')).toContain('min-height: 3rem')
   })
 
-  it('compact buttons are at least 44px', () => {
-    expect(ruleBody(':where(.fj-btn-sm)')).toContain('min-height: 2.75rem')
-    expect(ruleBody(':where(.fj-btn-xs)')).toContain('min-height: 2.75rem')
+  // 48px everywhere since batch 19: the app's touch-target rule for over-50 users.
+  it('compact buttons are at least 48px', () => {
+    expect(ruleBody(':where(.fj-btn-sm)')).toContain('min-height: 3rem')
+    expect(ruleBody(':where(.fj-btn-xs)')).toContain('min-height: 3rem')
   })
 
   it('compact buttons meet the 14px type floor', () => {
@@ -150,10 +151,10 @@ describe('shared control size floors', () => {
     expect(ruleBody(':where(.fj-btn-xs)')).toContain('font-size: 0.875rem')
   })
 
-  it('icon buttons have a 44px hit area', () => {
+  it('icon buttons have a 48px hit area', () => {
     const body = ruleBody('.fj-icon-btn {')
-    expect(body).toContain('min-width: 2.75rem')
-    expect(body).toContain('min-height: 2.75rem')
+    expect(body).toContain('min-width: 3rem')
+    expect(body).toContain('min-height: 3rem')
   })
 
   it('form controls are at least 48px', () => {

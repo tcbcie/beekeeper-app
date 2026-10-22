@@ -1,4 +1,5 @@
 'use client'
+import { getCurrentDate } from '@/lib/date-utils'
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -228,7 +229,7 @@ export default function CustomersPage() {
       ['Name', 'Company', 'Email', 'Phone', 'Address', 'Orders', 'Total', 'Last order', 'Currency'],
       rows,
     )
-    downloadCsv(`customers-${new Date().toISOString().slice(0, 10)}.csv`, csv)
+    downloadCsv(`customers-${getCurrentDate()}.csv`, csv)
   }
 
   if (loading) return <LoadingSpinner text="Loading customers..." />

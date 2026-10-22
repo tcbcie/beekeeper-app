@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
 import type { VarroaTreatment, Hive, Apiary, TreatmentProduct, DropdownValue } from '@/types/records'
 import { computePlannedRemovalDate } from '@/lib/treatment-removal'
-import { toLocalDateString } from '@/lib/date-utils'
+import { toLocalDateString, getCurrentDate } from '@/lib/date-utils'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 import { useFormDirtyState } from '@/hooks/useFormDirtyState'
@@ -48,7 +48,7 @@ export default function VarroaTreatmentForm({
     id: '',
     hive_id: '',
     user_id: '',
-    treatment_date: new Date().toISOString().split('T')[0],
+    treatment_date: getCurrentDate(),
     treatment_time: new Date().toTimeString().slice(0, 5),
     treatment_type: '',
     dosage: '',

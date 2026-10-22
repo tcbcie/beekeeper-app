@@ -100,11 +100,13 @@ export function formatRelativeTime(dateString: string): string {
 }
 
 /**
- * Get current date in ISO format (YYYY-MM-DD)
- * @returns Current date string
+ * Today's date on the user's calendar (YYYY-MM-DD).
+ * Local, not UTC: `toISOString()` gives yesterday between midnight and 1am in Irish Summer Time.
+ * Use this for "today" defaults and status dates.
+ * @returns Current local date string
  */
 export function getCurrentDate(): string {
-  return new Date().toISOString().split('T')[0]
+  return toLocalDateString(new Date())
 }
 
 /**
@@ -189,12 +191,11 @@ export const formatDateIrish = (dateString: string | null): string => {
 }
 
 /**
- * Format a Date as YYYY-MM-DD for date input fields. Note: UTC-based
- * (toISOString), kept as-is to preserve existing input behaviour; use
- * toLocalDateString when the local calendar date is required.
+ * Format a Date as YYYY-MM-DD for date input fields, on the user's local calendar.
+ * (It used to be UTC, which put "now"-based defaults a day early just after midnight in summer.)
  */
 export function formatDateForInput(date: Date): string {
-  return date.toISOString().split('T')[0]
+  return toLocalDateString(date)
 }
 
 /**

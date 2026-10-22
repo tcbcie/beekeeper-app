@@ -1,3 +1,4 @@
+import { toLocalDateString } from '@/lib/date-utils'
 import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Team, TeamMember, TeamStats, TeamApiaryWithOwner } from '@/types/dashboard'
@@ -185,7 +186,7 @@ export function useTeams(): UseTeamsReturn {
       const othersQueenIds = othersHives.map((h) => h.queen_id).filter((q) => q !== null)
 
       // Parallelize all count queries
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      const sevenDaysAgo = toLocalDateString(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
 
       const [
         myQueensResult,

@@ -1161,7 +1161,7 @@ export default function RecordsPage() {
             event_type: 'task',
             category: 'Treatment',
             priority: 'high',
-            start_date: taskDate.toISOString().split('T')[0],
+            start_date: toLocalDateString(taskDate),
             start_time: '09:00',
             hive_id: check.hive_id,
             apiary_id: selectedHive?.apiary_id || null,

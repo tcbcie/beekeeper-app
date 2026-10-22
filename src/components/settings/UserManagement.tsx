@@ -1326,10 +1326,18 @@ export default function UserManagement() {
                               <div>
                                 <span className="text-text-tertiary block mb-1">Expires</span>
                                 <div className="flex flex-col gap-1">
+                                  {/* Saved once, on blur or Enter. Saving on every change wrote each
+                                      partial year while typing (0002, 0020, 0202, 2026), each with a
+                                      list refresh. The key resets the field when the stored date changes. */}
                                   <TextInput
                                     type="date"
-                                    value={user.subscription_expires_at ? new Date(user.subscription_expires_at).toISOString().split('T')[0] : ''}
-                                    onChange={(e) => handleExpiryDateChange(user.id, e.target.value)}
+                                    key={user.subscription_expires_at ?? 'none'}
+                                    defaultValue={user.subscription_expires_at ? new Date(user.subscription_expires_at).toISOString().split('T')[0] : ''}
+                                    onBlur={(e) => {
+                                      const stored = user.subscription_expires_at ? new Date(user.subscription_expires_at).toISOString().split('T')[0] : ''
+                                      if (e.target.value && e.target.value !== stored) handleExpiryDateChange(user.id, e.target.value)
+                                    }}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
                                     tone="purple"
                                     className="fj-control-inline px-2 py-1 rounded text-xs"
                                   />

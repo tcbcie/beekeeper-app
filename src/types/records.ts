@@ -1,3 +1,5 @@
+import { getCurrentDate } from '@/lib/date-utils'
+
 // Shared type definitions for the Records page and related components
 
 // Sentinel value used in form state to mean "not recorded" (stored as NULL in DB)
@@ -456,7 +458,7 @@ export interface OptionsState {
 export function getDefaultInspectionFormData(): InspectionFormData {
   return {
     hive_id: '',
-    inspection_date: new Date().toISOString().split('T')[0],
+    inspection_date: getCurrentDate(),
     inspection_time: new Date().toTimeString().slice(0, 5),
     weight: null,
     queen_seen: false,

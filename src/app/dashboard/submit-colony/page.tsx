@@ -1,4 +1,5 @@
 'use client'
+import { getCurrentDate } from '@/lib/date-utils'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { deleteUploadedImages } from '@/lib/upload-image'
@@ -89,7 +90,7 @@ export default function SubmitColonyPage() {
     longitude: '',
     nesting_type: '',
     estimated_size: '',
-    observation_date: new Date().toISOString().split('T')[0],
+    observation_date: getCurrentDate(),
     entrance_description: '',
     notes: '',
   })
@@ -213,7 +214,7 @@ export default function SubmitColonyPage() {
       longitude: '',
       nesting_type: '',
       estimated_size: '',
-      observation_date: new Date().toISOString().split('T')[0],
+      observation_date: getCurrentDate(),
       entrance_description: '',
       notes: '',
     })

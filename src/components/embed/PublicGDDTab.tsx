@@ -16,6 +16,7 @@
  *
  * See: docs/features/tcbc-wordpress-research-widget.md
  */
+import { getCurrentDate, toLocalDateString } from '@/lib/date-utils'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Thermometer, Loader2, Filter, BarChart3, Table, TrendingUp, Flower2 } from 'lucide-react'
@@ -164,7 +165,7 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
         const today = new Date()
         const year = today.getFullYear()
         const janFirst = `${year}-01-01`
-        const todayStr = today.toISOString().split('T')[0]
+        const todayStr = toLocalDateString(today)
 
         const response = await fetch(
           `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${janFirst}&end_date=${todayStr}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
@@ -212,7 +213,7 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
         const isCurrentYear = year === cyear
         const startDate = `${year}-01-01`
         const endDate = isCurrentYear
-          ? new Date().toISOString().split('T')[0]
+          ? getCurrentDate()
           : `${year}-12-31`
 
         const response = await fetch(
@@ -276,7 +277,7 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
         const isCurrentYear = year === cyear
         const startDate = `${year}-01-01`
         const endDateStr = isCurrentYear
-          ? today.toISOString().split('T')[0]
+          ? toLocalDateString(today)
           : `${year}-12-31`
 
         const tempResponse = await fetch(

@@ -1,5 +1,6 @@
 'use client'
 
+import { getCurrentDate } from '@/lib/date-utils'
 import { useState, useEffect, useCallback } from 'react'
 import { X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -32,7 +33,7 @@ export default function ConfirmMatingModal({
   onClose,
 }: ConfirmMatingModalProps) {
   const isExternal = !recipientUserId
-  const today = new Date().toISOString().split('T')[0]
+  const today = getCurrentDate()
 
   // Form state
   const [matingDate, setMatingDate] = useState(currentMatingDate || today)

@@ -112,7 +112,7 @@ export default function VarroaCheckCard({
           <IconButton
             onClick={() => onEdit(check)}
             tone="blue"
-            className="min-h-[40px] min-w-[40px] touch-manipulation"
+            className="min-h-12 min-w-12 touch-manipulation"
             aria-label="Edit check"
           >
             <Edit2 size={18} />
@@ -120,7 +120,7 @@ export default function VarroaCheckCard({
           <IconButton
             onClick={() => onDelete(check)}
             tone="danger"
-            className="min-h-[40px] min-w-[40px] touch-manipulation"
+            className="min-h-12 min-w-12 touch-manipulation"
             aria-label="Delete check"
           >
             <Trash2 size={18} />

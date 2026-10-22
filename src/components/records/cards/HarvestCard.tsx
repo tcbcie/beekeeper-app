@@ -60,7 +60,7 @@ export default function HarvestCard({
           <IconButton
             onClick={() => onEdit(harvest)}
             tone="blue"
-            className="min-h-[40px] min-w-[40px] touch-manipulation"
+            className="min-h-12 min-w-12 touch-manipulation"
             aria-label="Edit harvest"
           >
             <Edit2 size={18} />
@@ -68,7 +68,7 @@ export default function HarvestCard({
           <IconButton
             onClick={() => onDelete(harvest)}
             tone="danger"
-            className="min-h-[40px] min-w-[40px] touch-manipulation"
+            className="min-h-12 min-w-12 touch-manipulation"
             aria-label="Delete harvest"
           >
             <Trash2 size={18} />
