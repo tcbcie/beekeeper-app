@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 21: Load on Demand</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 21: Load Heavy Panels Only When Needed</h1>
+<p><strong>Status:</strong> Done 22/10/2026. Tested by you; committed and pushed. Research keeps GDD as the default tab (your decision). This is Phase 2 fix batch 9; request waterfalls follow in batch 22.</p>
+<p>Several pages download every panel they <em>could</em> show, including chart libraries, maps and QR codes, even though only one panel is visible at a time. On a phone over mobile data, that's the slow first load beekeepers feel. The fix is Next.js's standard <code>dynamic()</code> import, already used for the map picker and the dashboard weather row: a panel's code downloads the first time it's opened, with a short "Loading…" spinner. No behaviour changes.</p>
+
+<h2>Pages</h2>
+<table>
+  <tr><th>Page</th><th>Load on demand</th><th>Saving</th><th>Finding</th></tr>
+  <tr><td><strong>Tools</strong></td><td>All 8 tool panels. The landing page is just the card grid.</td><td>About 8,300 lines, chart.js (TBR planner) and QR codes (traceability)</td><td>C8a-04</td></tr>
+  <tr><td><strong>Queen rearing (batches)</strong></td><td>Mating Nucs, Manage Nucs, Queen Tracker, Planning and Reports tabs, plus the batch form (only when "New Batch" or Edit is open). The default Grafting tab is part of the page itself.</td><td>About 7,600 lines</td><td>C5a-21, C5b-17</td></tr>
+  <tr><td><strong>Settings</strong></td><td>The 12 managers. Profile/Export stays as it is because it's the default tab.</td><td>About 7,400 lines of mostly admin-only code that power users never need</td><td>C9a-22</td></tr>
+  <tr><td><strong>Research</strong></td><td>All 5 tabs: GDD, foraging hours, scales, wild colonies, diagnosis.</td><td>chart.js plus 3 plugins, now only for the tab that shows it</td><td>C7b-19</td></tr>
+  <tr><td><strong>Hive detail</strong></td><td>BEEP scale chart, Wolf scale panel, QR code modal.</td><td>chart.js only for hives with a scale (most don't have one)</td><td>C3-17</td></tr>
+  <tr><td><strong>Community map</strong></td><td>mapbox-gl loads inside the page's map setup instead of with the page.</td><td>The map library downloads after the page shell</td><td>C7a-17</td></tr>
+</table>
+<p>Already done, so no change: the apiary map picker, the 3D apiary view, Excel export (loaded on demand), and the invoice PDF (server only).</p>
+
+<h2>Todo</h2>
+<div class="task"><input type="checkbox" checked disabled> Tools, Settings, Research, Queen rearing and Hive detail: swap the static imports for <code>dynamic(() =&gt; import(...), { loading: spinner, ssr: false })</code>. The JSX and props are unchanged.</div>
+<div class="task"><input type="checkbox" checked disabled> Community map: <code>import type</code> for the types, <code>await import('mapbox-gl')</code> in the map setup, kept in a ref for the marker code. It's the smallest change: no new component.</div>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and tests; qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/load-on-demand-batch21-plan.md</code>; Phase 2 register; memory note ("tabs and modals with heavy libraries load with dynamic()").</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>How you'll test</h2>
+<ul>
+  <li>Open <strong>Tools</strong>, then each tool. A short spinner appears the first time, then the tool works as before. The <code>?section=</code> links still work.</li>
+  <li><strong>Queen rearing:</strong> click through every tab, open "New Batch", and edit a batch.</li>
+  <li><strong>Settings:</strong> as admin, open each section.</li>
+  <li><strong>Research:</strong> the GDD chart and foraging hours load.</li>
+  <li><strong>Hive detail:</strong> open a hive with a scale, a hive without one, and the QR modal.</li>
+  <li><strong>Community map:</strong> the map, markers and popups appear as before.</li>
+</ul>
+
+<h2>Decision for you</h2>
+<table>
+  <tr><th>Question</th><th>Recommendation</th></tr>
+  <tr><td>Research opens on the GDD chart tab, so chart.js still loads at once there. Should it open on a lighter tab, such as Scales, instead?</td><td><strong>Keep GDD as the default.</strong> It's what people open Research for, and the chart code now loads after the page shell, so the page still appears faster.</td></tr>
+</table>
+
+<h2>Review</h2>
+<p>34 panels across 5 pages now load on demand: Tools 8, Settings 12, Research 5, Queen rearing 6, Hive detail 3. The community map loads mapbox-gl in its setup effect, and a failed download is logged. tsc and ESLint (src) are clean, 818 tests pass, and qa-engineer found no issues. Details are in <code>docs/features/load-on-demand-batch21-plan.md</code>.</p>
+</body>
+</html>

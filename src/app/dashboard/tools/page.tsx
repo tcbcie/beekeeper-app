@@ -1,19 +1,47 @@
 'use client'
+import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
 import { Wrench, Droplet, Cookie, Cloud, Send, Thermometer, Grid3X3, Camera, Wallet, Package, ShoppingCart, QrCode, ArrowLeft, Scissors } from 'lucide-react'
 import Link from 'next/link'
-import GDDTracker from '@/components/tools/GDDTracker'
-import TBRPlanner from '@/components/tools/TBRPlanner'
-import VarroaWeather from '@/components/tools/VarroaWeather'
-import FrameCellCalculator from '@/components/tools/FrameCellCalculator'
-import DiagnosisUploader from '@/components/tools/DiagnosisUploader'
-import ProfitLoss from '@/components/tools/ProfitLoss'
-import TraceabilityTool from '@/components/tools/TraceabilityTool'
-import PurchaseList from '@/components/tools/PurchaseList'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
+
+// Panels load on demand: only the one on screen is downloaded, so heavy libraries
+// (chart.js, QR codes) and large tabs stay out of the first load.
+const GDDTracker = dynamic(() => import('@/components/tools/GDDTracker'), {
+  loading: () => <LoadingSpinner text="Loading GDD tracker..." />,
+  ssr: false,
+})
+const TBRPlanner = dynamic(() => import('@/components/tools/TBRPlanner'), {
+  loading: () => <LoadingSpinner text="Loading TBR planner..." />,
+  ssr: false,
+})
+const VarroaWeather = dynamic(() => import('@/components/tools/VarroaWeather'), {
+  loading: () => <LoadingSpinner text="Loading varroa treatment check..." />,
+  ssr: false,
+})
+const FrameCellCalculator = dynamic(() => import('@/components/tools/FrameCellCalculator'), {
+  loading: () => <LoadingSpinner text="Loading cell calculator..." />,
+  ssr: false,
+})
+const DiagnosisUploader = dynamic(() => import('@/components/tools/DiagnosisUploader'), {
+  loading: () => <LoadingSpinner text="Loading diagnosis upload..." />,
+  ssr: false,
+})
+const ProfitLoss = dynamic(() => import('@/components/tools/ProfitLoss'), {
+  loading: () => <LoadingSpinner text="Loading profit and loss..." />,
+  ssr: false,
+})
+const TraceabilityTool = dynamic(() => import('@/components/tools/TraceabilityTool'), {
+  loading: () => <LoadingSpinner text="Loading traceability..." />,
+  ssr: false,
+})
+const PurchaseList = dynamic(() => import('@/components/tools/PurchaseList'), {
+  loading: () => <LoadingSpinner text="Loading purchase list..." />,
+  ssr: false,
+})
 
 type ToolsSection = 'feeding' | 'fondant' | 'cells' | 'varroa' | 'gdd' | 'tbr' | 'diagnosis' | 'profitloss' | 'traceability' | 'purchases'
 

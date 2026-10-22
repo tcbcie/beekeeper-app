@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
 import { MapPin, Info, Map, Satellite, Users, Maximize2, Minimize2, Eye, EyeOff, Circle, Mountain, X, Calendar, TreeDeciduous, Crosshair } from 'lucide-react'
-import mapboxgl from 'mapbox-gl'
+// Types only: the library itself is loaded on demand in the map setup effect below.
+import type mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { useDCAPredictions, type DCAConfirmation } from '@/hooks/useDCAPredictions'
 // Server-side obfuscation now used - coordinates pre-obfuscated in database views
@@ -175,6 +176,8 @@ export default function CommunityMapPage() {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const markers = useRef<mapboxgl.Marker[]>([])
+  // The mapbox-gl module, loaded on demand so the map library isn't part of the page's first load.
+  const mapboxRef = useRef<typeof mapboxgl | null>(null)
   const router = useRouter()
   const dca = useDCAPredictions(userApiaries)
 
@@ -266,22 +269,30 @@ export default function CommunityMapPage() {
       return
     }
 
-    mapboxgl.accessToken = accessToken
+    let cancelled = false
+    import('mapbox-gl').then(({ default: mapboxModule }) => {
+      if (cancelled || !mapContainer.current || map.current) return
+      mapboxRef.current = mapboxModule
+      mapboxModule.accessToken = accessToken
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: MAP_STYLES.outdoors,
-      center: DEFAULT_CENTER,
-      zoom: 6,
-    })
+      map.current = new mapboxModule.Map({
+        container: mapContainer.current,
+        style: MAP_STYLES.outdoors,
+        center: DEFAULT_CENTER,
+        zoom: 6,
+      })
 
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right')
+      map.current.addControl(new mapboxModule.NavigationControl(), 'top-right')
 
-    map.current.on('load', () => {
-      setMapLoaded(true)
+      map.current.on('load', () => {
+        setMapLoaded(true)
+      })
+    }).catch(err => {
+      console.error('Failed to load the map library:', err)
     })
 
     return () => {
+      cancelled = true
       markers.current.forEach(m => m.remove())
       markers.current = []
       if (map.current) {
@@ -304,7 +315,9 @@ export default function CommunityMapPage() {
 
   // Add markers for all apiaries
   useEffect(() => {
-    if (!mapLoaded || !map.current) return
+    // mapLoaded is only set after the library has loaded and the map exists.
+    const mb = mapboxRef.current
+    if (!mapLoaded || !map.current || !mb) return
 
     // Clear existing markers
     markers.current.forEach(m => m.remove())
@@ -407,7 +420,7 @@ export default function CommunityMapPage() {
           el.style.cursor = 'pointer'
           el.innerHTML = `<div style="background-color: #16a34a; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.4);"></div>`
 
-          const popup = new mapboxgl.Popup({
+          const popup = new mb.Popup({
             offset: 15,
             closeButton: false,
             closeOnClick: true,
@@ -419,7 +432,7 @@ export default function CommunityMapPage() {
             </div>
           `)
 
-          const marker = new mapboxgl.Marker({ element: el })
+          const marker = new mb.Marker({ element: el })
             .setLngLat([apiary.longitude, apiary.latitude])
             .setPopup(popup)
             .addTo(map.current)
@@ -442,7 +455,7 @@ export default function CommunityMapPage() {
           el.style.cursor = 'pointer'
           el.innerHTML = `<div style="background-color: #8b5cf6; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); opacity: 0.8;"></div>`
 
-          const popup = new mapboxgl.Popup({
+          const popup = new mb.Popup({
             offset: 15,
             closeButton: false,
             closeOnClick: true,
@@ -456,7 +469,7 @@ export default function CommunityMapPage() {
             </div>
           `)
 
-          const marker = new mapboxgl.Marker({ element: el })
+          const marker = new mb.Marker({ element: el })
             .setLngLat([apiary.longitude, apiary.latitude])
             .setPopup(popup)
             .addTo(map.current)
@@ -480,7 +493,7 @@ export default function CommunityMapPage() {
           el.style.cursor = 'pointer'
           el.innerHTML = `<div style="background-color: #6366f1; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); opacity: 0.85;"></div>`
 
-          const popup = new mapboxgl.Popup({
+          const popup = new mb.Popup({
             offset: 15,
             closeButton: false,
             closeOnClick: true,
@@ -494,7 +507,7 @@ export default function CommunityMapPage() {
             </div>
           `)
 
-          const marker = new mapboxgl.Marker({ element: el })
+          const marker = new mb.Marker({ element: el })
             .setLngLat([apiary.longitude, apiary.latitude])
             .setPopup(popup)
             .addTo(map.current)
@@ -526,7 +539,7 @@ export default function CommunityMapPage() {
             </svg>
           </div>`
 
-          const popup = new mapboxgl.Popup({
+          const popup = new mb.Popup({
             offset: 15,
             closeButton: false,
             closeOnClick: true,
@@ -539,7 +552,7 @@ export default function CommunityMapPage() {
             </div>
           `)
 
-          const marker = new mapboxgl.Marker({ element: el })
+          const marker = new mb.Marker({ element: el })
             .setLngLat([colony.longitude, colony.latitude])
             .setPopup(popup)
             .addTo(map.current)
@@ -594,7 +607,7 @@ export default function CommunityMapPage() {
           : ''
         const typeLabel = ca.type === 'apiary' ? 'Apiary CA' : 'Land CA'
 
-        const popup = new mapboxgl.Popup({
+        const popup = new mb.Popup({
           offset: 15,
           closeButton: false,
           closeOnClick: true,
@@ -608,7 +621,7 @@ export default function CommunityMapPage() {
           </div>
         `)
 
-        const marker = new mapboxgl.Marker({ element: el })
+        const marker = new mb.Marker({ element: el })
           .setLngLat([ca.longitude, ca.latitude])
           .setPopup(popup)
           .addTo(map.current)
@@ -723,7 +736,7 @@ export default function CommunityMapPage() {
           </div>`
         }
 
-        const popup = new mapboxgl.Popup({
+        const popup = new mb.Popup({
           offset: 15,
           closeButton: false,
           closeOnClick: true,
@@ -741,7 +754,7 @@ export default function CommunityMapPage() {
           </div>
         `)
 
-        const marker = new mapboxgl.Marker({ element: el })
+        const marker = new mb.Marker({ element: el })
           .setLngLat([pred.longitude, pred.latitude])
           .setPopup(popup)
           .addTo(map.current)

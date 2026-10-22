@@ -1,16 +1,35 @@
 'use client'
+import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 import { FlaskConical, TreeDeciduous, Camera, Scale, Thermometer, Sun } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import WildColoniesTab from '@/components/research/WildColoniesTab'
-import DiagnosisImagesTab from '@/components/research/DiagnosisImagesTab'
-import ScaleOverviewTab from '@/components/research/ScaleOverviewTab'
-import GDDDataTab from '@/components/research/GDDDataTab'
-import ForagingHoursTab from '@/components/research/ForagingHoursTab'
 import NavTabButton from '@/components/ui/NavTabButton'
+
+// Panels load on demand: only the one on screen is downloaded, so heavy libraries
+// (chart.js, QR codes) and large tabs stay out of the first load.
+const WildColoniesTab = dynamic(() => import('@/components/research/WildColoniesTab'), {
+  loading: () => <LoadingSpinner text="Loading wild colonies..." />,
+  ssr: false,
+})
+const DiagnosisImagesTab = dynamic(() => import('@/components/research/DiagnosisImagesTab'), {
+  loading: () => <LoadingSpinner text="Loading diagnosis images..." />,
+  ssr: false,
+})
+const ScaleOverviewTab = dynamic(() => import('@/components/research/ScaleOverviewTab'), {
+  loading: () => <LoadingSpinner text="Loading scales..." />,
+  ssr: false,
+})
+const GDDDataTab = dynamic(() => import('@/components/research/GDDDataTab'), {
+  loading: () => <LoadingSpinner text="Loading GDD data..." />,
+  ssr: false,
+})
+const ForagingHoursTab = dynamic(() => import('@/components/research/ForagingHoursTab'), {
+  loading: () => <LoadingSpinner text="Loading foraging hours..." />,
+  ssr: false,
+})
 
 type ResearchSection = 'wild-colonies' | 'diagnosis-images' | 'scale-overview' | 'gdd-data' | 'foraging-hours'
 

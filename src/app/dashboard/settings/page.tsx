@@ -1,26 +1,66 @@
 'use client'
+import dynamic from 'next/dynamic'
 import React, { useEffect, useState } from 'react'
 import { getCurrentUserId, isAdmin, isPowerUserOrAdmin, hasActiveSubscription } from '@/lib/auth'
 import { Shield, Users, User, MessageCircle, Bug, List, Building2, BookOpen, BookText, Ruler, Lightbulb, Newspaper, MapPin } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import KnowledgeBaseManager from '@/components/admin/KnowledgeBaseManager'
-import ConservationAreaManager from '@/components/admin/ConservationAreaManager'
-import NewsArticlesManager from '@/components/admin/NewsArticlesManager'
-import ToolSuggestionsManager from '@/components/admin/ToolSuggestionsManager'
-import TerminologyTable from '@/components/settings/TerminologyTable'
-import FrameStandardsManager from '@/components/settings/FrameStandardsManager'
 import ProfileExport from '@/components/settings/ProfileExport'
-import TicketManagement from '@/components/settings/TicketManagement'
-import UserManagement from '@/components/settings/UserManagement'
-import TreatmentManagement from '@/components/settings/TreatmentManagement'
-import AssociationManagement from '@/components/settings/AssociationManagement'
-import DropdownManagement from '@/components/settings/DropdownManagement'
-import RegistrationCodeManagement from '@/components/settings/RegistrationCodeManagement'
 import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import Card from '@/components/ui/Card'
 import NavTabButton from '@/components/ui/NavTabButton'
+
+// Panels load on demand: only the one on screen is downloaded, so heavy libraries
+// (chart.js, QR codes) and large tabs stay out of the first load.
+const KnowledgeBaseManager = dynamic(() => import('@/components/admin/KnowledgeBaseManager'), {
+  loading: () => <LoadingSpinner text="Loading knowledge base..." />,
+  ssr: false,
+})
+const ConservationAreaManager = dynamic(() => import('@/components/admin/ConservationAreaManager'), {
+  loading: () => <LoadingSpinner text="Loading conservation areas..." />,
+  ssr: false,
+})
+const NewsArticlesManager = dynamic(() => import('@/components/admin/NewsArticlesManager'), {
+  loading: () => <LoadingSpinner text="Loading news articles..." />,
+  ssr: false,
+})
+const ToolSuggestionsManager = dynamic(() => import('@/components/admin/ToolSuggestionsManager'), {
+  loading: () => <LoadingSpinner text="Loading tool suggestions..." />,
+  ssr: false,
+})
+const TerminologyTable = dynamic(() => import('@/components/settings/TerminologyTable'), {
+  loading: () => <LoadingSpinner text="Loading terminology..." />,
+  ssr: false,
+})
+const FrameStandardsManager = dynamic(() => import('@/components/settings/FrameStandardsManager'), {
+  loading: () => <LoadingSpinner text="Loading frame standards..." />,
+  ssr: false,
+})
+const TicketManagement = dynamic(() => import('@/components/settings/TicketManagement'), {
+  loading: () => <LoadingSpinner text="Loading tickets..." />,
+  ssr: false,
+})
+const UserManagement = dynamic(() => import('@/components/settings/UserManagement'), {
+  loading: () => <LoadingSpinner text="Loading users..." />,
+  ssr: false,
+})
+const TreatmentManagement = dynamic(() => import('@/components/settings/TreatmentManagement'), {
+  loading: () => <LoadingSpinner text="Loading treatments..." />,
+  ssr: false,
+})
+const AssociationManagement = dynamic(() => import('@/components/settings/AssociationManagement'), {
+  loading: () => <LoadingSpinner text="Loading associations..." />,
+  ssr: false,
+})
+const DropdownManagement = dynamic(() => import('@/components/settings/DropdownManagement'), {
+  loading: () => <LoadingSpinner text="Loading dropdowns..." />,
+  ssr: false,
+})
+const RegistrationCodeManagement = dynamic(() => import('@/components/settings/RegistrationCodeManagement'), {
+  loading: () => <LoadingSpinner text="Loading registration codes..." />,
+  ssr: false,
+})
 
 
 export default function SettingsPage() {

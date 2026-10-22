@@ -1,7 +1,7 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
@@ -17,7 +17,7 @@
 - **C3-07 / C3-29:** UTC dates via `toISOString`, so "today" is yesterday just after midnight in Irish Summer Time. *Fixed in batch 19 (22/10/2026).* Client side; the dashboard's "due today" count comes from the `get_dashboard_overview` RPC (`current_date` in UTC), which is still open.
 - **C3-08 / C3-09:** stale responses aren't discarded in `useHiveDetail`, and a refetch unmounts the whole page.
 - **C3-10:** the QR ordering puts nulls first. **C3-11:** a scale can end up assigned to two hives. **C3-12:** scale charts don't cancel or debounce their requests. **C3-13:** failed results are cached as empty.
-- **C3-14 / C3-15 / C3-16:** sequential request waterfalls. **C3-17:** chart.js is loaded statically on the hive detail page.
+- **C3-14 / C3-15 / C3-16:** sequential request waterfalls. **C3-17:** chart.js is loaded statically on the hive detail page. *Fixed in batch 21 (22/10/2026), load on demand.*
 - **C3-18:** the QR code uses `window.location.origin` instead of a canonical site URL. **C3-19:** buttons are nested inside a `<Link>`. **C3-20:** the tag page says "not assigned" when the real problem is no access.
 
 ### Low
@@ -49,7 +49,7 @@ Covers missing try/finally, a misleading RLS comment, touch targets and inputs b
 - **C7a-14:** reload unmounts the dnd canvas.
 - **C7a-15:** the entrance bearing is calculated in % space.
 - **C7a-16:** markers are rebuilt on every toggle.
-- **C7a-17:** mapbox-gl is imported statically.
+- **C7a-17:** mapbox-gl is imported statically. *Fixed in batch 21 (22/10/2026), load on demand.*
 - **C7a-18:** `window.__dcaConfirm` with inline onclick.
 - **C7a-19 / C7a-20:** controls and handles are below the 14px / 48px rules.
 - **C7a-21:** OpenStreetMap attribution has been removed.
@@ -74,7 +74,7 @@ Covers native `confirm()`, bench delete with no confirmation, the rollback race,
 - **C5a-15 / C5a-16 / C5a-17:** over-fetching, `select('*')`, and an unpaginated ledger.
 - **C5a-18:** UTC dates. *Fixed in batch 19 (22/10/2026).*
 - **C5a-19 / C5a-20:** 14px inputs, and the table only works on desktop.
-- **C5a-21:** about 6k lines of tabs are imported statically.
+- **C5a-21:** about 6k lines of tabs are imported statically. *Fixed in batch 21 (22/10/2026), load on demand.*
 
 ### Low
 Covers the breeder option list, hand-rolled modals, native `confirm()`, equipment status, docs drift, time-of-check races, failed-guard gaps, mutation-vs-fetch races, comment-length mismatches, re-renders, the redirect page, `aria-label`s, an unused prop, the QR element id, and the date locale.
@@ -128,7 +128,7 @@ One shell-profile hook with a cache, one `safeInternalPath()` redirect helper, s
 - **C5b-13:** single-breeder cells don't stamp the mother, and the dropdown isn't locked.
 - **C5b-15:** stuck on "Loading grafts…" with no retry.
 - **C5b-16:** the selection scoring refetches on every tap and counts missing ratings as 0.
-- **C5b-17:** the page is 1,091 lines and the tabs are imported statically.
+- **C5b-17:** the page is 1,091 lines and the tabs are imported statically. *Fixed in batch 21 (22/10/2026), load on demand.*
 - **C5b-18 / C5b-19 / C5b-20:** data access in UI files, modal accessibility, and `select('*')`.
 
 ### Low
@@ -154,7 +154,7 @@ Covers UTC "today", the sequential list fetches, the distribution list disappear
 - **C7b-15:** per-card weather and GDD duplicates, with polling while the tab is hidden.
 - **C7b-16 / C7b-17:** the GDD formula is copied five times, and `PublicGDDTab` is a ~1k-line clone.
 - **C7b-18:** a stale chart stays when no year is selected.
-- **C7b-19:** chart.js is loaded on every research tab.
+- **C7b-19:** chart.js is loaded on every research tab. *Fixed in batch 21 (22/10/2026), load on demand.*
 - **C7b-20 / C7b-21:** N+1 profile lookups, and the diagnosis list is unpaged with an `.in()` URL limit.
 - **C7b-22 (check):** `get_shared_gdd_records` returns every shared record nationally with `user_id`, then filters to 20 km in the browser. The coordinates are already obfuscated (batch 4); the leftover `user_id` and scale issues should move to SQL.
 - **C7b-23 / C7b-24 / C7b-25 / C7b-26:** touch targets of 20–28px, 12px text and 9–10px chart labels with no dark mode, a 12-column table with no phone layout, and the diagnosis modal can double-post. *The double-post was fixed in batch 16 (19/10/2026).*
@@ -184,7 +184,7 @@ Covers Wolf battery NaN, being unable to deselect the last year, date locale and
 - **C9a-18:** double tap creates duplicate tickets. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
 - **C9a-19:** CSV export has no escaping (formula injection).
 - **C9a-20 / C9a-21 / C9a-23:** request waterfalls and N+1 queries.
-- **C9a-22:** 13 managers imported statically.
+- **C9a-22:** 13 managers imported statically. *Fixed in batch 21 (22/10/2026), load on demand.*
 - **C9a-24:** `UserManagement` is 1,693 lines.
 - **C9a-25 / C9a-26:** xs admin buttons, 14px inputs and 16px checkboxes.
 
@@ -320,7 +320,7 @@ The auth block is copied in 22 routes. Proposal: `requireUser()` plus one servic
 ### High
 - **C8a-01 / C8a-02:** the P&L and Purchases edit forms have no `key`. Editing record B while A's form is open saves A's values onto B. *Fixed in batch 14 (19/10/2026).*
 - **C8a-03:** VarroaWeather refetches and unmounts on each apiary change, and can show the wrong apiary's forecast.
-- **C8a-04:** all 8 tool panels (chart.js and QR included) are imported statically into the Tools landing page.
+- **C8a-04:** all 8 tool panels (chart.js and QR included) are imported statically into the Tools landing page. *Fixed in batch 21 (22/10/2026), load on demand.*
 
 ### Medium, key items
 - **C8a-05:** 8 dead tool components (~1,750 lines).

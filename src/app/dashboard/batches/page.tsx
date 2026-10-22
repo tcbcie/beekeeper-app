@@ -1,4 +1,5 @@
 'use client'
+import dynamic from 'next/dynamic'
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Edit2, Trash2, X } from 'lucide-react'
@@ -10,15 +11,36 @@ import IconButton from '@/components/ui/IconButton'
 import NavTabButton from '@/components/ui/NavTabButton'
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner'
 import { initializeNotifications, scheduleBatchNotifications } from '@/lib/notifications'
-import MatingNucsTab from '@/components/batches/MatingNucsTab'
-import ManageNucsTab from '@/components/batches/ManageNucsTab'
-import QueenTrackerTab from '@/components/batches/QueenTrackerTab'
-import QueenRearingPlanningTab from '@/components/batches/QueenRearingPlanningTab'
-import NucReportsTab from '@/components/batches/NucReportsTab'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useBatchesList, Batch, HiveWithInspections, HiveScore, formatDateIrish } from '@/hooks/useBatchesList'
-import BatchFormSection from '@/components/batches/BatchFormSection'
+
+// Panels load on demand: only the one on screen is downloaded, so heavy libraries
+// (chart.js, QR codes) and large tabs stay out of the first load.
+const MatingNucsTab = dynamic(() => import('@/components/batches/MatingNucsTab'), {
+  loading: () => <LoadingSpinner text="Loading mating nucs..." />,
+  ssr: false,
+})
+const ManageNucsTab = dynamic(() => import('@/components/batches/ManageNucsTab'), {
+  loading: () => <LoadingSpinner text="Loading nucs..." />,
+  ssr: false,
+})
+const QueenTrackerTab = dynamic(() => import('@/components/batches/QueenTrackerTab'), {
+  loading: () => <LoadingSpinner text="Loading queen tracker..." />,
+  ssr: false,
+})
+const QueenRearingPlanningTab = dynamic(() => import('@/components/batches/QueenRearingPlanningTab'), {
+  loading: () => <LoadingSpinner text="Loading planning..." />,
+  ssr: false,
+})
+const NucReportsTab = dynamic(() => import('@/components/batches/NucReportsTab'), {
+  loading: () => <LoadingSpinner text="Loading reports..." />,
+  ssr: false,
+})
+const BatchFormSection = dynamic(() => import('@/components/batches/BatchFormSection'), {
+  loading: () => <LoadingSpinner text="Loading batch form..." />,
+  ssr: false,
+})
 
 type TabId = 'grafting' | 'nucs' | 'manage_nucs' | 'queens' | 'selection' | 'planning' | 'reports'
 

@@ -1,4 +1,5 @@
 'use client'
+import dynamic from 'next/dynamic'
 import { useEffect, useState, useCallback } from 'react'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
@@ -9,11 +10,8 @@ import HiveConfigurationHistory from '@/components/HiveConfigurationHistory'
 import { RecordSection } from '@/components/hive/RecordSection'
 import ScaleSensorDisplay from '@/components/hive/ScaleSensorDisplay'
 import ScaleSelectionModal from '@/components/hive/ScaleSelectionModal'
-import ScaleHistoryChart from '@/components/hive/ScaleHistoryChart'
 import WolfScaleSelectionModal from '@/components/hive/WolfScaleSelectionModal'
-import WolfScalePanel from '@/components/hive/WolfScalePanel'
 import { useHiveDetail } from '@/hooks'
-import HiveQRCode from '@/components/hive/HiveQRCode'
 import { supabase } from '@/lib/supabase'
 import { formatQueenlessLabel } from '@/lib/queenless'
 import { getTreatmentRemovalState, formatRemovalLabel } from '@/lib/treatment-removal'
@@ -21,6 +19,21 @@ import { formatLocalDate } from '@/lib/date-utils'
 import type { Hive, HiveInspection, HiveVarroaCheck, HiveVarroaTreatment, HiveFeeding, HiveHarvest, InspectionAverages, HiveTask } from '@/types/hive'
 import { queenStatusBadgeClass } from '@/types/queen'
 import Button from '@/components/ui/Button'
+
+// Panels load on demand: only the one on screen is downloaded, so heavy libraries
+// (chart.js, QR codes) and large tabs stay out of the first load.
+const ScaleHistoryChart = dynamic(() => import('@/components/hive/ScaleHistoryChart'), {
+  loading: () => <LoadingSpinner text="Loading scale chart..." />,
+  ssr: false,
+})
+const WolfScalePanel = dynamic(() => import('@/components/hive/WolfScalePanel'), {
+  loading: () => <LoadingSpinner text="Loading scale data..." />,
+  ssr: false,
+})
+const HiveQRCode = dynamic(() => import('@/components/hive/HiveQRCode'), {
+  loading: () => <LoadingSpinner text="Loading QR code..." />,
+  ssr: false,
+})
 
 export default function HiveDetailPage() {
   const params = useParams()
