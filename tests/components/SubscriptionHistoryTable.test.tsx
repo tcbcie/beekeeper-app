@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import SubscriptionHistoryTable from '@/components/SubscriptionHistoryTable'
 
@@ -12,6 +12,9 @@ vi.mock('@/lib/supabase', () => ({
 // Import the mocked supabase
 import { supabase } from '@/lib/supabase'
 
+// The mock resolves plain objects, not full PostgREST responses, so use it untyped.
+const rpc = supabase.rpc as unknown as Mock
+
 describe('SubscriptionHistoryTable', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -20,7 +23,7 @@ describe('SubscriptionHistoryTable', () => {
   describe('Loading State', () => {
     it('should show loading skeleton while fetching data', () => {
       // Mock a delayed response
-      vi.mocked(supabase.rpc).mockImplementation(() =>
+      rpc.mockImplementation(() =>
         new Promise(() => {}) // Never resolves
       )
 
@@ -35,7 +38,7 @@ describe('SubscriptionHistoryTable', () => {
 
   describe('Empty State', () => {
     it('should return null when there is no subscription history', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: [],
         error: null
       })
@@ -48,7 +51,7 @@ describe('SubscriptionHistoryTable', () => {
     })
 
     it('should not show "Subscription History" heading when empty', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: [],
         error: null
       })
@@ -61,7 +64,7 @@ describe('SubscriptionHistoryTable', () => {
     })
 
     it('should not show empty state message when no history', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: [],
         error: null
       })
@@ -81,7 +84,7 @@ describe('SubscriptionHistoryTable', () => {
         id: '1',
         code: 'TEST-CODE-123',
         activated_at: '2025-01-15T10:00:00Z',
-        expires_at: '2026-01-15T10:00:00Z',
+        expires_at: '2099-01-15T10:00:00Z',
         is_current: true
       },
       {
@@ -94,7 +97,7 @@ describe('SubscriptionHistoryTable', () => {
     ]
 
     it('should display subscription history table with data', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: mockHistoryData,
         error: null
       })
@@ -109,7 +112,7 @@ describe('SubscriptionHistoryTable', () => {
     })
 
     it('should show correct number of activations', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: mockHistoryData,
         error: null
       })
@@ -122,7 +125,7 @@ describe('SubscriptionHistoryTable', () => {
     })
 
     it('should show "Current" badge for current subscription', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: mockHistoryData,
         error: null
       })
@@ -135,7 +138,7 @@ describe('SubscriptionHistoryTable', () => {
     })
 
     it('should show "Active" status for current non-expired subscription', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: mockHistoryData,
         error: null
       })
@@ -148,7 +151,7 @@ describe('SubscriptionHistoryTable', () => {
     })
 
     it('should show table headers', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: mockHistoryData,
         error: null
       })
@@ -164,7 +167,7 @@ describe('SubscriptionHistoryTable', () => {
     })
 
     it('should show footer message', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: mockHistoryData,
         error: null
       })
@@ -177,7 +180,7 @@ describe('SubscriptionHistoryTable', () => {
     })
 
     it('should use singular "activation" for one item', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: [mockHistoryData[0]],
         error: null
       })
@@ -202,7 +205,7 @@ describe('SubscriptionHistoryTable', () => {
         }
       ]
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: expiredData,
         error: null
       })
@@ -220,12 +223,12 @@ describe('SubscriptionHistoryTable', () => {
           id: '1',
           code: 'PAST-CODE',
           activated_at: '2024-06-15T10:00:00Z',
-          expires_at: '2026-06-15T10:00:00Z',
+          expires_at: '2099-06-15T10:00:00Z',
           is_current: false
         }
       ]
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: pastData,
         error: null
       })
@@ -240,7 +243,7 @@ describe('SubscriptionHistoryTable', () => {
 
   describe('Error Handling', () => {
     it('should return null when RPC call fails', async () => {
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: null,
         error: { message: 'Database error' }
       })
@@ -256,7 +259,7 @@ describe('SubscriptionHistoryTable', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const mockError = { message: 'Network error' }
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: null,
         error: mockError
       })
@@ -286,7 +289,7 @@ describe('SubscriptionHistoryTable', () => {
         }
       ]
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: dataWithDate,
         error: null
       })
@@ -311,7 +314,7 @@ describe('SubscriptionHistoryTable', () => {
         }
       ]
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: dataWithDate,
         error: null
       })
@@ -345,7 +348,7 @@ describe('SubscriptionHistoryTable', () => {
         }
       ]
 
-      vi.mocked(supabase.rpc).mockResolvedValue({
+      rpc.mockResolvedValue({
         data: dataWithCurrent,
         error: null
       })

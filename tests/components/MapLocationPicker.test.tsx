@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { renderWithProviders } from '../utils/render'
 import userEvent from '@testing-library/user-event'
 
 // Mock mapbox-gl before importing the component
@@ -53,6 +54,15 @@ vi.mock('mapbox-gl/dist/mapbox-gl.css', () => ({}))
 // Import component after mocks
 import MapLocationPicker from '@/components/MapLocationPicker'
 
+// Every describe in this file needs the token: without it the component never creates the map.
+beforeEach(() => {
+  vi.stubEnv('NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN', 'test-token')
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
+
 describe('MapLocationPicker', () => {
   const defaultProps = {
     latitude: '',
@@ -74,37 +84,33 @@ describe('MapLocationPicker', () => {
 
   describe('Rendering', () => {
     it('should render the map container', () => {
-      render(<MapLocationPicker {...defaultProps} />)
+      renderWithProviders(<MapLocationPicker {...defaultProps} />)
 
       expect(screen.getByText(/click on the map or drag the marker/i)).toBeInTheDocument()
     })
 
     it('should render close button when onClose is provided', () => {
-      render(<MapLocationPicker {...defaultProps} />)
+      renderWithProviders(<MapLocationPicker {...defaultProps} />)
 
-      // Close button should be present
-      const closeButton = screen.getByRole('button', { name: '' })
-      expect(closeButton).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Close map' })).toBeInTheDocument()
     })
 
     it('should not render close button when onClose is not provided', () => {
       const propsWithoutClose = { ...defaultProps, onClose: undefined }
-      render(<MapLocationPicker {...propsWithoutClose} />)
+      renderWithProviders(<MapLocationPicker {...propsWithoutClose} />)
 
-      // Should only have the location button and flight radius select
-      const buttons = screen.getAllByRole('button')
-      expect(buttons).toHaveLength(1) // Only the current location button
+      expect(screen.queryByRole('button', { name: 'Close map' })).not.toBeInTheDocument()
     })
 
     it('should render coordinates display', () => {
-      render(<MapLocationPicker {...defaultProps} />)
+      renderWithProviders(<MapLocationPicker {...defaultProps} />)
 
       expect(screen.getByText('Lat:')).toBeInTheDocument()
       expect(screen.getByText('Lng:')).toBeInTheDocument()
     })
 
     it('should display placeholder when no coordinates', () => {
-      render(<MapLocationPicker {...defaultProps} />)
+      renderWithProviders(<MapLocationPicker {...defaultProps} />)
 
       // Should show em dash when no coordinates
       const latValue = screen.getAllByText('—')
@@ -112,7 +118,7 @@ describe('MapLocationPicker', () => {
     })
 
     it('should display actual coordinates when provided', () => {
-      render(
+      renderWithProviders(
         <MapLocationPicker
           {...defaultProps}
           latitude="53.4129"
@@ -127,21 +133,21 @@ describe('MapLocationPicker', () => {
 
   describe('Flight Radius Dropdown', () => {
     it('should render flight radius dropdown', () => {
-      render(<MapLocationPicker {...defaultProps} />)
+      renderWithProviders(<MapLocationPicker {...defaultProps} />)
 
       const select = screen.getByRole('combobox')
       expect(select).toBeInTheDocument()
     })
 
     it('should have default value of 3 km', () => {
-      render(<MapLocationPicker {...defaultProps} />)
+      renderWithProviders(<MapLocationPicker {...defaultProps} />)
 
       const select = screen.getByRole('combobox') as HTMLSelectElement
       expect(select.value).toBe('3')
     })
 
     it('should have all radius options', () => {
-      render(<MapLocationPicker {...defaultProps} />)
+      renderWithProviders(<MapLocationPicker {...defaultProps} />)
 
       expect(screen.getByRole('option', { name: 'No radius' })).toBeInTheDocument()
       expect(screen.getByRole('option', { name: '1 km' })).toBeInTheDocument()
@@ -157,7 +163,7 @@ describe('MapLocationPicker', () => {
 
     it('should allow changing radius', async () => {
       const user = userEvent.setup()
-      render(
+      renderWithProviders(
         <MapLocationPicker
           {...defaultProps}
           latitude="53.4129"
@@ -174,14 +180,14 @@ describe('MapLocationPicker', () => {
 
   describe('Current Location Button', () => {
     it('should render current location button', () => {
-      render(<MapLocationPicker {...defaultProps} />)
+      renderWithProviders(<MapLocationPicker {...defaultProps} />)
 
       const locationButton = screen.getByTitle('Use my current location')
       expect(locationButton).toBeInTheDocument()
     })
 
     it('should be enabled by default', () => {
-      render(<MapLocationPicker {...defaultProps} />)
+      renderWithProviders(<MapLocationPicker {...defaultProps} />)
 
       const locationButton = screen.getByTitle('Use my current location')
       expect(locationButton).not.toBeDisabled()
@@ -192,48 +198,42 @@ describe('MapLocationPicker', () => {
     it('should call onClose when clicked', async () => {
       const user = userEvent.setup()
       const onClose = vi.fn()
-      render(<MapLocationPicker {...defaultProps} onClose={onClose} />)
+      renderWithProviders(<MapLocationPicker {...defaultProps} onClose={onClose} />)
 
-      // Find the close button (it's the button without a title in the header)
-      const buttons = screen.getAllByRole('button')
-      const closeButton = buttons.find(btn => !btn.getAttribute('title'))
-
-      if (closeButton) {
-        await user.click(closeButton)
-        expect(onClose).toHaveBeenCalledTimes(1)
-      }
+      await user.click(screen.getByRole('button', { name: 'Close map' }))
+      expect(onClose).toHaveBeenCalledTimes(1)
     })
   })
 
   describe('Props Interface', () => {
     it('should accept latitude as string', () => {
       expect(() => {
-        render(<MapLocationPicker {...defaultProps} latitude="53.4129" />)
+        renderWithProviders(<MapLocationPicker {...defaultProps} latitude="53.4129" />)
       }).not.toThrow()
     })
 
     it('should accept longitude as string', () => {
       expect(() => {
-        render(<MapLocationPicker {...defaultProps} longitude="-8.2439" />)
+        renderWithProviders(<MapLocationPicker {...defaultProps} longitude="-8.2439" />)
       }).not.toThrow()
     })
 
     it('should accept onLocationChange callback', () => {
       const onLocationChange = vi.fn()
       expect(() => {
-        render(<MapLocationPicker {...defaultProps} onLocationChange={onLocationChange} />)
+        renderWithProviders(<MapLocationPicker {...defaultProps} onLocationChange={onLocationChange} />)
       }).not.toThrow()
     })
 
     it('should accept optional onCityChange callback', () => {
       expect(() => {
-        render(<MapLocationPicker {...defaultProps} onCityChange={undefined} />)
+        renderWithProviders(<MapLocationPicker {...defaultProps} onCityChange={undefined} />)
       }).not.toThrow()
     })
 
     it('should accept optional onClose callback', () => {
       expect(() => {
-        render(<MapLocationPicker {...defaultProps} onClose={undefined} />)
+        renderWithProviders(<MapLocationPicker {...defaultProps} onClose={undefined} />)
       }).not.toThrow()
     })
   })
@@ -242,7 +242,7 @@ describe('MapLocationPicker', () => {
 describe('createCircleGeoJSON helper', () => {
   // Test the circle generation logic indirectly through component behavior
   it('should generate valid GeoJSON for circle', async () => {
-    render(
+    renderWithProviders(
       <MapLocationPicker
         latitude="53.4129"
         longitude="-8.2439"
@@ -273,7 +273,7 @@ describe('createCircleGeoJSON helper', () => {
 
 describe('Flight Radius Options', () => {
   it('should have correct option values', () => {
-    render(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
+    renderWithProviders(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
 
     const options = screen.getAllByRole('option')
     const values = options.map(opt => (opt as HTMLOptionElement).value)
@@ -291,7 +291,7 @@ describe('Flight Radius Options', () => {
   })
 
   it('should have "No radius" as first option', () => {
-    render(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
+    renderWithProviders(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
 
     const options = screen.getAllByRole('option')
     expect(options[0]).toHaveTextContent('No radius')
@@ -303,7 +303,7 @@ describe('Default Center', () => {
   it('should use Ireland as default center when no coordinates provided', async () => {
     const mapboxgl = await import('mapbox-gl')
 
-    render(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
+    renderWithProviders(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
 
     // Map should be initialized with default center (Ireland)
     expect(mapboxgl.default.Map).toHaveBeenCalledWith(
@@ -317,7 +317,7 @@ describe('Default Center', () => {
   it('should use provided coordinates as center when available', async () => {
     const mapboxgl = await import('mapbox-gl')
 
-    render(
+    renderWithProviders(
       <MapLocationPicker
         latitude="52.0"
         longitude="-7.0"
@@ -337,7 +337,7 @@ describe('Default Center', () => {
 
 describe('Map Layers', () => {
   it('should add flight radius fill layer', async () => {
-    render(<MapLocationPicker latitude="53.4129" longitude="-8.2439" onLocationChange={vi.fn()} />)
+    renderWithProviders(<MapLocationPicker latitude="53.4129" longitude="-8.2439" onLocationChange={vi.fn()} />)
 
     await waitFor(() => {
       expect(mockAddLayer).toHaveBeenCalledWith(
@@ -351,7 +351,7 @@ describe('Map Layers', () => {
   })
 
   it('should add flight radius outline layer', async () => {
-    render(<MapLocationPicker latitude="53.4129" longitude="-8.2439" onLocationChange={vi.fn()} />)
+    renderWithProviders(<MapLocationPicker latitude="53.4129" longitude="-8.2439" onLocationChange={vi.fn()} />)
 
     await waitFor(() => {
       expect(mockAddLayer).toHaveBeenCalledWith(
@@ -369,7 +369,7 @@ describe('Marker', () => {
   it('should create a draggable marker', async () => {
     const mapboxgl = await import('mapbox-gl')
 
-    render(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
+    renderWithProviders(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
 
     expect(mapboxgl.default.Marker).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -380,13 +380,13 @@ describe('Marker', () => {
   })
 
   it('should set marker at initial position', () => {
-    render(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
+    renderWithProviders(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
 
     expect(mockSetLngLat).toHaveBeenCalledWith([-8.2439, 53.4129]) // Default center
   })
 
   it('should add marker to map', () => {
-    render(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
+    renderWithProviders(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
 
     expect(mockAddTo).toHaveBeenCalled()
   })
@@ -394,14 +394,14 @@ describe('Marker', () => {
 
 describe('Accessibility', () => {
   it('should have accessible select element', () => {
-    render(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
+    renderWithProviders(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
 
     const select = screen.getByRole('combobox')
     expect(select).toBeInTheDocument()
   })
 
   it('should have accessible button for current location', () => {
-    render(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
+    renderWithProviders(<MapLocationPicker latitude="" longitude="" onLocationChange={vi.fn()} />)
 
     const button = screen.getByTitle('Use my current location')
     expect(button).toBeInTheDocument()

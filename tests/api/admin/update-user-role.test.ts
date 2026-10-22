@@ -3,6 +3,11 @@ import { NextRequest } from 'next/server'
 
 // Hoist the mock objects so they're available during module initialization
 const { mockAuth, mockFrom, mockSupabaseClient } = vi.hoisted(() => {
+  // The route fails fast at import without these, and imports are hoisted above test code,
+  // so they are set here, before the route module loads.
+  process.env.NEXT_PUBLIC_SUPABASE_URL ??= 'https://test.supabase.co'
+  process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'test-service-role-key'
+
   const mockAuth = {
     getUser: vi.fn()
   }
@@ -22,7 +27,36 @@ vi.mock('@supabase/supabase-js', () => ({
 }))
 
 // Import the route after setting up mocks
+import { mockQuery } from '../../utils/supabase-mock'
 import { POST } from '@/app/api/admin/update-user-role/route'
+
+type ProfileResult = { data?: unknown; error?: unknown; count?: number | null }
+
+/**
+ * The route reads `profiles` in a fixed order: the caller's admin check, the target's current
+ * role, the active-admin count (only when demoting an Admin), then the update. Each call to
+ * `from('profiles')` takes the next result; the audit-log insert always succeeds.
+ */
+function mockProfileCalls(results: ProfileResult[]) {
+  const queue = [...results]
+  mockFrom.mockImplementation((table: string) => {
+    if (table === 'profiles') {
+      const next = queue.shift() ?? {}
+      return mockQuery({ data: next.data ?? null, error: next.error ?? null, count: next.count ?? null })
+    }
+    return mockQuery({ data: null, error: null })
+  })
+}
+
+const ADMIN = { data: { role: 'Admin', is_active: true } }
+
+function roleRequest(targetUserId: string, newRole: string) {
+  return new NextRequest('http://localhost:3000/api/admin/update-user-role', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer admin-token' },
+    body: JSON.stringify({ targetUserId, newRole }),
+  })
+}
 
 describe('Admin Update User Role API', () => {
   beforeEach(() => {
@@ -172,132 +206,30 @@ describe('Admin Update User Role API', () => {
     })
 
     it('should accept "User" as valid role', async () => {
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'profiles') {
-          const mockChain = {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: { role: 'Admin' },
-              error: null
-            }),
-            update: vi.fn().mockReturnThis()
-          }
+      // The target is a User, so no Admin demotion and no last-admin check.
+      mockProfileCalls([ADMIN, { data: { role: 'User' } }, { data: [{ id: 'user-123' }] }])
 
-          // Handle both select and update chains
-          mockChain.update = vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              select: vi.fn().mockResolvedValue({
-                data: [{ id: 'user-123', role: 'User' }],
-                error: null
-              })
-            })
-          })
-
-          mockChain.select = vi.fn().mockReturnValue(mockChain)
-
-          return mockChain
-        }
-        return {}
-      })
-
-      const request = new NextRequest('http://localhost:3000/api/admin/update-user-role', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer admin-token'
-        },
-        body: JSON.stringify({ targetUserId: 'user-123', newRole: 'User' })
-      })
-
-      const response = await POST(request)
+      const response = await POST(roleRequest('user-123', 'User'))
       const data = await response.json()
 
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
     })
-
     it('should accept "Power User" as valid role', async () => {
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'profiles') {
-          const mockChain = {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: { role: 'Admin' },
-              error: null
-            }),
-            update: vi.fn().mockReturnThis()
-          }
+      // The target is a User, so no Admin demotion and no last-admin check.
+      mockProfileCalls([ADMIN, { data: { role: 'User' } }, { data: [{ id: 'user-123' }] }])
 
-          mockChain.update = vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              select: vi.fn().mockResolvedValue({
-                data: [{ id: 'user-123', role: 'Power User' }],
-                error: null
-              })
-            })
-          })
-
-          mockChain.select = vi.fn().mockReturnValue(mockChain)
-
-          return mockChain
-        }
-        return {}
-      })
-
-      const request = new NextRequest('http://localhost:3000/api/admin/update-user-role', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer admin-token'
-        },
-        body: JSON.stringify({ targetUserId: 'user-123', newRole: 'Power User' })
-      })
-
-      const response = await POST(request)
+      const response = await POST(roleRequest('user-123', 'Power User'))
       const data = await response.json()
 
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
     })
-
     it('should accept "Admin" as valid role', async () => {
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'profiles') {
-          const mockChain = {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: { role: 'Admin' },
-              error: null
-            }),
-            update: vi.fn().mockReturnThis()
-          }
+      // The target is a User, so no Admin demotion and no last-admin check.
+      mockProfileCalls([ADMIN, { data: { role: 'User' } }, { data: [{ id: 'user-123' }] }])
 
-          mockChain.update = vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              select: vi.fn().mockResolvedValue({
-                data: [{ id: 'user-123', role: 'Admin' }],
-                error: null
-              })
-            })
-          })
-
-          mockChain.select = vi.fn().mockReturnValue(mockChain)
-
-          return mockChain
-        }
-        return {}
-      })
-
-      const request = new NextRequest('http://localhost:3000/api/admin/update-user-role', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer admin-token'
-        },
-        body: JSON.stringify({ targetUserId: 'user-123', newRole: 'Admin' })
-      })
-
-      const response = await POST(request)
+      const response = await POST(roleRequest('user-123', 'Admin'))
       const data = await response.json()
 
       expect(response.status).toBe(200)
@@ -343,105 +275,41 @@ describe('Admin Update User Role API', () => {
 
   describe('Successful Role Updates', () => {
     it('should successfully update user role to Power User', async () => {
-      const adminId = 'admin-123'
-      const targetUserId = 'user-456'
-
       mockAuth.getUser.mockResolvedValue({
-        data: { user: { id: adminId, email: 'admin@example.com' } },
+        data: { user: { id: 'admin-123', email: 'admin@example.com' } },
         error: null
       })
+      mockProfileCalls([ADMIN, { data: { role: 'User' } }, { data: [{ id: 'user-456' }] }])
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'profiles') {
-          const mockChain = {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: { role: 'Admin' },
-              error: null
-            }),
-            update: vi.fn().mockReturnThis()
-          }
-
-          mockChain.update = vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              select: vi.fn().mockResolvedValue({
-                data: [{ id: targetUserId, role: 'Power User', email: 'user@example.com' }],
-                error: null
-              })
-            })
-          })
-
-          mockChain.select = vi.fn().mockReturnValue(mockChain)
-
-          return mockChain
-        }
-        return {}
-      })
-
-      const request = new NextRequest('http://localhost:3000/api/admin/update-user-role', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer admin-token'
-        },
-        body: JSON.stringify({ targetUserId, newRole: 'Power User' })
-      })
-
-      const response = await POST(request)
+      const response = await POST(roleRequest('user-456', 'Power User'))
       const data = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.success).toBe(true)
-      expect(data.message).toBe('User role updated to Power User successfully')
-      expect(data.data).toEqual({ id: targetUserId, role: 'Power User', email: 'user@example.com' })
+      // Only a success flag: the profile row holds tokens the browser has no use for.
+      expect(data).toEqual({ success: true })
     })
 
-    it('should return 404 when target user is not found', async () => {
-      const adminId = 'admin-123'
-      const targetUserId = 'nonexistent-user'
-
+    it('should refuse to demote the last remaining administrator', async () => {
       mockAuth.getUser.mockResolvedValue({
-        data: { user: { id: adminId, email: 'admin@example.com' } },
+        data: { user: { id: 'admin-123', email: 'admin@example.com' } },
         error: null
       })
+      mockProfileCalls([ADMIN, { data: { role: 'Admin' } }, { count: 1 }])
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'profiles') {
-          const mockChain = {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: { role: 'Admin' },
-              error: null
-            }),
-            update: vi.fn().mockReturnThis()
-          }
+      const response = await POST(roleRequest('admin-456', 'User'))
+      const data = await response.json()
 
-          mockChain.update = vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              select: vi.fn().mockResolvedValue({
-                data: [],
-                error: null
-              })
-            })
-          })
-
-          mockChain.select = vi.fn().mockReturnValue(mockChain)
-
-          return mockChain
-        }
-        return {}
+      expect(response.status).toBe(409)
+      expect(data.error).toBe('Cannot demote the last remaining administrator')
+    })
+    it('should return 404 when target user is not found', async () => {
+      mockAuth.getUser.mockResolvedValue({
+        data: { user: { id: 'admin-123', email: 'admin@example.com' } },
+        error: null
       })
+      mockProfileCalls([ADMIN, { data: null, error: { message: 'No rows' } }])
 
-      const request = new NextRequest('http://localhost:3000/api/admin/update-user-role', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer admin-token'
-        },
-        body: JSON.stringify({ targetUserId, newRole: 'Power User' })
-      })
-
-      const response = await POST(request)
+      const response = await POST(roleRequest('nonexistent-user', 'Power User'))
       const data = await response.json()
 
       expect(response.status).toBe(404)
@@ -451,56 +319,19 @@ describe('Admin Update User Role API', () => {
 
   describe('Error Handling', () => {
     it('should handle database errors gracefully', async () => {
-      const adminId = 'admin-123'
-      const targetUserId = 'user-456'
-
       mockAuth.getUser.mockResolvedValue({
-        data: { user: { id: adminId, email: 'admin@example.com' } },
+        data: { user: { id: 'admin-123', email: 'admin@example.com' } },
         error: null
       })
+      mockProfileCalls([ADMIN, { data: { role: 'User' } }, { error: { message: 'Database connection error' } }])
 
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'profiles') {
-          const mockChain = {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            single: vi.fn().mockResolvedValue({
-              data: { role: 'Admin' },
-              error: null
-            }),
-            update: vi.fn().mockReturnThis()
-          }
-
-          mockChain.update = vi.fn().mockReturnValue({
-            eq: vi.fn().mockReturnValue({
-              select: vi.fn().mockResolvedValue({
-                data: null,
-                error: { message: 'Database connection error' }
-              })
-            })
-          })
-
-          mockChain.select = vi.fn().mockReturnValue(mockChain)
-
-          return mockChain
-        }
-        return {}
-      })
-
-      const request = new NextRequest('http://localhost:3000/api/admin/update-user-role', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer admin-token'
-        },
-        body: JSON.stringify({ targetUserId, newRole: 'Power User' })
-      })
-
-      const response = await POST(request)
+      const response = await POST(roleRequest('user-456', 'Power User'))
       const data = await response.json()
 
       expect(response.status).toBe(500)
       expect(data.error).toBe('Failed to update role')
-      expect(data.details).toBe('Database connection error')
+      // Database detail stays in the server log, never in the response.
+      expect(data.details).toBeUndefined()
     })
   })
 })

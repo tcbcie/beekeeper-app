@@ -754,7 +754,9 @@ export default function ApiariesPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-foreground">Apiaries 📍</h1>
         <Button
-          onClick={() => setShowForm(!showForm)}
+          // "Cancel" discards the form like the form's own Cancel button. Only hiding it left the
+          // edited apiary selected, so the next "Add Apiary" reopened it in edit mode.
+          onClick={() => (showForm ? resetForm() : setShowForm(true))}
           className="fj-btn fj-btn-success min-h-[48px]"
         >
           {showForm ? <X size={16} /> : <Plus size={16} />}

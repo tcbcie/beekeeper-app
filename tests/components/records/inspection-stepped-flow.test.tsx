@@ -78,7 +78,7 @@ function completeStepOne() {
 
 beforeEach(() => {
   mocks.confirmSpy.mockClear()
-  mocks.imageState.imageFile = null
+  mocks.imageState.staged = []
 })
 
 describe('step gating', () => {

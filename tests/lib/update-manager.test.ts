@@ -38,7 +38,8 @@ describe('Update Manager', () => {
           controller: mockServiceWorker,
           addEventListener: vi.fn((event: string, callback: Function) => {
             listeners.set(`sw-${event}`, callback)
-          })
+          }),
+          removeEventListener: vi.fn()
         }
       },
       writable: true,
@@ -51,7 +52,8 @@ describe('Update Manager', () => {
         hidden: false,
         addEventListener: vi.fn((event: string, callback: Function) => {
           listeners.set(`doc-${event}`, callback)
-        })
+        }),
+        removeEventListener: vi.fn()
       },
       writable: true,
       configurable: true
@@ -59,8 +61,11 @@ describe('Update Manager', () => {
   })
 
   afterEach(() => {
+    // The manager is a singleton that initialises once; reset it so each test starts fresh.
+    updateManager.destroy()
     vi.useRealTimers()
     listeners.clear()
+    localStorage.clear()
   })
 
   describe('initialize', () => {
@@ -173,7 +178,6 @@ describe('Update Manager', () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       // Reset the update manager by setting registration to null
-      // @ts-expect-error - accessing private field for testing
       updateManager['registration'] = null
 
       await updateManager.checkForUpdates()
@@ -204,7 +208,6 @@ describe('Update Manager', () => {
       await updateManager.initialize(mockRegistration)
 
       // Reset waiting worker to null
-      // @ts-expect-error - accessing private field for testing
       updateManager['waitingWorker'] = null
 
       updateManager.applyUpdate()

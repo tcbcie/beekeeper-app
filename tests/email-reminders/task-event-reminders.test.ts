@@ -19,10 +19,11 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 const HAS_ENV_VARS = SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
 
-// Only create client if we have the required env vars
-const supabase: SupabaseClient | null = HAS_ENV_VARS
+// Only create client if we have the required env vars. Typed as non-null because the suite
+// is skipped (skipIf) whenever it is null, so no test ever uses it unset.
+const supabase = (HAS_ENV_VARS
   ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-  : null
+  : null) as SupabaseClient
 
 // Test user IDs
 let testUserId: string

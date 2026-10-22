@@ -8,7 +8,6 @@ import {
   isAdmin,
   requireAdmin,
   isAccountActive,
-  requireActiveAccount,
   hasActiveSubscription,
   type UserRole,
   type UserProfile
@@ -239,8 +238,7 @@ describe('Authentication Functions', () => {
       const mockProfile: UserProfile = {
         id: mockUserId,
         role: 'User',
-        created_at: '2025-01-01T00:00:00Z',
-        updated_at: '2025-01-15T00:00:00Z'
+        created_at: '2025-01-01T00:00:00Z'
       }
 
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
@@ -507,64 +505,6 @@ describe('Authentication Functions', () => {
 
       const result = await isAccountActive()
       expect(result).toBe(false)
-    })
-  })
-
-  describe('requireActiveAccount', () => {
-    it('should not throw for active account', async () => {
-      const mockUserId = 'user-123'
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: {
-          session: {
-            user: { id: mockUserId } as any
-          } as any
-        },
-        error: null
-      })
-
-      const mockFrom = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { is_active: true },
-              error: null
-            })
-          })
-        })
-      })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
-
-      await expect(requireActiveAccount()).resolves.toBeUndefined()
-    })
-
-    it('should throw and sign out for disabled account', async () => {
-      const mockUserId = 'user-disabled-require-789'
-      const mockSignOut = vi.fn().mockResolvedValue({})
-
-      vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: {
-          session: {
-            user: { id: mockUserId } as any
-          } as any
-        },
-        error: null
-      })
-      vi.mocked(supabase.auth.signOut).mockImplementation(mockSignOut)
-
-      const mockFrom = vi.fn().mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            single: vi.fn().mockResolvedValue({
-              data: { is_active: false },
-              error: null
-            })
-          })
-        })
-      })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
-
-      await expect(requireActiveAccount()).rejects.toThrow('Your account has been disabled')
-      expect(mockSignOut).toHaveBeenCalled()
     })
   })
 

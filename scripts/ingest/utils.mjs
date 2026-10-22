@@ -53,6 +53,11 @@ export function splitTextIntoChunks(text, chunkSize, overlap) {
       chunks.push(trimmedChunk)
     }
 
+    // This window reached the end of the text, so there is nothing left to cover. Advancing
+    // again would add a chunk that only repeats this one's last `overlap` characters, and that
+    // duplicate would be embedded and stored for every document.
+    if (end >= text.length) break
+
     const advance = Math.max(chunk.length - overlap, 100)
     start = start + advance
 

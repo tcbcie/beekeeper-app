@@ -1,7 +1,7 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
@@ -354,18 +354,18 @@ Covers NIHBS `.in()` size, TBR dark mode, a dynamic Tailwind class, the tools au
 | One file needs env stubs | 1 file |
 
 ### High
-- **B0-1:** CI is red on every push (137 failing tests).
-- **B0-2:** CI runs no lint, tsc or build.
-- **B0-3:** the coverage thresholds sit under the wrong key in `vitest.config.mts`, so they are never enforced.
+- **B0-1:** CI is red on every push (137 failing tests). *Fixed in batch 18 (22/10/2026).*
+- **B0-2:** CI runs no lint, tsc or build. *Fixed in batch 18 (22/10/2026).* A new "Lint & typecheck" job runs `typecheck` and `lint:src`; no build step, because Vercel builds every push.
+- **B0-3:** the coverage thresholds sit under the wrong key in `vitest.config.mts`, so they are never enforced. *Fixed in batch 18 (22/10/2026).* The misplaced values were removed; real thresholds come once CI reports a baseline.
 
 ### Medium
-- **B0-4 / B0-5:** the ESLint ignores and the `lint` script crawl `coverage/`, `varroa-detector/venv/` and `public/`.
-- **B0-6 / B0-7 / B0-8:** test type errors, a removed auth API, and env stubs.
+- **B0-4 / B0-5:** the ESLint ignores and the `lint` script crawl `coverage/`, `varroa-detector/venv/` and `public/`. *Fixed in batch 18 (22/10/2026).* A full `eslint .` now takes about 24 s; 145 problems remain in tests, scripts and root files.
+- **B0-6 / B0-7 / B0-8:** test type errors, a removed auth API, and env stubs. *Fixed in batch 18 (22/10/2026).*
 - **B0-9:** generated Supabase types would remove about 255 casts.
 - **B0-10:** 5 migrations have no timestamp, so the CLI skips them.
 - **B0-11:** a legacy `migrations/` folder.
 - **B0-12 to B0-14:** `.claude/CLAUDE.md` is stale (Next 14, v1.4.11, the `sql/` workflow).
-- **B0-18:** the obsolete PostCSS backup steps in CI.
+- **B0-18:** the obsolete PostCSS backup steps in CI. *Fixed in batch 18 (22/10/2026).*
 
 ### Low
 - The CLAUDE.md folder tree and client description.

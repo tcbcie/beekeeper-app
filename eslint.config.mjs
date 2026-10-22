@@ -18,6 +18,14 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      // Generated output, a Python project with its own virtual environment (about 1 GB),
+      // static assets, and Supabase files. None of it is ours to lint; the hand-written
+      // service worker in public/ is the exception.
+      "coverage/**",
+      "varroa-detector/**",
+      "public/**",
+      "!public/service-worker.js",
+      "supabase/**",
     ],
   },
 ];

@@ -263,7 +263,7 @@ export default function TerminologyTable() {
 
       {/* Results count */}
       <p className="text-sm text-text-tertiary">
-        Showing {startIndex + 1}-{Math.min(endIndex, filteredTerms.length)} of {filteredTerms.length} terms
+        Showing {filteredTerms.length === 0 ? 0 : startIndex + 1}-{Math.min(endIndex, filteredTerms.length)} of {filteredTerms.length} terms
         {searchQuery && ` (filtered from ${terms.length})`}
       </p>
 

@@ -767,6 +767,7 @@ export default function MapLocationPicker({
             <Button
               type="button"
               onClick={onClose}
+              aria-label="Close map"
               className="p-1 text-text-tertiary hover:text-foreground rounded"
             >
               <X size={18} />

@@ -260,7 +260,7 @@ describe('GDDTracker', () => {
         expect(screen.getByText('Vegetation Type *')).toBeInTheDocument()
         expect(screen.getByText('Bloom Observed Date *')).toBeInTheDocument()
         expect(screen.getByText('Bloom End Date (optional)')).toBeInTheDocument()
-        expect(screen.getByText(/GDD calculated from Jan 1st to this date/)).toBeInTheDocument()
+        expect(screen.getByText(/GDD is calculated from 1 Jan to this date/)).toBeInTheDocument()
       })
     })
 

@@ -75,7 +75,7 @@ describe('FrameCellCalculator', () => {
 
     it('should render cell size preset buttons', async () => {
       render(<FrameCellCalculator />)
-      expect(screen.getByText('5.1mm (Standard)')).toBeInTheDocument()
+      expect(screen.getByText('5.4mm (Standard)')).toBeInTheDocument()
       expect(screen.getByText('4.9mm (Small Cell)')).toBeInTheDocument()
     })
 
@@ -101,7 +101,7 @@ describe('FrameCellCalculator', () => {
       render(<FrameCellCalculator />)
 
       await waitFor(() => {
-        expect(screen.getByText(/British National Deep/)).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /British National Deep/ })).toBeInTheDocument()
       })
     })
 
@@ -117,15 +117,15 @@ describe('FrameCellCalculator', () => {
       render(<FrameCellCalculator />)
 
       await waitFor(() => {
-        expect(screen.getByText(/British National Deep/)).toBeInTheDocument()
-        expect(screen.getByText(/British National Shallow/)).toBeInTheDocument()
-        expect(screen.getByText(/Langstroth Deep/)).toBeInTheDocument()
-        expect(screen.getByText(/Langstroth Medium/)).toBeInTheDocument()
-        expect(screen.getByText(/Langstroth Shallow/)).toBeInTheDocument()
-        expect(screen.getByText(/Dadant Modified Deep/)).toBeInTheDocument()
-        expect(screen.getByText(/Dadant Modified Shallow/)).toBeInTheDocument()
-        expect(screen.getByText(/Smith/)).toBeInTheDocument()
-        expect(screen.getByText(/Commercial/)).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /British National Deep/ })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /British National Shallow/ })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /Langstroth Deep/ })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /Langstroth Medium/ })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /Langstroth Shallow/ })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /Dadant Modified Deep/ })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /Dadant Modified Shallow/ })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /Smith/ })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /Commercial/ })).toBeInTheDocument()
       })
     })
 
@@ -156,16 +156,16 @@ describe('FrameCellCalculator', () => {
 
       // Should still render with fallback presets
       await waitFor(() => {
-        expect(screen.getByText(/British National Deep/)).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /British National Deep/ })).toBeInTheDocument()
       })
     })
   })
 
   describe('Cell Size Selection', () => {
-    it('should default to 5.1mm cell size', async () => {
+    it('should default to 5.4mm cell size', async () => {
       render(<FrameCellCalculator />)
 
-      const cellSizeInput = screen.getByDisplayValue('5.1')
+      const cellSizeInput = screen.getByDisplayValue('5.4')
       expect(cellSizeInput).toBeInTheDocument()
     })
 
@@ -178,23 +178,23 @@ describe('FrameCellCalculator', () => {
       expect(cellSizeInput).toBeInTheDocument()
     })
 
-    it('should switch to standard cell when 5.1mm button is clicked', async () => {
+    it('should switch to standard cell when 5.4mm button is clicked', async () => {
       render(<FrameCellCalculator />)
 
       // First switch to small cell
       fireEvent.click(screen.getByText('4.9mm (Small Cell)'))
 
       // Then switch back to standard
-      fireEvent.click(screen.getByText('5.1mm (Standard)'))
+      fireEvent.click(screen.getByText('5.4mm (Standard)'))
 
-      const cellSizeInput = screen.getByDisplayValue('5.1')
+      const cellSizeInput = screen.getByDisplayValue('5.4')
       expect(cellSizeInput).toBeInTheDocument()
     })
 
     it('should allow manual cell size input', async () => {
       render(<FrameCellCalculator />)
 
-      const cellSizeInput = screen.getByDisplayValue('5.1')
+      const cellSizeInput = screen.getByDisplayValue('5.4')
       fireEvent.change(cellSizeInput, { target: { value: '6.9' } })
 
       expect(screen.getByDisplayValue('6.9')).toBeInTheDocument()
@@ -225,7 +225,7 @@ describe('FrameCellCalculator', () => {
 
       await waitFor(() => {
         // After loading, first standard (British National Deep) is selected
-        // Expected: (335 * 195) / (0.866 * 5.1 * 5.1) * 2 ≈ 5800
+        // Expected: (335 * 195) / (0.866 * 5.4 * 5.4) * 2 ≈ 5170
         const resultText = screen.getByText(/^[\d,]+$/)
         const cellCount = parseInt(resultText.textContent?.replace(/,/g, '') || '0')
 
@@ -238,7 +238,7 @@ describe('FrameCellCalculator', () => {
       render(<FrameCellCalculator />)
 
       await waitFor(() => {
-        expect(screen.getByText(/British National Deep/)).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /British National Deep/ })).toBeInTheDocument()
       })
 
       // Get initial count (both sides)
@@ -260,10 +260,10 @@ describe('FrameCellCalculator', () => {
       render(<FrameCellCalculator />)
 
       await waitFor(() => {
-        expect(screen.getByText(/British National Deep/)).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /British National Deep/ })).toBeInTheDocument()
       })
 
-      // Get initial count with 5.1mm
+      // Get initial count with 5.4mm
       const initialResultText = screen.getByText(/^[\d,]+$/)
       const initialCount = parseInt(initialResultText.textContent?.replace(/,/g, '') || '0')
 
@@ -282,7 +282,7 @@ describe('FrameCellCalculator', () => {
       render(<FrameCellCalculator />)
 
       await waitFor(() => {
-        expect(screen.getByText(/British National Deep/)).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /British National Deep/ })).toBeInTheDocument()
       })
 
       // Get initial count
@@ -317,14 +317,14 @@ describe('FrameCellCalculator', () => {
 
       await waitFor(() => {
         // Should show something like "335mm x 195mm"
-        expect(screen.getByText(/335mm x 195mm/)).toBeInTheDocument()
+        expect(screen.getByText(/335mm x 195mm =/)).toBeInTheDocument()
       })
     })
 
     it('should indicate when counting both sides', async () => {
       render(<FrameCellCalculator />)
 
-      expect(screen.getByText(/\(both sides\)/)).toBeInTheDocument()
+      expect(screen.getByText(/cm² \(both sides\)/)).toBeInTheDocument()
     })
 
     it('should indicate when counting one side', async () => {

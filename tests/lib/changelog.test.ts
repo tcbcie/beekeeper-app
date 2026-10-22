@@ -60,16 +60,16 @@ describe('Changelog Utilities', () => {
     })
 
     it('should return gray color for unknown type', () => {
-      expect(getEntryTypeColor('unknown')).toBe('text-gray-600')
-      expect(getEntryTypeColor('')).toBe('text-gray-600')
-      expect(getEntryTypeColor('random-type')).toBe('text-gray-600')
+      expect(getEntryTypeColor('unknown')).toBe('text-text-secondary')
+      expect(getEntryTypeColor('')).toBe('text-text-secondary')
+      expect(getEntryTypeColor('random-type')).toBe('text-text-secondary')
     })
   })
 
   describe('formatChangelogDate', () => {
     it('should format ISO date string correctly', () => {
       const result = formatChangelogDate('2025-01-15T10:00:00Z')
-      expect(result).toBe('January 15, 2025')
+      expect(result).toBe('15 January 2025')
     })
 
     it('should format date-only string correctly', () => {
@@ -91,12 +91,12 @@ describe('Changelog Utilities', () => {
 
     it('should handle leap year dates', () => {
       const result = formatChangelogDate('2024-02-29')
-      expect(result).toBe('February 29, 2024')
+      expect(result).toBe('29 February 2024')
     })
 
-    it('should format US locale correctly', () => {
+    it('should format British locale correctly', () => {
       const result = formatChangelogDate('2025-12-31')
-      expect(result).toBe('December 31, 2025')
+      expect(result).toBe('31 December 2025')
     })
   })
 })

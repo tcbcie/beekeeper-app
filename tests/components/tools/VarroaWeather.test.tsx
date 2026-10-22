@@ -105,11 +105,11 @@ describe('VarroaWeather', () => {
   })
 
   describe('Rendering', () => {
-    it('should render the Varroa Weather title', async () => {
+    it('should render the tool title', async () => {
       render(<VarroaWeather userId="test-user-id" />)
 
       await waitFor(() => {
-        expect(screen.getByText('Varroa Weather')).toBeInTheDocument()
+        expect(screen.getByText('Evaluate Varroa Treatment')).toBeInTheDocument()
       })
     })
 
@@ -263,8 +263,9 @@ describe('VarroaWeather', () => {
       render(<VarroaWeather userId="test-user-id" />)
 
       await waitFor(() => {
-        expect(screen.getByText('15-30°C')).toBeInTheDocument()
-        expect(screen.getByText('10-29°C')).toBeInTheDocument()
+        // Two fixture products share a range, so a range can appear more than once.
+        expect(screen.getAllByText('15-30°C').length).toBeGreaterThan(0)
+        expect(screen.getAllByText('10-29°C').length).toBeGreaterThan(0)
       })
     })
 
@@ -319,12 +320,12 @@ describe('VarroaWeather', () => {
       })
     })
 
-    it('should display disclaimer about following product instructions', async () => {
+    it('should display the guidance note on colony status', async () => {
       render(<VarroaWeather userId="test-user-id" />)
 
       await waitFor(() => {
         expect(
-          screen.getByText(/Temperature limits are based on manufacturer recommendations/)
+          screen.getByText(/Recommendations vary based on colony status/)
         ).toBeInTheDocument()
       })
     })

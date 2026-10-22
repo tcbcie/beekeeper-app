@@ -17,7 +17,7 @@ export function Skeleton({ className = '' }: SkeletonProps) {
   )
 }
 
-/** Matches the StatCard layout: icon circle on the right + two text lines on the left */
+/** Matches the dashboard stat card layout: icon circle on the right + two text lines on the left */
 export function SkeletonCard({ className = '' }: SkeletonProps) {
   return (
     <div

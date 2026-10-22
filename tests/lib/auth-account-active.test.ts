@@ -18,7 +18,7 @@ vi.mock('@/lib/supabase', () => ({
 }))
 
 // Import after mocks are set up
-import { isAccountActive, clearAccountActiveCache } from '@/lib/auth'
+import { isAccountActive, getAccountStatus, clearAccountActiveCache } from '@/lib/auth'
 
 describe('isAccountActive', () => {
   let testCounter = 0
@@ -177,8 +177,10 @@ describe('isAccountActive', () => {
     })
   })
 
-  describe('Error Handling - Fail Open Strategy', () => {
-    it('should return true on database error (network issue)', async () => {
+  // Fail closed (security audit C2): a database error is never treated as 'active', so a
+  // deactivated account can't linger during a database problem.
+  describe('Error Handling - Fail Closed Strategy', () => {
+    it('should return false on database error', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       mockAuth.getSession.mockResolvedValue({
@@ -197,8 +199,8 @@ describe('isAccountActive', () => {
         })
       })
 
-      const result = await isAccountActive()
-      expect(result).toBe(true)
+      expect(await getAccountStatus()).toBe('error')
+      expect(await isAccountActive()).toBe(false)
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         'Error fetching account status:',
         expect.objectContaining({ message: 'Network error' })
@@ -207,7 +209,7 @@ describe('isAccountActive', () => {
       consoleErrorSpy.mockRestore()
     })
 
-    it('should return true on RLS policy error', async () => {
+    it('should return false on RLS policy error', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       mockAuth.getSession.mockResolvedValue({
@@ -226,14 +228,14 @@ describe('isAccountActive', () => {
         })
       })
 
-      const result = await isAccountActive()
-      expect(result).toBe(true)
+      expect(await getAccountStatus()).toBe('error')
+      expect(await isAccountActive()).toBe(false)
       expect(consoleErrorSpy).toHaveBeenCalled()
 
       consoleErrorSpy.mockRestore()
     })
 
-    it('should return true on timeout error', async () => {
+    it('should return false on timeout error', async () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       mockAuth.getSession.mockResolvedValue({
@@ -252,8 +254,8 @@ describe('isAccountActive', () => {
         })
       })
 
-      const result = await isAccountActive()
-      expect(result).toBe(true)
+      expect(await getAccountStatus()).toBe('error')
+      expect(await isAccountActive()).toBe(false)
       expect(consoleErrorSpy).toHaveBeenCalled()
 
       consoleErrorSpy.mockRestore()
@@ -459,15 +461,16 @@ describe('isAccountActive', () => {
           eq: vi.fn().mockReturnValue({
             single: vi.fn().mockResolvedValue({
               data: null,
-              error: { message: 'fetch failed', code: 'FETCH_ERROR' }
+              // A fetch-layer failure carries no PostgREST code.
+              error: { message: 'fetch failed', code: '' }
             })
           })
         })
       })
 
-      const result = await isAccountActive()
-      expect(result).toBe(true) // Fail open - allow access
-      expect(consoleErrorSpy).toHaveBeenCalled()
+      // 'unreachable' tells the caller to keep the user signed in and retry, rather than
+      // treating the account as deactivated.
+      expect(await getAccountStatus()).toBe('unreachable')
 
       consoleErrorSpy.mockRestore()
     })

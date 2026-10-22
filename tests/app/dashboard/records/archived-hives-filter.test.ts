@@ -461,7 +461,7 @@ describe('Archived Hives Filter on Records Page', () => {
 
     it('should work with other filters (record type filter)', () => {
       const showArchivedHives = true
-      const recordTypeFilter = 'inspection'
+      const recordTypeFilter: string = 'inspection'
 
       const filteredRecords = mockRecords.filter(record => {
         // Filter by record type

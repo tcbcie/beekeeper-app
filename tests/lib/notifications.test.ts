@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest'
 import {
   registerServiceWorker,
   requestNotificationPermission,
@@ -11,7 +11,7 @@ import {
 } from '@/lib/notifications'
 
 describe('Notification Utilities', () => {
-  let setTimeoutSpy: ReturnType<typeof vi.spyOn>
+  let setTimeoutSpy: MockInstance<typeof setTimeout>
 
   beforeEach(() => {
     vi.clearAllMocks()

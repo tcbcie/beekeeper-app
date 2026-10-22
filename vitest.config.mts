@@ -33,11 +33,9 @@ export default defineConfig({
         'public/'
       ],
       include: ['src/**/*.{ts,tsx}'],
-      all: true,
-      lines: 80,
-      functions: 80,
-      branches: 75,
-      statements: 80
+      all: true
+      // No coverage thresholds yet. The old 80% values sat outside `thresholds`, so they were
+      // never applied; real coverage is far lower. Add `thresholds` once CI reports a baseline.
     }
   },
   resolve: {

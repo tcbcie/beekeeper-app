@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 18: Tooling and Green CI</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+    .note { background: #fff7ed; border-left: 4px solid #f59e0b; padding: 0.6rem 0.9rem; margin: 1rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 18: Tooling and Green CI (Batch 0 findings)</h1>
+<p><strong>Status:</strong> Done 22/10/2026. Committed and pushed. Approved with the recommendations: lint blocks on <code>src</code> now, and coverage limits are removed until there is a baseline. This is Phase 2 fix batch 6.</p>
+<p>Today 137 of 834 tests fail, so CI is red on every push. CI also never type-checks or lints, and the coverage limits are written under the wrong key, so they are never enforced. Three agents checked every failure.</p>
+<ul>
+  <li><strong>One real app bug:</strong> the knowledge-base ingest stores a duplicate copy of the last ~200 characters of every document.</li>
+  <li><strong>Everything else:</strong> stale tests (deliberate app changes such as design tokens, British dates, the 5.4mm cell size and fail-closed sign-in), tests that never worked, or test setup gaps.</li>
+</ul>
+<div class="note">This batch changes test files, CI and config. The only app changes are the ingest fix and deleting one unused component. Nothing users see changes.</div>
+
+<h2>A. Fix the failing tests (137 → 0)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Shared helper</strong> <code>tests/utils/render.tsx</code>: <code>renderWithProviders()</code> wraps screens in Toast, Confirm and Selection, the same as the real app. Five files switch to it, and their old partial Toast mocks are removed. This alone fixes about 47 failures.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Mock gaps exposed by the helper:</strong>
+  <ul>
+    <li>Apiaries and hives test mocks get <code>supabase.rpc</code>, because the pages now use the team-access RPC.</li>
+    <li>Hives gets the fuller <code>next/navigation</code> mock.</li>
+    <li><code>localStorage.clear()</code> runs between tests.</li>
+    <li>The Mapbox token is set for the later map tests.</li>
+  </ul></div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Stale assertions</strong>, updated to the intended behaviour:
+  <ul>
+    <li>Terminology table: the new count text, the toast and the confirm dialog.</li>
+    <li>Version badge: the over-50 type sizes.</li>
+    <li>Changelog: design tokens and British dates.</li>
+    <li>Frame cell calculator: 5.4mm cells and exact queries.</li>
+    <li>GDD helper text and the Varroa Weather title.</li>
+    <li>Subscription history: the fixture dates had passed, so they move to 2099.</li>
+  </ul></div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Sign-in tests:</strong> the removed <code>requireActiveAccount</code> tests are deleted. The "fail open" tests become "fail closed": a database error now means "not active", which was a deliberate security change.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>PWA update tests:</strong> call <code>updateManager.destroy()</code> after each test. The singleton kept the first test's state.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Admin role test:</strong> stub the two environment variables before the route is imported.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Dead code:</strong> delete <code>src/components/ui/StatCard.tsx</code> and its test. Nothing in the app uses it, and its tests never passed.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Real bug, ingest:</strong> <code>scripts/ingest/utils.mjs</code> keeps looping after the last chunk and adds a duplicate tail chunk to every document. Fix: one line, stop once the window reaches the end. The bad overlap test is rewritten with realistic sizes.</div>
+
+<h2>B. Type errors in tests (98 → 0)</h2>
+<div class="task"><input type="checkbox" checked disabled> About 10 small edits. Three one-line typing fixes clear 90 errors: a nullable test client, a hoisted mock typed too narrowly, and RPC mocks. The rest: unused <code>@ts-expect-error</code> lines, two stale fields and two spy types.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>tsconfig.json</code>: include <code>**/*.mts</code>, so the Vitest config is checked (that would have caught the coverage key), and exclude <code>varroa-detector</code> and <code>coverage</code>.</div>
+
+<h2>C. ESLint</h2>
+<div class="task"><input type="checkbox" checked disabled> Ignore <code>coverage/</code>, <code>varroa-detector/</code> (about 1 GB, mostly a Python virtual environment), <code>public/</code> (except <code>service-worker.js</code>) and <code>supabase/</code>. Today a plain <code>eslint .</code> runs for over 10 minutes and finds about 21.8k "problems" that aren't ours.</div>
+<div class="task"><input type="checkbox" checked disabled> <code>src</code> lints clean today. <code>tests</code> has 129 lint errors (see decision 1).</div>
+
+<h2>D. CI (<code>.github/workflows/test.yml</code>)</h2>
+<div class="task"><input type="checkbox" checked disabled> New <strong>"Lint &amp; typecheck"</strong> job (same pinned action SHAs, read-only permissions). It runs <code>npm run typecheck</code> (new script: <code>tsc --noEmit</code>) and lint. No build step: Vercel already builds every push.</div>
+<div class="task"><input type="checkbox" checked disabled> Run the tests <strong>once</strong>, with coverage. Today they run twice.</div>
+<div class="task"><input type="checkbox" checked disabled> Remove the obsolete PostCSS backup and restore steps.</div>
+<div class="task"><input type="checkbox" checked disabled> Remove the fake PR comment (it always says "All tests passed!") and its <code>pull-requests: write</code> permission.</div>
+<div class="task"><input type="checkbox" checked disabled> Coverage limits: see decision 2.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Run the full test suite, tsc and lint locally (no app build); qa-engineer review.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/tooling-ci-batch18-plan.md</code>; Phase 2 register.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>You:</strong> commit and push. The proof is a green GitHub Actions run. There's nothing to test in the app.</div>
+
+<h2>Decisions for you</h2>
+<table>
+  <tr><th>Question</th><th>Recommendation</th></tr>
+  <tr><td><strong>1.</strong> The 129 lint errors in the test files: fix them now, or start with <code>src</code> only?</td><td>Make lint <strong>blocking for <code>src</code></strong> now (already clean, so it guards app code from today), and clear the test-file lint errors in a later batch.</td></tr>
+  <tr><td><strong>2.</strong> Coverage limits: the misplaced values ask for 80%, but real coverage is about 2% of lines (the suite tests components, and most code is pages).</td><td><strong>Remove</strong> the misplaced values for now, and set realistic limits once CI has reported a first coverage figure. Enforcing 80% would turn CI red again straight away.</td></tr>
+</table>
+
+<h2>Out of scope (later)</h2>
+<ul>
+  <li>Generated Supabase types (B0-9), migrations without timestamps (B0-10/11), the stale <code>.claude/CLAUDE.md</code> facts (B0-12 to 14), the dead files and empty route folders. <code>RatingButtons</code> looks unused too.</li>
+  <li>Vitest 2 → 5 (dev-only security advisories) stays a separate task.</li>
+</ul>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Check</th><th>Before</th><th>After</th></tr>
+  <tr><td>Tests</td><td>137 of 834 failing</td><td>808 pass, 23 skipped, 0 failing</td></tr>
+  <tr><td>Type-check</td><td>98 errors</td><td>0</td></tr>
+  <tr><td>Lint (app code)</td><td>clean, not run in CI</td><td>clean and blocking in CI</td></tr>
+  <tr><td>Full lint</td><td>more than 10 minutes</td><td>about 24 seconds; 145 problems left in tests, scripts and root files</td></tr>
+</table>
+<h3>App fixes found along the way</h3>
+<ul>
+  <li><strong>Ingest:</strong> no more duplicate tail chunk per document. A test proves it and fails without the fix.</li>
+  <li><strong>Apiaries:</strong> the header "Cancel" now resets the form. Before, the next "Add Apiary" could reopen the apiary you'd been editing.</li>
+  <li><strong>Terminology:</strong> an empty list reads "0-0 of 0" rather than "1-0 of 0".</li>
+  <li><strong>Map picker:</strong> the close button is now labelled "Close map" for screen readers.</li>
+  <li><strong>Update manager:</strong> <code>destroy()</code> fully resets the update manager (not used by the app today).</li>
+</ul>
+<h3>New test helpers</h3>
+<p><code>tests/utils/render.tsx</code> (<code>renderWithProviders</code>) and <code>tests/utils/supabase-mock.ts</code> (<code>mockQuery</code>). The apiaries and hives page tests were rebuilt on them. See <code>docs/features/tooling-ci-batch18-plan.md</code>.</p>
+<h3>What to check</h3>
+<p>After pushing, the GitHub Actions run should be green: "Secret scan", "Lint &amp; typecheck" and "Run Tests". In the app, you can try the apiaries header Cancel (open Edit on an apiary, press Cancel at the top, then Add Apiary: you get an empty form).</p>
+</body>
+</html>

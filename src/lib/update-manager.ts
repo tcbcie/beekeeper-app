@@ -270,6 +270,12 @@ class UpdateManager {
       this.controllerChangeHandler = null
     }
     this.listeners.clear()
+    // Back to a fresh state, so initialise() starts clean rather than reusing an old
+    // registration or a pending reload.
+    this.registration = null
+    this.waitingWorker = null
+    this.currentState = { status: 'no-update' }
+    this.reloadPending = false
     this.initialized = false
   }
 

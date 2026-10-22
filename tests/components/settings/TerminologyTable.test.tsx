@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { renderWithProviders } from '../../utils/render'
 import TerminologyTable from '@/components/settings/TerminologyTable'
 
 // Mock terminology data
@@ -24,9 +25,6 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
-// Mock window.confirm and window.alert
-global.confirm = vi.fn(() => true)
-global.alert = vi.fn()
 
 describe('TerminologyTable', () => {
   beforeEach(() => {
@@ -58,7 +56,7 @@ describe('TerminologyTable', () => {
 
   describe('Rendering', () => {
     it('should render the terminology table title', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText(/Beekeeping Terminology/)).toBeInTheDocument()
@@ -66,7 +64,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should render the search input', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByPlaceholderText('Search terms...')).toBeInTheDocument()
@@ -74,7 +72,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should render the Add Term button', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Add Term')).toBeInTheDocument()
@@ -82,7 +80,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should render table headers', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('English')).toBeInTheDocument()
@@ -92,22 +90,22 @@ describe('TerminologyTable', () => {
     })
 
     it('should show loading spinner initially', () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
       expect(document.querySelector('.animate-spin')).toBeInTheDocument()
     })
 
     it('should render terms count', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
-        expect(screen.getByText(/Showing 10 of 10 terms/)).toBeInTheDocument()
+        expect(screen.getByText(/Showing 1-10 of 10 terms/)).toBeInTheDocument()
       })
     })
   })
 
   describe('Data Display', () => {
     it('should display terminology entries', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Hive')).toBeInTheDocument()
@@ -118,7 +116,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should display edit and delete buttons for each term', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         const editButtons = screen.getAllByTitle('Edit')
@@ -131,7 +129,7 @@ describe('TerminologyTable', () => {
 
   describe('Search Functionality', () => {
     it('should filter by English term', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Hive')).toBeInTheDocument()
@@ -147,7 +145,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should filter by German term', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Hive')).toBeInTheDocument()
@@ -164,7 +162,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should be case-insensitive', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Hive')).toBeInTheDocument()
@@ -179,7 +177,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should show empty state when no matches', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Hive')).toBeInTheDocument()
@@ -194,24 +192,24 @@ describe('TerminologyTable', () => {
     })
 
     it('should update results count when searching', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
-        expect(screen.getByText(/Showing 10 of 10 terms/)).toBeInTheDocument()
+        expect(screen.getByText(/Showing 1-10 of 10 terms/)).toBeInTheDocument()
       })
 
       const searchInput = screen.getByPlaceholderText('Search terms...')
       fireEvent.change(searchInput, { target: { value: 'queen' } })
 
       await waitFor(() => {
-        expect(screen.getByText(/Showing 1 of 10 terms/)).toBeInTheDocument()
+        expect(screen.getByText(/Showing 1-1 of 1 terms \(filtered from 10\)/)).toBeInTheDocument()
       })
     })
   })
 
   describe('Add Term Functionality', () => {
     it('should show add form when Add Term button is clicked', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Add Term')).toBeInTheDocument()
@@ -227,7 +225,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should hide add form when Cancel is clicked', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         fireEvent.click(screen.getByText('Add Term'))
@@ -244,8 +242,8 @@ describe('TerminologyTable', () => {
       })
     })
 
-    it('should show alert when trying to save empty fields', async () => {
-      render(<TerminologyTable />)
+    it('should warn when trying to save empty fields', async () => {
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         fireEvent.click(screen.getByText('Add Term'))
@@ -255,11 +253,11 @@ describe('TerminologyTable', () => {
         fireEvent.click(screen.getByText('Save'))
       })
 
-      expect(global.alert).toHaveBeenCalledWith('Please fill in both English and German terms')
+      expect(await screen.findByText('Please fill in both English and German terms')).toBeInTheDocument()
     })
 
     it('should add new term when form is submitted', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         fireEvent.click(screen.getByText('Add Term'))
@@ -281,7 +279,7 @@ describe('TerminologyTable', () => {
 
   describe('Edit Term Functionality', () => {
     it('should show edit inputs when edit button is clicked', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Hive')).toBeInTheDocument()
@@ -298,7 +296,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should show save and cancel buttons when editing', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Hive')).toBeInTheDocument()
@@ -314,7 +312,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should cancel editing when cancel button is clicked', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Hive')).toBeInTheDocument()
@@ -338,7 +336,7 @@ describe('TerminologyTable', () => {
 
   describe('Delete Term Functionality', () => {
     it('should show confirm dialog when delete button is clicked', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Hive')).toBeInTheDocument()
@@ -347,13 +345,12 @@ describe('TerminologyTable', () => {
       const deleteButtons = screen.getAllByTitle('Delete')
       fireEvent.click(deleteButtons[0])
 
-      expect(global.confirm).toHaveBeenCalledWith('Delete "Hive"?')
+      const dialog = await screen.findByRole('dialog')
+      expect(within(dialog).getByText('Are you sure you want to delete "Hive"?')).toBeInTheDocument()
     })
 
-    it('should not delete when confirm returns false', async () => {
-      vi.mocked(global.confirm).mockReturnValueOnce(false)
-
-      render(<TerminologyTable />)
+    it('should not delete when the dialog is cancelled', async () => {
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Hive')).toBeInTheDocument()
@@ -361,6 +358,7 @@ describe('TerminologyTable', () => {
 
       const deleteButtons = screen.getAllByTitle('Delete')
       fireEvent.click(deleteButtons[0])
+      fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel' }))
 
       // Term should still be in the list
       await waitFor(() => {
@@ -369,7 +367,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should remove term from list when deleted', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByText('Hive')).toBeInTheDocument()
@@ -377,6 +375,8 @@ describe('TerminologyTable', () => {
 
       const deleteButtons = screen.getAllByTitle('Delete')
       fireEvent.click(deleteButtons[0])
+      // The row buttons are titled "Delete" too, so confirm inside the dialog.
+      fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }))
 
       await waitFor(() => {
         expect(screen.queryByText('Hive')).not.toBeInTheDocument()
@@ -397,10 +397,10 @@ describe('TerminologyTable', () => {
         return {}
       })
 
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
-        expect(screen.getByText(/Showing 0 of 0 terms/)).toBeInTheDocument()
+        expect(screen.getByText(/Showing 0-0 of 0 terms/)).toBeInTheDocument()
       })
     })
 
@@ -418,7 +418,7 @@ describe('TerminologyTable', () => {
         return {}
       })
 
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Error fetching terminology:', expect.any(Object))
@@ -430,7 +430,7 @@ describe('TerminologyTable', () => {
 
   describe('Accessibility', () => {
     it('should have accessible search input', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         const searchInput = screen.getByPlaceholderText('Search terms...')
@@ -439,7 +439,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should have proper table structure', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getByRole('table')).toBeInTheDocument()
@@ -447,7 +447,7 @@ describe('TerminologyTable', () => {
     })
 
     it('should have title attributes on action buttons', async () => {
-      render(<TerminologyTable />)
+      renderWithProviders(<TerminologyTable />)
 
       await waitFor(() => {
         expect(screen.getAllByTitle('Edit').length).toBeGreaterThan(0)

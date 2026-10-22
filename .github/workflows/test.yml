@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main, develop]
 
-# Least privilege by default; the test job adds what its PR comment needs.
+# Least privilege: every job only reads the repository.
 permissions:
   contents: read
 
@@ -46,42 +46,50 @@ jobs:
           fi
           node scripts/check-secrets.mjs --range "$RANGE"
 
-  test:
-    name: Run Tests
+  static-checks:
+    name: Lint & typecheck
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-
-    strategy:
-      matrix:
-        node-version: [20.x]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20.x
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Backup PostCSS config
-        run: mv postcss.config.mjs postcss.config.mjs.backup
+      - name: Typecheck
+        run: npm run typecheck
 
-      - name: Run tests
-        run: npm run test:run
+      # App code only for now: src lints clean, the test files still have lint errors to clear.
+      - name: Lint
+        run: npm run lint:src
 
-      - name: Generate coverage report
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # One run, with coverage (vitest.config.mts sets PostCSS inline, so no config juggling).
+      - name: Run tests with coverage
         run: npm run test:coverage
-
-      - name: Restore PostCSS config
-        if: always()
-        run: mv postcss.config.mjs.backup postcss.config.mjs
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
@@ -91,20 +99,3 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Comment Test Results on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
-        with:
-          script: |
-            const fs = require('fs');
-            let comment = '## 🧪 Test Results\n\n';
-            comment += '✅ All tests passed!\n\n';
-            comment += 'View detailed coverage report in the Codecov tab.';
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: comment
-            });

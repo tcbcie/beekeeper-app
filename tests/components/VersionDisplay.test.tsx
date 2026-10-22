@@ -39,8 +39,9 @@ describe('VersionDisplay', () => {
     const { container } = render(<VersionDisplay />)
 
     const versionElement = container.querySelector('div')
-    expect(versionElement).toHaveClass('text-xs')
-    expect(versionElement).toHaveClass('text-text-tertiary')
+    // The badge class sets the size; text-xs was removed for the over-50 typography floor.
+    expect(versionElement).toHaveClass('fj-badge', 'fj-badge-neutral', 'font-mono')
+    expect(versionElement).not.toHaveClass('text-xs')
   })
 
   it('should display different version numbers correctly', () => {

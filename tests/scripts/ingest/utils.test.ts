@@ -49,23 +49,25 @@ describe('Ingest Utils', () => {
     })
 
     it('should respect overlap', () => {
-      const text = '1234567890'.repeat(100) // 1000 chars
-      const chunkSize = 100
-      const overlap = 20
-      const chunks = splitTextIntoChunks(text, chunkSize, overlap)
-      
-      // Check overlap between chunk 0 and 1
-      const endOfFirst = chunks[0].slice(-overlap)
-      const startOfSecond = chunks[1].slice(0, overlap)
-      
-      // Note: The simple overlap logic in utils might not be character-perfect due to the sentence breaking logic,
-      // but let's check if the second chunk contains the end of the first.
-      
-      // Actually, let's test a simple string with the exact logic
-      const simpleText = 'Sentence one. Sentence two. Sentence three. Sentence four.'
-      const simpleChunks = splitTextIntoChunks(simpleText, 30, 10)
-      // Expect it to try to break at sentences
-      expect(simpleChunks.length).toBeGreaterThan(1)
+      // Production sizes (scripts/ingest/config.mjs): 1000 characters with 200 of overlap.
+      const sentence = 'The colony was inspected and the queen was seen laying well. '
+      const text = sentence.repeat(50) // about 3,000 characters
+      const chunks = splitTextIntoChunks(text, 1000, 200)
+
+      expect(chunks.length).toBeGreaterThan(1)
+      // Each chunk breaks at a sentence end, and the next one starts inside the overlap,
+      // so the end of one chunk reappears at the start of the next.
+      expect(chunks[0].endsWith('.')).toBe(true)
+      expect(chunks[1]).toContain(chunks[0].slice(-100))
+    })
+
+    it('should not add a duplicate tail chunk at the end of the text', () => {
+      // Numbered sentences, so a repeated chunk can only come from the chunker itself.
+      const text = Array.from({ length: 50 }, (_, i) => `Inspection ${i + 1} found the queen laying well. `).join('')
+      const chunks = splitTextIntoChunks(text, 1000, 200)
+      const last = chunks[chunks.length - 1]
+      const previous = chunks[chunks.length - 2]
+      expect(previous.endsWith(last)).toBe(false)
     })
 
     it('should handle text smaller than chunk size', () => {

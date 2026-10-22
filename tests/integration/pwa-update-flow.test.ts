@@ -66,7 +66,8 @@ describe('PWA Update Flow Integration', () => {
               eventListeners.set(`sw-${event}`, new Set())
             }
             eventListeners.get(`sw-${event}`)!.add(callback)
-          })
+          }),
+          removeEventListener: vi.fn()
         }
       },
       writable: true,
@@ -82,7 +83,8 @@ describe('PWA Update Flow Integration', () => {
             eventListeners.set(`doc-${event}`, new Set())
           }
           eventListeners.get(`doc-${event}`)!.add(callback)
-        })
+        }),
+        removeEventListener: vi.fn()
       },
       writable: true,
       configurable: true
@@ -97,9 +99,12 @@ describe('PWA Update Flow Integration', () => {
   })
 
   afterEach(() => {
+    // The manager is a singleton that initialises once; reset it so each test starts fresh.
+    updateManager.destroy()
     vi.useRealTimers()
     listeners.clear()
     eventListeners.clear()
+    localStorage.clear()
   })
 
   const triggerEvent = (eventName: string) => {
@@ -311,7 +316,6 @@ describe('PWA Update Flow Integration', () => {
       await updateManager.initialize(mockRegistration)
 
       // Reset waiting worker to null
-      // @ts-expect-error - accessing private field for testing
       updateManager['waitingWorker'] = null
 
       // Try to apply update when no waiting worker
