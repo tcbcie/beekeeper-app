@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 24: Embed, Mel and Reports</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; margin: 0.8rem 0; font-size: 0.95em; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 24: Public Embed, Mel's Tools and Group Reports</h1>
+<p><strong>Status:</strong> Implemented 22/10/2026, waiting for your test. This is Phase 2 fix batch 11. The smaller admin and Tools items follow in batch 25.</p>
+
+<h2>A. GDD weather calls: the public tcbc.ie embed and Research (C7b-04)</h2>
+<div class="task"><input type="checkbox" checked disabled> Every visitor to the embed triggered up to 11 Open-Meteo archive calls, one after another. The current year was fetched 4 times and last year 3 times, from four parts of the page asking for the same data. Fix: one helper in <code>src/lib/gdd.ts</code>, <code>fetchArchive(lat, lon, start, end)</code>. It shares a request that's already under way and remembers results while the page is open, so each distinct year is fetched once. The per-year loops run their years together. A request-id check stops a slower, older result from overwriting a newer one. Same change in <code>PublicGDDTab</code> and <code>GDDDataTab</code>; the dashboard's current-year GDD uses the helper too. Result: about 6 calls instead of 11, nearly all at once, and same results.</div>
+
+<h2>B. Mel's tools (C9b-13, C9b-14, C6-12)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>11 tools ran one query per hive or nuc in turn</strong>: varroa counts, above threshold, needing treatment, treatment counts, last treatment, needing inspection, queen status, inspection counts, best performers, nucs needing inspection, colony overview. They now run those per-item queries <strong>together</strong> with <code>Promise.all</code>. They stay per-item on purpose, because one big query would hit Supabase's 1,000-row cap and silently drop the oldest hives. Errors are now checked rather than ignored.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Scale tools</strong> (compare readings, scale alerts): the vendor token is read once instead of once per hive, and the BEEP and Wolf calls run in groups of 5 with <code>Promise.allSettled</code>, so one slow or failing scale doesn't hold up or break the rest.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Lineage tool</strong>: 10 → 4 round trips, one query per generation, the same as the lineage tree in batch 23 (scoped to the user). Daughters, siblings and the batch load with the parents.</div>
+
+<h2>C. Group reports (C9b-11, C9b-12)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Rearing-group report</strong>: 6 → 3 round trips. It also had a list of every batch the group ever had sent in one request, which grows without limit (the same failure as the breeder-queen report). The distributions now filter through the batch join, so the list is gone.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>NIHBS report</strong>: 5 → 3 round trips. The monthly-return lookup starts straight away, and the mating-apiary lookup joins the existing parallel group. The batch-id lists use <code>fetchInChunks</code>.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and tests; qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/request-chains-batch24-plan.md</code>; Phase 2 register; AI tools skill note ("per-item queries run together; never one capped .in() for 'latest per hive'").</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>How you'll test</h2>
+<ul>
+  <li><strong>Research → GDD and the public embed page</strong> (<code>/embed/...</code>): the current-year GDD, the accumulation chart and the monthly temperatures show the same values as before, faster.</li>
+  <li><strong>Mel:</strong> "Which hives need varroa treatment?", "When did I last treat my hives?", "Which hives need inspecting?", "Show me Queen X's lineage", and with a scale "Compare my scale readings". You get the same answers as before.</li>
+  <li><strong>Rearing group report</strong> and <strong>NIHBS monthly return</strong>: same figures as before.</li>
+</ul>
+
+<h2>Batch 25 (next, smaller)</h2>
+<p>Profile export (72 tables one after another → about 6 at a time), ticket list fallback, category look-ups in P&amp;L, Purchases, traceability and jar sales (one join each), GDD tracker, CRM order page, queen productivity, admin apiary hive counts, profile page start-up, diagnosis comments (unbounded list), wild colonies.</p>
+
+<h2>Review</h2>
+<table>
+  <tr><th>Area</th><th>Before</th><th>After</th></tr>
+  <tr><td>GDD embed and Research</td><td>Up to 11 Open-Meteo calls one after another</td><td>One call per distinct year, run together (shared <code>fetchArchiveDaily</code>)</td></tr>
+  <tr><td>Monthly temperatures (C7b-01)</td><td>Missing days counted as 0 °C</td><td>Missing days skipped</td></tr>
+  <tr><td>Mel: 12 per-hive loops</td><td>One query per hive, in turn</td><td>All hives together, same order and answers</td></tr>
+  <tr><td>Mel: scale tools</td><td>Token read per hive; vendor calls in turn</td><td>Tokens read once; 5 hives at a time</td></tr>
+  <tr><td>Mel: lineage</td><td>10 round trips</td><td>4</td></tr>
+  <tr><td>Rearing-group report</td><td>6 round trips + an unbounded batch-id list</td><td>3, with a join filter (no list)</td></tr>
+  <tr><td>NIHBS report</td><td>5 round trips</td><td>3</td></tr>
+</table>
+<ul>
+  <li><strong>Different from the plan:</strong>
+    <ul>
+      <li>The Mel loops keep their <em>original</em> error handling. A failed query still counts as "no records" for that hive, as before. Turning errors into failures would change answers, which is beyond this speed fix. It can be a small follow-up if you want it.</li>
+      <li>The scale calls use <code>Promise.all</code> with a reader that never throws, which has the same effect as <code>Promise.allSettled</code>.</li>
+      <li>12 loops were converted, not 11: analysis has two.</li>
+    </ul>
+  </li>
+  <li><strong>Checked against the live database:</strong> distributions have one link to batches, and every distribution belongs to its batch's owner (96 of 96). So the join filter gives the same counts per member.</li>
+  <li><strong>Checks:</strong> type-check 0 errors; lint clean; tests 818 passed, 23 skipped. qa-engineer found no Critical or High issues. The GDD cache only exists in the browser, and the lineage depth is fixed, so a lineage cycle can't loop.</li>
+  <li><strong>Docs:</strong> <code>docs/features/request-chains-batch24-plan.md</code>, the Phase 2 register, and rule 7 in the AI tools skill.</li>
+</ul>
+</body>
+</html>

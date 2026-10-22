@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchInChunks } from '@/lib/supabase-chunk'
 import { buildNucSignalSets, NucSignalRow } from '@/components/batches/graftConstants'
 
 export interface RearingGroupMemberReport {
@@ -78,27 +79,37 @@ export function useRearingGroupReport() {
       // Fetch rearing batches for those user_ids - need batches that either:
       // 1. Were grafted in the selected month (for batch counts, cell counts)
       // 2. Have emergence in the selected month (for hatched/mated counts)
-      // We fetch a wider range and filter accordingly
-      const { data: groupBatchRows, error: groupBatchRowsError } = await supabase
-        .from('rearing_batches')
-        .select('id')
-        .in('user_id', userIds)
-        .eq('rearing_group_id', groupId)
-
-      if (groupBatchRowsError) throw groupBatchRowsError
-
-      const groupBatchIds = (groupBatchRows || []).map((b) => b.id).filter(Boolean)
-
+      // We fetch a wider range and filter accordingly.
+      // Queen-cell distributions (by distribution_date, scoped to this group's batches through a
+      // join filter rather than a list of every batch id the group ever had) and member names
+      // don't depend on the batches, so all three load together.
       const widerStartDate = `${month === 1 ? year - 1 : year}-${String(month === 1 ? 12 : month - 1).padStart(2, '0')}-01`
-      const { data: batches, error: batchesError } = await supabase
-        .from('rearing_batches')
-        .select('id, user_id, graft_date, emergence_date, cell_count, queens_hatched, queens_mated, mating_apiary_id, rearing_group_id')
-        .in('user_id', userIds)
-        .eq('rearing_group_id', groupId)
-        .gte('graft_date', widerStartDate)
-        .lt('graft_date', endDate)
+      const [batchesRes, qcDistsRes, profilesRes] = await Promise.all([
+        supabase
+          .from('rearing_batches')
+          .select('id, user_id, graft_date, emergence_date, cell_count, queens_hatched, queens_mated, mating_apiary_id, rearing_group_id')
+          .in('user_id', userIds)
+          .eq('rearing_group_id', groupId)
+          .gte('graft_date', widerStartDate)
+          .lt('graft_date', endDate),
+        supabase
+          .from('graft_distributions')
+          .select('user_id, rearing_batches!inner(rearing_group_id)')
+          .eq('distribution_type', 'queen_cell')
+          .in('user_id', userIds)
+          .eq('rearing_batches.rearing_group_id', groupId)
+          .gte('distribution_date', startDate)
+          .lt('distribution_date', endDate),
+        supabase
+          .from('profiles')
+          .select('id, first_name, last_name')
+          .in('id', userIds),
+      ])
 
-      if (batchesError) throw batchesError
+      if (batchesRes.error) throw batchesRes.error
+      if (qcDistsRes.error) throw qcDistsRes.error
+      if (profilesRes.error) throw profilesRes.error
+      const batches = batchesRes.data
 
       // Fetch graft statuses + distributions + nuc timestamps in one round trip.
       // See useNIHBSReport for rationale on the batch_id filter and Set aggregation.
@@ -109,9 +120,9 @@ export function useRearingGroupReport() {
         type DistRow = { graft_id: string; batch_id: string; distribution_type: string }
 
         const [graftsRes, distsRes, nucsRes] = await Promise.all([
-          supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIds),
-          supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type').in('batch_id', batchIds),
-          supabase.from('mating_nucs').select('graft_id, status, queen_emerged_at, mating_confirmed_at').in('batch_id', batchIds),
+          fetchInChunks<GraftRow>(batchIds, (chunk) => supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', chunk)),
+          fetchInChunks<DistRow>(batchIds, (chunk) => supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type').in('batch_id', chunk)),
+          fetchInChunks<NucSignalRow>(batchIds, (chunk) => supabase.from('mating_nucs').select('graft_id, status, queen_emerged_at, mating_confirmed_at').in('batch_id', chunk)),
         ])
 
         if (graftsRes.error) throw graftsRes.error
@@ -155,34 +166,13 @@ export function useRearingGroupReport() {
         }
       }
 
-      // Fetch queen_cell distributions by distribution_date, scoped to this group's batches.
       const queenCellCountPerMember = new Map<string, number>()
-      if (groupBatchIds.length > 0) {
-        const { data: qcDists, error: qcError } = await supabase
-          .from('graft_distributions')
-          .select('user_id')
-          .eq('distribution_type', 'queen_cell')
-          .in('user_id', userIds)
-          .in('batch_id', groupBatchIds)
-          .gte('distribution_date', startDate)
-          .lt('distribution_date', endDate)
-
-        if (qcError) throw qcError
-        for (const d of (qcDists || [])) {
-          queenCellCountPerMember.set(d.user_id, (queenCellCountPerMember.get(d.user_id) || 0) + 1)
-        }
+      for (const d of (qcDistsRes.data || [])) {
+        queenCellCountPerMember.set(d.user_id, (queenCellCountPerMember.get(d.user_id) || 0) + 1)
       }
 
-      // Fetch profiles for display names
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name')
-        .in('id', userIds)
-
-      if (profilesError) throw profilesError
-
       const profilesMap = new Map(
-        (profiles || []).map((p) => [p.id, `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown'])
+        (profilesRes.data || []).map((p) => [p.id, `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown'])
       )
 
       // Aggregate per member

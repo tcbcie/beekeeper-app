@@ -1,7 +1,7 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). The main page request chains and double loads were fixed in batch 23 (22/10/2026); the rest are batch 24. Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). The main page request chains and double loads were fixed in batch 23 (22/10/2026). The public GDD embed, Mel's tools and the group reports followed in batch 24 (22/10/2026). Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
@@ -137,10 +137,10 @@ Covers UTC "today", the sequential list fetches, the distribution list disappear
 ## Chunk 7b: research, GDD, wild colonies, embed (35 findings: 5 High, 21 Medium, 9 Low)
 
 ### High
-- **C7b-01:** `GDDDataTab.tsx:403` and `PublicGDDTab.tsx:293`. The monthly average treats a `null` temperature as 0, so the current month reads too low. This shows on the public tcbc.ie embed.
+- **C7b-01:** `GDDDataTab.tsx:403` and `PublicGDDTab.tsx:293`. The monthly average treats a `null` temperature as 0, so the current month reads too low. This shows on the public tcbc.ie embed. *Fixed in batch 24 (22/10/2026).*
 - **C7b-02:** `WildColoniesTab.tsx:161-164`. An early return skips `setLoading(false)`, so the spinner never stops.
 - **C7b-03:** `ForagingHoursTab.tsx:239,245`. Deselecting the last year during a load leaves the spinner stuck.
-- **C7b-04:** GDD and public tabs. Up to 11 sequential Open-Meteo calls per view (the same archive is fetched three times), for every anonymous embed visitor.
+- **C7b-04:** GDD and public tabs. Up to 11 sequential Open-Meteo calls per view (the same archive is fetched three times), for every anonymous embed visitor. *Fixed in batch 24 (22/10/2026): shared `fetchArchiveDaily`, one call per year.*
 - **C7b-05:** `KeyEventsOverlay.tsx:390-403`. Edit and delete are about 21px, with no label, and delete has no confirmation.
 
 ### Medium, key items
@@ -202,8 +202,8 @@ Covers `window.prompt` and `confirm`, the subscription-history prefetch, dead fi
 
 ### Medium, key items
 - **C9b-08 / C9b-09:** no cancel or try/finally in the report effects, and query errors show as "no data" on a compliance report.
-- **C9b-10 / C9b-11 / C9b-12:** report waterfalls. *C9b-10 fixed in batch 23 (22/10/2026); C9b-11/12 in batch 24.*
-- **C9b-13 / C9b-14:** N+1 in 12 tools, and sequential scale calls.
+- **C9b-10 / C9b-11 / C9b-12:** report waterfalls. *C9b-10 fixed in batch 23 (22/10/2026); C9b-11/12 fixed in batch 24 (22/10/2026).*
+- **C9b-13 / C9b-14:** N+1 in 12 tools, and sequential scale calls. *Fixed in batch 24 (22/10/2026).*
 - **C9b-15:** fuzzy `ilike` with `limit(1)` matches "hive 1" to "Hive 12".
 - **C9b-16:** unbounded number arguments, and `year` is silently dropped.
 - **C9b-17:** the router runs at temperature 0.7 with no JSON mode, and `tools[name]` accepts built-in object keys.
@@ -280,7 +280,7 @@ Covers the UTC end date, period counts, the toggle race, `confirm()`, UTC defaul
 - **C6-07 / C6-08:** queen form double submit, and the cycle check runs after the RPC. *C6-07 fixed in batch 16 (19/10/2026). C6-08 is still open; it's worse than first reported, because a reared daughter can be saved as her own mother's mother.*
 - **C6-09:** duplicate invites. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.* A unique index on pending invitations is still to do.
 - **C6-10:** stale team detail race.
-- **C6-11 to C6-15:** N+1 queries and waterfalls (lineage up to 8 sequential queries; the report hits the URL length limit). *C6-11, C6-13, C6-14 and C6-15 fixed in batch 23 (22/10/2026); C6-12 (Mel's lineage tool) in batch 24.*
+- **C6-11 to C6-15:** N+1 queries and waterfalls (lineage up to 8 sequential queries; the report hits the URL length limit). *C6-11, C6-13, C6-14 and C6-15 fixed in batch 23 (22/10/2026); C6-12 (Mel's lineage tool) fixed in batch 24 (22/10/2026).*
 - **C6-16:** errors show as empty.
 - **C6-17 to C6-19:** touch targets and 14px inputs.
 

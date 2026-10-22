@@ -231,7 +231,10 @@ export const getNucsNeedingInspection: Tool = {
       matingLocation: string
     }> = []
 
-    for (const nuc of nucs) {
+    // All nucs at once instead of one after another. Each keeps its own query, so
+    // "latest per item" stays exact (one capped .in() query could silently drop rows);
+    // results keep the original order.
+    const perItem = await Promise.all(nucs.map(async (nuc) => {
       // Get last inspection date
       const { data: lastInspection } = await supabase
         .from('mating_nuc_inspections')
@@ -246,15 +249,17 @@ export const getNucsNeedingInspection: Tool = {
         : daysSince(nuc.setup_date)
 
       if (daysSinceInspection === null || daysSinceInspection >= cutoffDays) {
-        overdue.push({
+        return {
           nucNumber: nuc.nuc_number,
           status: nuc.status,
           daysSinceSetup: daysSince(nuc.setup_date),
           daysSinceLastInspection: daysSinceInspection,
           matingLocation: nuc.mating_location || 'Not specified'
-        })
+        }
       }
-    }
+      return null
+    }))
+    for (const row of perItem) if (row) overdue.push(row)
 
     if (overdue.length === 0) {
       return `All active nucs have been inspected within the last ${cutoffDays} days.`

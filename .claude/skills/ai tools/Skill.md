@@ -33,6 +33,12 @@ When creating a new tool, you **MUST** adhere to these non-negotiable rules to e
     * Status values are stored in lower case and filters are case-sensitive. Use the exact stored values: check the column's check constraint or `SELECT DISTINCT status`, and match the app page's own rule (e.g. batches: `.neq('status', 'completed')`; nucs: the `ACTIVE_NUC_STATUSES` list in `nucs.ts`). Never invent display names such as 'Active' or 'In Progress'.
     * The tools run on the server in UTC. For "today" and date windows use `todayInDublin()` and `addDaysISO()` (`./utils`), never `new Date().toISOString().split('T')[0]`. `daysSince`/`daysUntil` count calendar days in Ireland (0 = today).
     * Never return raw IDs (`*_id` UUIDs, device IDs). Return the human label (queen number, colony number) through a named-FK embed, or drop the field.
+
+7.  **Per-item queries run together (batch 24):**
+    * Never `await` a query inside a `for` loop over hives or nucs. Map the list to `Promise.all(list.map(async item => ...))`, return a row or `null`, then push the non-null rows in the original order.
+    * "Latest record per hive" stays one query per hive. Never replace it with one `.in('hive_id', ...)` query: Supabase caps a response at 1,000 rows and would silently drop the oldest hives.
+    * Calls to the scale vendors (BEEP, Wolf) go five at a time (`mapInGroups` in `scales.ts`), with the tokens read once (`getScaleTokens`).
+    * Lineage: one `.in('id', ...)` query per generation, scoped to the user. Never use a queens→queens embed.
 Only use data either based on the users data or on the Knowledge in the database. Never use any data that is part of the model.
 
 ## Tool Structure Template

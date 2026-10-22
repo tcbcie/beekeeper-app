@@ -17,7 +17,8 @@
  * See: docs/features/tcbc-wordpress-research-widget.md
  */
 import { getCurrentDate, toLocalDateString } from '@/lib/date-utils'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { fetchArchiveDaily } from '@/lib/gdd'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Thermometer, Loader2, Filter, BarChart3, Table, TrendingUp, Flower2 } from 'lucide-react'
 import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
@@ -100,6 +101,8 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
   const [accumulationData, setAccumulationData] = useState<YearlyAccumulation[]>([])
   const [accumulationLoading, setAccumulationLoading] = useState(false)
   const [monthlyTemps, setMonthlyTemps] = useState<YearlyMonthlyTemps>({})
+  const accumulationRequestRef = useRef(0)
+  const monthlyRequestRef = useRef(0)
   const [showTemperature, setShowTemperature] = useState(true)
 
   // Vegetation info modal
@@ -167,12 +170,9 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
         const janFirst = `${year}-01-01`
         const todayStr = toLocalDateString(today)
 
-        const response = await fetch(
-          `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${janFirst}&end_date=${todayStr}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
-        )
-        if (!response.ok) return
-        const data = await response.json()
-        if (!data.daily?.temperature_2m_max || !data.daily?.time) return
+        const daily = await fetchArchiveDaily(latitude, longitude, janFirst, todayStr)
+        if (!daily) return
+        const data = { daily }
 
         let totalGDD = 0
         for (let i = 0; i < data.daily.temperature_2m_max.length; i++) {
@@ -202,6 +202,7 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
   // Multi-year accumulation data from Open-Meteo
   const fetchAccumulationData = useCallback(async (yearsToFetch: number[]) => {
     if (yearsToFetch.length === 0) return
+    const requestId = ++accumulationRequestRef.current
     setAccumulationLoading(true)
     try {
       const { latitude, longitude } = regionCoords
@@ -209,19 +210,16 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
       const todayDayOfYear = Math.floor((new Date().getTime() - new Date(cyear, 0, 0).getTime()) / 86400000)
       const results: YearlyAccumulation[] = []
 
-      for (const year of yearsToFetch) {
-        const isCurrentYear = year === cyear
-        const startDate = `${year}-01-01`
-        const endDate = isCurrentYear
-          ? getCurrentDate()
-          : `${year}-12-31`
+      // All years at once; a year another chart already asked for comes from the shared cache.
+      const dailies = await Promise.all(yearsToFetch.map(year =>
+        fetchArchiveDaily(latitude, longitude, `${year}-01-01`, year === cyear ? getCurrentDate() : `${year}-12-31`)))
+      if (requestId !== accumulationRequestRef.current) return
 
-        const response = await fetch(
-          `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${startDate}&end_date=${endDate}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
-        )
-        if (!response.ok) continue
-        const data = await response.json()
-        if (!data.daily?.temperature_2m_max || !data.daily?.time) continue
+      for (const [index, year] of yearsToFetch.entries()) {
+        const isCurrentYear = year === cyear
+        const daily = dailies[index]
+        if (!daily) continue
+        const data = { daily }
 
         let cumulativeGDD = 0
         const dataPoints: AccumulationDataPoint[] = []
@@ -253,7 +251,7 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
     } catch (err) {
       console.error('Failed to fetch accumulation data:', err)
     } finally {
-      setAccumulationLoading(false)
+      if (requestId === accumulationRequestRef.current) setAccumulationLoading(false)
     }
   }, [regionCoords])
 
@@ -266,6 +264,7 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
   // Monthly temperatures
   const fetchMonthlyTemps = useCallback(async (yearsToFetch: number[]) => {
     if (yearsToFetch.length === 0) return
+    const requestId = ++monthlyRequestRef.current
     try {
       const { latitude, longitude } = regionCoords
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -273,25 +272,27 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
       const cyear = today.getFullYear()
       const results: YearlyMonthlyTemps = {}
 
-      for (const year of yearsToFetch) {
-        const isCurrentYear = year === cyear
-        const startDate = `${year}-01-01`
-        const endDateStr = isCurrentYear
-          ? toLocalDateString(today)
-          : `${year}-12-31`
+      // All years at once, from the shared cache where another chart already asked.
+      const dailies = await Promise.all(yearsToFetch.map(year =>
+        fetchArchiveDaily(latitude, longitude, `${year}-01-01`, year === cyear ? toLocalDateString(today) : `${year}-12-31`)))
+      // A newer call (more years selected) may have started meanwhile; only it may set state.
+      if (requestId !== monthlyRequestRef.current) return
 
-        const tempResponse = await fetch(
-          `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${startDate}&end_date=${endDateStr}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
-        )
-        if (!tempResponse.ok) continue
-        const tempData = await tempResponse.json()
-        if (!tempData.daily?.temperature_2m_max) continue
+      for (const [index, year] of yearsToFetch.entries()) {
+        const daily = dailies[index]
+        if (!daily) continue
+        const tempData = { daily }
 
         const monthlyData: { sum: number; count: number }[] = Array(12).fill(null).map(() => ({ sum: 0, count: 0 }))
         for (let i = 0; i < tempData.daily.time.length; i++) {
           const date = new Date(tempData.daily.time[i])
           const month = date.getMonth()
-          const avgTemp = (tempData.daily.temperature_2m_max[i] + tempData.daily.temperature_2m_min[i]) / 2
+          const tMax = tempData.daily.temperature_2m_max[i]
+          const tMin = tempData.daily.temperature_2m_min[i]
+          // Days without data (the archive lags a few days) are skipped: counting them as 0 °C
+          // pulled the current month's average down (C7b-01).
+          if (tMax === null || tMin === null) continue
+          const avgTemp = (tMax + tMin) / 2
           monthlyData[month].sum += avgTemp
           monthlyData[month].count++
         }

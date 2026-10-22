@@ -88,10 +88,13 @@ export const getColonyOverview: Tool = {
     if (!data?.length) return 'No colonies found.'
 
     const results = []
-    for (const colony of data) {
+    // All colonies at once instead of one after another. Each keeps its own query, so
+    // "latest per item" stays exact (one capped .in() query could silently drop rows);
+    // results keep the original order.
+    const perItem = await Promise.all(data.map(async (colony) => {
       const currentHive = await getCurrentHiveForColony(colony.id)
 
-      results.push({
+      return {
         colonyNumber: colony.colony_number,
         status: colony.status,
         originType: colony.origin_type,
@@ -101,8 +104,9 @@ export const getColonyOverview: Tool = {
         apiary: currentHive?.apiary_name || 'N/A',
         statusReason: colony.status_reason || null,
         notes: colony.notes?.substring(0, 80) || null
-      })
-    }
+      }
+    }))
+    for (const row of perItem) if (row) results.push(row)
 
     return {
       count: results.length,

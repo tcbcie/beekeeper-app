@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchInChunks } from '@/lib/supabase-chunk'
 import { buildNucSignalSets, NucSignalRow } from '@/components/batches/graftConstants'
 
 export interface MatingApiaryInfo {
@@ -61,11 +62,19 @@ export function useNIHBSReport() {
     setLoading(true)
     setError(null)
     try {
-      // 1. Fetch members with experience levels
-      const { data: members, error: membersError } = await supabase
-        .from('rearing_group_members')
-        .select('user_id, experience_level')
-        .eq('group_id', groupId)
+      // 1. Fetch members with experience levels, together with the saved manual fields from
+      //    nihbs_monthly_returns (step 4) since both only need the group and year.
+      const [{ data: members, error: membersError }, { data: returns, error: returnsError }] = await Promise.all([
+        supabase
+          .from('rearing_group_members')
+          .select('user_id, experience_level')
+          .eq('group_id', groupId),
+        supabase
+          .from('nihbs_monthly_returns')
+          .select('month, hybridised_offspring, virgins_distributed_external, virgins_external_mated')
+          .eq('group_id', groupId)
+          .eq('year', year),
+      ])
 
       if (membersError) throw membersError
 
@@ -84,6 +93,7 @@ export function useNIHBSReport() {
       let first_graft_date: string | null = null
       let last_graft_date: string | null = null
       const monthlyMap = new Map<number, MonthlyData>()
+      const mating_apiaries: MatingApiaryInfo[] = []
 
       if (userIds.length > 0) {
         const { data: batches, error: batchesError } = await supabase
@@ -99,25 +109,47 @@ export function useNIHBSReport() {
         if (batchesError) throw batchesError
 
         // 2a. Fetch graft statuses + distributions + nuc timestamps in one round trip.
-        //     Filtering all three by batch_id keeps the URL bounded (batches are typically
-        //     small in count) and avoids a sequential round trip on graft_id IN (…).
+        //     Filtering all three by batch_id (in chunks, so a busy year can't overflow the
+        //     URL) avoids a sequential round trip on graft_id IN (…).
         const batchIdList = (batches || []).map((b: { id: string }) => b.id).filter(Boolean)
+        // 3. Mating apiaries are the batches' mating apiaries, so they load in the same round trip.
+        const batchApiaryIds = Array.from(new Set(
+          (batches || []).map((b: { mating_apiary_id: string | null }) => b.mating_apiary_id).filter((id): id is string => Boolean(id))
+        ))
         const derivedCounts = new Map<string, { grafts_accepted: number; queens_hatched: number; queens_mated: number }>()
         // Also store distributions for reuse in step 2b
         let allDists: { graft_id: string; batch_id: string; distribution_type: string; recipient_user_id: string | null; mating_confirmed: boolean | null; distribution_date: string | null; offspring_hybridised: boolean | null; hybridisation_date: string | null }[] = []
         if (batchIdList.length > 0) {
           type GraftRow = { id: string; batch_id: string; status: string }
+          type DistRow = typeof allDists[number]
 
-          const [graftsRes, distsRes, nucsRes] = await Promise.all([
-            supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', batchIdList),
-            supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type, recipient_user_id, mating_confirmed, distribution_date, offspring_hybridised, hybridisation_date').in('batch_id', batchIdList),
-            supabase.from('mating_nucs').select('graft_id, status, queen_emerged_at, mating_confirmed_at').in('batch_id', batchIdList),
+          const [graftsRes, distsRes, nucsRes, apiariesRes] = await Promise.all([
+            fetchInChunks<GraftRow>(batchIdList, (chunk) => supabase.from('batch_grafts').select('id, batch_id, status').in('batch_id', chunk)),
+            fetchInChunks<DistRow>(batchIdList, (chunk) => supabase.from('graft_distributions').select('graft_id, batch_id, distribution_type, recipient_user_id, mating_confirmed, distribution_date, offspring_hybridised, hybridisation_date').in('batch_id', chunk)),
+            fetchInChunks<NucSignalRow>(batchIdList, (chunk) => supabase.from('mating_nucs').select('graft_id, status, queen_emerged_at, mating_confirmed_at').in('batch_id', chunk)),
+            batchApiaryIds.length > 0
+              ? supabase
+                  .from('apiaries')
+                  .select('id, name, grid_reference, elevation')
+                  .in('id', batchApiaryIds)
+                  .order('name')
+              : Promise.resolve({ data: [], error: null }),
           ])
 
+          if (apiariesRes.error) throw apiariesRes.error
+          for (const a of (apiariesRes.data || [])) {
+            mating_apiaries.push({
+              id: a.id,
+              apiary_id: a.id,
+              apiary_name: a.name || 'Unknown',
+              grid_reference: a.grid_reference || null,
+              elevation: a.elevation ?? null,
+            })
+          }
           if (graftsRes.error) throw graftsRes.error
           if (distsRes.error) throw distsRes.error
           if (nucsRes.error) throw nucsRes.error
-          allDists = distsRes.data || []
+          allDists = distsRes.data
 
           // Build graft_id → distribution_type lookup for sold grafts
           const graftDistType = new Map<string, string>()
@@ -132,8 +164,8 @@ export function useNIHBSReport() {
           // confirmed via a nuc inspection, AND cases where the nuc was set straight to
           // 'virgin' without an inspection stamping queen_emerged_at. Aggregated as sets
           // so multiple nuc rows per graft (no UNIQUE constraint on graft_id) OR together.
-          const { hatched: hatchedViaNuc, mated: matedViaNuc } = buildNucSignalSets((nucsRes.data || []) as NucSignalRow[])
-          const graftRows = (graftsRes.data || []) as GraftRow[]
+          const { hatched: hatchedViaNuc, mated: matedViaNuc } = buildNucSignalSets(nucsRes.data)
+          const graftRows = graftsRes.data
 
           for (const g of graftRows) {
             if (!derivedCounts.has(g.batch_id)) {
@@ -287,45 +319,7 @@ export function useNIHBSReport() {
         }
       }
 
-      // 3. Derive mating apiaries from batch data
-      const batchApiaryIds = new Set<string>()
-      for (const [, md] of monthlyMap) {
-        for (const [apiaryId] of md.byApiary) {
-          if (apiaryId !== 'unassigned') {
-            batchApiaryIds.add(apiaryId)
-          }
-        }
-      }
-
-      const mating_apiaries: MatingApiaryInfo[] = []
-      if (batchApiaryIds.size > 0) {
-        const { data: batchApiariesRaw, error: apiariesError } = await supabase
-          .from('apiaries')
-          .select('id, name, grid_reference, elevation')
-          .in('id', Array.from(batchApiaryIds))
-          .order('name')
-
-        if (apiariesError) throw apiariesError
-        if (batchApiariesRaw) {
-          for (const a of batchApiariesRaw) {
-            mating_apiaries.push({
-              id: a.id,
-              apiary_id: a.id,
-              apiary_name: a.name || 'Unknown',
-              grid_reference: a.grid_reference || null,
-              elevation: a.elevation ?? null,
-            })
-          }
-        }
-      }
-
-      // 4. Fetch manual fields from nihbs_monthly_returns
-      const { data: returns, error: returnsError } = await supabase
-        .from('nihbs_monthly_returns')
-        .select('month, hybridised_offspring, virgins_distributed_external, virgins_external_mated')
-        .eq('group_id', groupId)
-        .eq('year', year)
-
+      // 4. Manual fields from nihbs_monthly_returns (fetched with the members in step 1)
       // Before applying manual overrides, set auto-calculated values as defaults
       for (const [, md] of monthlyMap) {
         md.virgins_distributed_external = md.auto_virgins_distributed_external

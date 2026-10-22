@@ -129,20 +129,24 @@ export const getBestPerformingHives: Tool = {
     if (args.metric === 'honey_production') {
       const hiveScores: Array<{ hive: string; apiary: string; value: number; display: string }> = []
 
-      for (const hive of hives) {
+      // All hives at once instead of one after another. Each keeps its own query, so
+      // "latest per item" stays exact (one capped .in() query could silently drop rows);
+      // results keep the original order.
+      const perItem = await Promise.all(hives.map(async (hive) => {
         const { data: harvests } = await supabase
           .from('harvests')
           .select('honey_weight')
           .eq('hive_id', hive.id)
 
         const total = harvests?.reduce((sum, h) => sum + (h.honey_weight || 0), 0) || 0
-        hiveScores.push({
+        return {
           hive: hive.hive_number,
           apiary: getApiaryName(hive.apiaries),
           value: total,
           display: `${total.toFixed(1)} kg`
-        })
-      }
+        }
+      }))
+      for (const row of perItem) if (row) hiveScores.push(row)
 
       hiveScores.sort((a, b) => b.value - a.value)
 
@@ -160,7 +164,10 @@ export const getBestPerformingHives: Tool = {
 
     const hiveScores: Array<{ hive: string; apiary: string; value: number; display: string }> = []
 
-    for (const hive of hives) {
+    // All hives at once instead of one after another. Each keeps its own query, so
+    // "latest per item" stays exact (one capped .in() query could silently drop rows);
+    // results keep the original order.
+    const perItem = await Promise.all(hives.map(async (hive) => {
       const { data: inspection } = await supabase
         .from('inspections')
         .select('temperament_rating, brood_pattern_rating, population_strength')
@@ -169,7 +176,7 @@ export const getBestPerformingHives: Tool = {
         .limit(1)
         .single()
 
-      if (!inspection) continue
+      if (!inspection) return null
 
       let value = 0
       let display = 'N/A'
@@ -186,14 +193,16 @@ export const getBestPerformingHives: Tool = {
       }
 
       if (value > 0) {
-        hiveScores.push({
+        return {
           hive: hive.hive_number,
           apiary: getApiaryName(hive.apiaries),
           value,
           display
-        })
+        }
       }
-    }
+      return null
+    }))
+    for (const row of perItem) if (row) hiveScores.push(row)
 
     hiveScores.sort((a, b) => b.value - a.value)
 

@@ -40,6 +40,54 @@ async function getBeepToken(userId: string): Promise<string | null> {
   return data?.beep_api_token || null
 }
 
+// Both vendor tokens in one read, for tools that look at every hive (instead of one read per hive).
+interface ScaleTokens { wolf: string | null; beep: string | null }
+async function getScaleTokens(userId: string): Promise<ScaleTokens> {
+  const supabase = getServiceSupabase()
+  const { data } = await supabase
+    .from('profiles')
+    .select('wolf_api_token, beep_api_token')
+    .eq('id', userId)
+    .single()
+  return { wolf: data?.wolf_api_token || null, beep: data?.beep_api_token || null }
+}
+
+// Run fn over items five at a time: much faster than one hive after another, without firing
+// every request at a vendor API at once.
+async function mapInGroups<T, R>(items: T[], fn: (item: T) => Promise<R>, size = 5): Promise<R[]> {
+  const out: R[] = []
+  for (let i = 0; i < items.length; i += size) {
+    out.push(...await Promise.all(items.slice(i, i + size).map(fn)))
+  }
+  return out
+}
+
+// One hive's readings from whichever scale it has. Never throws: a failing scale gives no
+// readings (and a log line) so it can't hold up or break the other hives.
+async function readHiveScale(
+  hive: { hive_number: string; wolf_scale_id: string | null; beep_device_id: string | null },
+  tokens: ScaleTokens,
+  sinceSeconds: number,
+  nowSeconds: number,
+  wolfResolution: 'hourly' | 'daily'
+): Promise<{ readings: ScaleReading[]; scaleType: 'Wolf' | 'BEEP' | null }> {
+  try {
+    if (hive.wolf_scale_id) {
+      if (!tokens.wolf) return { readings: [], scaleType: null }
+      return { readings: await fetchWolfData(tokens.wolf, hive.wolf_scale_id, sinceSeconds, nowSeconds, wolfResolution), scaleType: 'Wolf' }
+    }
+    if (hive.beep_device_id) {
+      if (!tokens.beep) return { readings: [], scaleType: null }
+      const startDate = new Date(sinceSeconds * 1000).toISOString()
+      const endDate = new Date(nowSeconds * 1000).toISOString()
+      return { readings: await fetchBeepData(tokens.beep, hive.beep_device_id, startDate, endDate), scaleType: 'BEEP' }
+    }
+  } catch (error) {
+    console.error(`Scale read failed for hive ${hive.hive_number}:`, error)
+  }
+  return { readings: [], scaleType: null }
+}
+
 // Fetch Wolf Waagen data via the hardened API client (timeouts, retries,
 // NaN/Infinity-safe value parsing all included). Maps WolfParsedReading
 // to the local ScaleReading shape.
@@ -378,46 +426,22 @@ export const compareScaleReadings: Tool = {
       scaleType: string
     }> = []
 
-    for (const hive of hives) {
+    const tokens = await getScaleTokens(userId)
+    const scaleData = await mapInGroups(hives, hive => readHiveScale(hive, tokens, oneDayAgo, now, 'hourly'))
+
+    hives.forEach((hive, index) => {
+      const { readings, scaleType } = scaleData[index]
+      if (!scaleType || readings.length === 0) return
       const apiary = hive.apiaries as unknown as { name: string } | null
-      try {
-        if (hive.wolf_scale_id) {
-          const wolfToken = await getWolfToken(userId)
-          if (wolfToken) {
-            const readings = await fetchWolfData(wolfToken, hive.wolf_scale_id, oneDayAgo, now, 'hourly')
-            if (readings.length > 0) {
-              const latest = readings[readings.length - 1]
-              results.push({
-                hive: hive.hive_number,
-                apiary: apiary?.name || 'Unknown',
-                weight: latest.weight_kg || null,
-                temperature: latest.temperature_c || null,
-                scaleType: 'Wolf'
-              })
-            }
-          }
-        } else if (hive.beep_device_id) {
-          const beepToken = await getBeepToken(userId)
-          if (beepToken) {
-            const endDate = new Date().toISOString()
-            const startDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-            const readings = await fetchBeepData(beepToken, hive.beep_device_id, startDate, endDate)
-            if (readings.length > 0) {
-              const latest = readings[readings.length - 1]
-              results.push({
-                hive: hive.hive_number,
-                apiary: apiary?.name || 'Unknown',
-                weight: latest.weight_kg || null,
-                temperature: latest.temperature_c || null,
-                scaleType: 'BEEP'
-              })
-            }
-          }
-        }
-      } catch {
-        // Skip hives with fetch errors
-      }
-    }
+      const latest = readings[readings.length - 1]
+      results.push({
+        hive: hive.hive_number,
+        apiary: apiary?.name || 'Unknown',
+        weight: latest.weight_kg || null,
+        temperature: latest.temperature_c || null,
+        scaleType
+      })
+    })
 
     if (results.length === 0) {
       return 'Could not fetch scale data from any hives.'
@@ -492,66 +516,51 @@ export const checkScaleAlerts: Tool = {
       details: string
     }> = []
 
-    for (const hive of hives) {
+    const tokens = await getScaleTokens(userId)
+    const scaleData = await mapInGroups(hives, hive => readHiveScale(hive, tokens, startTimestamp, now, 'daily'))
+
+    for (const [index, hive] of hives.entries()) {
       const apiary = hive.apiaries as unknown as { name: string } | null
-      try {
-        let readings: ScaleReading[] = []
+      const { readings } = scaleData[index]
 
-        if (hive.wolf_scale_id) {
-          const wolfToken = await getWolfToken(userId)
-          if (wolfToken) {
-            readings = await fetchWolfData(wolfToken, hive.wolf_scale_id, startTimestamp, now, 'daily')
-          }
-        } else if (hive.beep_device_id) {
-          const beepToken = await getBeepToken(userId)
-          if (beepToken) {
-            const endDate = new Date().toISOString()
-            const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
-            readings = await fetchBeepData(beepToken, hive.beep_device_id, startDate, endDate)
-          }
-        }
-
-        if (readings.length >= 2) {
-          const weights = readings.map(r => r.weight_kg).filter((w): w is number => w !== undefined)
-          if (weights.length >= 2) {
-            // Check for sudden weight loss (potential swarm: >2kg in a day)
-            for (let i = 1; i < weights.length; i++) {
-              const dailyChange = weights[i] - weights[i - 1]
-              if (dailyChange < -2) {
-                alerts.push({
-                  hive: hive.hive_number,
-                  apiary: apiary?.name || 'Unknown',
-                  alertType: 'Sudden Weight Loss',
-                  details: `Lost ${Math.abs(dailyChange).toFixed(1)} kg - possible swarm or robbing`
-                })
-                break
-              }
-            }
-
-            // Check for rapid weight gain (>3kg over period - strong flow)
-            const totalChange = weights[weights.length - 1] - weights[0]
-            if (totalChange > 3) {
+      if (readings.length >= 2) {
+        const weights = readings.map(r => r.weight_kg).filter((w): w is number => w !== undefined)
+        if (weights.length >= 2) {
+          // Check for sudden weight loss (potential swarm: >2kg in a day)
+          for (let i = 1; i < weights.length; i++) {
+            const dailyChange = weights[i] - weights[i - 1]
+            if (dailyChange < -2) {
               alerts.push({
                 hive: hive.hive_number,
                 apiary: apiary?.name || 'Unknown',
-                alertType: 'Rapid Weight Gain',
-                details: `Gained ${totalChange.toFixed(1)} kg over ${days} days - strong nectar flow`
+                alertType: 'Sudden Weight Loss',
+                details: `Lost ${Math.abs(dailyChange).toFixed(1)} kg - possible swarm or robbing`
               })
-            }
-
-            // Check for significant decline (>2kg over period - possible issue)
-            if (totalChange < -2) {
-              alerts.push({
-                hive: hive.hive_number,
-                apiary: apiary?.name || 'Unknown',
-                alertType: 'Weight Decline',
-                details: `Lost ${Math.abs(totalChange).toFixed(1)} kg over ${days} days - may need feeding`
-              })
+              break
             }
           }
+
+          // Check for rapid weight gain (>3kg over period - strong flow)
+          const totalChange = weights[weights.length - 1] - weights[0]
+          if (totalChange > 3) {
+            alerts.push({
+              hive: hive.hive_number,
+              apiary: apiary?.name || 'Unknown',
+              alertType: 'Rapid Weight Gain',
+              details: `Gained ${totalChange.toFixed(1)} kg over ${days} days - strong nectar flow`
+            })
+          }
+
+          // Check for significant decline (>2kg over period - possible issue)
+          if (totalChange < -2) {
+            alerts.push({
+              hive: hive.hive_number,
+              apiary: apiary?.name || 'Unknown',
+              alertType: 'Weight Decline',
+              details: `Lost ${Math.abs(totalChange).toFixed(1)} kg over ${days} days - may need feeding`
+            })
+          }
         }
-      } catch {
-        // Skip hives with fetch errors
       }
     }
 

@@ -193,7 +193,10 @@ export const getHivesNeedingInspection: Tool = {
       daysAgo: number | null
     }> = []
 
-    for (const hive of hives) {
+    // All hives at once instead of one after another. Each keeps its own query, so
+    // "latest per item" stays exact (one capped .in() query could silently drop rows);
+    // results keep the original order.
+    const perItem = await Promise.all(hives.map(async (hive) => {
       const { data: lastInspection } = await supabase
         .from('inspections')
         .select('inspection_date')
@@ -206,14 +209,16 @@ export const getHivesNeedingInspection: Tool = {
       const days = daysSince(lastDate)
 
       if (!lastDate || (days !== null && days >= threshold)) {
-        hivesNeedingInspection.push({
+        return {
           hive: hive.hive_number,
           apiary: getApiaryName(hive.apiaries),
           lastInspection: lastDate ? formatDate(lastDate) : 'Never',
           daysAgo: days
-        })
+        }
       }
-    }
+      return null
+    }))
+    for (const row of perItem) if (row) hivesNeedingInspection.push(row)
 
     if (hivesNeedingInspection.length === 0) {
       return `All hives have been inspected within the last ${threshold} days.`
@@ -258,7 +263,10 @@ export const getQueenStatus: Tool = {
 
     const results = []
 
-    for (const hive of hives) {
+    // All hives at once instead of one after another. Each keeps its own query, so
+    // "latest per item" stays exact (one capped .in() query could silently drop rows);
+    // results keep the original order.
+    const perItem = await Promise.all(hives.map(async (hive) => {
       const { data: queenSeen } = await supabase
         .from('inspections')
         .select('inspection_date')
@@ -277,7 +285,7 @@ export const getQueenStatus: Tool = {
         .limit(1)
         .single()
 
-      results.push({
+      return {
         hive: hive.hive_number,
         apiary: getApiaryName(hive.apiaries),
         queenMarked: hive.queen_marked ? 'Yes' : 'No',
@@ -286,8 +294,9 @@ export const getQueenStatus: Tool = {
         daysSinceQueenSeen: daysSince(queenSeen?.inspection_date || null),
         eggsLastSeen: eggsSeen?.inspection_date ? formatDate(eggsSeen.inspection_date) : 'Never',
         daysSinceEggsSeen: daysSince(eggsSeen?.inspection_date || null)
-      })
-    }
+      }
+    }))
+    for (const row of perItem) if (row) results.push(row)
 
     return results
   }
@@ -422,13 +431,16 @@ export const getInspectionCounts: Tool = {
       lastInspection: string | null
     }> = []
 
-    for (const hive of hives) {
+    // All hives at once instead of one after another. Each keeps its own query, so
+    // "latest per item" stays exact (one capped .in() query could silently drop rows);
+    // results keep the original order.
+    const perItem = await Promise.all(hives.map(async (hive) => {
       const { count, error: countError } = await supabase
         .from('inspections')
         .select('*', { count: 'exact', head: true })
         .eq('hive_id', hive.id)
 
-      if (countError) continue
+      if (countError) return null
 
       const { data: lastInspection } = await supabase
         .from('inspections')
@@ -438,13 +450,14 @@ export const getInspectionCounts: Tool = {
         .limit(1)
         .single()
 
-      hiveCounts.push({
+      return {
         hive: hive.hive_number,
         apiary: getApiaryName(hive.apiaries),
         inspectionCount: count || 0,
         lastInspection: lastInspection?.inspection_date ? formatDate(lastInspection.inspection_date) : null
-      })
-    }
+      }
+    }))
+    for (const row of perItem) if (row) hiveCounts.push(row)
 
     // Sort by inspection count descending
     hiveCounts.sort((a, b) => b.inspectionCount - a.inspectionCount)

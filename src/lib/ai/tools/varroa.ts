@@ -51,7 +51,10 @@ export const getLatestVarroaCounts: Tool = {
       sampleSize: number | string
     }> = []
 
-    for (const hive of hives) {
+    // All hives at once instead of one after another. Each keeps its own query, so
+    // "latest per item" stays exact (one capped .in() query could silently drop rows);
+    // results keep the original order.
+    const perItem = await Promise.all(hives.map(async (hive) => {
       const { data: latestCheck } = await supabase
         .from('varroa_checks')
         .select('check_date, mites_count, method, infestation_rate, sample_size')
@@ -60,7 +63,7 @@ export const getLatestVarroaCounts: Tool = {
         .limit(1)
         .single()
 
-      results.push({
+      return {
         hive: hive.hive_number,
         apiary: getApiaryName(hive.apiaries),
         lastCheck: latestCheck?.check_date ? formatDate(latestCheck.check_date) : 'Never',
@@ -70,8 +73,9 @@ export const getLatestVarroaCounts: Tool = {
         infestationRate: latestCheck?.infestation_rate ? `${latestCheck.infestation_rate.toFixed(1)}%` : 'N/A',
         infestationRateNum: latestCheck?.infestation_rate ?? 0,
         sampleSize: latestCheck?.sample_size ?? 'N/A'
-      })
-    }
+      }
+    }))
+    for (const row of perItem) if (row) results.push(row)
 
     // Sort by infestation rate (highest first)
     results.sort((a, b) => b.infestationRateNum - a.infestationRateNum)
@@ -156,7 +160,10 @@ export const getHivesAboveThreshold: Tool = {
 
     const aboveThreshold = []
 
-    for (const hive of hives) {
+    // All hives at once instead of one after another. Each keeps its own query, so
+    // "latest per item" stays exact (one capped .in() query could silently drop rows);
+    // results keep the original order.
+    const perItem = await Promise.all(hives.map(async (hive) => {
       const { data: latestCheck } = await supabase
         .from('varroa_checks')
         .select('check_date, mites_count, infestation_rate, method')
@@ -166,16 +173,18 @@ export const getHivesAboveThreshold: Tool = {
         .single()
 
       if (latestCheck?.infestation_rate && latestCheck.infestation_rate >= threshold) {
-        aboveThreshold.push({
+        return {
           hive: hive.hive_number,
           apiary: getApiaryName(hive.apiaries),
           checkDate: formatDate(latestCheck.check_date),
           miteCount: latestCheck.mites_count,
           infestationRate: `${latestCheck.infestation_rate.toFixed(1)}%`,
           method: latestCheck.method || 'Unknown'
-        })
+        }
       }
-    }
+      return null
+    }))
+    for (const row of perItem) if (row) aboveThreshold.push(row)
 
     if (aboveThreshold.length === 0) {
       return `No hives have infestation rates above ${threshold}%.`
@@ -271,7 +280,10 @@ export const getHivesNeedingTreatment: Tool = {
 
     const needingTreatment = []
 
-    for (const hive of hives) {
+    // All hives at once instead of one after another. Each keeps its own query, so
+    // "latest per item" stays exact (one capped .in() query could silently drop rows);
+    // results keep the original order.
+    const perItem = await Promise.all(hives.map(async (hive) => {
       const { data: latestCheck } = await supabase
         .from('varroa_checks')
         .select('check_date, mites_count, infestation_rate')
@@ -281,7 +293,7 @@ export const getHivesNeedingTreatment: Tool = {
         .single()
 
       if (!latestCheck?.infestation_rate || latestCheck.infestation_rate < threshold) {
-        continue
+        return null
       }
 
       const { data: lastTreatment } = await supabase
@@ -296,16 +308,18 @@ export const getHivesNeedingTreatment: Tool = {
       const isRecent = treatmentDate && new Date(treatmentDate) > treatmentCutoff
 
       if (!isRecent) {
-        needingTreatment.push({
+        return {
           hive: hive.hive_number,
           apiary: getApiaryName(hive.apiaries),
           infestationRate: `${latestCheck.infestation_rate.toFixed(1)}%`,
           lastCheck: formatDate(latestCheck.check_date),
           lastTreatment: treatmentDate ? formatDate(treatmentDate) : 'Never',
           daysSinceTreatment: treatmentDate ? daysSince(treatmentDate) : null
-        })
+        }
       }
-    }
+      return null
+    }))
+    for (const row of perItem) if (row) needingTreatment.push(row)
 
     if (needingTreatment.length === 0) {
       return `No hives need treatment (threshold: ${threshold}%, treatment window: ${treatmentDays} days).`
@@ -363,13 +377,16 @@ export const getTreatmentCounts: Tool = {
       lastTreatment: string | null
     }> = []
 
-    for (const hive of hives) {
+    // All hives at once instead of one after another. Each keeps its own query, so
+    // "latest per item" stays exact (one capped .in() query could silently drop rows);
+    // results keep the original order.
+    const perItem = await Promise.all(hives.map(async (hive) => {
       const { count, error: countError } = await supabase
         .from('varroa_treatments')
         .select('*', { count: 'exact', head: true })
         .eq('hive_id', hive.id)
 
-      if (countError) continue
+      if (countError) return null
 
       const { data: lastTreatment } = await supabase
         .from('varroa_treatments')
@@ -379,13 +396,14 @@ export const getTreatmentCounts: Tool = {
         .limit(1)
         .single()
 
-      hiveCounts.push({
+      return {
         hive: hive.hive_number,
         apiary: getApiaryName(hive.apiaries),
         treatmentCount: count || 0,
         lastTreatment: lastTreatment?.treatment_date ? `${formatDate(lastTreatment.treatment_date)} (${lastTreatment.treatment_type || 'Unknown'})` : null
-      })
-    }
+      }
+    }))
+    for (const row of perItem) if (row) hiveCounts.push(row)
 
     // Sort by treatment count descending
     hiveCounts.sort((a, b) => b.treatmentCount - a.treatmentCount)
@@ -439,7 +457,10 @@ export const getLastTreatmentDates: Tool = {
       sortDate: number
     }> = []
 
-    for (const hive of hives) {
+    // All hives at once instead of one after another. Each keeps its own query, so
+    // "latest per item" stays exact (one capped .in() query could silently drop rows);
+    // results keep the original order.
+    const perItem = await Promise.all(hives.map(async (hive) => {
       const { data: lastTreatment } = await supabase
         .from('varroa_treatments')
         .select('treatment_date, treatment_type')
@@ -448,15 +469,16 @@ export const getLastTreatmentDates: Tool = {
         .limit(1)
         .maybeSingle()
 
-      hiveResults.push({
+      return {
         hive: hive.hive_number,
         apiary: getApiaryName(hive.apiaries),
         lastTreatmentDate: lastTreatment?.treatment_date ? formatDate(lastTreatment.treatment_date) : null,
         lastTreatmentType: lastTreatment?.treatment_type || null,
         daysSinceTreatment: lastTreatment?.treatment_date ? daysSince(lastTreatment.treatment_date) : null,
         sortDate: lastTreatment?.treatment_date ? new Date(lastTreatment.treatment_date).getTime() : 0
-      })
-    }
+      }
+    }))
+    for (const row of perItem) if (row) hiveResults.push(row)
 
     // Sort by treatment date descending (most recent first), untreated at the end
     hiveResults.sort((a, b) => b.sortDate - a.sortDate)

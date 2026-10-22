@@ -237,18 +237,21 @@ export const getQueenLineage: Tool = {
       return `Queen "${args.queenNumber}" not found.`
     }
 
-    // Helper to fetch a queen by ID. Scoped to the requesting user so
-    // ancestors / descendants belonging to other users (e.g. a sold queen
-    // whose lineage points at one of theirs) are NOT returned.
-    const fetchQueen = async (id: string | null) => {
-      if (!id) return null
+    // Ancestors are fetched one generation per query (never a queens->queens embed): 4 round
+    // trips instead of 10. Scoped to the requesting user so ancestors / descendants belonging to
+    // other users (e.g. a sold queen whose lineage points at one of theirs) are NOT returned.
+    type LineageQueen = { id: string; queen_number: string; status: string; marking_color: string; subspecies: string; mother_id: string | null; father_id: string | null }
+    const fetchQueens = async (ids: (string | null)[]): Promise<Map<string, LineageQueen>> => {
+      const wanted = ids.filter((id): id is string => Boolean(id))
+      const byId = new Map<string, LineageQueen>()
+      if (wanted.length === 0) return byId
       const { data } = await supabase
         .from('queens')
         .select('id, queen_number, status, marking_color, subspecies, mother_id, father_id')
-        .eq('id', id)
+        .in('id', wanted)
         .eq('user_id', userId)
-        .maybeSingle()
-      return data
+      for (const q of (data || []) as LineageQueen[]) byId.set(q.id, q)
+      return byId
     }
 
     // Fetch the main queen with all details
@@ -256,55 +259,55 @@ export const getQueenLineage: Tool = {
       .from('queens')
       .select('id, queen_number, status, subspecies, marking_color, birth_date, lineage, mother_id, father_id, batch_id, hives(hive_number, apiaries(name))')
       .eq('id', queen.id)
+      .eq('user_id', userId)
       .single()
 
     if (error || !queenData) return `Error fetching queen: ${logToolError(error)}`
 
-    // Fetch 3 generations of ancestors
-    const mother = await fetchQueen(queenData.mother_id)
-    const father = await fetchQueen(queenData.father_id)
+    // Parents, daughters, siblings and the source batch all depend only on this queen.
+    // Daughters and siblings are scoped so a queen sold to another user whose lineage points back
+    // here doesn't surface in this user's lists.
+    const [parents, { data: daughters }, { data: siblingsData }, { data: batchData }] = await Promise.all([
+      fetchQueens([queenData.mother_id, queenData.father_id]),
+      supabase
+        .from('queens')
+        .select('queen_number, status, marking_color, hives(hive_number)')
+        .eq('mother_id', queen.id)
+        .eq('user_id', userId)
+        .order('birth_date', { ascending: false }),
+      queenData.mother_id
+        ? supabase
+            .from('queens')
+            .select('queen_number, status, marking_color')
+            .eq('mother_id', queenData.mother_id)
+            .eq('user_id', userId)
+            .neq('id', queen.id)
+            .limit(10)
+        : Promise.resolve({ data: null }),
+      queenData.batch_id
+        ? supabase
+            .from('rearing_batches')
+            .select('batch_name, graft_date, status')
+            .eq('id', queenData.batch_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ])
+
+    const mother = queenData.mother_id ? parents.get(queenData.mother_id) ?? null : null
+    const father = queenData.father_id ? parents.get(queenData.father_id) ?? null : null
 
     // Grandparents (mother's parents)
-    const grandmother = mother ? await fetchQueen(mother.mother_id) : null
-    const grandfather = mother ? await fetchQueen(mother.father_id) : null
+    const grandparents = mother ? await fetchQueens([mother.mother_id, mother.father_id]) : new Map<string, LineageQueen>()
+    const grandmother = mother?.mother_id ? grandparents.get(mother.mother_id) ?? null : null
+    const grandfather = mother?.father_id ? grandparents.get(mother.father_id) ?? null : null
 
     // Great-grandparents (grandmother's parents)
-    const greatGrandmother = grandmother ? await fetchQueen(grandmother.mother_id) : null
-    const greatGrandfather = grandmother ? await fetchQueen(grandmother.father_id) : null
+    const greatGrandparents = grandmother ? await fetchQueens([grandmother.mother_id, grandmother.father_id]) : new Map<string, LineageQueen>()
+    const greatGrandmother = grandmother?.mother_id ? greatGrandparents.get(grandmother.mother_id) ?? null : null
+    const greatGrandfather = grandmother?.father_id ? greatGrandparents.get(grandmother.father_id) ?? null : null
 
-    // Fetch daughters (queens where mother_id = this queen). Scoped so a
-    // queen sold to another user whose lineage points back here doesn't
-    // surface in this user's daughter list.
-    const { data: daughters } = await supabase
-      .from('queens')
-      .select('queen_number, status, marking_color, hives(hive_number)')
-      .eq('mother_id', queen.id)
-      .eq('user_id', userId)
-      .order('birth_date', { ascending: false })
-
-    // Fetch siblings (same mother, excluding self). Scoped likewise.
-    let siblings: { queen_number: string; status: string; marking_color: string }[] = []
-    if (queenData.mother_id) {
-      const { data: siblingsData } = await supabase
-        .from('queens')
-        .select('queen_number, status, marking_color')
-        .eq('mother_id', queenData.mother_id)
-        .eq('user_id', userId)
-        .neq('id', queen.id)
-        .limit(10)
-      siblings = siblingsData || []
-    }
-
-    // Fetch source batch if exists
-    let sourceBatch = null
-    if (queenData.batch_id) {
-      const { data: batchData } = await supabase
-        .from('rearing_batches')
-        .select('batch_name, graft_date, status')
-        .eq('id', queenData.batch_id)
-        .maybeSingle()
-      sourceBatch = batchData
-    }
+    const siblings: { queen_number: string; status: string; marking_color: string }[] = siblingsData || []
+    const sourceBatch = batchData
 
     const hiveInfo = getHiveInfo(queenData.hives)
 

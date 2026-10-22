@@ -53,35 +53,52 @@ export function calculateGDDFromDaily(daily: OpenMeteoDaily): number {
   return Math.round(total * 10) / 10
 }
 
-// --- Fetch current year GDD for a location ---
+// --- Open-Meteo daily archive, shared per page ---
 
 const GDD_FETCH_TIMEOUT_MS = 15_000
 
-export async function fetchCurrentYearGDD(lat: number, lon: number): Promise<number | null> {
+// One request per distinct URL while the page is open. Several parts of the GDD views ask for
+// the same year (current-year GDD, accumulation, monthly temperatures), and the public embed did
+// this for every visitor: up to 11 calls in a row. In-flight requests are shared; failures are
+// not cached, so a later call can retry.
+const archiveCache = new Map<string, Promise<OpenMeteoDaily | null>>()
+
+export function fetchArchiveDaily(
+  lat: number,
+  lon: number,
+  startDate: string,
+  endDate: string
+): Promise<OpenMeteoDaily | null> {
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${startDate}&end_date=${endDate}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
+  const cached = archiveCache.get(url)
+  if (cached) return cached
+
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), GDD_FETCH_TIMEOUT_MS)
+  const request = fetch(url, { signal: controller.signal })
+    .then(async res => {
+      if (!res.ok) return null
+      const data = await res.json()
+      return data.daily?.temperature_2m_max && data.daily?.time ? (data.daily as OpenMeteoDaily) : null
+    })
+    .catch(() => null)
+    .finally(() => clearTimeout(timer))
 
-  try {
-    const now = new Date()
-    const year = now.getFullYear()
-    const janFirst = `${year}-01-01`
-    const today = `${year}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  archiveCache.set(url, request)
+  request.then(daily => { if (!daily) archiveCache.delete(url) })
+  return request
+}
 
-    const res = await fetch(
-      `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${janFirst}&end_date=${today}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`,
-      { signal: controller.signal }
-    )
-    if (!res.ok) return null
+// --- Fetch current year GDD for a location ---
 
-    const data = await res.json()
-    if (!data.daily?.temperature_2m_max || !data.daily?.time) return null
+export async function fetchCurrentYearGDD(lat: number, lon: number): Promise<number | null> {
+  const now = new Date()
+  const year = now.getFullYear()
+  const janFirst = `${year}-01-01`
+  const today = `${year}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
-    return calculateGDDFromDaily(data.daily)
-  } catch {
-    return null
-  } finally {
-    clearTimeout(timer)
-  }
+  const daily = await fetchArchiveDaily(lat, lon, janFirst, today)
+  return daily ? calculateGDDFromDaily(daily) : null
 }
 
 // --- Parse GDD range string ("200–400" or "200-400") ---
