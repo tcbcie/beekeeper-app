@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 32: Exports and Saves</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 32: Exports and Saves</h1>
+<p><strong>Status:</strong> Implemented 23/10/2026, waiting for your test. This is Phase 2 fix batch 19 and the first batch of Medium findings. It covers the last open High finding (C9a-02, the personal data export), the spreadsheet exports, and record edits and deletes that report success when nothing changed. Three agents checked each finding against the code and the live database.</p>
+
+<h2>A. Personal data export (Settings → Export): C9a-02</h2>
+<p>The non-admin "Export my data" SQL file currently reads all 72 tables with no owner filter. RLS decides what comes back, so the file contains:</p>
+<ul>
+  <li>reference data every user can see, such as the knowledge base, news, dropdowns and associations;</li>
+  <li>other people's rows: team-mates' hives and records, shared GDD records, all conservation areas, and wild colonies for power users.</li>
+</ul>
+<p>Your own profile row is always missing, because <code>select('*')</code> on <code>profiles</code> is refused by the column grants. A failed table only shows up as a comment at the bottom of the file, under a "success" message. The 1,000-row cut-off was already fixed in batch 25.</p>
+<div class="task"><input type="checkbox" checked disabled> Read only the user's own tables: the same <code>USER_EXPORT_TABLES</code> list the Profile page export uses, each filtered on <code>user_id</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> Add the user's own profile row, read with <code>PROFILE_COLUMNS</code>, the column list the app is allowed to select.</div>
+<div class="task"><input type="checkbox" checked disabled> If a table fails, stop and show an error, as the Profile page export already does, instead of downloading an incomplete file marked "success".</div>
+<div class="task"><input type="checkbox" checked disabled> Remove the file header line saying "visibility depends on your row-level security permissions".</div>
+<div class="note">The admin "complete" export runs on the server and is unchanged. Some owned tables have no <code>user_id</code> column, for example jar batch containers and teams you own. These are missing from both personal exports today; that's a separate, small gap and is noted for later.</div>
+
+<h2>B. Spreadsheet (CSV) exports: C9a-19, C8a-11, C8a-12 and the Chunk 6 CSV item</h2>
+<p>There are six CSV exports. The two CRM ones (orders and customers) already use the safe shared helper in <code>src/lib/csv.ts</code>. It neutralises formulas, quotes cells properly and adds the marker Excel needs for é and £. The other four have their own code, with no formula guard and no Excel marker:</p>
+<ul>
+  <li><strong>Queens list:</strong> it includes team-mates' queens, so a team-mate's performance notes could hold a formula that runs when you open the file in Excel. This is the realistic risk.</li>
+  <li><strong>Reports:</strong> all 7, plus the nuc reports. They share one function.</li>
+  <li><strong>Profit &amp; Loss.</strong></li>
+  <li><strong>Profile page "Export as CSV" backup:</strong> its quoting is broken. A note with a quote mark or line break splits the row, and lists shift every column after them.</li>
+</ul>
+<div class="task"><input type="checkbox" checked disabled> <strong>Fix the shared helper first.</strong> Real numbers and numeric text such as <code>-8.12</code> are left alone. Today a negative number would be prefixed with <code>'</code>, which turns Irish longitudes and sub-zero temperatures into text. Lists and objects are written as JSON, and dates as ISO dates.</div>
+<div class="task"><input type="checkbox" checked disabled> Switch the four writers to the helper: the report function (which fixes all 9 report buttons at once), Profit &amp; Loss, the queens list and the Profile CSV backup. The column headers stay the same, except "Marking Color" becomes "Marking Colour".</div>
+<div class="note">The app never reads these CSV files back in, so the change can't break anything. Text cells that start with <code>=</code>, <code>+</code>, <code>-</code> or <code>@</code>, such as a phone number <code>+353…</code>, show a leading <code>'</code> in some spreadsheet apps. That's the standard safeguard, and the CRM exports already do it.</div>
+
+<h2>C. Record edits and deletes that "work" but don't: C4-07</h2>
+<p>A team-mate can see every record on a shared hive, but the database only lets the beekeeper who recorded it change or delete it. The record cards still offer Edit and Delete to everyone, and the database reports no error when it changes nothing. So these seven actions say "saved" or "deleted" while nothing changes:</p>
+<ul>
+  <li>edit or delete a feeding;</li>
+  <li>edit or delete a harvest;</li>
+  <li>edit or delete a varroa check;</li>
+  <li>delete a treatment.</li>
+</ul>
+<p>The varroa check edit also keeps a newly uploaded photo that no record uses.</p>
+<div class="task"><input type="checkbox" checked disabled> Each of the 7 actions asks the database which rows changed. When none did, it shows "Only the beekeeper who recorded this … can change it", and the varroa check edit removes the unused photo. This is the same pattern the inspection and treatment edits already use.</div>
+<div class="task"><input type="checkbox" checked disabled> The five record cards show Edit and Delete only on your own records. Team-mates' records stay visible, with "Recorded by", but read-only.</div>
+<div class="task"><input type="checkbox" checked disabled> In the same save handlers, show the real database message instead of "Unknown error". Supabase errors aren't <code>Error</code> objects.</div>
+
+<h2>D. Checked, not changed: C3-06 and C9a-11</h2>
+<ul>
+  <li><strong>C3-06 (hive edits):</strong> anyone who can see a hive can also edit it, so a blocked save can't happen in normal use. The only fix is a wrong code comment in <code>HiveFormSection.tsx</code>, which claims only the owner can edit a hive.</li>
+  <li><strong>C9a-11 (admin screens):</strong> these are only blocked if an admin's role is removed while the page is open. I'll mark this low priority and make no change.</li>
+</ul>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; a short test file for the CSV helper; the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/exports-saves-batch32-plan.md</code>, the Phase 2 register and memory.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>Settings → Export: download "my data" and check it holds your own records only.</li>
+    <li>Queens → Export CSV, and one report's CSV: open each in Excel and check accents and negative numbers look right.</li>
+    <li>On a shared hive's records, team-mates' feedings and harvests show no Edit or Delete buttons.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Personal SQL export</td><td style="border:1px solid #e7d9b8;padding:0.4rem">72 tables, whatever RLS shows; no profile row; errors hidden</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Your 47 tables filtered on your id, plus your profile; a failed table stops it with an error</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">CSV exports</td><td style="border:1px solid #e7d9b8;padding:0.4rem">4 of 6 without formula guard or Excel marker</td><td style="border:1px solid #e7d9b8;padding:0.4rem">All 6 use one shared helper; negative numbers stay numbers</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Record edits and deletes</td><td style="border:1px solid #e7d9b8;padding:0.4rem">7 actions said "saved" when nothing changed</td><td style="border:1px solid #e7d9b8;padding:0.4rem">All check the rows changed; buttons only on your own records</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">818 tests</td><td style="border:1px solid #e7d9b8;padding:0.4rem">823 tests (5 new CSV tests); type-check clean; <code>eslint .</code> 0</td></tr>
+</table>
+<ul>
+  <li><strong>Export:</strong> <code>ProfileExport.tsx</code> uses <code>USER_EXPORT_TABLES</code> with a <code>user_id</code> filter, the same list the Profile page export uses. It reads the profile row with <code>PROFILE_COLUMNS</code>. Some owned tables with no <code>user_id</code>, such as jar batch containers and teams you own, are missing from both personal exports; noted for later.</li>
+  <li><strong>CSV:</strong> the shared <code>src/lib/csv.ts</code> helper now takes any value (JSON for lists, ISO dates) and leaves plain numbers and the "-" placeholder unguarded. Reports, Profit &amp; Loss, queens and the Profile CSV backup use it. The Profile backup no longer splits rows on notes with quotes or line breaks.</li>
+  <li><strong>Records:</strong> the 7 actions follow the existing inspection and treatment pattern (<code>.select('id')</code>, then a clear message on 0 rows). The five cards hide Edit and Delete on team-mates' records. The catch blocks now show the real database message instead of "Unknown error". I checked the live policy myself: feedings UPDATE and DELETE are owner-only, while viewing is open to anyone with access to the hive.</li>
+  <li><strong>Not changed:</strong> hive edits (C3-06), because the live policy lets anyone who can view a hive edit it; the wrong comment was corrected. The admin screens (C9a-11) are low priority.</li>
+  <li><strong>QA audit:</strong> no Critical or High issues. One Low fix was applied: an invalid date no longer stops a CSV export.</li>
+</ul>
+</body>
+</html>

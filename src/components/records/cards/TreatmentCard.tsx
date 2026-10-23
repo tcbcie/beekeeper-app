@@ -57,24 +57,28 @@ export default function TreatmentCard({
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-1 flex-shrink-0">
-          <IconButton
-            onClick={() => onEdit(treatment)}
-            tone="blue"
-            className="min-h-12 min-w-12 touch-manipulation"
-            aria-label="Edit treatment"
-          >
-            <Edit2 size={18} />
-          </IconButton>
-          <IconButton
-            onClick={() => onDelete(treatment)}
-            tone="danger"
-            className="min-h-12 min-w-12 touch-manipulation"
-            aria-label="Delete treatment"
-          >
-            <Trash2 size={18} />
-          </IconButton>
-        </div>
+        {/* Only the beekeeper who recorded it can change or delete it (RLS);
+            team-mates' records on a shared hive are read-only. */}
+        {treatment.user_id === userId && (
+          <div className="flex gap-1 flex-shrink-0">
+            <IconButton
+              onClick={() => onEdit(treatment)}
+              tone="blue"
+              className="min-h-12 min-w-12 touch-manipulation"
+              aria-label="Edit treatment"
+            >
+              <Edit2 size={18} />
+            </IconButton>
+            <IconButton
+              onClick={() => onDelete(treatment)}
+              tone="danger"
+              className="min-h-12 min-w-12 touch-manipulation"
+              aria-label="Delete treatment"
+            >
+              <Trash2 size={18} />
+            </IconButton>
+          </div>
+        )}
       </div>
 
       {/* Details Section */}

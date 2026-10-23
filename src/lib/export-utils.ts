@@ -1,4 +1,5 @@
 import { getCurrentDate } from '@/lib/date-utils'
+import { downloadCsv, toCsv } from '@/lib/csv'
 
 /**
  * Utility functions for exporting data to CSV format
@@ -20,49 +21,11 @@ export function exportToCSV<T extends object>(
     return
   }
 
-  // Determine which columns to include
-  const headers = columns || Object.keys(data[0])
-
-  // Create CSV header row
-  const headerRow = headers.map(header => `"${String(header)}"`).join(',')
-
-  // Create CSV data rows
-  const dataRows = data.map(row =>
-    headers.map(header => {
-      const value = (row as Record<string, unknown>)[header as string]
-      // Handle null/undefined
-      if (value === null || value === undefined) return '""'
-      // Handle dates
-      if (value instanceof Date) return `"${value.toISOString()}"`
-      // Handle strings with quotes or commas
-      if (typeof value === 'string') {
-        return `"${value.replace(/"/g, '""')}"` // Escape quotes
-      }
-      // Handle numbers and booleans
-      return `"${String(value)}"`
-    }).join(',')
-  )
-
-  // Combine header and data
-  const csvContent = [headerRow, ...dataRows].join('\n')
-
-  // Create blob and download
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-
-  if (link.download !== undefined) {
-    // Create download link
-    const url = URL.createObjectURL(blob)
-    link.setAttribute('href', url)
-    link.setAttribute('download', `${filename}-${getCurrentDate()}.csv`)
-    link.style.visibility = 'hidden'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-
-    // Clean up
-    setTimeout(() => URL.revokeObjectURL(url), 100)
-  }
+  const headers = (columns || Object.keys(data[0])).map(String)
+  // The shared helper quotes cells, neutralises formulas (a report can hold a
+  // team-mate's text) and adds the BOM Excel needs for accented letters.
+  const rows = data.map(row => headers.map(header => (row as Record<string, unknown>)[header]))
+  downloadCsv(`${filename}-${getCurrentDate()}.csv`, toCsv(headers, rows))
 }
 
 /**

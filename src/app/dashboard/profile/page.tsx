@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { fetchUserExportData, USER_EXPORT_TABLES } from '@/lib/database-export'
+import { downloadCsv, escapeCsvField, toCsv } from '@/lib/csv'
 import { getCurrentUserId, PROFILE_COLUMNS } from '@/lib/auth'
 import { verifyCurrentPassword } from '@/lib/verify-password'
 import { Edit2, Save, Download, Trash2, Scale, Users, Crown, ChevronRight } from 'lucide-react'
@@ -408,37 +409,25 @@ export default function ProfilePage() {
  // Same shared fetch as the JSON export; only the serialisation differs
  const tables = await fetchUserExportData(supabase, userId)
 
+ // One section per table: its name, then a header row and the rows. The shared
+ // helper keeps notes with quotes or line breaks in one cell, writes lists and
+ // objects as JSON, guards against formulas and adds the BOM Excel needs.
  const convertToCSV = (data: Record<string, unknown>[], tableName: string) => {
- if (!data || data.length === 0) return `${tableName}\nNo data\n\n`
+ if (!data || data.length === 0) return `${escapeCsvField(tableName)}\r\nNo data`
 
- const headers = Object.keys(data[0])
- const rows = data.map(row =>
- headers.map(header => {
- const value = row[header]
- if (value === null || value === undefined) return ''
- if (typeof value === 'string' && value.includes(',')) return `"${value}"`
- return value
- }).join(',')
- )
-
- return `${tableName}\n${headers.join(',')}\n${rows.join('\n')}\n\n`
+ // Every column seen in the table, not just the first row's
+ const headers = [...new Set(data.flatMap(row => Object.keys(row)))]
+ const rows = data.map(row => headers.map(header => row[header]))
+ return `${escapeCsvField(tableName)}\r\n${toCsv(headers, rows)}`
  }
 
- let csvContent = `Beekeeping Data Export\nExported on: ${new Date().toISOString()}\n\n`
+ const sections = [`Beekeeping Data Export\r\nExported on: ${new Date().toISOString()}`]
  for (const { table, label } of USER_EXPORT_TABLES) {
- csvContent += convertToCSV(tables[table], label)
+ sections.push(convertToCSV(tables[table], label))
  }
 
- const blob = new Blob([csvContent], { type: 'text/csv' })
- const url = URL.createObjectURL(blob)
- const a = document.createElement('a')
- a.href = url
  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5) // Format: 2025-11-03T14-30-45
- a.download = `hivecraic-backup-${timestamp}.csv`
- document.body.appendChild(a)
- a.click()
- document.body.removeChild(a)
- URL.revokeObjectURL(url)
+ downloadCsv(`hivecraic-backup-${timestamp}.csv`, sections.join('\r\n\r\n'))
 
  toast.success('Your data has been exported successfully!')
  } catch (error) {

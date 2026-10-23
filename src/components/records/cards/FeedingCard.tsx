@@ -56,24 +56,28 @@ export default function FeedingCard({
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-1 flex-shrink-0">
-          <IconButton
-            onClick={() => onEdit(feeding)}
-            tone="blue"
-            className="min-h-12 min-w-12 touch-manipulation"
-            aria-label="Edit feeding"
-          >
-            <Edit2 size={18} />
-          </IconButton>
-          <IconButton
-            onClick={() => onDelete(feeding)}
-            tone="danger"
-            className="min-h-12 min-w-12 touch-manipulation"
-            aria-label="Delete feeding"
-          >
-            <Trash2 size={18} />
-          </IconButton>
-        </div>
+        {/* Only the beekeeper who recorded it can change or delete it (RLS);
+            team-mates' records on a shared hive are read-only. */}
+        {feeding.user_id === userId && (
+          <div className="flex gap-1 flex-shrink-0">
+            <IconButton
+              onClick={() => onEdit(feeding)}
+              tone="blue"
+              className="min-h-12 min-w-12 touch-manipulation"
+              aria-label="Edit feeding"
+            >
+              <Edit2 size={18} />
+            </IconButton>
+            <IconButton
+              onClick={() => onDelete(feeding)}
+              tone="danger"
+              className="min-h-12 min-w-12 touch-manipulation"
+              aria-label="Delete feeding"
+            >
+              <Trash2 size={18} />
+            </IconButton>
+          </div>
+        )}
       </div>
 
       {/* Details Section */}

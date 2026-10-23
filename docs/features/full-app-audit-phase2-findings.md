@@ -1,7 +1,7 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). The main page request chains and double loads were fixed in batch 23 (22/10/2026). The public GDD embed, Mel's tools and the group reports followed in batch 24 (22/10/2026), and the admin, Tools, research and export chains in batch 25 (22/10/2026). Batch 25 also fixed a new data-loss bug: the settings and member exports stopped at 1,000 rows per table. Batch 26 (23/10/2026) added database guards against queen lineage loops and duplicate pending invitations, and made the dashboard use the Irish date. Batch 28 (23/10/2026) fixed the remaining data-correctness High findings, batch 29 (23/10/2026) the sign-in redirects and offline sign-in, batch 30 (23/10/2026) the community map, tap targets and sign-in deep links, and batch 31 (23/10/2026) the tooling: lint clean across the project and Vitest 5. Batch 27 (23/10/2026) moved the server to Irish dates: task reminders had been arriving an hour late all summer, and database "today" fill-ins, invitation e-mail dates and the scale chart ranges were fixed. Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). The main page request chains and double loads were fixed in batch 23 (22/10/2026). The public GDD embed, Mel's tools and the group reports followed in batch 24 (22/10/2026), and the admin, Tools, research and export chains in batch 25 (22/10/2026). Batch 25 also fixed a new data-loss bug: the settings and member exports stopped at 1,000 rows per table. Batch 26 (23/10/2026) added database guards against queen lineage loops and duplicate pending invitations, and made the dashboard use the Irish date. Batch 28 (23/10/2026) fixed the remaining data-correctness High findings, batch 29 (23/10/2026) the sign-in redirects and offline sign-in, batch 30 (23/10/2026) the community map, tap targets and sign-in deep links, batch 31 (23/10/2026) the tooling: lint clean across the project and Vitest 5, and batch 32 (23/10/2026) the personal data export, the CSV exports and record edits that reported success when RLS blocked them. Batch 27 (23/10/2026) moved the server to Irish dates: task reminders had been arriving an hour late all summer, and database "today" fill-ins, invitation e-mail dates and the scale chart ranges were fixed. Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
@@ -13,7 +13,7 @@
 
 ### Medium, key items
 - **C3-05:** a `JSON.stringify` comparison means almost every save counts as a configuration change, so "Last changed by" is wrong.
-- **C3-06:** updates have no `.select()`, so an update RLS blocks fails silently.
+- **C3-06:** updates have no `.select()`, so an update RLS blocks fails silently. *Checked in batch 32 (23/10/2026): the live hive UPDATE policy uses the same rule as viewing, so this can't happen in normal use; no change, and the wrong comment was corrected.*
 - **C3-07 / C3-29:** UTC dates via `toISOString`, so "today" is yesterday just after midnight in Irish Summer Time. *Fixed in batch 19 (22/10/2026).* Client side; the dashboard's "due today" count comes from the `get_dashboard_overview` RPC (`current_date` in UTC). *The RPC was fixed in batch 26 (23/10/2026): it uses the Europe/Dublin date.*
 - **C3-08 / C3-09:** stale responses aren't discarded in `useHiveDetail`, and a refetch unmounts the whole page.
 - **C3-10:** the QR ordering puts nulls first. **C3-11:** a scale can end up assigned to two hives. **C3-12:** scale charts don't cancel or debounce their requests. **C3-13:** failed results are cached as empty.
@@ -166,7 +166,7 @@ Covers Wolf battery NaN, being unable to deselect the last year, date locale and
 
 ### High
 - **C9a-01 (SECURITY, new):** `profile/page.tsx:454-484`. The Change Password form asks for the current password but never checks it, so anyone with an unlocked session can change the password. Fix: re-authenticate (verify the current password, or use Supabase's reauthenticate nonce or "secure password change").
-- **C9a-02:** `ProfileExport.tsx:126-130`. The user export runs `select('*')` on every table. The user's own `profiles` row fails because of the column grants, so it is silently missing. The export also includes global and team-visible rows and is truncated at max-rows. Fix: reuse the user-scoped export with `PROFILE_COLUMNS`, and page through results.
+- **C9a-02:** `ProfileExport.tsx:126-130`. The user export runs `select('*')` on every table. The user's own `profiles` row fails because of the column grants, so it is silently missing. The export also includes global and team-visible rows and is truncated at max-rows. Fix: reuse the user-scoped export with `PROFILE_COLUMNS`, and page through results. *Fixed in batch 32 (23/10/2026): own tables only (filtered on `user_id`), the profile row read with `PROFILE_COLUMNS`, and a failed table stops the export. Paging was added in batch 25.*
 - **C9a-03:** `UserManagement.tsx:430-448`. Impersonation data is saved before `verifyOtp`, so it's left behind on failure. *Fixed in batch 28 (23/10/2026).*
 - **C9a-04:** `UserManagement.tsx:1329-1332`. The expiry date input writes on every keystroke (several writes and refetches) and shows the UTC date. *Fixed in batch 19 (22/10/2026).* It now saves on blur or Enter.
 
@@ -176,13 +176,13 @@ Covers Wolf battery NaN, being unable to deselect the last year, date locale and
 - **C9a-07:** the subscription cache can leak across sign-in and out, and caches errors.
 - **C9a-08:** profile preferences are stale and undo doesn't work.
 - **C9a-09 / C9a-10:** the ticket fallback ignores the filter, and the stats are counted from the filtered list.
-- **C9a-11:** RLS-blocked updates and deletes report success (no `.select()`).
+- **C9a-11:** RLS-blocked updates and deletes report success (no `.select()`). *Checked in batch 32 (23/10/2026): the role checks match the admin-only policies, so this only happens if a role is removed mid-session; left as low priority.*
 - **C9a-12 / C9a-13 / C9a-14:** silent admin failures.
 - **C9a-15:** the KB and news lists are capped at 100.
 - **C9a-16:** PDFs are uploaded as base64 JSON, exceeding the 4.5 MB body limit.
 - **C9a-17:** search has no abort.
 - **C9a-18:** double tap creates duplicate tickets. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
-- **C9a-19:** CSV export has no escaping (formula injection).
+- **C9a-19:** CSV export has no escaping (formula injection). *Fixed in batch 32 (23/10/2026): the Profile CSV backup uses the shared `src/lib/csv.ts` helper.*
 - **C9a-20 / C9a-21 / C9a-23:** request waterfalls and N+1 queries. *Fixed in batch 25 (22/10/2026).*
 - **C9a-22:** 13 managers imported statically. *Fixed in batch 21 (22/10/2026), load on demand.*
 - **C9a-24:** `UserManagement` is 1,693 lines.
@@ -250,7 +250,7 @@ Covers the due-date update, invoice email double send, customer double insert, f
 - **C4-06:** the brood-box sync runs in edit mode and reshapes old frames. *Fixed in batch 14 (19/10/2026).*
 
 ### Medium, key items
-- **C4-07:** RLS-blocked edits and deletes look like they worked.
+- **C4-07:** RLS-blocked edits and deletes look like they worked. *Fixed in batch 32 (23/10/2026): feeding, harvest and varroa check edits and deletes, and treatment delete, check the rows changed; the record cards show Edit and Delete only on your own records.*
 - **C4-08:** varroa auto-task faults.
 - **C4-09:** the tasks window and the 1000-row limit.
 - **C4-10 / C4-11:** double submits. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
@@ -285,7 +285,7 @@ Covers the UTC end date, period counts, the toggle race, `confirm()`, UTC defaul
 - **C6-17 to C6-19:** touch targets and 14px inputs.
 
 ### Low
-Covers `text-xs`, `any`, `select('*')`, data access in UI files, the StrictMode sort updater, CSV formula and "Color", static modals, unmemoised lineage, error copy, the invite double send, Link wrapping a Button, empty `.in()`, and the timeout cleanup.
+Covers `text-xs`, `any`, `select('*')`, data access in UI files, the StrictMode sort updater, CSV formula and "Color" *(fixed in batch 32, 23/10/2026)*, static modals, unmemoised lineage, error copy, the invite double send, Link wrapping a Button, empty `.in()`, and the timeout cleanup.
 
 ## Chunk 2: API routes and edge functions (35 findings: 3 High, 17 Medium, 15 Low)
 
@@ -326,7 +326,7 @@ The auth block is copied in 22 routes. Proposal: `requireUser()` plus one servic
 - **C8a-05:** 8 dead tool components (~1,750 lines).
 - **C8a-06 / C8a-07:** the GDD archive doesn't check `ok` (recent blooms get a null GDD), and silent delete and toggle failures.
 - **C8a-08 to C8a-10:** waterfalls and `select('*')`. *Fixed in batch 25 (22/10/2026); the small user-scoped `select('*')` reads stay.*
-- **C8a-11 / C8a-12:** two CSV writers have no formula-injection guard or BOM.
+- **C8a-11 / C8a-12:** two CSV writers have no formula-injection guard or BOM. *Fixed in batch 32 (23/10/2026): Profit & Loss and the shared report export use `src/lib/csv.ts`.*
 - **C8a-13:** export-to-image cleanup only runs on success.
 - **C8a-14:** NIHBS drops saved overrides on a query failure.
 - **C8a-16:** TBRPlanner is 1,011 lines.

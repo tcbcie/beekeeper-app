@@ -1,13 +1,22 @@
 // Minimal CSV helpers for client-side data export (bookkeeping, spreadsheets).
 
-type CsvValue = string | number | null | undefined
+// Any cell value: text, numbers, booleans, dates, or lists/objects (written as JSON).
+type CsvValue = unknown
 
-function escapeCsvField(value: CsvValue): string {
+// A plain number such as -8.12 (an Irish longitude, a sub-zero temperature) or the
+// "-" placeholder. Spreadsheets don't run these as formulas, and a leading quote
+// would turn the number into text, so the formula guard leaves them alone.
+const PLAIN_NUMBER = /^-?\d+(\.\d+)?(e[+-]?\d+)?$/i
+
+export function escapeCsvField(value: CsvValue): string {
   if (value === null || value === undefined) return ''
-  let s = String(value)
+  // An invalid Date would make toISOString() throw and abort the whole export.
+  let s = value instanceof Date ? (Number.isNaN(value.getTime()) ? '' : value.toISOString())
+    : typeof value === 'object' ? JSON.stringify(value)
+    : String(value)
   // Mitigate CSV/formula injection: a leading =, +, -, @ (or control char) can
   // be executed as a formula in Excel/Sheets. Neutralise with a leading quote.
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
+  if (/^[=+\-@\t\r]/.test(s) && s !== '-' && !PLAIN_NUMBER.test(s)) s = `'${s}`
   // Quote fields containing a delimiter, quote, or newline; double inner quotes.
   if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`
   return s

@@ -258,8 +258,9 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  }
 
  if (editingHive) {
- // Update hive. Hives RLS permits UPDATE for the hive owner only, so this path
- // is reached only for the user's own hives (Edit is hidden for others' hives).
+ // Update hive. Hives RLS permits UPDATE to the owner and to anyone with access
+ // to the hive's apiary (the same rule as viewing it), so a shared hive can be
+ // edited here; moving it to an apiary the user can't access is refused.
  // Note: The database trigger will automatically create a history entry if configuration changes
  const { error } = await supabase
  .from('hives')

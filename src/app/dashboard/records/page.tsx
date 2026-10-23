@@ -923,7 +923,7 @@ export default function RecordsPage() {
       if (!recordSaved) {
         await deleteUploadedImages(uploadedUrls)
       }
-      toast.error(error instanceof Error ? error.message : 'Error saving inspection')
+      toast.error((error as { message?: string } | null)?.message || 'Error saving inspection')
     }
   }
 
@@ -1057,7 +1057,7 @@ export default function RecordsPage() {
       await fetchVarroaTreatments(userId, filters.ownershipFilter)
       resetForm()
     } catch (error) {
-      toast.error('Error saving treatment: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      toast.error('Error saving treatment: ' + ((error as { message?: string } | null)?.message || 'Unknown error'))
     }
   }
 
@@ -1085,14 +1085,19 @@ export default function RecordsPage() {
     )
     if (!ok) return
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('varroa_treatments')
       .delete()
       .eq('id', treatment.id)
       .eq('user_id', userId)
+      .select('id')
 
     if (error) {
       toast.error(error.message)
+      return
+    }
+    if (!data || data.length === 0) {
+      toast.error('Only the beekeeper who recorded this treatment can delete it.')
       return
     }
     await fetchVarroaTreatments(userId, filters.ownershipFilter)
@@ -1132,13 +1137,21 @@ export default function RecordsPage() {
       }
 
       if (check.id) {
-        const { error } = await supabase
+        // RLS lets a team-mate see this check on a shared hive but not change it,
+        // and a blocked update returns no error, so ask which rows matched.
+        const { data, error } = await supabase
           .from('varroa_checks')
           .update(submitData)
           .eq('id', check.id)
           .eq('user_id', userId)
+          .select('id')
 
         if (error) throw error
+        if (!data || data.length === 0) {
+          await deleteUploadedImages(uploadedUrls)
+          toast.error('Only the beekeeper who recorded this varroa check can change it.')
+          return
+        }
         recordSaved = true
       } else {
         const { error } = await supabase
@@ -1178,7 +1191,7 @@ export default function RecordsPage() {
     } catch (error) {
       // Only when the row never landed - a saved check owns its photo.
       if (!recordSaved) await deleteUploadedImages(uploadedUrls)
-      toast.error('Error saving check: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      toast.error('Error saving check: ' + ((error as { message?: string } | null)?.message || 'Unknown error'))
     }
   }
 
@@ -1206,14 +1219,19 @@ export default function RecordsPage() {
     )
     if (!ok) return
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('varroa_checks')
       .delete()
       .eq('id', check.id)
       .eq('user_id', userId)
+      .select('id')
 
     if (error) {
       toast.error(error.message)
+      return
+    }
+    if (!data || data.length === 0) {
+      toast.error('Only the beekeeper who recorded this varroa check can delete it.')
       return
     }
     await fetchVarroaChecks(userId, filters.ownershipFilter)
@@ -1237,13 +1255,20 @@ export default function RecordsPage() {
       }
 
       if (feeding.id) {
-        const { error } = await supabase
+        // RLS lets a team-mate see this record on a shared hive but not change
+        // it, and a blocked update returns no error, so ask which rows matched.
+        const { data, error } = await supabase
           .from('feedings')
           .update(submitData)
           .eq('id', feeding.id)
           .eq('user_id', userId)
+          .select('id')
 
         if (error) throw error
+        if (!data || data.length === 0) {
+          toast.error('Only the beekeeper who recorded this feeding can change it.')
+          return
+        }
       } else {
         const { error } = await supabase
           .from('feedings')
@@ -1255,7 +1280,7 @@ export default function RecordsPage() {
       await fetchFeedings(userId, filters.ownershipFilter)
       resetForm()
     } catch (error) {
-      toast.error('Error saving feeding: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      toast.error('Error saving feeding: ' + ((error as { message?: string } | null)?.message || 'Unknown error'))
     }
   }
 
@@ -1283,14 +1308,19 @@ export default function RecordsPage() {
     )
     if (!ok) return
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('feedings')
       .delete()
       .eq('id', feeding.id)
       .eq('user_id', userId)
+      .select('id')
 
     if (error) {
       toast.error(error.message)
+      return
+    }
+    if (!data || data.length === 0) {
+      toast.error('Only the beekeeper who recorded this feeding can delete it.')
       return
     }
     await fetchFeedings(userId, filters.ownershipFilter)
@@ -1314,13 +1344,20 @@ export default function RecordsPage() {
       }
 
       if (harvest.id) {
-        const { error } = await supabase
+        // RLS lets a team-mate see this record on a shared hive but not change
+        // it, and a blocked update returns no error, so ask which rows matched.
+        const { data, error } = await supabase
           .from('harvests')
           .update(submitData)
           .eq('id', harvest.id)
           .eq('user_id', userId)
+          .select('id')
 
         if (error) throw error
+        if (!data || data.length === 0) {
+          toast.error('Only the beekeeper who recorded this harvest can change it.')
+          return
+        }
       } else {
         const { error } = await supabase
           .from('harvests')
@@ -1332,7 +1369,7 @@ export default function RecordsPage() {
       await fetchHarvests(userId, filters.ownershipFilter)
       resetForm()
     } catch (error) {
-      toast.error('Error saving harvest: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      toast.error('Error saving harvest: ' + ((error as { message?: string } | null)?.message || 'Unknown error'))
     }
   }
 
@@ -1360,14 +1397,19 @@ export default function RecordsPage() {
     )
     if (!ok) return
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('harvests')
       .delete()
       .eq('id', harvest.id)
       .eq('user_id', userId)
+      .select('id')
 
     if (error) {
       toast.error(error.message)
+      return
+    }
+    if (!data || data.length === 0) {
+      toast.error('Only the beekeeper who recorded this harvest can delete it.')
       return
     }
     await fetchHarvests(userId, filters.ownershipFilter)
@@ -1415,7 +1457,7 @@ export default function RecordsPage() {
       }
       toast.success(extras.length > 0 ? `Hive archived — ${extras.join(', ')}` : 'Hive archived successfully')
     } catch (error) {
-      toast.error('Error archiving hive: ' + (error instanceof Error ? error.message : 'Unknown error'))
+      toast.error('Error archiving hive: ' + ((error as { message?: string } | null)?.message || 'Unknown error'))
     }
   }
 

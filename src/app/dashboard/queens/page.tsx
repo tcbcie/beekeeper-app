@@ -1,5 +1,6 @@
 'use client'
 import { getCurrentDate } from '@/lib/date-utils'
+import { downloadCsv, toCsv } from '@/lib/csv'
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -324,22 +325,13 @@ export default function QueensPage() {
  }
 
  const exportCSV = () => {
- // Helper to escape CSV values containing commas or quotes
- const escapeCSV = (value: string | null | undefined): string => {
- if (value === null || value === undefined) return ''
- const str = String(value)
- if (str.includes(',') || str.includes('"') || str.includes('\n')) {
- return `"${str.replace(/"/g, '""')}"`
- }
- return str
- }
-
- const csv = [
- [
+ // The list includes team-mates' queens, so their notes go through the shared
+ // helper's formula guard as well as its quoting.
+ const headers = [
  'Queen Number',
  'Birth Date',
  'Age',
- 'Marking Color',
+ 'Marking Colour',
  'Source',
  'Subspecies',
  'Lineage',
@@ -352,35 +344,26 @@ export default function QueensPage() {
  'Queen Clipped',
  'Status',
  'Performance Notes',
- ],
- ...sortedQueens.map((q) => [
- escapeCSV(q.queen_number),
- escapeCSV(q.birth_date),
- escapeCSV(calculateQueenAge(q.birth_date)),
- escapeCSV(q.marking_color),
- escapeCSV(q.source),
- escapeCSV(q.subspecies),
- escapeCSV(q.lineage),
- escapeCSV(q.mother?.queen_number || ''),
- escapeCSV(q.father?.queen_number || ''),
- escapeCSV(q.batch?.batch_name || ''),
- escapeCSV(q.hives?.hive_number || ''),
- escapeCSV(q.hives?.apiaries?.name || ''),
- escapeCSV(q.mated_at_eircode),
- q.queen_clipped ? 'Yes' : 'No',
- escapeCSV(q.status),
- escapeCSV(q.performance_notes),
- ]),
  ]
- .map((row) => row.join(','))
- .join('\n')
-
- const blob = new Blob([csv], { type: 'text/csv' })
- const url = URL.createObjectURL(blob)
- const a = document.createElement('a')
- a.href = url
- a.download = `queens-${getCurrentDate()}.csv`
- a.click()
+ const rows = sortedQueens.map((q) => [
+ q.queen_number,
+ q.birth_date,
+ calculateQueenAge(q.birth_date),
+ q.marking_color,
+ q.source,
+ q.subspecies,
+ q.lineage,
+ q.mother?.queen_number,
+ q.father?.queen_number,
+ q.batch?.batch_name,
+ q.hives?.hive_number,
+ q.hives?.apiaries?.name,
+ q.mated_at_eircode,
+ q.queen_clipped ? 'Yes' : 'No',
+ q.status,
+ q.performance_notes,
+ ])
+ downloadCsv(`queens-${getCurrentDate()}.csv`, toCsv(headers, rows))
  }
 
  // Distinct apiaries present among the loaded queens, for the filter dropdown.

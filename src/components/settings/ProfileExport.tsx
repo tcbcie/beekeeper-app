@@ -10,7 +10,8 @@ import Card from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import TextInput from '@/components/ui/TextInput'
 import CheckboxInput from '@/components/ui/CheckboxInput'
-import { buildInsertSql, DATABASE_EXPORT_TABLES, fetchAllRows } from '@/lib/database-export'
+import { buildInsertSql, fetchAllRows, USER_EXPORT_TABLES } from '@/lib/database-export'
+import { getCurrentUserId, PROFILE_COLUMNS } from '@/lib/auth'
 import { mapInGroups } from '@/lib/supabase-chunk'
 
 interface ProfileExportProps {
@@ -109,10 +110,12 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
             : 'Complete database exported successfully!'
         )
       } else {
-        // Regular user: export only their own data
-        const tables = [...DATABASE_EXPORT_TABLES]
+        // Regular user: export only their own data. RLS also lets a user read reference
+        // data and team-mates' or shared rows, so every table is filtered on user_id.
+        const userId = await getCurrentUserId()
+        if (!userId) throw new Error('Please sign in again to export your data.')
+        const tables = USER_EXPORT_TABLES.map(({ table }) => table)
         const exportResults: Record<string, number> = {}
-        const exportErrors: Record<string, string> = {}
 
         let sqlContent = `-- =====================================================\n`
         sqlContent += `-- HiveCraic Personal Data Export\n`
@@ -120,22 +123,37 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
         sqlContent += `-- =====================================================\n\n`
         sqlContent += `-- This export includes YOUR data only\n`
         sqlContent += `-- Restore prerequisite: database schema must already exist (run migrations first)\n`
-        sqlContent += `-- Data visibility depends on your row-level security permissions\n`
-        sqlContent += `-- Tables: ${tables.join(', ')}\n\n`
+        sqlContent += `-- Tables: profiles, ${tables.join(', ')}\n\n`
         sqlContent += `BEGIN;\n\n`
 
-        // Fetch every row of each table (RLS will filter to user's data), six tables at a time.
+        // profiles has column-level grants, so select('*') is refused: read the
+        // permitted columns of the user's own row.
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select(PROFILE_COLUMNS)
+          .eq('id', userId)
+          .maybeSingle()
+        if (profileError) throw new Error(`Export failed for profiles: ${profileError.message}`)
+        exportResults.profiles = profile ? 1 : 0
+        if (profile) {
+          sqlContent += `\n-- Table: profiles\n`
+          sqlContent += `-- Records: 1\n\n`
+          sqlContent += `${buildInsertSql('public', 'profiles', profile)}\n\n`
+        }
+
+        // Fetch every row the user owns in each table, six tables at a time.
         // The SQL is still written in table order below.
-        const fetchedTables = await mapInGroups(tables, (table) => fetchAllRows(supabase, table), 6)
+        const fetchedTables = await mapInGroups(
+          tables,
+          (table) => fetchAllRows(supabase, table, { column: 'user_id', value: userId }),
+          6
+        )
         for (const [index, table] of tables.entries()) {
           const { data, error } = fetchedTables[index]
 
-          if (error) {
-            console.error(`Error fetching ${table}:`, error)
-            exportResults[table] = 0
-            exportErrors[table] = error.message
-            continue
-          }
+          // A missing table would make the backup incomplete, so stop rather than
+          // download a partial file marked as a success.
+          if (error) throw new Error(`Export failed for ${table}: ${error.message}`)
 
           exportResults[table] = data.length
 
@@ -155,17 +173,9 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
         sqlContent += `\n-- =====================================================\n`
         sqlContent += `-- EXPORT SUMMARY\n`
         sqlContent += `-- =====================================================\n`
-        sqlContent += `-- Total tables: ${tables.length}\n`
+        sqlContent += `-- Total tables: ${tables.length + 1}\n`
         for (const [table, count] of Object.entries(exportResults)) {
           sqlContent += `-- ${table}: ${count} records\n`
-        }
-        if (Object.keys(exportErrors).length > 0) {
-          sqlContent += `-- -----------------------------------------------------\n`
-          sqlContent += `-- TABLES WITH EXPORT ERRORS\n`
-          sqlContent += `-- -----------------------------------------------------\n`
-          for (const [table, message] of Object.entries(exportErrors)) {
-            sqlContent += `-- ${table}: ${message.replace(/\n/g, ' ')}\n`
-          }
         }
         sqlContent += `-- =====================================================\n`
         sqlContent += `-- END OF EXPORT\n`

@@ -108,24 +108,28 @@ export default function VarroaCheckCard({
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-1 flex-shrink-0">
-          <IconButton
-            onClick={() => onEdit(check)}
-            tone="blue"
-            className="min-h-12 min-w-12 touch-manipulation"
-            aria-label="Edit check"
-          >
-            <Edit2 size={18} />
-          </IconButton>
-          <IconButton
-            onClick={() => onDelete(check)}
-            tone="danger"
-            className="min-h-12 min-w-12 touch-manipulation"
-            aria-label="Delete check"
-          >
-            <Trash2 size={18} />
-          </IconButton>
-        </div>
+        {/* Only the beekeeper who recorded it can change or delete it (RLS);
+            team-mates' records on a shared hive are read-only. */}
+        {check.user_id === userId && (
+          <div className="flex gap-1 flex-shrink-0">
+            <IconButton
+              onClick={() => onEdit(check)}
+              tone="blue"
+              className="min-h-12 min-w-12 touch-manipulation"
+              aria-label="Edit check"
+            >
+              <Edit2 size={18} />
+            </IconButton>
+            <IconButton
+              onClick={() => onDelete(check)}
+              tone="danger"
+              className="min-h-12 min-w-12 touch-manipulation"
+              aria-label="Delete check"
+            >
+              <Trash2 size={18} />
+            </IconButton>
+          </div>
+        )}
       </div>
 
       {/* Details Section */}

@@ -188,24 +188,28 @@ export default function InspectionCard({
           </div>
         </div>
 
-        <div className="flex gap-1.5 flex-shrink-0">
-          <IconButton
-            onClick={() => onEdit(inspection)}
-            tone="blue"
-            className="min-h-[44px] min-w-[44px] touch-manipulation"
-            aria-label="Edit inspection"
-          >
-            <Edit2 size={18} />
-          </IconButton>
-          <IconButton
-            onClick={() => onDelete(inspection.id)}
-            tone="danger"
-            className="min-h-[44px] min-w-[44px] touch-manipulation"
-            aria-label="Delete inspection"
-          >
-            <Trash2 size={18} />
-          </IconButton>
-        </div>
+        {/* Only the beekeeper who recorded it can change or delete it (RLS);
+            team-mates' records on a shared hive are read-only. */}
+        {inspection.user_id === userId && (
+          <div className="flex gap-1.5 flex-shrink-0">
+            <IconButton
+              onClick={() => onEdit(inspection)}
+              tone="blue"
+              className="min-h-[44px] min-w-[44px] touch-manipulation"
+              aria-label="Edit inspection"
+            >
+              <Edit2 size={18} />
+            </IconButton>
+            <IconButton
+              onClick={() => onDelete(inspection.id)}
+              tone="danger"
+              className="min-h-[44px] min-w-[44px] touch-manipulation"
+              aria-label="Delete inspection"
+            >
+              <Trash2 size={18} />
+            </IconButton>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-border mb-2" />
