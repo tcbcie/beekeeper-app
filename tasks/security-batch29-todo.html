@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 29: Sign-in Redirects</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .flow { background: #fff; border: 1px solid #e7d9b8; padding: 0.6rem 0.9rem; font-family: ui-monospace, monospace; font-size: 0.9em; white-space: pre; overflow-x: auto; }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 29: Sign-in Redirects and Offline Sign-in</h1>
+<p><strong>Status:</strong> Implemented 23/10/2026, waiting for your test. This is Phase 2 fix batch 16, covering C1-01, C1-02 and C1-03. Two agents traced every redirect path. There is no server middleware, so all redirects happen in the pages.</p>
+
+<h2>A. Invitation round trip (C1-01, C1-02)</h2>
+<p>What happens today when someone not signed in opens an invitation link:</p>
+<div class="flow">Invitation page → /login?redirect=https://www.hivecraic.com/accept-invitation?id=…   (a full web address)
+Login page only accepts paths starting with "/" → falls back to /dashboard
+→ the invitee never gets back to Accept. With Google sign-in or a new account, the target is lost too.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>One shared safety check</strong>, <code>safeRedirectPath()</code> in <code>src/lib/safe-redirect.ts</code>. It accepts only paths inside this app that start with one of <code>/dashboard</code>, <code>/accept-invitation</code> or <code>/accept-rearing-group-invitation</code>. It refuses other sites and the tricks used to sneak them in (<code>//evil.com</code>, back-slashes, hidden tabs). Everything else falls back to <code>/dashboard</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Invitation pages</strong> (team and rearing group): send the page's path, not the full address.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Login page:</strong>
+  <ul>
+    <li>Checks the target with the shared helper.</li>
+    <li>If you're already signed in, it takes you straight to the target. Before, it sat on the login page.</li>
+    <li><strong>Google sign-in and new-account confirmation e-mails</strong> carry the target through the sign-in callback (<code>/auth/callback?next=…</code>).</li>
+    <li>The old browser-stored <code>pendingRedirect</code> is removed. It was written in three places but never read, so it lingered and could fire later.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Sign-in callback:</strong> goes to the checked target, not always <code>/dashboard</code>. If sign-in fails there, the login page still remembers the target.</div>
+<div class="task"><input type="checkbox" disabled> <em>(Not done, see review.)</em> <strong>Dashboard pages when signed out</strong> (for example a hive QR code scanned while signed out): the login link keeps the page you wanted, so you return there after signing in.</div>
+<p>All four cases then work: an existing user with password, an existing user with Google, a new user with e-mail confirmation, and a new user with Google.</p>
+<div class="note"><strong>One setting to check (you, Supabase dashboard):</strong> Auth → URL Configuration → Redirect URLs. The live site already allows its own addresses, so <code>https://www.hivecraic.com/auth/callback?next=…</code> should work as it is. If you sign in on Vercel preview links or localhost, those need an entry too (e.g. <code>http://localhost:3000/**</code>). I can't see that screen from here.</div>
+
+<h2>B. Opening the app offline (C1-03)</h2>
+<p>The audit's cause was slightly wrong. The old offline fallback is dead code: it reads a storage key that the current Supabase library never writes. The real cause: once the hour-long sign-in token has expired and the phone is offline, the renewal fails with a "network" error. The app treated that as "signed out". After a 25–50 second wait it sent you to the login page, even though your sign-in was still valid.</p>
+<div class="task"><input type="checkbox" checked disabled> A network error while renewing is now "can't check right now", not "signed out". The app remembers who was last signed in on this device (id and e-mail only) and keeps you in. Data loads simply fail while offline, as they do now. Back online, the session is checked and renewed as usual.</div>
+<div class="task"><input type="checkbox" checked disabled> Same rule in <code>getCurrentUserId()</code>, so the 43 pages that use it no longer bounce you to login while offline, and on the home page (the app's start screen).</div>
+<div class="task"><input type="checkbox" checked disabled> The dead offline fallback is removed. The remembered user is wiped on sign-out.</div>
+<p><strong>Security:</strong> the remembered id only decides which screen to show. The expired token is never used, and nothing can be read or saved without a valid session. A real sign-out (for example a password change elsewhere) still signs you out.</p>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and tests; qa-engineer audit (redirect safety cases checked).</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/sign-in-redirects-batch29-plan.md</code>, Phase 2 register (C1-03 cause corrected), memory note.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>How you'll test</h2>
+<ul>
+  <li><strong>Invitation, signed out:</strong> open an invite link in a private window. Sign in with a password; you land on Accept. Repeat with Google.</li>
+  <li><strong>New account from an invite:</strong> sign up from the invite; after confirming the e-mail you land on Accept.</li>
+  <li><strong>Already signed in:</strong> open <code>/login?redirect=/dashboard/hives</code>; you go straight to Hives.</li>
+  <li><strong>Unsafe link:</strong> <code>/login?redirect=//example.com</code> after sign-in goes to the dashboard, never the other site.</li>
+  <li><strong>Offline (phone):</strong> leave the app for over an hour, switch to aeroplane mode and open it. You stay signed in (pages show they can't load), and back online it works normally.</li>
+</ul>
+
+<h2>Review</h2>
+<ul>
+  <li><strong>Redirect safety:</strong> <code>safeRedirectPath()</code> is shared by the login page and the sign-in callback. Checked against 16 cases:
+    <ul>
+      <li>Allowed: dashboard and invitation paths.</li>
+      <li>Refused: full addresses, <code>//evil.com</code>, back-slash and hidden-tab tricks, <code>/dashboard/../login</code>, <code>/login</code>, <code>javascript:</code>.</li>
+    </ul>
+  </li>
+  <li><strong>Invitation round trip:</strong> the invitation pages send a path. Login checks it and sends a signed-in visitor straight there. Google and new-account confirmation carry it through <code>/auth/callback?next=…</code>. If the callback fails, the login page keeps the target. The never-read <code>pendingRedirect</code> is removed.</li>
+  <li><strong>Offline:</strong> the dead fallback is removed. A network error while renewing keeps the last user on the device, so you aren't sent to login. Offline start-up shows your screens at once instead of a 25–50 second wait. The remembered user is wiped on sign-out.</li>
+  <li><strong>Not done:</strong> returning to a dashboard page (for example a hive QR code) after being sent to login. Every page sends you to login before the layout can, so it needs a shared helper across about 40 pages. Left for a later batch.</li>
+  <li><strong>For you:</strong> the Supabase Redirect URLs setting only matters for preview or localhost sign-ins.</li>
+  <li><strong>Checks:</strong> type-check 0 errors; lint clean on 10 files; tests 818 passed, 23 skipped. qa-engineer found no Critical or High issues.</li>
+</ul>
+</body>
+</html>

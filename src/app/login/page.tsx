@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
+import { safeRedirectPath } from '@/lib/safe-redirect'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import PageShell from '@/components/ui/PageShell'
 import PageHeader from '@/components/ui/PageHeader'
@@ -19,20 +20,8 @@ function LoginForm() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const rawRedirect = searchParams.get('redirect') || '/dashboard'
-  // Reject open redirects. Character checks are not enough ('/%09/evil.com' becomes
-  // '//evil.com' once the browser strips the tab), so parse it as the browser would against a
-  // placeholder origin and keep only the path of a same-origin URL.
-  const redirectUrl = (() => {
-    const base = 'https://hivecraic.invalid'
-    if (!rawRedirect.startsWith('/')) return '/dashboard'
-    try {
-      const url = new URL(rawRedirect, base)
-      return url.origin === base ? `${url.pathname}${url.search}${url.hash}` : '/dashboard'
-    } catch {
-      return '/dashboard'
-    }
-  })()
+  // Where to go after signing in: only in-app pages we allow (shared with the sign-in callback)
+  const redirectUrl = safeRedirectPath(searchParams.get('redirect')) ?? '/dashboard'
 
   useEffect(() => {
     const emailParam = searchParams.get('email')
@@ -44,27 +33,26 @@ function LoginForm() {
     if (signupParam === 'true') {
       setIsSignUp(true)
     }
+    // The sign-in callback couldn't finish (e.g. a confirmation link opened in another browser)
+    if (searchParams.get('error') === 'auth_error') {
+      setMessage('Sign-in could not be completed. Please sign in again.')
+    }
   }, [searchParams])
 
   useEffect(() => {
-    const checkPendingRedirect = async () => {
+    const redirectIfSignedIn = async () => {
+      // Remove a value older versions stored and never read back, so it can't fire later
+      try { localStorage.removeItem('pendingRedirect') } catch { /* storage unavailable */ }
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        if (session) {
-          const pendingRedirect = localStorage.getItem('pendingRedirect')
-          if (pendingRedirect && pendingRedirect.startsWith('/dashboard')) {
-            localStorage.removeItem('pendingRedirect')
-            router.push(pendingRedirect)
-          } else if (!searchParams.get('redirect')) {
-            router.push('/dashboard')
-          }
-        }
+        // Already signed in: go straight to the target (it used to stay on this page)
+        if (session) router.push(redirectUrl)
       } catch (error) {
-        console.error('Error checking pending redirect:', error)
+        console.error('Error checking session:', error)
       }
     }
-    checkPendingRedirect()
-  }, [router, searchParams])
+    redirectIfSignedIn()
+  }, [router, redirectUrl])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -93,7 +81,9 @@ function LoginForm() {
             data: {
               full_name: email.split('@')[0],
             },
-            emailRedirectTo: `${window.location.origin}${redirectUrl}`,
+            // Through the sign-in callback, which signs the new user in and then goes on to the
+            // target (e.g. the invitation they came from)
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectUrl)}`,
           },
         })
 
@@ -116,9 +106,6 @@ function LoginForm() {
         if (session) {
           router.push(redirectUrl)
         } else {
-          if (redirectUrl !== '/dashboard') {
-            localStorage.setItem('pendingRedirect', redirectUrl)
-          }
           setMessage('Account created! Please check your email to confirm your account.')
           setIsSignUp(false)
         }
@@ -146,14 +133,11 @@ function LoginForm() {
     setMessage('')
 
     try {
-      if (redirectUrl !== '/dashboard') {
-        localStorage.setItem('pendingRedirect', redirectUrl)
-      }
-
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          // The callback goes on to the target once Google sign-in completes
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectUrl)}`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',

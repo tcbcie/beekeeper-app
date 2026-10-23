@@ -4,6 +4,7 @@ import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { clearPersistedFilters } from '@/hooks/usePersistentState'
 import { clearLocalUserData } from '@/lib/sign-out-cleanup'
+import { isOfflineAuthError, readLastUser, rememberLastUser } from '@/lib/last-user'
 
 interface AuthContextType {
   user: User | null
@@ -29,36 +30,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = useCallback(async () => {
     if (refreshingRef.current) return
     refreshingRef.current = true
-    // Try to restore session from localStorage when offline. The cached
-    // session must still be within its expiry window -- a stale token from
-    // days ago must not be restored as if it were live, even offline.
-    const tryOfflineFallback = (): boolean => {
-      if (navigator.onLine) return false
-      try {
-        const cachedSession = localStorage.getItem('supabase.auth.token')
-        if (cachedSession) {
-          const parsed = JSON.parse(cachedSession)
-          if (parsed?.currentSession?.user) {
-            // Reject expired cached sessions. Supabase stores expires_at as a
-            // Unix timestamp in seconds. If absent (older format), refuse to
-            // restore rather than fail-open.
-            const expiresAt = parsed.currentSession.expires_at
-            if (typeof expiresAt !== 'number' || !Number.isFinite(expiresAt)) {
-              return false
-            }
-            const nowSec = Math.floor(Date.now() / 1000)
-            if (nowSec >= expiresAt) {
-              return false
-            }
-            setUser(parsed.currentSession.user)
-            setUserId(parsed.currentSession.user.id)
-            return true
-          }
-        }
-      } catch (e) {
-        console.error('Failed to parse cached session:', e)
-      }
-      return false
+
+    // Offline, a session that needs renewing can't be checked; the renewal keeps retrying for
+    // about 25 seconds before it gives up. Keep the last user on this device instead of a
+    // spinner and then a trip to the login page (C1-03). This only picks the screens: data
+    // still needs a valid session, and a real sign-out still signs them out.
+    const keepLastUser = (): boolean => {
+      const last = readLastUser()
+      if (!last) return false
+      // Only the dashboard layout reads `user`, and only to see whether someone is signed in
+      setUser((current) => current ?? ({ id: last.id, email: last.email ?? undefined } as unknown as User))
+      setUserId((current) => current ?? last.id)
+      return true
+    }
+    if (typeof navigator !== 'undefined' && navigator.onLine === false && keepLastUser()) {
+      setLoading(false)
     }
 
     try {
@@ -66,7 +52,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         console.error('Error getting session:', error)
-        if (tryOfflineFallback()) return
+        // A network error is "can't check right now", not "signed out"
+        if (isOfflineAuthError(error) && keepLastUser()) return
         setUser(null)
         setUserId(null)
         return
@@ -75,13 +62,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         setUser(session.user)
         setUserId(session.user.id)
+        rememberLastUser(session.user)
       } else {
         setUser(null)
         setUserId(null)
       }
     } catch (error) {
       console.error('Error refreshing user:', error)
-      if (tryOfflineFallback()) return
+      if (isOfflineAuthError(error) && keepLastUser()) return
       setUser(null)
       setUserId(null)
     } finally {
@@ -105,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           setUser(session.user)
           setUserId(session.user.id)
+          rememberLastUser(session.user)
         } else if (event === 'SIGNED_OUT') {
           // Explicit sign-out is authoritative regardless of connectivity. Also
           // clear persisted filter/selection state so a different account

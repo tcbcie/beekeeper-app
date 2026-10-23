@@ -197,14 +197,14 @@ function AcceptRearingGroupInvitationContent() {
               </p>
               <div className="space-y-3">
                 <Button
-                  onClick={() => router.push(`/login?signup=true&email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.href)}`)}
+                  onClick={() => router.push(`/login?signup=true&email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
                   tone="blue"
                   fullWidth
                 >
                   Sign Up
                 </Button>
                 <Button
-                  onClick={() => router.push(`/login?email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.href)}`)}
+                  onClick={() => router.push(`/login?email=${encodeURIComponent(invitedEmail)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
                   tone="neutral"
                   fullWidth
                 >

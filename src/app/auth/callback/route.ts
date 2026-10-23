@@ -1,10 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { safeRedirectPath } from '@/lib/safe-redirect'
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  // Where to go once signed in (set by the login page), checked like the login page's redirect
+  const next = safeRedirectPath(requestUrl.searchParams.get('next')) ?? '/dashboard'
 
   if (code) {
     const cookieStore = await cookies()
@@ -37,7 +40,10 @@ export async function GET(request: Request) {
 
     if (error) {
       console.error('Error exchanging code for session:', error)
-      return NextResponse.redirect(new URL('/login?error=auth_error', requestUrl.origin))
+      // Keep the target, so signing in from here still lands on it
+      return NextResponse.redirect(
+        new URL(`/login?error=auth_error&redirect=${encodeURIComponent(next)}`, requestUrl.origin)
+      )
     }
 
     // Check if this user account has been deleted
@@ -70,5 +76,5 @@ export async function GET(request: Request) {
   }
 
   // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL('/dashboard', requestUrl.origin))
+  return NextResponse.redirect(new URL(next, requestUrl.origin))
 }

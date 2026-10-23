@@ -1,3 +1,5 @@
+import { forgetLastUser } from './last-user'
+
 /** localStorage key holding the admin's own session while they impersonate a user. */
 export const IMPERSONATION_KEY = 'hivecraic_impersonation'
 
@@ -17,6 +19,8 @@ export function clearLocalUserData(): void {
   } catch {
     // Storage unavailable (private mode, blocked site data): nothing to clear.
   }
+  // The last signed-in user kept for offline starts
+  forgetLastUser()
   // Message the registration's active worker rather than `controller`, which is null
   // when this page isn't controlled (first load, hard refresh) even though the worker
   // and its cache exist. Older workers ignore the unknown message type.

@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { isOfflineAuthError, readLastUser } from './last-user'
 
 /**
  * Get the current authenticated user's ID
@@ -9,6 +10,10 @@ export async function getCurrentUserId(): Promise<string | null> {
 
   if (error) {
     console.error('Error getting session:', error)
+    // Offline, an expired token can't be renewed; that isn't a sign-out, so keep the last
+    // user on this device rather than sending every page to the login screen (C1-03).
+    // Data requests still need a valid session.
+    if (isOfflineAuthError(error)) return readLastUser()?.id ?? null
     return null
   }
 
