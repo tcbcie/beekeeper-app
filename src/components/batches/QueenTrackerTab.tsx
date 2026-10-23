@@ -1324,6 +1324,18 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
       return
     }
 
+    // One tap on the green icon used to clear the mated date straight away; ask first, as
+    // clearing a failure does.
+    const confirmed = await confirm({
+      title: 'Clear the mating confirmation?',
+      message: 'This removes the mated date and takes the queen out of the mated count. The mating location is kept.',
+      confirmLabel: 'Clear mated',
+      cancelLabel: 'Keep mated',
+      variant: 'danger',
+    })
+    if (!confirmed) return
+    if (updatingIdsRef.current.has(distribution.id)) return
+
     lockRow(updatingIdsRef, setUpdatingIds, distribution.id)
     try {
       const success = await updateMating(distribution.id, false)
@@ -1336,7 +1348,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
     } finally {
       unlockRow(updatingIdsRef, setUpdatingIds, distribution.id)
     }
-  }, [openOutcomeActionDraft, updateMating, toast])
+  }, [openOutcomeActionDraft, updateMating, toast, confirm])
 
   const handleMatingDateChange = useCallback(async (id: string, date: string): Promise<boolean> => {
     if (updatingIdsRef.current.has(id)) return false

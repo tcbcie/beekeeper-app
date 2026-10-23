@@ -1,7 +1,7 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). The main page request chains and double loads were fixed in batch 23 (22/10/2026). The public GDD embed, Mel's tools and the group reports followed in batch 24 (22/10/2026), and the admin, Tools, research and export chains in batch 25 (22/10/2026). Batch 25 also fixed a new data-loss bug: the settings and member exports stopped at 1,000 rows per table. Batch 26 (23/10/2026) added database guards against queen lineage loops and duplicate pending invitations, and made the dashboard use the Irish date. Batch 28 (23/10/2026) fixed the remaining data-correctness High findings, batch 29 (23/10/2026) the sign-in redirects and offline sign-in, batch 30 (23/10/2026) the community map, tap targets and sign-in deep links, batch 31 (23/10/2026) the tooling: lint clean across the project and Vitest 5, and batch 32 (23/10/2026) the personal data export, the CSV exports and record edits that reported success when RLS blocked them. Batch 27 (23/10/2026) moved the server to Irish dates: task reminders had been arriving an hour late all summer, and database "today" fill-ins, invitation e-mail dates and the scale chart ranges were fixed. Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). The main page request chains and double loads were fixed in batch 23 (22/10/2026). The public GDD embed, Mel's tools and the group reports followed in batch 24 (22/10/2026), and the admin, Tools, research and export chains in batch 25 (22/10/2026). Batch 25 also fixed a new data-loss bug: the settings and member exports stopped at 1,000 rows per table. Batch 26 (23/10/2026) added database guards against queen lineage loops and duplicate pending invitations, and made the dashboard use the Irish date. Batch 28 (23/10/2026) fixed the remaining data-correctness High findings, batch 29 (23/10/2026) the sign-in redirects and offline sign-in, batch 30 (23/10/2026) the community map, tap targets and sign-in deep links, batch 31 (23/10/2026) the tooling: lint clean across the project and Vitest 5, batch 32 (23/10/2026) the personal data export, the CSV exports and record edits that reported success when RLS blocked them, and batch 33 (23/10/2026) the queen rearing records: distributed grafts, mating nuc edits, mixed bulk distributions, mated dates and NIHBS overrides. Batch 27 (23/10/2026) moved the server to Irish dates: task reminders had been arriving an hour late all summer, and database "today" fill-ins, invitation e-mail dates and the scale chart ranges were fixed. Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
@@ -67,9 +67,9 @@ Covers native `confirm()`, bench delete with no confirmation, the rollback race,
 
 ### Medium, key items
 - **C5a-06 / C5a-07:** multi-breeder breeder leakage, and the card has no fallback breeder.
-- **C5a-08 / C5a-09:** moving or deleting a nuc wipes the graft data, and the order of writes and ignored errors.
+- **C5a-08 / C5a-09:** moving or deleting a nuc wipes the graft data, and the order of writes and ignored errors. *Fixed in batch 33 (23/10/2026): only an in-nuc cell is moved back, its number and marking are kept, the nuc is deleted first and every write is checked.*
 - **C5a-10:** the double-tap guard ref is set during render. *Fixed in batch 16 (19/10/2026): the ref is now the lock and is updated by `lockRow`/`unlockRow`.*
-- **C5a-11:** clearing Mated has no confirmation and wipes the location.
+- **C5a-11:** clearing Mated has no confirmation and wipes the location. *Fixed in batch 33 (23/10/2026).*
 - **C5a-12 / C5a-13 / C5a-14:** sync errors are hidden, there's no try/catch, and a stale fetch race.
 - **C5a-15 / C5a-16 / C5a-17:** over-fetching, `select('*')`, and an unpaginated ledger.
 - **C5a-18:** UTC dates. *Fixed in batch 19 (22/10/2026).*
@@ -119,12 +119,12 @@ One shell-profile hook with a cache, one `safeInternalPath()` redirect helper, s
 
 ### Medium, key items
 - **C5b-05:** the recipient queen's birth date is a day early in summer time (UTC). *Fixed in batch 19 (22/10/2026).*
-- **C5b-06:** bulk distribution drops the mating location and installed date.
-- **C5b-07:** a mixed bulk selection records every graft as a mated queen.
-- **C5b-08:** mated-date edits never sync to the recipient queen.
-- **C5b-09:** distributed grafts can be deleted or have their status changed, and `sold` can be set by hand.
+- **C5b-06:** bulk distribution drops the mating location and installed date. *Fixed in batch 33 (23/10/2026).*
+- **C5b-07:** a mixed bulk selection records every graft as a mated queen. *Fixed in batch 33 (23/10/2026): a mixed selection is refused.*
+- **C5b-08:** mated-date edits never sync to the recipient queen. *Fixed in batch 33 (23/10/2026): trigger `trg_sync_distributed_queen_mated_date`.*
+- **C5b-09:** distributed grafts can be deleted or have their status changed, and `sold` can be set by hand. *Fixed in batch 33 (23/10/2026). It was worse than reported: the FK cascaded, so a delete silently removed the distribution. The FK is now `NO ACTION`, the screen hides status and delete on distributed rows, and `sold` can't be picked by hand.*
 - **C5b-10 / C5b-11:** double initial fetch, and the tab bounces. *Fixed in batch 23 (22/10/2026).*
-- **C5b-12 / C5b-14:** double tap on save and on generate, and the save is not atomic. *Double taps fixed in batch 16 (19/10/2026); the non-atomic save is still open.*
+- **C5b-12 / C5b-14:** double tap on save and on generate, and the save is not atomic. *Double taps fixed in batch 16 (19/10/2026). The non-atomic save was fixed in batch 33 (23/10/2026): a new batch is removed if its breeder queens fail to save.*
 - **C5b-13:** single-breeder cells don't stamp the mother, and the dropdown isn't locked.
 - **C5b-15:** stuck on "Loading grafts…" with no retry.
 - **C5b-16:** the selection scoring refetches on every tap and counts missing ratings as 0.
@@ -276,7 +276,7 @@ Covers the UTC end date, period counts, the toggle race, `confirm()`, UTC defaul
 
 ### Medium, key items
 - **C6-05:** double init fetch. *Fixed in batch 23 (22/10/2026).*
-- **C6-06:** redistribute is not atomic.
+- **C6-06:** redistribute is not atomic. *Fixed in batch 33 (23/10/2026): the queen is marked distributed only after the recipient's queen exists.*
 - **C6-07 / C6-08:** queen form double submit, and the cycle check runs after the RPC. *C6-07 fixed in batch 16 (19/10/2026). C6-08 was worse than first reported, because a reared daughter could be saved as her own mother's mother. Fixed in batch 26 (23/10/2026): the database trigger `queens_prevent_lineage_cycle` and the `queens_not_own_parent` check, plus the form checks before promotion and hides the queen's own reared daughters.*
 - **C6-09:** duplicate invites. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.* The pending-invitation index was added in batch 26 (23/10/2026). It replaced the old `(team/group, email, status)` rule, which also blocked former members from accepting a new invitation.
 - **C6-10:** stale team detail race.
@@ -328,7 +328,7 @@ The auth block is copied in 22 routes. Proposal: `requireUser()` plus one servic
 - **C8a-08 to C8a-10:** waterfalls and `select('*')`. *Fixed in batch 25 (22/10/2026); the small user-scoped `select('*')` reads stay.*
 - **C8a-11 / C8a-12:** two CSV writers have no formula-injection guard or BOM. *Fixed in batch 32 (23/10/2026): Profit & Loss and the shared report export use `src/lib/csv.ts`.*
 - **C8a-13:** export-to-image cleanup only runs on success.
-- **C8a-14:** NIHBS drops saved overrides on a query failure.
+- **C8a-14:** NIHBS drops saved overrides on a query failure. *Fixed in batch 33 (23/10/2026).*
 - **C8a-16:** TBRPlanner is 1,011 lines.
 
 ### Low

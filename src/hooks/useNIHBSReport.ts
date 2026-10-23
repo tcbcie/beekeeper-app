@@ -77,6 +77,9 @@ export function useNIHBSReport() {
       ])
 
       if (membersError) throw membersError
+      // Without the saved overrides the report would show the automatic figures, and saving any
+      // month would then overwrite the overrides for good (C8a-14), so fail the whole report.
+      if (returnsError) throw returnsError
 
       const userIds = (members || []).map((m) => m.user_id)
       const experience_counts = { experienced: 0, intermediate: 0, novice: 0 }

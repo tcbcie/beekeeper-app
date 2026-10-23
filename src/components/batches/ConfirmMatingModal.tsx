@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Apiary {
   id: string
@@ -34,6 +35,7 @@ export default function ConfirmMatingModal({
 }: ConfirmMatingModalProps) {
   const isExternal = !recipientUserId
   const today = getCurrentDate()
+  const confirm = useConfirm()
 
   // Form state
   const [matingDate, setMatingDate] = useState(currentMatingDate || today)
@@ -170,6 +172,13 @@ export default function ConfirmMatingModal({
   }, [validateForm, matingDate, customLocation, onConfirm, onClose])
 
   const handleClear = useCallback(async () => {
+    if (!(await confirm({
+      title: 'Clear the mating confirmation?',
+      message: 'This removes the mated date and takes the queen out of the mated count. The mating location is kept.',
+      confirmLabel: 'Clear mated',
+      cancelLabel: 'Keep mated',
+      variant: 'danger',
+    }))) return
     setSaving(true)
     setError('')
 
@@ -186,7 +195,7 @@ export default function ConfirmMatingModal({
     } finally {
       setSaving(false)
     }
-  }, [onClear, onClose])
+  }, [onClear, onClose, confirm])
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

@@ -243,7 +243,10 @@ export default function QueenDetailPage() {
     const isGraftSourced = !!data.graft_id
     const ok = isGraftSourced ? await redistributeQueen(data) : await createDistribution(data)
     if (!ok) {
-      toast.error(isGraftSourced ? 'Failed to redistribute queen' : 'Failed to distribute queen')
+      // Nothing is marked here until the recipient's queen exists, so a retry is safe.
+      toast.error(isGraftSourced
+        ? "Failed to redistribute queen. The recipient's queen could not be created, so your queen is unchanged. Please try again."
+        : 'Failed to distribute queen')
       return ok
     }
     const { error: qErr } = await supabase
@@ -251,16 +254,22 @@ export default function QueenDetailPage() {
       .update({ status: 'distributed' })
       .eq('id', queen.id)
       .eq('user_id', currentUserId)
-    if (qErr) console.error('Non-blocking: failed to mark queen distributed:', qErr)
+    if (qErr) console.error('Failed to mark queen distributed:', qErr)
+    let hErr: unknown = null
     if (hive?.id) {
-      const { error: hErr } = await supabase
+      const { error } = await supabase
         .from('hives')
         .update({ queen_id: null, queen_mated: false, is_queenless: true, queenless_reason: 'Queen distributed to another beekeeper' })
         .eq('id', hive.id)
         .eq('user_id', currentUserId)
-      if (hErr) console.error('Non-blocking: failed to detach queen from hive:', hErr)
+      hErr = error
+      if (hErr) console.error('Failed to detach queen from hive:', hErr)
     }
-    toast.success(isGraftSourced ? 'Queen redistributed' : 'Queen distributed')
+    // The distribution is recorded either way; say what didn't follow instead of a plain success.
+    const action = isGraftSourced ? 'Queen redistributed' : 'Queen distributed'
+    if (qErr) toast.error(`${action}, but this copy could not be marked as distributed. Please set its status to Distributed.`)
+    else if (hErr) toast.error(`${action}, but it could not be removed from its hive. Please update the hive.`)
+    else toast.success(action)
     fetchQueenData(currentUserId)
     return ok
   }

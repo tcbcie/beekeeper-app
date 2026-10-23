@@ -171,6 +171,7 @@ Second round of defensive improvements from a full code audit:
 - **Input length limits** — External recipient fields in `DistributeGraftModal` now have `maxLength` (name: 200, email: 254, phone: 20, location: 100)
 - **O(1) graft lookup** — `DistributionList` uses a `Map` for graft lookup instead of `Array.find()` in render loop
 - **Safe bulk delete** — Frame bulk delete now filters out distributed and failed grafts before deletion, preventing FK constraint errors
+- **Distributed grafts can't be deleted (batch 33, 23/10/2026)** — The FK `graft_distributions_graft_id_fkey` was really `ON DELETE CASCADE`, so deleting a graft silently removed its distribution. It is now `ON DELETE NO ACTION`. Remove the distribution first. The Queen Tracking table hides status and delete on distributed rows, and `sold` is no longer a manual status. See `queen-rearing-batch33-plan.md`.
 - **Status validation** — `updateGraftStatus` validates against known `GRAFT_STATUSES` values before writing to the database
 
 ## Files

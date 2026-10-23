@@ -151,7 +151,9 @@ export async function setDistributionMatingConfirmation(
     confirmed,
     matingDate,
     matingLocation,
-    clearLocationOnClear = true,
+    // Clearing a confirmation (often a stray tap) keeps the mating site: re-confirming from the
+    // tracker sends no location, so a cleared site stayed blank for good (C5a-11).
+    clearLocationOnClear = false,
   }: {
     confirmed: boolean
     matingDate?: string | null
@@ -888,9 +890,20 @@ export function useGraftDistributions() {
         throw graftError
       }
 
-      // Create queen records for recipient (non-blocking, single batch fetch)
+      // Create queen records for recipient (non-blocking, single batch fetch). Pass the date and
+      // mating location typed into the window, as the single path does; without them mated
+      // queens got the batch's default station instead (C5b-06). No hive: bulk never places.
       if (data.recipient_user_id) {
-        warnIfQueenMissing(createQueensForRecipient(data.recipient_user_id, data.batch_id, graftIds, data.distribution_type, null, null, data.recipient_apiary_id))
+        warnIfQueenMissing(createQueensForRecipient(
+          data.recipient_user_id,
+          data.batch_id,
+          graftIds,
+          data.distribution_type,
+          null,
+          data.distribution_date,
+          data.recipient_apiary_id,
+          data.mating_location,
+        ))
       }
 
       return true
@@ -1009,9 +1022,13 @@ export function useGraftDistributions() {
       }
 
       // Mint the queen in an app-user recipient's account (external recipients are record-only).
+      // Awaited, not fire-and-forget: the caller marks its own copy distributed only once the
+      // recipient's queen exists. On failure the queen stays live here and Redistribute stays
+      // offered; create_queen_for_distribution is idempotent, so a retry is safe (C6-06).
       if (data.recipient_user_id) {
+        let created = true
         if (data.graft_id && data.batch_id) {
-          warnIfQueenMissing(createQueensForRecipient(
+          created = await createQueensForRecipient(
             data.recipient_user_id,
             data.batch_id,
             [data.graft_id],
@@ -1020,11 +1037,11 @@ export function useGraftDistributions() {
             data.distribution_date,
             data.recipient_apiary_id,
             data.mating_location,
-          ))
+          )
         } else if (data.source_queen_id) {
           const distributionId = (updated as { id: string }[] | null)?.[0]?.id ?? null
           if (distributionId) {
-            warnIfQueenMissing(createQueenForRecipientFromQueen(
+            created = await createQueenForRecipientFromQueen(
               data.recipient_user_id,
               data.source_queen_id,
               distributionId,
@@ -1033,8 +1050,12 @@ export function useGraftDistributions() {
               data.distribution_date,
               data.recipient_apiary_id,
               data.mating_location,
-            ))
+            )
           }
+        }
+        if (!created) {
+          console.error("Redistribution recorded but the recipient's queen could not be created:", data.graft_id ?? data.source_queen_id)
+          return false
         }
       }
 
@@ -1043,7 +1064,7 @@ export function useGraftDistributions() {
       console.error('Error redistributing queen:', err)
       return null
     }
-  }, [warnIfQueenMissing])
+  }, [])
 
   const searchUsers = useCallback(async (searchText: string): Promise<RecipientUser[]> => {
     // The RPC needs 3+ characters (name fragment or a complete email) and returns masked emails

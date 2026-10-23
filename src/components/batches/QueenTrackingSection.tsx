@@ -12,6 +12,12 @@ import {
   formatDateIrish,
 } from './graftConstants'
 
+// "Sold" is only set by distributing, so it isn't offered by hand. An older graft left as
+// sold without a distribution still lists it, so its select shows the current status and
+// can be corrected.
+const statusOptionsFor = (status: string) =>
+  status === 'sold' ? [...TABLE_STATUSES, ...GRAFT_STATUSES.filter(s => s.value === 'sold')] : TABLE_STATUSES
+
 interface QueenTrackingSectionProps {
   grafts: Graft[]
   tableGrafts: Graft[]
@@ -219,6 +225,8 @@ export default function QueenTrackingSection({
           <tbody className="divide-y divide-border">
             {tableGrafts.map(graft => {
               const isDistributed = distributedGraftIds.has(graft.id) || graft.status === 'sold'
+              // Unlocking still allows the marking, number, weight and date; never status or delete.
+              const hasDistribution = distributedGraftIds.has(graft.id)
               const isLockedByFailed = graft.status === 'failed'
               const isLocked = (isDistributed || isLockedByFailed) && !unlockedGraftIds.has(graft.id)
               const canMark = MARKABLE_STATUSES.includes(graft.status)
@@ -242,8 +250,8 @@ export default function QueenTrackingSection({
                   </td>
                   <td className="px-3 py-2 text-sm font-medium text-foreground">#{graft.cell_number}</td>
                   <td className="px-3 py-2">
-                    {isLocked ? (
-                      isLockedByFailed ? (
+                    {isLocked || hasDistribution ? (
+                      isLockedByFailed && !hasDistribution ? (
                         <span className="px-2 py-1 text-sm rounded bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border border-red-200 dark:border-red-800 font-medium">
                           Failed
                         </span>
@@ -258,7 +266,7 @@ export default function QueenTrackingSection({
                         onChange={(e) => updateGraftStatus(graft.id, e.target.value)}
                         className="rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
                       >
-                        {TABLE_STATUSES.map(s => (
+                        {statusOptionsFor(graft.status).map(s => (
                           <option key={s.value} value={s.value}>{s.label}</option>
                         ))}
                       </select>
@@ -354,7 +362,7 @@ export default function QueenTrackingSection({
                           <Send size={14} />
                         </Button>
                       )}
-                      {!isLocked && tableSelectedIds.size < 2 && (
+                      {!isLocked && !hasDistribution && tableSelectedIds.size < 2 && (
                         <Button
                           type="button"
                           onClick={() => deleteGraft(graft.id)}
@@ -378,6 +386,8 @@ export default function QueenTrackingSection({
         {tableGrafts.map(graft => {
           const statusInfo = GRAFT_STATUSES.find(s => s.value === graft.status)
           const isDistributed = distributedGraftIds.has(graft.id) || graft.status === 'sold'
+          // Unlocking still allows the marking, number, weight and date; never status or delete.
+          const hasDistribution = distributedGraftIds.has(graft.id)
           const isLockedByFailed = graft.status === 'failed'
           const isLocked = (isDistributed || isLockedByFailed) && !unlockedGraftIds.has(graft.id)
           const canMark = MARKABLE_STATUSES.includes(graft.status)
@@ -416,15 +426,19 @@ export default function QueenTrackingSection({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-sm text-text-secondary">Status</label>
+                    {hasDistribution ? (
+                      <span className="text-sm text-text-secondary">Distributed</span>
+                    ) : (
                     <select
                       value={graft.status}
                       onChange={(e) => updateGraftStatus(graft.id, e.target.value)}
                       className="rounded border border-border bg-surface px-2 py-1 text-base text-foreground dark:bg-surface-elevated"
                     >
-                      {TABLE_STATUSES.map(s => (
+                      {statusOptionsFor(graft.status).map(s => (
                         <option key={s.value} value={s.value}>{s.label}</option>
                       ))}
                     </select>
+                    )}
                   </div>
                   <div className="flex items-center justify-between">
                     <label className="text-sm text-text-secondary">Last Update</label>
@@ -517,7 +531,7 @@ export default function QueenTrackingSection({
                     Distribute
                   </Button>
                 )}
-                {!isLocked && tableSelectedIds.size < 2 && (
+                {!isLocked && !hasDistribution && tableSelectedIds.size < 2 && (
                   <Button
                     type="button"
                     onClick={() => deleteGraft(graft.id)}

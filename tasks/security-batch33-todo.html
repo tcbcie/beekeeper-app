@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 33: Queen Rearing Records</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 33: Queen Rearing Records</h1>
+<p><strong>Status:</strong> Implemented 23/10/2026, waiting for your test. This is Phase 2 fix batch 20. It covers the open Medium findings where queen rearing loses or misrecords data, which feeds into NIHBS returns and recipients' queen records. Two agents checked each finding against the code and the live database. The next two batches are CRM and traceability (batch 34), then records and hives (batch 35).</p>
+
+<h2>A. Deleting a distributed graft silently deletes the distribution: C5b-09</h2>
+<p>In the live database, deleting a graft also deletes its distribution: the Queen Tracker row, its NIHBS counts, and the link to the recipient's queen. The lock on a distributed row in the grafts table is screen-only, and one tap takes it off with no warning. After that, the row can be deleted or have its status changed. "Sold" can also be picked by hand on any graft, which drops a mated queen out of the NIHBS return.</p>
+<div class="task"><input type="checkbox" checked disabled> <strong>Database:</strong> refuse to delete a graft that has a distribution, instead of deleting both. Deleting a whole batch still works, because it removes the batch's distributions in the same step.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Screen:</strong>
+  <ul>
+    <li>Distributed grafts never show Delete or the status picker, even when unlocked.</li>
+    <li>"Sold" is removed from the hand-picked statuses; it's only set by distributing.</li>
+    <li>The bulk status and delete actions skip distributed grafts and say so.</li>
+    <li>A wrong code comment about this rule is corrected.</li>
+  </ul>
+</div>
+
+<h2>B. Editing or deleting a mating nuc wipes the old queen's record: C5a-08, C5a-09</h2>
+<p>When you re-queen a nuc by editing it to a new cell, the old graft is reset to "sealed cell", and its queen number and marking are erased. This happens even if it's mated, failed or sold. Deleting a nuc does the same to an emerged queen. Delete also resets the graft before deleting the nuc, so a failed delete in the field still wipes it. Several of these writes ignore errors and show "success" anyway.</p>
+<div class="task"><input type="checkbox" checked disabled> Only a graft still marked "in nuc" is moved back, to "emerged" if it has a marking, otherwise "sealed". Its number and marking are kept.</div>
+<div class="task"><input type="checkbox" checked disabled> Delete removes the nuc first, then moves the graft back.</div>
+<div class="task"><input type="checkbox" checked disabled> Every write checks for errors, and a partial failure is reported rather than shown as success.</div>
+
+<h2>C. A mixed bulk distribution records every graft as a mated queen: C5b-07</h2>
+<p>If you select sealed cells together with a mated queen and press Distribute, every graft is recorded as a mated queen. This over-counts NIHBS and gives the recipient "active" queens that are really cells.</p>
+<div class="task"><input type="checkbox" checked disabled> The Distribute window refuses a selection whose grafts are at different stages and asks you to distribute them in groups. A selection all at one stage works as now.</div>
+
+<h2>D. Mated date and Mated tick: C5b-08, C5a-11</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5b-08, database:</strong> when you correct a distribution's mated date, the recipient's queen gets the corrected date too. It's only changed where the queen still has the old date, so a date the recipient set themselves is left alone.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-11:</strong> clearing "Mated", from the tracker icon or the Mated window, now asks first, as clearing a failure already does. It also keeps the mating location instead of erasing it.</div>
+
+<h2>E. Smaller fixes: C8a-14, C5b-06, C6-06, C5b-14</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C8a-14, NIHBS return:</strong> if loading your saved overrides fails, the report now shows an error. Before, it showed the automatic figures, and pressing Save would overwrite your overrides for good.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5b-06, bulk distribution:</strong> the recipient queens get the mating location and date typed into the window, as single distributions already do.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C6-06, redistributing a queen:</strong> your copy is only marked "distributed" once the recipient's queen has actually been created. Errors are shown, not just written to the console.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5b-14, creating a batch:</strong> if saving the breeder queens fails, the half-made batch is removed. Before, a retry failed with a false "name already used" error.</div>
+
+<div class="note"><strong>Database changes:</strong> one migration, applied through MCP and saved in <code>supabase/migrations/</code>. It changes how a graft's distribution reacts to a delete, and adds one trigger that copies a corrected mated date to the recipient's queen. The trigger function gets no client access, and I'll run the security advisors afterwards. Everything else is screen code.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; the qa-engineer audit; the security advisors after the migration.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/queen-rearing-batch33-plan.md</code>, the Phase 2 register, <code>batch-distributions.md</code> (the corrected rule), and memory.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>In a batch's grafts table, a distributed graft has no Delete or status picker, even when unlocked, and "Sold" isn't offered.</li>
+    <li>Edit a mating nuc to a new cell: the old graft keeps its number and status.</li>
+    <li>Select a sealed cell and a mated queen together and press Distribute: you're asked to split them.</li>
+    <li>In the Queen Tracker, change a mated date: the recipient's queen shows the new date. Tapping the Mated tick asks before clearing.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Delete a distributed graft</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Distribution, tracker row and NIHBS counts silently deleted</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Refused by the database; no Delete or status picker on the row</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Edit or delete a mating nuc</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Old queen reset to sealed, number erased</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Only an in-nuc cell moves back; number kept; errors reported</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Mixed bulk distribution</td><td style="border:1px solid #e7d9b8;padding:0.4rem">All recorded as mated queens</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Refused, with "distribute each stage as its own group"</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Corrected mated date</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Recipient's queen kept the old date</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Copied by a database trigger (tested live, rolled back)</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0; 823 tests pass; advisors show nothing new</td></tr>
+</table>
+<ul>
+  <li><strong>Migration:</strong> <code>20261023180000_queen_rearing_batch33.sql</code>. It changes the graft FK to <code>NO ACTION</code> and adds the mated-date trigger, whose function has no client access. Both were tested on the live database inside a block that rolled back, so no real data was changed. A graft delete was refused, a batch delete still worked, and the queen's date followed the correction. No database function deletes grafts directly.</li>
+  <li><strong>Screen:</strong> distributed rows can still be unlocked to change marking, queen number, weight and date, but never status or delete. An older graft left as "sold" without a distribution still shows that status, so it can be corrected.</li>
+  <li><strong>Mated:</strong> both clear paths ask first, and the mating location is kept.</li>
+  <li><strong>Smaller fixes:</strong>
+    <ul>
+      <li>NIHBS shows an error instead of figures that would overwrite your overrides.</li>
+      <li>Bulk distributions pass on the mating location.</li>
+      <li>Redistributing waits for the recipient's queen to exist.</li>
+      <li>A half-made batch is removed.</li>
+    </ul>
+  </li>
+  <li><strong>QA audit:</strong> no Critical or High issues.</li>
+</ul>
+</body>
+</html>

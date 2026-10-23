@@ -87,6 +87,11 @@ export default function DistributeGraftModal({
       }, bulkGrafts[0].status)
     : (graftStatus ?? '')
   const distributionType = distributionTypeOverride || TYPE_FROM_GRAFT_STATUS[effectiveStatus] || 'queen_cell'
+  // A bulk distribution records one type for every graft, so cells, virgins and mated queens
+  // can't go together: sealed cells sent with a mated queen were all recorded as mated queens,
+  // over-counting the NIHBS return and giving the recipient "active" queens (C5b-07).
+  const mixedStages = !!isBulk && !distributionTypeOverride &&
+    new Set(bulkGrafts.map(g => TYPE_FROM_GRAFT_STATUS[g.status] || 'queen_cell')).size > 1
   const typeInfo = TYPE_LABELS[distributionType] || { label: 'Queen Cell', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' }
 
   const hasGroup = groupMemberIds && groupMemberIds.length > 0
@@ -280,7 +285,7 @@ export default function DistributeGraftModal({
   const isExternal = recipientMode === 'external'
   const externalHasData = extName.trim() || extEmail.trim() || extPhone.trim() || extLocation.trim()
   const externalLocationRequired = isExternal && !extLocation.trim()
-  const canSubmit = isExternal ? (!!externalHasData && !externalLocationRequired) : !!selectedUser
+  const canSubmit = !mixedStages && (isExternal ? (!!externalHasData && !externalLocationRequired) : !!selectedUser)
 
   // Mirrors the search RPC (name contains the text, or the complete email matches), so the hint
   // only shows when the empty result really is the self-exclusion rather than a genuine miss.
@@ -388,9 +393,15 @@ export default function DistributeGraftModal({
           {/* Distribution Type Badge */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">Type</label>
-            <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${typeInfo.color}`}>
-              {typeInfo.label}
-            </span>
+            {mixedStages ? (
+              <p role="alert" className="text-base text-red-700 dark:text-red-300">
+                The selected grafts are at different stages (cells, virgins and mated queens). Close this and distribute each stage as its own group.
+              </p>
+            ) : (
+              <span className={`inline-block px-3 py-1 rounded text-sm font-medium ${typeInfo.color}`}>
+                {typeInfo.label}
+              </span>
+            )}
           </div>
 
           {/* Recipient */}

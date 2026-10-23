@@ -61,6 +61,9 @@ export const FRAME_STATUSES = [
   { value: 'failed', label: 'Failed', color: STATUS_CHIP_CLASSES.failed },
 ]
 
+// Statuses a beekeeper can pick by hand in the Queen Tracking table. 'sold' is left out:
+// it is set only by recording a distribution, and a hand-set 'sold' with no distribution
+// dropped a mated queen out of the NIHBS return.
 export const TABLE_STATUSES = [
   { value: 'sealed', label: 'Sealed', color: STATUS_CHIP_CLASSES.sealed },
   { value: 'caged', label: 'Caged', color: STATUS_CHIP_CLASSES.caged },
@@ -68,7 +71,6 @@ export const TABLE_STATUSES = [
   { value: 'in_nuc', label: 'In Nuc', color: STATUS_CHIP_CLASSES.in_nuc },
   { value: 'mated', label: 'Mated', color: STATUS_CHIP_CLASSES.mated },
   { value: 'failed', label: 'Failed', color: STATUS_CHIP_CLASSES.failed },
-  { value: 'sold', label: 'Distributed/Sold', color: STATUS_CHIP_CLASSES.sold },
 ]
 
 export const FRAME_STATUS_VALUES = ['grafted', 'accepted']

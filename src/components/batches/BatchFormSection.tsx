@@ -325,7 +325,20 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  p_batch_id: batchId,
  p_breeder_queen_ids: isMulti ? formData.breeder_queen_ids : [],
  })
- if (rpcErr) throw rpcErr
+ if (rpcErr) {
+ // A new batch without its breeders is half-made (a multi-breeder batch has no mother at
+ // all), and a retry would fail on the name it already uses. Remove it so the retry starts
+ // clean (C5b-14).
+ if (!editingBatch) {
+ const { error: undoErr } = await supabase
+ .from('rearing_batches')
+ .delete()
+ .eq('id', batchId)
+ .eq('user_id', userId)
+ if (undoErr) console.error('Could not remove the half-created batch:', undoErr)
+ }
+ throw rpcErr
+ }
  }
 
  onSaved()

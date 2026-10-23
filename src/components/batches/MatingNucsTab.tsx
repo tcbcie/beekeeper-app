@@ -726,6 +726,27 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  void run(saveNuc)
  }
 
+ // A cell leaving its nuc goes back to where it was before: emerged if its queen is marked,
+ // otherwise sealed. Only a cell still 'in nuc' moves; one that has gone on to mated, failed or
+ // distributed keeps its status, and the queen number and marking are never cleared (C5a-08).
+ // Returns the first error, if any.
+ const releaseGraftFromNuc = async (graftId: string) => {
+ const [marked, unmarked] = await Promise.all([
+ supabase.from('batch_grafts').update({ status: 'emerged' })
+ .eq('id', graftId).eq('user_id', userId).eq('status', 'in_nuc').eq('queen_marked', true),
+ supabase.from('batch_grafts').update({ status: 'sealed' })
+ .eq('id', graftId).eq('user_id', userId).eq('status', 'in_nuc').eq('queen_marked', false),
+ ])
+ return marked.error ?? unmarked.error
+ }
+
+ // The main write succeeded; a follow-up write that failed is reported, not hidden behind a
+ // success message.
+ const reportSaved = (message: string, problems: string[]) => {
+ if (problems.length === 0) toast.success(message)
+ else toast.error(`${message}, but ${problems.join(' and ')}. Please check and try again.`)
+ }
+
  const saveNuc = async () => {
  if (!formData.mating_location.trim()) {
  toast.error('Mating location is required. Select an apiary or enter a custom location.')
@@ -735,17 +756,6 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (formData.batch_id && !formData.graft_id) {
  toast.error('Please select a cell/graft when a batch is chosen.')
  return
- }
-
- // Moving a nuc off its cell reverts that cell to 'sealed' and wipes its marking below, which
- // takes the queen number with it. Warn before any of the writes run, so cancelling leaves
- // everything untouched — the Queen Tracker asks the same question when unmarking.
- const revertingGraftId = editingNuc?.graft_id
- if (revertingGraftId && revertingGraftId !== (formData.graft_id || null)) {
- const lostNumber = grafts.find(g => g.id === revertingGraftId)?.queen_number?.trim()
- if (lostNumber && !confirm(`Moving this nuc off its current cell also clears that cell's queen number (${lostNumber}). Continue?`)) {
- return
- }
  }
 
  const nucData = {
@@ -771,25 +781,23 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  if (error) throw error
 
- // Handle graft change on edit: revert old graft, transition new graft
+ // Handle graft change on edit: release the old cell, move the new one into the nuc
  const oldGraftId = editingNuc.graft_id
  const newGraftId = formData.graft_id || null
+ const problems: string[] = []
  if (oldGraftId && oldGraftId !== newGraftId) {
-   await supabase
-     .from('batch_grafts')
-     .update({ status: 'sealed', queen_marked: false, queen_number: null })
-     .eq('id', oldGraftId)
-     .eq('user_id', userId)
+   if (await releaseGraftFromNuc(oldGraftId)) problems.push('the old cell could not be moved back')
  }
  if (newGraftId && newGraftId !== oldGraftId) {
-   await supabase
+   const { error: graftError } = await supabase
      .from('batch_grafts')
      .update({ status: 'in_nuc', status_date: formData.setup_date || getCurrentDate() })
      .eq('id', newGraftId)
      .eq('user_id', userId)
+   if (graftError) problems.push('the new cell could not be marked as in the nuc')
  }
 
- toast.success('Mating nuc updated')
+ reportSaved('Mating nuc updated', problems)
  } else {
  const { error } = await supabase
  .from('mating_nucs')
@@ -797,25 +805,28 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  if (error) throw error
 
+ const problems: string[] = []
  // Update graft status to 'in_nuc' if a graft was selected
  if (formData.graft_id) {
- await supabase
+ const { error: graftError } = await supabase
  .from('batch_grafts')
  .update({ status: 'in_nuc', status_date: formData.setup_date || getCurrentDate() })
  .eq('id', formData.graft_id)
  .eq('user_id', userId)
+ if (graftError) problems.push('the cell could not be marked as in the nuc')
  }
 
  // Mark inventory nuc as active so it is no longer available for selection
  if (selectedInventoryNucId) {
- await supabase
+ const { error: inventoryError } = await supabase
  .from('mating_nucs')
  .update({ equipment_status: 'active' })
  .eq('id', selectedInventoryNucId)
  .eq('user_id', userId)
+ if (inventoryError) problems.push('the nuc box is still listed as available')
  }
 
- toast.success('Mating nuc created')
+ reportSaved('Mating nuc created', problems)
  }
 
  fetchNucs()
@@ -843,17 +854,19 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (error) throw error
 
  // Set the corresponding inventory nuc to 'retired' if one exists
+ const problems: string[] = []
  if (nuc?.nuc_number) {
-   await supabase
+   const { error: inventoryError } = await supabase
      .from('mating_nucs')
      .update({ equipment_status: 'retired', retired_at: new Date().toISOString() })
      .eq('nuc_number', nuc.nuc_number)
      .eq('user_id', userId)
      .eq('is_inventory', true)
      .eq('equipment_status', 'active')
+   if (inventoryError) problems.push('its nuc box is still listed as in use')
  }
 
- toast.success('Nuc retired')
+ reportSaved('Nuc retired', problems)
  fetchNucs()
  fetchGrafts()
  fetchInventoryNucs()
@@ -867,17 +880,9 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  if (!confirm('Delete this nuc permanently? This will also delete all its inspections. This cannot be undone.')) return
 
  try {
- // Reset graft status back to 'sealed' before deleting (guard includes pre-sync statuses)
+ // Delete the nuc first: releasing its cell before a delete that then failed (offline in the
+ // field) used to leave the cell reset while the nuc still existed.
  const nuc = nucs.find(n => n.id === id)
- if (nuc?.graft_id) {
- await supabase
-   .from('batch_grafts')
-   .update({ status: 'sealed', queen_marked: false, queen_number: null })
-   .eq('id', nuc.graft_id)
-   .in('status', ['in_nuc', 'sealed', 'caged', 'emerged'])
-   .eq('user_id', userId)
- }
-
  const { error } = await supabase
  .from('mating_nucs')
  .delete()
@@ -885,7 +890,12 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .eq('user_id', userId)
 
  if (error) throw error
- toast.success('Nuc deleted')
+
+ const problems: string[] = []
+ if (nuc?.graft_id && await releaseGraftFromNuc(nuc.graft_id)) {
+ problems.push('its cell could not be moved back')
+ }
+ reportSaved('Nuc deleted', problems)
  fetchNucs()
  fetchGrafts()
  } catch (error) {

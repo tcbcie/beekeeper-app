@@ -206,6 +206,13 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     fetchDistributions(batchId)
   }, [fetchGrafts, fetchDistributions, batchId])
 
+  // Grafts with a distribution. Their status is set by distributing, and the database
+  // refuses to delete them (deleting would remove the Queen Tracker row, NIHBS counts and
+  // the link to the recipient's queen).
+  const distributedGraftIds = useMemo(() =>
+    new Set(distributions.map(d => d.graft_id)),
+  [distributions])
+
   // Prune unlockedGraftIds when distributions change
   useEffect(() => {
     const currentDistributed = new Set(distributions.map(d => d.graft_id))
@@ -372,6 +379,10 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       toast.error('Invalid status value')
       return
     }
+    if (distributedGraftIds.has(graftId)) {
+      toast.error('This graft has been distributed. Remove its distribution first.')
+      return
+    }
     try {
       const today = getCurrentDate()
       const { error } = await supabase
@@ -385,9 +396,13 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       console.error('Error updating graft:', error)
       toast.error('Failed to update graft')
     }
-  }, [fetchGrafts, toast])
+  }, [fetchGrafts, toast, distributedGraftIds])
 
   const deleteGraft = useCallback(async (graftId: string) => {
+    if (distributedGraftIds.has(graftId)) {
+      toast.error('This graft has been distributed. Remove its distribution first.')
+      return
+    }
     if (!confirm('Delete this graft?')) return
 
     try {
@@ -401,9 +416,12 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       fetchGrafts()
     } catch (error) {
       console.error('Error deleting graft:', error)
-      toast.error('Failed to delete graft')
+      // 23503: a distribution recorded since this page loaded still points at the graft.
+      toast.error((error as { code?: string } | null)?.code === '23503'
+        ? 'This graft has been distributed. Remove its distribution first.'
+        : 'Failed to delete graft')
     }
-  }, [fetchGrafts, toast])
+  }, [fetchGrafts, toast, distributedGraftIds])
 
   const updateGraftQueenMarked = useCallback(async (graftId: string, marked: boolean) => {
     const existing = grafts.find(g => g.id === graftId)
@@ -628,10 +646,6 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     grafts.filter(g => !FRAME_STATUS_VALUES.includes(g.status)),
   [grafts])
 
-  const distributedGraftIds = useMemo(() =>
-    new Set(distributions.map(d => d.graft_id)),
-  [distributions])
-
   // --- Table selection helpers ---
 
   const toggleTableSelect = useCallback((id: string) => {
@@ -728,7 +742,10 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       toast.error('Invalid status value')
       return
     }
-    const ids = Array.from(tableSelectedIds)
+    const selected = Array.from(tableSelectedIds)
+    const ids = selected.filter(id => !distributedGraftIds.has(id))
+    const skipped = selected.length - ids.length
+    if (skipped > 0) toast.warning(`${skipped} distributed ${skipped === 1 ? 'graft was' : 'grafts were'} left unchanged.`)
     if (ids.length === 0) return
     try {
       const statusDate = date || getCurrentDate()
@@ -744,7 +761,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       console.error('Error bulk updating grafts:', error)
       toast.error('Failed to update grafts')
     }
-  }, [tableSelectedIds, toast, fetchGrafts])
+  }, [tableSelectedIds, toast, fetchGrafts, distributedGraftIds])
 
   const handleTableBulkDateChange = useCallback(async (date: string) => {
     const ids = Array.from(tableSelectedIds)
@@ -812,9 +829,15 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   }, [tableSelectedIds, toast, fetchGrafts, grafts, userId])
 
   const handleTableBulkDelete = useCallback(async () => {
-    const ids = Array.from(tableSelectedIds)
-    if (ids.length === 0) return
-    if (!confirm(`Delete ${ids.length} selected grafts? This cannot be undone.`)) return
+    const selected = Array.from(tableSelectedIds)
+    const ids = selected.filter(id => !distributedGraftIds.has(id))
+    const skipped = selected.length - ids.length
+    if (ids.length === 0) {
+      if (skipped > 0) toast.error('Distributed grafts can\'t be deleted. Remove their distributions first.')
+      return
+    }
+    const skippedNote = skipped > 0 ? ` ${skipped} distributed ${skipped === 1 ? 'graft' : 'grafts'} will be kept.` : ''
+    if (!confirm(`Delete ${ids.length} selected grafts? This cannot be undone.${skippedNote}`)) return
     try {
       const { error } = await supabase
         .from('batch_grafts')
@@ -827,9 +850,11 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       setTableSelectedIds(new Set())
     } catch (error) {
       console.error('Error bulk deleting grafts:', error)
-      toast.error('Failed to delete grafts')
+      toast.error((error as { code?: string } | null)?.code === '23503'
+        ? 'One of these grafts has been distributed. Remove its distribution first.'
+        : 'Failed to delete grafts')
     }
-  }, [tableSelectedIds, toast, fetchGrafts, fetchDistributions, batchId])
+  }, [tableSelectedIds, toast, fetchGrafts, fetchDistributions, batchId, distributedGraftIds])
 
   // --- Computed values (memoised to stabilise references for child components) ---
 
