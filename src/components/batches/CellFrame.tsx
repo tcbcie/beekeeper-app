@@ -2,6 +2,7 @@ import { Dispatch, SetStateAction, useMemo } from 'react'
 import { XCircle, Trash2, CheckSquare, Square, ChevronDown, ChevronUp, Grid3X3 } from 'lucide-react'
 import { Graft, GRAFT_STATUSES, FRAME_STATUSES, FRAME_STATUS_VALUES, CUP_COLORS, BatchBreederQueen } from './graftConstants'
 import Button from '@/components/ui/Button'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface CellFrameProps {
   grafts: Graft[]
@@ -45,6 +46,7 @@ export default function CellFrame({
   updateGraftStatus,
   updateGraftStatusDate,
 }: CellFrameProps) {
+  const confirm = useConfirm()
   const isMultiBreeder = (breederQueens?.length ?? 0) > 0
   const breederNumberById = useMemo(() => {
     const m = new Map<string, string>()
@@ -156,11 +158,11 @@ export default function CellFrame({
                   {/* Horizontal bar */}
                   <div className="h-2 bg-amber-600 dark:bg-amber-700 rounded mx-2" />
                   {/* Cell cups hanging below */}
-                  <div className="flex justify-between pt-1 px-2">
+                  <div className="flex justify-between gap-1 pt-1 px-2">
                     {rowGrafts.map(graft => {
                       const isFrameStage = FRAME_STATUS_VALUES.includes(graft.status)
                       return (
-                        <div key={graft.id} className="flex flex-col items-center flex-1 min-w-0">
+                        <div key={graft.id} className="flex flex-col items-center w-24 shrink-0">
                           {/* Connector line */}
                           <div className="w-0.5 h-2 bg-amber-600 dark:bg-amber-700" />
                           {/* Select checkbox above cup (frame-stage grafts only) */}
@@ -176,7 +178,7 @@ export default function CellFrame({
                           <Button
                             type="button"
                             onClick={selectMode && isFrameStage ? () => toggleSelect(graft.id) : undefined}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                            className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                               CUP_COLORS[graft.status] || 'bg-surface-secondary text-text-secondary border border-border'
                             } ${selectMode && isFrameStage ? 'cursor-pointer' : ''} ${
                               selectedIds.has(graft.id)
@@ -189,7 +191,7 @@ export default function CellFrame({
                           </Button>
                           {isMultiBreeder && (
                             <span
-                              className="mt-0.5 text-[10px] font-semibold text-amber-900 dark:text-amber-200 truncate max-w-[3.5rem]"
+                              className="mt-0.5 text-sm font-semibold text-amber-900 dark:text-amber-200 truncate max-w-full"
                               title={`Breeder: ${breederNumberById.get(graft.breeder_queen_id ?? '') || 'unassigned'}`}
                             >
                               {breederNumberById.get(graft.breeder_queen_id ?? '') || '—'}
@@ -202,7 +204,8 @@ export default function CellFrame({
                                 value={graft.status}
                                 onChange={(e) => updateGraftStatus(graft.id, e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-16 rounded border border-border bg-surface px-0 py-1 text-center text-[10px] text-foreground dark:bg-surface-elevated"
+                                className="w-full min-h-12 rounded border border-border bg-surface px-1 text-center text-sm text-foreground dark:bg-surface-elevated"
+                                aria-label={`Status of cell ${graft.cell_number}`}
                               >
                                 {FRAME_STATUSES.map(s => (
                                   <option key={s.value} value={s.value}>{s.label}</option>
@@ -214,16 +217,26 @@ export default function CellFrame({
                                 defaultValue={graft.status_date || ''}
                                 onChange={(e) => updateGraftStatusDate(graft.id, e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-16 rounded border border-border bg-surface px-0 py-0.5 text-center text-[10px] text-foreground dark:bg-surface-elevated"
+                                className="w-full min-h-12 rounded border border-border bg-surface px-1 text-center text-sm text-foreground dark:bg-surface-elevated"
+                                aria-label={`Status date of cell ${graft.cell_number}`}
                               />
                               <div className="flex gap-0.5">
                                 <Button
                                   type="button"
-                                  onClick={() => updateGraftStatus(graft.id, 'failed')}
-                                  className="rounded p-1.5 text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
+                                  onClick={async () => {
+                                    const confirmed = await confirm({
+                                      title: `Mark cell ${graft.cell_number} as failed?`,
+                                      message: 'You can change it back with the status picker.',
+                                      confirmLabel: 'Mark failed',
+                                      variant: 'danger',
+                                    })
+                                    if (confirmed) updateGraftStatus(graft.id, 'failed')
+                                  }}
+                                  className="min-w-12 rounded p-1.5 text-red-600 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-900/20"
                                   title="Failed"
+                                  aria-label={`Mark cell ${graft.cell_number} as failed`}
                                 >
-                                  <XCircle size={10} />
+                                  <XCircle size={18} />
                                 </Button>
                               </div>
                             </div>

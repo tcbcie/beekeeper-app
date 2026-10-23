@@ -123,7 +123,9 @@ const NUC_STATUSES = [
 
 // Format date to Irish format (DD/MM/YYYY) - uses string splitting to avoid timezone drift
 const NUC_DISTRIBUTABLE_STATUSES = ['virgin', 'mating', 'laying']
-const NUC_ACTION_BUTTON_CLASS = 'inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface-secondary text-text-tertiary transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-surface-elevated'
+// A 48px tap area (for older fingers, C5a-04) around the same 28px circle as before
+const NUC_ACTION_BUTTON_CLASS = 'inline-flex h-12 w-12 items-center justify-center rounded-full transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50'
+const NUC_ACTION_ICON_CLASS = 'inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface-secondary dark:bg-surface-elevated'
 const BULK_MODES: { value: MatingNucBulkMode; label: string }[] = [
  { value: 'numbered', label: 'Numbered Nucs' },
  { value: 'unnumbered', label: 'Unnumbered from Sealed Cells' },
@@ -1715,25 +1717,25 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <>
  {/* No graft required: a nuc that reared its own queen mints her on demand. Marking is optional. */}
  {NUC_DISTRIBUTABLE_STATUSES.includes(nuc.status) && (
- <button type="button" onClick={() => openDistribute(nuc)} disabled={mintingNucId === nuc.id} className={`${NUC_ACTION_BUTTON_CLASS} text-indigo-600`} title="Distribute">
- <Send size={13} />
+ <button type="button" onClick={() => openDistribute(nuc)} disabled={mintingNucId === nuc.id} className={`${NUC_ACTION_BUTTON_CLASS} text-indigo-600`} title="Distribute" aria-label={`Distribute nuc ${nuc.nuc_number ?? ''}`.trim()}>
+ <span className={NUC_ACTION_ICON_CLASS}><Send size={15} /></span>
  </button>
  )}
- <button type="button" onClick={() => { if (nuc.nuc_number) fetchHistory(nuc.nuc_number) }} disabled={!nuc.nuc_number} className={`${NUC_ACTION_BUTTON_CLASS} text-blue-600`} title="View History">
- <History size={13} />
+ <button type="button" onClick={() => { if (nuc.nuc_number) fetchHistory(nuc.nuc_number) }} disabled={!nuc.nuc_number} className={`${NUC_ACTION_BUTTON_CLASS} text-blue-600`} title="View History" aria-label={`View history of nuc ${nuc.nuc_number ?? ''}`.trim()}>
+ <span className={NUC_ACTION_ICON_CLASS}><History size={15} /></span>
  </button>
  {nuc.status !== 'sold' && (
  <>
- <button type="button" onClick={() => handleEdit(nuc)} className={`${NUC_ACTION_BUTTON_CLASS} text-amber-600`} title="Edit">
- <Edit2 size={13} />
+ <button type="button" onClick={() => handleEdit(nuc)} className={`${NUC_ACTION_BUTTON_CLASS} text-amber-600`} title="Edit" aria-label={`Edit nuc ${nuc.nuc_number ?? ''}`.trim()}>
+ <span className={NUC_ACTION_ICON_CLASS}><Edit2 size={15} /></span>
  </button>
- <button type="button" onClick={() => handleDelete(nuc.id)} className={`${NUC_ACTION_BUTTON_CLASS} text-red-500`} title="Delete">
- <Trash2 size={13} />
+ <button type="button" onClick={() => handleDelete(nuc.id)} className={`${NUC_ACTION_BUTTON_CLASS} text-red-500`} title="Delete" aria-label={`Delete nuc ${nuc.nuc_number ?? ''}`.trim()}>
+ <span className={NUC_ACTION_ICON_CLASS}><Trash2 size={15} /></span>
  </button>
  </>
  )}
- <button type="button" onClick={() => handleRetire(nuc.id)} className={`${NUC_ACTION_BUTTON_CLASS} text-text-secondary`} title="Retire">
- <Archive size={13} />
+ <button type="button" onClick={() => handleRetire(nuc.id)} className={`${NUC_ACTION_BUTTON_CLASS} text-text-secondary`} title="Retire" aria-label={`Retire nuc ${nuc.nuc_number ?? ''}`.trim()}>
+ <span className={NUC_ACTION_ICON_CLASS}><Archive size={15} /></span>
  </button>
  </>
  )}

@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getAccountStatus } from '@/lib/auth'
+import { loginPath } from '@/lib/login-path'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { SelectionProvider } from '@/contexts/SelectionContext'
 import Navbar from '@/components/Navbar'
@@ -30,9 +31,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   // Redirect to /login when auth resolves with no session. The grace period
   // covers a momentary null user (e.g. mid token-refresh on a flaky connection):
   // if the session recovers, `user` becomes truthy and the cleanup cancels it.
+  // The page wanted (e.g. a hive QR code) goes with it, so sign-in returns there. This is the
+  // only login redirect a signed-out visitor reaches: pages don't mount until a user is known.
   useEffect(() => {
     if (authLoading || user) return
-    const redirectTimer = setTimeout(() => router.push('/login'), 1500)
+    const redirectTimer = setTimeout(() => router.push(loginPath()), 1500)
     return () => clearTimeout(redirectTimer)
   }, [authLoading, user, router])
 

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 30: Map, Tap Targets, Deep Links</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 30: Community Map, Tap Targets and Sign-in Deep Links</h1>
+<p><strong>Status:</strong> Implemented 23/10/2026, waiting for your test. This is Phase 2 fix batch 17. Three agents explored, and all items are confirmed still open. After this, the High findings are done, apart from the tooling.</p>
+
+<h2>A. Community map (C7a-01, C7a-05)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Fullscreen shows a blank map.</strong> Fullscreen drew the page as a different layout, so the map's container was thrown away while the map stayed attached to it. Fix: one layout; fullscreen only changes the frame's styling, and the map is told to resize. Same file, small change.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Changing map style loses the overlays.</strong> Switching between Outdoors, Satellite and Terrain wiped the flight radii, conservation areas and DCA circles, and they only came back when you touched a toggle. Toggling during the switch could throw an error, and quick clicks could add the terrain twice and fail. Fix:
+  <ul>
+    <li>The overlays are redrawn every time a style finishes loading.</li>
+    <li>Toggles wait while a style loads.</li>
+    <li>Terrain is added once.</li>
+    <li>Clicking the current style does nothing.</li>
+  </ul>
+</div>
+
+<h2>B. Tap targets for older eyes and fingers (C5a-04, C5a-05, C7b-05)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Mating nuc actions</strong> (Distribute, History, Edit, Delete, Retire) and the <strong>queen tracker outcome icons</strong> were 28px. The tap area grows to 48px and the circles look the same. The icons get slightly bigger, and each gets a spoken label. On phones the row wraps onto two lines instead of overflowing.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Queen cell frame:</strong> the status picker and date were 10px text, about 22px tall; they become 14px text, 48px tall. The Fail button becomes 48px wide with a clear label. Fail now asks first, because one tap marks a cell failed. The cup becomes 48px wide. On phones the frame scrolls sideways rather than squashing the cells.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Research key events:</strong> Edit and Delete were about 21px with no label, and Delete removed straight away. Now they are 48px buttons with labels, and Delete asks "Delete this event?" using the app's own confirmation box. The list shows more rows.</div>
+
+<h2>C. Back to the right page after signing in</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Correction to batch 29:</strong> signed-out visitors never reach the page-level login redirects, because the dashboard shows a loading skeleton until sign-in is known. Only the layout's redirect runs, so the fix is one line, not 40 pages. A small helper adds <code>?redirect=</code> with the page you wanted, checked by the batch 29 safety helper. A hive or nuc QR code scanned while signed out now brings you back to that hive after signing in. Sign-out and deactivation still go to a plain login page.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and tests; qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/map-taps-deeplinks-batch30-plan.md</code>, the Phase 2 register, the batch 29 doc correction, and the out-of-date QR scanning doc (it names deleted pages).</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>How you'll test</h2>
+<ul>
+  <li><strong>Community map:</strong>
+    <ul>
+      <li>Fullscreen in and out: the map stays.</li>
+      <li>Turn on flight radius and conservation areas, then switch Outdoors → Satellite → Terrain: the overlays stay.</li>
+      <li>Click the styles quickly: no error.</li>
+    </ul>
+  </li>
+  <li><strong>Phone, mating nucs:</strong> the action buttons are easy to hit. <strong>Queen tracker cell frame:</strong> the picker and date are readable, and Fail asks first.</li>
+  <li><strong>Research chart key events:</strong> Delete asks first.</li>
+  <li><strong>QR code:</strong> signed out, scan a hive QR (or open its link), sign in; you land on the hive. Sign out from the menu; you land on a plain login page.</li>
+</ul>
+
+<h2>Review</h2>
+<ul>
+  <li><strong>Community map:</strong>
+    <ul>
+      <li>One layout; fullscreen switches the frame's classes and tells the map to resize, so the map can no longer go blank.</li>
+      <li>A persistent "style loaded" handler adds terrain (once) and redraws all overlays after every style change.</li>
+      <li>Toggles wait while a style loads, and clicking the current style does nothing.</li>
+    </ul>
+  </li>
+  <li><strong>Tap targets:</strong>
+    <ul>
+      <li>Nuc actions and tracker outcome icons have 48px tap areas around the same 28px circles, with labels.</li>
+      <li>The cell frame picker and date are 14px text, 48px tall, and the cup is 48px wide.</li>
+      <li>Fail is 48px wide with a label and asks first.</li>
+      <li>Key event Edit and Delete are 48px buttons with labels, Delete asks first, and the list shows more rows.</li>
+    </ul>
+  </li>
+  <li><strong>Deep links:</strong> the layout's login redirect uses <code>loginPath()</code>, which keeps the page you wanted, checked by <code>safeRedirectPath</code>. Sign-out and deactivation still go to a plain login page. The batch 29 note and the out-of-date QR scanning doc are corrected.</li>
+  <li><strong>Checks:</strong> type-check 0 errors; lint clean on 7 files; tests 818 passed, 23 skipped. qa-engineer found no Critical or High issues.</li>
+</ul>
+</body>
+</html>

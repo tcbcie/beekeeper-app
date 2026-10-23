@@ -315,11 +315,16 @@ function OutcomeActionIcon({
       title={`${label}: ${isOn ? 'On' : active === false ? 'Off' : '?'}`}
       aria-label={ariaLabel}
       aria-pressed={isOn ? 'true' : active === false ? 'false' : 'mixed'}
-      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border transition-colors ${
-        isOn ? activeClass : 'border-border bg-surface-secondary text-text-tertiary dark:bg-surface-elevated'
-      } ${disabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-80'}`}
+      // A 48px tap area (for older fingers, C5a-04) around the same 28px circle as before
+      className={`inline-flex h-12 w-12 items-center justify-center rounded-full transition-colors ${
+        disabled ? 'cursor-not-allowed opacity-50' : 'hover:opacity-80'
+      }`}
     >
-      <Icon size={13} aria-hidden="true" />
+      <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full border ${
+        isOn ? activeClass : 'border-border bg-surface-secondary text-text-tertiary dark:bg-surface-elevated'
+      }`}>
+        <Icon size={15} aria-hidden="true" />
+      </span>
     </button>
   )
 }
@@ -354,7 +359,7 @@ function OutcomeActionStack({
   onFailureToggle: () => void
 }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="grid grid-cols-2 gap-0.5 w-max">
       {showMatedAction && (
         <OutcomeActionIcon
           icon={Check}

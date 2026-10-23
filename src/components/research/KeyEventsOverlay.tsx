@@ -5,6 +5,7 @@ import { fetchDropdownValues } from '@/lib/dropdown-values'
 import { CalendarDays, Plus, Pencil, Trash2, Loader2, X } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { useToast } from '@/components/ui/Toast'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 // Colours for different years — must match the parent chart's palette
 const YEAR_COLORS = [
@@ -105,6 +106,7 @@ export function useKeyEvents({
   chartYearOrder,
 }: KeyEventsOverlayProps) {
   const toast = useToast()
+  const confirm = useConfirm()
   const [events, setEvents] = useState<KeyEvent[]>([])
   const [eventTypes, setEventTypes] = useState<EventTypeOption[]>([])
   const [loading, setLoading] = useState(true)
@@ -252,8 +254,16 @@ export function useKeyEvents({
     }
   }
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, description: string) => {
     if (deletingId) return
+    // Deleting used to happen on the first tap (C7b-05)
+    const confirmed = await confirm({
+      title: 'Delete this event?',
+      message: `${description} will be removed from the chart. This cannot be undone.`,
+      confirmLabel: 'Delete event',
+      variant: 'danger',
+    })
+    if (!confirmed) return
     setDeletingId(id)
 
     try {
@@ -361,7 +371,7 @@ export function useKeyEvents({
         ) : filteredEvents.length === 0 ? (
           <p className="text-sm text-text-tertiary">No events recorded for selected years.</p>
         ) : (
-          <div className="space-y-1 max-h-40 overflow-y-auto">
+          <div className="space-y-1 max-h-64 overflow-y-auto">
             {filteredEvents.map(evt => (
               <div key={evt.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-surface-secondary dark:bg-surface-elevated rounded text-sm">
                 <div className="flex items-center gap-2 min-w-0">
@@ -371,21 +381,29 @@ export function useKeyEvents({
                   <span className="font-medium text-foreground truncate">{getEventTypeName(evt)}</span>
                   {evt.notes && <span className="text-xs text-text-tertiary truncate">— {evt.notes}</span>}
                 </div>
-                <div className="flex items-center gap-0.5 shrink-0">
+                {/* 48px tap areas with spoken labels (they were about 21px, C7b-05) */}
+                <div className="flex items-center gap-1 shrink-0">
                   <button
+                    type="button"
                     onClick={() => handleEdit(evt)}
-                    className="p-1 text-text-tertiary hover:text-forest-600 transition-colors"
+                    className="inline-flex min-h-12 min-w-12 items-center justify-center rounded text-text-tertiary hover:text-forest-600 transition-colors"
                     title="Edit event"
+                    aria-label={`Edit ${getEventTypeName(evt)} event`}
                   >
-                    <Pencil size={13} />
+                    <Pencil size={16} />
                   </button>
                   <button
-                    onClick={() => handleDelete(evt.id)}
+                    type="button"
+                    onClick={() => handleDelete(
+                      evt.id,
+                      `${getEventTypeName(evt)} on ${new Date(evt.event_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                    )}
                     disabled={deletingId === evt.id}
-                    className="p-1 text-text-tertiary hover:text-red-600 disabled:opacity-50 transition-colors"
+                    className="inline-flex min-h-12 min-w-12 items-center justify-center rounded text-text-tertiary hover:text-red-600 disabled:opacity-50 transition-colors"
                     title="Delete event"
+                    aria-label={`Delete ${getEventTypeName(evt)} event`}
                   >
-                    {deletingId === evt.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                    {deletingId === evt.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                   </button>
                 </div>
               </div>

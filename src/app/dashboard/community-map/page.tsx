@@ -160,6 +160,12 @@ export default function CommunityMapPage() {
   const [mapStyle, setMapStyle] = useState<MapStyleKey>('outdoors')
   const [mapLoaded, setMapLoaded] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  // Bumped each time a map style finishes loading, so the overlays are drawn again (a style
+  // change wipes them, C7a-05). styleReadyRef is false while a new style loads: adding layers
+  // then throws. mapStyleRef is the style being loaded, read by the style.load handler.
+  const [styleVersion, setStyleVersion] = useState(0)
+  const styleReadyRef = useRef(false)
+  const mapStyleRef = useRef<MapStyleKey>('outdoors')
   const [showUserApiaries, setShowUserApiaries] = useState(true)
   const [showSharedApiaries, setShowSharedApiaries] = useState(true)
   const [flightRadius, setFlightRadius] = useState(3) // Default 3km
@@ -287,6 +293,26 @@ export default function CommunityMapPage() {
       map.current.on('load', () => {
         setMapLoaded(true)
       })
+
+      // Every finished style load (the first one and each style change): add terrain if that
+      // style needs it (once), then redraw the overlays
+      map.current.on('style.load', () => {
+        const m = map.current
+        if (!m) return
+        styleReadyRef.current = true
+        if (mapStyleRef.current === 'terrain') {
+          if (!m.getSource('mapbox-dem')) {
+            m.addSource('mapbox-dem', {
+              type: 'raster-dem',
+              url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+              tileSize: 512,
+              maxzoom: 14
+            })
+          }
+          m.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 })
+        }
+        setStyleVersion(v => v + 1)
+      })
     }).catch(err => {
       console.error('Failed to load the map library:', err)
     })
@@ -317,7 +343,8 @@ export default function CommunityMapPage() {
   useEffect(() => {
     // mapLoaded is only set after the library has loaded and the map exists.
     const mb = mapboxRef.current
-    if (!mapLoaded || !map.current || !mb) return
+    // Wait while a new style loads (adding layers then throws); style.load redraws them
+    if (!mapLoaded || !map.current || !mb || !styleReadyRef.current) return
 
     // Clear existing markers
     markers.current.forEach(m => m.remove())
@@ -763,38 +790,31 @@ export default function CommunityMapPage() {
       })
     }
 
-  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations, allApiaries, showAllApiaries])
+  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations, allApiaries, showAllApiaries, styleVersion])
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyleKey) => {
-    if (!map.current) return
+    // The current style: nothing to do (a no-op style change never fires style.load)
+    if (!map.current || newStyle === mapStyleRef.current) return
     setMapStyle(newStyle)
-    map.current.setStyle(MAP_STYLES[newStyle])
-
-    // Enable/disable terrain based on style
-    map.current.once('style.load', () => {
-      if (!map.current) return
-      if (newStyle === 'terrain') {
-        map.current.addSource('mapbox-dem', {
-          type: 'raster-dem',
-          url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
-          tileSize: 512,
-          maxzoom: 14
-        })
-        map.current.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 })
-      }
-    })
+    mapStyleRef.current = newStyle
+    styleReadyRef.current = false
+    // A full rebuild always fires style.load, where terrain and the overlays are added again
+    // (Only `diff` is set: Mapbox's types also require the font fields, but passing them would
+    // replace the map's own font defaults.)
+    map.current.setStyle(MAP_STYLES[newStyle], { diff: false } as Parameters<typeof map.current.setStyle>[1])
   }
 
   // Toggle fullscreen
   const toggleFullscreen = useCallback(() => {
     setIsFullscreen(prev => !prev)
-    setTimeout(() => {
-      if (map.current) {
-        map.current.resize()
-      }
-    }, 100)
   }, [])
+
+  // The map only resizes itself with the window, so tell it after the frame changes size
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => map.current?.resize())
+    return () => cancelAnimationFrame(frame)
+  }, [isFullscreen])
 
   // Handle Escape key to exit fullscreen
   useEffect(() => {
@@ -802,9 +822,6 @@ export default function CommunityMapPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsFullscreen(false)
-        setTimeout(() => {
-          if (map.current) map.current.resize()
-        }, 100)
       }
     }
     document.addEventListener('keydown', handleKeyDown)
@@ -1077,15 +1094,6 @@ export default function CommunityMapPage() {
     </div>
   )
 
-  // Fullscreen mode
-  if (isFullscreen) {
-    return (
-      <div className="fixed inset-0 z-50 bg-surface-elevated">
-        {mapContent}
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -1116,8 +1124,11 @@ export default function CommunityMapPage() {
         </div>
       </div>
 
-      {/* Map Container */}
-      <div className="bg-surface dark:bg-surface rounded-lg shadow-lg border border-border overflow-hidden">
+      {/* Map Container. Fullscreen only changes this frame's classes: rendering a different
+          tree destroyed the map's container and left the map blank (C7a-01). */}
+      <div className={isFullscreen
+        ? 'fixed inset-0 z-50 bg-surface-elevated'
+        : 'bg-surface dark:bg-surface rounded-lg shadow-lg border border-border overflow-hidden'}>
         {mapContent}
       </div>
 

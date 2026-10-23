@@ -18,7 +18,7 @@ Beekeepers can generate QR codes for individual hives, print them, and attach th
 Physical QR on Hive
         |
         v  (phone camera scans, opens URL)
-/dashboard/hive-scan/{hiveId}     (auth-protected landing page)
+/dashboard/hive-scan/tag/{code}   (auth-protected landing page; codes come from qr_tags)
         |
         v  (user taps record type button)
 /dashboard/records?hive={hiveId}&type={type}   (existing records page)
@@ -30,7 +30,7 @@ Record Form (InspectionForm, etc.)
 ## Key Design Decisions
 
 - **Native camera scanning** - No in-app QR scanner needed. All modern phones (iOS 11+, Android 9+) detect QR codes from the camera app
-- **Authenticated route** - Uses `/dashboard/` route for free auth protection. Unauthenticated users are redirected to login
+- **Authenticated route** - Uses `/dashboard/` route for free auth protection. Signed-out visitors are sent to `/login?redirect=<scan path>` and land back on the scanned hive after signing in (batch 30, `src/lib/login-path.ts`)
 - **No database changes** - QR codes encode the existing hive UUID in a URL
 - **No new dependencies** - `qrcode.react` was already installed
 
@@ -38,7 +38,7 @@ Record Form (InspectionForm, etc.)
 
 | File | Description |
 |------|-------------|
-| `src/app/dashboard/hive-scan/[id]/page.tsx` | QR landing page with hive info + record type buttons |
+| `src/app/dashboard/hive-scan/tag/[code]/page.tsx` | QR landing page (by tag code) with hive info + record type buttons. The older `hive-scan/[id]` page was removed when QR tags arrived. |
 | `src/components/hive/HiveQRCode.tsx` | QR code display with download/print functionality |
 | `src/app/dashboard/hives/[id]/page.tsx` | Modified - QR button + modal added to header |
 

@@ -40,7 +40,7 @@
 
 **Supabase setting:** the production Site URL already allows its own host, so `https://www.hivecraic.com/auth/callback?next=…` should work as it is. Preview and localhost origins need their own entries under Auth → URL Configuration → Redirect URLs, if used.
 
-**Not done:** keeping the target when a dashboard page bounces a signed-out visitor to the login page, for example a hive QR code. Each page's start-up calls `router.push('/login')` before the layout can, so this needs a shared "go to login" helper across about 40 pages. It's left for a later batch.
+**Not done here; fixed in batch 30:** keeping the target when a signed-out visitor is sent to the login page, for example from a hive QR code. *Correction:* the pages' own `router.push('/login')` calls are not the issue. The dashboard layout shows a skeleton until a user is known, so pages don't mount for signed-out visitors, and the layout's 1.5-second redirect is the only one that runs. Batch 30 changed that one line to `loginPath()` (`src/lib/login-path.ts`).
 
 ## B. Opening the app offline (C1-03, cause corrected)
 
