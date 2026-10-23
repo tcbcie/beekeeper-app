@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceSupabase, requireAdmin } from '@/lib/server/api-auth'
-import { generateEmbedding } from '@/lib/openai'
+import { generateEmbeddings } from '@/lib/openai'
 import {
   assertSafePublicUrl,
   fetchHtmlWithBounds,
@@ -8,6 +8,9 @@ import {
 } from '@/lib/admin-url-fetch'
 import * as cheerio from 'cheerio'
 import { toDublinDate } from '@/lib/dublin-date'
+
+// Large uploads embed many chunks; allow the full function time (C2-02)
+export const maxDuration = 300
 
 const URL_FETCH_MAX_BYTES = 5 * 1024 * 1024
 
@@ -187,39 +190,39 @@ async function ingestToKnowledgeBase(
     return null
   }
 
-  // Split and embed content
+  // Split, embed in batches of 100 and save 100 rows at a time (C2-02): one AI call and one
+  // insert per chunk, one after another, could time out half-loaded. All or nothing: a failure
+  // removes the half-made source instead of leaving it with a wrong count.
   const chunks = splitTextIntoChunks(content)
-  let successCount = 0
-
-  for (let i = 0; i < chunks.length; i++) {
-    try {
-      const embedding = await generateEmbedding(chunks[i])
-
-      const { error } = await supabase
-        .from('knowledge_base')
-        .insert({
-          content: chunks[i],
-          metadata: {
-            source: title,
-            author: author || undefined,
-            topic: 'News/Article',
-            chunk_index: i,
-            total_chunks: chunks.length
-          },
-          embedding,
-          source_id: source.id
-        })
-
-      if (!error) successCount++
-    } catch (err) {
-      console.error(`Error embedding chunk ${i}:`, err)
+  try {
+    const embeddings = await generateEmbeddings(chunks)
+    const rows = chunks.map((chunk, i) => ({
+      content: chunk,
+      metadata: {
+        source: title,
+        author: author || undefined,
+        topic: 'News/Article',
+        chunk_index: i,
+        total_chunks: chunks.length
+      },
+      embedding: embeddings[i],
+      source_id: source.id
+    }))
+    for (let i = 0; i < rows.length; i += 100) {
+      const { error } = await supabase.from('knowledge_base').insert(rows.slice(i, i + 100))
+      if (error) throw error
     }
+  } catch (err) {
+    console.error('Error embedding article chunks:', err)
+    await supabase.from('knowledge_base').delete().eq('source_id', source.id)
+    await supabase.from('knowledge_sources').delete().eq('id', source.id)
+    return null
   }
 
   // Update chunks count
   await supabase
     .from('knowledge_sources')
-    .update({ chunks_count: successCount })
+    .update({ chunks_count: chunks.length })
     .eq('id', source.id)
 
   return source.id

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceSupabase, requireAdmin } from '@/lib/server/api-auth'
-import { generateEmbedding } from '@/lib/openai'
+import { generateEmbeddings } from '@/lib/openai'
 import {
   assertSafePublicUrl,
   fetchHtmlWithBounds,
@@ -8,6 +8,9 @@ import {
   withDeadline,
 } from '@/lib/admin-url-fetch'
 import * as cheerio from 'cheerio'
+
+// Large uploads embed many chunks; allow the full function time (C2-02)
+export const maxDuration = 300
 
 const PDF_PARSE_TIMEOUT_MS = 30_000
 const URL_FETCH_MAX_BYTES = 5 * 1024 * 1024
@@ -191,47 +194,44 @@ async function processAndStoreContent(
 
   const sourceId = sourceRecord.id
 
-  // Process chunks and link to source
-  const results = []
-  for (let i = 0; i < chunks.length; i++) {
-    const chunk = chunks[i]
-    const embedding = await generateEmbedding(chunk)
-
-    const { data, error } = await getSupabaseAdmin()
-      .from('knowledge_base')
-      .insert({
-        content: chunk,
-        metadata: {
-          source: sourceName,
-          author: author || undefined,
-          topic: topic || 'General',
-          chunk_index: i,
-          total_chunks: chunks.length
-        },
-        embedding,
-        source_id: sourceId
-      })
-      .select('id')
-      .single()
-
-    if (error) {
-      console.error('Error inserting chunk:', error)
-      continue
+  // Embed the chunks in batches of 100 and save them 100 rows at a time (C2-02): one AI call
+  // and one insert per chunk, one after another, timed out on large PDFs half-loaded. All or
+  // nothing: a failure removes the half-made source instead of leaving it with a count of 0.
+  try {
+    const embeddings = await generateEmbeddings(chunks)
+    const rows = chunks.map((chunk, i) => ({
+      content: chunk,
+      metadata: {
+        source: sourceName,
+        author: author || undefined,
+        topic: topic || 'General',
+        chunk_index: i,
+        total_chunks: chunks.length
+      },
+      embedding: embeddings[i],
+      source_id: sourceId
+    }))
+    for (let i = 0; i < rows.length; i += 100) {
+      const { error } = await getSupabaseAdmin().from('knowledge_base').insert(rows.slice(i, i + 100))
+      if (error) throw error
     }
-
-    results.push(data)
+  } catch (error) {
+    console.error('Error storing chunks:', error)
+    await getSupabaseAdmin().from('knowledge_base').delete().eq('source_id', sourceId)
+    await getSupabaseAdmin().from('knowledge_sources').delete().eq('id', sourceId)
+    return { success: false, chunks_created: 0, message: 'Failed to process the content; nothing was added' }
   }
 
   // Update source with chunks count
   await getSupabaseAdmin()
     .from('knowledge_sources')
-    .update({ chunks_count: results.length })
+    .update({ chunks_count: chunks.length })
     .eq('id', sourceId)
 
   return {
     success: true,
-    chunks_created: results.length,
-    message: `Added ${results.length} chunks to knowledge base`,
+    chunks_created: chunks.length,
+    message: `Added ${chunks.length} chunks to knowledge base`,
     source_id: sourceId
   }
 }

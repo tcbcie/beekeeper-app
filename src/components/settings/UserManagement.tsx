@@ -426,17 +426,6 @@ export default function UserManagement() {
         throw new Error(result.error || 'Failed to impersonate user')
       }
 
-      // Store original session before switching
-      setImpersonationData({
-        originalSession: {
-          access_token: session.access_token,
-          refresh_token: session.refresh_token
-        },
-        targetUserEmail: result.email,
-        targetDisplayName: result.displayName,
-        startedAt: new Date().toISOString()
-      })
-
       // Sign in as target user using the token hash
       const { error: verifyError } = await supabase.auth.verifyOtp({
         token_hash: result.tokenHash,
@@ -446,6 +435,19 @@ export default function UserManagement() {
       if (verifyError) {
         throw verifyError
       }
+
+      // Store the original session only once the switch has worked (it is still held in
+      // `session`). Stored earlier, a failed sign-in left a false "Impersonating" banner and the
+      // admin's refresh token in the browser (C9a-03).
+      setImpersonationData({
+        originalSession: {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        },
+        targetUserEmail: result.email,
+        targetDisplayName: result.displayName,
+        startedAt: new Date().toISOString()
+      })
 
       toast.success(`Now impersonating ${result.displayName}`)
       // Use full page reload so the ImpersonationBanner re-reads from localStorage

@@ -1,13 +1,13 @@
 # Full App Audit: Phase 2 Findings (in progress)
 
 **Started:** 18/10/2026. These are read-only best-practice findings; no fixes have been made yet.
-**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). The main page request chains and double loads were fixed in batch 23 (22/10/2026). The public GDD embed, Mel's tools and the group reports followed in batch 24 (22/10/2026), and the admin, Tools, research and export chains in batch 25 (22/10/2026). Batch 25 also fixed a new data-loss bug: the settings and member exports stopped at 1,000 rows per table. Batch 26 (23/10/2026) added database guards against queen lineage loops and duplicate pending invitations, and made the dashboard use the Irish date. Batch 27 (23/10/2026) moved the server to Irish dates: task reminders had been arriving an hour late all summer, and database "today" fill-ins, invitation e-mail dates and the scale chart ranges were fixed. Other fixes follow in approved batches.
+**Status:** Complete on 18/10/2026. Batch 0 and all 13 chunks were audited: about 470 findings, about 59 High. The three new security findings (C7a-02, C9a-01 and C2-31) were fixed in security batch 13 on 18/10/2026. The data-loss bugs in records, batches, Tools and the export were fixed in batch 14 on 19/10/2026; the mating nuc ones (C5a-01 to C5a-03) in batch 15 on 19/10/2026. The double-submit findings were fixed in batch 16 on 19/10/2026 with the shared `useSubmitLock` hook. Mel's status filters and the report date bugs (C9b-01 to C9b-07, C9b-20) were fixed in batch 17 on 19/10/2026. The tooling findings (B0-1 to B0-8, B0-18) were fixed in batch 18 on 22/10/2026: 0 failing tests, 0 type errors, and lint and typecheck now run in CI. The shared foundations (embed reads, local dates, 48px targets) were fixed in batch 19 on 22/10/2026. The shared API sign-in check (`requireUser`/`requireAdmin`) followed in batch 20 on 22/10/2026. Heavy panels and libraries load on demand since batch 21 (22/10/2026). The main page request chains and double loads were fixed in batch 23 (22/10/2026). The public GDD embed, Mel's tools and the group reports followed in batch 24 (22/10/2026), and the admin, Tools, research and export chains in batch 25 (22/10/2026). Batch 25 also fixed a new data-loss bug: the settings and member exports stopped at 1,000 rows per table. Batch 26 (23/10/2026) added database guards against queen lineage loops and duplicate pending invitations, and made the dashboard use the Irish date. Batch 28 (23/10/2026) fixed the remaining data-correctness High findings. Batch 27 (23/10/2026) moved the server to Irish dates: task reminders had been arriving an hour late all summer, and database "today" fill-ins, invitation e-mail dates and the scale chart ranges were fixed. Other fixes follow in approved batches.
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)
 
 ### High
-- **C3-01** `hooks/useHivesList.ts:211-272`: the list fetches full record history for all hives in one query. Supabase caps a query at 1000 rows, so with about 293 hives the older hives' cards show "Never" and lose their queen, egg, super and treatment data. Fix: one RPC returning per-hive aggregates (`DISTINCT ON (hive_id)`).
-- **C3-02** `app/dashboard/hives/page.tsx:639-642` with `useHivesList.ts:57,532`: the ownership filter fires a fetch with the old value and then another, so the last response wins and the list can be wrong. Fix: remove the manual call, and ignore stale responses with a request ID.
+- **C3-01** `hooks/useHivesList.ts:211-272`: the list fetches full record history for all hives in one query. Supabase caps a query at 1000 rows, so with about 293 hives the older hives' cards show "Never" and lose their queen, egg, super and treatment data. Fix: one RPC returning per-hive aggregates (`DISTINCT ON (hive_id)`). *Fixed in batch 28 (23/10/2026): paged and chunked history reads.*
+- **C3-02** `app/dashboard/hives/page.tsx:639-642` with `useHivesList.ts:57,532`: the ownership filter fires a fetch with the old value and then another, so the last response wins and the list can be wrong. Fix: remove the manual call, and ignore stale responses with a request ID. *Fixed in batch 28 (23/10/2026).*
 - **C3-03** `components/hive/HiveFormSection.tsx:118-345, 367-373, 961-966`: there's no in-flight guard, so a double tap creates duplicate hives. Fix: a `submittingRef`, and disable the submit buttons while saving. *Fixed in batch 16 (19/10/2026), `useSubmitLock`.*
 - **C3-04** `components/dashboard/ApiaryWeatherRow.tsx:458`: reads the `dropdown_values` embed as an array, but it's an object, so the user's own bloom records never show as confirmed. Fix: handle both shapes and name the FK. *Fixed in batch 19 (22/10/2026).*
 
@@ -139,7 +139,7 @@ Covers UTC "today", the sequential list fetches, the distribution list disappear
 ### High
 - **C7b-01:** `GDDDataTab.tsx:403` and `PublicGDDTab.tsx:293`. The monthly average treats a `null` temperature as 0, so the current month reads too low. This shows on the public tcbc.ie embed. *Fixed in batch 24 (22/10/2026).*
 - **C7b-02:** `WildColoniesTab.tsx:161-164`. An early return skips `setLoading(false)`, so the spinner never stops. *Fixed in batch 25 (22/10/2026).*
-- **C7b-03:** `ForagingHoursTab.tsx:239,245`. Deselecting the last year during a load leaves the spinner stuck.
+- **C7b-03:** `ForagingHoursTab.tsx:239,245`. Deselecting the last year during a load leaves the spinner stuck. *Fixed in batch 28 (23/10/2026).*
 - **C7b-04:** GDD and public tabs. Up to 11 sequential Open-Meteo calls per view (the same archive is fetched three times), for every anonymous embed visitor. *Fixed in batch 24 (22/10/2026): shared `fetchArchiveDaily`, one call per year.*
 - **C7b-05:** `KeyEventsOverlay.tsx:390-403`. Edit and delete are about 21px, with no label, and delete has no confirmation.
 
@@ -167,7 +167,7 @@ Covers Wolf battery NaN, being unable to deselect the last year, date locale and
 ### High
 - **C9a-01 (SECURITY, new):** `profile/page.tsx:454-484`. The Change Password form asks for the current password but never checks it, so anyone with an unlocked session can change the password. Fix: re-authenticate (verify the current password, or use Supabase's reauthenticate nonce or "secure password change").
 - **C9a-02:** `ProfileExport.tsx:126-130`. The user export runs `select('*')` on every table. The user's own `profiles` row fails because of the column grants, so it is silently missing. The export also includes global and team-visible rows and is truncated at max-rows. Fix: reuse the user-scoped export with `PROFILE_COLUMNS`, and page through results.
-- **C9a-03:** `UserManagement.tsx:430-448`. Impersonation data is saved before `verifyOtp`, so it's left behind on failure.
+- **C9a-03:** `UserManagement.tsx:430-448`. Impersonation data is saved before `verifyOtp`, so it's left behind on failure. *Fixed in batch 28 (23/10/2026).*
 - **C9a-04:** `UserManagement.tsx:1329-1332`. The expiry date input writes on every keystroke (several writes and refetches) and shows the UTC date. *Fixed in batch 19 (22/10/2026).* It now saves on blur or Enter.
 
 ### Medium, key items
@@ -243,7 +243,7 @@ Covers the due-date update, invoice email double send, customer double insert, f
 
 ### High
 - **C4-01:** a refetch shows the skeleton, which unmounts an open record form, so unsaved work is lost with no prompt. *Fixed in batch 14 (19/10/2026).* Also fixed: the five record forms no longer reset when the hive list or apiary filter changes.
-- **C4-02:** the in-progress guard drops later calls, so a shared-hive deep link shows the wrong data.
+- **C4-02:** the in-progress guard drops later calls, so a shared-hive deep link shows the wrong data. *Fixed in batch 28 (23/10/2026): the latest dropped request is queued.*
 - **C4-03:** editing an inspection overwrites its weather with today's. *Fixed in batch 14 (19/10/2026).*
 - **C4-04:** harvest `moisture_content` is never saved. *Fixed in batch 14 (19/10/2026).*
 - **C4-05:** editing a task resets `completed:false` and changes `user_id`, so done tasks reopen. *Fixed in batch 14 (19/10/2026).*
@@ -269,9 +269,9 @@ Covers the UTC end date, period counts, the toggle race, `confirm()`, UTC defaul
 ## Chunk 6: queens, lineage, teams, rearing groups (32 findings: 4 High, 15 Medium, 13 Low)
 
 ### High
-- **C6-01:** team delete, remove member and leave never call `clearTeamAccessCache()`, so a leaver still sees shared queens and hives.
-- **C6-02:** remove and unshare only refresh `selectedTeam`, not the expanded panel, so a repeat remove deletes 0 rows and says "removed".
-- **C6-03:** rearing-group ownership transfer is three updates with no transaction, so a failure leaves two owners.
+- **C6-01:** team delete, remove member and leave never call `clearTeamAccessCache()`, so a leaver still sees shared queens and hives. *Fixed in batch 28 (23/10/2026).*
+- **C6-02:** remove and unshare only refresh `selectedTeam`, not the expanded panel, so a repeat remove deletes 0 rows and says "removed". *Fixed in batch 28 (23/10/2026).*
+- **C6-03:** rearing-group ownership transfer is three updates with no transaction, so a failure leaves two owners. *Fixed in batch 28 (23/10/2026): `transfer_rearing_group_ownership` RPC.*
 - **C6-04:** `useQueenDetail.ts:330-342`. The sightings hive embed is an object, so the hive number is always blank. *Fixed in batch 19 (22/10/2026).*
 
 ### Medium, key items
@@ -290,12 +290,12 @@ Covers `text-xs`, `any`, `select('*')`, data access in UI files, the StrictMode 
 ## Chunk 2: API routes and edge functions (35 findings: 3 High, 17 Medium, 15 Low)
 
 ### High
-- **C2-01:** task reminders re-query all tasks per profile (users × tasks), so who gets reminded depends on loop order.
-- **C2-02:** knowledge-base and news ingestion make one embedding and insert per chunk in sequence, so large PDFs time out half-loaded.
+- **C2-01:** task reminders re-query all tasks per profile (users × tasks), so who gets reminded depends on loop order. *Fixed in batch 28 (23/10/2026): read once per frequency.*
+- **C2-02:** knowledge-base and news ingestion make one embedding and insert per chunk in sequence, so large PDFs time out half-loaded. *Fixed in batch 28 (23/10/2026): batched embeddings, bulk insert, all or nothing.*
 - **C2-03:** `database-export.ts:3-66`. The "complete" export's table list leaves out `crm_*`, `queen_assignments`, `queen_weights`, `yard_benches`, `batch_breeder_queens` and others, so a restore would lose data. *Fixed in batch 14 (19/10/2026).*
 
 ### Medium, key items
-- **C2-04:** reminders query a non-existent `team_hive_access` table, so team members never get them.
+- **C2-04:** reminders query a non-existent `team_hive_access` table, so team members never get them. *Batch 28 (23/10/2026): the broken branch was removed (owner's decision); team reminders would be a new feature.*
 - **C2-05:** Wolf's previous-24h figure is almost always null.
 - **C2-06 / C2-07:** 7 vendor calls per scale view.
 - **C2-08:** custom dates are not validated.
@@ -319,7 +319,7 @@ The auth block is copied in 22 routes. Proposal: `requireUser()` plus one servic
 
 ### High
 - **C8a-01 / C8a-02:** the P&L and Purchases edit forms have no `key`. Editing record B while A's form is open saves A's values onto B. *Fixed in batch 14 (19/10/2026).*
-- **C8a-03:** VarroaWeather refetches and unmounts on each apiary change, and can show the wrong apiary's forecast.
+- **C8a-03:** VarroaWeather refetches and unmounts on each apiary change, and can show the wrong apiary's forecast. *Fixed in batch 28 (23/10/2026).*
 - **C8a-04:** all 8 tool panels (chart.js and QR included) are imported statically into the Tools landing page. *Fixed in batch 21 (22/10/2026), load on demand.*
 
 ### Medium, key items

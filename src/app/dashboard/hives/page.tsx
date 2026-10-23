@@ -638,8 +638,8 @@ export default function HivesPage() {
  <select
  value={ownershipFilter}
  onChange={(e) => {
+ // The hook refetches when the filter changes; a manual call here used the old filter
  setOwnershipFilter(e.target.value as 'my' | 'team' | 'all')
- if (userId) fetchHives(userId)
  }}
  className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500/20 transition-all"
  >

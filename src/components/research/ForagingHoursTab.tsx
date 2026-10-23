@@ -243,7 +243,12 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
 
   // Refetch when years or apiary changes; abort previous in-flight request
   useEffect(() => {
-    if (!selectedApiary || selectedYears.length === 0) return
+    // Nothing to load: stop the spinner too, or deselecting the last year during a load (which
+    // aborts it before it can clear the spinner) left it running for ever (C7b-03)
+    if (!selectedApiary || selectedYears.length === 0) {
+      setDataLoading(false)
+      return
+    }
     const controller = new AbortController()
     fetchForagingData(selectedYears, controller.signal)
     return () => controller.abort()

@@ -182,39 +182,14 @@ export default function RearingTeamPage() {
     if (!selectedRg || !transferRgTargetUserId || !userId) return
     setTransferringRg(true)
     try {
-      // Order matters: member role updates FIRST, owner_id LAST
-      // RLS checks is_rearing_group_owner() which reads rearing_groups.owner_id
-      // If we update owner_id first, subsequent member updates are denied by RLS
-
-      // Step 1: Set new owner's member role to 'owner'
-      const { data: d1, error: e1 } = await supabase
-        .from('rearing_group_members')
-        .update({ role: 'owner' })
-        .eq('group_id', selectedRg.id)
-        .eq('user_id', transferRgTargetUserId)
-        .select()
-      if (e1) throw e1
-      if (!d1 || d1.length === 0) throw new Error('Failed to update new owner role — member may have been removed.')
-
-      // Step 2: Set old owner's member role to 'member'
-      const { data: d2, error: e2 } = await supabase
-        .from('rearing_group_members')
-        .update({ role: 'member' })
-        .eq('group_id', selectedRg.id)
-        .eq('user_id', userId)
-        .select()
-      if (e2) throw e2
-      if (!d2 || d2.length === 0) throw new Error('Failed to update old owner role.')
-
-      // Step 3: Transfer group ownership (old owner still has owner_id here)
-      const { data: d3, error: e3 } = await supabase
-        .from('rearing_groups')
-        .update({ owner_id: transferRgTargetUserId })
-        .eq('id', selectedRg.id)
-        .eq('owner_id', userId)
-        .select()
-      if (e3) throw e3
-      if (!d3 || d3.length === 0) throw new Error('Failed to transfer group ownership.')
+      // One database function swaps both roles and the owner in a single transaction, so a
+      // dropped connection can't leave two owners (C6-03). It checks the caller is the owner and
+      // the new owner is a member.
+      const { error: transferError } = await supabase.rpc('transfer_rearing_group_ownership', {
+        p_group_id: selectedRg.id,
+        p_new_owner_id: transferRgTargetUserId,
+      })
+      if (transferError) throw new Error(transferError.message)
 
       toast.success(`Ownership of "${selectedRg.name}" transferred successfully!`)
       setShowTransferRgModal(false)
@@ -225,7 +200,7 @@ export default function RearingTeamPage() {
       console.error('Error transferring rearing group ownership:', error)
       const msg = error instanceof Error ? error.message : 'Please try again.'
       toast.error(`Failed to transfer ownership. ${msg}`)
-      // Refresh to show current state (partially updated or not)
+      // Refresh to show the current state (nothing changed: the transfer is all or nothing)
       if (userId) fetchRearingGroups(userId)
     } finally {
       setTransferringRg(false)

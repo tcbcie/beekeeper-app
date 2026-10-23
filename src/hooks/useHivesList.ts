@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { getTeamAccess } from '@/lib/team-access'
+import { fetchAllPages, fetchInChunks } from '@/lib/supabase-chunk'
 import { useToast } from '@/components/ui/Toast'
 import { usePersistentState } from './usePersistentState'
 import { useSelection } from '@/contexts/SelectionContext'
@@ -54,12 +55,18 @@ export function useHivesList() {
    'hives:archive', 'active', (v) => v === 'active' || v === 'archived' || v === 'all'
  )
 
+ // Each fetchHives call takes a number; only the newest may set state, so an older, slower
+ // load (e.g. the previous ownership filter) can't overwrite the list (C3-02).
+ const fetchSeqRef = useRef(0)
+
  const fetchHives = useCallback(async (userIdParam?: string) => {
  const currentUserId = userIdParam || userId
  if (!currentUserId) return
+ const seq = ++fetchSeqRef.current
 
  // One memoised round trip for team membership + shared apiary access
  const { sharedApiaryIds, isTeamMember: hasTeams } = await getTeamAccess(currentUserId)
+ if (seq !== fetchSeqRef.current) return
  setIsTeamMember(hasTeams)
 
  // Build base query with archive filter applied first (important for PostgREST)
@@ -107,6 +114,7 @@ export function useHivesList() {
  }
 
  const { data, error } = await query.order('hive_number')
+ if (seq !== fetchSeqRef.current) return
 
  if (error) {
  console.error('Error fetching hives:', error)
@@ -130,6 +138,20 @@ export function useHivesList() {
  .map(h => h.queen_id)
  .filter((id): id is string => id !== null)
  )]
+
+ // Every row of a record type for these hives, 100 hives and 1,000 rows at a time (C3-01):
+ // one request stops at 1,000 rows and would silently drop the oldest hives' records, and a
+ // long hive id list breaks the URL. A hive's rows all sit in one chunk, newest first, so the
+ // "first row per hive" loops below still find its latest.
+ const historyForHives = <T>(table: string, columns: string, dateColumn: string) =>
+ fetchInChunks<T>(hiveIds, (chunk) => fetchAllPages<T>((from, to) => supabase
+ .from(table)
+ .select(columns)
+ .in('hive_id', chunk)
+ .order(dateColumn, { ascending: false })
+ .order('id', { ascending: true })
+ // The column list is a parameter, so the client can't type the rows; T names them.
+ .range(from, to) as unknown as PromiseLike<{ data: T[] | null; error: unknown }>))
 
  // Every query below needs only the hive rows, so they all go out together: one round trip
  // instead of five in a row. RLS already restricts each result to records the user may see.
@@ -162,48 +184,34 @@ export function useHivesList() {
  : noRows,
  // QR tags ordered deterministically so the most recently assigned tag wins
  // when a hive has multiple rows (prevents flickering codes on reload).
- supabase
+ fetchInChunks<{ hive_id: string; code: string }>(hiveIds, (chunk) => supabase
  .from('qr_tags')
  .select('hive_id, code, assigned_at, created_at')
- .in('hive_id', hiveIds)
+ .in('hive_id', chunk)
  .order('assigned_at', { ascending: false, nullsFirst: false })
- .order('created_at', { ascending: false, nullsFirst: false }),
+ .order('created_at', { ascending: false, nullsFirst: false })),
  // All inspections for these hives. Do NOT add .eq('user_id', currentUserId):
  // team-mate inspections on shared hives must count in the card aggregates.
- supabase
- .from('inspections')
- .select('hive_id, inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength, queen_seen, eggs_present, honey_super_fullness')
- .in('hive_id', hiveIds)
- .order('inspection_date', { ascending: false }),
+ historyForHives<{ hive_id: string; inspection_date: string; queen_seen: boolean | null; eggs_present: boolean | null; honey_super_fullness: unknown }>(
+ 'inspections',
+ 'hive_id, inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength, queen_seen, eggs_present, honey_super_fullness',
+ 'inspection_date'
+ ),
  // Last record of each type. No user_id filter (RLS scopes it, and team-mates' records
- // count) and no .limit (it is a total row cap, not per hive); the dedupe loop below keeps
- // one row per hive.
- supabase
- .from('varroa_treatments')
- .select('hive_id, treatment_date, treatment_type, planned_removal_date, removed_date')
- .in('hive_id', hiveIds)
- .order('treatment_date', { ascending: false }),
- supabase
- .from('varroa_checks')
- .select('hive_id, check_date')
- .in('hive_id', hiveIds)
- .order('check_date', { ascending: false }),
- supabase
- .from('feedings')
- .select('hive_id, feed_date')
- .in('hive_id', hiveIds)
- .order('feed_date', { ascending: false }),
- supabase
- .from('harvests')
- .select('hive_id, harvest_date')
- .in('hive_id', hiveIds)
- .order('harvest_date', { ascending: false }),
- supabase
+ // count); the dedupe loop below keeps one row per hive.
+ historyForHives<{ hive_id: string; treatment_date: string; treatment_type: string; planned_removal_date: string | null; removed_date: string | null }>(
+ 'varroa_treatments', 'hive_id, treatment_date, treatment_type, planned_removal_date, removed_date', 'treatment_date'
+ ),
+ historyForHives<{ hive_id: string; check_date: string }>('varroa_checks', 'hive_id, check_date', 'check_date'),
+ historyForHives<{ hive_id: string; feed_date: string }>('feedings', 'hive_id, feed_date', 'feed_date'),
+ historyForHives<{ hive_id: string; harvest_date: string }>('harvests', 'hive_id, harvest_date', 'harvest_date'),
+ fetchInChunks<{ hive_id: string | null }>(hiveIds, (chunk) => supabase
  .from('tasks_events')
  .select('hive_id')
- .in('hive_id', hiveIds)
- .eq('completed', false)
+ .in('hive_id', chunk)
+ .eq('completed', false))
  ])
+ if (seq !== fetchSeqRef.current) return
 
  // Map for shared apiaries (viewing others' hives)
  const teamDataMap = new Map<string, { name: string }>()

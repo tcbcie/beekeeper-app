@@ -71,7 +71,7 @@
   <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Scale chart custom range</td><td style="border:1px solid #e7d9b8;padding:0.4rem">01:00 to 00:59</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Midnight to midnight</td></tr>
 </table>
 <ul>
-  <li><strong>Edge functions deployed through MCP:</strong> reminders v14, digest v17, new-user notice v10, team invite v16, group invite v10. Each deployed copy matched the repo before deploying. The shared helper was checked in Node against 18 cases, including both 2026 clock-change days. The first reminder run on the new version (09:15 UTC) still needs confirming in the logs.</li>
+  <li><strong>Edge functions deployed through MCP:</strong> reminders v14, digest v17, new-user notice v10, team invite v16, group invite v10. Each deployed copy matched the repo before deploying. The shared helper was checked in Node against 18 cases, including both 2026 clock-change days. The first reminder run on the new version (09:15 UTC) returned 200 with success.</li>
   <li><strong>Database</strong> (<code>20261023120000_server_dates_batch27.sql</code>): each function was re-created from its own live definition with only <code>current_date</code> swapped. Permissions and security settings were identical before and after, and no <code>current_date</code> is left. Advisors: nothing new.</li>
   <li><strong>App:</strong> <code>src/lib/dublin-date.ts</code> is shared by the API routes and Mel's tools. The scale chart ranges, Mel's varroa treatment check, and the admin news and export dates now use it.</li>
   <li><strong>Checks:</strong> type-check 0 errors; lint clean; tests 818 passed, 23 skipped. qa-engineer found no Critical or High issues.</li>

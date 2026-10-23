@@ -39,6 +39,25 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   return response.data[0].embedding
 }
 
+// Embeddings for many texts, 100 per OpenAI request, in the same order as `texts`. One request
+// per chunk, one after another, made large uploads time out (C2-02).
+export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
+  const embeddings: number[][] = []
+  for (let i = 0; i < texts.length; i += 100) {
+    const batch = texts.slice(i, i + 100)
+    const response = await getOpenAI().embeddings.create({
+      model: 'text-embedding-3-small',
+      input: batch,
+    })
+    const ordered = [...(response.data ?? [])].sort((a, b) => a.index - b.index)
+    if (ordered.length !== batch.length || ordered.some(d => !d.embedding)) {
+      throw new Error('OpenAI embedding response was incomplete')
+    }
+    embeddings.push(...ordered.map(d => d.embedding))
+  }
+  return embeddings
+}
+
 // Chat completion with specified model
 export async function generateChatResponse(
   messages: OpenAI.Chat.ChatCompletionMessageParam[],

@@ -120,6 +120,9 @@ export function useRecordsData(): UseRecordsDataReturn {
   const [sharedHiveIds, setSharedHiveIds] = useState<string[]>([])
   const sharedHiveIdsRef = useRef<string[]>([])
   const fetchInProgressRef = useRef(false)
+  // The load running now, and the latest different one asked for meanwhile (run straight after)
+  const inFlightFetchKeyRef = useRef('')
+  const pendingFetchRef = useRef<{ userId: string; ownershipFilter: OwnershipFilter } | null>(null)
   const optionsLoadedRef = useRef(false)
 
   // Only update sharedHiveIds if the array actually changed
@@ -618,15 +621,7 @@ export function useRecordsData(): UseRecordsDataReturn {
     ])
   }, [fetchCheckMethods, fetchFeedTypes, fetchFloralSources, fetchTreatmentProducts, fetchArchiveReasons, fetchApplicationMethods])
 
-  const fetchAllData = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
-    // Prevent duplicate concurrent requests
-    if (fetchInProgressRef.current) {
-      return
-    }
-    fetchInProgressRef.current = true
-
-    // No setLoading(true) here: `loading` starts true for the first load, and showing the
-    // skeleton on a refetch would unmount an open record form and lose unsaved edits.
+  const loadAllData = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
     try {
       // Fetch accessible hive IDs once and pass to all record fetchers
       const hiveIds = await getAccessibleHiveIds(userId)
@@ -655,9 +650,6 @@ export function useRecordsData(): UseRecordsDataReturn {
       ])
     } catch (error) {
       console.error('Failed to fetch records data:', error)
-    } finally {
-      fetchInProgressRef.current = false
-      setLoading(false)
     }
   }, [
     fetchInspections,
@@ -670,6 +662,32 @@ export function useRecordsData(): UseRecordsDataReturn {
     fetchApiaries,
     fetchAllOptions
   ])
+
+  const fetchAllData = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
+    // One load at a time. A request for different arguments while one runs is remembered and
+    // run straight after: opening a team-mate's hive from a link switches the filter mid-load,
+    // and that load used to be dropped, leaving the list empty (C4-02). A repeat of the
+    // running request is still dropped.
+    const key = `${userId}|${ownershipFilter}`
+    if (fetchInProgressRef.current) {
+      pendingFetchRef.current = key === inFlightFetchKeyRef.current ? null : { userId, ownershipFilter }
+      return
+    }
+    fetchInProgressRef.current = true
+
+    // No setLoading(true) here: `loading` starts true for the first load, and showing the
+    // skeleton on a refetch would unmount an open record form and lose unsaved edits.
+    let request: { userId: string; ownershipFilter: OwnershipFilter } | null = { userId, ownershipFilter }
+    while (request) {
+      inFlightFetchKeyRef.current = `${request.userId}|${request.ownershipFilter}`
+      await loadAllData(request.userId, request.ownershipFilter)
+      request = pendingFetchRef.current
+      pendingFetchRef.current = null
+    }
+    inFlightFetchKeyRef.current = ''
+    fetchInProgressRef.current = false
+    setLoading(false)
+  }, [loadAllData])
 
   return {
     // Data

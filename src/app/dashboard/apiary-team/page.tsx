@@ -234,22 +234,27 @@ export default function ApiaryTeamPage() {
   }
 
   // Unshare an apiary from a team
-  const handleUnshareApiary = async (teamApiaryId: string, apiaryEircode: string) => {
+  const handleUnshareApiary = async (teamApiaryId: string, teamId: string, apiaryEircode: string) => {
     if (!confirm(`Remove apiary ${apiaryEircode} from this team?`)) return
 
     try {
-      const { error } = await supabase
+      const { data: removed, error } = await supabase
         .from('team_apiaries')
         .delete()
         .eq('id', teamApiaryId)
+        .select('id')
 
       if (error) throw error
 
       clearTeamAccessCache()
-      toast.success('Apiary removed from team successfully!')
-      if (selectedTeam) {
-        fetchTeamApiaries(selectedTeam.id)
+      // A repeat press deletes nothing: say so rather than "removed" again
+      if (!removed || removed.length === 0) {
+        toast.warning('That apiary was already removed from the team.')
+      } else {
+        toast.success('Apiary removed from team successfully!')
       }
+      // Refresh the team this apiary belongs to (not whichever team was last opened in a dialog)
+      fetchTeamApiaries(teamId)
     } catch (error) {
       console.error('Error unsharing apiary:', error)
       toast.error('Failed to remove apiary from team.')
@@ -541,6 +546,7 @@ export default function ApiaryTeamPage() {
 
       if (error) throw error
 
+      clearTeamAccessCache()
       toast.success(`Team "${teamName}" deleted successfully.`)
       fetchTeams() // Refresh teams list
     } catch (error) {
@@ -585,23 +591,29 @@ export default function ApiaryTeamPage() {
   }
 
   // Remove team member
-  const handleRemoveMember = async (memberId: string, memberEmail: string) => {
+  const handleRemoveMember = async (memberId: string, teamId: string, memberEmail: string) => {
     if (!confirm(`Are you sure you want to remove ${memberEmail} from the team?`)) {
       return
     }
 
     try {
-      const { error } = await supabase
+      const { data: removed, error } = await supabase
         .from('team_members')
         .delete()
         .eq('id', memberId)
+        .select('id')
 
       if (error) throw error
 
-      toast.success(`${memberEmail} removed from team.`)
-      if (selectedTeam) {
-        fetchTeamDetails(selectedTeam.id) // Refresh team details
+      clearTeamAccessCache()
+      // A repeat press deletes nothing: say so rather than "removed" again
+      if (!removed || removed.length === 0) {
+        toast.warning(`${memberEmail} was already removed from the team.`)
+      } else {
+        toast.success(`${memberEmail} removed from team.`)
       }
+      // Refresh the team this member belongs to (not whichever team was last opened in a dialog)
+      fetchTeamDetails(teamId)
       fetchTeams() // Refresh teams list
     } catch (error) {
       console.error('Error removing member:', error)
@@ -639,6 +651,7 @@ export default function ApiaryTeamPage() {
         return
       }
 
+      clearTeamAccessCache()
       toast.success(`You have left the team "${teamName}".`)
       fetchTeams() // Refresh teams list
     } catch (error) {
@@ -883,7 +896,7 @@ export default function ApiaryTeamPage() {
                                   </div>
                                   {member.role !== 'owner' && (
                                     <Button
-                                      onClick={() => handleRemoveMember(member.id, member.user_email || 'this member')}
+                                      onClick={() => handleRemoveMember(member.id, member.team_id, member.user_email || 'this member')}
                                       tone="danger"
                                       size="xs"
                                       className="ml-3"
@@ -1053,6 +1066,7 @@ export default function ApiaryTeamPage() {
                                     <Button
                                       onClick={() => handleUnshareApiary(
                                         ta.id,
+                                        ta.team_id,
                                         ta.apiary?.name
                                           ? `${ta.apiary.name} - ${ta.apiary.eircode}`
                                           : (ta.apiary?.eircode || 'this apiary')
@@ -1344,7 +1358,7 @@ export default function ApiaryTeamPage() {
                         </span>
                         {member.role !== 'owner' && (
                           <Button
-                            onClick={() => handleRemoveMember(member.id, member.user_email || 'Unknown')}
+                            onClick={() => handleRemoveMember(member.id, member.team_id, member.user_email || 'Unknown')}
                             tone="danger"
                             size="xs"
                           >

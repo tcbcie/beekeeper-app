@@ -204,24 +204,24 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
       setApiaries(apiaryData || [])
       setTreatments(treatmentData || [])
 
-      // Auto-select first apiary if available
-      if (apiaryData && apiaryData.length > 0 && !selectedApiary) {
-        setSelectedApiary(apiaryData[0].id)
-      }
+      // Auto-select first apiary if none is chosen yet
+      setSelectedApiary(prev => prev || apiaryData?.[0]?.id || '')
     } catch (err) {
       console.error('Error fetching data:', err)
       setError('Failed to load data')
     } finally {
       setLoading(false)
     }
-  }, [userId, selectedApiary])
+  // Only userId: depending on the selected apiary reloaded everything (and unmounted the tool
+  // behind the loading spinner) on every apiary change (C8a-03)
+  }, [userId])
 
   useEffect(() => {
     fetchData()
   }, [fetchData])
 
   // Fetch weather forecast when apiary changes
-  const fetchForecast = useCallback(async () => {
+  const fetchForecast = useCallback(async (signal: AbortSignal) => {
     const apiary = apiaries.find(a => a.id === selectedApiary)
     if (!apiary?.latitude || !apiary?.longitude) {
       setForecast([])
@@ -233,7 +233,8 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
 
     try {
       const response = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${apiary.latitude}&longitude=${apiary.longitude}&daily=temperature_2m_max,temperature_2m_min,relative_humidity_2m_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,weather_code&timezone=Europe/Dublin&forecast_days=7`
+        `https://api.open-meteo.com/v1/forecast?latitude=${apiary.latitude}&longitude=${apiary.longitude}&daily=temperature_2m_max,temperature_2m_min,relative_humidity_2m_max,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,weather_code&timezone=Europe/Dublin&forecast_days=7`,
+        { signal }
       )
 
       if (!response.ok) {
@@ -263,20 +264,25 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
         }
       })
 
+      if (signal.aborted) return
       setForecast(days)
     } catch (err) {
+      // A newer apiary's forecast replaced this request: nothing to show or report
+      if (signal.aborted) return
       console.error('Error fetching forecast:', err)
       setError('Failed to fetch weather forecast')
       setForecast([])
     } finally {
-      setLoadingForecast(false)
+      if (!signal.aborted) setLoadingForecast(false)
     }
   }, [apiaries, selectedApiary])
 
   useEffect(() => {
-    if (selectedApiary && apiaries.length > 0) {
-      fetchForecast()
-    }
+    if (!selectedApiary || apiaries.length === 0) return
+    // Each apiary change cancels the previous forecast request
+    const controller = new AbortController()
+    fetchForecast(controller.signal)
+    return () => controller.abort()
   }, [selectedApiary, apiaries, fetchForecast])
 
   // Render suitability indicator

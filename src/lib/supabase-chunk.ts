@@ -36,3 +36,23 @@ export async function mapInGroups<T, R>(items: readonly T[], fn: (item: T) => Pr
   }
   return out
 }
+
+/**
+ * Read every row of a query, a page at a time. Supabase returns at most 1,000 rows per request
+ * and says nothing when it stops there, so a list that grows with the account must page.
+ * `page(from, to)` must apply a stable order (ending in a unique column such as `id`) and
+ * `.range(from, to)`. The first error, if any, is returned with no rows.
+ */
+export async function fetchAllPages<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+  pageSize = 1000
+): Promise<{ data: T[]; error: unknown }> {
+  const rows: T[] = []
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await page(from, from + pageSize - 1)
+    if (error) return { data: [], error }
+    const pageRows = data ?? []
+    rows.push(...pageRows)
+    if (pageRows.length < pageSize) return { data: rows, error: null }
+  }
+}

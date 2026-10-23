@@ -70,7 +70,7 @@ These used `current_date` (UTC) when the app sent no date:
 - `eslint` on the changed files: clean.
 - Tests: 818 passed, 23 skipped.
 - Helper checks in Node: 18 of 18 cases, including both clock-change days.
-- The first `task-event-reminders` run after deployment is due at 09:15 UTC on 23/10/2026. The run before the deployment returned 200; check the function logs to confirm the new version.
+- The first `task-event-reminders` run on the new version (09:15 UTC, 23/10/2026) returned 200 `{"success":true}` (checked in `net._http_response`).
 - qa-engineer: no Critical or High issues.
 
 ## Rules

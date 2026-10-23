@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 28: Remaining High Findings</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .ask { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 28: Remaining High Findings (Data Correctness)</h1>
+<p><strong>Status:</strong> Implemented 23/10/2026, waiting for your test. This is Phase 2 fix batch 15. Three agents confirmed each item is still open, and the key facts were checked live. The sign-in redirects (C1-01 to C1-03), the community map (C7a-01, C7a-05), the small tap targets and the tooling follow in later batches.</p>
+
+<h2>A. Hive list and records</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C3-01, hive cards losing data past 1,000 records.</strong> The hive list loads every inspection, treatment, check, feeding and harvest for all your hives in one request, and Supabase stops at 1,000 rows. Nobody is over today: the biggest account sees 560 inspections. Past about 85 hives the oldest hives' cards would show "Never" and lose queen, eggs and super data. Fix: read these in pages (all rows, in a stable order) and in groups of 100 hives, using one shared helper. No database change; results stay exact.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C3-02, ownership filter race.</strong> Changing My / Team / All loaded twice, the first time with the old filter. Whichever finished last won, so "Team" could show your own hives. Fix: one load per change, and an older load can no longer overwrite a newer one.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-02, shared-hive link on Records.</strong> Opening a team-mate's hive from a link switched the filter to "All" mid-load. The "already loading" guard threw that second load away, so the list stayed empty. Fix: the guard remembers the latest dropped request and runs it straight after.</div>
+
+<h2>B. Teams and admin</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C6-01:</strong> after deleting a team, removing a member or leaving, the team-access memory is cleared, as sharing already does. Before, the old team view stayed for up to 30 seconds.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C6-02:</strong> Remove and Unshare refresh the team the row belongs to; before, it was whichever team was last opened for a modal, sometimes another team's data. A second press that removes nothing says "already removed" instead of "removed".</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C6-03, rearing group ownership transfer:</strong> it was three separate updates from the browser, so a dropped connection could leave two owners. Fix: one database function that does all three or none. It checks that you're the owner and the new owner is a member. Signed-in users only, saved as a migration, advisors checked.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9a-03, impersonation:</strong> the admin's saved session is only stored once the sign-in as the user succeeds. A failed attempt no longer leaves a false "Impersonating" banner and a stored token behind.</div>
+
+<h2>C. Reminders, research and the knowledge base</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C2-01, reminder e-mails:</strong> the function re-read every pending task once per user, so the work grew as users × tasks. Fix: read once per reminder frequency (2 today), and mark reminders sent once at the end. Redeploy and check the logs.</div>
+<div class="ask"><strong>Decided (C2-04): A, remove the broken branch.</strong> The reminder function has a branch meant to remind team members about tasks on shared hives. It has never worked: it reads a table and a hive column that don't exist (checked live), so only the task's creator is ever reminded.
+<br><strong>A (recommended now):</strong> remove the broken branch. Nothing changes for anyone.
+<br><strong>B:</strong> build team reminders properly (members of a team the hive's apiary is shared with). This is a new feature: more people would get e-mails. Better as its own small batch.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-03, Research → Foraging hours:</strong> deselecting the last year during a load no longer leaves the spinner running for ever.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C8a-03, Tools → Varroa weather:</strong> changing apiary no longer reloads the whole tool. A slow forecast for the previous apiary can no longer replace the new one.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C2-02, admin knowledge base and news uploads:</strong> each chunk was one AI call and one save, one after another, so large PDFs timed out half-loaded with a count of 0. Fix: the AI calls are made in batches of 100, with one save for all chunks and a longer time limit. A failed upload removes its half-made source.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and tests; qa-engineer audit; advisors; edge function logs.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/high-findings-batch28-plan.md</code>, Phase 2 register, memory notes.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>How you'll test</h2>
+<ul>
+  <li><strong>Hives:</strong> the cards show the same last-inspection, queen and super details as before. Switch My / Team / All quickly; the list matches the filter.</li>
+  <li><strong>Records:</strong> open a link to a team-mate's hive record; the record shows.</li>
+  <li><strong>Apiary team:</strong> remove a member from an expanded team; the panel updates. Leave a team; the team views disappear straight away.</li>
+  <li><strong>Rearing team:</strong> transfer ownership to a member; it works and you become a member.</li>
+  <li><strong>Research → Foraging hours</strong> and <strong>Tools → Varroa weather:</strong> switch years and apiaries quickly.</li>
+  <li><strong>Admin:</strong> upload a large PDF to the knowledge base; all chunks load.</li>
+</ul>
+
+<h2>Review</h2>
+<ul>
+  <li><strong>Hive list:</strong>
+    <ul>
+      <li>History is read in pages of 1,000 rows and groups of 100 hives, through the new <code>fetchAllPages</code>, so cards can't silently lose data as accounts grow.</li>
+      <li>The ownership filter loads once, and only the newest load can update the list.</li>
+    </ul>
+  </li>
+  <li><strong>Records:</strong> a filter change during a load is queued and run straight after, so a team-mate's hive link now shows its record.</li>
+  <li><strong>Teams:</strong>
+    <ul>
+      <li>The team-access memory is cleared after delete, remove and leave.</li>
+      <li>Remove and Unshare refresh the right team and say "already removed" on a repeat press.</li>
+    </ul>
+  </li>
+  <li><strong>Rearing group transfer:</strong> the new database function <code>transfer_rearing_group_ownership</code> does it all or nothing. Tested live in a rolled-back block: the owner's transfer works and a non-owner is refused. Signed-in users only.</li>
+  <li><strong>Impersonation:</strong> the admin's session is stored only after the switch works.</li>
+  <li><strong>Reminders (v15):</strong> due reminders are read once per frequency, and the broken team branch is removed (your choice). The batch 27 version's first run (09:15) returned 200 with success.</li>
+  <li><strong>Foraging hours</strong> spinner fixed. <strong>Varroa weather:</strong> no full reload, and the newest forecast wins.</li>
+  <li><strong>Knowledge base and news uploads:</strong> AI calls are made 100 at a time with bulk saves and a 300-second limit. A failure removes the half-made source.</li>
+  <li><strong>Checks:</strong> type-check 0 errors; lint clean; tests 818 passed, 23 skipped. Advisors: the only new entry is the transfer function, signed-in users only, as intended. qa-engineer found no Critical or High issues.</li>
+</ul>
+</body>
+</html>
