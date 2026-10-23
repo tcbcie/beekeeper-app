@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { buildInsertSql, DATABASE_EXPORT_TABLES, sqlIdentifier, sqlValue } from '@/lib/database-export'
 import { logAdminAction } from '@/lib/admin-audit'
 import { mapInGroups } from '@/lib/supabase-chunk'
+import { todayInDublin } from '@/lib/dublin-date'
 
 const PUBLIC_SCHEMA = 'public'
 
@@ -1309,7 +1310,7 @@ export async function POST(request: NextRequest) {
       status: 200,
       headers: {
         'Content-Type': 'text/plain',
-        'Content-Disposition': `attachment; filename="${filePrefix}-${new Date().toISOString().split('T')[0]}.sql"`
+        'Content-Disposition': `attachment; filename="${filePrefix}-${todayInDublin()}.sql"`
       }
     })
 

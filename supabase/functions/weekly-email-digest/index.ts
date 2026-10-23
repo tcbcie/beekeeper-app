@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { addDaysISO, dublinDate, formatDateIrish } from '../_shared/dublin-time.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 // New sb_secret_ key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name), with the
@@ -54,31 +55,21 @@ interface UpcomingEvent {
   daysUntil: number
 }
 
-// Format date to Irish format (DD/MM/YYYY)
-function formatDateIrish(dateString: string): string {
-  const date = new Date(dateString)
-  const day = date.getDate().toString().padStart(2, '0')
-  const month = (date.getMonth() + 1).toString().padStart(2, '0')
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
-}
-
 // Get upcoming events for a batch within the next 7 days
 function getUpcomingEvents(batch: Batch): UpcomingEvent[] {
   const events: UpcomingEvent[] = []
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const sevenDaysFromNow = new Date(today)
-  sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
+  // Irish dates (batch dates are Irish dates), compared as YYYY-MM-DD strings
+  const today = dublinDate()
+  const sevenDaysFromNow = addDaysISO(today, 7)
 
   const checkDate = (dateStr: string | null, eventType: string) => {
     if (!dateStr) return
 
-    const eventDate = new Date(dateStr)
-    eventDate.setHours(0, 0, 0, 0)
-
+    const eventDate = dateStr.slice(0, 10)
     if (eventDate >= today && eventDate <= sevenDaysFromNow) {
-      const daysUntil = Math.floor((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      const daysUntil = Math.round(
+        (Date.parse(`${eventDate}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / (1000 * 60 * 60 * 24)
+      )
       events.push({
         batchName: batch.batch_name,
         eventType,

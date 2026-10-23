@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUser } from '@/lib/server/api-auth'
 import { wolfGetLastValues, wolfGetMeasurements, wolfGetBatteryVoltage, detectMaintenanceEvents, sumInterventions, WolfParsedReading } from '@/lib/wolf-waagen-api'
+import { addDaysISO, dublinDayStartUtc } from '@/lib/dublin-date'
 
 export async function GET(request: NextRequest) {
   try {
@@ -200,10 +201,11 @@ export async function GET(request: NextRequest) {
       let endTimestamp: number = now
 
       if (period === 'custom' && customStart && customEnd) {
-        // Use custom date range
-        startTimestamp = Math.floor(new Date(customStart).getTime() / 1000)
-        const endDate = new Date(customEnd)
-        endDate.setHours(23, 59, 59, 999)
+        // Use custom date range: whole days in Ireland (the server runs in UTC, so a plain
+        // date read here would start and end an hour late in summer)
+        startTimestamp = Math.floor(dublinDayStartUtc(customStart).getTime() / 1000)
+        // End of the end day: one millisecond before the next Irish midnight
+        const endDate = new Date(dublinDayStartUtc(addDaysISO(customEnd.slice(0, 10), 1)).getTime() - 1)
         endTimestamp = Math.floor(endDate.getTime() / 1000)
       } else {
         // Calculate date range based on period

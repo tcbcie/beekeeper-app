@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUser } from '@/lib/server/api-auth'
 import { beepGetLastValues, beepGetMeasurements } from '@/lib/beep-api'
+import { addDaysISO, dublinDayStartUtc } from '@/lib/dublin-date'
 
 export async function GET(request: NextRequest) {
   try {
@@ -173,11 +174,11 @@ export async function GET(request: NextRequest) {
       let endDate: Date = now
 
       if (period === 'custom' && customStart && customEnd) {
-        // Use custom date range
-        startDate = new Date(customStart)
-        endDate = new Date(customEnd)
-        // Set end date to end of day
-        endDate.setHours(23, 59, 59, 999)
+        // Use custom date range: whole days in Ireland (the server runs in UTC, so a plain
+        // date read here would start and end an hour late in summer)
+        startDate = dublinDayStartUtc(customStart)
+        // End of the end day: one millisecond before the next Irish midnight
+        endDate = new Date(dublinDayStartUtc(addDaysISO(customEnd.slice(0, 10), 1)).getTime() - 1)
       } else {
         // Calculate date range based on period
         switch (period) {

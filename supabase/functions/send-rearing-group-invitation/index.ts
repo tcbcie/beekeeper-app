@@ -94,6 +94,7 @@ serve(async (req) => {
 
     const expiryDate = new Date(invitation.expires_at as string)
     const formattedExpiry = expiryDate.toLocaleDateString('en-IE', {
+      timeZone: 'Europe/Dublin', // the function runs in UTC
       day: '2-digit',
       month: 'long',
       year: 'numeric',

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 27: Server Irish Dates</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 27: Irish Dates on the Server</h1>
+<p><strong>Status:</strong> Implemented 23/10/2026, waiting for your test. This is Phase 2 fix batch 14. Two agents audited the edge functions and server code; I scanned the live database myself.</p>
+
+<div class="warn"><strong>Most important: task reminders arrive an hour late all summer.</strong> The reminder e-mail function reads a task's time (say 10:00) as UTC, which is 11:00 in Irish summer time. Every reminder from late March to late October is about an hour late. Reminders set for less than an hour before a task arrive after the task has started. Winter is unaffected, and the clocks go back on Sunday (25/10).</div>
+
+<h2>A. Reminder and digest e-mails (edge functions)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>New shared helper</strong> <code>supabase/functions/_shared/dublin-time.ts</code>. It gives today's Irish date, adds days to a date, and turns an Irish date and time into the real moment, handling summer time correctly.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Task reminders:</strong> the task time is read as Irish time, and the "today / tomorrow / this week" windows use the Irish date. The "daily" window covered 3 days instead of 2; it's fixed to 2. Reminders are compared in minutes, so a 30-minute reminder comes 30 minutes before the task, not after it starts. The "In N hours" text in the e-mail is right.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Weekly digest:</strong> "today" and the 7-day window use the Irish date. It's correct today only because it runs on Monday morning; this makes it correct whenever it runs.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Invitation and new-user e-mails:</strong> the expiry date and sign-up time are shown in Irish time (they were shown in UTC).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Deploy</strong> the 5 changed functions through MCP, with the same settings as now. Then check that the next reminder run succeeds in the function logs.</div>
+
+<h2>B. Database: "today" fill-ins</h2>
+<p>When the app sends no date, these fill in "today" using the database's UTC date, so between midnight and 1 am in summer they record yesterday:</p>
+<ul>
+  <li><strong>Defaults on 6 date columns:</strong> order date, distribution date, nuc inspection date, queen weighing date, DCA observation date, wild colony observation date.</li>
+  <li><strong>8 database functions:</strong> paid date, queen failed date on hive archive, nuc status date, queen installed and mated dates, reared queen birth date, colony movement date, and the order date and its <code>ORD-YYYY</code> number.</li>
+</ul>
+<div class="task"><input type="checkbox" checked disabled> Each one uses the Irish date instead: <code>(now() AT TIME ZONE 'Europe/Dublin')::date</code>, the same as the dashboard in batch 26. Only that word changes in each function; names, inputs and permissions stay the same. Saved as a migration file and applied through MCP; advisors checked.</div>
+<p>Checked and left alone: the nuc emerged, set-up and mated timestamps are stored as plain dates (midnight UTC), so their date conversion is already correct.</p>
+
+<h2>C. App server code (smaller)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Shared helper:</strong> Mel's <code>todayInDublin</code> and <code>addDaysISO</code> move to <code>src/lib/dublin-date.ts</code> (Mel's tools keep working unchanged), plus one new helper for "midnight Irish time on this date".</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Scale charts (BEEP and Wolf), custom date range:</strong> the range ran from 1 am to 1 am in summer, missing the first hour and adding an hour of the next day. It now runs midnight to midnight, Irish time.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Mel's varroa treatment check:</strong> a treatment exactly N days ago now counts as recent, matching the other tools.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Admin:</strong> the news article date and the export file name use the Irish date.</div>
+
+<h2>Not changed</h2>
+<ul>
+  <li>The Vercel time zone setting stays as it is. Changing it would break code that relies on UTC; explicit Irish dates are safer.</li>
+  <li>The year look-ups (<code>getFullYear</code>) are only wrong on New Year's night, and Irish time equals UTC then.</li>
+</ul>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and tests; qa-engineer audit; database advisors; edge function logs.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/server-dates-batch27-plan.md</code>, the Phase 2 register and a memory note.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>How you'll test</h2>
+<ul>
+  <li><strong>Reminders:</strong> make a task for later today at a set time with a 1-hour reminder. The e-mail should arrive about an hour before, not at the task time. A 30-minute reminder arrives 30 minutes before.</li>
+  <li><strong>Scale charts:</strong> pick a custom date range; the first and last days should be complete.</li>
+  <li><strong>Other places:</strong> add a CRM order or a distribution without a date; it shows today's date.</li>
+</ul>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Where</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before (summer)</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Task reminder for a 10:00 task, 1 hour before</td><td style="border:1px solid #e7d9b8;padding:0.4rem">About 10:00 (an hour late)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">09:00–09:15</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">30-minute reminder</td><td style="border:1px solid #e7d9b8;padding:0.4rem">After the task started</td><td style="border:1px solid #e7d9b8;padding:0.4rem">About 30 minutes before</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">"Daily" reminder window</td><td style="border:1px solid #e7d9b8;padding:0.4rem">3 days</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Today and tomorrow</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">"Today" fill-ins (6 columns, 8 functions)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Yesterday from 00:00 to 01:00</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Irish date</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Scale chart custom range</td><td style="border:1px solid #e7d9b8;padding:0.4rem">01:00 to 00:59</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Midnight to midnight</td></tr>
+</table>
+<ul>
+  <li><strong>Edge functions deployed through MCP:</strong> reminders v14, digest v17, new-user notice v10, team invite v16, group invite v10. Each deployed copy matched the repo before deploying. The shared helper was checked in Node against 18 cases, including both 2026 clock-change days. The first reminder run on the new version (09:15 UTC) still needs confirming in the logs.</li>
+  <li><strong>Database</strong> (<code>20261023120000_server_dates_batch27.sql</code>): each function was re-created from its own live definition with only <code>current_date</code> swapped. Permissions and security settings were identical before and after, and no <code>current_date</code> is left. Advisors: nothing new.</li>
+  <li><strong>App:</strong> <code>src/lib/dublin-date.ts</code> is shared by the API routes and Mel's tools. The scale chart ranges, Mel's varroa treatment check, and the admin news and export dates now use it.</li>
+  <li><strong>Checks:</strong> type-check 0 errors; lint clean; tests 818 passed, 23 skipped. qa-engineer found no Critical or High issues.</li>
+  <li><strong>Noticed, not changed:</strong> the reminder function reloads all tasks once per user, and reads a team-access table that doesn't exist (C2-04).</li>
+</ul>
+</body>
+</html>

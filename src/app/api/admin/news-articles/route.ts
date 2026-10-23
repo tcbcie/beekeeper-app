@@ -7,6 +7,7 @@ import {
   FetchTooLargeError,
 } from '@/lib/admin-url-fetch'
 import * as cheerio from 'cheerio'
+import { toDublinDate } from '@/lib/dublin-date'
 
 const URL_FETCH_MAX_BYTES = 5 * 1024 * 1024
 
@@ -338,7 +339,7 @@ export async function POST(request: NextRequest) {
       try {
         const date = new Date(metadata.publishedDate)
         if (!isNaN(date.getTime())) {
-          parsedDate = date.toISOString().split('T')[0]
+          parsedDate = toDublinDate(date)
         }
       } catch {
         // Ignore invalid date

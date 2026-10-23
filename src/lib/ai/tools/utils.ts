@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { BEEKEEPER_TIME_ZONE, toDublinDate, todayInDublin, addDaysISO } from '@/lib/dublin-date'
 
 // Fail-fast at module init. Returns a non-nullable string so the values can
 // be used inside any closure without TS narrowing surprises.
@@ -171,31 +172,9 @@ export async function findBatchByName(userId: string, batchName: string): Promis
 }
 
 // The tools run on the server (UTC), but "today" and day counts must follow the beekeeper's
-// calendar in Ireland, or they are a day out around midnight and all summer evening long.
-const BEEKEEPER_TIME_ZONE = 'Europe/Dublin'
-const dublinDateFormat = new Intl.DateTimeFormat('en-CA', {
-  timeZone: BEEKEEPER_TIME_ZONE,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit'
-})
-
-// Calendar date (YYYY-MM-DD) in Ireland for an instant
-export function toDublinDate(instant: Date = new Date()): string {
-  return dublinDateFormat.format(instant)
-}
-
-// Today's calendar date in Ireland (YYYY-MM-DD)
-export function todayInDublin(): string {
-  return toDublinDate()
-}
-
-// Add whole days to a YYYY-MM-DD date
-export function addDaysISO(isoDate: string, days: number): string {
-  const d = new Date(`${isoDate}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + days)
-  return d.toISOString().slice(0, 10)
-}
+// calendar in Ireland. The helpers live in src/lib/dublin-date.ts (shared with the API routes)
+// and are re-exported here so the tools keep importing them from './utils'.
+export { toDublinDate, todayInDublin, addDaysISO }
 
 // A stored value as an Irish calendar date: date columns pass through, timestamps convert
 function toCalendarDay(value: string): string {

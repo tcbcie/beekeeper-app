@@ -131,6 +131,7 @@ serve(async (req) => {
     // Format signup date
     const signupDate = new Date(newUser.created_at)
     const formattedDate = signupDate.toLocaleDateString('en-IE', {
+      timeZone: 'Europe/Dublin', // the function runs in UTC
       day: '2-digit',
       month: 'long',
       year: 'numeric',

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getOwnApiaryIds, getAccessibleApiaryIds, findHiveByName, formatDate, daysSince, logToolError } from './utils'
+import { getSupabase, getOwnApiaryIds, getAccessibleApiaryIds, findHiveByName, formatDate, daysSince, logToolError, todayInDublin, addDaysISO } from './utils'
 
 // Helper to extract apiary name from Supabase join
 function getApiaryName(apiaries: unknown): string {
@@ -266,8 +266,8 @@ export const getHivesNeedingTreatment: Tool = {
 
     const threshold = args.threshold || 3
     const treatmentDays = args.treatmentDays || 30
-    const treatmentCutoff = new Date()
-    treatmentCutoff.setDate(treatmentCutoff.getDate() - treatmentDays)
+    // Irish calendar date, compared as YYYY-MM-DD: a treatment exactly N days ago still counts
+    const treatmentCutoff = addDaysISO(todayInDublin(), -treatmentDays)
 
     const { data: hives, error } = await supabase
       .from('hives')
@@ -305,7 +305,7 @@ export const getHivesNeedingTreatment: Tool = {
         .single()
 
       const treatmentDate = lastTreatment?.treatment_date
-      const isRecent = treatmentDate && new Date(treatmentDate) > treatmentCutoff
+      const isRecent = treatmentDate && String(treatmentDate).slice(0, 10) >= treatmentCutoff
 
       if (!isRecent) {
         return {

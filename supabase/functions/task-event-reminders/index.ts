@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
+import { addDaysISO, dublinDate, dublinLocalToInstant, formatDateIrish } from '../_shared/dublin-time.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 // New sb_secret_ key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name), with the
@@ -68,15 +69,6 @@ interface ReminderItem {
   hoursUntil: number
 }
 
-// Format date to Irish format (DD/MM/YYYY)
-function formatDateIrish(dateString: string): string {
-  const date = new Date(dateString)
-  const day = date.getDate().toString().padStart(2, '0')
-  const month = (date.getMonth() + 1).toString().padStart(2, '0')
-  const year = date.getFullYear()
-  return `${day}/${month}/${year}`
-}
-
 // Format time (HH:MM)
 function formatTime(timeString: string | null): string {
   if (!timeString) return ''
@@ -84,43 +76,27 @@ function formatTime(timeString: string | null): string {
   return `${hours}:${minutes}`
 }
 
-// Calculate hours until event
-function getHoursUntil(dateStr: string, timeStr: string | null): number {
-  const now = new Date()
-  const eventDate = new Date(dateStr)
-
-  if (timeStr) {
-    const [hours, minutes] = timeStr.split(':').map(Number)
-    eventDate.setHours(hours, minutes, 0, 0)
-  } else {
-    eventDate.setHours(9, 0, 0, 0) // Default to 9 AM if no time specified
-  }
-
-  return Math.floor((eventDate.getTime() - now.getTime()) / (1000 * 60 * 60))
+// Minutes until the event. Its date and time are Irish wall-clock values (09:00 if no time is
+// set), so in summer 10:00 is 09:00 UTC; reading them as UTC sent every reminder an hour late.
+function getMinutesUntil(dateStr: string, timeStr: string | null): number {
+  const eventMoment = dublinLocalToInstant(dateStr, timeStr || '09:00')
+  return Math.floor((eventMoment.getTime() - Date.now()) / (1000 * 60))
 }
 
 // Get upcoming tasks/events that need reminders
 async function getUpcomingReminders(supabase: any, frequency: string): Promise<Map<string, TaskEvent[]>> {
-  const now = new Date()
-  let startDate: Date
-  let endDate: Date
-
-  // Calculate date range based on frequency
+  // Date range based on frequency, in Irish dates (start_date is an Irish date)
+  const today = dublinDate()
+  let endDate: string
   if (frequency === 'realtime') {
     // Next 24 hours
-    startDate = now
-    endDate = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    endDate = dublinDate(new Date(Date.now() + 24 * 60 * 60 * 1000))
   } else if (frequency === 'daily') {
     // Today and tomorrow
-    startDate = now
-    endDate = new Date(now)
-    endDate.setDate(endDate.getDate() + 2)
-    endDate.setHours(0, 0, 0, 0)
+    endDate = addDaysISO(today, 1)
   } else if (frequency === 'weekly') {
     // Next 7 days
-    startDate = now
-    endDate = new Date(now)
-    endDate.setDate(endDate.getDate() + 7)
+    endDate = addDaysISO(today, 7)
   } else {
     return new Map()
   }
@@ -148,8 +124,8 @@ async function getUpcomingReminders(supabase: any, frequency: string): Promise<M
     .eq('reminder_enabled', true)
     .eq('reminder_sent', false)
     .eq('completed', false)
-    .gte('start_date', startDate.toISOString().split('T')[0])
-    .lte('start_date', endDate.toISOString().split('T')[0])
+    .gte('start_date', today)
+    .lte('start_date', endDate)
 
   if (error) {
     throw new Error(`Error fetching tasks/events: ${error.message}`)
@@ -159,16 +135,17 @@ async function getUpcomingReminders(supabase: any, frequency: string): Promise<M
   const eventsByUser = new Map<string, TaskEvent[]>()
 
   for (const event of tasksEvents || []) {
-    const hoursUntil = getHoursUntil(event.start_date, event.start_time)
-    const reminderHours = Math.floor(event.reminder_minutes_before / 60)
+    // Compared in minutes, so a reminder set under an hour before (e.g. 30) is sent before the
+    // event rather than only once it has started.
+    const minutesUntil = getMinutesUntil(event.start_date, event.start_time)
     // All-day events with no explicit start_time should fire any time during
     // the event day, not just in the pre-event window. Without this, a single
-    // missed cron tick between 08:00 and 09:00 UTC (the default time for
+    // missed cron tick before 09:00 Irish time (the default time for
     // all-day events) drops the reminder permanently.
-    const minHoursUntil = event.all_day && !event.start_time ? -24 : 0
+    const minMinutesUntil = event.all_day && !event.start_time ? -24 * 60 : 0
 
     // Check if we should send reminder now
-    if (hoursUntil <= reminderHours && hoursUntil >= minHoursUntil) {
+    if (minutesUntil <= event.reminder_minutes_before && minutesUntil >= minMinutesUntil) {
       // Always add to task creator
       if (!eventsByUser.has(event.user_id)) {
         eventsByUser.set(event.user_id, [])
@@ -413,7 +390,7 @@ serve(async (req) => {
           if (apiary) location = apiary.name
         }
 
-        const hoursUntil = getHoursUntil(event.start_date, event.start_time)
+        const hoursUntil = Math.floor(getMinutesUntil(event.start_date, event.start_time) / 60)
         const dateTimeStr = event.all_day
           ? formatDateIrish(event.start_date)
           : `${formatDateIrish(event.start_date)} ${formatTime(event.start_time)}`
