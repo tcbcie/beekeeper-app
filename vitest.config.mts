@@ -35,8 +35,9 @@ export default defineConfig({
         '.claude/',
         'public/'
       ],
+      // Every file under src/ is reported, tested or not (Vitest 4+ does this from `include`;
+      // the old `all` option was removed).
       include: ['src/**/*.{ts,tsx}'],
-      all: true
       // No coverage thresholds yet. The old 80% values sat outside `thresholds`, so they were
       // never applied; real coverage is far lower. Add `thresholds` once CI reports a baseline.
     }

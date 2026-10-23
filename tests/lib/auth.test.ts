@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { AuthError, type Session } from '@supabase/supabase-js'
 import {
   getCurrentUserId,
   requireUserId,
@@ -9,7 +10,6 @@ import {
   requireAdmin,
   isAccountActive,
   hasActiveSubscription,
-  type UserRole,
   type UserProfile
 } from '@/lib/auth'
 
@@ -44,8 +44,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -67,7 +67,7 @@ describe('Authentication Functions', () => {
     it('should return null on error', async () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: { session: null },
-        error: new Error('Session error') as any
+        error: new AuthError('Session error')
       })
 
       const result = await getCurrentUserId()
@@ -77,7 +77,7 @@ describe('Authentication Functions', () => {
 
     it('should handle missing session user gracefully', async () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
-        data: { session: {} as any },
+        data: { session: {} as Session },
         error: null
       })
 
@@ -92,8 +92,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -117,8 +117,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: 'user-789' } as any
-          } as any
+            user: { id: 'user-789' }
+          } as Session
         },
         error: null
       })
@@ -144,8 +144,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -160,7 +160,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await getUserRole()
       expect(result).toBe('Admin')
@@ -171,8 +171,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -187,7 +187,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await getUserRole()
       expect(result).toBe('User')
@@ -208,8 +208,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -224,7 +224,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await getUserRole()
       expect(result).toBe('User')
@@ -244,8 +244,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -260,7 +260,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await getUserProfile()
       expect(result).toEqual(mockProfile)
@@ -281,8 +281,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -297,7 +297,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await getUserProfile()
       expect(result).toBeNull()
@@ -311,8 +311,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -327,7 +327,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await isAdmin()
       expect(result).toBe(true)
@@ -338,8 +338,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -354,7 +354,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await isAdmin()
       expect(result).toBe(false)
@@ -367,8 +367,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -383,7 +383,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       await expect(requireAdmin()).resolves.toBeUndefined()
     })
@@ -393,8 +393,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -409,7 +409,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       await expect(requireAdmin()).rejects.toThrow('Admin access required')
     })
@@ -421,8 +421,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -437,7 +437,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await isAccountActive()
       expect(result).toBe(true)
@@ -448,8 +448,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -464,7 +464,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await isAccountActive()
       expect(result).toBe(false)
@@ -475,8 +475,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -491,7 +491,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await isAccountActive()
       expect(result).toBe(true)
@@ -517,8 +517,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -533,7 +533,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await hasActiveSubscription()
       expect(result).toBe(true)
@@ -547,8 +547,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -563,7 +563,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await hasActiveSubscription()
       expect(result).toBe(false)
@@ -574,8 +574,8 @@ describe('Authentication Functions', () => {
       vi.mocked(supabase.auth.getSession).mockResolvedValue({
         data: {
           session: {
-            user: { id: mockUserId } as any
-          } as any
+            user: { id: mockUserId }
+          } as Session
         },
         error: null
       })
@@ -590,7 +590,7 @@ describe('Authentication Functions', () => {
           })
         })
       })
-      vi.mocked(supabase.from).mockImplementation(mockFrom as any)
+      vi.mocked(supabase.from).mockImplementation(mockFrom as unknown as typeof supabase.from)
 
       const result = await hasActiveSubscription()
       expect(result).toBe(false)

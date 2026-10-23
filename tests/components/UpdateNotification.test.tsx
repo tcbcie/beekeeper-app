@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import UpdateNotification, { UpdateCheckButton } from '@/components/UpdateNotification'
 import { updateManager } from '@/lib/update-manager'
-import type { UpdateState } from '@/lib/update-manager'
+import type { UpdateListener } from '@/lib/update-manager'
 
 // Mock the update manager
 vi.mock('@/lib/update-manager', () => ({
@@ -15,18 +15,18 @@ vi.mock('@/lib/update-manager', () => ({
 }))
 
 describe('UpdateNotification', () => {
-  let mockSubscribe: any
-  let mockUnsubscribe: any
+  let mockSubscribe: Mock<(listener: UpdateListener) => () => void>
+  let mockUnsubscribe: Mock<() => void>
 
   beforeEach(() => {
     vi.clearAllMocks()
     mockUnsubscribe = vi.fn()
-    mockSubscribe = vi.fn((callback: Function) => {
+    mockSubscribe = vi.fn((callback: UpdateListener) => {
       // Call immediately with initial state
       callback({ status: 'no-update' })
       return mockUnsubscribe
     })
-    ;(updateManager.subscribe as any) = mockSubscribe
+    updateManager.subscribe = mockSubscribe
   })
 
   afterEach(() => {
@@ -39,7 +39,7 @@ describe('UpdateNotification', () => {
   })
 
   it('should render when update is ready', async () => {
-    mockSubscribe.mockImplementation((callback: Function) => {
+    mockSubscribe.mockImplementation((callback: UpdateListener) => {
       callback({ status: 'ready' })
       return mockUnsubscribe
     })
@@ -56,7 +56,7 @@ describe('UpdateNotification', () => {
   })
 
   it('should call applyUpdate when Update Now is clicked', async () => {
-    mockSubscribe.mockImplementation((callback: Function) => {
+    mockSubscribe.mockImplementation((callback: UpdateListener) => {
       callback({ status: 'ready' })
       return mockUnsubscribe
     })
@@ -74,7 +74,7 @@ describe('UpdateNotification', () => {
   })
 
   it('should call dismissUpdate when Later is clicked', async () => {
-    mockSubscribe.mockImplementation((callback: Function) => {
+    mockSubscribe.mockImplementation((callback: UpdateListener) => {
       callback({ status: 'ready' })
       return mockUnsubscribe
     })
@@ -92,7 +92,7 @@ describe('UpdateNotification', () => {
   })
 
   it('should hide notification after Update Now is clicked', async () => {
-    mockSubscribe.mockImplementation((callback: Function) => {
+    mockSubscribe.mockImplementation((callback: UpdateListener) => {
       callback({ status: 'ready' })
       return mockUnsubscribe
     })
@@ -112,7 +112,7 @@ describe('UpdateNotification', () => {
   })
 
   it('should hide notification after Later is clicked', async () => {
-    mockSubscribe.mockImplementation((callback: Function) => {
+    mockSubscribe.mockImplementation((callback: UpdateListener) => {
       callback({ status: 'ready' })
       return mockUnsubscribe
     })
@@ -146,9 +146,9 @@ describe('UpdateNotification', () => {
   })
 
   it('should update visibility when state changes', async () => {
-    let stateCallback: Function
+    let stateCallback: UpdateListener
 
-    mockSubscribe.mockImplementation((callback: Function) => {
+    mockSubscribe.mockImplementation((callback: UpdateListener) => {
       stateCallback = callback
       callback({ status: 'no-update' })
       return mockUnsubscribe
@@ -171,9 +171,9 @@ describe('UpdateNotification', () => {
   })
 
   it('should hide when state changes to no-update', async () => {
-    let stateCallback: Function
+    let stateCallback: UpdateListener
 
-    mockSubscribe.mockImplementation((callback: Function) => {
+    mockSubscribe.mockImplementation((callback: UpdateListener) => {
       stateCallback = callback
       callback({ status: 'ready' })
       return mockUnsubscribe
@@ -198,7 +198,7 @@ describe('UpdateNotification', () => {
   })
 
   it('should render update icon', async () => {
-    mockSubscribe.mockImplementation((callback: Function) => {
+    mockSubscribe.mockImplementation((callback: UpdateListener) => {
       callback({ status: 'ready' })
       return mockUnsubscribe
     })
@@ -216,17 +216,17 @@ describe('UpdateNotification', () => {
 })
 
 describe('UpdateCheckButton', () => {
-  let mockSubscribe: any
-  let mockUnsubscribe: any
+  let mockSubscribe: Mock<(listener: UpdateListener) => () => void>
+  let mockUnsubscribe: Mock<() => void>
 
   beforeEach(() => {
     vi.clearAllMocks()
     mockUnsubscribe = vi.fn()
-    mockSubscribe = vi.fn((callback: Function) => {
+    mockSubscribe = vi.fn((callback: UpdateListener) => {
       callback({ status: 'no-update' })
       return mockUnsubscribe
     })
-    ;(updateManager.subscribe as any) = mockSubscribe
+    updateManager.subscribe = mockSubscribe
   })
 
   afterEach(() => {
@@ -249,7 +249,7 @@ describe('UpdateCheckButton', () => {
   })
 
   it('should show checking state when update check is in progress', async () => {
-    mockSubscribe.mockImplementation((callback: Function) => {
+    mockSubscribe.mockImplementation((callback: UpdateListener) => {
       callback({ status: 'checking' })
       return mockUnsubscribe
     })
@@ -262,7 +262,7 @@ describe('UpdateCheckButton', () => {
   })
 
   it('should disable button when checking for updates', async () => {
-    mockSubscribe.mockImplementation((callback: Function) => {
+    mockSubscribe.mockImplementation((callback: UpdateListener) => {
       callback({ status: 'checking' })
       return mockUnsubscribe
     })
@@ -291,7 +291,7 @@ describe('UpdateCheckButton', () => {
   })
 
   it('should have spinning animation when checking', async () => {
-    mockSubscribe.mockImplementation((callback: Function) => {
+    mockSubscribe.mockImplementation((callback: UpdateListener) => {
       callback({ status: 'checking' })
       return mockUnsubscribe
     })
@@ -326,9 +326,9 @@ describe('UpdateCheckButton', () => {
   })
 
   it('should update button state when update state changes', async () => {
-    let stateCallback: Function
+    let stateCallback: UpdateListener
 
-    mockSubscribe.mockImplementation((callback: Function) => {
+    mockSubscribe.mockImplementation((callback: UpdateListener) => {
       stateCallback = callback
       callback({ status: 'no-update' })
       return mockUnsubscribe

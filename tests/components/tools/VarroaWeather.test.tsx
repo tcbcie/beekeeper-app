@@ -8,10 +8,6 @@ const mockApiaries = [
   { id: 'apiary-2', name: 'Farm Apiary', latitude: 53.2707, longitude: -9.0568 },
 ]
 
-const mockApiariesNoCoords = [
-  { id: 'apiary-3', name: 'No Location', latitude: null, longitude: null },
-]
-
 const mockTreatments = [
   {
     id: 'treat-1',
@@ -691,7 +687,6 @@ describe('Irish Treatment Products', () => {
 
   it('should verify broodless treatments have "Any" temperature range', () => {
     const broodlessTreatments = ['Apibioxal', 'Oxybee']
-    const anyRangePattern = /any/i
 
     // These treatments should have "Any" in their temperature range
     broodlessTreatments.forEach(name => {

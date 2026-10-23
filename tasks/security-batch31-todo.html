@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 31: Tooling</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 31: Tooling (Lint Clean-up and Vitest 5)</h1>
+<p><strong>Status:</strong> Implemented 23/10/2026, waiting for your check of GitHub CI. This is Phase 2 fix batch 18, the last High-priority item. It changes no app behaviour: only tests, scripts and the developer tools.</p>
+
+<h2>A. Lint: 145 problems → 0</h2>
+<p>All 145 are outside the app (<code>src/</code> is already clean): 131 in tests, 10 in scripts, 4 in two stray files. Every one gets a proper typed fix, not a rule switched off.</p>
+<div class="task"><input type="checkbox" checked disabled> <strong>Stray files:</strong>
+  <ul>
+    <li><code>.codex-temp/</code> is a git-ignored scratch folder; it's added to the lint ignore list.</li>
+    <li><code>fix-remaining-hives-tests.mjs</code> is a dead one-off script from Nov 2025 with a hard-coded path; it's deleted.</li>
+    <li><code>tests/setup.ts</code> is never loaded by the tests and is deleted. Its one useful line, the type names for the page-checking matchers such as <code>toBeInTheDocument</code>, moves into the setup file the tests actually use, <code>tests/setup-simple.ts</code>.</li>
+    <li>The test README is corrected.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Scripts (10):</strong> unused error variables and an unused import removed; a variable named <code>module</code>, which Next.js forbids, is renamed.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Tests (about 120):</strong>
+  <ul>
+    <li><code>as any</code> becomes the real Supabase <code>Session</code> type, <code>AuthError</code>, <code>vi.mocked()</code>, or a small local type.</li>
+    <li><code>Function</code> becomes the app's own <code>UpdateListener</code> or <code>() =&gt; void</code>.</li>
+    <li>Unused variables are removed.</li>
+  </ul>
+  About 25 files and about 60 edits, mostly find-and-replace in six files. No test changes what it checks.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>CI</strong> then checks the whole project (<code>npm run lint</code>), not just <code>src/</code>, so these can't build up again.</div>
+
+<h2>B. Vitest 2.1.9 → 5.0.5</h2>
+<p>Three major versions. It also clears the 4 critical development-only <code>npm audit</code> warnings that were deferred in batch 12.</p>
+<div class="task"><input type="checkbox" checked disabled> <strong>Install together:</strong> <code>vitest@5.0.5</code>, <code>@vitest/coverage-v8@5.0.5</code>, <code>@vitest/ui@5.0.5</code>, <code>vite@^7</code> (now a separate package; version 7 rather than 8, which brings a new bundler for no gain here), <code>@vitejs/plugin-react@^5.2</code>, and <code>@types/node@^22</code>. Development packages only, nothing users download.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Config:</strong> remove <code>coverage.all</code>, which was removed in v4. Coverage still includes every file in <code>src/</code>.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Known test fix:</strong> the map picker test mocks the Mapbox constructor with an arrow function, and v4+ rejects that; it becomes a normal function.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>GitHub CI:</strong> Node 20 → 22 in the three jobs (Vitest 5 needs Node 22).</div>
+<div class="task"><input type="checkbox" checked disabled> Run type-check, the whole test suite (3 runs) and coverage. Fix anything the upgrade breaks, most likely the few tests that replace browser globals (notifications, update manager, PWA update) or fake timers.</div>
+<div class="note"><strong>Worth knowing:</strong>
+  <ul>
+    <li>The project folder is in OneDrive, which can lock files while npm swaps them. If the install fails with "EPERM" or "EBUSY", pausing OneDrive sync for a minute fixes it.</li>
+    <li>Vercel only builds the app and doesn't run the tests. Node 20 support ends on Vercel this month, so I'll check which Node version the project uses and tell you.</li>
+    <li>If anything goes badly wrong, the upgrade is one commit and easy to undo.</li>
+  </ul>
+</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> <code>eslint .</code> shows 0 problems; type-check passes; tests pass (3 runs); coverage runs.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/tooling-batch31-plan.md</code>, the Phase 2 register (B0 items), memory notes (how to run the tools, Node 22).</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong> nothing to click in the app; check GitHub CI goes green after the push. Then commit and push.</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Check</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem"><code>eslint .</code></td><td style="border:1px solid #e7d9b8;padding:0.4rem">145 problems (111 errors)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">0</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Vitest</td><td style="border:1px solid #e7d9b8;padding:0.4rem">2.1.9</td><td style="border:1px solid #e7d9b8;padding:0.4rem">5.0.5 (with Vite 7.3.7)</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Tests</td><td style="border:1px solid #e7d9b8;padding:0.4rem">818 passed, 23 skipped</td><td style="border:1px solid #e7d9b8;padding:0.4rem">818 passed, 23 skipped, three runs in a row</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem"><code>npm audit</code></td><td style="border:1px solid #e7d9b8;padding:0.4rem">17 (4 critical)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">9 (0 critical), all already present through Next.js and exceljs</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">GitHub CI</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Node 20; lints <code>src/</code> only</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Node 22; lints the whole project</td></tr>
+</table>
+<ul>
+  <li><strong>Lint:</strong> every problem was fixed with a real type, nothing switched off:
+    <ul>
+      <li>Supabase <code>Session</code> and <code>AuthError</code>, the app's <code>UpdateListener</code>, <code>vi.mocked()</code>, and small local types for the service-worker stand-ins.</li>
+      <li>Unused variables and imports removed.</li>
+      <li>Deleted the dead <code>fix-remaining-hives-tests.mjs</code> and the never-loaded <code>tests/setup.ts</code>; its jest-dom types import moved to <code>tests/setup-simple.ts</code>.</li>
+      <li>Ignored the git-ignored <code>.codex-temp/</code> scratch folder.</li>
+    </ul>
+  </li>
+  <li><strong>Vitest 5:</strong>
+    <ul>
+      <li>npm refused to upgrade the packages that pin each other's versions in one step, so the three Vitest packages were removed and then installed fresh.</li>
+      <li><code>coverage.all</code> was removed; coverage still covers all of <code>src/</code>.</li>
+      <li>One test fix: the map picker's constructor mocks now use normal functions.</li>
+      <li>No other test needed changes, and type-checking passes, so the jest-dom matcher types still resolve.</li>
+    </ul>
+  </li>
+  <li><strong>Vercel:</strong> the project doesn't pin a Node version, and the API wouldn't return the project setting. Please check <em>Settings → Build and Deployment → Node.js Version</em> shows 22.x or 24.x; Vercel ends Node 20 this month. Vercel only builds the app, so the upgrade can't break a deployment.</li>
+  <li><strong>For you:</strong> after the push, check the GitHub Actions run goes green.</li>
+</ul>
+</body>
+</html>

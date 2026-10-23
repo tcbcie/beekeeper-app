@@ -147,7 +147,6 @@ describe('Weather Fetching Functionality', () => {
       }) as typeof fetch
 
       const eircode = 'INVALID'
-      const isUkNi = false
       const cleanedCode = eircode.trim().replace(/\s+/g, '').toUpperCase()
       const country = 'Ireland'
 
@@ -372,7 +371,6 @@ describe('Weather Fetching Functionality', () => {
       for (const scenario of scenarios) {
         const country = scenario.isUkNi ? 'United Kingdom' : 'Ireland'
         const fallbackLat = scenario.isUkNi ? '54.5973' : '53.3498'
-        const fallbackLon = scenario.isUkNi ? '-5.9301' : '-6.2603'
 
         expect(country).toBe(scenario.expectedCountry)
         expect(fallbackLat).toBe(scenario.expectedFallbackLat)

@@ -23,5 +23,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.mts", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "supabase", "varroa-detector", "coverage"]
+  "exclude": ["node_modules", "supabase", "varroa-detector", "coverage", ".codex-temp"]
 }

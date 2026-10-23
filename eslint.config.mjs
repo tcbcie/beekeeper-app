@@ -26,6 +26,8 @@ const eslintConfig = [
       "public/**",
       "!public/service-worker.js",
       "supabase/**",
+      // Local scratch output (git-ignored)
+      ".codex-temp/**",
     ],
   },
 ];

@@ -170,10 +170,12 @@ resolve: {
 ```
 
 ### Supabase mock not working
-Check that `tests/setup.ts` is properly loaded. It should be specified in `vitest.config.ts`:
+The global set-up file is `tests/setup-simple.ts` (jest-dom matchers and cleanup), set in
+`vitest.config.mts`. It does not mock Supabase: each test mocks `@/lib/supabase` itself, usually
+with `mockQuery()` from `tests/utils/supabase-mock.ts`.
 ```typescript
 test: {
-  setupFiles: ['./tests/setup.ts']
+  setupFiles: ['./tests/setup-simple.ts']
 }
 ```
 

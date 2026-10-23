@@ -3,7 +3,7 @@ import {
   matchesTaskView, isBatchMilestone, compareTaskUrgency, dueLabel, isTaskView, taskDateBounds,
 } from '@/lib/task-triage'
 
-const row = (o: Partial<any>) => ({
+const row = (o: Partial<Parameters<typeof matchesTaskView>[0]>) => ({
   completed: false, start_date: '2026-09-04', priority: 'normal',
   event_type: 'task', batch_id: null, ...o,
 })

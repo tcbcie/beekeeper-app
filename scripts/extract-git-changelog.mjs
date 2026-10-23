@@ -36,7 +36,7 @@ if (!targetVersion) {
     const versionFile = join(ROOT_DIR, 'version.json');
     const versionData = JSON.parse(readFileSync(versionFile, 'utf8'));
     targetVersion = versionData.version;
-  } catch (error) {
+  } catch {
     console.error('❌ Error: Could not determine version');
     console.log('   Provide version as argument or ensure version.json exists');
     process.exit(1);
@@ -71,7 +71,7 @@ try {
     .find(({ subject }) => !versionPattern.test(subject));
 
   lastBumpCommit = previousRelease ? previousRelease.hash : null;
-} catch (error) {
+} catch {
   console.log('⚠️  No previous bump commits found, using all commits');
   lastBumpCommit = null;
 }

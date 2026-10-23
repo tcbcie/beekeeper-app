@@ -1,10 +1,24 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { updateManager, getAppVersion, type UpdateState } from '@/lib/update-manager'
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest'
+import { updateManager, getAppVersion } from '@/lib/update-manager'
+
+
+// Stand-ins for the browser's service worker objects. Every stored listener is called with no
+// arguments, so a plain () => void is enough.
+type Listener = () => void
+interface MockWorker { state: string; postMessage: Mock; addEventListener: Mock }
+interface MockRegistration {
+  waiting: MockWorker | null
+  installing: MockWorker | null
+  active: MockWorker
+  update: Mock<() => Promise<void>>
+  addEventListener: Mock
+}
+const asRegistration = (registration: MockRegistration) => registration as unknown as ServiceWorkerRegistration
 
 describe('Update Manager', () => {
-  let mockRegistration: any
-  let mockServiceWorker: any
-  let listeners: Map<string, Function>
+  let mockRegistration: MockRegistration
+  let mockServiceWorker: MockWorker
+  let listeners: Map<string, Listener>
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -15,7 +29,7 @@ describe('Update Manager', () => {
     mockServiceWorker = {
       state: 'installed',
       postMessage: vi.fn(),
-      addEventListener: vi.fn((event: string, callback: Function) => {
+      addEventListener: vi.fn((event: string, callback: Listener) => {
         listeners.set(event, callback)
       })
     }
@@ -26,7 +40,7 @@ describe('Update Manager', () => {
       installing: null,
       active: mockServiceWorker,
       update: vi.fn().mockResolvedValue(undefined),
-      addEventListener: vi.fn((event: string, callback: Function) => {
+      addEventListener: vi.fn((event: string, callback: Listener) => {
         listeners.set(event, callback)
       })
     }
@@ -36,7 +50,7 @@ describe('Update Manager', () => {
       value: {
         serviceWorker: {
           controller: mockServiceWorker,
-          addEventListener: vi.fn((event: string, callback: Function) => {
+          addEventListener: vi.fn((event: string, callback: Listener) => {
             listeners.set(`sw-${event}`, callback)
           }),
           removeEventListener: vi.fn()
@@ -50,7 +64,7 @@ describe('Update Manager', () => {
     Object.defineProperty(global, 'document', {
       value: {
         hidden: false,
-        addEventListener: vi.fn((event: string, callback: Function) => {
+        addEventListener: vi.fn((event: string, callback: Listener) => {
           listeners.set(`doc-${event}`, callback)
         }),
         removeEventListener: vi.fn()
@@ -70,7 +84,7 @@ describe('Update Manager', () => {
 
   describe('initialize', () => {
     it('should initialize with service worker registration', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       expect(mockRegistration.addEventListener).toHaveBeenCalledWith(
         'updatefound',
@@ -84,7 +98,7 @@ describe('Update Manager', () => {
 
       mockRegistration.waiting = mockServiceWorker
 
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       // Should notify subscriber about ready update
       expect(subscriber).toHaveBeenCalledWith(
@@ -93,7 +107,7 @@ describe('Update Manager', () => {
     })
 
     it('should set up periodic update checks', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       // Fast-forward 30 minutes
       vi.advanceTimersByTime(30 * 60 * 1000)
@@ -102,7 +116,7 @@ describe('Update Manager', () => {
     })
 
     it('should check for updates on visibility change', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       const visibilityCallback = listeners.get('doc-visibilitychange')
       expect(visibilityCallback).toBeDefined()
@@ -117,7 +131,7 @@ describe('Update Manager', () => {
 
   describe('checkForUpdates', () => {
     it('should update state to checking', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       const subscriber = vi.fn()
       updateManager.subscribe(subscriber)
@@ -130,7 +144,7 @@ describe('Update Manager', () => {
     })
 
     it('should call registration.update()', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       await updateManager.checkForUpdates()
 
@@ -138,7 +152,7 @@ describe('Update Manager', () => {
     })
 
     it('should update state to no-update after timeout if no update found', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       const subscriber = vi.fn()
       updateManager.subscribe(subscriber)
@@ -157,7 +171,7 @@ describe('Update Manager', () => {
       const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       mockRegistration.update.mockRejectedValue(new Error('Update failed'))
 
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       const subscriber = vi.fn()
       updateManager.subscribe(subscriber)
@@ -193,7 +207,7 @@ describe('Update Manager', () => {
     it('should send SKIP_WAITING message to waiting service worker', async () => {
       mockRegistration.waiting = mockServiceWorker
 
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       updateManager.applyUpdate()
 
@@ -205,7 +219,7 @@ describe('Update Manager', () => {
     it('should warn if no waiting service worker', async () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       // Reset waiting worker to null
       updateManager['waitingWorker'] = null
@@ -222,7 +236,7 @@ describe('Update Manager', () => {
 
   describe('dismissUpdate', () => {
     it('should update state to no-update', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       const subscriber = vi.fn()
       updateManager.subscribe(subscriber)
@@ -237,7 +251,7 @@ describe('Update Manager', () => {
 
   describe('subscribe', () => {
     it('should call listener immediately with current state', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       const subscriber = vi.fn()
       updateManager.subscribe(subscriber)
@@ -248,7 +262,7 @@ describe('Update Manager', () => {
     })
 
     it('should call listener on state updates', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       const subscriber = vi.fn()
       updateManager.subscribe(subscriber)
@@ -261,7 +275,7 @@ describe('Update Manager', () => {
     })
 
     it('should return unsubscribe function', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       const subscriber = vi.fn()
       const unsubscribe = updateManager.subscribe(subscriber)
@@ -279,7 +293,7 @@ describe('Update Manager', () => {
 
   describe('getState', () => {
     it('should return current state', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       const state = updateManager.getState()
 
@@ -289,7 +303,7 @@ describe('Update Manager', () => {
 
   describe('updatefound event handling', () => {
     it('should update state to installing when new worker is installing', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       const subscriber = vi.fn()
       updateManager.subscribe(subscriber)
@@ -307,7 +321,7 @@ describe('Update Manager', () => {
     })
 
     it('should update state to ready when new worker is installed', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       const subscriber = vi.fn()
       updateManager.subscribe(subscriber)
@@ -339,7 +353,7 @@ describe('Update Manager', () => {
         configurable: true
       })
 
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       // Simulate controllerchange event
       const controllerChangeCallback = listeners.get('sw-controllerchange')

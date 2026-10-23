@@ -8,12 +8,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
  */
 
 describe('Service Worker Registration', () => {
-  let originalNavigator: Navigator
-  let originalWindow: Window & typeof globalThis
 
   beforeEach(() => {
-    originalNavigator = global.navigator
-    originalWindow = global.window
   })
 
   afterEach(() => {

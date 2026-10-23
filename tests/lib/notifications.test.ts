@@ -260,7 +260,6 @@ describe('Notification Utilities', () => {
   describe('scheduleNotification', () => {
     it('should show notification immediately if time has passed', () => {
       const pastDate = new Date(Date.now() - 1000)
-      const showNotificationSpy = vi.spyOn({ showNotification }, 'showNotification')
 
       const data: NotificationData = {
         title: 'Test',

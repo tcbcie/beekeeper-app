@@ -44,7 +44,7 @@ try {
     supabaseUrl = urlMatch[1].trim();
     supabaseKey = keyMatch[1].trim();
   }
-} catch (error) {
+} catch {
   console.error('❌ Error reading .env.local file');
   console.log('   Make sure .env.local exists with NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
@@ -94,7 +94,7 @@ async function main() {
       const versionData = JSON.parse(readFileSync(versionFile, 'utf8'));
       version = versionData.version;
       console.log(`📦 Version: ${version} (from version.json)\n`);
-    } catch (error) {
+    } catch {
       version = await prompt('📦 Version (e.g., 1.0.12): ');
     }
 

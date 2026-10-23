@@ -58,7 +58,7 @@ if (!existsSync(versionFile)) {
 let versionData;
 try {
   versionData = JSON.parse(readFileSync(versionFile, 'utf8'));
-} catch (error) {
+} catch {
   console.error('❌ Error: Invalid JSON in version.json');
   console.log('   Expected format: {"version":"1.0.0","date":"November 18, 2025"}');
   process.exit(1);
@@ -179,7 +179,7 @@ async function main() {
         process.exit(0);
       }
     }
-  } catch (error) {
+  } catch {
     // Not a git repository or git not available - continue anyway
   }
 
@@ -248,7 +248,7 @@ async function main() {
               );
               addedCount++;
               console.log(`✅ Added: ${entry.title}`);
-            } catch (error) {
+            } catch {
               failedTitles.push(entry.title);
               console.log(`⚠️  Could not add entry: ${entry.title}`);
             }
@@ -271,7 +271,7 @@ async function main() {
           }
         }
       }
-    } catch (error) {
+    } catch {
       console.log('\n⚠️  Could not extract changelog from git commits');
       console.log('   You can add entries manually with:');
       console.log(`   node scripts/add-changelog.mjs\n`);

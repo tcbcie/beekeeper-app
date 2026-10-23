@@ -1,16 +1,29 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest'
 import { updateManager, getAppVersion } from '@/lib/update-manager'
+
+// Stand-ins for the browser's service worker objects. Every stored listener is called with no
+// arguments, so a plain () => void is enough.
+type Listener = () => void
+interface MockWorker { state: string; postMessage: Mock; addEventListener: Mock }
+interface MockRegistration {
+  waiting: MockWorker | null
+  installing: MockWorker | null
+  active: MockWorker
+  update: Mock<() => Promise<void>>
+  addEventListener: Mock
+}
+const asRegistration = (registration: MockRegistration) => registration as unknown as ServiceWorkerRegistration
 
 /**
  * Integration tests for the complete PWA update flow
  * Tests the interaction between service worker, update manager, and UI components
  */
 describe('PWA Update Flow Integration', () => {
-  let mockRegistration: any
-  let mockServiceWorker: any
-  let mockWaitingWorker: any
-  let listeners: Map<string, Function>
-  let eventListeners: Map<string, Set<Function>>
+  let mockRegistration: MockRegistration
+  let mockServiceWorker: MockWorker
+  let mockWaitingWorker: MockWorker
+  let listeners: Map<string, Listener>
+  let eventListeners: Map<string, Set<Listener>>
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -22,7 +35,7 @@ describe('PWA Update Flow Integration', () => {
     mockServiceWorker = {
       state: 'activated',
       postMessage: vi.fn(),
-      addEventListener: vi.fn((event: string, callback: Function) => {
+      addEventListener: vi.fn((event: string, callback: Listener) => {
         if (!eventListeners.has(event)) {
           eventListeners.set(event, new Set())
         }
@@ -33,7 +46,7 @@ describe('PWA Update Flow Integration', () => {
     mockWaitingWorker = {
       state: 'installed',
       postMessage: vi.fn(),
-      addEventListener: vi.fn((event: string, callback: Function) => {
+      addEventListener: vi.fn((event: string, callback: Listener) => {
         if (!eventListeners.has(event)) {
           eventListeners.set(event, new Set())
         }
@@ -47,7 +60,7 @@ describe('PWA Update Flow Integration', () => {
       installing: null,
       active: mockServiceWorker,
       update: vi.fn().mockResolvedValue(undefined),
-      addEventListener: vi.fn((event: string, callback: Function) => {
+      addEventListener: vi.fn((event: string, callback: Listener) => {
         if (!eventListeners.has(event)) {
           eventListeners.set(event, new Set())
         }
@@ -61,7 +74,7 @@ describe('PWA Update Flow Integration', () => {
         serviceWorker: {
           controller: mockServiceWorker,
           ready: Promise.resolve(mockRegistration),
-          addEventListener: vi.fn((event: string, callback: Function) => {
+          addEventListener: vi.fn((event: string, callback: Listener) => {
             if (!eventListeners.has(`sw-${event}`)) {
               eventListeners.set(`sw-${event}`, new Set())
             }
@@ -78,7 +91,7 @@ describe('PWA Update Flow Integration', () => {
     Object.defineProperty(global, 'document', {
       value: {
         hidden: false,
-        addEventListener: vi.fn((event: string, callback: Function) => {
+        addEventListener: vi.fn((event: string, callback: Listener) => {
           if (!eventListeners.has(`doc-${event}`)) {
             eventListeners.set(`doc-${event}`, new Set())
           }
@@ -107,13 +120,6 @@ describe('PWA Update Flow Integration', () => {
     localStorage.clear()
   })
 
-  const triggerEvent = (eventName: string) => {
-    const callbacks = eventListeners.get(eventName)
-    if (callbacks) {
-      callbacks.forEach(callback => callback())
-    }
-  }
-
   describe('Complete Update Lifecycle', () => {
     it('should handle full update flow from detection to activation', async () => {
       const stateUpdates: string[] = []
@@ -124,7 +130,7 @@ describe('PWA Update Flow Integration', () => {
       })
 
       // Initialize update manager
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       expect(stateUpdates).toContain('no-update')
 
@@ -173,7 +179,7 @@ describe('PWA Update Flow Integration', () => {
         stateUpdates.push(state.status)
       })
 
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       // Should immediately detect ready update
       expect(stateUpdates).toContain('ready')
@@ -186,7 +192,7 @@ describe('PWA Update Flow Integration', () => {
         stateUpdates.push(state.status)
       })
 
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       // Simulate update ready
       mockRegistration.waiting = mockWaitingWorker
@@ -214,7 +220,7 @@ describe('PWA Update Flow Integration', () => {
 
   describe('Periodic Update Checks', () => {
     it('should check for updates every 30 minutes', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       expect(mockRegistration.update).toHaveBeenCalledTimes(0)
 
@@ -230,7 +236,7 @@ describe('PWA Update Flow Integration', () => {
     })
 
     it('should check for updates when page becomes visible', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       mockRegistration.update.mockClear()
 
@@ -247,7 +253,7 @@ describe('PWA Update Flow Integration', () => {
     })
 
     it('should not check for updates when page becomes hidden', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       mockRegistration.update.mockClear()
 
@@ -263,7 +269,7 @@ describe('PWA Update Flow Integration', () => {
 
   describe('Manual Update Check', () => {
     it('should allow manual update check', async () => {
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       mockRegistration.update.mockClear()
 
@@ -279,7 +285,7 @@ describe('PWA Update Flow Integration', () => {
         stateUpdates.push(state.status)
       })
 
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       stateUpdates.length = 0 // Clear initial states
 
@@ -300,7 +306,7 @@ describe('PWA Update Flow Integration', () => {
         stateUpdates.push(state.status)
       })
 
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       await updateManager.checkForUpdates()
 
@@ -313,7 +319,7 @@ describe('PWA Update Flow Integration', () => {
     it('should handle missing waiting service worker gracefully', async () => {
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       // Reset waiting worker to null
       updateManager['waitingWorker'] = null
@@ -348,7 +354,7 @@ describe('PWA Update Flow Integration', () => {
         subscriber3Updates.push(state.status)
       })
 
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
       await updateManager.checkForUpdates()
 
       // All subscribers should receive the same updates
@@ -369,7 +375,7 @@ describe('PWA Update Flow Integration', () => {
         subscriber2Updates.push(state.status)
       })
 
-      await updateManager.initialize(mockRegistration)
+      await updateManager.initialize(asRegistration(mockRegistration))
 
       // Clear arrays
       subscriber1Updates.length = 0

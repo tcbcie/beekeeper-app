@@ -83,7 +83,7 @@
 | SUP-08 | **Fixed 18/10/2026 (batch 12).** `supabase/.temp` untracked; dumps, keys and backup files ignored; `.env.example` (placeholders) committed. |
 | SUP-09 | **Fixed 18/10/2026 (batch 12).** The secret scanner knows the leaked key types and many more, blocks new data files and files over 1 MB, and also runs in GitHub Actions on every push. |
 | SUP-10 | **Fixed 18/10/2026 (batch 12).** Workflow permissions limited; actions pinned to commit SHAs. |
-| npm audit (dev) | **Accepted for now (18/10/2026).** Production: 4 findings, 0 critical. The 4 critical findings are dev-only (Vitest 2); upgrading to Vitest 5 is a separate task. |
+| npm audit (dev) | **Accepted for now (18/10/2026).** Production: 4 findings, 0 critical. The 4 critical findings were dev-only (Vitest 2). *Batch 31 (23/10/2026) upgraded to Vitest 5.0.5: all 4 critical findings are gone (17 to 9 in total). The remaining 9 come through Next.js, eslint-config-next and exceljs.* |
 | C7a-02 (Phase 2) | **Fixed 18/10/2026 (batch 13).** The apiary map picker inserted apiary names, including team members', into popups as HTML (stored XSS). The name is now set as text. |
 | C9a-01 (Phase 2) | **Fixed 18/10/2026 (batch 13).** Change Password didn't check the current password. It is now verified first. |
 | C2-31 (Phase 2) | **Fixed 18/10/2026 (batch 13).** The reminder and digest emails now escape user-written text. |

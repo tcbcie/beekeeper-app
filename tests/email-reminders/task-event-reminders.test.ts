@@ -28,7 +28,6 @@ const supabase = (HAS_ENV_VARS
 // Test user IDs
 let testUserId: string
 let testTaskId: string
-let testEventId: string
 
 // Skip all tests if env vars not available
 describe.skipIf(!HAS_ENV_VARS)('Email Reminder System - User Preferences', () => {
@@ -129,7 +128,7 @@ describe.skipIf(!HAS_ENV_VARS)('Email Reminder System - User Preferences', () =>
   it('should reject invalid reminder frequency', async () => {
     const { error } = await supabase
       .from('profiles')
-      .update({ task_reminder_frequency: 'invalid' as any })
+      .update({ task_reminder_frequency: 'invalid' })
       .eq('id', testUserId)
 
     expect(error).not.toBeNull()

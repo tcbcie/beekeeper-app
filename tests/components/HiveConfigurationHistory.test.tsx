@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import HiveConfigurationHistory from '@/components/HiveConfigurationHistory'
 
@@ -24,7 +24,7 @@ describe('HiveConfigurationHistory', () => {
   const mockHiveId = 'hive-123'
 
   // Helper to create standard table mocks with hives and team_apiaries support
-  const createTableMock = (historyData: any[], profileData: any = { full_name: 'John Doe', email: 'john@example.com' }) => {
+  const createTableMock = (historyData: unknown[], profileData: unknown = { full_name: 'John Doe', email: 'john@example.com' }) => {
     return (table: string) => {
       if (table === 'hives') {
         return {

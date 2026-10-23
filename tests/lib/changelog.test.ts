@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 
 // Mock Supabase before importing changelog
 vi.mock('@/lib/supabase', () => ({
@@ -14,7 +14,6 @@ import {
   getEntryTypeIcon,
   getEntryTypeColor,
   formatChangelogDate,
-  type ChangelogEntry
 } from '@/lib/changelog'
 
 describe('Changelog Utilities', () => {

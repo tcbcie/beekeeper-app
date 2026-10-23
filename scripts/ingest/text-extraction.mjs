@@ -13,8 +13,8 @@ export async function initializeExtractionServices(openaiApiKey, googleApiKey) {
     // Dynamically import libraries
     if (!pdfParse) pdfParse = (await import('pdf-parse')).default
     if (!pdfToImg) {
-        const module = await import('pdf-to-img')
-        pdfToImg = module.pdf
+        const pdfToImgModule = await import('pdf-to-img')
+        pdfToImg = pdfToImgModule.pdf
     }
 
     const services = {

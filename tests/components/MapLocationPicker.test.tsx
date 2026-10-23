@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { renderWithProviders } from '../utils/render'
 import userEvent from '@testing-library/user-event'
 
@@ -42,8 +42,10 @@ const mockMapInstance = {
 vi.mock('mapbox-gl', () => ({
   default: {
     accessToken: '',
-    Map: vi.fn().mockImplementation(() => mockMapInstance),
-    Marker: vi.fn().mockImplementation(() => mockMarkerInstance),
+    // The component calls `new Map(...)` and `new Marker(...)`. Since Vitest 4 a mock used with
+    // `new` needs a normal function: an arrow function is not a constructor.
+    Map: vi.fn().mockImplementation(function () { return mockMapInstance }),
+    Marker: vi.fn().mockImplementation(function () { return mockMarkerInstance }),
     NavigationControl: vi.fn(),
   },
 }))

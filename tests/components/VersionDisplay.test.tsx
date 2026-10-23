@@ -18,7 +18,7 @@ describe('VersionDisplay', () => {
   })
 
   it('should render version number', () => {
-    ;(getAppVersion as any).mockReturnValue('1.2.3')
+    ;vi.mocked(getAppVersion).mockReturnValue('1.2.3')
 
     render(<VersionDisplay />)
 
@@ -26,7 +26,7 @@ describe('VersionDisplay', () => {
   })
 
   it('should call getAppVersion', () => {
-    ;(getAppVersion as any).mockReturnValue('1.0.0')
+    ;vi.mocked(getAppVersion).mockReturnValue('1.0.0')
 
     render(<VersionDisplay />)
 
@@ -34,7 +34,7 @@ describe('VersionDisplay', () => {
   })
 
   it('should render with correct styling classes', () => {
-    ;(getAppVersion as any).mockReturnValue('1.4.2')
+    ;vi.mocked(getAppVersion).mockReturnValue('1.4.2')
 
     const { container } = render(<VersionDisplay />)
 
@@ -48,7 +48,7 @@ describe('VersionDisplay', () => {
     const versions = ['0.0.1', '1.0.0', '2.5.3', '10.20.30']
 
     versions.forEach(version => {
-      ;(getAppVersion as any).mockReturnValue(version)
+      ;vi.mocked(getAppVersion).mockReturnValue(version)
 
       const { unmount } = render(<VersionDisplay />)
 
@@ -59,7 +59,7 @@ describe('VersionDisplay', () => {
   })
 
   it('should handle version with pre-release tag', () => {
-    ;(getAppVersion as any).mockReturnValue('1.0.0-beta.1')
+    ;vi.mocked(getAppVersion).mockReturnValue('1.0.0-beta.1')
 
     render(<VersionDisplay />)
 
@@ -67,7 +67,7 @@ describe('VersionDisplay', () => {
   })
 
   it('should handle version with build metadata', () => {
-    ;(getAppVersion as any).mockReturnValue('1.0.0+build.123')
+    ;vi.mocked(getAppVersion).mockReturnValue('1.0.0+build.123')
 
     render(<VersionDisplay />)
 
@@ -75,7 +75,7 @@ describe('VersionDisplay', () => {
   })
 
   it('should render as a div element', () => {
-    ;(getAppVersion as any).mockReturnValue('1.0.0')
+    ;vi.mocked(getAppVersion).mockReturnValue('1.0.0')
 
     const { container } = render(<VersionDisplay />)
 
@@ -83,7 +83,7 @@ describe('VersionDisplay', () => {
   })
 
   it('should be accessible', () => {
-    ;(getAppVersion as any).mockReturnValue('1.2.3')
+    ;vi.mocked(getAppVersion).mockReturnValue('1.2.3')
 
     const { container } = render(<VersionDisplay />)
 

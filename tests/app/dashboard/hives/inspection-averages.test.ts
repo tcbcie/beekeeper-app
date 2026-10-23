@@ -126,7 +126,14 @@ describe('Inspection Averages Calculation', () => {
     })
 
     it('should handle empty inspections array', () => {
-      const inspections: any[] = []
+      const inspections: {
+        id: string
+        brood_frames: number | null
+        right_sized_frames: number | null
+        brood_pattern_rating: number | null
+        temperament_rating: number | null
+        population_strength: number | null
+      }[] = []
 
       const inspectionsWithData = new Set<string>()
       inspections.forEach(inspection => {
