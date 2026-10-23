@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 26: Data Integrity</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .warn { background: #fef2f2; border-left: 4px solid #dc2626; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    .flow { background: #fff; border: 1px solid #e7d9b8; padding: 0.6rem 0.9rem; font-family: ui-monospace, monospace; font-size: 0.9em; white-space: pre; overflow-x: auto; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 26: Lineage, Invitations and Dashboard Dates</h1>
+<p><strong>Status:</strong> Implemented 23/10/2026, waiting for your test. This is Phase 2 fix batch 13. Three agents explored the code, and every fact below was checked against the live database: no lineage cycles exist today, there are no duplicate invitations, and the dashboard function is identical to the repo copy.</p>
+
+<h2>A. Queen lineage cycles (C6-08)</h2>
+<p>How it goes wrong today, when editing queen M:</p>
+<div class="flow">Mother picker offers "Queen 26 (mated)"  ← reared from M's own graft, never filtered
+Save → RPC creates register record D with mother = M
+     → cycle check runs now, but D isn't in the page's list, so it passes
+     → M.mother = D     ⇒  M → D → M  (a daughter as her own mother's mother)</div>
+<div class="warn"><strong>Also found:</strong> the queen form never shows a failed save. Supabase returns errors as plain objects, and the form only reports real <code>Error</code> objects. A duplicate queen number or a database refusal just does nothing. The same happens in two admin drop-down forms.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Database guard (essential):</strong> a check that a queen can't be her own parent, plus a trigger. When mother or father changes, the trigger walks up the family tree and refuses the change if the queen is already among her new parent's ancestors. The message reads: "Queen 12 can't have one of her own descendants as a parent." It also covers other users' queens and anything the page didn't load. It's saved as a migration file and applied through MCP. Execution is revoked from app users (it runs as a trigger only), and I'll run the advisors afterwards.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Form:</strong> the cycle check runs <em>before</em> the reared queen is added to the register, so a refused save leaves no stray record. Reared candidates from this queen's own line are hidden from the mother picker; each candidate now carries its would-be mother, the same rule the database function uses.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Errors shown:</strong> the queen form and the two drop-down forms show the real message (or a plain fallback) for any failed save.</div>
+
+<h2>B. Invitations</h2>
+<p>Both invitation tables already have a unique rule on <code>(team or group, email, status)</code>, so exact duplicate pending invitations can't happen. But the rule is wrong in two ways:</p>
+<ul>
+  <li><strong>It blocks re-joining:</strong> it allows only one "accepted" row per email. If someone who left a group is invited again, accepting fails, because their old accepted row is still there. <strong>3 former rearing-group members are in that position today.</strong></li>
+  <li><strong>It's case-sensitive:</strong> <code>Anne@x.ie</code> and <code>anne@x.ie</code> count as different people. The app lower-cases emails, but the database doesn't enforce it.</li>
+</ul>
+<div class="task"><input type="checkbox" checked disabled> <strong>Database:</strong> the old three-column rule is replaced with "one <em>pending</em> invitation per team (or group) and email, ignoring case". Accepted and declined history no longer blocks anything. No existing rows conflict (checked).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Pages (apiary team and rearing team):</strong> the "already invited" check reads a list instead of expecting exactly one row, which silently failed when two rows matched. If the database refuses a duplicate, the page shows "An invitation has already been sent to this email." instead of a generic error. The rearing-team page now checks the delete of a declined invitation, as the apiary-team page already does.</div>
+
+<h2>C. Dashboard dates (UTC)</h2>
+<div class="task"><input type="checkbox" checked disabled> The dashboard database function used the database's UTC date. Between midnight and 1 am Irish summer time, "tasks due today" counted yesterday's tasks, and the windows (inspections in 7 days, hives not inspected in 14, varroa in 30, queen checks in 21, queens over 2 years) were a day out. Fix: one line works out today in <code>Europe/Dublin</code>, used everywhere in the function. The function's name and inputs are unchanged, so the app and its permissions need no changes. The function still refuses anyone but the signed-in user.</div>
+
+<h2>Not changed (noted)</h2>
+<ul>
+  <li><strong>Other date fallbacks:</strong> a few database functions fill in a date when the app sends none (order date, paid date, colony movement). They should use the Irish date the next time they're changed. The reminder e-mail function has a similar UTC date issue; that's server-side and separate.</li>
+  <li><strong>Expired invitations</strong> still count as pending, as now. The owner cancels and re-invites.</li>
+</ul>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and tests; qa-engineer audit; database advisors.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/data-integrity-batch26-plan.md</code>, the Phase 2 register, a correction to the lineage plan's "can't be descendants" claim, and memory notes.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong> test, then commit and push.</div>
+
+<h2>How you'll test</h2>
+<ul>
+  <li><strong>Queens:</strong> edit a breeder queen and open the mother picker. Her own reared daughters are no longer offered. Try a duplicate queen number: you now see an error. Normal edits and adding a reared mother still work.</li>
+  <li><strong>Apiary team / rearing team:</strong> invite someone (works), invite the same email again in different capitals (you're told it's already sent), and cancel and re-invite (works).</li>
+  <li><strong>Dashboard:</strong> the counts look the same as before during the day.</li>
+</ul>
+
+<h2>Review</h2>
+<p><strong>Database</strong> (migration <code>supabase/migrations/20261023100000_data_integrity_batch26.sql</code>, applied through MCP):</p>
+<ul>
+  <li><strong>Lineage:</strong> the <code>queens_not_own_parent</code> check and the <code>queens_prevent_lineage_cycle</code> trigger. Live test (always rolled back):
+    <ul>
+      <li>Making a queen's daughter her mother: refused with "Queen 00 M30 can't have one of her own descendants as a parent."</li>
+      <li>Making a queen her own father: refused.</li>
+      <li>An ordinary new mother: allowed.</li>
+    </ul>
+  </li>
+  <li><strong>Invitations:</strong> the old <code>(team/group, email, status)</code> rules were dropped and replaced with one pending invitation per team/group and <code>lower(email)</code>. The 3 former rearing-group members can now accept a new invitation.</li>
+  <li><strong>Dashboard:</strong> <code>get_dashboard_overview</code> uses <code>v_today</code> (Europe/Dublin), with no <code>current_date</code> left. Signed-in users can still run it; anonymous visitors can't.</li>
+  <li><strong>Advisors:</strong> nothing new. The trigger function can't be run by app users.</li>
+</ul>
+<p><strong>App:</strong></p>
+<ul>
+  <li><strong>Queen form:</strong> the cycle check runs before a reared queen is added. Reared daughters from the queen's own line are hidden from the mother picker; each candidate now knows her would-be mother. Every failed save shows its message.</li>
+  <li><strong>Drop-down admin forms:</strong> failed saves are shown (same silent-error bug).</li>
+  <li><strong>Apiary team and rearing team:</strong> the "already invited" check reads a list. The database's refusal shows "already sent". The rearing-team page checks the delete of declined invitations.</li>
+</ul>
+<ul>
+  <li><strong>Checks:</strong> type-check 0 errors; lint clean on the 5 files; tests 818 passed, 23 skipped. qa-engineer found no Critical or High issues.</li>
+  <li><strong>Low, noted:</strong> two edits of related queens at the same moment could in theory each pass the check. It needs simultaneous edits by one beekeeper, so I left it.</li>
+  <li><strong>Docs:</strong> <code>docs/features/data-integrity-batch26-plan.md</code>, the Phase 2 register, the corrected lineage plan, the double-submit doc, and a memory note on Supabase errors being plain objects.</li>
+</ul>
+</body>
+</html>

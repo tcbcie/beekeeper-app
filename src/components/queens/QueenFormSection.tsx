@@ -193,6 +193,26 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  return
  }
 
+ // A queen can't have herself or one of her descendants as a parent. Checked before the
+ // reared queen below is promoted, so a refused save leaves no stray register record. A
+ // reared candidate is judged by the mother her record will get: if that is this queen or
+ // one of her descendants, the new record would be her descendant too. The database
+ // refuses any loop this page can't see (queens_prevent_lineage_cycle).
+ const invalidParentIds = editingQueen
+ ? getInvalidLineageParentIds(queens, editingQueen.id)
+ : new Set<string>()
+ const selectedCandidate = formData.mother_id.startsWith('graft:')
+ ? rearedCandidates.find((c) => `graft:${c.graft_id}` === formData.mother_id)
+ : undefined
+ const selectedParentIds = [
+ selectedCandidate ? selectedCandidate.mother_id : formData.mother_id,
+ formData.father_id,
+ ].filter((parentId): parentId is string => Boolean(parentId))
+ if (selectedParentIds.some((parentId) => invalidParentIds.has(parentId))) {
+ toast.error('A queen cannot use herself or one of her descendants as a parent.')
+ return
+ }
+
  // A reared-queen candidate (dropdown value "graft:<id>") is promoted to a real register
  // record on save so mother_id links a traversable lineage node.
  let resolvedMotherId = formData.mother_id
@@ -224,20 +244,6 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  mating_station: formData.mating_station || null,
  origin_breeder_code: formData.origin_breeder_code ? formData.origin_breeder_code.trim().toUpperCase() : null,
  lineage: lineageToSave,
- }
-
- const invalidParentIds = editingQueen
- ? getInvalidLineageParentIds(queens, editingQueen.id)
- : new Set<string>()
- const selectedParentIds = [dataToSubmit.mother_id, dataToSubmit.father_id].filter(
- (parentId): parentId is string => Boolean(parentId)
- )
-
- // Checked against the *resolved* mother id, so an already-promoted reared queen that is a
- // descendant of this queen is still rejected.
- if (selectedParentIds.some((parentId) => invalidParentIds.has(parentId))) {
- toast.error('A queen cannot use herself or one of her descendants as a parent.')
- return
  }
 
  try {
@@ -279,9 +285,8 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  onSaved()
  resetForm()
  } catch (error) {
- if (error instanceof Error) {
- toast.error(error.message)
- }
+ // Supabase returns plain error objects, not Error instances, so read the message directly.
+ toast.error((error as { message?: string } | null)?.message || 'Could not save the queen. Please try again.')
  }
  }
 
@@ -289,6 +294,8 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  ? getInvalidLineageParentIds(queens, editingQueen.id)
  : new Set<string>()
  const availableParentQueens = queens.filter((q) => !invalidParentIds.has(q.id))
+ // A reared candidate whose mother is this queen (or one of her descendants) would close a loop.
+ const availableRearedCandidates = rearedCandidates.filter((c) => !c.mother_id || !invalidParentIds.has(c.mother_id))
 
  // Live preview of the auto-generated lineage from the current form values.
  const derivedLineage = deriveLineage(formData, editingQueen, queens)
@@ -477,9 +484,9 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  {q.queen_number} {q.marking_color ? `(${q.marking_color})` : ''}
  </option>
  ))}
- {rearedCandidates.length > 0 && (
+ {availableRearedCandidates.length > 0 && (
  <optgroup label="Reared (from tracker)">
- {rearedCandidates.map((c) => (
+ {availableRearedCandidates.map((c) => (
  <option key={c.graft_id} value={`graft:${c.graft_id}`}>
  {c.label}
  </option>

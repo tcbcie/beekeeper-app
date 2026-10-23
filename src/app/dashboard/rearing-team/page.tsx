@@ -268,21 +268,34 @@ export default function RearingTeamPage() {
         }
       }
 
-      // Check if invitation already exists
-      const { data: existingInvite } = await supabase
+      // Check if invitation already exists (pending or declined). Read as a list: with more than
+      // one matching row, .maybeSingle() returned an error and the check was silently skipped.
+      const { data: existingInvites, error: existingError } = await supabase
         .from('rearing_group_invitations')
         .select('id, status')
         .eq('group_id', selectedRg.id)
         .eq('email', rgInviteEmail.toLowerCase())
         .in('status', ['pending', 'declined'])
-        .maybeSingle()
 
-      if (existingInvite) {
-        if (existingInvite.status === 'pending') {
-          toast.warning('An invitation has already been sent to this email.')
+      if (existingError) throw existingError
+
+      if ((existingInvites || []).some((invite) => invite.status === 'pending')) {
+        toast.warning('An invitation has already been sent to this email.')
+        return
+      }
+
+      const declinedIds = (existingInvites || []).map((invite) => invite.id)
+      if (declinedIds.length > 0) {
+        // Delete the old declined invitations so we can send a new one
+        const { error: deleteError } = await supabase
+          .from('rearing_group_invitations')
+          .delete()
+          .in('id', declinedIds)
+
+        if (deleteError) {
+          console.error('Error deleting declined invitation:', deleteError)
+          toast.error('Failed to resend invitation. Please try again.')
           return
-        } else if (existingInvite.status === 'declined') {
-          await supabase.from('rearing_group_invitations').delete().eq('id', existingInvite.id)
         }
       }
 
@@ -331,6 +344,12 @@ export default function RearingTeamPage() {
       setShowInviteRgModal(false)
       fetchRearingGroupDetails(selectedRg.id)
     } catch (error) {
+      // The database allows one pending invitation per team/group and email, so a duplicate
+      // that slipped past the check above (e.g. two tabs) is refused with 23505.
+      if ((error as { code?: string } | null)?.code === '23505') {
+        toast.warning('An invitation has already been sent to this email.')
+        return
+      }
       console.error('Error sending rearing group invitation:', error)
       toast.error('Failed to send invitation. Please try again.')
     }

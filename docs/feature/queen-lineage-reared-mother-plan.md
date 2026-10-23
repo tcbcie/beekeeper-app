@@ -68,8 +68,12 @@ A hook query: the user's `graft_distributions` (own batches) joined to `batch_gr
   candidates, valued as `graft:<graft_id>`.
 - On save, if the chosen mother is a `graft:` option, call `ensure_reared_queen_record(graft_id)` to
   get/create the register queen id, then set `mother_id` to it before the normal update.
-- The lineage-cycle guard (`getInvalidLineageParentIds`) still applies to register queens; reared
-  candidates are new nodes so can't be descendants.
+- The lineage-cycle guard (`getInvalidLineageParentIds`) still applies to register queens. *Corrected
+  in batch 26 (23/10/2026):* a reared candidate is a new node, but her record's mother can be the
+  queen being edited, so she *can* be a descendant (a daughter saved as her own mother's mother).
+  Each candidate now carries that would-be mother (`RearedQueenCandidate.mother_id`), candidates
+  from the queen's own line are hidden, the check runs before promotion, and the database trigger
+  `queens_prevent_lineage_cycle` refuses any loop.
 
 ## 5. Open decisions (please confirm in review)
 
@@ -128,8 +132,9 @@ re-saving regenerates the lineage string.
 
 - **Side effect before validation (High).** The promotion RPC ran *before* the Eircode check, so an
   invalid Eircode aborted the save **after** a breeder record had already been inserted, leaving a
-  stray register entry. Pure validation now runs first; the lineage-cycle guard deliberately stays
-  *after* resolution so an already-promoted reared queen that is a descendant is still rejected.
+  stray register entry. Pure validation now runs first. *Batch 26 (23/10/2026):* the lineage-cycle
+  guard now also runs before promotion, judging a reared candidate by her would-be mother, so a
+  refused save leaves no stray record.
 - **Candidate/RPC ownership mismatch (Medium).** The candidate query filtered only on
   `graft_distributions.user_id`, while the RPC requires the *batch* to be owned by the caller — a
   distribution from another user's batch would have been offered but always errored. The query now

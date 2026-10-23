@@ -66,4 +66,4 @@ const saveThing = async () => { /* the existing save code, unchanged */ }
 - Logbook save is an upsert, so a double save is harmless.
 - The mating nuc bulk "change mating site" sets the same value twice, which is harmless. It keeps its state guard.
 - CRM order detail actions use a `busy` flag that is state only. They were outside the audit items and are left for a later batch.
-- Pending invitations need a unique index as a database backstop (later batch).
+- Pending invitations need a unique index as a database backstop. *Done in batch 26 (23/10/2026): one pending invitation per team/group and `lower(email)`.*

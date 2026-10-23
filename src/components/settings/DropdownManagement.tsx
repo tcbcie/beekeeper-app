@@ -104,9 +104,8 @@ export default function DropdownManagement() {
       fetchCategories()
       resetCategoryForm()
     } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message)
-      }
+      // Supabase returns plain error objects, not Error instances, so read the message directly.
+      toast.error((error as { message?: string } | null)?.message || 'Could not save. Please try again.')
     }
   }
 
@@ -136,9 +135,8 @@ export default function DropdownManagement() {
       fetchCategories()
       resetValueForm()
     } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message)
-      }
+      // Supabase returns plain error objects, not Error instances, so read the message directly.
+      toast.error((error as { message?: string } | null)?.message || 'Could not save. Please try again.')
     }
   }
 

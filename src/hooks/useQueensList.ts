@@ -14,6 +14,9 @@ import type { BreederContext } from '@/lib/queen-code'
 export interface RearedQueenCandidate {
  graft_id: string
  label: string
+ /** The mother the register record will get (same rule as ensure_reared_queen_record:
+  *  the cell's breeder, else the batch mother), so the form can refuse a lineage loop. */
+ mother_id: string | null
 }
 
 /**
@@ -247,7 +250,7 @@ export function useQueensList() {
  ] = await Promise.all([
  supabase
  .from('graft_distributions')
- .select('graft_id, distribution_type, batch_grafts!inner(queen_number, cell_number), rearing_batches!inner(user_id)')
+ .select('graft_id, distribution_type, batch_grafts!inner(queen_number, cell_number, breeder_queen_id), rearing_batches!inner(user_id, mother_queen_id)')
  .eq('user_id', currentUserId)
  .eq('rearing_batches.user_id', currentUserId)
  .order('distribution_date', { ascending: false }),
@@ -271,14 +274,16 @@ export function useQueensList() {
  const graftId = typeof row.graft_id === 'string' ? row.graft_id : null
  if (!graftId || seen.has(graftId) || promoted.has(graftId)) continue
  const graft = (Array.isArray(row.batch_grafts) ? row.batch_grafts[0] : row.batch_grafts) as
- { queen_number: string | null; cell_number: number | null } | null | undefined
+ { queen_number: string | null; cell_number: number | null; breeder_queen_id: string | null } | null | undefined
+ const batch = (Array.isArray(row.rearing_batches) ? row.rearing_batches[0] : row.rearing_batches) as
+ { mother_queen_id: string | null } | null | undefined
  // A graft with neither a queen number nor a cell number cannot name a register record
  // (queen_number is NOT NULL), so skip it instead of offering a candidate that must fail.
  const number = graft?.queen_number?.trim() || (graft?.cell_number != null ? `#${graft.cell_number}` : '')
  if (!number) continue
  seen.add(graftId)
  const type = row.distribution_type === 'mated_queen' ? 'mated' : row.distribution_type === 'virgin_queen' ? 'virgin' : 'cell'
- candidates.push({ graft_id: graftId, label: `Queen ${number} (${type})` })
+ candidates.push({ graft_id: graftId, label: `Queen ${number} (${type})`, mother_id: graft?.breeder_queen_id ?? batch?.mother_queen_id ?? null })
  }
  candidates.sort((a, b) => a.label.localeCompare(b.label))
  setRearedCandidates(candidates)
