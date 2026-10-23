@@ -16,7 +16,7 @@ import TextAreaField from '@/components/ui/TextAreaField'
 import Button from '@/components/ui/Button'
 import Panel from '@/components/ui/Panel'
 import { useToast } from '@/components/ui/Toast'
-import OrderItemsEditor, { emptyOrderItem } from '@/components/crm/OrderItemsEditor'
+import OrderItemsEditor, { emptyOrderItem, checkOrderItems } from '@/components/crm/OrderItemsEditor'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadges'
 import { formatMoney, currencyCode } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
@@ -140,8 +140,8 @@ export default function OrdersPage() {
   const createOrder = async () => {
     if (!userId) return
     if (!customerId) { toast.warning('Please select a customer'); return }
-    const validItems = items.filter((i) => Number(i.quantity) > 0)
-    if (validItems.length === 0) { toast.warning('Add at least one line item with a quantity'); return }
+    const checked = checkOrderItems(items)
+    if (checked.error !== null) { toast.warning(checked.error); return }
 
     try {
       // Atomic: allocates the order number, inserts order + items in one
@@ -150,7 +150,7 @@ export default function OrdersPage() {
         p_customer_id: customerId,
         p_order_date: orderDate,
         p_notes: notes.trim() || null,
-        p_items: validItems,
+        p_items: checked.lines,
       })
       if (error) throw error
 

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 34: Traceability and Orders</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 34: Traceability and Orders</h1>
+<p><strong>Status:</strong> Implemented 23/10/2026, waiting for your test. This is Phase 2 fix batch 21. It covers the open Medium findings in honey traceability (C8b-03, C8b-04, C8b-09 to C8b-13) and CRM orders (C8b-05, C8b-06, C8b-08). It also fixes one new bug the checks found: harvests saved with a blank unit. Three agents checked the code and the live database. The next batch covers records and hives (batch 35).</p>
+
+<h2>A. Weights and origin percentages: C8b-12, C8b-13, C8b-04</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C8b-12, editing a jar batch overwrites its total:</strong> opening a batch to edit it recalculates its total weight from the whole of its containers. So a batch that used 12 kg of a 25 kg bucket becomes 25 kg on any save. Now the total is only recalculated when you tick or untick a container.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Each harvest counted once, and in kg:</strong> when a batch uses several buckets filled from the same harvest, that harvest is counted once per bucket. Pounds are also added as if they were kilograms.
+  <ul>
+    <li><strong>Where:</strong> the batch preview, the public trace page (the QR code on the jar) and Mel's traceability answers.</li>
+    <li><strong>The fix:</strong> one shared lb→kg helper, used everywhere, and each harvest counted once per batch.</li>
+    <li><strong>The public page:</strong> its database function is corrected, with the same results format and the same public access.</li>
+  </ul>
+  Today no published percentage changes, because only one batch draws on two apiaries. This stops future ones from being wrong.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Container "Used / Remaining":</strong> today, every container in a multi-container batch is charged the batch's <em>whole</em> total. Now each container is charged its share of the batch total, in proportion to its weight, never more than it holds, and rounded to 2 decimals. Single-container batches are unchanged.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>New: harvests saved with a blank unit.</strong> A new harvest starts with no unit. The form shows "kg", but saves a blank. This affects 62 harvests.
+  <ul>
+    <li>New harvests now start as kg.</li>
+    <li>A one-off database update sets those 62 blank units to "kg". That is what the form showed, and what every calculation already assumed.</li>
+  </ul>
+</div>
+
+<h2>B. Creating batches, containers and jar sales: C8b-09, C8b-10, C8b-11, C8b-04, C8b-03</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Lot number and trace code:</strong>
+  <ul>
+    <li>If the lot number can't be generated, the save stops with a message. Before, it fell back to "…-001", which clashes with an existing batch.</li>
+    <li>A failed trace code is reported clearly instead of as a database error.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Half-made batches and containers:</strong> if linking a new batch to its containers and jars fails, the new batch is removed, so a retry doesn't create a second batch under the next lot number. The same applies to new containers whose harvest links fail. The container form also gets the double-tap lock the other forms have.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Jar sales recorded twice:</strong> on a weak signal at a market, the sale can save but the reply get lost. Pressing Save again then added a second income row. Now each sale window has its own fixed record id, so a repeat save can't make a second row. It also gets the shared double-tap lock.</div>
+
+<h2>C. CRM orders: C8b-05, C8b-06, C8b-08</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C8b-05, unsaved item edits lost:</strong> if you change the items and then press Mark Paid, Record payment, Apply credit, Fulfil or Cancel, the order reloads and your changes vanish. Payment is also booked at the <em>old</em> total. Now those actions are refused while there are unsaved changes, with "Save your item changes first".</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C8b-06, items that failed to load:</strong> today the editor shows "No items yet". Saving after re-entering one line then deletes all the real lines. Now it shows an error and hides the editor and Save until the page is reloaded.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C8b-08, cleared number fields:</strong> clearing a quantity or price used to snap it to 0. The line was then silently dropped, or saved at €0. Now the field can be left empty while you type, and saving asks you to fill in every quantity and price instead of dropping lines. Negative prices are stopped as you type.</div>
+
+<div class="note"><strong>Database changes:</strong> one migration, applied through MCP and saved in <code>supabase/migrations/</code>. It corrects the public trace page function and sets the 62 blank harvest units to "kg". I'll run the security advisors afterwards and check the public page still returns the same results format.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; a short test for the lb→kg helper; the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/traceability-orders-batch34-plan.md</code>, <code>honey-traceability.md</code>, the Phase 2 register and memory.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>Edit a jar batch and change only its story: the total weight stays as saved.</li>
+    <li>Scan a jar's QR code: the trace page shows the same origins as before.</li>
+    <li>In an order, change an item and press Mark Paid: you're asked to save first. Clear a price and save: you're asked to fill it in.</li>
+    <li>Record a jar sale: it appears once in Profit &amp; Loss.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Edit a batch</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Total reset to the sum of its containers</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Saved total kept; re-tallied only on tick/untick</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Origin percentages</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Harvest counted once per bucket; lb added as kg</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Each harvest once, in kg (9 public batches checked: no change today)</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Container Used</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Whole batch total charged to every container</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Proportional share, capped, 2 decimals</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">New harvest unit</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Saved blank (62 rows)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Starts as kg; blanks set to kg</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Lot / trace code failure</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Guessed -001 or a database error</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Save stops with a clear message</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Half-made batch or containers</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Left behind; retry made a second one</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Removed before the error shows</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Jar sale after a lost reply</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Second income row</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Same id, recognised as already saved</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Order actions with unsaved items</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Edits lost; paid at old total</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Refused: “Save your item changes first”</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Items failed to load</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Empty editor could wipe the items</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Error shown; editor and Save hidden</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Cleared quantity or price</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Snapped to 0; line dropped or €0</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Stays blank; save asks you to fill it in</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0; 827 tests pass (4 new); advisors show nothing new</td></tr>
+</table>
+<ul>
+  <li><strong>Migration:</strong> <code>20261023190000_traceability_batch34.sql</code>. Before applying it, I compared the corrected origin maths with the live function for every public batch: identical. After it, all 10 public batches still return a full trace page, the grants are unchanged, and no harvest has a blank unit.</li>
+  <li><strong>One lb→kg helper:</strong> <code>harvestWeightKg</code> in <code>traceability-utils.ts</code> is used by the container origins, the batch preview and Mel's tools.</li>
+  <li><strong>Orders:</strong> one shared <code>checkOrderItems</code> check for new orders and the order page.</li>
+  <li><strong>QA audit:</strong> no Critical or High issues. One Low was fixed: after Save, the buttons stay disabled until the order has reloaded, so a quick tap isn't refused as "unsaved".</li>
+</ul>
+</body>
+</html>

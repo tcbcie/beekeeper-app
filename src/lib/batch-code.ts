@@ -8,6 +8,8 @@ import { supabase } from './supabase'
  * Format: L-YYYY-MM-NNN where NNN is sequential globally per month
  * @param _userId - Unused, kept for API compatibility
  * @param batchDate - Date to generate code for
+ * @throws if the database can't supply the next number. There is no safe fallback: a
+ *   guessed "-001" clashes with the month's first batch (C8b-10).
  */
 export async function generateBatchCode(_userId: string, batchDate: Date): Promise<string> {
   const year = batchDate.getFullYear()
@@ -22,7 +24,7 @@ export async function generateBatchCode(_userId: string, batchDate: Date): Promi
 
   if (error || typeof data !== 'string' || !data.startsWith(prefix)) {
     console.error('Error generating batch code:', error)
-    return `${prefix}001`
+    throw new Error('Could not generate a lot number. Please check your connection and try again.')
   }
 
   return data

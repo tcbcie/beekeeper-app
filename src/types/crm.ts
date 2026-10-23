@@ -84,8 +84,9 @@ export interface OrderItem {
 export interface OrderItemFormData {
   product_type: ProductType
   description: string
-  quantity: number
-  unit_price: number
+  /** '' while the field is cleared; checkOrderItems refuses to save it. */
+  quantity: number | ''
+  unit_price: number | ''
 }
 
 export interface Order {

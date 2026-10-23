@@ -10,7 +10,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useToast } from '@/components/ui/Toast'
 import { generateBatchCode } from '@/lib/batch-code'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
-import { calculateBestBeforeDate, formatDateForInput } from '@/lib/traceability-utils'
+import { calculateBestBeforeDate, formatDateForInput, harvestWeightKg } from '@/lib/traceability-utils'
 import { storyTemplates, replacePlaceholders, hasUnfilledPlaceholders, getUnfilledPlaceholders, stripMarkers } from '@/lib/story-templates'
 import type { BulkContainer, BatchRun, BatchJar, BatchFormData, JarConfig, BatchLabelPointer } from '@/types/traceability'
 import Button from '@/components/ui/Button'
@@ -90,20 +90,6 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
     fetchJarSizes()
   }, [fetchJarSizes])
 
-  // Auto-tally total weight from the selected bulk honey sources. The batch's
-  // total weight is the sum of the linked containers' weights (the raw honey
-  // going into the batch). Manual edits to Total Weight are preserved until the
-  // source selection changes again.
-  useEffect(() => {
-    const totalKg = containers
-      .filter(c => batchForm.container_ids.includes(c.id))
-      .reduce((sum, c) => sum + (c.total_weight_kg ?? 0), 0)
-
-    if (totalKg > 0) {
-      setBatchForm(prev => ({ ...prev, total_weight_kg: totalKg.toFixed(2) }))
-    }
-  }, [batchForm.container_ids, containers])
-
   // Public preview state
   interface PublicPreviewData {
     beekeeperName: string
@@ -135,13 +121,16 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
       // Calculate origins and gather floral sources
       const originMap = new Map<string, { city: string | null; hasLocation: boolean; weight: number }>()
       const floralSourcesSet = new Set<string>()
+      // A harvest split across several of the selected buckets counts once.
+      const countedHarvestIds = new Set<string>()
 
       for (const container of selectedContainers) {
         if (!container.harvests) continue
 
         for (const harvestLink of container.harvests) {
           const harvest = harvestLink.harvest
-          if (!harvest) continue
+          if (!harvest || countedHarvestIds.has(harvestLink.harvest_id)) continue
+          countedHarvestIds.add(harvestLink.harvest_id)
 
           // Floral source comes with the containers' harvests
           if (harvest.floral_source) floralSourcesSet.add(harvest.floral_source)
@@ -155,7 +144,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
           if (apiary) {
             const key = apiary.name || 'Unknown'
             const existing = originMap.get(key)
-            const weight = harvest.honey_weight || 0
+            const weight = harvestWeightKg(harvest)
 
             if (existing) {
               existing.weight += weight
@@ -441,8 +430,12 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
         // Generate new batch code
         batchCode = await generateBatchCode(userId, new Date(batchForm.batch_date))
         // Generate unique trace code via database function
-        const { data: newTraceCode } = await supabase.rpc('generate_trace_code')
-        traceCode = newTraceCode as string
+        const { data: newTraceCode, error: traceError } = await supabase.rpc('generate_trace_code')
+        if (traceError || typeof newTraceCode !== 'string' || !newTraceCode) {
+          console.error('Error generating trace code:', traceError)
+          throw new Error('Could not generate a trace code. Please check your connection and try again.')
+        }
+        traceCode = newTraceCode
       }
 
       // Parse jar rows into clean numeric configs, skipping rows without a valid size.
@@ -517,13 +510,27 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
         p_container_ids: batchForm.container_ids,
         p_jars: parsedJars,
       })
-      if (linksError) throw linksError
+      if (linksError) {
+        // A new batch without its containers and jars is half-made, and a retry would
+        // create a second batch under the next lot number. Remove it so the retry starts
+        // clean (C8b-11). The links are written in one transaction, so none were saved.
+        if (!editingBatch) {
+          const { error: undoErr } = await supabase
+            .from('batch_runs')
+            .delete()
+            .eq('id', batchId)
+            .eq('user_id', userId)
+          if (undoErr) console.error('Could not remove the half-created batch:', undoErr)
+        }
+        throw linksError
+      }
 
       toast.success(editingBatch ? 'Batch updated' : `Batch ${batchCode} created`)
       resetBatchForm()
       fetchBatches()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error saving batch')
+      // Supabase errors are plain objects, not Error instances.
+      toast.error((error as { message?: string } | null)?.message || 'Error saving batch')
     }
   }
 
@@ -546,13 +553,22 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
 
   // Toggle harvest selection
 
+  // Ticking or unticking a source re-tallies Total Weight from the selected containers'
+  // weights (the raw honey going into the batch). It runs only here, never on opening a
+  // batch, so an edit keeps the saved total (C8b-12); a manual edit stands until the next
+  // tick.
   const toggleContainer = (containerId: string) => {
-    setBatchForm(prev => ({
-      ...prev,
-      container_ids: prev.container_ids.includes(containerId)
+    setBatchForm(prev => {
+      const container_ids = prev.container_ids.includes(containerId)
         ? prev.container_ids.filter(id => id !== containerId)
         : [...prev.container_ids, containerId]
-    }))
+      const totalKg = containers
+        .filter(c => container_ids.includes(c.id))
+        .reduce((sum, c) => sum + (c.total_weight_kg ?? 0), 0)
+      return totalKg > 0
+        ? { ...prev, container_ids, total_weight_kg: totalKg.toFixed(2) }
+        : { ...prev, container_ids }
+    })
   }
 
   const updateJar = (index: number, field: keyof JarConfig, value: string) => {

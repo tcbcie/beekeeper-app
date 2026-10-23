@@ -14,7 +14,7 @@ import TextAreaField from '@/components/ui/TextAreaField'
 import Button from '@/components/ui/Button'
 import Panel from '@/components/ui/Panel'
 import { useToast } from '@/components/ui/Toast'
-import OrderItemsEditor from '@/components/crm/OrderItemsEditor'
+import OrderItemsEditor, { checkOrderItems } from '@/components/crm/OrderItemsEditor'
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/crm/OrderBadges'
 import { formatMoney } from '@/lib/crm-currency'
 import { formatCrmDate } from '@/lib/crm-format'
@@ -82,6 +82,10 @@ export default function OrderDetailPage() {
   const [customerStats, setCustomerStats] = useState({ count: 0, lifetime: 0, outstanding: 0 })
   const [items, setItems] = useState<OrderItemFormData[]>([])
   const [notes, setNotes] = useState('')
+  // What was last loaded, to tell when the items or notes have unsaved edits.
+  const [savedItems, setSavedItems] = useState<OrderItemFormData[]>([])
+  const [savedNotes, setSavedNotes] = useState('')
+  const [itemsLoadFailed, setItemsLoadFailed] = useState(false)
   const [isUkNi, setIsUkNi] = useState(false)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -120,8 +124,15 @@ export default function OrderDetailPage() {
     const ord = orderRes.data as Order
     setOrder(ord)
     setNotes(ord.notes || '')
+    setSavedNotes(ord.notes || '')
     setDueDateInput(ord.due_date || '')
-    setItems(toFormItems((itemsRes.data || []) as OrderItem[]))
+    // A failed items query must not look like an order with no items: saving lines typed
+    // into that empty editor would replace the real ones (C8b-06).
+    if (itemsRes.error) console.error('Error loading order items:', itemsRes.error)
+    setItemsLoadFailed(!!itemsRes.error)
+    const formItems = toFormItems((itemsRes.data || []) as OrderItem[])
+    setItems(formItems)
+    setSavedItems(formItems)
     setIsUkNi(profileRes.data?.is_uk_ni_resident || false)
 
     const rawDistributions = (distRes.data || []) as Record<string, unknown>[]
@@ -214,22 +225,34 @@ export default function OrderDetailPage() {
     init()
   }, [router, load])
 
+  // The payment and status actions reload the order, which threw away unsaved item and note
+  // edits, and a payment was booked at the old saved total. They wait until the edits are
+  // saved (C8b-05).
+  const hasUnsavedChanges = notes !== savedNotes || JSON.stringify(items) !== JSON.stringify(savedItems)
+  const refuseIfUnsaved = () => {
+    if (!hasUnsavedChanges) return false
+    toast.warning('Save your item changes first')
+    return true
+  }
+
   // Persist line items + notes atomically; re-posts revenue if already paid.
   const handleSave = async () => {
-    if (!userId || !order) return
-    const validItems = items.filter((i) => Number(i.quantity) > 0)
-    if (validItems.length === 0) { toast.warning('Add at least one line item with a quantity'); return }
+    if (!userId || !order || itemsLoadFailed) return
+    const checked = checkOrderItems(items)
+    if (checked.error !== null) { toast.warning(checked.error); return }
 
     setBusy(true)
     try {
       const { error } = await supabase.rpc('crm_save_order_items', {
         p_order_id: order.id,
-        p_items: validItems,
+        p_items: checked.lines,
         p_notes: notes.trim() || null,
       })
       if (error) throw error
       toast.success('Order saved')
-      load(userId)
+      // Keep the buttons disabled until the saved items are back, so a tap in between isn't
+      // refused as "unsaved".
+      await load(userId)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to save order')
     } finally {
@@ -238,7 +261,7 @@ export default function OrderDetailPage() {
   }
 
   const handleFulfil = async (fulfil: boolean) => {
-    if (!userId || !order) return
+    if (!userId || !order || refuseIfUnsaved()) return
     setBusy(true)
     try {
       const { error } = await supabase
@@ -256,7 +279,7 @@ export default function OrderDetailPage() {
   }
 
   const handlePayment = async (paid: boolean) => {
-    if (!userId || !order) return
+    if (!userId || !order || refuseIfUnsaved()) return
     setBusy(true)
     try {
       const { error } = await supabase.rpc('crm_set_order_payment', {
@@ -278,7 +301,7 @@ export default function OrderDetailPage() {
   // Records a specific amount paid (deposit / partial / full). The order keeps
   // amount_paid in [0, total]; any surplus is swept to the customer's credit.
   const handleSetAmountPaid = async () => {
-    if (!userId || !order) return
+    if (!userId || !order || refuseIfUnsaved()) return
     const amount = parseFloat(amountPaidInput)
     if (!Number.isFinite(amount) || amount < 0) { toast.warning('Enter a valid amount'); return }
     const total = Number(order.total_amount) || 0
@@ -304,7 +327,7 @@ export default function OrderDetailPage() {
   // Applies the customer's stored credit to this order. The server caps it at
   // the available balance and the order's remaining balance in one transaction.
   const handleApplyCredit = async () => {
-    if (!userId || !order) return
+    if (!userId || !order || refuseIfUnsaved()) return
     const amount = parseFloat(applyCreditInput)
     if (!Number.isFinite(amount) || amount <= 0) { toast.warning('Enter a valid amount'); return }
     setBusy(true)
@@ -339,7 +362,7 @@ export default function OrderDetailPage() {
   }
 
   const handleCancel = async () => {
-    if (!userId || !order) return
+    if (!userId || !order || refuseIfUnsaved()) return
     if (!confirm('Cancel this order? Any income recognised for it will be removed from your ledger.')) return
     setBusy(true)
     try {
@@ -556,6 +579,10 @@ export default function OrderDetailPage() {
 
         {isCancelled ? (
           <p className="text-sm text-text-tertiary">This order is cancelled and can no longer be edited.</p>
+        ) : itemsLoadFailed ? (
+          <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+            The items couldn&apos;t be loaded, so they can&apos;t be edited. Reload the page to try again.
+          </p>
         ) : (
           <>
             <OrderItemsEditor items={items} onChange={setItems} isUkNi={isUkNi} />

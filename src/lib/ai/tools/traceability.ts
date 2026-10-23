@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { Tool } from './index'
 import { getSupabase, formatDate, logToolError, escapeLike } from './utils'
+import { harvestWeightKg } from '@/lib/traceability-utils'
 
 // Get all bulk honey containers for user
 export const getBulkContainers: Tool = {
@@ -43,12 +44,12 @@ export const getBulkContainers: Tool = {
       totalWeightKg: containers.reduce((sum, c) => sum + (c.total_weight_kg || 0), 0).toFixed(1),
       containers: containers.map(c => {
         const harvests = (c.container_harvests as Array<{ harvest: unknown }>)?.map(ch => {
-          const h = ch.harvest as { harvest_date: string; honey_weight: number | null; hives: unknown } | null
+          const h = ch.harvest as { harvest_date: string; honey_weight: number | null; unit: string | null; hives: unknown } | null
           if (!h) return null
           const hives = h.hives as { hive_number: string; apiaries: { name: string } | null } | null
           return {
             date: formatDate(h.harvest_date),
-            weightKg: h.honey_weight,
+            weightKg: harvestWeightKg(h),
             hive: hives?.hive_number || 'Unknown',
             apiary: hives?.apiaries?.name || 'Unknown'
           }
@@ -105,13 +106,14 @@ export const getContainerDetails: Tool = {
       const h = ch.harvest as {
         harvest_date: string
         honey_weight: number | null
+        unit: string | null
         floral_source: string | null
         moisture_content: number | null
         hives: { hive_number: string; apiaries: { name: string; city: string | null } | null } | null
       } | null
       if (!h) return null
 
-      const weight = h.honey_weight || 0
+      const weight = harvestWeightKg(h)
       const apiaryName = h.hives?.apiaries?.name || 'Unknown'
       const city = h.hives?.apiaries?.city || null
 
@@ -123,7 +125,7 @@ export const getContainerDetails: Tool = {
 
       return {
         date: formatDate(h.harvest_date),
-        weightKg: h.honey_weight,
+        weightKg: weight,
         floralSource: h.floral_source,
         moistureContent: h.moisture_content,
         hive: h.hives?.hive_number || 'Unknown',
@@ -235,7 +237,7 @@ export const getBatchDetails: Tool = {
             container_code, container_type, total_weight_kg,
             container_harvests(
               harvest:harvests(
-                honey_weight,
+                id, honey_weight, unit,
                 hives(apiaries(name, city))
               )
             )
@@ -253,6 +255,8 @@ export const getBatchDetails: Tool = {
     // Calculate origin percentages from linked containers
     const origins: Record<string, { weight: number; city: string | null }> = {}
     let totalOriginWeight = 0
+    // A harvest split across several of the batch's buckets counts once.
+    const countedHarvestIds = new Set<string>()
 
     const containers = (batch.batch_containers as Array<{
       weight_used_kg: number | null
@@ -269,12 +273,15 @@ export const getBatchDetails: Tool = {
       // Calculate origins from this container's harvests
       c.container_harvests?.forEach(ch => {
         const h = ch.harvest as {
+          id: string
           honey_weight: number | null
+          unit: string | null
           hives: { apiaries: { name: string; city: string | null } | null } | null
         } | null
-        if (!h) return
+        if (!h || countedHarvestIds.has(h.id)) return
+        countedHarvestIds.add(h.id)
 
-        const weight = h.honey_weight || 0
+        const weight = harvestWeightKg(h)
         const apiaryName = h.hives?.apiaries?.name || 'Unknown'
         const city = h.hives?.apiaries?.city || null
 

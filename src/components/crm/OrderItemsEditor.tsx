@@ -23,6 +23,34 @@ export function emptyOrderItem(): OrderItemFormData {
   return { product_type: 'queens', description: '', quantity: 1, unit_price: 0 }
 }
 
+/** A cleared field stays '' (so it can be retyped); anything else is a number of at least 0. */
+function parseAmount(value: string): number | '' {
+  if (value === '') return ''
+  const n = parseFloat(value)
+  return Number.isFinite(n) ? Math.max(0, n) : ''
+}
+
+/**
+ * The lines to save, or what to fix first. Every line needs a quantity above 0 and a price
+ * (0 is a valid price for a free item). Lines are never dropped silently: before, a cleared
+ * quantity became 0 and the line vanished on save, and a cleared price saved as 0 (C8b-08).
+ */
+export function checkOrderItems(items: OrderItemFormData[]):
+  | { lines: (Omit<OrderItemFormData, 'quantity' | 'unit_price'> & { quantity: number; unit_price: number })[]; error: null }
+  | { lines: null; error: string } {
+  if (items.length === 0) return { lines: null, error: 'Add at least one line item' }
+  if (items.some((i) => i.quantity === '' || i.quantity <= 0)) {
+    return { lines: null, error: 'Enter a quantity above 0 on every line, or remove the lines you don’t need' }
+  }
+  if (items.some((i) => i.unit_price === '')) {
+    return { lines: null, error: 'Enter a unit price on every line (0 for a free item)' }
+  }
+  return {
+    lines: items.map((i) => ({ ...i, quantity: Number(i.quantity), unit_price: Number(i.unit_price) })),
+    error: null,
+  }
+}
+
 export default function OrderItemsEditor({ items, onChange, isUkNi }: OrderItemsEditorProps) {
   const update = (index: number, patch: Partial<OrderItemFormData>) => {
     onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)))
@@ -84,7 +112,7 @@ export default function OrderItemsEditor({ items, onChange, isUkNi }: OrderItems
                   min="0"
                   step="0.01"
                   value={String(item.quantity)}
-                  onChange={(e) => update(index, { quantity: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => update(index, { quantity: parseAmount(e.target.value) })}
                   className="rounded-md text-sm"
                 />
               </div>
@@ -95,7 +123,7 @@ export default function OrderItemsEditor({ items, onChange, isUkNi }: OrderItems
                   min="0"
                   step="0.01"
                   value={String(item.unit_price)}
-                  onChange={(e) => update(index, { unit_price: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => update(index, { unit_price: parseAmount(e.target.value) })}
                   className="rounded-md text-sm"
                 />
               </div>

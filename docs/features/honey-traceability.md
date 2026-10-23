@@ -34,7 +34,9 @@ Bulk honey represents physical storage vessels (buckets, tanks, drums) that hold
 When creating new bulk honey, you can specify a **Number of Buckets** (default 1). When set to more than 1, the system creates multiple containers with sequenced codes — e.g., entering code "BH-01" with 3 buckets creates "BH-01-1", "BH-01-2", "BH-01-3". All containers share the same extraction date, type, moisture content, notes, and linked harvests. Weight is left blank so you can record the actual weight per bucket afterwards.
 
 **Origin Tracking:**
-When you link harvests from different apiaries, the system automatically calculates origin percentages based on harvest weights (e.g., "60% Cork, 40% Kerry").
+When you link harvests from different apiaries, the system automatically calculates origin percentages based on harvest weights (e.g., "60% Cork, 40% Kerry"). Weights in pounds are converted to kg through `harvestWeightKg` (`src/lib/traceability-utils.ts`). A harvest linked to several buckets is counted once per batch.
+
+**Used / Remaining:** a container's Used figure is its share of each batch it went into. The batch total is split across the batch's containers in proportion to their weights, capped at what the container holds.
 
 ### Bottling Batches
 
@@ -45,7 +47,7 @@ Batches represent a production run of jarred honey from one or more bulk honey s
 - **Batch Date** - Date of bottling
 - **Best Before Date** - Defaults to 2 years from batch date
 - **Jar Sizes** - One or more jar sizes per batch. Each row has its own Jar Size (ml), Net Weight (g, for EU compliance) and Jar Count. Use **+ Add jar size** to fill a single batch into multiple jar sizes; remove a row with the bin icon (at least one row is always kept)
-- **Total Weight (kg)** - Auto-tallied from the selected bulk honey sources (sum of the linked containers' weights); can be overridden. Recalculates whenever the source selection changes
+- **Total Weight (kg)** - Auto-tallied from the selected bulk honey sources (sum of the linked containers' weights); can be overridden. Recalculates only when you tick or untick a source, so opening a batch to edit keeps its saved total
 - **Creamed** - Whether the honey has been stirred creamy
 - **Public** - Whether consumers can look up this batch
 - **Notes** - Optional notes
@@ -387,7 +389,7 @@ The `get_public_batch_info(trace_code)` function:
 2. Validates the batch exists and is public
 3. Gets beekeeper name from profiles (first_name or full_name)
 4. Traverses the traceability chain: `batch_runs` → `batch_containers` → `bulk_containers` → `container_harvests` → `harvests` → `hives` → `apiaries`
-5. Calculates origin percentages based on harvest weights
+5. Calculates origin percentages based on harvest weights, counting each harvest once and in kg (batch 34)
 6. Aggregates unique floral sources from linked harvests
 7. Includes approximate map coordinates (server-side, same point as the community map) only if share_location is enabled; otherwise `latitude`/`longitude` are null and `show_map` is false
 8. Returns consumer-safe JSON or NULL
@@ -432,6 +434,14 @@ When editing an existing public batch, a QR code preview is shown at the top of 
 - [Printable Labels](./print-labels.md) — opt-in thermal printing for balkani (bulk container) labels via Brother QL-820NWB.
 
 ## Changelog
+
+### October 23, 2026 (batch 34)
+- Editing a batch no longer overwrites its total weight; the tally runs only when a source is ticked or unticked
+- Origin percentages (preview, public trace page, Mel) count each harvest once per batch and convert pounds to kg
+- Container Used / Remaining charges each container its proportional share of a batch, not the whole batch total
+- New harvests save "kg" instead of a blank unit; 62 blank units were set to "kg"
+- A failed lot number or trace code stops the save instead of guessing; a half-made batch or container is removed
+- Jar sales can't be recorded twice after a lost reply. See `traceability-orders-batch34-plan.md`
 
 ### October 17, 2026 (security batch 6)
 - The public trace functions no longer send exact apiary coordinates: none when share location is off, and the community map's approximate point when it is on. Previously the exact spot was sent and only blurred in the browser

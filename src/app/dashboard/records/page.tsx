@@ -505,7 +505,9 @@ export default function RecordsPage() {
         harvest_date: currentDate,
         honey_weight: null,
         wax_weight: null,
-        unit: '',
+        // The unit select has no blank option, so it shows "kg"; start with kg so that is
+        // what gets saved.
+        unit: 'kg',
         frames_harvested: null,
         floral_source: null,
         moisture_content: null,

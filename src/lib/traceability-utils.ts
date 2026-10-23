@@ -2,6 +2,20 @@
 
 import type { OriginPercentage, ContainerHarvest } from '@/types/traceability'
 
+export const LB_TO_KG = 0.453592
+
+/**
+ * A harvest's honey weight in kg. Only 'lb' is converted; any other unit (including a
+ * blank one) is already kg, which is what the harvest form offers by default.
+ */
+export function harvestWeightKg(
+  harvest: { honey_weight: number | null; unit?: string | null } | null | undefined
+): number {
+  if (!harvest) return 0
+  const weight = Number(harvest.honey_weight) || 0
+  return harvest.unit === 'lb' ? weight * LB_TO_KG : weight
+}
+
 /**
  * Calculate origin percentages from container harvests
  * Groups harvests by apiary and calculates weight percentages
@@ -24,11 +38,7 @@ export function calculateOriginPercentages(
     const harvest = Array.isArray(harvestRaw) ? harvestRaw[0] : harvestRaw
     if (!harvest) continue
 
-    // Convert weight to kg if needed
-    let weightKg = harvest.honey_weight || 0
-    if (harvest.unit === 'lb') {
-      weightKg = weightKg * 0.453592
-    }
+    const weightKg = harvestWeightKg(harvest)
 
     totalWeight += weightKg
 
@@ -95,11 +105,7 @@ export function calculateTotalWeight(containerHarvests: ContainerHarvest[]): num
     const harvest = Array.isArray(harvestRaw) ? harvestRaw[0] : harvestRaw
     if (!harvest) continue
 
-    let weightKg = harvest.honey_weight || 0
-    if (harvest.unit === 'lb') {
-      weightKg = weightKg * 0.453592
-    }
-    total += weightKg
+    total += harvestWeightKg(harvest)
   }
 
   return Math.round(total * 100) / 100

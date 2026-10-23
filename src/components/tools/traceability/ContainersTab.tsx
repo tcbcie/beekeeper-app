@@ -2,11 +2,18 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { Package, X, Edit2, Trash2, Check, Printer } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { calculateOriginPercentages, formatOrigins, formatDateForInput } from '@/lib/traceability-utils'
 import type { BulkContainer, HarvestWithApiary, ContainerFormData, OriginPercentage } from '@/types/traceability'
 import Button from '@/components/ui/Button'
+
+/** One batch a container went into (`batch_usage` on the containers query). */
+type BatchUsage = {
+  weight_used_kg: number | null
+  batch: { batch_code: string; total_weight_kg: number | null; containers?: { container_id: string }[] | null } | null
+}
 
 interface ContainersTabProps {
  userId: string
@@ -139,9 +146,15 @@ export default function ContainersTab({ userId, containers, fetchContainers, lab
     fetchAvailableHarvests()
   }
 
-  const handleContainerSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // One save at a time: a double tap must not create the buckets twice.
+  const { submitting, run } = useSubmitLock()
 
+  const handleContainerSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    void run(saveContainer)
+  }
+
+  const saveContainer = async () => {
     const safeFloat = (v: string): number | null => {
       if (!v) return null
       const n = parseFloat(v)
@@ -206,7 +219,18 @@ export default function ContainersTab({ userId, containers, fetchContainers, lab
           const { error: linkError } = await supabase
             .from('container_harvests')
             .insert(links)
-          if (linkError) throw linkError
+          if (linkError) {
+            // Containers without their harvests are half-made, and a retry would create them
+            // again. Remove them so the retry starts clean (C8b-04). The links went in as one
+            // insert, so none were saved.
+            const { error: undoErr } = await supabase
+              .from('bulk_containers')
+              .delete()
+              .in('id', data.map(row => row.id))
+              .eq('user_id', userId)
+            if (undoErr) console.error('Could not remove the half-created containers:', undoErr)
+            throw linkError
+          }
         }
       }
 
@@ -219,7 +243,8 @@ export default function ContainersTab({ userId, containers, fetchContainers, lab
       resetContainerForm()
       fetchContainers()
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error saving bulk honey')
+      // Supabase errors are plain objects, not Error instances.
+      toast.error((error as { message?: string } | null)?.message || 'Error saving bulk honey')
     }
   }
 
@@ -254,6 +279,24 @@ export default function ContainersTab({ userId, containers, fetchContainers, lab
   const getContainerOrigins = (container: BulkContainer): OriginPercentage[] => {
     if (!container.harvests) return []
     return calculateOriginPercentages(container.harvests)
+  }
+
+  // How much of a container a batch used. A recorded weight_used_kg wins; otherwise the
+  // batch total is split across the batch's containers in proportion to their weights,
+  // never more than this container holds. Before, every container in a multi-container
+  // batch was charged the whole batch total.
+  const containerWeights = new Map(containers.map(c => [c.id, c.total_weight_kg ?? 0]))
+  const usedFromContainer = (container: BulkContainer, usage: BatchUsage): number => {
+    if (usage.weight_used_kg) return usage.weight_used_kg
+    const batchTotal = usage.batch?.total_weight_kg ?? 0
+    if (batchTotal <= 0) return 0
+    const memberIds = usage.batch?.containers?.length
+      ? usage.batch.containers.map(bc => bc.container_id)
+      : [container.id]
+    const membersKg = memberIds.reduce((sum, id) => sum + (containerWeights.get(id) ?? 0), 0)
+    const ownKg = container.total_weight_kg ?? 0
+    const share = membersKg > 0 ? batchTotal * (ownKg / membersKg) : batchTotal / memberIds.length
+    return ownKg > 0 ? Math.min(share, ownKg) : share
   }
 
   // Get trace URL for a batch (uses trace_code for unique public URLs).
@@ -468,9 +511,10 @@ export default function ContainersTab({ userId, containers, fetchContainers, lab
               </Button>
               <Button
                 type="submit"
+                disabled={submitting}
                 className="flex-1 px-4 py-2 rounded-lg bg-amber-600 text-white hover:bg-amber-700 transition-colors"
               >
-                {editingContainer ? 'Update' : 'Create'} Bulk Honey
+                {submitting ? 'Saving…' : `${editingContainer ? 'Update' : 'Create'} Bulk Honey`}
               </Button>
             </div>
           </form>
@@ -513,15 +557,14 @@ export default function ContainersTab({ userId, containers, fetchContainers, lab
               const origins = getContainerOrigins(container)
               const harvestCount = container.harvests?.length || 0
               // Get batch usage info
-              const batchUsage = (container as { batch_usage?: { weight_used_kg: number | null; batch: { batch_code: string; total_weight_kg: number | null } | null }[] }).batch_usage || []
+              const batchUsage = (container as { batch_usage?: BatchUsage[] }).batch_usage || []
               const batchCodes = batchUsage.map(b => b.batch?.batch_code).filter(Boolean)
-              // Calculate total used (use weight_used_kg if set, otherwise use batch total_weight_kg)
-              const totalUsed = batchUsage.reduce((sum, b) => {
-                if (b.weight_used_kg) return sum + b.weight_used_kg
-                if (b.batch?.total_weight_kg) return sum + b.batch.total_weight_kg
-                return sum
-              }, 0)
-              const remaining = container.total_weight_kg ? Math.max(0, container.total_weight_kg - totalUsed) : null
+              const totalUsed = Math.round(
+                batchUsage.reduce((sum, b) => sum + usedFromContainer(container, b), 0) * 100
+              ) / 100
+              const remaining = container.total_weight_kg
+                ? Math.round(Math.max(0, container.total_weight_kg - totalUsed) * 100) / 100
+                : null
 
               return (
                 <div

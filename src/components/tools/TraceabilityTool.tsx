@@ -228,7 +228,7 @@ export default function TraceabilityTool({ userId }: TraceabilityToolProps) {
         ),
         batch_usage:batch_containers(
           weight_used_kg,
-          batch:batch_runs(batch_code, total_weight_kg)
+          batch:batch_runs(batch_code, total_weight_kg, containers:batch_containers(container_id))
         )
       `)
       .eq('user_id', userId)

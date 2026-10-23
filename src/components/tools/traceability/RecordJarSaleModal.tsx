@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { AlertCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
 import ModalShell from '@/components/ui/ModalShell'
 import FieldLabel from '@/components/ui/FieldLabel'
 import TextInput from '@/components/ui/TextInput'
@@ -50,7 +51,11 @@ export default function RecordJarSaleModal({
     label.payment_amount != null ? String(label.payment_amount) : ''
   )
   const [note, setNote] = useState('')
-  const [saving, setSaving] = useState(false)
+  const { submitting: saving, run } = useSubmitLock()
+  // One id per open window. If the sale saves but the reply is lost (a weak signal at a
+  // market), pressing Record again reuses the id, so the database refuses a second row
+  // instead of booking the income twice (C8b-03).
+  const [recordId] = useState(() => crypto.randomUUID())
   // financial_records.category_id is NOT NULL, so without this id there is no
   // valid row to write and saving must be blocked rather than guessed at.
   const [categoryId, setCategoryId] = useState<string | null>(null)
@@ -85,8 +90,9 @@ export default function RecordJarSaleModal({
   const lotCode = label.current_batch?.batch_code ?? null
   const description = `${label.name}${validQty && qty > 1 ? ` × ${qty}` : ''}${lotCode ? ` (${lotCode})` : ''}`
 
-  const handleSave = async () => {
-    if (saving) return
+  const handleSave = () => void run(saveSale)
+
+  const saveSale = async () => {
     if (!validQty) {
       toast.error('Enter how many jars you sold')
       return
@@ -104,8 +110,8 @@ export default function RecordJarSaleModal({
       return
     }
 
-    setSaving(true)
     const { error } = await supabase.from('financial_records').insert({
+      id: recordId,
       user_id: userId,
       record_type: 'income',
       transaction_date: date,
@@ -114,9 +120,9 @@ export default function RecordJarSaleModal({
       description,
       notes: note.trim() || null,
     })
-    setSaving(false)
 
-    if (error) {
+    // 23505 on this id means the first try was saved and only its reply was lost.
+    if (error && (error as { code?: string }).code !== '23505') {
       console.error('Error recording jar sale:', error)
       toast.error('Could not record the sale')
       return

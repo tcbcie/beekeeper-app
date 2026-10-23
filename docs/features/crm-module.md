@@ -226,6 +226,12 @@ distributions recorded against the order from the distribution dialogue. The lin
 is informational and does not affect fulfilment or revenue — see
 [distribution-order-linking.md](distribution-order-linking.md).
 
+**Unsaved items (batch 34, 23/10/2026):**
+- **Unsaved edits:** while the items or notes have unsaved edits, the payment and status actions are refused with "Save your item changes first", because they reload the order.
+- **Failed load:** if the items fail to load, the editor is replaced by an error.
+- **Blank fields:** a cleared quantity or price stays blank. `checkOrderItems` refuses to save it instead of dropping the line or saving €0.
+- See `traceability-orders-batch34-plan.md`.
+
 ## Sales Insights
 
 `crm/insights` — a cash-basis sales overview, computed client-side from the
