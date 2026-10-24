@@ -1,6 +1,6 @@
 'use client'
 import { getCurrentDate, toLocalDateString } from '@/lib/date-utils'
-import { fetchArchiveDaily } from '@/lib/gdd'
+import { fetchArchiveDaily, calculateGDDFromDaily, getSeasonalMultiplier } from '@/lib/gdd'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Thermometer, Share2, Loader2, ExternalLink, Filter, BarChart3, Table, TrendingUp, Flower2, Users, CalendarDays } from 'lucide-react'
@@ -50,7 +50,6 @@ interface CommunityGDDRecord {
   city: string | null
   latitude: number
   longitude: number
-  user_id: string
 }
 
 interface GDDDataTabProps {
@@ -194,11 +193,9 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       }
 
       if (data) {
-        // Filter: exclude own records, only within 20km of ANY user apiary
+        // The database already returns only other beekeepers' records within 20 km of one of this
+        // user's apiaries (C7b-22); the distance check stays as a harmless second filter
         const nearby = (data as CommunityGDDRecord[]).filter(record => {
-          if (record.user_id === userId) {
-            return false
-          }
           // Check if record is within 20km of ANY user apiary
           return apiaryCoordsList.some(apiary => {
             const distance = calculateDistance(
@@ -217,7 +214,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     } finally {
       setLoadingCommunity(false)
     }
-  }, [userId, apiaryCoordsList])
+  }, [apiaryCoordsList])
 
   // Fetch community data when coords are available (for indicator), regardless of toggle
   useEffect(() => {
@@ -264,29 +261,8 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         const todayStr = toLocalDateString(today)
 
         const daily = await fetchArchiveDaily(latitude, longitude, janFirst, todayStr)
-
-        if (daily) {
-          const data = { daily }
-          {
-            let totalGDD = 0
-            for (let i = 0; i < data.daily.temperature_2m_max.length; i++) {
-              const tMax = data.daily.temperature_2m_max[i]
-              const tMin = data.daily.temperature_2m_min[i]
-              const dateStr = data.daily.time[i]
-              if (tMax !== null && tMin !== null && dateStr) {
-                const avgTemp = (tMax + tMin) / 2
-                if (avgTemp > 0) {
-                  const month = new Date(dateStr).getMonth() + 1
-                  let multiplier = 1.0
-                  if (month === 1) multiplier = 0.5
-                  else if (month === 2) multiplier = 0.75
-                  totalGDD += avgTemp * multiplier
-                }
-              }
-            }
-            setCurrentGDD(Math.round(totalGDD * 10) / 10)
-          }
-        }
+        // The shared formula (C7b-16)
+        if (daily) setCurrentGDD(calculateGDDFromDaily(daily))
       } catch (err) {
         console.error('Failed to calculate current GDD:', err)
       }
@@ -331,11 +307,8 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
               if (tMax !== null && tMin !== null && dateStr) {
                 const avgTemp = (tMax + tMin) / 2
                 if (avgTemp > 0) {
-                  const month = new Date(dateStr).getMonth() + 1
-                  let multiplier = 1.0
-                  if (month === 1) multiplier = 0.5
-                  else if (month === 2) multiplier = 0.75
-                  cumulativeGDD += avgTemp * multiplier
+                  // Month straight from "YYYY-MM-DD": new Date() reads it as UTC midnight (C7b-16)
+                  cumulativeGDD += avgTemp * getSeasonalMultiplier(parseInt(dateStr.slice(5, 7), 10))
                 }
 
                 const dayOfYear = Math.floor((new Date(dateStr).getTime() - new Date(year, 0, 0).getTime()) / 86400000)
@@ -366,9 +339,16 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
 
   // Fetch accumulation data when years change or chart type switches
   useEffect(() => {
-    if (chartType === 'accumulation' && apiaryCoordsList.length > 0 && selectedAccumulationYears.length > 0) {
-      fetchAccumulationData(selectedAccumulationYears)
+    if (chartType !== 'accumulation' || apiaryCoordsList.length === 0) return
+    if (selectedAccumulationYears.length === 0) {
+      // Clear the chart, and retire any load still running so its lines can't land after it
+      // (C7b-18, C7b-06). The old lines used to stay, and "Select at least one year" never showed.
+      accumulationRequestRef.current++
+      setAccumulationData([])
+      setAccumulationLoading(false)
+      return
     }
+    fetchAccumulationData(selectedAccumulationYears)
   }, [chartType, apiaryCoordsList, selectedAccumulationYears, fetchAccumulationData])
 
   // Fetch monthly temperatures for selected years (for phenology chart, use first apiary)
@@ -1225,13 +1205,13 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                 <div className="mt-2 pt-2 border-t border-border">
                   <h4 className="text-xs font-medium text-foreground mb-1 flex items-center gap-1.5">
                     <Thermometer size={14} className="text-red-500" />
-                    Avg Monthly Temps ({selectedYears.sort((a, b) => a - b).join(', ')})
+                    Avg Monthly Temps ({selectedYears.slice().sort((a, b) => a - b).join(', ')})
                   </h4>
                   <div className="h-32">
                     <Bar
                       data={{
                         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                        datasets: selectedYears.sort((a, b) => a - b).map((year, idx) => {
+                        datasets: selectedYears.slice().sort((a, b) => a - b).map((year, idx) => {
                           const yearTemps = monthlyTemps[year] || []
                           const colorIdx = idx % YEAR_COLORS.length
                           return {

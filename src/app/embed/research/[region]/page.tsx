@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import PublicGDDTab from '@/components/embed/PublicGDDTab'
+import { EMBED_REGIONS as REGIONS } from '@/lib/embed-regions'
 
 /**
  * Iframe-embeddable Research / GDD page.
@@ -15,22 +16,7 @@ import PublicGDDTab from '@/components/embed/PublicGDDTab'
  * See: docs/features/tcbc-wordpress-research-widget.md
  */
 
-interface RegionConfig {
-  viewName: string
-  label: string
-  latitude: number
-  longitude: number
-}
-
-// Add new regions here as the corresponding public_<region>_gdd view is created.
-const REGIONS: Record<string, RegionConfig> = {
-  galway: {
-    viewName: 'public_galway_gdd',
-    label: 'Galway',
-    latitude: 53.2707,
-    longitude: -9.0568,
-  },
-}
+// Regions live in src/lib/embed-regions.ts, shared with the weather route the embed calls.
 
 export function generateStaticParams() {
   return Object.keys(REGIONS).map((region) => ({ region }))
@@ -50,7 +36,7 @@ export default async function EmbedResearchRegionPage({
   return (
     <PublicGDDTab
       viewName={config.viewName}
-      regionCoords={{ latitude: config.latitude, longitude: config.longitude }}
+      region={region}
       regionLabel={config.label}
     />
   )

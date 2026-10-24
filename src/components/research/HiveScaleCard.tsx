@@ -1,11 +1,11 @@
 'use client'
-import { toLocalDateString } from '@/lib/date-utils'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink, Sun, Cloud, CloudRain, CloudSnow, CloudFog, Sprout } from 'lucide-react'
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
+import { fetchCurrentYearGDD } from '@/lib/gdd'
 
 interface HiveScaleCardProps {
  hive: {
@@ -53,6 +53,35 @@ interface ScaleData {
  temperature: number | null
  humidity: number | null
  battery: number | null
+}
+
+// One weather request per location, shared by every card in the same apiary for 30 minutes.
+// Each card used to fetch its own, so hives in one apiary repeated identical calls (C7b-15).
+const WEATHER_TTL_MS = 30 * 60 * 1000
+const weatherCache = new Map<string, { promise: Promise<WeatherData | null>; at: number }>()
+
+function fetchLocationWeather(lat: number, lon: number): Promise<WeatherData | null> {
+ const key = `${lat},${lon}`
+ const cached = weatherCache.get(key)
+ if (cached && Date.now() - cached.at < WEATHER_TTL_MS) return cached.promise
+ const promise = fetch(
+ `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=auto`
+ )
+ .then(async (response) => {
+ if (!response.ok) return null
+ const json = await response.json()
+ return json.current
+ ? { temperature: json.current.temperature_2m, humidity: json.current.relative_humidity_2m, weatherCode: json.current.weather_code }
+ : null
+ })
+ .catch((err) => {
+ console.error('Failed to fetch weather:', err)
+ return null
+ })
+ // A failure isn't kept, so the next card or refresh tries again
+ promise.then(result => { if (!result) weatherCache.delete(key) })
+ weatherCache.set(key, { promise, at: Date.now() })
+ return promise
 }
 
 export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
@@ -154,7 +183,8 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
 
  useEffect(() => {
  fetchData()
- const interval = setInterval(fetchData, 5 * 60 * 1000)
+ // Refresh only while the page is visible: it used to poll in the background too (C7b-15)
+ const interval = setInterval(() => { if (!document.hidden) fetchData() }, 5 * 60 * 1000)
  return () => clearInterval(interval)
  }, [fetchData])
 
@@ -165,75 +195,30 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  useEffect(() => {
  if (!apiaryLat || !apiaryLon) return
 
+ let cancelled = false
  const fetchWeather = async () => {
- try {
- const response = await fetch(
- `https://api.open-meteo.com/v1/forecast?latitude=${apiaryLat}&longitude=${apiaryLon}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=auto`
- )
- if (response.ok) {
- const json = await response.json()
- if (json.current) {
- setWeather({
- temperature: json.current.temperature_2m,
- humidity: json.current.relative_humidity_2m,
- weatherCode: json.current.weather_code
- })
- }
- }
- } catch (err) {
- console.error('Failed to fetch weather:', err)
- }
+ const result = await fetchLocationWeather(apiaryLat, apiaryLon)
+ if (result && !cancelled) setWeather(result)
  }
 
  fetchWeather()
- // Refresh weather every 30 minutes
- const interval = setInterval(fetchWeather, 30 * 60 * 1000)
- return () => clearInterval(interval)
+ // Refresh weather every 30 minutes, only while the page is visible
+ const interval = setInterval(() => { if (!document.hidden) fetchWeather() }, 30 * 60 * 1000)
+ return () => {
+ cancelled = true
+ clearInterval(interval)
+ }
  }, [apiaryLat, apiaryLon])
 
- // Calculate GDD from January 1st to today
+ // GDD from 1 January to today, through the shared helper: one checked, timed-out, cached request
+ // per location, and the same formula as the rest of the app (C7b-15, C7b-16)
  useEffect(() => {
  if (!apiaryLat || !apiaryLon) return
-
- const calculateGDD = async () => {
- try {
- const today = new Date()
- const year = today.getFullYear()
- const janFirst = `${year}-01-01`
- const todayStr = toLocalDateString(today)
-
- const response = await fetch(
- `https://archive-api.open-meteo.com/v1/archive?latitude=${apiaryLat}&longitude=${apiaryLon}&start_date=${janFirst}&end_date=${todayStr}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
- )
- if (response.ok) {
- const data = await response.json()
- if (data.daily?.temperature_2m_max && data.daily?.time) {
- // GDD with seasonal multipliers (Jan: 0.5, Feb: 0.75, Mar-Dec: 1.0)
- let totalGDD = 0
- for (let i = 0; i < data.daily.temperature_2m_max.length; i++) {
- const tMax = data.daily.temperature_2m_max[i]
- const tMin = data.daily.temperature_2m_min[i]
- const dateStr = data.daily.time[i]
- if (tMax !== null && tMin !== null && dateStr) {
- const avgTemp = (tMax + tMin) / 2
- if (avgTemp > 0) {
- const month = new Date(dateStr).getMonth() + 1 // 1-12
- let multiplier = 1.0
- if (month === 1) multiplier = 0.5
- else if (month === 2) multiplier = 0.75
- totalGDD += avgTemp * multiplier
- }
- }
- }
- setGddValue(Math.round(totalGDD * 10) / 10)
- }
- }
- } catch (err) {
- console.error('Failed to calculate GDD:', err)
- }
- }
-
- calculateGDD()
+ let cancelled = false
+ fetchCurrentYearGDD(apiaryLat, apiaryLon).then(value => {
+ if (!cancelled && value !== null) setGddValue(value)
+ })
+ return () => { cancelled = true }
  }, [apiaryLat, apiaryLon])
 
  const borderColor = isBeep
@@ -336,7 +321,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  {getWeatherIcon(weather.weatherCode)}
  <span className="flex items-center gap-0.5">
  <Thermometer size={10} className="text-orange-400" />
- {weather.temperature.toFixed(0)}°C
+ {Math.round(weather.temperature)}°C
  </span>
  <span className="flex items-center gap-0.5">
  <Droplets size={10} className="text-cyan-400" />

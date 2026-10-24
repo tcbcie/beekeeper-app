@@ -41,6 +41,7 @@ export default function ResearchPage() {
   const [hasScales, setHasScales] = useState(false)
   const [isPowerUser, setIsPowerUser] = useState(false)
   const [activeSection, setActiveSection] = useState<ResearchSection>('gdd-data')
+  const [loadFailed, setLoadFailed] = useState(false)
 
   useEffect(() => {
     const section = searchParams.get('section')
@@ -51,32 +52,42 @@ export default function ResearchPage() {
 
   useEffect(() => {
     const initUser = async () => {
-      const id = await getCurrentUserId()
-      if (!id) {
-        router.push('/login')
-        return
+      // try/finally: a thrown sign-in or role lookup used to leave the spinner up for good (C7b-14)
+      try {
+        const id = await getCurrentUserId()
+        if (!id) {
+          router.push('/login')
+          return
+        }
+
+        // Check if user is power user or admin
+        const powerUser = await isPowerUserOrAdmin()
+        setIsPowerUser(powerUser)
+
+        // Check if user has any hives with scales
+        const { count } = await supabase
+          .from('hives')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', id)
+          .is('archived_at', null)
+          .or('beep_device_id.not.is.null,wolf_scale_id.not.is.null')
+
+        setHasScales((count ?? 0) > 0)
+        setUserId(id)
+      } catch (err) {
+        console.error('Error loading research page:', err)
+        setLoadFailed(true)
+      } finally {
+        setLoading(false)
       }
-
-      // Check if user is power user or admin
-      const powerUser = await isPowerUserOrAdmin()
-      setIsPowerUser(powerUser)
-
-      // Check if user has any hives with scales
-      const { count } = await supabase
-        .from('hives')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', id)
-        .is('archived_at', null)
-        .or('beep_device_id.not.is.null,wolf_scale_id.not.is.null')
-
-      setHasScales((count ?? 0) > 0)
-      setUserId(id)
-      setLoading(false)
     }
     initUser()
   }, [router])
 
   if (loading) return <LoadingSpinner text="Loading research..." />
+  if (loadFailed && !userId) {
+    return <p role="alert" className="py-12 text-center text-red-700 dark:text-red-300">Couldn&apos;t load Research. Check your connection and refresh the page.</p>
+  }
 
   const sections = [
     ...(hasScales ? [{ id: 'scale-overview' as const, label: 'Scale Overview', icon: Scale }] : []),
@@ -85,6 +96,9 @@ export default function ResearchPage() {
     ...(isPowerUser ? [{ id: 'diagnosis-images' as const, label: 'Diagnosis Images', icon: Camera }] : []),
     ...(isPowerUser ? [{ id: 'wild-colonies' as const, label: 'Wild Colonies', icon: TreeDeciduous }] : []),
   ]
+  // A ?section= link to a section this user can't see showed no tab and no content: fall back to
+  // GDD Data instead (C7b-14)
+  const visibleSection: ResearchSection = sections.some(s => s.id === activeSection) ? activeSection : 'gdd-data'
 
   return (
     <div className="space-y-6">
@@ -103,7 +117,7 @@ export default function ResearchPage() {
                 <NavTabButton
                   key={section.id}
                   onClick={() => setActiveSection(section.id)}
-                  active={activeSection === section.id}
+                  active={visibleSection === section.id}
                   tone="blue"
                   className="px-6 py-3"
                 >
@@ -117,27 +131,27 @@ export default function ResearchPage() {
       </div>
 
       {/* Wild Colonies Section (Power Users only) */}
-      {activeSection === 'wild-colonies' && userId && isPowerUser && (
+      {visibleSection === 'wild-colonies' && userId && isPowerUser && (
         <WildColoniesTab userId={userId} />
       )}
 
       {/* Diagnosis Images Section (Power Users only) */}
-      {activeSection === 'diagnosis-images' && userId && isPowerUser && (
+      {visibleSection === 'diagnosis-images' && userId && isPowerUser && (
         <DiagnosisImagesTab userId={userId} />
       )}
 
       {/* Scale Overview Section */}
-      {activeSection === 'scale-overview' && userId && (
+      {visibleSection === 'scale-overview' && userId && (
         <ScaleOverviewTab userId={userId} />
       )}
 
       {/* GDD Data Section */}
-      {activeSection === 'gdd-data' && userId && (
+      {visibleSection === 'gdd-data' && userId && (
         <GDDDataTab userId={userId} />
       )}
 
       {/* Foraging Hours Section */}
-      {activeSection === 'foraging-hours' && userId && (
+      {visibleSection === 'foraging-hours' && userId && (
         <ForagingHoursTab userId={userId} />
       )}
     </div>

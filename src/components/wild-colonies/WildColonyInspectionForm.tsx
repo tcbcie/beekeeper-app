@@ -128,38 +128,42 @@ export default function WildColonyInspectionForm({
   const [showStatus, setShowStatus] = useState(false)
   const [showWeather, setShowWeather] = useState(true) // Open by default to show auto-fetched weather
 
-  // Auto-fetch weather when form loads (for new inspections only)
+  // Auto-fetch weather once when the form opens (new inspections only). It used to depend on the
+  // temperature itself, so clearing the field (or typing a minus sign) fetched and refilled it (C7b-11).
   useEffect(() => {
+    let cancelled = false
     const fetchWeather = async () => {
       if (isEditing || !colonyLatitude || !colonyLongitude) return
-      if (formData.weather_temp !== null) return // Already has weather data
 
       setFetchingWeather(true)
       try {
         const response = await fetch(
           `https://api.open-meteo.com/v1/forecast?latitude=${colonyLatitude}&longitude=${colonyLongitude}&current=temperature_2m,weather_code&timezone=Europe/Dublin`
         )
+        if (!response.ok) return
         const data = await response.json()
 
-        if (data.current) {
+        if (data.current && !cancelled) {
           const temp = Math.round(data.current.temperature_2m)
           const condition = WEATHER_CODE_MAP[data.current.weather_code] || ''
 
-          setFormData(prev => ({
+          // Fill only a field the user hasn't already filled
+          setFormData(prev => prev.weather_temp !== null ? prev : {
             ...prev,
             weather_temp: temp,
             weather_condition: condition
-          }))
+          })
         }
       } catch (error) {
         console.error('Failed to fetch weather:', error)
       } finally {
-        setFetchingWeather(false)
+        if (!cancelled) setFetchingWeather(false)
       }
     }
 
     fetchWeather()
-  }, [colonyLatitude, colonyLongitude, isEditing, formData.weather_temp])
+    return () => { cancelled = true }
+  }, [colonyLatitude, colonyLongitude, isEditing])
 
   const {
     imagePreview,
@@ -175,12 +179,11 @@ export default function WildColonyInspectionForm({
     onError: (msg) => toast.error(msg)
   })
 
-  // Set initial image preview if editing
-  useState(() => {
-    if (initialImageUrl) {
-      setPreviewFromUrl(initialImageUrl)
-    }
-  })
+  // Set initial image preview if editing. An effect, not a useState initialiser: that set another
+  // hook's state during render and ignored a changed photo (C7b-13).
+  useEffect(() => {
+    if (initialImageUrl) setPreviewFromUrl(initialImageUrl)
+  }, [initialImageUrl, setPreviewFromUrl])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -437,7 +440,8 @@ export default function WildColonyInspectionForm({
                 </label>
                 <input
                   type="number"
-                  value={formData.weather_temp || ''}
+                  // ?? not ||: 0°C is a real reading, not an empty field (C7b-12)
+                  value={formData.weather_temp ?? ''}
                   onChange={(e) => updateField('weather_temp', e.target.value ? parseInt(e.target.value) : null)}
                   className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500"
                 />

@@ -57,8 +57,8 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
 
   useEffect(() => {
     fetchSensorData()
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchSensorData, 5 * 60 * 1000)
+    // Refresh every 5 minutes, only while the page is visible (C7b-15)
+    const interval = setInterval(() => { if (!document.hidden) fetchSensorData() }, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [fetchSensorData])
 

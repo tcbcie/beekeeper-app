@@ -102,7 +102,7 @@ Security notes:
 
 ### 3. Open-Meteo Archive API (external, already in use)
 
-`https://archive-api.open-meteo.com/v1/archive` — called directly from the browser, no key, CORS-open. Galway city centroid: `53.2707, -9.0568`.
+`https://archive-api.open-meteo.com/v1/archive` — no key, CORS-open. Galway city centroid: `53.2707, -9.0568`. The card widget still calls it from the browser. Since batch 41 (24/10/2026) the **iframe embed** calls our own route instead, `GET /api/embed/gdd-archive?region=<slug>&year=<yyyy>` (`src/app/api/embed/gdd-archive/route.ts`). It serves only regions in `src/lib/embed-regions.ts` and years from 2000 to this year (Irish date). It fetches upstream with `next: { revalidate }` (6 h for this year, 30 days for past years) and returns `Cache-Control: public, s-maxage`, so Open-Meteo sees a few calls per region whatever the visitor numbers (C7b-07).
 
 ## What the widget shows
 

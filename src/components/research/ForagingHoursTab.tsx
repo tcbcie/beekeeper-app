@@ -247,6 +247,11 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
     // aborts it before it can clear the spinner) left it running for ever (C7b-03)
     if (!selectedApiary || selectedYears.length === 0) {
       setDataLoading(false)
+      // Clear the charts too: the old lines and the "Current" line stayed after the last year was
+      // unticked (C7b-18)
+      setAccumulationData([])
+      setMonthlyHoursData({})
+      setCurrentYearTotal(null)
       return
     }
     const controller = new AbortController()

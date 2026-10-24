@@ -210,6 +210,14 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  toast.error('Please select a location on the map')
  return
  }
+ // Number() rejects "53.27x" (parseFloat kept 53.27), and the ranges stop an impossible point
+ // being saved and sent to the weather service (C7b-10)
+ const latitude = Number(formData.latitude)
+ const longitude = Number(formData.longitude)
+ if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+ toast.error('Please enter a valid latitude (-90 to 90) and longitude (-180 to 180), or pick the spot on the map')
+ return
+ }
 
  // Photos uploaded during this attempt. If the save then fails they belong to no
  // row and nothing else will ever collect them, so they are removed. Once the row
@@ -247,8 +255,8 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  }
 
  const dataToSave = {
- latitude: parseFloat(formData.latitude),
- longitude: parseFloat(formData.longitude),
+ latitude,
+ longitude,
  status: overrideStatus || formData.status,
  nesting_type: formData.nesting_type || null,
  estimated_size: formData.estimated_size || null,

@@ -216,10 +216,11 @@ export default function WildColonyInspectionCard({
  )}
 
  {/* Weather */}
- {(inspection.weather_temp || inspection.weather_condition) && (
+ {/* != null, not truthiness: 0°C is a real reading (C7b-12) */}
+ {(inspection.weather_temp != null || inspection.weather_condition) && (
  <div className="flex items-center gap-2 mt-2 text-xs text-text-tertiary">
  <Thermometer size={12} />
- {inspection.weather_temp && <span>{inspection.weather_temp}°C</span>}
+ {inspection.weather_temp != null && <span>{inspection.weather_temp}°C</span>}
  {inspection.weather_condition && <span>{getWeatherLabel(inspection.weather_condition)}</span>}
  </div>
  )}

@@ -58,15 +58,27 @@ const weatherCache = new Map<string, CacheEntry<ApiaryWeather>>()
 const scaleCache = new Map<string, CacheEntry<ScaleWeight[]>>()
 const gddCache = new Map<string, CacheEntry<number>>()
 const gddInflight = new Map<string, Promise<number | null>>()
+// Cards at the same coordinates share one weather request, as GDD already does (C7b-15)
+const weatherInflight = new Map<string, Promise<ApiaryWeather>>()
 let bloomDataCache: CacheEntry<VegetationEntry[]> | null = null
 let bloomDataInflight: Promise<VegetationEntry[]> | null = null
 const activeBloomCache = new Map<string, CacheEntry<string[]>>()
 
 // Module-level community records cache — shared across all cards to avoid N identical RPC calls
-interface CommunityRecord { user_id: string; year: number; start_date: string; end_date: string | null; latitude: number; longitude: number; vegetation_name: string | null }
+interface CommunityRecord { year: number; start_date: string; end_date: string | null; latitude: number; longitude: number; vegetation_name: string | null }
 const COMMUNITY_CACHE_TTL_MS = 60 * 60 * 1000
 let communityRecordsCache: CacheEntry<CommunityRecord[]> | null = null
 let communityInflight: Promise<CommunityRecord[]> | null = null
+// The shared records are now chosen per user (near their apiaries, their own left out, C7b-22),
+// so one account's cached set must never be shown to the next on the same device
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+      communityRecordsCache = null
+      communityInflight = null
+    }
+  })
+}
 
 function weatherIcon(code: number): string {
   if (code === 0) return '\u2600\uFE0F'
@@ -152,6 +164,62 @@ function getQueenIssueSummary(apiary: DashboardApiary): string {
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+/** Forecast for "lat,lon", fetched once however many cards ask at the same time. */
+function requestWeather(cacheKey: string): Promise<ApiaryWeather> {
+  const pending = weatherInflight.get(cacheKey)
+  if (pending) return pending
+  const [latitude, longitude] = cacheKey.split(',')
+
+  const request = (async () => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 15_000)
+    try {
+      const res = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code,sunshine_duration,precipitation_sum&timezone=Europe/Dublin&past_days=1&forecast_days=7`,
+        { signal: controller.signal }
+      )
+      if (!res.ok) throw new Error('fetch failed')
+
+      const data = await res.json()
+      if (!data.current || !data.daily?.time) throw new Error('Unexpected API response shape')
+
+      // past_days=1 prepends yesterday; find today's index to split reliably
+      const now = new Date()
+      const todayDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+      const todayIndex = (data.daily.time as string[]).indexOf(todayDate)
+
+      const allDays: DailyForecast[] = data.daily.time.map((date: string, index: number) => ({
+        day: DAY_NAMES[new Date(`${date}T12:00:00`).getDay()],
+        tempMin: Math.round(data.daily.temperature_2m_min[index]),
+        tempMax: Math.round(data.daily.temperature_2m_max[index]),
+        tempMinRaw: data.daily.temperature_2m_min[index] ?? 0,
+        tempMaxRaw: data.daily.temperature_2m_max[index] ?? 0,
+        weatherCode: data.daily.weather_code[index],
+        sunshineDuration: data.daily.sunshine_duration?.[index] ?? 0,
+        precipitationSum: data.daily.precipitation_sum?.[index] ?? 0,
+      }))
+
+      const nextWeather: ApiaryWeather = {
+        current: {
+          temperature: Math.round(data.current.temperature_2m),
+          weatherCode: data.current.weather_code,
+          humidity: data.current.relative_humidity_2m ?? 50,
+        },
+        yesterday: todayIndex > 0 ? allDays[todayIndex - 1] : null,
+        daily: todayIndex >= 0 ? allDays.slice(todayIndex) : allDays,
+      }
+
+      weatherCache.set(cacheKey, { data: nextWeather, fetchedAt: Date.now() })
+      return nextWeather
+    } finally {
+      clearTimeout(timer)
+    }
+  })().finally(() => weatherInflight.delete(cacheKey))
+
+  weatherInflight.set(cacheKey, request)
+  return request
+}
 
 function WeightChip({ label, value }: { label: string; value: number }) {
   const positive = value >= 0
@@ -243,46 +311,8 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
     setWeatherLoading(true)
     setWeatherError(false)
 
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 15_000)
-
     try {
-      const res = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${apiary.latitude}&longitude=${apiary.longitude}&current=temperature_2m,weather_code,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weather_code,sunshine_duration,precipitation_sum&timezone=Europe/Dublin&past_days=1&forecast_days=7`,
-        { signal: controller.signal }
-      )
-      if (!res.ok) throw new Error('fetch failed')
-
-      const data = await res.json()
-      if (!data.current || !data.daily?.time) throw new Error('Unexpected API response shape')
-
-      // past_days=1 prepends yesterday; find today's index to split reliably
-      const now = new Date()
-      const todayDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-      const todayIndex = (data.daily.time as string[]).indexOf(todayDate)
-
-      const allDays: DailyForecast[] = data.daily.time.map((date: string, index: number) => ({
-        day: DAY_NAMES[new Date(`${date}T12:00:00`).getDay()],
-        tempMin: Math.round(data.daily.temperature_2m_min[index]),
-        tempMax: Math.round(data.daily.temperature_2m_max[index]),
-        tempMinRaw: data.daily.temperature_2m_min[index] ?? 0,
-        tempMaxRaw: data.daily.temperature_2m_max[index] ?? 0,
-        weatherCode: data.daily.weather_code[index],
-        sunshineDuration: data.daily.sunshine_duration?.[index] ?? 0,
-        precipitationSum: data.daily.precipitation_sum?.[index] ?? 0,
-      }))
-
-      const nextWeather: ApiaryWeather = {
-        current: {
-          temperature: Math.round(data.current.temperature_2m),
-          weatherCode: data.current.weather_code,
-          humidity: data.current.relative_humidity_2m ?? 50,
-        },
-        yesterday: todayIndex > 0 ? allDays[todayIndex - 1] : null,
-        daily: todayIndex >= 0 ? allDays.slice(todayIndex) : allDays,
-      }
-
-      weatherCache.set(weatherCacheKey, { data: nextWeather, fetchedAt: Date.now() })
+      const nextWeather = await requestWeather(weatherCacheKey)
       if (!mountedRef.current) return
 
       startTransition(() => {
@@ -293,12 +323,11 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
         setWeatherError(true)
       }
     } finally {
-      clearTimeout(timer)
       if (mountedRef.current) {
         setWeatherLoading(false)
       }
     }
-  }, [apiary.latitude, apiary.longitude, hasCoords, shouldLoadData, weatherCacheKey])
+  }, [hasCoords, shouldLoadData, weatherCacheKey])
 
   const fetchScaleData = useCallback(async () => {
     if (!hasScales || !shouldLoadData) return
@@ -494,11 +523,9 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
           communityRecords = await communityInflight
         }
 
-        // Filter: exclude own records, within 20km, current year, currently active
-        const { data: { session } } = await supabase.auth.getSession()
-        const userId = session?.user?.id
+        // The database returns only other beekeepers' records near this user's apiaries (C7b-22);
+        // here: within 20 km of this card's apiary, current year, currently active
         for (const rec of communityRecords) {
-          if (rec.user_id === userId) continue
           if (rec.year !== currentYear) continue
           if (rec.start_date > todayStr) continue
           if (rec.end_date && rec.end_date < todayStr) continue

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Camera, Trash2, Calendar, Tag, RefreshCw, Download, MessageSquare, Send, User, Eye, LayoutGrid, List, X, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
-import { fetchInChunks } from '@/lib/supabase-chunk'
+import { fetchAllPages, fetchInChunks } from '@/lib/supabase-chunk'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
 import Button from '@/components/ui/Button'
@@ -58,15 +58,20 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  // Images and comments load together. The comments need no list of image ids (it went in the
  // URL and broke after a few hundred images): the database only returns comments on images this
  // user can see, which are exactly the images loaded here.
+ // Paged: power users see everyone's images, and one request stops at 1,000 rows (C7b-21)
  const [{ data: imagesData, error: fetchError }, { data: commentsData, error: commentsError }] = await Promise.all([
- supabase
+ fetchAllPages<DiagnosisImage>((from, to) => supabase
  .from('diagnosis_images')
  .select('*')
- .order('created_at', { ascending: false }),
- supabase
+ .order('created_at', { ascending: false })
+ .order('id')
+ .range(from, to)),
+ fetchAllPages<Comment>((from, to) => supabase
  .from('diagnosis_image_comments')
  .select('*')
- .order('created_at', { ascending: true }),
+ .order('created_at', { ascending: true })
+ .order('id')
+ .range(from, to)),
  ])
 
  if (fetchError) {

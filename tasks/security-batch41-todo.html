@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 41: Research Data</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 41: Research Data</h1>
+<p><strong>Status:</strong> Implemented 24/10/2026, waiting for your test. This is Phase 2 fix batch 28. It covers the logic and data findings in chunk 7b (research, GDD, wild colonies, the public embed): C7b-06, 07, 08, 10 to 18, 21, 22. Batch 42 will take the screen findings (C7b-23 to C7b-25: tap sizes, chart text and dark mode, the wide wild-colonies table). Three agents checked each finding against the code and the live database, and I re-checked the key lines.</p>
+
+<h2>A. GDD charts: C7b-06, C7b-08, C7b-18</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-18 and C7b-06, old lines stay after clearing the years:</strong> untick every year on the GDD accumulation chart (dashboard or the tcbc.ie embed) and the old lines stay, sometimes appearing after you've cleared them. The "Select at least one year" message never shows. Now the chart clears. The Foraging Hours chart has the same flaw and gets the same fix.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-08:</strong> the GDD tab sorts its list of selected years in place while drawing, which can stop the screen updating. It now sorts a copy, as the embed already does.</div>
+<div class="note">The other "no stale guard" cases are already handled (batch 24 added guards) or can't show wrong data.</div>
+
+<h2>B. Wild colonies: C7b-10 to C7b-13</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-10, coordinates not checked:</strong> latitude and longitude are free text. "abc" gives a raw database error, "53.27x" is quietly saved as 53.27, and 532744 is saved as it is and then sent to the weather service. Now both must be real numbers within ±90 / ±180, or you get a clear message.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-11, temperature can't be left blank:</strong> in a wild colony inspection, clearing the temperature fetches the weather again and refills it. Typing a minus sign does the same, so you can't enter a negative temperature. Now the weather fills the field once, only while it's empty.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-12, 0°C:</strong> an inspection at 0°C shows a blank field, hides its weather line, or shows a stray "0". The scale card shows "-0°C" for -0.4. All fixed.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-13:</strong> the inspection form sets the photo preview during drawing, which React warns about and which ignores a changed photo. It now does it properly. The form also gets a key, so opening another inspection doesn't keep the old fields.</div>
+
+<h2>C. Research page and scale cards: C7b-14, C7b-15, C7b-16</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-14, blank or stuck research page:</strong> a link to a section you don't have access to (diagnosis images, wild colonies) shows no tab and no content. A rare sign-in error leaves the spinner up for good. Now it falls back to the GDD section, and the spinner always ends.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-15, repeated calls:</strong> on Research → Scale Overview, every hive card fetches its own weather and GDD every 30 minutes, even for hives in the same apiary. Its scale readings refresh every 5 minutes, even while the app is in the background. Now:
+  <ul>
+    <li>Weather and GDD are fetched once per location.</li>
+    <li>Refreshing pauses while the tab is hidden. The same applies to the scale readings on the hive pages.</li>
+    <li>The dashboard weather row shares one weather request between cards with the same location.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-16, GDD formula copied five times:</strong> the GDD tab, the embed and the scale card each carry their own copy. The copies read the month in a way that shifts by a day west of Ireland. They now use the shared formula. The tcbc.ie widget script keeps its own copy, as it must, with its "keep in sync" note.</div>
+
+<h2>D. Public embed: C7b-07</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-07, every tcbc.ie visitor calls the weather service:</strong> the research embed makes 2–6 weather-archive calls from each visitor's browser. On a busy day that heads towards the free usage limits. The free tier is also for non-commercial use, and HiveCraic takes subscriptions. Now:
+  <ul>
+    <li>The embed asks our own server.</li>
+    <li>The server fetches each region and year once and keeps it for 6 hours (30 days for past years), so the weather service sees a handful of calls whatever the traffic.</li>
+    <li>The server only accepts the listed regions and sensible years, so it can't be used as an open relay.</li>
+    <li>The dashboard's own GDD calls are unchanged.</li>
+  </ul>
+</div>
+
+<h2>E. Data reads: C7b-21, C7b-22</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-21, diagnosis list:</strong> it loads in one request, which stops at 1,000 rows. There are only 2 today, but power users see everyone's. It now reads in pages.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-22, shared GDD records sent nationwide:</strong> the database sends every shared bloom record in the country (76 today), with each owner's user ID, and the browser then keeps those within 20 km of your apiaries. Now the database does the filtering: it leaves out your own records, returns only those within 20 km of one of your apiaries, and no longer sends user IDs. The locations stay blurred, as before.</div>
+<div class="note"><strong>Database change:</strong> one migration, applied through MCP and saved in <code>supabase/migrations/</code>. It replaces <code>get_shared_gdd_records</code> under the same name, so nothing that calls it changes. Signed-in users only, as now, with the security advisors checked afterwards.</div>
+
+<h2>F. Closed without a change</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7b-17, the embed is a near copy of the GDD tab:</strong> they differ in data source, filters, sharing and events, so merging would need a shared component with half a dozen switches, on a page live on tcbc.ie. Pointing both at the shared formula and fixing them together (above) removes the real risk.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; a short test for the embed route's region and year checks; the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/research-data-batch41-plan.md</code>, <code>tcbc-wordpress-research-widget.md</code>, the Phase 2 register and memory.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>GDD tab (and the tcbc.ie embed): untick all years; the chart clears and asks you to pick one.</li>
+    <li>Wild colonies: enter "abc" as latitude; you get a clear message. In an inspection, clear the temperature; it stays blank.</li>
+    <li>Open the tcbc.ie research embed: the GDD charts still load.</li>
+    <li>Dashboard weather row: nearby confirmed blooms from other beekeepers still show.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Unticking all years</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Old lines stayed (GDD, embed, foraging)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Charts clear</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Wild colony coordinates</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“abc” → database error; 532744 saved</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Checked, with a clear message</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Wild colony temperature</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Refilled when cleared; 0°C blank</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Fills once; 0°C shown</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Research page</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Blank on a disallowed section; spinner could stick</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Falls back to GDD; always loads</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Scale cards</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Weather and GDD per card; polling when hidden</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Shared per location; paused when hidden</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">GDD formula</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Five copies</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Shared helper</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">tcbc.ie embed weather</td><td style="border:1px solid #e7d9b8;padding:0.4rem">2–6 calls from each visitor</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Server-cached route</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Diagnosis list</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Cut at 1,000</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Paged</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Shared GDD records</td><td style="border:1px solid #e7d9b8;padding:0.4rem">All 76 nationwide, with user IDs</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Only nearby, no user IDs</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0; 852 tests pass (4 new); advisors unchanged</td></tr>
+</table>
+<ul>
+  <li><strong>Database:</strong> <code>20261024140000_research_batch41_shared_gdd_nearby.sql</code>, applied through MCP. The first apply call returned an error and changed nothing, so I checked and applied it again. It is signed-in users only, <code>search_path = public</code>, and the advisors are unchanged (14 anon, 72 signed-in, as before).</li>
+  <li><strong>New:</strong> <code>src/lib/embed-regions.ts</code> and <code>src/app/api/embed/gdd-archive/route.ts</code>. <code>tests/api/embed-gdd-archive.test.ts</code> covers unknown regions, out-of-range years, a valid response with its cache header, and an upstream failure.</li>
+  <li><strong>QA audit:</strong> no Critical or High issues. Two Medium were fixed:
+    <ul>
+      <li>The dashboard's cached nearby records are now per user, so they are cleared on sign-in and sign-out.</li>
+      <li>The route's time limit no longer passes an abort signal, which can stop Next.js caching the response.</li>
+    </ul>
+  </li>
+  <li><strong>Next:</strong> batch 42 for C7b-23 to C7b-25 (sizes, chart text and dark mode, the wide wild-colonies table).</li>
+</ul>
+</body>
+</html>

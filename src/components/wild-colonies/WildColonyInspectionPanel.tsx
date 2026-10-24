@@ -207,6 +207,8 @@ export default function WildColonyInspectionPanel({ colonyId, userId, colonyLati
             {editingInspection ? 'Edit Inspection' : 'New Inspection'}
           </h4>
           <WildColonyInspectionForm
+            // A key per inspection: opening another one used to keep the previous fields and photo (C7b-13)
+            key={editingInspection?.id ?? 'new'}
             initialData={editingInspection ? {
               inspection_date: editingInspection.inspection_date,
               inspection_time: editingInspection.inspection_time || '',

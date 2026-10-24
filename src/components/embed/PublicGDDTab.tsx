@@ -16,8 +16,24 @@
  *
  * See: docs/features/tcbc-wordpress-research-widget.md
  */
-import { getCurrentDate, toLocalDateString } from '@/lib/date-utils'
-import { fetchArchiveDaily } from '@/lib/gdd'
+import { calculateGDDFromDaily, getSeasonalMultiplier, type OpenMeteoDaily } from '@/lib/gdd'
+
+// Weather comes from our own cached route, not straight from Open-Meteo in every visitor's browser
+// (C7b-07). One request per region and year per page, shared by the charts.
+const regionArchiveCache = new Map<string, Promise<OpenMeteoDaily | null>>()
+function fetchRegionArchive(region: string, year: number): Promise<OpenMeteoDaily | null> {
+  const key = `${region}:${year}`
+  const cached = regionArchiveCache.get(key)
+  if (cached) return cached
+  const request = fetch(`/api/embed/gdd-archive?region=${encodeURIComponent(region)}&year=${year}`)
+    .then(res => (res.ok ? res.json() : null))
+    .then(json => (json?.daily as OpenMeteoDaily | undefined) ?? null)
+    .catch(() => null)
+  // A failure isn't kept, so the next chart or visit tries again
+  request.then(daily => { if (!daily) regionArchiveCache.delete(key) })
+  regionArchiveCache.set(key, request)
+  return request
+}
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Thermometer, Loader2, Filter, BarChart3, Table, TrendingUp, Flower2 } from 'lucide-react'
@@ -87,12 +103,13 @@ interface PublicGDDTabProps {
   /** Supabase view name to query (e.g. 'public_galway_gdd') */
   viewName: string
   /** Region centroid used for Open-Meteo temperature fetches */
-  regionCoords: { latitude: number; longitude: number }
+  /** Region slug from src/lib/embed-regions.ts; the weather route resolves its coordinates. */
+  region: string
   /** Display label for the region (shown in the header) */
   regionLabel: string
 }
 
-export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: PublicGDDTabProps) {
+export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGDDTabProps) {
   const [records, setRecords] = useState<PublicGDDRow[]>([])
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<ViewMode>('chart')
@@ -164,40 +181,17 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
   useEffect(() => {
     const fetchCurrentGDD = async () => {
       try {
-        const { latitude, longitude } = regionCoords
-        const today = new Date()
-        const year = today.getFullYear()
-        const janFirst = `${year}-01-01`
-        const todayStr = toLocalDateString(today)
-
-        const daily = await fetchArchiveDaily(latitude, longitude, janFirst, todayStr)
+        const daily = await fetchRegionArchive(region, new Date().getFullYear())
         if (!daily) return
-        const data = { daily }
-
-        let totalGDD = 0
-        for (let i = 0; i < data.daily.temperature_2m_max.length; i++) {
-          const tMax = data.daily.temperature_2m_max[i]
-          const tMin = data.daily.temperature_2m_min[i]
-          const dateStr = data.daily.time[i]
-          if (tMax !== null && tMin !== null && dateStr) {
-            const avgTemp = (tMax + tMin) / 2
-            if (avgTemp > 0) {
-              const month = new Date(dateStr).getMonth() + 1
-              let multiplier = 1.0
-              if (month === 1) multiplier = 0.5
-              else if (month === 2) multiplier = 0.75
-              totalGDD += avgTemp * multiplier
-            }
-          }
-        }
-        setCurrentGDD(Math.round(totalGDD * 10) / 10)
+        // The shared formula (C7b-16)
+        setCurrentGDD(calculateGDDFromDaily(daily))
       } catch (err) {
         console.error('Failed to calculate current GDD:', err)
       }
     }
 
     fetchCurrentGDD()
-  }, [regionCoords])
+  }, [region])
 
   // Multi-year accumulation data from Open-Meteo
   const fetchAccumulationData = useCallback(async (yearsToFetch: number[]) => {
@@ -205,14 +199,12 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
     const requestId = ++accumulationRequestRef.current
     setAccumulationLoading(true)
     try {
-      const { latitude, longitude } = regionCoords
       const cyear = new Date().getFullYear()
       const todayDayOfYear = Math.floor((new Date().getTime() - new Date(cyear, 0, 0).getTime()) / 86400000)
       const results: YearlyAccumulation[] = []
 
       // All years at once; a year another chart already asked for comes from the shared cache.
-      const dailies = await Promise.all(yearsToFetch.map(year =>
-        fetchArchiveDaily(latitude, longitude, `${year}-01-01`, year === cyear ? getCurrentDate() : `${year}-12-31`)))
+      const dailies = await Promise.all(yearsToFetch.map(year => fetchRegionArchive(region, year)))
       if (requestId !== accumulationRequestRef.current) return
 
       for (const [index, year] of yearsToFetch.entries()) {
@@ -230,11 +222,8 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
           if (tMax !== null && tMin !== null && dateStr) {
             const avgTemp = (tMax + tMin) / 2
             if (avgTemp > 0) {
-              const month = new Date(dateStr).getMonth() + 1
-              let multiplier = 1.0
-              if (month === 1) multiplier = 0.5
-              else if (month === 2) multiplier = 0.75
-              cumulativeGDD += avgTemp * multiplier
+              // Month straight from "YYYY-MM-DD": new Date() reads it as UTC midnight (C7b-16)
+              cumulativeGDD += avgTemp * getSeasonalMultiplier(parseInt(dateStr.slice(5, 7), 10))
             }
             const dayOfYear = Math.floor((new Date(dateStr).getTime() - new Date(year, 0, 0).getTime()) / 86400000)
             if (!isCurrentYear && dayOfYear > todayDayOfYear) continue
@@ -253,12 +242,18 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
     } finally {
       if (requestId === accumulationRequestRef.current) setAccumulationLoading(false)
     }
-  }, [regionCoords])
+  }, [region])
 
   useEffect(() => {
-    if (chartType === 'accumulation' && selectedAccumulationYears.length > 0) {
-      fetchAccumulationData(selectedAccumulationYears)
+    if (chartType !== 'accumulation') return
+    if (selectedAccumulationYears.length === 0) {
+      // Clear the chart and retire any load still running (C7b-18, C7b-06)
+      accumulationRequestRef.current++
+      setAccumulationData([])
+      setAccumulationLoading(false)
+      return
     }
+    fetchAccumulationData(selectedAccumulationYears)
   }, [chartType, selectedAccumulationYears, fetchAccumulationData])
 
   // Monthly temperatures
@@ -266,15 +261,11 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
     if (yearsToFetch.length === 0) return
     const requestId = ++monthlyRequestRef.current
     try {
-      const { latitude, longitude } = regionCoords
       const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-      const today = new Date()
-      const cyear = today.getFullYear()
       const results: YearlyMonthlyTemps = {}
 
       // All years at once, from the shared cache where another chart already asked.
-      const dailies = await Promise.all(yearsToFetch.map(year =>
-        fetchArchiveDaily(latitude, longitude, `${year}-01-01`, year === cyear ? toLocalDateString(today) : `${year}-12-31`)))
+      const dailies = await Promise.all(yearsToFetch.map(year => fetchRegionArchive(region, year)))
       // A newer call (more years selected) may have started meanwhile; only it may set state.
       if (requestId !== monthlyRequestRef.current) return
 
@@ -305,7 +296,7 @@ export default function PublicGDDTab({ viewName, regionCoords, regionLabel }: Pu
     } catch (err) {
       console.error('Failed to fetch monthly temps:', err)
     }
-  }, [regionCoords])
+  }, [region])
 
   useEffect(() => {
     const allYears = [...new Set([...selectedYears, ...selectedAccumulationYears])]
