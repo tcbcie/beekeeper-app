@@ -5,8 +5,10 @@ import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import type { SubscriptionStatusResponse } from '@/types/subscription'
 import Button from '@/components/ui/Button'
+import { resolveSubscriptionStatus } from '@/hooks/useHasActiveSubscription'
 interface NavbarProps {
   currentUser: User | null
 }
@@ -18,14 +20,9 @@ export default function Navbar({ currentUser }: NavbarProps) {
 
   // Fetch subscription status and profile completeness on mount
   useEffect(() => {
+    // Through the shared getter, which the CRM and nav gates already use: one request, not two
     const fetchSubscriptionStatus = async () => {
-      try {
-        const { data, error } = await supabase.rpc('get_subscription_status')
-        if (error) throw error
-        setSubscriptionStatus(data as SubscriptionStatusResponse)
-      } catch (error) {
-        console.error('Error fetching subscription status:', error)
-      }
+      setSubscriptionStatus(await resolveSubscriptionStatus())
     }
 
     const checkProfileCompleteness = async () => {
@@ -88,6 +85,15 @@ export default function Navbar({ currentUser }: NavbarProps) {
     }
   }
 
+  const subscriptionMessage = !subscriptionStatus ? ''
+    : subscriptionStatus.status === 'no_subscription'
+      ? 'Support the app and the Irish beekeeping community by getting a valid subscription via the profile section.'
+      : subscriptionStatus.status === 'expiring_soon'
+        ? `Your subscription expires in ${subscriptionStatus.days_remaining} days. Consider renewing to continue enjoying all features.`
+        : subscriptionStatus.status === 'expiring_very_soon'
+          ? `Your subscription expires in ${subscriptionStatus.days_remaining} days! Renew now to avoid interruption.`
+          : 'Your subscription has expired. Renew now to continue using the app.'
+
   return (
     <nav className="bg-surface/80 dark:bg-surface/80 backdrop-blur-xl shadow-lg border-b border-border sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
@@ -106,15 +112,15 @@ export default function Navbar({ currentUser }: NavbarProps) {
               {/* Profile incompleteness indicator */}
               {!hasProfileName && (
                 <div className="relative group">
-                  <span
-                    className="inline-flex"
-                    tabIndex={0}
-                    role="img"
-                    aria-label="Profile incomplete"
+                  {/* A 48px link to the profile, so a tap does something; the tooltip stays for hover */}
+                  <Link
+                    href="/dashboard/profile"
+                    className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center"
+                    aria-label="Profile incomplete: add your name in your profile"
                     aria-describedby="navbar-profile-incomplete-tooltip"
                   >
-                    <AlertCircle className="w-5 h-5 cursor-pointer text-amber-600 dark:text-amber-400" />
-                  </span>
+                    <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  </Link>
                   {/* Tooltip */}
                   <div
                     id="navbar-profile-incomplete-tooltip"
@@ -131,15 +137,16 @@ export default function Navbar({ currentUser }: NavbarProps) {
             {/* Subscription status indicator */}
             {subscriptionStatus && subscriptionStatus.status !== 'active' && (
               <div className="relative group">
-                <span
-                  className="inline-flex"
-                  tabIndex={0}
-                  role="img"
-                  aria-label="Subscription status"
+                {/* The warning was a 20px dot whose text only showed on hover, which a phone can't
+                    do. It's now a 48px link to the profile's subscription card (C1-19). */}
+                <Link
+                  href="/dashboard/profile"
+                  className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center"
+                  aria-label={`${subscriptionMessage} Open your profile.`}
                   aria-describedby="navbar-subscription-status-tooltip"
                 >
                   <AlertCircle
-                    className={`w-5 h-5 cursor-pointer ${
+                    className={`w-5 h-5 ${
                       subscriptionStatus.status === 'no_subscription'
                         ? 'text-blue-600 dark:text-blue-400'
                         : subscriptionStatus.status === 'expiring_soon'
@@ -149,22 +156,14 @@ export default function Navbar({ currentUser }: NavbarProps) {
                         : 'text-red-600 dark:text-red-400'
                     }`}
                   />
-                </span>
+                </Link>
                 {/* Tooltip */}
                 <div
                   id="navbar-subscription-status-tooltip"
                   role="tooltip"
                   className="pointer-events-none absolute right-0 top-full mt-2 w-72 p-3 bg-surface-elevated border border-border rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 z-50"
                 >
-                  <p className="text-sm text-text-primary">
-                    {subscriptionStatus.status === 'no_subscription'
-                      ? 'Support the app and the Irish beekeeping community by getting a valid subscription via the profile section.'
-                      : subscriptionStatus.status === 'expiring_soon'
-                      ? `Your subscription expires in ${subscriptionStatus.days_remaining} days. Consider renewing to continue enjoying all features.`
-                      : subscriptionStatus.status === 'expiring_very_soon'
-                      ? `Your subscription expires in ${subscriptionStatus.days_remaining} days! Renew now to avoid interruption.`
-                      : 'Your subscription has expired. Renew now to continue using the app.'}
-                  </p>
+                  <p className="text-sm text-text-primary">{subscriptionMessage}</p>
                 </div>
               </div>
             )}

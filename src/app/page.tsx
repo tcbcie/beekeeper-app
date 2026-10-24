@@ -9,11 +9,13 @@ export default function Home() {
 
   const checkUser = useCallback(async () => {
     const { data: { session }, error } = await supabase.auth.getSession()
-    // Offline with a token that can't be renewed: not signed out, so open the dashboard (C1-03)
+    // Offline with a token that can't be renewed: not signed out, so open the dashboard (C1-03).
+    // replace, not push: the installed app opens here, and a history entry for "/" trapped Back
+    // between here and the dashboard (C1-13).
     if (session || (error && isOfflineAuthError(error) && readLastUser())) {
-      router.push('/dashboard')
+      router.replace('/dashboard')
     } else {
-      router.push('/login')
+      router.replace('/login')
     }
   }, [router])
 

@@ -140,3 +140,24 @@ describe('dismissal cooldown', () => {
     expect(updateManager.isDismissalActive()).toBe(false)
   })
 })
+
+// C1-04: the 30-minute timer and the return-to-app check re-showed the banner seconds after "Later"
+describe('passive update checks', () => {
+  it('respect "Later", while the Check for Updates button still shows a waiting update', async () => {
+    vi.useFakeTimers()
+    const manager = updateManager as unknown as { registration: unknown }
+    manager.registration = { update: vi.fn().mockResolvedValue(undefined), waiting: {} }
+    try {
+      updateManager.dismissUpdate()
+      await updateManager.checkForUpdates()
+      expect(updateManager.getState().status).not.toBe('ready')
+
+      await updateManager.checkForUpdates(true)
+      expect(updateManager.getState().status).toBe('ready')
+    } finally {
+      manager.registration = null
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    }
+  })
+})

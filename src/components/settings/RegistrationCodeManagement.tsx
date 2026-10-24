@@ -297,7 +297,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
             <li><strong>New User Registration:</strong> Users enter a code during sign-up to create their account and receive initial subscription</li>
             <li><strong>Subscription Renewal:</strong> Existing users can enter codes to extend their subscription from the Profile page</li>
             <li><strong>Subscription Duration:</strong> How many days of subscription time the code grants when activated (30, 90, 180, or 365 days)</li>
-            <li><strong>Code Management:</strong> Codes remain active until you manually deactivate them - no automatic expiration</li>
+            <li><strong>Code Management:</strong> Codes remain active until you manually deactivate them - no automatic expiry</li>
           </ul>
         </InfoPanel>
 
@@ -368,7 +368,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                         ) : (
                           <div className="flex flex-col">
                             <span className="font-semibold text-foreground">{expiryDate.toLocaleDateString()}</span>
-                            <span className="text-xs text-text-tertiary">Fixed expiration</span>
+                            <span className="text-xs text-text-tertiary">Fixed expiry</span>
                           </div>
                         )}
                       </td>
@@ -472,7 +472,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
           <ul className="list-disc list-inside space-y-1 ml-2">
             <li><strong>Active:</strong> Code is valid and can be used for registration</li>
             <li><strong>Disabled:</strong> Code has been manually deactivated</li>
-            <li><strong>Expired:</strong> Code has passed its expiration date</li>
+            <li><strong>Expired:</strong> Code has passed its expiry date</li>
             <li><strong>Maxed:</strong> Code has reached its maximum usage limit</li>
           </ul>
         </div>
@@ -582,7 +582,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
               </div>
 
               <div>
-                <FieldLabel required>Subscription Expiration Date</FieldLabel>
+                <FieldLabel required>Subscription Expiry Date</FieldLabel>
                 <TextInput
                   type="date"
                   value={newCodeData.subscription_expires_at}

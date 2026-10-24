@@ -1277,7 +1277,7 @@ export default function UserManagement() {
                               <div>
                                 <span className="text-text-tertiary block mb-1">Joined</span>
                                 <p className="text-foreground">
-                                  {new Date(user.created_at).toLocaleDateString('en-US', {
+                                  {new Date(user.created_at).toLocaleDateString('en-IE', {
                                     month: 'short',
                                     day: 'numeric',
                                     year: 'numeric'
@@ -1398,14 +1398,14 @@ export default function UserManagement() {
                                 {user.last_sign_in_at ? (
                                   <div>
                                     <p className="text-foreground">
-                                      {new Date(user.last_sign_in_at).toLocaleDateString('en-US', {
+                                      {new Date(user.last_sign_in_at).toLocaleDateString('en-IE', {
                                         month: 'short',
                                         day: 'numeric',
                                         year: 'numeric'
                                       })}
                                     </p>
                                     <p className="text-sm text-text-tertiary">
-                                      {new Date(user.last_sign_in_at).toLocaleTimeString('en-US', {
+                                      {new Date(user.last_sign_in_at).toLocaleTimeString('en-IE', {
                                         hour: '2-digit',
                                         minute: '2-digit'
                                       })}
@@ -1422,7 +1422,7 @@ export default function UserManagement() {
                                   <span className="text-text-tertiary block mb-1">Deleted On</span>
                                   <div className="flex items-center gap-2">
                                     <p className="text-red-600 font-medium">
-                                      {new Date(user.deleted_at).toLocaleDateString('en-US', {
+                                      {new Date(user.deleted_at).toLocaleDateString('en-IE', {
                                         month: 'short',
                                         day: 'numeric',
                                         year: 'numeric',
@@ -1554,7 +1554,7 @@ export default function UserManagement() {
                             <div className="text-sm text-text-secondary space-y-1">
                               <p>
                                 <span className="font-medium">Requested:</span>{' '}
-                                {new Date(request.requested_at).toLocaleString('en-US', {
+                                {new Date(request.requested_at).toLocaleString('en-IE', {
                                   dateStyle: 'medium',
                                   timeStyle: 'short'
                                 })}
@@ -1562,7 +1562,7 @@ export default function UserManagement() {
                               {request.processed_at && (
                                 <p>
                                   <span className="font-medium">Processed:</span>{' '}
-                                  {new Date(request.processed_at).toLocaleString('en-US', {
+                                  {new Date(request.processed_at).toLocaleString('en-IE', {
                                     dateStyle: 'medium',
                                     timeStyle: 'short'
                                   })}

@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, X, ZoomIn, ZoomOut } from 'lucide-react'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
+import { useDialogA11y } from '@/hooks/useDialogA11y'
 
 interface ImageZoomModalProps {
   isOpen: boolean
@@ -85,6 +86,11 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [isOpen, hasMultiple, showPrevious, showNext])
 
+  // Dialog behaviour without ModalShell's card layout, which doesn't suit a full-screen viewer:
+  // Escape closes, focus stays inside and returns afterwards (C1-26). Called before the early return.
+  const containerRef = useRef<HTMLDivElement>(null)
+  useDialogA11y({ isOpen: isOpen && !!normalisedImageUrl, onClose, containerRef })
+
   if (!isOpen || !normalisedImageUrl) return null
 
   const handleZoomIn = (e?: React.MouseEvent) => {
@@ -111,15 +117,18 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
       }
   }
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  // Pointer events, not mouse events: a finger drag fires no mousemove, so a zoomed photo couldn't
+  // be moved on a phone (C1-26). Capture keeps the drag going when the finger leaves the element.
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (scale > 1) {
       e.preventDefault()
+      e.currentTarget.setPointerCapture(e.pointerId)
       setIsDragging(true)
       setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
     }
   }
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handlePointerMove = (e: React.PointerEvent) => {
     if (isDragging && scale > 1) {
       e.preventDefault()
       setPosition({
@@ -129,7 +138,7 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
     }
   }
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     setIsDragging(false)
   }
 
@@ -140,6 +149,10 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
 
   return (
     <div
+      ref={containerRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Image viewer"
       className="fixed inset-0 bg-black/95 flex items-center justify-center z-[100] overflow-hidden backdrop-blur-sm"
       onClick={onClose}
     >
@@ -151,7 +164,7 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
         <button
           type="button"
           onClick={handleZoomIn}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
+          className="flex min-h-[48px] min-w-[48px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
           aria-label="Zoom in"
           title="Zoom In"
         >
@@ -160,7 +173,7 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
         <button
           type="button"
           onClick={handleZoomOut}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
+          className="flex min-h-[48px] min-w-[48px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
           aria-label="Zoom out"
           title="Zoom Out"
         >
@@ -169,7 +182,7 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
         <button
           type="button"
           onClick={onClose}
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-red-900/80 hover:text-red-100 transition-colors border border-white/20 ml-2"
+          className="flex min-h-[48px] min-w-[48px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-red-900/80 hover:text-red-100 transition-colors border border-white/20 ml-2"
           aria-label="Close image viewer"
           title="Close"
         >
@@ -188,13 +201,13 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
         )}
       </div>
 
-      {/* Previous / next. 44px targets, matching the zoom controls. */}
+      {/* Previous / next. 48px targets, matching the zoom controls. */}
       {hasMultiple && (
         <>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); showPrevious() }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-[110] flex min-h-[44px] min-w-[44px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-[110] flex min-h-[48px] min-w-[48px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
             aria-label="Previous photo"
             title="Previous photo"
           >
@@ -203,7 +216,7 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); showNext() }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-[110] flex min-h-[44px] min-w-[44px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-[110] flex min-h-[48px] min-w-[48px] items-center justify-center p-2 bg-black/70 text-white rounded-full hover:bg-black/85 transition-colors border border-white/20"
             aria-label="Next photo"
             title="Next photo"
           >
@@ -214,11 +227,11 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
 
       {/* Image Container */}
       <div
-        className="relative w-full h-full flex items-center justify-center overflow-hidden"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        className={`relative w-full h-full flex items-center justify-center overflow-hidden ${scale > 1 ? 'touch-none' : ''}`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         onClick={handleContentClick}
         style={{ cursor: scale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
       >
@@ -241,7 +254,7 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
       </div>
       
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 text-white/70 text-sm pointer-events-none bg-black/40 px-3 py-1 rounded-full backdrop-blur-md">
-         {scale === 1 ? 'Double-click to zoom' : 'Drag to pan - Double-click to reset'}
+         {scale === 1 ? 'Double-tap or use + to zoom' : 'Drag to move - double-tap to reset'}
       </div>
     </div>
   )

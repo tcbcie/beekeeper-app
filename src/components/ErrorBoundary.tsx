@@ -6,6 +6,8 @@ import Button from '@/components/ui/Button'
 interface Props {
   children: React.ReactNode
   fallback?: React.ReactNode
+  /** When this changes (e.g. the route), a shown error is cleared. Nothing remounts otherwise. */
+  resetKey?: string
 }
 
 interface State {
@@ -25,6 +27,13 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught error:', error, errorInfo)
+  }
+
+  componentDidUpdate(prevProps: Props) {
+    // Navigating away from a page that failed shows the next page, not the old error (C1-11)
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false, error: null })
+    }
   }
 
   render() {

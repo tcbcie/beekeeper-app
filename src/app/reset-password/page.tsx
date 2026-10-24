@@ -78,7 +78,7 @@ export default function ResetPassword() {
 
   if (!validToken && !error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-yellow-100 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="max-w-md w-full bg-surface dark:bg-surface rounded-lg shadow-lg p-8">
           <div className="text-center">
             <p className="text-text-secondary">Verifying reset link...</p>
@@ -89,7 +89,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-amber-50 to-yellow-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="max-w-md w-full bg-surface dark:bg-surface rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-forest-600 dark:text-amber-600 mb-2 flex items-center justify-center gap-2">
@@ -115,7 +115,7 @@ export default function ResetPassword() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="block min-h-[48px] w-full rounded-lg border border-border bg-surface px-4 py-3 text-foreground placeholder:text-text-tertiary focus:border-forest-500 focus:ring-2 focus:ring-forest-500/30 dark:bg-surface-elevated"
                 placeholder="At least 6 characters"
                 disabled={loading}
               />
@@ -132,7 +132,7 @@ export default function ResetPassword() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 minLength={6}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="block min-h-[48px] w-full rounded-lg border border-border bg-surface px-4 py-3 text-foreground placeholder:text-text-tertiary focus:border-forest-500 focus:ring-2 focus:ring-forest-500/30 dark:bg-surface-elevated"
                 placeholder="Re-enter your password"
                 disabled={loading}
               />

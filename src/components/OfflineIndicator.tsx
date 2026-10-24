@@ -34,9 +34,10 @@ export default function OfflineIndicator() {
     return null
   }
 
+  // top-24 sits just below the sticky navbar: at top-4 it covered Logout while offline (C1-30)
   return (
     <div
-      className={`fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-all ${
+      className={`fixed top-24 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg transition-all ${
         isOnline
           ? 'bg-emerald-600 text-white'
           : 'bg-red-600 text-white'

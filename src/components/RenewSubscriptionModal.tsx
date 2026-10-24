@@ -291,7 +291,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('en-IE', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -322,7 +322,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
 
             <Card padding="sm" className="bg-surface-secondary/50 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-text-secondary">New expiration date:</span>
+                <span className="text-text-secondary">New expiry date:</span>
                 <span className="font-medium text-foreground">
                   {success.expires_at && formatDate(success.expires_at)}
                 </span>
@@ -406,7 +406,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
 
                 <InfoPanel tone="blue" title="Tip:" className="p-3" contentClassName="text-xs">
                   <p>
-                    If your subscription is still active, the new code will extend from your current expiration date. If expired, it will start from today.
+                    If your subscription is still active, the new code will extend from your current expiry date. If expired, it will start from today.
                   </p>
                 </InfoPanel>
 

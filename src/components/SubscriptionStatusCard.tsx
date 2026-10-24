@@ -101,7 +101,7 @@ export default function SubscriptionStatusCard({ onRenewClick }: SubscriptionSta
 
  const formatDate = (dateString: string | null) => {
  if (!dateString) return 'N/A'
- return new Date(dateString).toLocaleDateString('en-US', {
+ return new Date(dateString).toLocaleDateString('en-IE', {
  year: 'numeric',
  month: 'long',
  day: 'numeric'

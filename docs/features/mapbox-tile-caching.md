@@ -17,4 +17,4 @@ Primarily for running offline demos with a local Supabase instance. Load the com
 ## Notes
 - Only tiles/styles that have been viewed are cached (zoom levels, map areas visited).
 - To cache a specific area, simply pan and zoom over it while online.
-- No cache size limit is enforced; for demo purposes this is acceptable.
+- Since batch 39 (24/10/2026) the tile cache is capped at the 1,500 most recent entries (`MAX_MAPBOX_ENTRIES`, trimmed oldest-first every 25 writes by `maybeTrimCache` in `public/service-worker.js`). Before, it grew without limit, and on a full phone the browser could evict all of the site's storage.

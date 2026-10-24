@@ -71,6 +71,18 @@ export async function showNotification(data: NotificationData): Promise<void> {
   }
 }
 
+// One pending timer per reminder tag, so a re-render or a return to the page replaces a reminder
+// rather than adding another with stale details (C1-07). Reminders whose time has passed show
+// once per session, not on every load.
+const scheduledTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const shownTags = new Set<string>()
+
+/** Cancel every pending reminder timer (when the page that scheduled them goes away). */
+export function clearScheduledNotifications(): void {
+  scheduledTimers.forEach(timer => clearTimeout(timer))
+  scheduledTimers.clear()
+}
+
 /**
  * Schedule a notification to be shown at a specific time
  * Note: Browser notifications don't support native scheduling, so we use setTimeout
@@ -81,8 +93,16 @@ export function scheduleNotification(data: NotificationData, scheduledTime: Date
   const now = new Date()
   const timeUntil = scheduledTime.getTime() - now.getTime()
 
+  const pending = scheduledTimers.get(data.tag)
+  if (pending) {
+    clearTimeout(pending)
+    scheduledTimers.delete(data.tag)
+  }
+
   if (timeUntil <= 0) {
-    // Time has passed, show immediately
+    // Time has passed, show immediately (once per session)
+    if (shownTags.has(data.tag)) return
+    shownTags.add(data.tag)
     showNotification(data)
     return
   }
@@ -94,9 +114,11 @@ export function scheduleNotification(data: NotificationData, scheduledTime: Date
     return
   }
 
-  setTimeout(() => {
+  scheduledTimers.set(data.tag, setTimeout(() => {
+    scheduledTimers.delete(data.tag)
+    shownTags.add(data.tag)
     showNotification(data)
-  }, timeUntil)
+  }, timeUntil))
 }
 
 /**

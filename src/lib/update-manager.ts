@@ -102,9 +102,10 @@ class UpdateManager {
   }
 
   /**
-   * Manually check for updates
+   * Check for updates. `explicit` is true only for the "Check for Updates" button: the 30-minute
+   * timer and the return-to-app check are passive and must respect "Later" (C1-04).
    */
-  async checkForUpdates(): Promise<void> {
+  async checkForUpdates(explicit = false): Promise<void> {
     if (!this.registration) {
       console.warn('Update manager not initialized')
       return
@@ -118,8 +119,9 @@ class UpdateManager {
       // while a dismissal cooldown is suppressing the passive prompt.
       // Otherwise the user asks "are there updates?" and is told no while one
       // sits ready to install, which the cooldown made reachable across
-      // reloads. Asking directly overrides having said "later" earlier.
-      if (this.registration.waiting) {
+      // reloads. Asking directly overrides having said "later" earlier. Passive checks (timer,
+      // returning to the app) do not: they re-showed the banner seconds after "Later".
+      if (this.registration.waiting && (explicit || !this.isDismissalActive())) {
         this.waitingWorker = this.registration.waiting
         this.updateState({ status: 'ready' })
         return

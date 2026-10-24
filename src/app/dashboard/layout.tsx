@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useRef, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getAccountStatus } from '@/lib/auth'
 import { loginPath } from '@/lib/login-path'
@@ -21,8 +21,9 @@ import { registerServiceWorker } from '@/lib/notifications'
 import { useToast } from '@/components/ui/Toast'
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  const { user, loading: authLoading } = useAuth()
+  const { user, userId, loading: authLoading } = useAuth()
   const toast = useToast()
+  const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
   const hasShownDisabledAlert = useRef(false)
@@ -44,8 +45,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   // the dashboard shows straight away (data is protected by RLS) and we redirect
   // only when the server CONFIRMS the account is no longer active. A transient
   // 'unreachable' result is ignored so flaky connectivity never logs anyone out.
+  // Keyed on userId, not the user object: a token refresh replaces the object about hourly,
+  // which re-ran this check and restarted its timer for the same person (C1-12)
   useEffect(() => {
-    if (!user) return
+    if (!userId) return
     let cancelled = false
 
     const checkAccount = async () => {
@@ -82,7 +85,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       cancelled = true
       clearInterval(interval)
     }
-  }, [user, router, toast])
+  }, [userId, router, toast])
 
   // Initialize update manager
   useEffect(() => {
@@ -124,7 +127,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         <div className="flex gap-4 md:gap-6">
           <Sidebar />
           <main className="flex-1 w-full min-w-0">
-            <ErrorBoundary>{children}</ErrorBoundary>
+            {/* Reset by route: the layout stays mounted, so one page's error used to stay on
+                screen for every page after it (C1-11). A reset key, not a React key, so nested
+                layouts (CRM, logbook, apiary map) aren't remounted on every navigation. */}
+            <ErrorBoundary resetKey={pathname}>{children}</ErrorBoundary>
           </main>
         </div>
       </div>

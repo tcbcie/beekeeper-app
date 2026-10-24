@@ -13,8 +13,9 @@ import type { SubscriptionStatusResponse } from '@/types/subscription'
  * (locked) on any error so a failed check never leaks access.
  */
 const TTL_MS = 5 * 60 * 1000
-let cache: { value: boolean; at: number } | null = null
-let inFlight: Promise<boolean> | null = null
+// The full status is cached so the Navbar's expiry warning shares this one request too (C1-18)
+let cache: { status: SubscriptionStatusResponse | null; at: number } | null = null
+let inFlight: Promise<SubscriptionStatusResponse | null> | null = null
 
 // Never let one account's cached entitlement bleed into another in the same tab.
 if (typeof window !== 'undefined') {
@@ -26,27 +27,32 @@ if (typeof window !== 'undefined') {
   })
 }
 
-export async function resolveActiveSubscription(): Promise<boolean> {
-  if (cache && Date.now() - cache.at < TTL_MS) return cache.value
+/** The current subscription status, shared and briefly cached; null when it couldn't be read. */
+export async function resolveSubscriptionStatus(): Promise<SubscriptionStatusResponse | null> {
+  if (cache && Date.now() - cache.at < TTL_MS) return cache.status
   if (inFlight) return inFlight
 
   inFlight = (async () => {
     try {
       const { data, error } = await supabase.rpc('get_subscription_status')
       if (error) throw error
-      const value = (data as SubscriptionStatusResponse | null)?.is_active === true
-      cache = { value, at: Date.now() }
-      return value
+      const status = (data as SubscriptionStatusResponse | null) ?? null
+      cache = { status, at: Date.now() }
+      return status
     } catch (error) {
       console.error('Error checking subscription status:', error)
-      cache = { value: false, at: Date.now() }
-      return false
+      cache = { status: null, at: Date.now() }
+      return null
     } finally {
       inFlight = null
     }
   })()
 
   return inFlight
+}
+
+export async function resolveActiveSubscription(): Promise<boolean> {
+  return (await resolveSubscriptionStatus())?.is_active === true
 }
 
 export function useHasActiveSubscription() {

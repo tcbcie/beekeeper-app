@@ -63,7 +63,19 @@ export interface UserProfile {
  * Get the current user's role
  * @returns User role or 'User' as default
  */
-export async function getUserRole(): Promise<UserRole> {
+// The shell (Sidebar, MobileDrawer) and pages ask for the role at the same moment on each load.
+// Sharing the in-flight request makes that one query instead of three (C1-18). Only the in-flight
+// promise is shared, not the result, so a role an admin changes is never held back by a stale copy.
+let roleInFlight: Promise<UserRole> | null = null
+
+export function getUserRole(): Promise<UserRole> {
+  if (!roleInFlight) {
+    roleInFlight = fetchUserRole().finally(() => { roleInFlight = null })
+  }
+  return roleInFlight
+}
+
+async function fetchUserRole(): Promise<UserRole> {
   const userId = await getCurrentUserId()
 
   if (!userId) {

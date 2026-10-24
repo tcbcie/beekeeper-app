@@ -114,7 +114,7 @@ export function UpdateCheckButton() {
   }, [])
 
   const handleCheckForUpdates = () => {
-    updateManager.checkForUpdates()
+    updateManager.checkForUpdates(true)
   }
 
   const isChecking = updateState.status === 'checking'

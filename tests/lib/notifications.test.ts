@@ -5,6 +5,7 @@ import {
   showNotification,
   scheduleNotification,
   scheduleBatchNotifications,
+  clearScheduledNotifications,
   initializeNotifications,
   type NotificationData,
   type BatchDates
@@ -312,6 +313,28 @@ describe('Notification Utilities', () => {
 
       // Should not throw when scheduling
       expect(() => scheduleNotification(data, futureDate)).not.toThrow()
+    })
+  })
+
+  // C1-07: reminders used to pile up, one more timer per visit, each with stale details
+  describe('pending reminder timers', () => {
+    const reminder = (tag: string): NotificationData => ({ title: 'Reminder', body: 'Body', tag })
+
+    it('replaces a pending reminder with the same tag instead of adding another', () => {
+      const later = new Date(Date.now() + 60_000)
+      scheduleNotification(reminder('dup-tag'), later)
+      scheduleNotification(reminder('dup-tag'), later)
+      expect(vi.getTimerCount()).toBe(1)
+      clearScheduledNotifications()
+    })
+
+    it('clears every pending reminder', () => {
+      const later = new Date(Date.now() + 60_000)
+      scheduleNotification(reminder('clear-a'), later)
+      scheduleNotification(reminder('clear-b'), later)
+      expect(vi.getTimerCount()).toBe(2)
+      clearScheduledNotifications()
+      expect(vi.getTimerCount()).toBe(0)
     })
   })
 

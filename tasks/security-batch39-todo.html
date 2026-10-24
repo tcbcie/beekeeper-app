@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 39: App Shell</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 39: App Shell</h1>
+<p><strong>Status:</strong> Implemented 24/10/2026, waiting for your test. This is Phase 2 fix batch 26. It covers the open Medium findings in chunk 1: the app shell, sign-in, the installed app and offline use (C1-04 to 09, 11 to 14, 16, 18, 19, 23, 26, 27, 30). Three agents checked each finding against the code, and I re-checked the key lines. No database change.</p>
+
+<h2>A. Prompts and reminders: C1-04 to C1-07</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-04, the update banner comes back after "Later":</strong> "Later" is saved for an hour, but coming back to the app (or the 30-minute check) shows the banner again within seconds. Now "Later" holds for the hour. Only the "Check for Updates" button ignores it, and a genuinely new update still shows.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-05, the notification banner comes back after "Later":</strong> on the Batches page the banner reappears on every visit, even after Later or ✕, because its 2-second timer runs after the check. Now the check comes first.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-06, notification permission asked without a tap:</strong> opening Batches pops up the browser's own permission prompt before you've seen why. One "Block" there is permanent. Now only the banner's "Enable" button asks.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-07, reminders pile up:</strong> each visit or save on Batches adds another 8 am reminder timer per event. Old ones keep their old details, so a deleted or re-dated batch can still remind you. Now old timers are cleared before new ones are set, and when you leave the page.</div>
+
+<h2>B. Offline storage: C1-08, C1-09</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-08, the offline cache grows without limit:</strong> the app keeps a copy of every page and every page-data request. Next.js fetches page data for each visible link, with a changing code in the address, so the copies pile up. Offline, page data from an older version could also be served to newer code. Now page-data requests aren't stored, and the stored pages are capped at the 100 most recent. Your data from our own server and Supabase was already never stored.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-09, map tiles kept for ever:</strong> every map area you've looked at is kept, with no limit. On a full phone the browser can wipe all the app's offline storage, offline pages included. The map cache is now capped at the 1,500 most recent tiles.</div>
+<div class="note">Any change to the service worker file makes phones install the new version through the normal update banner. I won't touch the version number or the cache name; the old extra copies get trimmed as the app is used.</div>
+
+<h2>C. Sign-in and loading: C1-11 to C1-14, C1-16, C1-18</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-11, one error breaks every page:</strong> if a page hits an error, the "Something went wrong" screen stays for every page you go to next, until you press "Try again" or reload. Now each page starts fresh.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-12, hourly sign-in refresh:</strong> mostly not real, because pages don't refetch. The one thing left is an extra account check every hour, which now runs only when the signed-in person actually changes.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-13, Back gets stuck:</strong> the installed app opens on the home address, which sends you on to the dashboard. That stays in the history, so pressing Back goes home, which sends you forward again. Now the redirect replaces the history entry, and the same is done on the login page.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-14, Enter signs in when you meant to sign up:</strong> on the login page, pressing Enter always triggers "Log in", even in sign-up mode, so a new user arriving from an invitation gets "Invalid login credentials". Now Enter submits in the mode you're in.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-16, reset-password page:</strong> in dark mode, a dark card sits on a bright yellow page, and the fields are about 40px tall. It now uses the same fields and background as the login page.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-18, duplicate requests on every load:</strong> the shell asks for your role three times and your subscription twice. Now one request is shared each time: the role through one in-flight request, and the subscription through the existing shared getter.</div>
+
+<h2>D. Screens: C1-19, C1-26, C1-27, C1-30</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-19, warnings you can't read on a phone:</strong> the subscription warning in the top bar is a small coloured dot whose text only appears on hover. You can't do that on a phone, and it's a 20px target. It becomes a 48px button that takes you to your profile's subscription card. The hover text stays for desktop, and the profile-incomplete warning gets the same treatment.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-26, photo viewer:</strong> after zooming in on a phone you can't drag the photo around, because only a mouse drag works. Screen readers don't know it's a dialog, and Escape doesn't close it. Now touch dragging works, it's announced as an image viewer, Escape closes it, focus stays inside, and the hint mentions double-tap.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-27, American dates and wording:</strong> the renewal confirmation and subscription history show "October 24, 2026" and "expiration date". They become "24 October 2026" and "expiry". Admin's user and code screens get the same.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-30, offline notice covers Logout:</strong> while offline, the notice sits over the top-right of the bar, on top of Logout, and can't be dismissed. It moves just below the bar.</div>
+
+<h2>E. Closed without a change</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C1-23, theme hydration mismatch:</strong> not real today. The no-flash script sets the theme before the page appears, and the only component that shows the theme is never in the server-rendered page. I'll note it in the register.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; short tests for "Later" on the update banner, Enter on the login page and clearing reminder timers; the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/app-shell-batch39-plan.md</code>, <code>mapbox-tile-caching.md</code>, the Phase 2 register and memory.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>When an update banner appears, tap Later, switch to another app and back: it stays away.</li>
+    <li>Open Batches: no browser permission pop-up; tap Later on the banner and come back: it stays away.</li>
+    <li>Installed app: open it and press Back from the dashboard: it leaves instead of bouncing.</li>
+    <li>Login page in sign-up mode: fill in the fields and press Enter: it signs you up.</li>
+    <li>Open a photo on your phone, zoom in, and drag it around.</li>
+    <li>Turn on airplane mode: the offline notice no longer covers Logout.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Update banner “Later”</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Back within seconds of returning</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Holds for the hour</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Notification banner “Later”</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Back on every Batches visit</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Stays away</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Permission prompt</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Browser prompt on Batches load</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Only on Enable</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Reminder timers</td><td style="border:1px solid #e7d9b8;padding:0.4rem">One more per visit, stale details</td><td style="border:1px solid #e7d9b8;padding:0.4rem">One per reminder, cleared</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Offline cache</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Every page-data request, no limit</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Page data not stored; 100 pages; 1,500 tiles</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Error screen</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Stayed for every page</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Clears on navigation</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Back in the installed app</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Bounced home ↔ dashboard</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Leaves</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Enter on sign-up</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Signed in instead</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Signs up</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Shell requests</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Role ×3, subscription ×2</td><td style="border:1px solid #e7d9b8;padding:0.4rem">One each</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Subscription warning on phones</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Hover-only 20px dot</td><td style="border:1px solid #e7d9b8;padding:0.4rem">48px link to profile</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Photo viewer</td><td style="border:1px solid #e7d9b8;padding:0.4rem">No touch drag; not a dialog</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Touch drag, Escape, focus kept</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Dates and wording</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“October 24, 2026”, “expiration”</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“24 October 2026”, “expiry”</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Offline notice</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Covered Logout</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Below the bar</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0; 848 tests pass (5 new)</td></tr>
+</table>
+<ul>
+  <li><strong>Tests:</strong>
+    <ul>
+      <li>The login page signs up or signs in on Enter, matching the mode.</li>
+      <li>Reminder timers are replaced and cleared.</li>
+      <li>A passive update check respects "Later", and the button still shows a waiting update.</li>
+    </ul>
+  </li>
+  <li><strong>Service worker:</strong> no version or cache-name change. Phones pick up the new worker through the normal update banner, and old extra copies are trimmed as the app is used.</li>
+  <li><strong>QA audit:</strong> no Critical or High issues. One Medium was fixed. Keying the error boundary by route would have remounted the CRM, logbook and apiary map layouts on every navigation inside them. It now uses a reset key that only clears a shown error.</li>
+  <li><strong>C1-23:</strong> closed as not real.</li>
+</ul>
+</body>
+</html>

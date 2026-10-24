@@ -27,7 +27,7 @@ export default function SubscriptionHistoryTable() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('en-IE', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
@@ -35,7 +35,7 @@ export default function SubscriptionHistoryTable() {
   }
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
+    return new Date(dateString).toLocaleString('en-IE', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

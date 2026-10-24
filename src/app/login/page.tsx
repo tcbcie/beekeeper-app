@@ -45,8 +45,9 @@ function LoginForm() {
       try { localStorage.removeItem('pendingRedirect') } catch { /* storage unavailable */ }
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        // Already signed in: go straight to the target (it used to stay on this page)
-        if (session) router.push(redirectUrl)
+        // Already signed in: go straight to the target (it used to stay on this page). replace, so
+        // Back doesn't return to a login page that redirects straight away again.
+        if (session) router.replace(redirectUrl)
       } catch (error) {
         console.error('Error checking session:', error)
       }
@@ -198,7 +199,19 @@ function LoginForm() {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form
+              onSubmit={handleSubmit}
+              // Enter would "click" the first submit button, Log in, which switches the mode back to
+              // sign-in. requestSubmit() submits without clicking either button, so the mode the user
+              // is in is kept and the required/minLength checks still run (C1-14).
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.target instanceof HTMLInputElement) {
+                  e.preventDefault()
+                  e.currentTarget.requestSubmit()
+                }
+              }}
+              className="space-y-5"
+            >
               <div>
                 <label htmlFor="login-email" className="block text-sm font-medium text-text-secondary">Email</label>
                 <input

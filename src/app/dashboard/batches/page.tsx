@@ -10,7 +10,7 @@ import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 import NavTabButton from '@/components/ui/NavTabButton'
 import NotificationPermissionBanner from '@/components/NotificationPermissionBanner'
-import { initializeNotifications, scheduleBatchNotifications } from '@/lib/notifications'
+import { clearScheduledNotifications, scheduleBatchNotifications } from '@/lib/notifications'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useBatchesList, Batch, HiveWithInspections, formatDateIrish } from '@/hooks/useBatchesList'
@@ -174,11 +174,9 @@ export default function BatchesPage() {
 
 
 
- // Initialize browser notifications
- useEffect(() => {
- initializeNotifications()
- }, [])
-
+ // Notification permission is only asked from the banner's Enable button, on a tap. Asking on
+ // page load showed the browser's own prompt before any explanation, and a "Block" there is
+ // permanent (C1-06).
 
  // Schedule notifications for batches with browser notifications enabled
  useEffect(() => {
@@ -195,6 +193,9 @@ export default function BatchesPage() {
  })
  }
  })
+ // Old timers go when the batches change or the page closes, so a deleted or re-dated batch
+ // doesn't still remind (C1-07)
+ return clearScheduledNotifications
  }, [batches])
 
 

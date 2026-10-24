@@ -22,6 +22,11 @@ export default function NotificationPermissionBanner() {
     if ('Notification' in window) {
       setPermission(Notification.permission)
 
+      // "Later" is checked before the timer starts. A separate effect used to hide a banner that
+      // wasn't showing yet, and then this timer showed it anyway on every visit (C1-05).
+      const dismissedUntil = localStorage.getItem('notification-banner-dismissed-until')
+      if (dismissedUntil && Date.now() < parseInt(dismissedUntil)) return
+
       // Show banner if permission is default (not asked yet)
       if (Notification.permission === 'default') {
         // Wait 2 seconds before showing to not overwhelm user
@@ -50,14 +55,6 @@ export default function NotificationPermissionBanner() {
     const dismissedUntil = Date.now() + (7 * 24 * 60 * 60 * 1000)
     localStorage.setItem('notification-banner-dismissed-until', dismissedUntil.toString())
   }
-
-  // Don't show if already dismissed recently
-  useEffect(() => {
-    const dismissedUntil = localStorage.getItem('notification-banner-dismissed-until')
-    if (dismissedUntil && Date.now() < parseInt(dismissedUntil)) {
-      setShow(false)
-    }
-  }, [])
 
   // Lowest precedence: yields to an update or an install offer, and waits
   // while a form is in progress.

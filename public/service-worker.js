@@ -51,6 +51,31 @@ function isUserData(url) {
   return !(sameOrigin && (url.pathname.startsWith('/_next/static/') || OFFLINE_URLS.includes(url.pathname)))
 }
 
+// Size caps (C1-08, C1-09). Pages and lookups kept for offline use, and Mapbox tiles, used to grow
+// without limit; on a full phone the browser can then evict all of the site's storage, offline
+// pages included. Build assets and the offline pages are never trimmed.
+const MAX_PAGE_ENTRIES = 100
+const MAX_MAPBOX_ENTRIES = 1500
+const TRIM_EVERY_PUTS = 25
+const putsSinceTrim = {}
+
+// Keep the newest `max` entries that `shouldTrim` selects. cache.keys() lists entries in the order
+// they were written, so the oldest go first. Run every few writes rather than on each one, and
+// best-effort like all caching here.
+function maybeTrimCache(cacheName, max, shouldTrim) {
+  putsSinceTrim[cacheName] = (putsSinceTrim[cacheName] || 0) + 1
+  if (putsSinceTrim[cacheName] < TRIM_EVERY_PUTS) return
+  putsSinceTrim[cacheName] = 0
+  caches.open(cacheName)
+    .then((cache) => cache.keys().then((keys) => {
+      const candidates = keys.filter((request) => shouldTrim(new URL(request.url)))
+      const excess = candidates.length - max
+      if (excess <= 0) return undefined
+      return Promise.all(candidates.slice(0, excess).map((request) => cache.delete(request)))
+    }))
+    .catch(() => { /* best-effort */ })
+}
+
 self.addEventListener('activate', (event) => {
   console.log('Service Worker activating...')
   event.waitUntil(
@@ -135,6 +160,14 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  // Next.js page-data (RSC) requests carry a changing ?_rsc= code, so storing them piled up copies
+  // for every link the app prefetched, and offline they could serve an older build's data to newer
+  // code. Leave them to the network: offline, Next falls back to a full page load, which is served
+  // from the cached page or /offline.html (C1-08).
+  if (event.request.headers.get('RSC') === '1' || requestUrl.searchParams.has('_rsc')) {
+    return
+  }
+
   // Cache-first strategy for Next.js build assets: files under /_next/static/
   // are content-hashed and immutable, so once cached they never need the
   // network again. This is what makes the app open fast on poor connections
@@ -170,6 +203,7 @@ self.addEventListener('fetch', (event) => {
           return fetch(event.request).then((response) => {
             if (response && response.status === 200) {
               cache.put(event.request, response.clone()).catch(() => { /* best-effort */ })
+              maybeTrimCache(MAPBOX_CACHE_NAME, MAX_MAPBOX_ENTRIES, () => true)
             }
             return response
           })
@@ -189,6 +223,7 @@ self.addEventListener('fetch', (event) => {
           const responseToCache = response.clone()
           caches.open(CACHE_NAME)
             .then((cache) => cache.put(event.request, responseToCache))
+            .then(() => maybeTrimCache(CACHE_NAME, MAX_PAGE_ENTRIES, isUserData))
             .catch(() => { /* caching is best-effort */ })
         }
         return response
