@@ -334,7 +334,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  type="text"
  value={formData.queen_number}
  onChange={(e) => setFormData({ ...formData, queen_number: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  />
  </div>
 
@@ -345,7 +345,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  value={formData.birth_date}
  onChange={(e) => setFormData({ ...formData, birth_date: e.target.value })}
  disabled={!!editingQueen?.distributed_by_name}
- className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
+ className={`w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
  />
  </div>
 
@@ -362,7 +362,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  value={formData.marking_color}
  onChange={(e) => setFormData({ ...formData, marking_color: e.target.value })}
  disabled={!!editingQueen?.distributed_by_name}
- className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
+ className={`w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
  >
  <option value="">Select color</option>
  {colorOptions.map((color) => (
@@ -382,7 +382,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  value={formData.source}
  onChange={(e) => setFormData({ ...formData, source: e.target.value })}
  disabled={!!editingQueen?.distributed_by_name}
- className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
+ className={`w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}
  >
  <option value="">Select source</option>
  {sourceOptions.map((source) => (
@@ -398,7 +398,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  <select
  value={formData.queen_role}
  onChange={(e) => setFormData({ ...formData, queen_role: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  >
  {QUEEN_ROLE_OPTIONS.map((opt) => (
  <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -416,7 +416,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  onChange={(e) => setFormData({ ...formData, origin_breeder_code: e.target.value.toUpperCase() })}
  placeholder="e.g. UG"
  maxLength={10}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  />
  <p className="text-sm text-text-tertiary mt-1">Originating line/breeder. Used in this queen&apos;s code (e.g. UG-{formData.queen_number || 'number'}-year) instead of your own.</p>
  </div>
@@ -427,7 +427,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  <select
  value={formData.subspecies}
  onChange={(e) => setFormData({ ...formData, subspecies: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  >
  <option value="">Select subspecies</option>
  {subspeciesOptions.map((subspecies) => (
@@ -446,9 +446,9 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  onChange={(e) => setFormData({ ...formData, lineage: e.target.value })}
  readOnly={!formData.lineage_overridden}
  placeholder="Auto-generated from dam, drone source, mating site and year"
- className={`w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${formData.lineage_overridden ? '' : 'opacity-70'}`}
+ className={`w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${formData.lineage_overridden ? '' : 'opacity-70'}`}
  />
- <label className="flex items-center gap-2 mt-2 text-sm text-text-secondary cursor-pointer">
+ <label className="flex min-h-12 items-center gap-2 mt-2 text-sm text-text-secondary cursor-pointer">
  <input
  type="checkbox"
  checked={formData.lineage_overridden}
@@ -461,7 +461,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  lineage: overridden ? (prev.lineage || derivedLineage) : prev.lineage,
  }))
  }}
- className="w-4 h-4 text-forest-600 border-border rounded focus:ring-forest-500"
+ className="w-5 h-5 text-forest-600 border-border rounded focus:ring-forest-500"
  />
  Edit manually
  </label>
@@ -475,7 +475,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  <select
  value={formData.mother_id}
  onChange={(e) => setFormData({ ...formData, mother_id: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  >
  <option value="">Select mother queen (optional)</option>
  {availableParentQueens
@@ -507,7 +507,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  <select
  value={formData.father_id}
  onChange={(e) => setFormData({ ...formData, father_id: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  >
  <option value="">Select drone-line queen (optional)</option>
  {availableParentQueens
@@ -527,13 +527,13 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  type="text"
  value={editingQueen.distributed_batch_name || ''}
  disabled
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground opacity-60 cursor-not-allowed"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground opacity-60 cursor-not-allowed"
  />
  ) : (
  <select
  value={formData.batch_id}
  onChange={(e) => setFormData({ ...formData, batch_id: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  >
  <option value="">Select source batch (optional)</option>
  {batches.map((b) => (
@@ -550,7 +550,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  <select
  value={formData.drone_source_type}
  onChange={(e) => setFormData({ ...formData, drone_source_type: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  >
  {DRONE_SOURCE_OPTIONS.map((opt) => (
  <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -567,7 +567,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  value={formData.mating_station}
  onChange={(e) => setFormData({ ...formData, mating_station: e.target.value })}
  placeholder="e.g., TBKA Kilcornan"
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  />
  <datalist id="mating-station-options">
  {matingStationOptions.map((name) => (
@@ -587,7 +587,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  onChange={(e) => setFormData({ ...formData, mated_at_eircode: e.target.value.toUpperCase() })}
  placeholder="e.g., H91 E6K2"
  maxLength={8}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  />
  <p className="text-sm text-text-tertiary mt-1">
  Irish postcode where the queen was mated
@@ -600,7 +600,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  type="date"
  value={formData.mated_date}
  onChange={(e) => setFormData({ ...formData, mated_date: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  />
  </div>
 
@@ -609,7 +609,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  <select
  value={formData.status}
  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  >
  <option value="active">Active</option>
  <option value="virgin">Virgin</option>
@@ -621,13 +621,13 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  </select>
  </div>
 
- <div className="flex items-center">
+ <div className="flex min-h-12 items-center">
  <input
  type="checkbox"
  id="queen_clipped"
  checked={formData.queen_clipped}
  onChange={(e) => setFormData({ ...formData, queen_clipped: e.target.checked })}
- className="w-4 h-4 text-forest-600 dark:text-emerald-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500 bg-surface dark:bg-surface-elevated"
+ className="w-5 h-5 text-forest-600 dark:text-emerald-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500 bg-surface dark:bg-surface-elevated"
  />
  <label htmlFor="queen_clipped" className="ml-2 text-sm font-medium text-text-secondary">
  Queen Clipped
@@ -644,7 +644,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  setFormData({ ...formData, performance_notes: e.target.value })
  }
  rows={3}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  />
  </div>
 

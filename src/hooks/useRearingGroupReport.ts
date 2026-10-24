@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchInChunks } from '@/lib/supabase-chunk'
 import { buildNucSignalSets, NucSignalRow } from '@/components/batches/graftConstants'
@@ -31,9 +31,16 @@ export interface RearingGroupReport {
 export function useRearingGroupReport() {
   const [report, setReport] = useState<RearingGroupReport | null>(null)
   const [loadingReport, setLoadingReport] = useState(false)
+  // This report feeds official NIHBS returns: a failed load must not read "No rearing data" (C6-16),
+  // and a slow answer for the month picked before must not replace the one on screen
+  const [reportError, setReportError] = useState(false)
+  const reportSeqRef = useRef(0)
 
   const fetchReport = useCallback(async (groupId: string, groupName: string, month: number, year: number) => {
+    const seq = ++reportSeqRef.current
+    const isCurrent = () => seq === reportSeqRef.current
     setLoadingReport(true)
+    setReportError(false)
     try {
       // Get all member user_ids for this group
       const { data: members, error: membersError } = await supabase
@@ -46,6 +53,7 @@ export function useRearingGroupReport() {
       const userIds = (members || []).map((m) => m.user_id)
 
       if (userIds.length === 0) {
+        if (!isCurrent()) return
         setReport({
           group_id: groupId,
           group_name: groupName,
@@ -54,7 +62,6 @@ export function useRearingGroupReport() {
           members: [],
           totals: { queens_hatched: 0, queens_mated: 0, queen_cells_distributed: 0, batch_count: 0, cell_count: 0 },
         })
-        setLoadingReport(false)
         return
       }
 
@@ -238,6 +245,7 @@ export function useRearingGroupReport() {
         { queens_hatched: 0, queens_mated: 0, queen_cells_distributed: 0, batch_count: 0, cell_count: 0 }
       )
 
+      if (!isCurrent()) return
       setReport({
         group_id: groupId,
         group_name: groupName,
@@ -247,16 +255,19 @@ export function useRearingGroupReport() {
         totals,
       })
     } catch (error) {
+      if (!isCurrent()) return
       console.error('Error fetching rearing group report:', error)
       setReport(null)
+      setReportError(true)
     } finally {
-      setLoadingReport(false)
+      if (isCurrent()) setLoadingReport(false)
     }
   }, [])
 
   return {
     report,
     loadingReport,
+    reportError,
     fetchReport,
   }
 }

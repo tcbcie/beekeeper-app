@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback, useMemo, Fragment } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchDropdownValues } from '@/lib/dropdown-values'
+import { fetchArchiveDaily, calculateGDDFromDaily } from '@/lib/gdd'
+import { getCurrentDate } from '@/lib/date-utils'
 import { Thermometer, Plus, Trash2, Share2, Info, Loader2, RefreshCw, Pencil, Save, ChevronUp, ChevronDown, Layers } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
@@ -37,13 +39,6 @@ interface GDDRecord {
 
 interface GDDTrackerProps {
   userId: string
-}
-
-// GDD seasonal multipliers to account for reduced growth contribution in winter
-const getSeasonalMultiplier = (month: number): number => {
-  if (month === 1) return 0.5
-  if (month === 2) return 0.75
-  return 1.0
 }
 
 type SortColumn = 'year' | 'start_date' | 'gdd_value'
@@ -133,37 +128,20 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
       const year = new Date(startDate).getFullYear()
       const janFirst = `${year}-01-01`
 
-      // Fetch historical weather data from Open-Meteo
-      const response = await fetch(
-        `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${janFirst}&end_date=${startDate}&daily=temperature_2m_max,temperature_2m_min&timezone=Europe/Dublin`
-      )
-      const data = await response.json()
-
-      if (!data.daily || !data.daily.temperature_2m_max || !data.daily.time) {
+      // The shared archive fetch checks the response, gives up after 15 seconds and caches per page.
+      // The raw fetch here checked neither, so an error page or a hang left the record with no GDD (C8a-06).
+      const daily = await fetchArchiveDaily(latitude, longitude, janFirst, startDate)
+      if (!daily) {
         toast.error('Could not fetch weather data for the selected date range')
         return
       }
-
-      // GDD with seasonal multipliers (Jan: 0.5, Feb: 0.75, Mar-Dec: 1.0)
-      let totalGDD = 0
-      for (let i = 0; i < data.daily.temperature_2m_max.length; i++) {
-        const tMax = data.daily.temperature_2m_max[i]
-        const tMin = data.daily.temperature_2m_min[i]
-        const dateStr = data.daily.time[i]
-        if (tMax !== null && tMin !== null && dateStr) {
-          const avgTemp = (tMax + tMin) / 2
-          if (avgTemp > 0) {
-            const month = new Date(dateStr).getMonth() + 1 // 1-12
-            const multiplier = getSeasonalMultiplier(month)
-            totalGDD += avgTemp * multiplier
-          }
-        }
-      }
+      // Same seasonal multipliers (Jan 0.5, Feb 0.75, Mar-Dec 1.0), already rounded
+      const totalGDD = calculateGDDFromDaily(daily)
 
       // Update record with calculated GDD
       const { error } = await supabase
         .from('gdd_records')
-        .update({ gdd_value: Math.round(totalGDD * 10) / 10, updated_at: new Date().toISOString() })
+        .update({ gdd_value: totalGDD, updated_at: new Date().toISOString() })
         .eq('id', recordId)
 
       if (error) throw error
@@ -273,30 +251,40 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
     if (!confirm('Are you sure you want to delete this record?')) return
 
     try {
-      const { error } = await supabase
+      // .select('id'): a delete RLS blocks returns no error and no rows (shared records are visible)
+      const { data, error } = await supabase
         .from('gdd_records')
         .delete()
         .eq('id', id)
+        .select('id')
 
       if (error) throw error
+      if (!data?.length) throw new Error('No record was deleted')
+      toast.success('Record deleted')
       fetchData()
     } catch (error) {
       console.error('Error deleting GDD record:', error)
+      // It used to fail silently, so the button seemed to do nothing (C8a-07)
+      toast.error('Could not delete the record. Please try again.')
     }
   }
 
   // Toggle sharing
   const toggleSharing = async (id: string, currentValue: boolean) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('gdd_records')
         .update({ is_shared: !currentValue, updated_at: new Date().toISOString() })
         .eq('id', id)
+        .select('id')
 
       if (error) throw error
+      if (!data?.length) throw new Error('No record was updated')
+      toast.success(currentValue ? 'Record no longer shared' : 'Record shared')
       fetchData()
     } catch (error) {
       console.error('Error toggling sharing:', error)
+      toast.error('Could not change sharing. Please try again.')
     }
   }
 
@@ -553,6 +541,8 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
+                // The weather archive has no future days: a future date left the record without a GDD
+                max={getCurrentDate()}
                 className="w-full px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
               />
               <p className="text-sm text-text-tertiary mt-1">

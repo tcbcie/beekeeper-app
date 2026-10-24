@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
@@ -90,6 +90,14 @@ export default function ApiaryTeamPage() {
   const [declinedInvitations, setDeclinedInvitations] = useState<TeamInvitation[]>([])
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null)
   const [loadingMembers, setLoadingMembers] = useState(false)
+  // Team details belong to one team at a time. Loads are numbered so a slow answer for the team
+  // tapped before can't overwrite the one on screen; its Remove buttons would then act on the
+  // other team's members (C6-10).
+  const detailSeqRef = useRef(0)
+  const detailTeamRef = useRef<string | null>(null)
+  const [detailsError, setDetailsError] = useState(false)
+  // A failed teams load must not show "Create Your First Team" (C6-16)
+  const [teamsError, setTeamsError] = useState(false)
 
   // Apiary sharing state
   const [userApiaries, setUserApiaries] = useState<Apiary[]>([])
@@ -107,6 +115,7 @@ export default function ApiaryTeamPage() {
   const fetchTeams = useCallback(async () => {
     if (!userId) return
     setLoadingTeams(true)
+    setTeamsError(false)
 
     try {
       // Fetch owned teams
@@ -151,8 +160,10 @@ export default function ApiaryTeamPage() {
       setMemberTeams(memberWithCounts)
     } catch (error) {
       console.error('Error fetching teams:', error)
+      setTeamsError(true)
       // More detailed error message
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      // Supabase errors are plain objects, not Error instances
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to load teams: ${errorMessage}. Please ensure the teams tables have been created in Supabase.`)
     } finally {
       setLoadingTeams(false)
@@ -186,6 +197,8 @@ export default function ApiaryTeamPage() {
         .eq('team_id', teamId)
         .order('added_at', { ascending: false })
 
+      // The list on screen is for the team whose details are open; never replace it with another's
+      if (teamId !== detailTeamRef.current) return
       if (error) throw error
 
       // Transform the data to match our interface
@@ -197,6 +210,7 @@ export default function ApiaryTeamPage() {
       setTeamApiaries(transformed)
     } catch (error) {
       console.error('Error fetching team apiaries:', error)
+      setDetailsError(true)
     }
   }, [])
 
@@ -226,7 +240,8 @@ export default function ApiaryTeamPage() {
       fetchTeamApiaries(selectedTeam.id)
     } catch (error) {
       console.error('Error sharing apiary:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      // Supabase errors are plain objects, not Error instances
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to share apiary: ${errorMessage}`)
     } finally {
       setSharingApiary(false)
@@ -287,7 +302,8 @@ export default function ApiaryTeamPage() {
       fetchTeams() // Refresh teams list
     } catch (error) {
       console.error('Error creating team:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      // Supabase errors are plain objects, not Error instances
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to create team: ${errorMessage}. The teams tables may not exist in Supabase yet.`)
     } finally {
       setCreatingTeam(false)
@@ -296,6 +312,17 @@ export default function ApiaryTeamPage() {
 
   // Fetch team members and invitations
   const fetchTeamDetails = useCallback(async (teamId: string) => {
+    const seq = ++detailSeqRef.current
+    const isCurrent = () => seq === detailSeqRef.current
+    detailTeamRef.current = teamId
+    // Clear the previous team's lists first, so nothing of theirs can be acted on meanwhile
+    setTeamMembers([])
+    setTeamInvitations([])
+    setAcceptedInvitations([])
+    setDeclinedInvitations([])
+    setTeamApiaries([])
+    setDetailsError(false)
+    setLoadingMembers(true)
     try {
       // Fetch team members (without user_profiles join since no FK exists)
       const { data: members, error: membersError } = await supabase
@@ -329,6 +356,7 @@ export default function ApiaryTeamPage() {
         })
       )
 
+      if (!isCurrent()) return
       setTeamMembers(membersWithDetails as TeamMember[])
 
       // Fetch pending invitations
@@ -339,6 +367,7 @@ export default function ApiaryTeamPage() {
         .eq('status', 'pending')
         .order('invited_at', { ascending: false })
 
+      if (!isCurrent()) return
       if (invitationsError) throw invitationsError
 
       setTeamInvitations(invitations || [])
@@ -351,6 +380,7 @@ export default function ApiaryTeamPage() {
         .eq('status', 'accepted')
         .order('accepted_at', { ascending: false })
 
+      if (!isCurrent()) return
       if (!acceptedError) {
         setAcceptedInvitations(acceptedInvites || [])
       }
@@ -363,6 +393,7 @@ export default function ApiaryTeamPage() {
         .eq('status', 'declined')
         .order('declined_at', { ascending: false })
 
+      if (!isCurrent()) return
       if (!declinedError) {
         setDeclinedInvitations(declinedInvites || [])
       }
@@ -371,6 +402,9 @@ export default function ApiaryTeamPage() {
       await fetchTeamApiaries(teamId)
     } catch (error) {
       console.error('Error fetching team details:', error)
+      if (isCurrent()) setDetailsError(true)
+    } finally {
+      if (isCurrent()) setLoadingMembers(false)
     }
   }, [fetchTeamApiaries])
 
@@ -519,7 +553,8 @@ export default function ApiaryTeamPage() {
 
       setInviteEmail('')
       setShowInviteMemberModal(false)
-      fetchTeamDetails(selectedTeam.id) // Refresh team details
+      // Details are page-wide: reload the open panel's team, not the modal's (C6-10)
+      fetchTeamDetails(expandedTeamId ?? selectedTeam.id)
     } catch (error) {
       // The database allows one pending invitation per team/group and email, so a duplicate
       // that slipped past the check above (e.g. two tabs) is refused with 23505.
@@ -656,7 +691,8 @@ export default function ApiaryTeamPage() {
       fetchTeams() // Refresh teams list
     } catch (error) {
       console.error('Error leaving team:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      // Supabase errors are plain objects, not Error instances
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to leave team: ${errorMessage}`)
     }
   }
@@ -795,8 +831,7 @@ export default function ApiaryTeamPage() {
                                 setExpandedTeamId(null)
                               } else {
                                 setExpandedTeamId(team.id)
-                                setLoadingMembers(true)
-                                fetchTeamDetails(team.id).finally(() => setLoadingMembers(false))
+                                fetchTeamDetails(team.id)
                               }
                             }}
                             tone="neutral"
@@ -910,7 +945,9 @@ export default function ApiaryTeamPage() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-sm text-text-tertiary text-center py-4">No members yet. Invite someone to get started!</p>
+                            detailsError
+                              ? <p role="alert" className="text-sm text-red-700 dark:text-red-300 text-center py-4">Couldn&apos;t load this team&apos;s details. Check your connection and try again.</p>
+                              : <p className="text-sm text-text-tertiary text-center py-4">No members yet. Invite someone to get started!</p>
                           )}
 
                           {/* Pending Invitations */}
@@ -1082,7 +1119,7 @@ export default function ApiaryTeamPage() {
                                   </div>
                                 ))}
                               </div>
-                            ) : (
+                            ) : detailsError ? null : (
                               <p className="text-sm text-text-tertiary text-center py-4 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                                 No apiaries shared yet. Click &quot;Share Apiary&quot; to share an apiary with this team.
                               </p>
@@ -1117,8 +1154,7 @@ export default function ApiaryTeamPage() {
                                 setExpandedTeamId(null)
                               } else {
                                 setExpandedTeamId(team.id)
-                                setLoadingMembers(true)
-                                fetchTeamDetails(team.id).finally(() => setLoadingMembers(false))
+                                fetchTeamDetails(team.id)
                               }
                             }}
                             tone="neutral"
@@ -1182,7 +1218,9 @@ export default function ApiaryTeamPage() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-sm text-text-tertiary text-center py-4">No members found.</p>
+                            detailsError
+                              ? <p role="alert" className="text-sm text-red-700 dark:text-red-300 text-center py-4">Couldn&apos;t load this team&apos;s details. Check your connection and try again.</p>
+                              : <p className="text-sm text-text-tertiary text-center py-4">No members found.</p>
                           )}
                         </div>
                       )}
@@ -1193,7 +1231,15 @@ export default function ApiaryTeamPage() {
             )}
 
             {/* Empty State */}
-            {ownedTeams.length === 0 && memberTeams.length === 0 && (
+            {teamsError && ownedTeams.length === 0 && memberTeams.length === 0 && (
+              <div className="py-6">
+                <AlertPanel tone="error" title="Couldn't load your teams">
+                  <p>Check your connection and try again.</p>
+                  <Button onClick={() => fetchTeams()} tone="danger" size="sm" className="mt-2">Try again</Button>
+                </AlertPanel>
+              </div>
+            )}
+            {!teamsError && ownedTeams.length === 0 && memberTeams.length === 0 && (
               <div className="text-center py-12 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                 <Users size={48} className="mx-auto text-text-tertiary mb-3" />
                 <p className="text-text-tertiary mb-4">You haven&apos;t created or joined any teams yet.</p>
@@ -1238,7 +1284,7 @@ export default function ApiaryTeamPage() {
                 value={newTeamName}
                 onChange={(e) => setNewTeamName(e.target.value)}
                 placeholder="e.g., West County Beekeepers"
-                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-blue-500"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-blue-500"
                 maxLength={100}
               />
             </div>
@@ -1284,8 +1330,8 @@ export default function ApiaryTeamPage() {
                   setShowInviteMemberModal(false)
                   setSelectedTeam(null)
                   setInviteEmail('')
-                  setTeamMembers([])
-                  setTeamInvitations([])
+                  // The modal loaded its own team's details; restore the open panel's (C6-10)
+                  if (expandedTeamId) fetchTeamDetails(expandedTeamId)
                 }}
                 size="sm"
                 className="text-text-tertiary hover:text-text-secondary"
@@ -1309,7 +1355,7 @@ export default function ApiaryTeamPage() {
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="email@example.com"
-                  className="flex-1 px-3 py-2 bg-surface dark:bg-surface-elevated text-foreground border border-border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="flex-1 min-h-12 px-3 py-2 bg-surface dark:bg-surface-elevated text-foreground border border-border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
                 <Button
                   onClick={handleSendInvite}
@@ -1335,7 +1381,9 @@ export default function ApiaryTeamPage() {
             {/* Current Members */}
             <div className="mb-6">
               <h4 className="font-semibold text-foreground mb-3">Current Members ({teamMembers.length})</h4>
-              {teamMembers.length > 0 ? (
+              {loadingMembers ? (
+                <p className="text-sm text-text-tertiary">Loading members…</p>
+              ) : teamMembers.length > 0 ? (
                 <div className="space-y-2">
                   {teamMembers.map((member) => (
                     <div key={member.id} className="flex items-center justify-between p-3 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
@@ -1370,7 +1418,7 @@ export default function ApiaryTeamPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-text-tertiary italic">No members yet.</p>
+                detailsError ? <p role="alert" className="text-sm text-red-700 dark:text-red-300 text-center py-4">Couldn&apos;t load this team&apos;s details. Check your connection and try again.</p> : <p className="text-sm text-text-tertiary italic">No members yet.</p>
               )}
             </div>
 
@@ -1414,8 +1462,8 @@ export default function ApiaryTeamPage() {
                   setShowInviteMemberModal(false)
                   setSelectedTeam(null)
                   setInviteEmail('')
-                  setTeamMembers([])
-                  setTeamInvitations([])
+                  // The modal loaded its own team's details; restore the open panel's (C6-10)
+                  if (expandedTeamId) fetchTeamDetails(expandedTeamId)
                 }}
                 tone="neutral"
               >
@@ -1456,7 +1504,7 @@ export default function ApiaryTeamPage() {
               <select
                 value={selectedApiaryId}
                 onChange={(e) => setSelectedApiaryId(e.target.value)}
-                className="w-full px-3 py-2 bg-surface dark:bg-surface-elevated text-foreground border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                className="w-full min-h-12 px-3 py-2 bg-surface dark:bg-surface-elevated text-foreground border border-border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               >
                 <option value="" className="bg-surface dark:bg-surface-elevated text-foreground">-- Select an apiary --</option>
                 {userApiaries.map((apiary) => (
@@ -1537,7 +1585,7 @@ export default function ApiaryTeamPage() {
                 value={renameTeamName}
                 onChange={(e) => setRenameTeamName(e.target.value)}
                 placeholder="Enter new team name"
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500"
                 maxLength={100}
               />
             </div>

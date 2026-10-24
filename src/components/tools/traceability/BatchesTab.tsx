@@ -15,6 +15,7 @@ import { storyTemplates, replacePlaceholders, hasUnfilledPlaceholders, getUnfill
 import type { BulkContainer, BatchRun, BatchJar, BatchFormData, JarConfig, BatchLabelPointer } from '@/types/traceability'
 import Button from '@/components/ui/Button'
 import { SITE_URL } from '@/lib/site-url'
+import { downloadQrPng } from '@/lib/qr-download'
 
 interface BatchesTabProps {
  userId: string
@@ -650,29 +651,10 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
     (pct === 0 && kg > 0 ? '<1%' : `${pct}%`)
 
   // Download a QR code SVG (by element id) as a PNG.
-  const downloadQrCode = (elementId: string, filename: string) => {
-    const svg = document.getElementById(elementId)
-    if (!svg) return
-
-    const svgData = new XMLSerializer().serializeToString(svg)
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    const img = new window.Image()
-
-    img.onload = () => {
-      canvas.width = img.width
-      canvas.height = img.height
-      ctx?.drawImage(img, 0, 0)
-      const pngUrl = canvas.toDataURL('image/png')
-      const downloadLink = document.createElement('a')
-      downloadLink.href = pngUrl
-      downloadLink.download = filename
-      document.body.appendChild(downloadLink)
-      downloadLink.click()
-      document.body.removeChild(downloadLink)
-    }
-
-    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)))
+  // The shared PNG download checks every step and reports failure. This page had its own copy with
+  // no error handling, so a failed download did nothing at all (C8a-13).
+  const downloadQrCode = async (elementId: string, filename: string) => {
+    if (!(await downloadQrPng(elementId, filename))) toast.error('Could not save the QR code')
   }
 
 

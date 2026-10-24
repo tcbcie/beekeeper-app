@@ -367,7 +367,7 @@ export default function QueenDetailPage() {
           <button
             type="button"
             onClick={() => setPrintOpen(true)}
-            className="p-2 hover:bg-surface-secondary rounded-lg transition-colors"
+            className="min-h-12 min-w-12 inline-flex items-center justify-center p-2 hover:bg-surface-secondary rounded-lg transition-colors"
             title="Print label"
           >
             <Printer size={18} className="text-text-secondary" />
@@ -377,7 +377,7 @@ export default function QueenDetailPage() {
           <button
             type="button"
             onClick={() => setShowRedistribute(true)}
-            className="p-2 hover:bg-surface-secondary rounded-lg transition-colors"
+            className="min-h-12 min-w-12 inline-flex items-center justify-center p-2 hover:bg-surface-secondary rounded-lg transition-colors"
             title={canRedistribute
               ? 'Redistribute queen to another beekeeper'
               : 'Distribute queen to another beekeeper'}
@@ -388,7 +388,7 @@ export default function QueenDetailPage() {
         {isOwner && (
           <Link
             href={`/dashboard/queens?id=${queen.id}&edit=true`}
-            className="p-2 hover:bg-surface-secondary rounded-lg transition-colors"
+            className="min-h-12 min-w-12 inline-flex items-center justify-center p-2 hover:bg-surface-secondary rounded-lg transition-colors"
             title="Edit Queen"
           >
             <Edit2 size={18} className="text-text-secondary" />
@@ -417,7 +417,7 @@ export default function QueenDetailPage() {
                 <Button
                   onClick={() => { setEmergedDate(queen.birth_date || ''); setShowEmergedForm(true) }}
                   disabled={cellActionLoading}
-                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 text-sm min-h-[44px]"
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 text-sm min-h-12"
                 >
                   Mark as Emerged
                 </Button>
@@ -425,14 +425,14 @@ export default function QueenDetailPage() {
               <Button
                 onClick={() => setShowMatedForm(true)}
                 disabled={cellActionLoading}
-                className="px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 text-sm min-h-[44px]"
+                className="px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 text-sm min-h-12"
               >
                 Mark as Mated
               </Button>
               <Button
                 onClick={handleMarkFailed}
                 disabled={cellActionLoading}
-                className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 text-sm min-h-[44px]"
+                className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 text-sm min-h-12"
               >
                 Mark as Failed
               </Button>
@@ -446,7 +446,7 @@ export default function QueenDetailPage() {
                   type="date"
                   value={emergedDate}
                   onChange={(e) => setEmergedDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                  className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
                 />
                 <p className="text-sm text-text-tertiary mt-1">Pre-filled with the estimate — adjust to the actual hatch day.</p>
               </div>
@@ -454,13 +454,13 @@ export default function QueenDetailPage() {
                 <Button
                   onClick={handleMarkEmerged}
                   disabled={cellActionLoading}
-                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 text-sm min-h-[44px]"
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 text-sm min-h-12"
                 >
                   {cellActionLoading ? 'Saving...' : 'Confirm Emerged'}
                 </Button>
                 <Button
                   onClick={() => setShowEmergedForm(false)}
-                  className="px-4 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated text-sm min-h-[44px]"
+                  className="px-4 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated text-sm min-h-12"
                 >
                   Cancel
                 </Button>
@@ -475,7 +475,7 @@ export default function QueenDetailPage() {
                   type="date"
                   value={matedDate}
                   onChange={(e) => setMatedDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                  className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
                 />
               </div>
               <div>
@@ -486,20 +486,20 @@ export default function QueenDetailPage() {
                   onChange={(e) => setMatedEircode(e.target.value.toUpperCase())}
                   placeholder="e.g., H91 E6K2"
                   maxLength={8}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+                  className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary uppercase focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
                 />
               </div>
               <div className="flex gap-2">
                 <Button
                   onClick={handleMarkMated}
                   disabled={cellActionLoading}
-                  className="px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 text-sm min-h-[44px]"
+                  className="px-4 py-2 bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 text-sm min-h-12"
                 >
                   {cellActionLoading ? 'Saving...' : 'Confirm Mated'}
                 </Button>
                 <Button
                   onClick={() => setShowMatedForm(false)}
-                  className="px-4 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated text-sm min-h-[44px]"
+                  className="px-4 py-2 bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated text-sm min-h-12"
                 >
                   Cancel
                 </Button>
@@ -648,7 +648,7 @@ export default function QueenDetailPage() {
         {hive && (
           <Link
             href={`/dashboard/hives/${hive.id}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface dark:bg-surface border border-border rounded-full hover:border-forest-500 dark:hover:border-forest-400 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
+            className="inline-flex min-h-12 items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface dark:bg-surface border border-border rounded-full hover:border-forest-500 dark:hover:border-forest-400 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
           >
             <ExternalLink size={14} />
             View Hive
@@ -657,7 +657,7 @@ export default function QueenDetailPage() {
         {queen.batch && (
           <Link
             href={`/dashboard/batches?batch=${queen.batch.id}`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface dark:bg-surface border border-border rounded-full hover:border-forest-500 dark:hover:border-forest-400 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
+            className="inline-flex min-h-12 items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface dark:bg-surface border border-border rounded-full hover:border-forest-500 dark:hover:border-forest-400 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
           >
             <ExternalLink size={14} />
             View Batch

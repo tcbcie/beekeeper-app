@@ -43,7 +43,7 @@ const EMPTY_FORM: QueenAssignmentInput = {
 export default function QueenAssignmentHistory({ queenId }: QueenAssignmentHistoryProps) {
   const toast = useToast()
   const confirmDialog = useConfirm()
-  const { assignments, loading, addAssignment, updateAssignment, deleteAssignment } = useQueenAssignments(queenId)
+  const { assignments, loading, loadError, refetch, addAssignment, updateAssignment, deleteAssignment } = useQueenAssignments(queenId)
 
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -113,7 +113,7 @@ export default function QueenAssignmentHistory({ queenId }: QueenAssignmentHisto
         <h2 className="text-lg font-semibold text-foreground">Assignment History</h2>
         <Button
           onClick={openAdd}
-          className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] text-sm font-medium bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600"
+          className="inline-flex items-center gap-1.5 px-3 py-2 min-h-12 text-sm font-medium bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600"
         >
           <Plus size={16} />
           Add entry
@@ -122,6 +122,11 @@ export default function QueenAssignmentHistory({ queenId }: QueenAssignmentHisto
 
       {loading ? (
         <p className="text-sm text-text-tertiary">Loading…</p>
+      ) : loadError ? (
+        <p role="alert" className="text-sm text-red-700 dark:text-red-300">
+          Couldn&apos;t load the assignment history.{' '}
+          <button type="button" onClick={() => refetch()} className="inline-flex min-h-12 items-center font-medium underline">Try again</button>
+        </p>
       ) : assignments.length === 0 ? (
         <p className="text-sm text-text-tertiary">
           No assignment history yet. Moves between hives and mating nucs are recorded automatically;
@@ -181,7 +186,7 @@ export default function QueenAssignmentHistory({ queenId }: QueenAssignmentHisto
                   <button
                     type="button"
                     onClick={() => openEdit(a)}
-                    className="p-2 rounded hover:bg-surface-elevated text-text-secondary"
+                    className="min-h-12 min-w-12 inline-flex items-center justify-center p-2 rounded hover:bg-surface-elevated text-text-secondary"
                     aria-label="Edit assignment"
                   >
                     <Pencil size={16} />
@@ -189,7 +194,7 @@ export default function QueenAssignmentHistory({ queenId }: QueenAssignmentHisto
                   <button
                     type="button"
                     onClick={() => handleDelete(a)}
-                    className="p-2 rounded hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400"
+                    className="min-h-12 min-w-12 inline-flex items-center justify-center p-2 rounded hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400"
                     aria-label="Delete assignment"
                   >
                     <Trash2 size={16} />

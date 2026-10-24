@@ -29,6 +29,8 @@ export interface RearedQueenCandidate {
 export function useQueensList() {
  const [queens, setQueens] = useState<Queen[]>([])
  const [loading, setLoading] = useState(true)
+ // A failed load keeps the list on screen and says so, rather than "No Queens Found" (C6-16)
+ const [loadError, setLoadError] = useState(false)
  const [userId, setUserId] = useState<string | null>(null)
  const [isTeamMember, setIsTeamMember] = useState(false)
  const [subspeciesOptions, setSubspeciesOptions] = useState<string[]>([])
@@ -42,6 +44,7 @@ export function useQueensList() {
  const fetchQueens = useCallback(async (userIdParam?: string) => {
  const currentUserId = userIdParam || userId
  if (!currentUserId) return
+ setLoadError(false)
 
  // One memoised round trip for team membership + shared apiary owners
  const { isTeamMember: hasTeams, sharedOwnerIds: sharedUserIds } = await getTeamAccess(currentUserId)
@@ -67,6 +70,7 @@ export function useQueensList() {
 
  if (queensError) {
  console.error('Error fetching queens:', queensError)
+ setLoadError(true)
  setLoading(false)
  return
  }
@@ -108,8 +112,12 @@ export function useQueensList() {
  .in('id', chunk)),
  ])
 
+ // Without the hives every queen would show hive "N/A" and match the Unassigned filter
  if (hivesError) {
  console.error('Error fetching hives for queens:', hivesError)
+ setLoadError(true)
+ setLoading(false)
+ return
  }
 
  const hivesByQueenId = new Map(
@@ -324,6 +332,7 @@ export function useQueensList() {
  return {
  queens,
  loading,
+ loadError,
  userId,
  isTeamMember,
  subspeciesOptions,

@@ -51,7 +51,7 @@ function TreeNode({ node, depth = 0 }: { node: FamilyTree; depth?: number }) {
         {hasChildren && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="p-0.5 rounded hover:bg-surface-secondary text-text-tertiary"
+            className="min-h-12 min-w-12 inline-flex items-center justify-center p-0.5 rounded hover:bg-surface-secondary text-text-tertiary"
           >
             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
@@ -59,7 +59,7 @@ function TreeNode({ node, depth = 0 }: { node: FamilyTree; depth?: number }) {
         {!hasChildren && <span className="w-5" />}
         <Link href={`/dashboard/queens/${node.queen.id}`}>
           <div
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm hover:opacity-80 cursor-pointer ${getColorClass(node.queen.marking_color)}`}
+            className={`inline-flex min-h-12 items-center gap-2 px-3 py-1.5 rounded-lg border text-sm hover:opacity-80 cursor-pointer ${getColorClass(node.queen.marking_color)}`}
           >
             {depth === 0 && <Crown size={14} className="text-amber-500" />}
             <span className="font-medium">{node.queen.queen_number}</span>
@@ -99,8 +99,11 @@ export default function QueenLineageOverviewPage() {
   const [apiaryFilter, setApiaryFilter] = useState<string>('all')
   const [apiaries, setApiaries] = useState<{ id: string; name: string }[]>([])
   const [lineageWarning, setLineageWarning] = useState<string | null>(null)
+  // A failed load must not read "No lineage data found" (C6-16)
+  const [loadError, setLoadError] = useState(false)
 
   const fetchData = useCallback(async () => {
+    setLoadError(false)
     try {
       const userId = await getCurrentUserId()
       if (!userId) {
@@ -116,6 +119,7 @@ export default function QueenLineageOverviewPage() {
 
       if (error || !queens) {
         console.error('Error fetching queens for lineage:', error)
+        setLoadError(true)
         setLoading(false)
         return
       }
@@ -151,6 +155,7 @@ export default function QueenLineageOverviewPage() {
       )
     } catch (err) {
       console.error('Error loading lineage data:', err)
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -276,7 +281,7 @@ export default function QueenLineageOverviewPage() {
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <Link href="/dashboard/queens">
-            <Button tone="neutral" className="p-2">
+            <Button tone="neutral" className="p-2 min-w-12">
               <ArrowLeft size={20} />
             </Button>
           </Link>
@@ -293,7 +298,7 @@ export default function QueenLineageOverviewPage() {
           <select
             value={apiaryFilter}
             onChange={(e) => setApiaryFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-sm min-h-[44px]"
+            className="px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-base min-h-12"
           >
             <option value="all">All Apiaries</option>
             {apiaries.map((apiary) => (
@@ -312,7 +317,13 @@ export default function QueenLineageOverviewPage() {
         </div>
       )}
 
-      {trees.length === 0 ? (
+      {loadError ? (
+        <div role="alert" className="text-center py-12 text-red-700 dark:text-red-300">
+          <p className="text-lg font-medium">Couldn&apos;t load your queens&apos; lineage</p>
+          <p className="text-sm mt-1">Check your connection and try again.</p>
+          <Button onClick={() => { setLoading(true); fetchData() }} tone="danger" size="sm" className="mt-3">Try again</Button>
+        </div>
+      ) : trees.length === 0 ? (
         <div className="text-center py-12 text-text-secondary">
           <Crown size={48} className="mx-auto mb-4 text-text-tertiary" />
           <p className="text-lg font-medium">No lineage data found</p>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 40: Teams, Queens and Tools</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    .decide { background: #fff7ed; border-left: 4px solid #ea580c; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 40: Teams, Queens and Tools</h1>
+<p><strong>Status:</strong> Implemented 24/10/2026, waiting for your test. This is Phase 2 fix batch 27. It covers the open Medium findings in chunk 6 (teams, rearing groups, queens: C6-10, C6-16 to C6-19) and chunk 8a (Tools: C8a-05 to 07, C8a-13, C8a-16). Two agents checked each finding against the code, and I re-checked the key lines. No database change.</p>
+
+<h2>A. One team's details under another: C6-10</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Apiary teams:</strong> tap "View Members" on team A, then team B. A big team A can answer last, so A's members, invitations and apiaries appear under B. B's Remove buttons then act on A's members, because each removes from the member's own team. Opening "Invite" or sharing an apiary for another team causes the same mix-up. Now only the latest team's answer is used. Each list belongs to the team on screen, and the spinner follows the right team.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Rearing groups:</strong> the same flaw. The worst case is Transfer, whose New Owner list first shows the previous group's members (the database refuses a wrong owner, so it's a confusing error, not a wrong transfer). Same fix, and Transfer and Invite now show a spinner while members load.</div>
+
+<h2>B. Failed loads shown as "nothing here": C6-16</h2>
+<div class="task"><input type="checkbox" checked disabled> A failed load currently shows the normal empty screen, often with an invitation to create something. These now show "Couldn't load …" with a Try again button (or keep what was on screen):
+  <ul>
+    <li>Queens list: shows "No Queens Found, Add Queen". A failed hive lookup marks every queen's hive "N/A".</li>
+    <li>Queen assignment history: shows "No history yet, Add entry", which invites duplicates.</li>
+    <li>Lineage: shows "No lineage data found".</li>
+    <li>Rearing group report: shows "No rearing data for October 2026". This feeds official NIHBS returns.</li>
+    <li>Rearing groups list and details: shows "You haven't joined any groups" and "No members".</li>
+    <li>Apiary teams list, team details and team apiaries: shows "Create Your First Team", "No members yet" and "No apiaries shared yet". Team error messages also said "Unknown error", because Supabase errors aren't plain JavaScript errors; they now show the real message.</li>
+  </ul>
+</div>
+
+<h2>C. Sizes for 50+ eyes: C6-17 to C6-19</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>79 places in 12 files</strong> across teams, rearing groups, queens, lineage, compare and the NIHBS return go to 48px. They are fields, icon buttons (34px today), 44px and 40px caps, chips and checkboxes. 16 fields go from 14px to 16px, including the NIHBS return's number boxes, which also stops iPhones zooming in. Class changes only.</div>
+<div class="decide"><strong>Tabs everywhere (<code>NavTabButton</code>):</strong> the shared tab button is 38–46px tall, used for the queen detail tabs and most tab rows in the app. Adding the 48px minimum to it fixes every tab row at once, but every tab row grows a little taller. <strong>Done (you approved).</strong></div>
+
+<h2>D. Tools: C8a-05, C8a-06, C8a-07, C8a-13</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C8a-05, dead code:</strong> 8 old tool components and the 2 helper files only they use, about 2,500 lines, are never imported anywhere, not even by tests:
+  <ul>
+    <li>Apiary location analyser, association finder and hive strength analyser.</li>
+    <li>Honey super calculator, queen productivity tracker and seasonal task generator.</li>
+    <li>Treatment schedule planner and varroa drop calculator.</li>
+  </ul>
+  They're deleted. Nothing you use changes.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C8a-06, GDD tracker's bloom records:</strong> working out a bloom's GDD fetches the weather archive without checking the answer, and with no time limit. A future date (allowed today), a busy weather service or an error page leaves the record saved with no GDD and a vague message, or a spinner that never stops. It now uses the app's shared archive fetch, which checks the answer, gives up after 15 seconds and uses the same GDD formula. The bloom date can't be in the future.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C8a-07, silent failures:</strong> deleting a GDD record or switching its sharing does nothing visible when it fails. It now says whether it worked.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C8a-13, QR download clean-up:</strong> if a QR download fails part-way, a hidden link or file reference is left behind. Clean-up now always runs. Honey Traceability's batch QR download had its own copy with no error handling, so a failure did nothing. It now uses the shared download and tells you if it fails.</div>
+
+<h2>E. Closed without a change</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C8a-16 (TBR planner is 1,011 lines):</strong> its logic already lives in a hook and a model file. What's left is display code, and it's already loaded on demand. Splitting it would add hand-offs between files without making it any safer.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/teams-queens-tools-batch40-plan.md</code>, the Phase 2 register and memory if a new rule comes out of it.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>Apiary teams: tap View Members on one team, then quickly another: the second team's members show.</li>
+    <li>Turn on airplane mode and open Queens: you see "Couldn't load", not "No Queens Found".</li>
+    <li>GDD tracker: add a bloom record; its GDD fills in. Delete one: it confirms.</li>
+    <li>Look over the queen form, queen detail and NIHBS return on your phone: fields and buttons are full size.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Switching teams or groups quickly</td><td style="border:1px solid #e7d9b8;padding:0.4rem">First one's members shown under the second</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Only the latest answer; lists cleared first</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Invite/Transfer for another team</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Its members left in the open panel</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Open panel restored on close</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Failed loads (queens, lineage, report, teams, groups)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“Nothing here” screens</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“Couldn't load” with Try again</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Sizes</td><td style="border:1px solid #e7d9b8;padding:0.4rem">About 79 targets under 48px; 16 fields at 14px; 38–46px tabs</td><td style="border:1px solid #e7d9b8;padding:0.4rem">48px and 16px</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Dead tool code</td><td style="border:1px solid #e7d9b8;padding:0.4rem">About 2,500 unused lines</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Deleted</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">GDD tracker bloom GDD</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Unchecked fetch, no time limit, future dates allowed</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Shared archive fetch; no future dates</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">GDD delete / sharing failure</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Nothing happened</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Says so</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">QR downloads</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Leftovers on failure; Traceability copy failed silently</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Always cleaned up; failure reported</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0; 848 tests pass</td></tr>
+</table>
+<ul>
+  <li><strong>Deleted:</strong> 8 unused tool components plus <code>src/lib/tool-calculations.ts</code> and <code>src/lib/external-data.ts</code>. I checked each against every import, dynamic import and test first.</li>
+  <li><strong>QA audit:</strong> no Critical or High issues. One Medium was fixed. Closing the Invite or Transfer window for one team or group left that window's members in another team's open panel. Closing now reloads the open panel's own details.</li>
+  <li><strong>Left as it is:</strong> C8a-16 (TBR planner size).</li>
+</ul>
+</body>
+</html>

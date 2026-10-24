@@ -9,6 +9,7 @@ import { queenCodeFor } from '@/lib/queen-code'
 import { Search, Plus, Edit2, Trash2, X, Download, ExternalLink, Crown, GitBranch, GitCompareArrows, ArrowUp, ArrowDown, ArrowUpDown, Printer } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
+import AlertPanel from '@/components/ui/AlertPanel'
 import { useToast } from '@/components/ui/Toast'
 import { Queen, calculateQueenAge, isProductionQueen, queenStatusBadgeClass } from '@/types/queen'
 import QueenRoleBadge from '@/components/queens/QueenRoleBadge'
@@ -90,7 +91,7 @@ function SortableTh({ label, colKey, sortKey, sortDir, onToggle, paddingClass = 
       <button
         type="button"
         onClick={() => onToggle(colKey)}
-        className={`inline-flex items-center gap-1.5 min-h-[32px] hover:text-foreground focus:outline-none focus:text-foreground transition-colors ${
+        className={`inline-flex items-center gap-1.5 min-h-12 hover:text-foreground focus:outline-none focus:text-foreground transition-colors ${
           isActive ? 'text-foreground' : ''
         }`}
         aria-label={`Sort by ${label}`}
@@ -142,7 +143,7 @@ export default function QueensPage() {
  const [deleting, setDeleting] = useState(false)
  // Data layer: queens + option lists + breeder context (see useQueensList)
  const {
-  queens, loading, userId, isTeamMember,
+  queens, loading, loadError, userId, isTeamMember,
   subspeciesOptions, sourceOptions, batches, matingStationOptions,
   breederContext, rearedCandidates, fetchQueens, fetchRearedCandidates,
  } = useQueensList()
@@ -573,7 +574,7 @@ export default function QueensPage() {
  placeholder="Search by queen number, mother, or subspecies..."
  value={searchTerm}
  onChange={(e) => setSearchTerm(e.target.value)}
- className="w-full pl-10 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
+ className="w-full min-h-[48px] pl-10 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-forest-500 focus:border-forest-500"
  />
  </div>
  {isTeamMember && (
@@ -726,7 +727,7 @@ export default function QueensPage() {
  )}
  </div>
  <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
- <label className="flex items-center gap-2 min-h-[44px] px-1 text-sm text-text-secondary cursor-pointer">
+ <label className="flex items-center gap-2 min-h-12 px-1 text-sm text-text-secondary cursor-pointer">
  <input
  type="checkbox"
  checked={selectedIds.has(queen.id)}
@@ -740,7 +741,7 @@ export default function QueensPage() {
  <Button
  unstyled
  onClick={() => setPrintQueens([queen])}
- className="min-h-[44px] px-3 rounded-lg border border-border text-text-secondary hover:text-foreground hover:bg-surface-secondary flex items-center gap-1.5 text-sm font-semibold"
+ className="min-h-12 px-3 rounded-lg border border-border text-text-secondary hover:text-foreground hover:bg-surface-secondary flex items-center gap-1.5 text-sm font-semibold"
  >
  <Printer size={18} />
  Label
@@ -749,7 +750,7 @@ export default function QueensPage() {
  <Button
  unstyled
  onClick={() => handleEdit(queen)}
- className="flex-1 min-h-[44px] rounded-lg text-sm font-semibold border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 flex items-center justify-center gap-1.5"
+ className="flex-1 min-h-12 rounded-lg text-sm font-semibold border border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 flex items-center justify-center gap-1.5"
  >
  <Edit2 size={16} />
  Edit
@@ -757,7 +758,7 @@ export default function QueensPage() {
  <Button
  unstyled
  onClick={() => handleDelete(queen.id)}
- className="min-h-[44px] px-4 rounded-lg text-sm font-semibold border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 flex items-center justify-center gap-1.5"
+ className="min-h-12 px-4 rounded-lg text-sm font-semibold border border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 flex items-center justify-center gap-1.5"
  >
  <Trash2 size={16} />
  Delete
@@ -802,6 +803,8 @@ export default function QueensPage() {
  >
  <td className="px-3 py-4 whitespace-nowrap text-sm">
  <div className="flex items-center gap-1">
+ {/* 48px tap area around the 20px box */}
+ <label className="inline-flex min-h-12 min-w-12 items-center justify-center cursor-pointer">
  <input
  type="checkbox"
  checked={selectedIds.has(queen.id)}
@@ -809,11 +812,12 @@ export default function QueensPage() {
  aria-label={`Select queen ${queen.queen_number} for comparison`}
  className="w-5 h-5 rounded border-border text-forest-600 focus:ring-2 focus:ring-forest-500 cursor-pointer"
  />
+ </label>
  {labelPrintingEnabled && (
  <Button
  unstyled
  onClick={() => setPrintQueens([queen])}
- className="p-2 rounded-lg text-text-secondary hover:text-foreground hover:bg-surface-secondary"
+ className="min-h-12 min-w-12 inline-flex items-center justify-center p-2 rounded-lg text-text-secondary hover:text-foreground hover:bg-surface-secondary"
  title="Print label"
  >
  <Printer size={18} />
@@ -822,7 +826,7 @@ export default function QueensPage() {
  <Button
  unstyled
  onClick={() => handleEdit(queen)}
- className="p-2 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+ className="min-h-12 min-w-12 inline-flex items-center justify-center p-2 rounded-lg text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30"
  title="Edit queen"
  >
  <Edit2 size={18} />
@@ -830,7 +834,7 @@ export default function QueensPage() {
  <Button
  unstyled
  onClick={() => handleDelete(queen.id)}
- className="p-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+ className="min-h-12 min-w-12 inline-flex items-center justify-center p-2 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
  title="Delete queen"
  >
  <Trash2 size={18} />
@@ -909,7 +913,15 @@ export default function QueensPage() {
  </tbody>
  </table>
  </div>
- {filteredQueens.length === 0 && (
+ {filteredQueens.length === 0 && loadError && (
+ <div className="py-4">
+ <AlertPanel tone="error" title="Couldn't load your queens">
+ <p>Check your connection and try again.</p>
+ <Button onClick={() => fetchQueens()} tone="danger" size="sm" className="mt-2">Try again</Button>
+ </AlertPanel>
+ </div>
+ )}
+ {filteredQueens.length === 0 && !loadError && (
  <div className="py-4">
  <EmptyState
  icon={Crown}

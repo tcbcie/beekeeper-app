@@ -33,6 +33,8 @@ function readEmbedName(value: unknown, key: 'hive_number' | 'nuc_number'): strin
 export function useQueenAssignments(queenId: string | null | undefined) {
   const [assignments, setAssignments] = useState<QueenAssignment[]>([])
   const [loading, setLoading] = useState(true)
+  // A failed load says so: "No assignment history yet, use Add entry" invited duplicates (C6-16)
+  const [loadError, setLoadError] = useState(false)
 
   const fetchAssignments = useCallback(async () => {
     if (!queenId) {
@@ -41,6 +43,7 @@ export function useQueenAssignments(queenId: string | null | undefined) {
       return
     }
     setLoading(true)
+    setLoadError(false)
     const { data, error } = await supabase
       .from('queen_assignments')
       .select('*, apiaries(name), hives(hive_number), mating_nucs(nuc_number)')
@@ -51,6 +54,7 @@ export function useQueenAssignments(queenId: string | null | undefined) {
     if (error) {
       console.error('Failed to load queen assignments:', error)
       setAssignments([])
+      setLoadError(true)
     } else {
       setAssignments(
         (data || []).map((row) => {
@@ -139,5 +143,5 @@ export function useQueenAssignments(queenId: string | null | undefined) {
     [fetchAssignments]
   )
 
-  return { assignments, loading, refetch: fetchAssignments, addAssignment, updateAssignment, deleteAssignment }
+  return { assignments, loading, loadError, refetch: fetchAssignments, addAssignment, updateAssignment, deleteAssignment }
 }

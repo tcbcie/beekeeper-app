@@ -17,7 +17,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
   const [selectedGroupId, setSelectedGroupId] = useState<string>(ownedGroups[0]?.id || '')
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear())
-  const { report, loadingReport, fetchReport } = useRearingGroupReport()
+  const { report, loadingReport, reportError, fetchReport } = useRearingGroupReport()
 
   // Fetch report when selection changes
   useEffect(() => {
@@ -49,7 +49,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
         <select
           value={selectedGroupId}
           onChange={(e) => setSelectedGroupId(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-sm"
+          className="min-h-12 px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-base"
         >
           {ownedGroups.map((g) => (
             <option key={g.id} value={g.id}>{g.name}</option>
@@ -58,7 +58,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
         <select
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(Number(e.target.value))}
-          className="px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-sm"
+          className="min-h-12 px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-base"
         >
           {MONTH_NAMES.map((name, i) => (
             <option key={i + 1} value={i + 1}>{name}</option>
@@ -67,7 +67,7 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
         <select
           value={selectedYear}
           onChange={(e) => setSelectedYear(Number(e.target.value))}
-          className="px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-sm"
+          className="min-h-12 px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-base"
         >
           {yearOptions.map((y) => (
             <option key={y} value={y}>{y}</option>
@@ -147,6 +147,10 @@ export default function RearingGroupReport({ ownedGroups }: RearingGroupReportPr
             </div>
           </div>
         </>
+      ) : reportError ? (
+        <div role="alert" className="text-center py-8 text-red-700 dark:text-red-300 text-sm">
+          Couldn&apos;t load the report for {MONTH_NAMES[selectedMonth - 1]} {selectedYear}. Check your connection and try again.
+        </div>
       ) : (
         <div className="text-center py-8 text-text-tertiary text-sm">
           No rearing data for {MONTH_NAMES[selectedMonth - 1]} {selectedYear}

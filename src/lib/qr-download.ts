@@ -21,8 +21,12 @@ function triggerDownload(href: string, filename: string): void {
   link.href = href
   link.download = filename
   document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  // The temporary link is removed even if click() throws, so none is left in the page (C8a-13)
+  try {
+    link.click()
+  } finally {
+    document.body.removeChild(link)
+  }
 }
 
 /** Rasterise the QR to PNG at its rendered size. */
@@ -67,14 +71,17 @@ export function downloadQrSvg(elementId: string, filename: string): Promise<bool
   const svgData = serialiseQrSvg(elementId)
   if (!svgData) return Promise.resolve(false)
 
+  let url: string | null = null
   try {
     const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
+    url = URL.createObjectURL(blob)
     triggerDownload(url, filename)
-    // Revoking immediately can race the click on some browsers; a tick is enough.
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
     return Promise.resolve(true)
   } catch {
     return Promise.resolve(false)
+  } finally {
+    // Released on failure too. Revoking immediately can race the click on some browsers; a tick is enough.
+    const created = url
+    if (created) setTimeout(() => URL.revokeObjectURL(created), 1000)
   }
 }

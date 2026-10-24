@@ -34,7 +34,8 @@ export default function RearingTeamPage() {
     rgAcceptedInvitations,
     rgDeclinedInvitations,
     loadingRgMembers,
-    setLoadingRgMembers,
+    rearingGroupsError,
+    rgDetailsError,
     setRgPendingInvitations,
     fetchRearingGroups,
     fetchRearingGroupDetails,
@@ -128,7 +129,8 @@ export default function RearingTeamPage() {
       fetchRearingGroups(userId)
     } catch (error) {
       console.error('Error creating rearing group:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      // Supabase errors are plain objects, not Error instances
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to create rearing group: ${errorMessage}`)
     } finally {
       setCreatingRg(false)
@@ -196,9 +198,10 @@ export default function RearingTeamPage() {
       setSelectedRg(null)
       setTransferRgTargetUserId('')
       fetchRearingGroups(userId)
+      if (expandedRgId) fetchRearingGroupDetails(expandedRgId)
     } catch (error) {
       console.error('Error transferring rearing group ownership:', error)
-      const msg = error instanceof Error ? error.message : 'Please try again.'
+      const msg = (error as { message?: string } | null)?.message || 'Please try again.'
       toast.error(`Failed to transfer ownership. ${msg}`)
       // Refresh to show the current state (nothing changed: the transfer is all or nothing)
       if (userId) fetchRearingGroups(userId)
@@ -317,7 +320,8 @@ export default function RearingTeamPage() {
 
       setRgInviteEmail('')
       setShowInviteRgModal(false)
-      fetchRearingGroupDetails(selectedRg.id)
+      // Details are page-wide: reload the open panel's group, not the modal's (C6-10)
+      fetchRearingGroupDetails(expandedRgId ?? selectedRg.id)
     } catch (error) {
       // The database allows one pending invitation per team/group and email, so a duplicate
       // that slipped past the check above (e.g. two tabs) is refused with 23505.
@@ -501,8 +505,7 @@ export default function RearingTeamPage() {
                               } else {
                                 setExpandedRgId(group.id)
                                 setExpandedMemberRgId(null)
-                                setLoadingRgMembers(true)
-                                fetchRearingGroupDetails(group.id).finally(() => setLoadingRgMembers(false))
+                                fetchRearingGroupDetails(group.id)
                               }
                             }}
                             tone="neutral"
@@ -605,7 +608,7 @@ export default function RearingTeamPage() {
                                     <select
                                       value={member.experience_level || ''}
                                       onChange={(e) => handleUpdateExperienceLevel(member.id, e.target.value)}
-                                      className="px-2 py-1 text-base border border-border rounded bg-surface text-foreground"
+                                      className="min-h-12 px-3 py-2 text-base border border-border rounded bg-surface text-foreground"
                                       title="Experience level"
                                     >
                                       <option value="">Level</option>
@@ -629,7 +632,9 @@ export default function RearingTeamPage() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-sm text-text-tertiary text-center py-4">No members yet. Invite someone to get started!</p>
+                            rgDetailsError
+                              ? <p role="alert" className="text-sm text-red-700 dark:text-red-300 text-center py-4">Couldn&apos;t load this group&apos;s details. Check your connection and try again.</p>
+                              : <p className="text-sm text-text-tertiary text-center py-4">No members yet. Invite someone to get started!</p>
                           )}
 
                           {/* Pending Invitations */}
@@ -786,8 +791,7 @@ export default function RearingTeamPage() {
                               } else {
                                 setExpandedMemberRgId(group.id)
                                 setExpandedRgId(null)
-                                setLoadingRgMembers(true)
-                                fetchRearingGroupDetails(group.id).finally(() => setLoadingRgMembers(false))
+                                fetchRearingGroupDetails(group.id)
                               }
                             }}
                             tone="neutral"
@@ -813,7 +817,7 @@ export default function RearingTeamPage() {
                               <select
                                 value={group.experience_level || ''}
                                 onChange={(e) => handleUpdateOwnExperienceLevel(membershipId, group.id, e.target.value)}
-                                className="px-2 py-1 text-sm border border-border rounded bg-surface text-foreground"
+                                className="min-h-12 px-3 py-2 text-base border border-border rounded bg-surface text-foreground"
                               >
                                 <option value="">Select level</option>
                                 <option value="experienced">Experienced</option>
@@ -863,7 +867,9 @@ export default function RearingTeamPage() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-sm text-text-tertiary text-center py-4">No members found.</p>
+                            rgDetailsError
+                              ? <p role="alert" className="text-sm text-red-700 dark:text-red-300 text-center py-4">Couldn&apos;t load this group&apos;s details. Check your connection and try again.</p>
+                              : <p className="text-sm text-text-tertiary text-center py-4">No members found.</p>
                           )}
                         </div>
                       )}
@@ -874,7 +880,15 @@ export default function RearingTeamPage() {
             )}
 
             {/* Empty State */}
-            {ownedRearingGroups.length === 0 && memberRearingGroups.length === 0 && (
+            {rearingGroupsError && ownedRearingGroups.length === 0 && memberRearingGroups.length === 0 && (
+              <div className="py-6">
+                <AlertPanel tone="error" title="Couldn't load your rearing groups">
+                  <p>Check your connection and try again.</p>
+                  {userId && <Button onClick={() => fetchRearingGroups(userId)} tone="danger" size="sm" className="mt-2">Try again</Button>}
+                </AlertPanel>
+              </div>
+            )}
+            {!rearingGroupsError && ownedRearingGroups.length === 0 && memberRearingGroups.length === 0 && (
               <div className="text-center py-12 bg-surface dark:bg-surface-elevated rounded-lg border border-border">
                 <Crown size={48} className="mx-auto text-text-tertiary mb-3" />
                 <p className="text-text-tertiary mb-4">You haven&apos;t created or joined any rearing groups yet.</p>
@@ -913,7 +927,7 @@ export default function RearingTeamPage() {
                 value={newRgName}
                 onChange={(e) => setNewRgName(e.target.value)}
                 placeholder="e.g., Cork Queen Rearers"
-                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-blue-500"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 focus:border-blue-500"
                 maxLength={100}
               />
             </div>
@@ -952,7 +966,7 @@ export default function RearingTeamPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Manage Group: {selectedRg.name}</h3>
               <IconButton
-                onClick={() => { setShowInviteRgModal(false); setSelectedRg(null); setRgInviteEmail('') }}
+                onClick={() => { setShowInviteRgModal(false); setSelectedRg(null); setRgInviteEmail(''); if (expandedRgId) fetchRearingGroupDetails(expandedRgId) }}
                 size="sm"
                 className="text-text-tertiary hover:text-text-secondary"
               >
@@ -975,7 +989,7 @@ export default function RearingTeamPage() {
                   value={rgInviteEmail}
                   onChange={(e) => setRgInviteEmail(e.target.value)}
                   placeholder="email@example.com"
-                  className="flex-1 px-3 py-2 bg-surface dark:bg-surface-elevated text-foreground border border-border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="flex-1 min-h-12 px-3 py-2 bg-surface dark:bg-surface-elevated text-foreground border border-border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
                 />
                 <Button
                   onClick={handleSendRgInvite}
@@ -1036,7 +1050,7 @@ export default function RearingTeamPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-text-tertiary italic">No members yet.</p>
+                rgDetailsError ? <p role="alert" className="text-sm text-red-700 dark:text-red-300 text-center py-4">Couldn&apos;t load this group&apos;s details. Check your connection and try again.</p> : <p className="text-sm text-text-tertiary italic">No members yet.</p>
               )}
             </div>
 
@@ -1076,7 +1090,7 @@ export default function RearingTeamPage() {
 
             <div className="mt-6 flex justify-end">
               <Button
-                onClick={() => { setShowInviteRgModal(false); setSelectedRg(null); setRgInviteEmail('') }}
+                onClick={() => { setShowInviteRgModal(false); setSelectedRg(null); setRgInviteEmail(''); if (expandedRgId) fetchRearingGroupDetails(expandedRgId) }}
                 tone="neutral"
               >
                 Close
@@ -1106,7 +1120,7 @@ export default function RearingTeamPage() {
                 value={renameRgName}
                 onChange={(e) => setRenameRgName(e.target.value)}
                 placeholder="Enter new group name"
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500"
                 maxLength={100}
               />
             </div>
@@ -1148,7 +1162,7 @@ export default function RearingTeamPage() {
           <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-foreground">Transfer Ownership</h3>
-              <IconButton onClick={() => { setShowTransferRgModal(false); setSelectedRg(null); setTransferRgTargetUserId('') }} size="sm" className="text-text-tertiary hover:text-text-secondary">
+              <IconButton onClick={() => { setShowTransferRgModal(false); setSelectedRg(null); setTransferRgTargetUserId(''); if (expandedRgId) fetchRearingGroupDetails(expandedRgId) }} size="sm" className="text-text-tertiary hover:text-text-secondary">
                 <X size={24} />
               </IconButton>
             </div>
@@ -1159,6 +1173,8 @@ export default function RearingTeamPage() {
               <div className="flex justify-center py-4">
                 <div className="animate-spin rounded-full h-6 w-6 border-2 border-amber-600 border-t-transparent"></div>
               </div>
+            ) : rgDetailsError ? (
+              <p role="alert" className="text-sm text-red-700 dark:text-red-300 text-center py-4">Couldn&apos;t load this group&apos;s details. Check your connection and try again.</p>
             ) : rgMembers.filter(m => m.role !== 'owner').length === 0 ? (
               <p className="text-sm text-text-tertiary text-center py-4">No other members to transfer to. Invite members first.</p>
             ) : (
@@ -1167,7 +1183,7 @@ export default function RearingTeamPage() {
                 <select
                   value={transferRgTargetUserId}
                   onChange={(e) => setTransferRgTargetUserId(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 bg-surface dark:bg-surface-elevated text-foreground mb-4"
+                  className="w-full min-h-12 px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-forest-500 dark:focus:ring-emerald-500 bg-surface dark:bg-surface-elevated text-foreground mb-4"
                 >
                   <option value="">Select a member...</option>
                   {rgMembers.filter(m => m.role !== 'owner').map((member) => (
@@ -1182,7 +1198,7 @@ export default function RearingTeamPage() {
             )}
             <div className="flex gap-3">
               <Button
-                onClick={() => { setShowTransferRgModal(false); setSelectedRg(null); setTransferRgTargetUserId('') }}
+                onClick={() => { setShowTransferRgModal(false); setSelectedRg(null); setTransferRgTargetUserId(''); if (expandedRgId) fetchRearingGroupDetails(expandedRgId) }}
                 tone="neutral"
                 fullWidth
               >

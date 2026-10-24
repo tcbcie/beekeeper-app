@@ -33,7 +33,8 @@ const NavTabButton = forwardRef<HTMLButtonElement, NavTabButtonProps>(function N
       ref={ref}
       type={type}
       className={cn(
-        'font-medium text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap',
+        // min-h-12: the app's 48px tap rule for its 50+ users; md was about 38px and lg about 46px
+        'min-h-12 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap',
         sizeClasses[size],
         active ? activeClasses[tone] : inactiveClasses,
         className

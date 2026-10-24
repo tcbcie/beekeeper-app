@@ -123,7 +123,7 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
             <select
               value={timeWindow}
               onChange={(e) => setTimeWindow(e.target.value as ReportTimeWindow)}
-              className="px-3 py-2 rounded-md border border-border bg-surface dark:bg-surface-elevated text-foreground text-sm min-h-[44px]"
+              className="px-3 py-2 rounded-md border border-border bg-surface dark:bg-surface-elevated text-foreground text-base min-h-12"
             >
               <option value="all">All time</option>
               <option value="90">Last 90 days</option>
@@ -137,7 +137,7 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
             <select
               value={minInspections}
               onChange={(e) => setMinInspections(Number(e.target.value))}
-              className="px-3 py-2 rounded-md border border-border bg-surface dark:bg-surface-elevated text-foreground text-sm min-h-[44px]"
+              className="px-3 py-2 rounded-md border border-border bg-surface dark:bg-surface-elevated text-foreground text-base min-h-12"
             >
               <option value={1}>1+</option>
               <option value={3}>3+</option>

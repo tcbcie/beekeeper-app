@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export interface RearingGroup {
@@ -46,10 +46,17 @@ export function useRearingGroups() {
   const [rgAcceptedInvitations, setRgAcceptedInvitations] = useState<RearingGroupInvitation[]>([])
   const [rgDeclinedInvitations, setRgDeclinedInvitations] = useState<RearingGroupInvitation[]>([])
   const [loadingRgMembers, setLoadingRgMembers] = useState(false)
+  // A failed load must say so, not show "no groups" or "no members" (C6-16)
+  const [rearingGroupsError, setRearingGroupsError] = useState(false)
+  const [rgDetailsError, setRgDetailsError] = useState(false)
+  // Group details belong to one group at a time: loads are numbered so a slow answer for the
+  // group opened before can't fill the one on screen, e.g. Transfer's New Owner list (C6-10)
+  const detailSeqRef = useRef(0)
 
   const fetchRearingGroups = useCallback(async (userId: string) => {
     if (!userId) return
     setLoadingRearingGroups(true)
+    setRearingGroupsError(false)
 
     try {
       // Fetch owned groups
@@ -114,12 +121,22 @@ export function useRearingGroups() {
       })))
     } catch (error) {
       console.error('Error fetching rearing groups:', error)
+      setRearingGroupsError(true)
     } finally {
       setLoadingRearingGroups(false)
     }
   }, [])
 
   const fetchRearingGroupDetails = useCallback(async (groupId: string) => {
+    const seq = ++detailSeqRef.current
+    const isCurrent = () => seq === detailSeqRef.current
+    // Clear the previous group's lists first, so nothing of theirs shows or can be acted on
+    setRgMembers([])
+    setRgPendingInvitations([])
+    setRgAcceptedInvitations([])
+    setRgDeclinedInvitations([])
+    setRgDetailsError(false)
+    setLoadingRgMembers(true)
     try {
       // Fetch members
       const { data: members, error: membersError } = await supabase
@@ -151,6 +168,7 @@ export function useRearingGroups() {
         })
       )
 
+      if (!isCurrent()) return
       setRgMembers(membersWithDetails as RearingGroupMember[])
 
       // Fetch pending invitations
@@ -161,6 +179,7 @@ export function useRearingGroups() {
         .eq('status', 'pending')
         .order('invited_at', { ascending: false })
 
+      if (!isCurrent()) return
       if (!pendingError) setRgPendingInvitations(pending || [])
 
       // Fetch accepted invitations
@@ -171,6 +190,7 @@ export function useRearingGroups() {
         .eq('status', 'accepted')
         .order('accepted_at', { ascending: false })
 
+      if (!isCurrent()) return
       if (!acceptedError) setRgAcceptedInvitations(accepted || [])
 
       // Fetch declined invitations
@@ -181,9 +201,13 @@ export function useRearingGroups() {
         .eq('status', 'declined')
         .order('declined_at', { ascending: false })
 
+      if (!isCurrent()) return
       if (!declinedError) setRgDeclinedInvitations(declined || [])
     } catch (error) {
       console.error('Error fetching rearing group details:', error)
+      if (isCurrent()) setRgDetailsError(true)
+    } finally {
+      if (isCurrent()) setLoadingRgMembers(false)
     }
   }, [])
 
@@ -199,6 +223,8 @@ export function useRearingGroups() {
     rgDeclinedInvitations,
     loadingRgMembers,
     setLoadingRgMembers,
+    rearingGroupsError,
+    rgDetailsError,
     setRgPendingInvitations,
     fetchRearingGroups,
     fetchRearingGroupDetails,

@@ -422,7 +422,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
         <select
           value={selectedGroupId}
           onChange={(e) => setSelectedGroupId(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-sm"
+          className="min-h-12 px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-base"
         >
           {ownedGroups.map((g) => (
             <option key={g.id} value={g.id}>{g.name}</option>
@@ -431,7 +431,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
         <select
           value={selectedYear}
           onChange={(e) => setSelectedYear(Number(e.target.value))}
-          className="px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-sm"
+          className="min-h-12 px-3 py-2 rounded-lg border border-border bg-surface text-foreground text-base"
         >
           {yearOptions.map((y) => (
             <option key={y} value={y}>{y}</option>
@@ -580,7 +580,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                           min="0"
                           value={getManualField(md.month, 'hybridised_offspring')}
                           onChange={(e) => setManualField(md.month, 'hybridised_offspring', parseInt(e.target.value) || 0)}
-                          className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
+                          className="w-24 min-h-12 px-2 py-2 text-right border border-border rounded bg-surface text-foreground text-base"
                         />
                       </td>
                     </tr>
@@ -598,7 +598,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                           min="0"
                           value={getManualField(md.month, 'virgins_distributed_external')}
                           onChange={(e) => setManualField(md.month, 'virgins_distributed_external', parseInt(e.target.value) || 0)}
-                          className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
+                          className="w-24 min-h-12 px-2 py-2 text-right border border-border rounded bg-surface text-foreground text-base"
                         />
                       </td>
                     </tr>
@@ -616,7 +616,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                           min="0"
                           value={getManualField(md.month, 'virgins_external_mated')}
                           onChange={(e) => setManualField(md.month, 'virgins_external_mated', parseInt(e.target.value) || 0)}
-                          className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
+                          className="w-24 min-h-12 px-2 py-2 text-right border border-border rounded bg-surface text-foreground text-base"
                         />
                       </td>
                     </tr>
@@ -655,7 +655,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                         min="0"
                         value={getManualField(md.month, 'hybridised_offspring')}
                         onChange={(e) => setManualField(md.month, 'hybridised_offspring', parseInt(e.target.value) || 0)}
-                        className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
+                        className="w-24 min-h-12 px-2 py-2 text-right border border-border rounded bg-surface text-foreground text-base"
                       />
                     </div>
                     {md.auto_hybridised_offspring > 0 && (
@@ -670,7 +670,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                         min="0"
                         value={getManualField(md.month, 'virgins_distributed_external')}
                         onChange={(e) => setManualField(md.month, 'virgins_distributed_external', parseInt(e.target.value) || 0)}
-                        className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
+                        className="w-24 min-h-12 px-2 py-2 text-right border border-border rounded bg-surface text-foreground text-base"
                       />
                     </div>
                     {md.auto_virgins_distributed_external > 0 && (
@@ -685,7 +685,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                         min="0"
                         value={getManualField(md.month, 'virgins_external_mated')}
                         onChange={(e) => setManualField(md.month, 'virgins_external_mated', parseInt(e.target.value) || 0)}
-                        className="w-20 px-2 py-1 text-right border border-border rounded bg-surface text-foreground text-sm"
+                        className="w-24 min-h-12 px-2 py-2 text-right border border-border rounded bg-surface text-foreground text-base"
                       />
                     </div>
                     {md.auto_virgins_external_mated > 0 && (

@@ -270,7 +270,7 @@ export default function QueenComparePage() {
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
         <Link href="/dashboard/queens">
-          <Button tone="neutral" className="p-2" aria-label="Back to queens">
+          <Button tone="neutral" className="p-2 min-w-12" aria-label="Back to queens">
             <ArrowLeft size={20} />
           </Button>
         </Link>
@@ -299,7 +299,7 @@ export default function QueenComparePage() {
             <select
               value={timeWindow}
               onChange={(e) => setTimeWindow(e.target.value as ReportTimeWindow)}
-              className="px-3 py-2 rounded-md border border-border bg-surface dark:bg-surface-elevated text-foreground text-sm min-h-[44px]"
+              className="px-3 py-2 rounded-md border border-border bg-surface dark:bg-surface-elevated text-foreground text-base min-h-12"
             >
               <option value="all">All time</option>
               <option value="90">Last 90 days</option>

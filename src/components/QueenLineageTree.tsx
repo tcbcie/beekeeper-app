@@ -97,7 +97,7 @@ const QueenCard = ({ queen, label, isMain = false, fallbackLabel }: { queen: Que
 
   const cardContent = (
     <div
-      className={`px-3 py-2 rounded-lg border ${getColorClass(queen.marking_color)} ${
+      className={`min-h-12 px-3 py-2 rounded-lg border ${getColorClass(queen.marking_color)} ${
         isMain ? 'ring-2 ring-forest-500 ring-offset-2 dark:ring-offset-slate-900' : ''
       } ${!isMain ? 'hover:opacity-80 cursor-pointer' : ''}`}
     >
@@ -412,7 +412,7 @@ export default function QueenLineageTree({ queenId, expanded, onToggle, motherFa
                       {lineage.children.slice(0, 6).map((child) => (
                         <Link key={child.id} href={`/dashboard/queens/${child.id}`}>
                           <div
-                            className={`px-2 py-1 rounded border text-xs hover:opacity-80 cursor-pointer ${getColorClass(child.marking_color)}`}
+                            className={`inline-flex min-h-12 items-center px-3 py-1 rounded border text-xs hover:opacity-80 cursor-pointer ${getColorClass(child.marking_color)}`}
                           >
                             <div>{child.queen_number}</div>
                             {(child.hive_number || child.apiary_name) && (
@@ -443,7 +443,7 @@ export default function QueenLineageTree({ queenId, expanded, onToggle, motherFa
                     {lineage.siblings.map((sibling) => (
                       <Link key={sibling.id} href={`/dashboard/queens/${sibling.id}`}>
                         <div
-                          className={`px-2 py-1 rounded border text-xs hover:opacity-80 cursor-pointer ${getColorClass(sibling.marking_color)}`}
+                          className={`inline-flex min-h-12 items-center px-3 py-1 rounded border text-xs hover:opacity-80 cursor-pointer ${getColorClass(sibling.marking_color)}`}
                         >
                           <div>{sibling.queen_number}</div>
                           {(sibling.hive_number || sibling.apiary_name) && (
