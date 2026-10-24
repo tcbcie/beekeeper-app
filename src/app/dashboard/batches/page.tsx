@@ -13,7 +13,8 @@ import NotificationPermissionBanner from '@/components/NotificationPermissionBan
 import { initializeNotifications, scheduleBatchNotifications } from '@/lib/notifications'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import { usePersistentState } from '@/hooks/usePersistentState'
-import { useBatchesList, Batch, HiveWithInspections, HiveScore, formatDateIrish } from '@/hooks/useBatchesList'
+import { useBatchesList, Batch, HiveWithInspections, formatDateIrish } from '@/hooks/useBatchesList'
+import { scoreHives, formatAverage } from '@/lib/selection-scoring'
 
 // Panels load on demand: only the one on screen is downloaded, so heavy libraries
 // (chart.js, QR codes) and large tabs stay out of the first load.
@@ -166,8 +167,10 @@ export default function BatchesPage() {
  smr: false,
  chalkbrood: false,
  })
- const [hiveScores, setHiveScores] = useState<HiveScore[]>([])
+ const [scoreHivesData, setScoreHivesData] = useState<HiveWithInspections[]>([])
  const [loadingScores, setLoadingScores] = useState(false)
+ const [scoresLoadFailed, setScoresLoadFailed] = useState(false)
+ const scoresSeqRef = useRef(0)
 
 
 
@@ -259,15 +262,15 @@ export default function BatchesPage() {
  return startDate
  }, [timePeriod, customStartDate])
 
- // Calculate hive scores based on inspection data
- const calculateHiveScores = useCallback(async () => {
- if (!userId) return
+ // Load the hives and their inspections once per apiary. Weights, options and the period only
+ // recalculate on screen: every weight tap used to refetch everything, and quick taps could let an
+ // older answer land last (C5b-16).
+ useEffect(() => {
+ if (activeTab !== 'selection' || !userId) return
+ const seq = ++scoresSeqRef.current
+ const load = async () => {
  setLoadingScores(true)
-
- try {
- const startDate = getDateRange()
-
- // Fetch all hives with their inspections
+ setScoresLoadFailed(false)
  let query = supabase
  .from('hives')
  .select(`
@@ -291,115 +294,29 @@ export default function BatchesPage() {
  `)
  .eq('user_id', userId)
  .is('archived_at', null)
-
- // Apply apiary filter
  if (selectedApiary !== 'all') {
  query = query.eq('apiary_id', selectedApiary)
  }
-
- const { data: hivesData, error } = await query
-
- if (error) throw error
-
- // Calculate averages and scores for each hive
- const scored = (hivesData as unknown as HiveWithInspections[])?.map((hive) => {
- let inspections = hive.inspections || []
-
- // Filter inspections by date range
- if (startDate) {
- inspections = inspections.filter((i) => {
- const inspectionDate = new Date(i.inspection_date)
- // For custom range, check both start and end dates
- if (timePeriod === 'custom' && customEndDate) {
- const endDate = new Date(customEndDate)
- return inspectionDate >= startDate && inspectionDate <= endDate
+ const { data, error } = await query
+ if (seq !== scoresSeqRef.current) return
+ if (error) {
+ console.error('Error loading hives for scoring:', error)
+ setScoresLoadFailed(true)
+ setScoreHivesData([])
+ } else {
+ setScoreHivesData((data ?? []) as unknown as HiveWithInspections[])
  }
- // For predefined periods, just check if after start date
- return inspectionDate >= startDate
- })
- }
-
- // Require minimum of 3 inspections for reliable averages
- if (inspections.length < 3) {
- return null // Skip hives with insufficient inspection data
- }
-
- // Calculate averages
- const avg = {
- brood_pattern: inspections.reduce((sum: number, i) => sum + (i.brood_pattern_rating || 0), 0) / inspections.length,
- population: inspections.reduce((sum: number, i) => sum + (i.population_strength || 0), 0) / inspections.length,
- temperament: inspections.reduce((sum: number, i) => sum + (i.temperament_rating || 0), 0) / inspections.length,
- swarming: inspections.reduce((sum: number, i) => sum + (i.swarming_tendency || 0), 0) / inspections.length, // Average swarming tendency
- honey_yield: inspections.reduce((sum: number, i) => {
- const stores = i.honey_stores?.toLowerCase() || ''
- if (stores.includes('full')) return sum + 5
- if (stores.includes('good')) return sum + 4
- if (stores.includes('moderate')) return sum + 3
- if (stores.includes('low')) return sum + 2
- return sum + 1
- }, 0) / inspections.length,
- calmness: inspections.reduce((sum: number, i) => sum + (i.calmness || 0), 0) / inspections.length,
- recapping: inspections.reduce((sum: number, i) => sum + (i.recapping || 0), 0) / inspections.length,
- vsh: inspections.reduce((sum: number, i) => sum + (i.vsh || 0), 0) / inspections.length,
- smr: inspections.reduce((sum: number, i) => sum + (i.smr || 0), 0) / inspections.length,
- chalkbrood: inspections.reduce((sum: number, i) => sum + (i.chalkbrood_disease || 0), 0) / inspections.length,
- }
-
- // Calculate weighted score (lower swarming and chalkbrood are better, so invert them)
- let score =
- (avg.brood_pattern * weights.brood_pattern) +
- (avg.population * weights.population) +
- (avg.temperament * weights.temperament) +
- ((6 - avg.swarming) * weights.swarming) + // Invert swarming tendency (1-5 scale, so 6 - value)
- (avg.honey_yield * weights.honey_yield)
-
- // Add optional criteria to score if selected
- if (optionalColumns.calmness) {
- score += avg.calmness * weights.calmness
- }
- if (optionalColumns.recapping) {
- score += avg.recapping * weights.recapping
- }
- if (optionalColumns.vsh) {
- score += avg.vsh * weights.vsh
- }
- if (optionalColumns.smr) {
- score += avg.smr * weights.smr
- }
- if (optionalColumns.chalkbrood) {
- // Lower chalkbrood is better, so invert it (assuming 1-5 scale)
- score += (6 - avg.chalkbrood) * weights.chalkbrood
- }
-
- return {
- hive_id: hive.id,
- hive_number: hive.hive_number,
- apiary_name: hive.apiaries?.name || 'Unknown',
- inspection_count: inspections.length,
- averages: avg,
- score: score,
- }
- }).filter((item): item is HiveScore => item !== null) // Remove null entries
-
- // Sort by score descending
- scored?.sort((a, b) => b.score - a.score)
-
- setHiveScores(scored || [])
- } catch (error) {
- console.error('Error calculating hive scores:', error)
- // Silently fail - user will see empty state message instead of alert
- setHiveScores([])
- } finally {
  setLoadingScores(false)
  }
- }, [userId, selectedApiary, timePeriod, customEndDate, weights, optionalColumns, getDateRange])
+ load()
+ }, [activeTab, userId, selectedApiary])
 
- // Recalculate when filters or weights change
- useEffect(() => {
- if (activeTab === 'selection') {
- calculateHiveScores()
- }
- }, [activeTab, selectedApiary, timePeriod, customStartDate, customEndDate, weights, optionalColumns, calculateHiveScores])
+ const hiveScores = useMemo(() => scoreHives(scoreHivesData, {
+ startDate: getDateRange(),
+ endDate: timePeriod === 'custom' && customEndDate ? new Date(customEndDate) : null,
+ weights,
+ optionalColumns,
+ }), [scoreHivesData, getDateRange, timePeriod, customEndDate, weights, optionalColumns])
 
 
  const closeForm = () => {
@@ -484,7 +401,7 @@ export default function BatchesPage() {
  <select
  value={filterStatus}
  onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'completed')}
- className="px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+ className="min-h-12 px-3 py-2 border border-border rounded-md bg-surface text-foreground text-base"
  >
  <option value="all">All Batches</option>
  <option value="active">Active</option>
@@ -493,7 +410,7 @@ export default function BatchesPage() {
  <select
  value={filterYear}
  onChange={(e) => setFilterYear(e.target.value)}
- className="px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+ className="min-h-12 px-3 py-2 border border-border rounded-md bg-surface text-foreground text-base"
  >
  <option value="all">All Years</option>
  {availableYears.map(y => (
@@ -715,14 +632,14 @@ export default function BatchesPage() {
  type="date"
  value={customStartDate}
  onChange={(e) => setCustomStartDate(e.target.value)}
- className="px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+ className="min-h-12 px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
  />
  <label className="text-sm font-medium text-text-secondary">To:</label>
  <input
  type="date"
  value={customEndDate}
  onChange={(e) => setCustomEndDate(e.target.value)}
- className="px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+ className="min-h-12 px-3 py-2 border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground text-base focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
  />
  <Button
  onClick={() => {
@@ -985,6 +902,10 @@ export default function BatchesPage() {
  <div className="p-12">
  <LoadingSpinner text="Calculating scores..." />
  </div>
+ ) : scoresLoadFailed ? (
+ <div className="text-center py-12 text-text-tertiary">
+ <p className="text-lg mb-2">Couldn&apos;t load your hives. Check your connection and try again.</p>
+ </div>
  ) : hiveScores.length === 0 ? (
  <div className="text-center py-12 text-text-tertiary">
  <p className="text-lg mb-2">Not enough data to calculate scores</p>
@@ -1044,43 +965,43 @@ export default function BatchesPage() {
  {hive.score.toFixed(2)}
  </td>
  <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
- {hive.averages.brood_pattern.toFixed(1)}
+ {formatAverage(hive.averages.brood_pattern)}
  </td>
  <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
- {hive.averages.population.toFixed(1)}
+ {formatAverage(hive.averages.population)}
  </td>
  <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
- {hive.averages.temperament.toFixed(1)}
+ {formatAverage(hive.averages.temperament)}
  </td>
  <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
- {hive.averages.swarming.toFixed(1)}
+ {formatAverage(hive.averages.swarming)}
  </td>
  <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
- {hive.averages.honey_yield.toFixed(1)}
+ {formatAverage(hive.averages.honey_yield)}
  </td>
  {optionalColumns.calmness && (
  <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
- {hive.averages.calmness.toFixed(1)}
+ {formatAverage(hive.averages.calmness)}
  </td>
  )}
  {optionalColumns.recapping && (
  <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
- {hive.averages.recapping.toFixed(1)}
+ {formatAverage(hive.averages.recapping)}
  </td>
  )}
  {optionalColumns.vsh && (
  <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
- {hive.averages.vsh.toFixed(1)}
+ {formatAverage(hive.averages.vsh)}
  </td>
  )}
  {optionalColumns.smr && (
  <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
- {hive.averages.smr.toFixed(1)}
+ {formatAverage(hive.averages.smr)}
  </td>
  )}
  {optionalColumns.chalkbrood && (
  <td className="px-4 py-4 whitespace-nowrap text-sm text-text-secondary">
- {hive.averages.chalkbrood.toFixed(1)}
+ {formatAverage(hive.averages.chalkbrood)}
  </td>
  )}
  </tr>

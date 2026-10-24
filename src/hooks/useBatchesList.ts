@@ -125,17 +125,18 @@ export interface HiveScore {
  hive_number: string
  apiary_name: string
  inspection_count: number
+ /** Average of the ratings given; null when none in the period was rated. */
  averages: {
- brood_pattern: number
- population: number
- temperament: number
- swarming: number
- honey_yield: number
- calmness: number
- recapping: number
- vsh: number
- smr: number
- chalkbrood: number
+ brood_pattern: number | null
+ population: number | null
+ temperament: number | null
+ swarming: number | null
+ honey_yield: number | null
+ calmness: number | null
+ recapping: number | null
+ vsh: number | null
+ smr: number | null
+ chalkbrood: number | null
  }
  score: number
 }

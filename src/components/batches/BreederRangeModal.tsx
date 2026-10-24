@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Button from '@/components/ui/Button'
+import ModalShell from '@/components/ui/ModalShell'
 import { BatchBreederQueen } from './graftConstants'
 import type { BreederRange } from '@/hooks/useBatchGrafts'
 
@@ -113,17 +114,24 @@ export default function BreederRangeModal({
     onConfirm(parsedRanges)
   }
 
+  // The shared dialog: dialog role, focus kept inside, Escape closes (C5b-19)
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-lg bg-surface dark:bg-surface-elevated shadow-xl border border-border max-h-[90vh] overflow-y-auto">
-        <div className="p-5 border-b border-border">
-          <h3 className="text-lg font-semibold text-foreground">Assign cells to breeder queens</h3>
-          <p className="text-sm text-text-secondary mt-1">
+    <ModalShell
+      title="Assign cells to breeder queens"
+      onClose={onClose}
+      maxWidthClassName="max-w-lg"
+      shellClassName="max-h-[90vh] overflow-y-auto"
+      bodyClassName="p-5 space-y-3"
+      footer={
+        <div className="p-5 border-t border-border flex justify-end gap-2">
+          <Button type="button" onClick={onClose} tone="neutral" size="sm">Cancel</Button>
+          <Button type="button" onClick={handleConfirm} tone="success" size="sm">Generate Cells</Button>
+        </div>
+      }
+    >
+          <p className="text-sm text-text-secondary">
             Cells {startCellNumber}–{endCellNumber} ({cellCount} total). Enter the start and end cell number for each queen (numbered 1–{cellCount} within this generation). Ranges must cover every cell with no gaps or overlaps.
           </p>
-        </div>
-
-        <div className="p-5 space-y-3">
           {rows.map((row, idx) => (
             <div key={row.queen_id} className="flex flex-wrap items-center gap-3">
               <div className="min-w-[8rem] flex-1 text-sm font-medium text-foreground">{row.queen_number}</div>
@@ -135,7 +143,7 @@ export default function BreederRangeModal({
                   max={cellCount}
                   value={row.start}
                   onChange={(e) => updateRow(idx, 'start', e.target.value)}
-                  className="w-20 px-2 py-1 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                  className="w-20 min-h-12 px-2 py-1 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 />
                 <label className="text-sm text-text-secondary">End</label>
                 <input
@@ -144,7 +152,7 @@ export default function BreederRangeModal({
                   max={cellCount}
                   value={row.end}
                   onChange={(e) => updateRow(idx, 'end', e.target.value)}
-                  className="w-20 px-2 py-1 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+                  className="w-20 min-h-12 px-2 py-1 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
                 />
               </div>
             </div>
@@ -152,13 +160,6 @@ export default function BreederRangeModal({
           {error && (
             <p className="text-sm text-red-600 dark:text-red-300">{error}</p>
           )}
-        </div>
-
-        <div className="p-5 border-t border-border flex justify-end gap-2">
-          <Button type="button" onClick={onClose} tone="neutral" size="sm">Cancel</Button>
-          <Button type="button" onClick={handleConfirm} tone="success" size="sm">Generate Cells</Button>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }

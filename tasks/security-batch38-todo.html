@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 38: Queen Rearing</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    .decide { background: #fff7ed; border-left: 4px solid #ea580c; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 38: Queen Rearing</h1>
+<p><strong>Status:</strong> Implemented 24/10/2026, waiting for your test. This is Phase 2 fix batch 25. It covers the open Medium findings in the Queen Tracker and mating nucs (C5a-06, 07, 12 to 17, 19, 20) and in batches and grafts (C5b-13, 15, 16, 18, 19, 20). Three agents checked each finding against the code and the live database (counts only), and I re-checked the key lines. No schema change; one optional data backfill (see the decision box).</p>
+
+<h2>A. Selection scoring ranks the wrong hives: C5b-16</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Ratings never filled in count as 0:</strong> an unrated field is stored as 0. Of 1,891 inspections, 1,314 have no swarming rating, 830 no brood rating and 1,809 no chalkbrood rating. The averages count those zeros, so:
+  <ul>
+    <li><strong>Swarming and chalkbrood:</strong> an unrated hive scores as perfect (6 − 0).</li>
+    <li><strong>Brood:</strong> unrated inspections drag the average down.</li>
+    <li><strong>Honey stores:</strong> left empty, they score the worst.</li>
+  </ul>
+  So the ranking mostly shows whose records are complete, not which hive is best. Now each average uses only the inspections that have a rating. A hive with no ratings at all for a field scores the middle of the scale (3), and the table shows "–" instead of a made-up number.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Every tap reloads everything:</strong> each weight button reloads every hive and all its inspections, and on quick taps an older answer can land last and show the wrong scores. Now the hives are loaded once per apiary, with only the latest load used. Weights and options just recalculate on screen. A failed load says so instead of "Not enough data".</div>
+
+<h2>B. Breeders and mothers: C5b-13, C5a-06, C5a-07</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5b-13, the breeder can be changed after cells exist:</strong> on a single-breeder batch, the "Breeder Queen" picker stays editable once cells are generated. Changing it re-parents every cell at once, including queens already in nucs, distributed or registered. It's now locked once cells exist, as the multi-breeder choices already are. New cells also record their breeder, as the multi-breeder feature doc says they should.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-06, a breeder carried over from another cell:</strong> in the nuc form, picking a cell with a breeder fills "Grafted from". Switching to a cell without one left the old breeder in place. It now falls back to the batch's breeder, or clears. No live nuc is affected.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-07, a nuc card with no breeder:</strong> the nuc card and its history only read the nuc's own breeder. Nuc Reports already falls back to the cell's breeder, then the batch's, so the two screens could disagree. The card now does the same. No live nuc is affected.</div>
+<div class="decide"><strong>Decision: backfill the breeder on old single-breeder cells?</strong> 871 existing cells from single-breeder batches have no breeder recorded. Nothing is wrong on screen, because every screen falls back to the batch's breeder. A one-off update would stamp each with its batch's breeder, so old and new cells match and the data follows the feature doc. <strong>Done (you approved):</strong> 871 cells stamped; afterwards 0 missing and 0 disagreeing with their batch.</div>
+
+<h2>C. Loading and errors: C5b-15, C5a-12, C5a-15, C5a-17</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5b-15, stuck on "Loading grafts…":</strong> if loading the breeders, cells or nucs fails once, the batch editor shows "Loading grafts…" until you reload the page. Now it says "Couldn't load grafts" with a Try again button.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-12, hidden sync errors:</strong> saving a nuc inspection reports "Inspection recorded" even when updating the nuc's or cell's status failed. The existing "nuc status could not be updated" warning now shows. Also:
+  <ul>
+    <li>A failed nuc list load says so instead of showing "no nucs".</li>
+    <li>A queen not marked as distributed after distributing from a nuc now shows an error.</li>
+    <li>Deleting an inspection no longer shows "deleted" straight after a failure warning.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-15, cell list capped:</strong> the nuc form's cell list loads every cell in your account in one request. The largest account has 660; past 1,000 the high-numbered cells would quietly drop out. It now reads in pages.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-17, tracker capped:</strong> the Queen Tracker's two lists aren't paged either, so past 1,000 rows the oldest queens would vanish. Today's largest is 36. They now read in pages, and errors show their real message.</div>
+
+<h2>D. Screens: C5a-19, C5a-20, C5b-19</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-19, 39 fields at 14px or under 48px:</strong> in the tracker, the nuc search, the distribute form, the nuc inspection panel, nuc reports, the batches filters and the cell editor. They become 16px and 48px tall.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-20, the tracker table on a phone:</strong> it's 768px wide, so on a phone the Queen column scrolls away and you lose track of the row. Now:
+  <ul>
+    <li>The Queen column stays pinned while the rest scrolls.</li>
+    <li>The table is narrower on phones.</li>
+    <li>An opened row's details stay in view instead of needing sideways scrolling.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5b-19, five hand-made pop-ups:</strong> "Assign cells to breeders", "Confirm Mating", "Distribute", "Nuc history" and "Change Mating Site" don't tell screen readers they are dialogs, don't keep focus inside, and most don't close with Escape. They move to the app's shared dialog. It also fixes a real bug: pressing Escape on Confirm Mating's own "are you sure?" closed both dialogs.</div>
+
+<h2>E. Closed without a change</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-13 (no try/catch):</strong> mostly not real. The tracker handlers and load are already wrapped, and Supabase reports errors rather than throwing. The one real case is the delete message, handled in C.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-14 (stale fetch race):</strong> not real in the tracker or nuc code, which already has guards. The real race was in selection scoring, fixed in A.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5a-16 / C5b-20 (<code>select('*')</code>):</strong> 11 uses, none broken. These tables have no column restrictions, unlike <code>profiles</code>, and they're narrow. Left as they are.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C5b-18 (database calls inside screen files):</strong> about 63 calls in 8 files. Moving them into hooks would be a large, risky change with nothing visible for you. Left as they are.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; a short test for the scoring averages; the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/queen-rearing-batch38-plan.md</code>, <code>multi-breeder-queens-per-batch.md</code>, the Phase 2 register and memory.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>Selection: change the weights quickly; the scores follow without reloading, and hives with unrated fields show "–".</li>
+    <li>Open a single-breeder batch that has cells: the Breeder Queen picker is locked.</li>
+    <li>Queen Tracker on your phone: the Queen column stays put while you scroll sideways.</li>
+    <li>Confirm Mating: press Escape on the "are you sure?" box; only that box closes.</li>
+    <li>Look over the tracker filters and the distribute form on your phone: fields are full size.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Selection scoring</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Unrated fields counted as 0; reload on every tap</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Rated values only, “–” when none; recalculated on screen</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Single-breeder picker</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Editable after cells exist (re-parents every cell)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Locked once cells exist</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Single-breeder cells</td><td style="border:1px solid #e7d9b8;padding:0.4rem">No breeder recorded (871)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Stamped on generation; older ones backfilled</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Nuc form / card breeder</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Kept the previous cell's; card blank without nuc breeder</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Cell breeder, else batch; card matches Nuc Reports</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Grafts load failure</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“Loading grafts…” for ever</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“Couldn't load grafts” + Try again</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Nuc inspection sync failure</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“Inspection recorded” only</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Warning shown</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Cell list, tracker</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Cut at 1,000 rows</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Paged</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Tracker on a phone</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Queen column scrolls away</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Pinned; narrower table</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Five pop-ups</td><td style="border:1px solid #e7d9b8;padding:0.4rem">No dialog role/focus; Escape closed two at once</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Shared dialog</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Field sizes</td><td style="border:1px solid #e7d9b8;padding:0.4rem">About 40 at 14px / under 48px</td><td style="border:1px solid #e7d9b8;padding:0.4rem">16px, 48px</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0; 843 tests pass (6 new)</td></tr>
+</table>
+<ul>
+  <li><strong>Database:</strong> no schema change. The migration <code>20261024120000_queen_rearing_batch38_breeder_backfill.sql</code> is the approved data backfill, applied through MCP.</li>
+  <li><strong>Tests:</strong> <code>tests/lib/selection-scoring.test.ts</code> covers unrated values, empty honey stores, an unrated hive not out-ranking a rated one, and the 3-inspection minimum.</li>
+  <li><strong>QA audit:</strong> no Critical or High issues. One Medium was fixed. Locking the breeder choices as soon as cells were generated had also switched off saving the breeder set, so a multi-breeder set picked before generating in the same session would have been lost. The on-screen lock is now separate from the save rule.</li>
+  <li><strong>Left as they are:</strong> C5a-13, C5a-14, C5a-16, C5b-18 and C5b-20 (see section E).</li>
+</ul>
+</body>
+</html>

@@ -600,7 +600,7 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="px-3 py-1.5 border border-border rounded-lg bg-surface text-foreground text-sm"
+                  className="min-h-12 px-3 py-1.5 border border-border rounded-lg bg-surface text-foreground text-base"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -609,7 +609,7 @@ export default function NucReportsTab({ userId }: NucReportsTabProps) {
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="px-3 py-1.5 border border-border rounded-lg bg-surface text-foreground text-sm"
+                  className="min-h-12 px-3 py-1.5 border border-border rounded-lg bg-surface text-foreground text-base"
                 />
               </div>
               <Button

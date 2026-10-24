@@ -222,7 +222,7 @@ function OutcomeActionEditor({
               value={draft.reason}
               onChange={(event) => onReasonChange(event.target.value)}
               disabled={disabled}
-              className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+              className="w-full rounded-xl border border-border bg-surface min-h-12 px-3 py-2 text-base text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
             >
               <option value="">Select a reason…</option>
               {draft.reason && !FAILURE_REASONS.includes(draft.reason as (typeof FAILURE_REASONS)[number]) && (
@@ -245,7 +245,7 @@ function OutcomeActionEditor({
               onChange={(event) => onCommentChange(event.target.value.slice(0, MAX_FAILURE_COMMENT_LENGTH))}
               disabled={disabled}
               rows={2}
-              className="w-full resize-none rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+              className="w-full resize-none rounded-xl border border-border bg-surface min-h-12 px-3 py-2 text-base text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
             />
           </div>
         </div>
@@ -260,7 +260,7 @@ function OutcomeActionEditor({
           value={needsDate ? draft.date : ''}
           onChange={(event) => onDateChange(event.target.value)}
           disabled={disabled || !needsDate}
-          className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
+          className="w-full rounded-xl border border-border bg-surface min-h-12 px-3 py-2 text-base text-foreground shadow-sm disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
         />
         {!needsDate && (
           <p className="text-xs text-text-secondary">No date is needed for the selected outcome.</p>
@@ -450,7 +450,7 @@ function OutcomeDateField({
           }
         }}
         disabled={disabled || !dateEnabled}
-        className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
+        className="w-full rounded-lg border border-border bg-surface min-h-12 px-2.5 py-1.5 text-base text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
       />
     </div>
   )
@@ -502,7 +502,7 @@ function OutcomeCommentField({
         onBlur={() => void commitComment()}
         disabled={disabled}
         rows={2}
-        className="w-full resize-none rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
+        className="w-full resize-none rounded-lg border border-border bg-surface min-h-12 px-2.5 py-1.5 text-base text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
       />
     </div>
   )
@@ -528,7 +528,7 @@ function OutcomeReasonField({
         value={reason ?? ''}
         onChange={(event) => void onReasonChange(id, event.target.value)}
         disabled={disabled}
-        className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-sm text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
+        className="w-full rounded-lg border border-border bg-surface min-h-12 px-2.5 py-1.5 text-base text-foreground disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
       >
         <option value="">No reason recorded</option>
         {reason && !FAILURE_REASONS.includes(reason as (typeof FAILURE_REASONS)[number]) && (
@@ -1593,7 +1593,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                 value={queenQuery}
                 onChange={(event) => setQueenQuery(event.target.value)}
                 placeholder="Search by queen number or cell # (e.g. 38W or 30)"
-                className="w-full rounded-xl border border-border bg-surface py-2.5 pl-9 pr-9 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
+                className="w-full rounded-xl border border-border bg-surface min-h-12 py-2.5 pl-9 pr-9 text-base text-foreground shadow-sm dark:bg-surface-elevated"
               />
               {queenQuery && (
                 <button
@@ -1621,7 +1621,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                     setSelectedBatchId('')
                   })
                 }}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
+                className="w-full rounded-xl border border-border bg-surface min-h-12 px-3 py-2.5 text-base text-foreground shadow-sm dark:bg-surface-elevated"
               >
                 <option value="">All groups and non-group batches</option>
                 {availableGroupFilters.groups.map((group) => (
@@ -1647,7 +1647,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                   })
                 }}
                 disabled={availableMembers.length === 0}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+                className="w-full rounded-xl border border-border bg-surface min-h-12 px-3 py-2.5 text-base text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
               >
                 <option value="">All members</option>
                 {availableMembers.map((member) => (
@@ -1667,7 +1667,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                   startTransition(() => setSelectedBatchId(value))
                 }}
                 disabled={availableBatches.length === 0}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+                className="w-full rounded-xl border border-border bg-surface min-h-12 px-3 py-2.5 text-base text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
               >
                 <option value="">All batches</option>
                 {availableBatches.map((batch) => (
@@ -1689,7 +1689,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                     setSelectedYear(Number.isFinite(parsed) ? parsed : null)
                   })
                 }}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
+                className="w-full rounded-xl border border-border bg-surface min-h-12 px-3 py-2.5 text-base text-foreground shadow-sm dark:bg-surface-elevated"
               >
                 <option value="">All years</option>
                 {availableYears.map((year) => (
@@ -1711,7 +1711,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                     setSelectedReason('')
                   })
                 }}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm dark:bg-surface-elevated"
+                className="w-full rounded-xl border border-border bg-surface min-h-12 px-3 py-2.5 text-base text-foreground shadow-sm dark:bg-surface-elevated"
               >
                 <option value="all">All</option>
                 <option value="pending">Pending mating</option>
@@ -1731,7 +1731,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                     startTransition(() => setSelectedReason(value))
                   }}
                   disabled={availableFailureReasons.length === 0}
-                  className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
+                  className="w-full rounded-xl border border-border bg-surface min-h-12 px-3 py-2.5 text-base text-foreground shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-surface-elevated"
                 >
                   <option value="">All reasons</option>
                   {availableFailureReasons.map((reason) => (
@@ -1773,10 +1773,11 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
             ))}
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-[48rem] w-full border-separate border-spacing-0 text-sm">
+            {/* Narrower on phones, with the Queen column pinned while the rest scrolls (C5a-20) */}
+            <table className="min-w-[36rem] md:min-w-[48rem] w-full border-separate border-spacing-0 text-sm">
               <thead className="bg-surface-secondary/70 dark:bg-surface-elevated/85">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Queen</th>
+                  <th className="sticky left-0 z-10 bg-surface-secondary dark:bg-surface-elevated px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Queen</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Actions</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Status</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Distribution</th>
@@ -1806,6 +1807,14 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                       : isExpanded
                         ? 'bg-surface-secondary/30 dark:bg-surface-elevated/70'
                         : ''
+                  // The pinned Queen cell needs an opaque background, or the scrolled cells show through
+                  const stickyCellClass = isSelected
+                    ? 'bg-emerald-50 dark:bg-emerald-950'
+                    : isReadOnly
+                      ? 'bg-slate-50 dark:bg-slate-950'
+                      : isExpanded
+                        ? 'bg-surface-secondary dark:bg-surface-elevated'
+                        : 'bg-surface dark:bg-surface-elevated'
                   const rowFrameClass = isSelected
                     ? 'shadow-[inset_0_1px_0_rgba(16,185,129,0.42),inset_0_-1px_0_rgba(16,185,129,0.42)]'
                     : isReadOnly
@@ -1825,7 +1834,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                         onFocusCapture={() => setSelectedId(distribution.id)}
                         className="transition-colors"
                       >
-                        <td className={`relative border-t border-border px-4 py-2 align-top ${cellHighlightClass} ${rowFrameClass} ${leadingAccentClass}`}>
+                        <td className={`sticky left-0 z-10 border-t border-border px-4 py-2 align-top ${stickyCellClass} ${rowFrameClass} ${leadingAccentClass}`}>
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
@@ -1947,6 +1956,8 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                                   : 'bg-surface-secondary/20 dark:bg-surface/35'
                             }`}
                           >
+                            {/* Kept within the screen on phones instead of spanning the scrolled table */}
+                            <div className="sticky left-0 max-w-[calc(100vw-4rem)] md:max-w-none">
                             <ExpandedTrackerRowContent
                               distribution={distribution}
                               ownerDisplayName={ownerDisplayName}
@@ -1959,6 +1970,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                               onFailureReasonChange={handleFailureReasonChange}
                               onFailureCommentChange={handleFailureCommentChange}
                             />
+                            </div>
                           </td>
                         </tr>
                       )}

@@ -8,6 +8,7 @@ import type { RecipientUser, RecipientApiary, RecipientHive, CreateDistributionD
 import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { TYPE_LABELS } from './graftConstants'
 import Button from '@/components/ui/Button'
+import ModalShell from '@/components/ui/ModalShell'
 
 interface DistributeGraftModalProps {
   // A distribution is sourced EITHER from a batch graft (graftId + batchId) OR from a queen
@@ -375,21 +376,17 @@ export default function DistributeGraftModal({
 
   const isGroupMember = selectedUser && groupMemberIds?.includes(selectedUser.id)
 
+  // The shared dialog: dialog role, focus kept inside, Escape closes, held open while saving (C5b-19)
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden">
-        <div className="p-4 border-b border-border flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-foreground">
-            {titleOverride ?? (isBulk
-              ? `Distribute ${bulkGrafts.length} Grafts`
-              : cellNumber != null ? `Distribute Cell #${cellNumber}` : 'Distribute Queen')}
-          </h3>
-          <Button onClick={onClose} className="p-2 text-text-secondary hover:text-foreground rounded">
-            <X size={20} />
-          </Button>
-        </div>
-
-        <div className="p-4 overflow-y-auto max-h-[70vh] space-y-4">
+    <ModalShell
+      title={titleOverride ?? (isBulk
+        ? `Distribute ${bulkGrafts.length} Grafts`
+        : cellNumber != null ? `Distribute Cell #${cellNumber}` : 'Distribute Queen')}
+      onClose={onClose}
+      closeDisabled={saving}
+      shellClassName="max-h-[90vh] overflow-hidden"
+      bodyClassName="p-4 overflow-y-auto max-h-[70vh] space-y-4"
+    >
           {/* Distribution Type Badge */}
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">Type</label>
@@ -480,7 +477,7 @@ export default function DistributeGraftModal({
                       value={groupFilter}
                       onChange={(e) => setGroupFilter(e.target.value)}
                       placeholder="Filter members..."
-                      className="w-full pl-9 pr-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                      className="w-full pl-9 pr-3 py-2 min-h-12 border border-border rounded-md bg-surface text-foreground text-base"
                     />
                   </div>
                 )}
@@ -523,7 +520,7 @@ export default function DistributeGraftModal({
                     value={searchText}
                     onChange={(e) => setSearchText(e.target.value)}
                     placeholder="Search by name or full email address…"
-                    className="w-full pl-9 pr-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                    className="w-full pl-9 pr-3 py-2 min-h-12 border border-border rounded-md bg-surface text-foreground text-base"
                     autoFocus
                   />
                 </div>
@@ -578,7 +575,7 @@ export default function DistributeGraftModal({
                     onChange={(e) => setExtName(e.target.value)}
                     placeholder="Beekeeper name..."
                     maxLength={200}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                    className="w-full px-3 py-2 min-h-12 border border-border rounded-md bg-surface text-foreground text-base"
                     autoFocus
                   />
                 </div>
@@ -590,7 +587,7 @@ export default function DistributeGraftModal({
                     onChange={(e) => setExtEmail(e.target.value)}
                     placeholder="email@example.com"
                     maxLength={254}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                    className="w-full px-3 py-2 min-h-12 border border-border rounded-md bg-surface text-foreground text-base"
                   />
                 </div>
                 <div>
@@ -601,7 +598,7 @@ export default function DistributeGraftModal({
                     onChange={(e) => setExtPhone(e.target.value)}
                     placeholder="+353 ..."
                     maxLength={20}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                    className="w-full px-3 py-2 min-h-12 border border-border rounded-md bg-surface text-foreground text-base"
                   />
                 </div>
                 <div>
@@ -626,7 +623,7 @@ export default function DistributeGraftModal({
               type="date"
               value={distributionDate}
               onChange={(e) => setDistributionDate(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+              className="w-full px-3 py-2 min-h-12 border border-border rounded-md bg-surface text-foreground text-base"
             />
           </div>
 
@@ -639,7 +636,7 @@ export default function DistributeGraftModal({
               <select
                 value={selectedApiaryId}
                 onChange={(e) => { setSelectedApiaryId(e.target.value); setSelectedHiveId(''); setLocationError('') }}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                className="w-full px-3 py-2 min-h-12 border border-border rounded-md bg-surface text-foreground text-base"
               >
                 <option value="">Select apiary (optional)</option>
                 {apiaries.map((a) => (
@@ -660,7 +657,7 @@ export default function DistributeGraftModal({
                 value={matingLocation}
                 onChange={(e) => { setMatingLocation(e.target.value); setLocationError('') }}
                 placeholder="e.g. D01 AB12"
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                className="w-full px-3 py-2 min-h-12 border border-border rounded-md bg-surface text-foreground text-base"
               />
               {locationError && (
                 <p className="text-sm text-red-600 dark:text-red-400 mt-1">{locationError}</p>
@@ -678,7 +675,7 @@ export default function DistributeGraftModal({
               <select
                 value={selectedHiveId}
                 onChange={(e) => setSelectedHiveId(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                className="w-full px-3 py-2 min-h-12 border border-border rounded-md bg-surface text-foreground text-base"
               >
                 <option value="">Select hive (optional)</option>
                 {hives.map((h) => (
@@ -700,7 +697,7 @@ export default function DistributeGraftModal({
               <select
                 value={selectedOrderId}
                 onChange={(e) => setSelectedOrderId(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+                className="w-full px-3 py-2 min-h-12 border border-border rounded-md bg-surface text-foreground text-base"
               >
                 <option value="">No order</option>
                 {sortedOrders.map(({ order, matches }) => (
@@ -735,7 +732,7 @@ export default function DistributeGraftModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+              className="w-full px-3 py-2 min-h-12 border border-border rounded-md bg-surface text-foreground text-base"
               placeholder="Optional notes..."
             />
           </div>
@@ -758,9 +755,7 @@ export default function DistributeGraftModal({
               Cancel
             </Button>
           </div>
-        </div>
-      </div>
-    </div>
+    </ModalShell>
   )
 }
 

@@ -25,10 +25,12 @@ interface UseBatchGraftsProps {
   groupId?: string | null
   emergenceDate?: string | null
   graftDate?: string | null
+  /** A single-breeder batch's breeder queen, stamped on each new cell (null for multi-breeder). */
+  motherQueenId?: string | null
   onCountsChange?: (counts: { grafts_accepted: number; queens_hatched: number; queens_mated: number }) => void
 }
 
-export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, graftDate, onCountsChange }: UseBatchGraftsProps) {
+export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, graftDate, motherQueenId, onCountsChange }: UseBatchGraftsProps) {
   const toast = useToast()
   const [grafts, setGrafts] = useState<Graft[]>([])
   const [breederQueens, setBreederQueens] = useState<BatchBreederQueen[]>([])
@@ -38,6 +40,8 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   const [hatchedViaNuc, setHatchedViaNuc] = useState<Set<string>>(new Set())
   const [matedViaNuc, setMatedViaNuc] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  // A load failed: `loading` stays true (so the counts aren't overwritten) and the section offers a retry
+  const [loadFailed, setLoadFailed] = useState(false)
   const [distributeGraft, setDistributeGraft] = useState<Graft | null>(null)
   const [groupMemberIds, setGroupMemberIds] = useState<string[]>([])
   const [showHelp, setShowHelp] = useState(false)
@@ -85,6 +89,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     // before the section can let the user click Generate — otherwise the
     // modal-vs-direct decision can be made against an empty breeder set,
     // silently writing cells with breeder_queen_id = NULL.
+    setLoadFailed(false)
     const [graftsRes, breedersRes] = await Promise.all([
       supabase
         .from('batch_grafts')
@@ -103,6 +108,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     if (breedersRes.error) {
       console.error('Error fetching batch breeder queens:', breedersRes.error)
       toast.error('Failed to load breeder queens')
+      setLoadFailed(true)
       return
     }
     type BreederRow = { queen_id: string; queens: { queen_number: string }[] | { queen_number: string } | null }
@@ -119,6 +125,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       toast.error('Failed to load grafts')
       // Bail like the breeder and nuc fetches: falling through with no grafts would let the
       // persist effect write zero counts over the batch's real ones.
+      setLoadFailed(true)
       return
     } else if (data) {
       // Fetch latest weights and nuc timestamps in parallel. Filtering mating_nucs by
@@ -146,6 +153,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
         if (nucsRes.error) {
           console.error('Error fetching mating nuc timestamps:', nucsRes.error)
           toast.error('Failed to load nuc data')
+          setLoadFailed(true)
           return
         }
         if (weightsRes.data) {
@@ -321,8 +329,10 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     }
 
     const ranges = opts?.ranges
+    // No ranges means a single-breeder batch: every cell records the batch's breeder, as
+    // docs/features/multi-breeder-queens-per-batch.md specifies (C5b-13)
     const breederForLocalIndex = (i1: number): string | null => {
-      if (!ranges || ranges.length === 0) return null
+      if (!ranges || ranges.length === 0) return motherQueenId || null
       const hit = ranges.find(r => i1 >= r.start && i1 <= r.end)
       return hit ? hit.queen_id : null
     }
@@ -355,7 +365,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
       console.error('Error creating grafts:', error)
       toast.error('Failed to create grafts')
     }
-  }), [cellCount, grafts, batchId, userId, graftDate, toast, fetchGrafts, runGenerate])
+  }), [cellCount, grafts, batchId, userId, graftDate, motherQueenId, toast, fetchGrafts, runGenerate])
 
   const updateGraftBreederQueen = useCallback(async (graftId: string, queenId: string | null) => {
     const previous = grafts.find(g => g.id === graftId)?.breeder_queen_id ?? null
@@ -880,6 +890,8 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     grafts,
     breederQueens,
     loading,
+    loadFailed,
+    retryLoad: fetchGrafts,
     distributeGraft,
     setDistributeGraft,
     groupMemberIds,

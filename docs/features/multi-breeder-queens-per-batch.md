@@ -23,7 +23,7 @@ The same toggle is also available in the **Edit Batch** dialog. Switching betwee
 Triggered from `BatchGraftsSection` → "Generate Cell Records" button (calls `useBatchGrafts.generateGrafts`):
 
 **Single-breeder batch (no change to existing UX)**
-- All cells are inserted with `batch_grafts.breeder_queen_id = rearing_batches.mother_queen_id`.
+- All cells are inserted with `batch_grafts.breeder_queen_id = rearing_batches.mother_queen_id`. (This was never actually done until batch 38, 24/10/2026: `useBatchGrafts` now stamps it from the batch's breeder, the 871 older cells were backfilled by migration `20261024120000_queen_rearing_batch38_breeder_backfill.sql`, and the single Breeder Queen picker is locked once cells exist, like the multi-breeder choices.)
 
 **Multi-breeder batch (new modal)**
 A range-assignment modal opens before the insert. The modal:

@@ -100,6 +100,12 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  const [quantitiesOpen, setQuantitiesOpen] = useState(true)
  const [notificationPrefsOpen, setNotificationPrefsOpen] = useState(false)
  const [editingBatchHasGrafts, setEditingBatchHasGrafts] = useState(false)
+ // Cells generated in this session lock the breeder choices on screen too, not only on the next
+ // open. Kept apart from editingBatchHasGrafts, which also decides whether saving writes the
+ // breeder set: a set picked before generating in this session must still be saved.
+ const [graftsCreatedHere, setGraftsCreatedHere] = useState(false)
+ const handleGraftsExist = useCallback(() => setGraftsCreatedHere(true), [])
+ const breedersLocked = !!editingBatch && (editingBatchHasGrafts || graftsCreatedHere)
  const editFetchGenRef = useRef(0)
 
  const {
@@ -158,6 +164,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  return
  }
  setEditingBatchHasGrafts(hasGrafts)
+ setGraftsCreatedHere(false)
 
  // Saved dates win; the standard timeline only fills dates that were never set.
  const timeline = timelineFromGraftDate(batch.graft_date)
@@ -194,6 +201,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
 
  const resetForm = () => {
  setEditingBatchHasGrafts(false)
+ setGraftsCreatedHere(false)
  voiceAbortRef.current?.abort()
  voiceAbortRef.current = null
  resetVoiceRecorder()
@@ -462,7 +470,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  <input
  type="checkbox"
  checked={formData.multiple_breeders}
- disabled={!!editingBatch && editingBatchHasGrafts}
+ disabled={breedersLocked}
  onChange={(e) => {
  const checked = e.target.checked
  setFormData(prev => ({
@@ -481,6 +489,9 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  <select
  value={formData.mother_queen_id}
  onChange={(e) => setFormData({...formData, mother_queen_id: e.target.value})}
+ // Locked once cells exist: changing it re-parented every cell at once, including queens
+ // already in nucs or distributed (C5b-13), as the multi-breeder choices already are
+ disabled={breedersLocked}
  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
  >
  <option value="">Select breeder queen (optional)</option>
@@ -507,7 +518,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  const hiveNumber = hive?.hive_number || ''
  const location = apiary && hiveNumber ? ` (${apiary} - ${hiveNumber})` : ''
  const isSelected = formData.breeder_queen_ids.includes(q.id)
- const locked = !!editingBatch && editingBatchHasGrafts
+ const locked = breedersLocked
  return (
  <label key={q.id} className={`flex items-center gap-2 px-3 py-2 border-b border-border last:border-b-0 ${locked ? 'opacity-60' : 'cursor-pointer hover:bg-surface-elevated'}`}>
  <input
@@ -532,7 +543,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  )}
  </div>
  )}
- {!!editingBatch && editingBatchHasGrafts && (
+ {breedersLocked && (
  <p className="text-sm text-text-tertiary mt-1">Cell records exist — breeder queens are locked. Edit per-cell on the frame.</p>
  )}
  </div>
@@ -1010,6 +1021,8 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  emergenceDate={editingBatch.emergence_date}
  graftDate={formData.graft_date || null}
  matingApiaryName={apiaries.find(a => a.id === formData.mating_apiary_id)?.name || null}
+ motherQueenId={formData.multiple_breeders ? null : formData.mother_queen_id || null}
+ onGraftsExist={handleGraftsExist}
  onCountsChange={(counts) => setFormData(prev => ({
  ...prev,
  grafts_accepted: counts.grafts_accepted.toString(),

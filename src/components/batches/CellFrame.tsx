@@ -204,7 +204,7 @@ export default function CellFrame({
                                 value={graft.status}
                                 onChange={(e) => updateGraftStatus(graft.id, e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-full min-h-12 rounded border border-border bg-surface px-1 text-center text-sm text-foreground dark:bg-surface-elevated"
+                                className="w-full min-h-12 rounded border border-border bg-surface px-1 text-center text-base text-foreground dark:bg-surface-elevated"
                                 aria-label={`Status of cell ${graft.cell_number}`}
                               >
                                 {FRAME_STATUSES.map(s => (
@@ -217,7 +217,7 @@ export default function CellFrame({
                                 defaultValue={graft.status_date || ''}
                                 onChange={(e) => updateGraftStatusDate(graft.id, e.target.value)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="w-full min-h-12 rounded border border-border bg-surface px-1 text-center text-sm text-foreground dark:bg-surface-elevated"
+                                className="w-full min-h-12 rounded border border-border bg-surface px-1 text-center text-base text-foreground dark:bg-surface-elevated"
                                 aria-label={`Status date of cell ${graft.cell_number}`}
                               />
                               <div className="flex gap-0.5">

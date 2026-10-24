@@ -2,9 +2,9 @@
 
 import { getCurrentDate } from '@/lib/date-utils'
 import { useState, useEffect, useCallback } from 'react'
-import { X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import Button from '@/components/ui/Button'
+import ModalShell from '@/components/ui/ModalShell'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 
 interface Apiary {
@@ -45,17 +45,6 @@ export default function ConfirmMatingModal({
   const [loadingApiaries, setLoadingApiaries] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-
-  // Keyboard escape handler for accessibility
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !saving) {
-        onClose()
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [onClose, saving])
 
   // Fetch recipient's apiaries for app users
   useEffect(() => {
@@ -197,82 +186,20 @@ export default function ConfirmMatingModal({
     }
   }, [onClear, onClose, confirm])
 
+  // The shared dialog handles Escape through the dialog stack. This modal's own document
+  // listener ignored that stack, so Escape on its "are you sure?" closed both (C5b-19).
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface dark:bg-surface rounded-lg shadow-xl w-full max-w-md">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">
-              {isConfirmed ? 'Update Mating Details' : 'Confirm Mating'}
-            </h3>
-            <p className="text-sm text-text-secondary">Cell #{cellNumber}</p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 text-text-secondary hover:text-foreground rounded-lg hover:bg-surface-secondary"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="p-4 space-y-4">
-          {/* Mating Date */}
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
-              Mating Date *
-            </label>
-            <input
-              type="date"
-              value={matingDate}
-              onChange={(e) => setMatingDate(e.target.value)}
-              max={today}
-              className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
-            />
-          </div>
-
-          {/* Mating Location */}
-          <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
-              Apiary / Mating Location (closest Eircode)
-            </label>
-
-            {/* Apiary dropdown for app users */}
-            {!isExternal && (loadingApiaries || apiaries.length > 0) && (
-              <select
-                value={selectedApiaryId}
-                onChange={(e) => handleApiaryChange(e.target.value)}
-                disabled={loadingApiaries}
-                className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground mb-2 disabled:opacity-50"
-              >
-                <option value="">{loadingApiaries ? 'Loading apiaries...' : 'Select apiary...'}</option>
-                {apiaries.map((apiary) => (
-                  <option key={apiary.id} value={apiary.id}>
-                    {apiary.name}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {/* Custom location text field */}
-            <input
-              type="text"
-              value={customLocation}
-              onChange={(e) => handleCustomLocationChange(e.target.value)}
-              placeholder="e.g. D01 AB12"
-              className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
-            />
-          </div>
-
-          {/* Error message */}
-          {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-          )}
-        </div>
-
-        {/* Footer */}
+    <ModalShell
+      title={
+        <>
+          {isConfirmed ? 'Update Mating Details' : 'Confirm Mating'}
+          <span className="block text-sm font-normal text-text-secondary">Cell #{cellNumber}</span>
+        </>
+      }
+      onClose={onClose}
+      closeDisabled={saving}
+      bodyClassName="p-4 space-y-4"
+      footer={
         <div className="flex items-center justify-between p-4 border-t border-border gap-3">
           <div>
             {isConfirmed && (
@@ -305,7 +232,59 @@ export default function ConfirmMatingModal({
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      }
+    >
+          {/* Mating Date */}
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">
+              Mating Date *
+            </label>
+            <input
+              type="date"
+              value={matingDate}
+              onChange={(e) => setMatingDate(e.target.value)}
+              max={today}
+              className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+            />
+          </div>
+
+          {/* Mating Location */}
+          <div>
+            <label className="block text-sm font-medium text-text-secondary mb-1">
+              Apiary / Mating Location (closest Eircode)
+            </label>
+
+            {/* Apiary dropdown for app users */}
+            {!isExternal && (loadingApiaries || apiaries.length > 0) && (
+              <select
+                value={selectedApiaryId}
+                onChange={(e) => handleApiaryChange(e.target.value)}
+                disabled={loadingApiaries}
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface text-foreground mb-2 disabled:opacity-50"
+              >
+                <option value="">{loadingApiaries ? 'Loading apiaries...' : 'Select apiary...'}</option>
+                {apiaries.map((apiary) => (
+                  <option key={apiary.id} value={apiary.id}>
+                    {apiary.name}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Custom location text field */}
+            <input
+              type="text"
+              value={customLocation}
+              onChange={(e) => handleCustomLocationChange(e.target.value)}
+              placeholder="e.g. D01 AB12"
+              className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+            />
+          </div>
+
+          {/* Error message */}
+          {error && (
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          )}
+    </ModalShell>
   )
 }

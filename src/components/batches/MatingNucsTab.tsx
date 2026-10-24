@@ -5,9 +5,12 @@ import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { getTeamAccess } from '@/lib/team-access'
 import { formatDateIrish, getCurrentDate } from '@/lib/date-utils'
+import { firstOf } from '@/lib/embed'
+import { fetchAllPages } from '@/lib/supabase-chunk'
 import { Plus, Edit2, Archive, Trash2, X, ClipboardList, ChevronDown, ChevronUp, History, Eye, EyeOff, Send, Search } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
+import ModalShell from '@/components/ui/ModalShell'
 import NucInspectionPanel from './NucInspectionPanel'
 import { getQueenColorFromYear } from '@/types/queen'
 import { COLOUR_DOTS } from './graftConstants'
@@ -76,10 +79,14 @@ interface MatingNuc {
  status: string
  queen_marked: boolean
  queen_number: string | null
+ // The cell's own breeder (multi-breeder batches), a to-one embed
+ breeder?: { queen_number: string } | { queen_number: string }[] | null
  } | null
  rearing_batches?: {
  batch_name: string
  emergence_date: string | null
+ // A single-breeder batch's breeder queen, a to-one embed
+ mother?: { queen_number: string } | { queen_number: string }[] | null
  } | null
  // The breeder/mother queen (the "Grafted from" field), via mating_nucs.queen_id.
  queens?: {
@@ -90,6 +97,17 @@ interface MatingNuc {
  queen_number: string
  } | null
  mating_nuc_inspections?: { count: number }[]
+}
+
+/**
+ * The nuc's breeder ("Grafted from"): its own queen_id, else the cell's breeder, else the batch's.
+ * The same fallback as Nuc Reports, so the two screens agree (C5a-07).
+ */
+function nucBreederNumber(nuc: MatingNuc): string | null {
+ return nuc.queens?.queen_number
+ ?? firstOf(nuc.batch_grafts?.breeder)?.queen_number
+ ?? firstOf(nuc.rearing_batches?.mother)?.queen_number
+ ?? null
 }
 
 interface MatingNucsTabProps {
@@ -232,7 +250,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const gen = ++fetchNucsGenRef.current
  let query = supabase
  .from('mating_nucs')
- .select('*, batch_grafts(cell_number, status, queen_marked, queen_number), rearing_batches(batch_name, emergence_date), queens!mating_nucs_queen_id_fkey(queen_number), reared_queen:queens!mating_nucs_reared_queen_id_fkey(queen_number), mating_nuc_inspections(count)')
+ .select('*, batch_grafts(cell_number, status, queen_marked, queen_number, breeder:queens!batch_grafts_breeder_queen_id_fkey(queen_number)), rearing_batches(batch_name, emergence_date, mother:queens!rearing_batches_mother_queen_id_fkey(queen_number)), queens!mating_nucs_queen_id_fkey(queen_number), reared_queen:queens!mating_nucs_reared_queen_id_fkey(queen_number), mating_nuc_inspections(count)')
  .eq('user_id', userId)
  .eq('is_inventory', false)
 
@@ -254,6 +272,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  if (error) {
  console.error('Error fetching nucs:', error)
+ // Say so: the normal "no nucs" screen would pass a failed load off as an empty list
+ toast.error('Failed to load nucs. Check your connection and try again.')
  } else if (data) {
  setNucs(data)
 
@@ -354,7 +374,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }
 
  if (gen === fetchNucsGenRef.current) setLoading(false)
- }, [userId, showRetired, activeBatchId, isSearching])
+ }, [userId, showRetired, activeBatchId, isSearching, toast])
 
  const fetchBatches = useCallback(async () => {
  const { data } = await supabase
@@ -367,13 +387,18 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }, [userId])
 
  const fetchGrafts = useCallback(async () => {
- const { data } = await supabase
+ // Every cell in the account fills the nuc form's cell list; paged, because one request stops
+ // at 1,000 rows and the high-numbered cells would drop out of the list (C5a-15)
+ const { data, error } = await fetchAllPages<Graft>((from, to) => supabase
  .from('batch_grafts')
  .select('*')
  .eq('user_id', userId)
  .order('cell_number')
+ .order('id')
+ .range(from, to))
 
- if (data) setGrafts(data)
+ if (error) console.error('Error fetching grafts:', error)
+ else setGrafts(data)
  }, [userId])
 
  const fetchQueens = useCallback(async () => {
@@ -907,7 +932,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const fetchHistory = async (nucNumber: string) => {
  const { data, error } = await supabase
  .from('mating_nucs')
- .select('*, batch_grafts(cell_number, status, queen_marked, queen_number), rearing_batches(batch_name, emergence_date), queens!mating_nucs_queen_id_fkey(queen_number), reared_queen:queens!mating_nucs_reared_queen_id_fkey(queen_number), mating_nuc_inspections(count)')
+ .select('*, batch_grafts(cell_number, status, queen_marked, queen_number, breeder:queens!batch_grafts_breeder_queen_id_fkey(queen_number)), rearing_batches(batch_name, emergence_date, mother:queens!rearing_batches_mother_queen_id_fkey(queen_number)), queens!mating_nucs_queen_id_fkey(queen_number), reared_queen:queens!mating_nucs_reared_queen_id_fkey(queen_number), mating_nuc_inspections(count)')
  .eq('user_id', userId)
  .eq('nuc_number', nucNumber)
  .order('setup_date', { ascending: false })
@@ -971,7 +996,10 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  .eq('id', distributeQueenId)
  .eq('user_id', userId)
 
- if (queenError) console.error('Non-blocking: failed to mark queen distributed:', queenError)
+ if (queenError) {
+ console.error('Failed to mark queen distributed:', queenError)
+ toast.error('Distribution saved, but the queen could not be marked as distributed. Please update her manually.')
+ }
  }
  toast.success('Distribution recorded')
  fetchNucs()
@@ -1234,9 +1262,12 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
    status: e.target.value ? autoStatus : formData.status,
  }
  // Multi-breeder batches store the mother per cell; auto-fill the "Grafted from" queen
- // from the selected cell's breeder (falls back to the batch mother for single-breeder cells).
- if (selectedGraft?.breeder_queen_id) {
+ // from the selected cell's breeder, falling back to the batch mother. Always set it for a
+ // picked cell: setting it only when the cell had a breeder kept the previous cell's (C5a-06).
+ if (selectedGraft) {
    updates.queen_id = selectedGraft.breeder_queen_id
+     || batches.find(b => b.id === formData.batch_id)?.mother_queen_id
+     || ''
  }
  // The marking date describes the cell's own queen, so it has to follow the newly selected
  // cell rather than linger from the one that was there before. Key it on queen_marked alone:
@@ -1439,7 +1470,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  value={bulkCellSearch}
  onChange={(e) => setBulkCellSearch(e.target.value)}
  placeholder="Search by cell number"
- className="px-3 py-2 border border-border rounded-md bg-surface text-foreground text-sm"
+ className="min-h-12 px-3 py-2 border border-border rounded-md bg-surface text-foreground text-base"
  />
  <Button type="button" onClick={selectAllFilteredBulkCells} className="text-xs">Select Filtered</Button>
  <Button type="button" onClick={clearAllBulkCells} className="text-xs">Clear</Button>
@@ -1756,7 +1787,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  // The marking normally trails the batch name. A nuc that reared its own queen has no
  // batch, so it stands alone rather than disappearing with the batch segment.
  nuc.rearing_batches ? `${nuc.rearing_batches.batch_name}${cellOrMarking}` : cellOrMarking.replace(/^ · /, ''),
- nuc.queens && `Breeder Queen: ${nuc.queens.queen_number}`,
+ nucBreederNumber(nuc) && `Breeder Queen: ${nucBreederNumber(nuc)}`,
  nuc.mating_location && `Mating Site: ${nuc.mating_location}`,
  ].filter(Boolean).join(' · ') || 'No batch assigned'}
  </p>
@@ -1823,21 +1854,15 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  )}
 
  {/* History Modal */}
+ {/* Shared dialogs from here on: dialog role, focus kept inside, Escape closes (C5b-19) */}
  {historyNucNumber && (
- <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
- <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
- <div className="p-4 border-b border-border flex justify-between items-center">
- <h3 className="text-lg font-semibold text-foreground">
- History for Nuc {historyNucNumber}
- </h3>
- <Button
- onClick={() => setHistoryNucNumber(null)}
- className="p-2 text-text-secondary hover:text-foreground rounded"
+ <ModalShell
+ title={`History for Nuc ${historyNucNumber}`}
+ onClose={() => setHistoryNucNumber(null)}
+ maxWidthClassName="max-w-2xl"
+ shellClassName="max-h-[80vh] overflow-hidden"
+ bodyClassName="p-4 overflow-y-auto max-h-[60vh]"
  >
- <X size={20} />
- </Button>
- </div>
- <div className="p-4 overflow-y-auto max-h-[60vh]">
  {historyData.length === 0 ? (
  <p className="text-text-secondary text-center py-4">No history found.</p>
  ) : (
@@ -1865,8 +1890,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  {nuc.rearing_batches && (
  <div>Batch: {nuc.rearing_batches.batch_name}</div>
  )}
- {nuc.queens && (
- <div>Grafted from: {nuc.queens.queen_number}</div>
+ {nucBreederNumber(nuc) && (
+ <div>Grafted from: {nucBreederNumber(nuc)}</div>
  )}
  <div>Inspections: {nuc.mating_nuc_inspections?.[0]?.count || 0}</div>
  </div>
@@ -1874,9 +1899,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  ))}
  </div>
  )}
- </div>
- </div>
- </div>
+ </ModalShell>
  )}
 
  {/* Distribute Modal */}
@@ -1913,17 +1936,32 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
 
  {/* Bulk Change Mating Site Modal */}
  {showBulkSiteModal && (
- <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
- <div className="bg-surface dark:bg-surface rounded-lg shadow-xl max-w-md w-full">
- <div className="p-4 border-b border-border flex justify-between items-center">
- <h3 className="text-lg font-semibold text-foreground">
- Change Mating Site ({selectedNucIds.size} nuc{selectedNucIds.size === 1 ? '' : 's'})
- </h3>
- <Button onClick={() => setShowBulkSiteModal(false)} className="p-2 text-text-secondary hover:text-foreground rounded">
- <X size={20} />
+ <ModalShell
+ title={`Change Mating Site (${selectedNucIds.size} nuc${selectedNucIds.size === 1 ? '' : 's'})`}
+ onClose={() => setShowBulkSiteModal(false)}
+ closeDisabled={bulkSiteSaving}
+ bodyClassName="p-4 space-y-2"
+ footer={
+ <div className="p-4 border-t border-border flex gap-3 justify-end">
+ <Button
+ type="button"
+ onClick={() => setShowBulkSiteModal(false)}
+ disabled={bulkSiteSaving}
+ className="px-4 py-2 bg-surface-secondary text-foreground rounded-lg hover:bg-surface-elevated disabled:opacity-50 disabled:cursor-not-allowed"
+ >
+ Cancel
+ </Button>
+ <Button
+ type="button"
+ onClick={handleBulkChangeMatingSite}
+ disabled={!bulkSiteLocation.trim() || bulkSiteSaving}
+ className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed"
+ >
+ {bulkSiteSaving ? 'Applying…' : 'Apply'}
  </Button>
  </div>
- <div className="p-4 space-y-2">
+ }
+ >
  <label className="block text-sm font-medium text-text-secondary mb-1">Mating Site</label>
  <select
  value={matingLocationOptions.find((a) => a.name === bulkSiteLocation)?.id || ''}
@@ -1948,27 +1986,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
  />
  <p className="text-sm text-text-tertiary">This site will be applied to all selected nucs.</p>
- </div>
- <div className="p-4 border-t border-border flex gap-3 justify-end">
- <Button
- type="button"
- onClick={() => setShowBulkSiteModal(false)}
- disabled={bulkSiteSaving}
- className="px-4 py-2 bg-surface-secondary text-foreground rounded-lg hover:bg-surface-elevated disabled:opacity-50 disabled:cursor-not-allowed"
- >
- Cancel
- </Button>
- <Button
- type="button"
- onClick={handleBulkChangeMatingSite}
- disabled={!bulkSiteLocation.trim() || bulkSiteSaving}
- className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed"
- >
- {bulkSiteSaving ? 'Applying…' : 'Apply'}
- </Button>
- </div>
- </div>
- </div>
+ </ModalShell>
  )}
  </div>
  )

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { fetchInChunks } from '@/lib/supabase-chunk'
+import { fetchAllPages, fetchInChunks } from '@/lib/supabase-chunk'
 import { parseLocalDate, toLocalDateString } from '@/lib/date-utils'
 import { setDistributionMatingConfirmation, updateDistributionMatingDate } from '@/hooks/useGraftDistributions'
 import { fillMissingRecipientLabels } from '@/lib/distribution-recipients'
@@ -304,12 +304,18 @@ export function useQueenTracker() {
           .in('distribution_type', ['queen_cell', 'virgin_queen', 'mated_queen'])
           .order('distribution_date', { ascending: false })
 
+      // Paged: one request stops at 1,000 rows and the oldest queens would drop out (C5a-17)
       const [ownResult, ownedGroupResult] = await Promise.all([
-        buildDistributionQuery(false).eq('user_id', userId),
+        fetchAllPages<unknown>((from, to) => buildDistributionQuery(false)
+          .eq('user_id', userId)
+          .order('id')
+          .range(from, to)),
         ownedGroupIds.length > 0
-          ? buildDistributionQuery(true)
+          ? fetchAllPages<unknown>((from, to) => buildDistributionQuery(true)
               .in('rearing_batches.rearing_group_id', ownedGroupIds)
               .neq('user_id', userId)
+              .order('id')
+              .range(from, to))
           : Promise.resolve({ data: [], error: null }),
       ])
 
@@ -605,7 +611,8 @@ export function useQueenTracker() {
       console.error('Error fetching queen tracker data:', err)
       if (requestId === fetchCounter.current) {
         setDistributions([])
-        setError(err instanceof Error ? err.message : 'Failed to load data')
+        // Supabase errors are plain objects, not Error instances
+        setError((err as { message?: string } | null)?.message || 'Failed to load data')
       }
     } finally {
       if (requestId === fetchCounter.current) setLoading(false)

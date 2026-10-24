@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, CheckSquare, HelpCircle } from 'lucide-react'
 import { useBatchGrafts } from '@/hooks/useBatchGrafts'
 import type { BreederRange } from '@/hooks/useBatchGrafts'
@@ -24,11 +24,19 @@ interface BatchGraftsSectionProps {
   emergenceDate?: string | null
   graftDate?: string | null
   matingApiaryName?: string | null
+  /** Single-breeder batch's breeder queen, stamped on new cells. */
+  motherQueenId?: string | null
   onCountsChange?: (counts: { grafts_accepted: number; queens_hatched: number; queens_mated: number }) => void
+  /** Told once the batch has cells, so the form can lock its breeder choices straight away. */
+  onGraftsExist?: () => void
 }
 
-export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, emergenceDate, graftDate, matingApiaryName, onCountsChange }: BatchGraftsSectionProps) {
-  const hook = useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, graftDate, onCountsChange })
+export default function BatchGraftsSection({ batchId, userId, cellCount, frameRows, cellsPerRow, groupId, emergenceDate, graftDate, matingApiaryName, motherQueenId, onCountsChange, onGraftsExist }: BatchGraftsSectionProps) {
+  const hook = useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceDate, graftDate, motherQueenId, onCountsChange })
+  const hasGrafts = hook.grafts.length > 0
+  useEffect(() => {
+    if (hasGrafts) onGraftsExist?.()
+  }, [hasGrafts, onGraftsExist])
   const [showRangeModal, setShowRangeModal] = useState(false)
 
   const handleFrameBulkButtonClick = async () => {
@@ -60,6 +68,18 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
   const nextStartCellNumber = hook.grafts.length > 0
     ? hook.grafts.reduce((max, g) => g.cell_number > max ? g.cell_number : max, 0) + 1
     : 1
+
+  if (hook.loading && hook.loadFailed) {
+    // A failed load used to leave "Loading grafts..." up until the page was reloaded (C5b-15)
+    return (
+      <div className="flex flex-wrap items-center gap-3 text-sm text-text-secondary">
+        <span>Couldn&apos;t load grafts. Check your connection and try again.</span>
+        <Button type="button" tone="blue" size="sm" onClick={() => hook.retryLoad()}>
+          Try again
+        </Button>
+      </div>
+    )
+  }
 
   if (hook.loading) {
     return <div className="text-sm text-text-secondary">Loading grafts...</div>

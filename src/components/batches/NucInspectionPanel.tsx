@@ -220,7 +220,12 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       .update(nucUpdate)
       .eq('id', nucId)
       .eq('user_id', userId)
-    if (nucSyncError) console.error('Error syncing nuc status:', nucSyncError)
+    // A failed write must report false, or the caller's "nuc status could not be updated" warning
+    // never shows and the user is told it all worked (C5a-12)
+    if (nucSyncError) {
+      console.error('Error syncing nuc status:', nucSyncError)
+      return false
+    }
 
     if (graftId && mode !== 'dates' && (graftStatus || mode === 'reset')) {
       const { error: graftSyncError } = await supabase
@@ -229,7 +234,10 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
         .eq('id', graftId)
         .eq('user_id', userId)
         .neq('status', 'sold')
-      if (graftSyncError) console.error('Error syncing graft status:', graftSyncError)
+      if (graftSyncError) {
+        console.error('Error syncing graft status:', graftSyncError)
+        return false
+      }
     }
 
     return true
@@ -317,9 +325,9 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
       deriveQueenStatus(deleted.queen_status, deleted.eggs_present ?? false, deleted.larvae_present ?? false) !== null
     if (!(await syncNucFromInspections(deletedCarriedStatus ? 'reset' : 'dates'))) {
       toast.error('Inspection deleted, but the nuc status could not be updated. Please refresh.')
+    } else {
+      toast.success('Inspection deleted')
     }
-
-    toast.success('Inspection deleted')
     fetchInspections()
     onInspectionChange?.()
   }
@@ -525,7 +533,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                 type="date"
                 value={markDate}
                 onChange={(e) => setMarkDate(e.target.value)}
-                className="px-2 py-1 text-sm border border-border rounded-md bg-surface text-foreground"
+                className="min-h-12 px-2 py-1 text-base border border-border rounded-md bg-surface text-foreground"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -546,7 +554,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                 value={markQueenNumber}
                 onChange={(e) => setMarkQueenNumber(e.target.value)}
                 placeholder="Optional"
-                className="w-32 px-2 py-1 text-sm border border-border rounded-md bg-surface text-foreground"
+                className="w-32 min-h-12 px-2 py-1 text-base border border-border rounded-md bg-surface text-foreground"
               />
             </div>
             <div className="flex gap-2">
@@ -581,7 +589,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                 type="date"
                 value={weightDate}
                 onChange={(e) => setWeightDate(e.target.value)}
-                className="px-2 py-1 text-sm border border-border rounded-md bg-surface text-foreground"
+                className="min-h-12 px-2 py-1 text-base border border-border rounded-md bg-surface text-foreground"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -593,7 +601,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                 min="1"
                 step="1"
                 placeholder="e.g. 220"
-                className="w-24 px-2 py-1 text-sm border border-border rounded-md bg-surface text-foreground"
+                className="w-24 min-h-12 px-2 py-1 text-base border border-border rounded-md bg-surface text-foreground"
               />
             </div>
             <div className="flex items-center gap-2">
@@ -603,7 +611,7 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                 value={weightNotes}
                 onChange={(e) => setWeightNotes(e.target.value)}
                 placeholder="Optional"
-                className="w-48 px-2 py-1 text-sm border border-border rounded-md bg-surface text-foreground"
+                className="w-48 min-h-12 px-2 py-1 text-base border border-border rounded-md bg-surface text-foreground"
               />
             </div>
             <div className="flex gap-2">
