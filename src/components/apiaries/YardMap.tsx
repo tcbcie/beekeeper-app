@@ -657,6 +657,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
             onRemove={handleRemove}
             onClose={() => setSelectedId(null)}
             entrance={entrance}
+            dims={yardDims}
           />
         )}
 

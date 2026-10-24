@@ -1,5 +1,5 @@
 'use client'
-import { useEffect } from 'react'
+import { useCallback, useEffect } from 'react'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, MapPin, Map, Plus, Clock, Search } from 'lucide-react'
@@ -23,23 +23,42 @@ export default function ApiaryDetailPage() {
     recentRecords,
     stats,
     loading,
+    loadError,
     fetchApiaryData,
   } = useApiaryDetail(apiaryId)
   const { yardMapEnabled } = useYardMapEnabled()
 
-  useEffect(() => {
-    const init = async () => {
-      const id = await getCurrentUserId()
-      if (!id) {
-        router.push('/login')
-        return
-      }
-      fetchApiaryData(id)
+  const load = useCallback(async () => {
+    const id = await getCurrentUserId()
+    if (!id) {
+      router.push('/login')
+      return
     }
-    init()
+    fetchApiaryData(id)
   }, [router, fetchApiaryData])
 
+  useEffect(() => {
+    load()
+  }, [load])
+
   if (loading) return <LoadingSpinner text="Loading apiary..." />
+
+  // A failed load (e.g. offline) is not a missing apiary: offer a retry instead of "not found"
+  if (!apiary && loadError) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-text-secondary">Couldn&apos;t load this apiary. Check your connection and try again.</p>
+        <div className="mt-4 flex justify-center gap-3">
+          <Button onClick={load} tone="blue" size="sm">
+            Try again
+          </Button>
+          <Button onClick={() => router.push('/dashboard/apiaries')} tone="neutral" size="sm">
+            Back to Apiaries
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   if (!apiary) {
     return (

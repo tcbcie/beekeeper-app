@@ -106,7 +106,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
         </p>
         <Link
           href={`/dashboard/apiaries/${apiaryId}/map`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-border rounded-full hover:border-forest-500 text-forest-700 dark:text-forest-300"
+          className="inline-flex min-h-[48px] items-center gap-1.5 px-3 py-1.5 text-sm font-medium border border-border rounded-full hover:border-forest-500 text-forest-700 dark:text-forest-300"
         >
           Open 2D apiary map
         </Link>
@@ -243,6 +243,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
           onRotate={noop}
           onRemove={noop}
           onClose={() => setSelectedId(null)}
+          dims={yardDims}
         />
       )}
 
@@ -257,7 +258,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
                   type="button"
                   onClick={() => setSelectedId(hive.id)}
                   aria-pressed={selectedId === hive.id}
-                  className={`inline-flex items-center min-h-[44px] px-3 py-1.5 rounded-lg border text-sm font-medium text-foreground hover:border-forest-500 ${
+                  className={`inline-flex items-center min-h-[48px] px-3 py-1.5 rounded-lg border text-sm font-medium text-foreground hover:border-forest-500 ${
                     selectedId === hive.id ? 'border-forest-600 ring-2 ring-forest-500' : 'border-border'
                   }`}
                 >

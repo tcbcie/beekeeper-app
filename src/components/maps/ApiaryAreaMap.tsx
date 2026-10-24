@@ -22,16 +22,16 @@ export default function ApiaryAreaMap({ lat, lon, radiusKm = 5 }: ApiaryAreaMapP
       center: [lat, lon],
       zoom: 11,
       zoomControl: false,
-      attributionControl: false,
       dragging: false,
       scrollWheelZoom: false,
       doubleClickZoom: false,
       touchZoom: false
     })
 
-    // Add OpenStreetMap tiles
+    // Add OpenStreetMap tiles. The credit is required by the OSM tile usage policy (C7a-21).
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map)
 
     // Draw circle (radius in meters)

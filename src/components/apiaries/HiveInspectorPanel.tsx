@@ -5,6 +5,7 @@ import IconButton from '@/components/ui/IconButton'
 import Button from '@/components/ui/Button'
 import { formatQueenlessLabel } from '@/lib/queenless'
 import { normaliseDeg, describeQueenLineage, type MapHive } from '@/hooks/useApiaryMap'
+import type { YardDims } from '@/lib/yard-geometry'
 
 const NUDGE_DEG = 15
 
@@ -12,11 +13,13 @@ const NUDGE_DEG = 15
  * Plain-language readout of where the hive's entrance faces relative to the
  * yard entrance marker — beekeepers think "as I walk in", not in compass terms.
  */
-function entranceRelation(hive: MapHive, entrance: { x: number; y: number } | null): string | null {
+export function entranceRelation(hive: MapHive, entrance: { x: number; y: number } | null, dims: YardDims): string | null {
   if (!entrance || hive.map_x == null || hive.map_y == null || hive.rotation_deg == null) return null
-  const bearing = normaliseDeg(
-    (Math.atan2(entrance.x - hive.map_x, -(entrance.y - hive.map_y)) * 180) / Math.PI,
-  )
+  // Positions are % of width and % of depth, which are different distances unless the apiary is
+  // square. Scale to real proportions first, as the canvas and hive rotation are (C7a-15).
+  const dx = (entrance.x - Number(hive.map_x)) * dims.widthUnits
+  const dy = (entrance.y - Number(hive.map_y)) * dims.depthUnits
+  const bearing = normaliseDeg((Math.atan2(dx, -dy) * 180) / Math.PI)
   const diff = ((hive.rotation_deg - bearing + 540) % 360) - 180
   if (Math.abs(diff) <= 45) return 'Faces towards the apiary entrance'
   if (Math.abs(diff) >= 135) return 'Faces away from the apiary entrance'
@@ -31,14 +34,16 @@ interface HiveInspectorPanelProps {
   onClose: () => void
   /** Yard entrance marker position (0-100 %), when set on the apiary. */
   entrance?: { x: number; y: number } | null
+  /** Apiary size, to turn % positions into real directions. */
+  dims: YardDims
 }
 
-export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemove, onClose, entrance }: HiveInspectorPanelProps) {
+export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemove, onClose, entrance, dims }: HiveInspectorPanelProps) {
   const queen = hive.queens?.[0]
   const isPlaced = (hive.map_x != null && hive.map_y != null) || hive.bench_id != null
   // numeric columns can arrive as strings; coerce before doing arithmetic.
   const rotation = Number(hive.rotation_deg ?? 0)
-  const relation = entranceRelation(hive, entrance ?? null)
+  const relation = entranceRelation(hive, entrance ?? null, dims)
   const lineage = describeQueenLineage(queen)
 
   return (

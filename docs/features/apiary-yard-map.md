@@ -119,6 +119,8 @@ The layout model was substantially extended — see `yard-map-v2-plan.md` for th
 * **Yard frame** — `apiaries.yard_entrance_x/y` (entrance marker, set by tapping the yard) and
   `apiaries.north_angle_deg` (user-adjustable north). The inspector reads out facing relative to
   the entrance ("Faces towards the yard entrance" etc.), since beekeepers think "as I walk in".
+  The direction is worked out in real proportions (% offsets scaled by `widthUnits`/`depthUnits`),
+  not raw percentages, which were wrong on any non-square apiary (batch 37, 24/10/2026).
 * **Footprints** — tokens are top-down footprints: square full hives, 1:2 rectangular nucs,
   rotating bodily with counter-rotating labels.
 * **Benches** — `yard_benches` table (centre, rotation, capacity 1–6; RLS mirrors hives) +

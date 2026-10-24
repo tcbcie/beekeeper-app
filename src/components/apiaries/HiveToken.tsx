@@ -186,7 +186,7 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
               onPointerDown={handleRotateStart}
               onMouseDown={swallowEvent}
               onTouchStart={swallowEvent}
-              className="pointer-events-auto absolute left-1/2 -top-[52px] -translate-x-1/2 h-9 w-9 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-sm font-bold"
+              className="pointer-events-auto absolute left-1/2 -top-[64px] -translate-x-1/2 h-12 w-12 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-sm font-bold"
               style={{ touchAction: 'none' }}
             >
               ⟳

@@ -191,7 +191,8 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     const seq = ++loadSeqRef.current
     // Ignore results once a newer load has started or the component unmounted.
     const isCurrent = () => mountedRef.current && seq === loadSeqRef.current
-    setLoading(true)
+    // No setLoading(true): `loading` starts true for the first load, and a reload (after a failed
+    // save) swapped the whole canvas for "Loading…", dropping any drag in progress (C7a-14)
     try {
       const userId = userIdRef.current ?? (await getCurrentUserId())
       userIdRef.current = userId

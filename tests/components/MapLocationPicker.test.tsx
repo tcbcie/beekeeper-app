@@ -32,6 +32,9 @@ const mockMapInstance = {
   }),
   remove: mockRemove,
   flyTo: mockFlyTo,
+  // The picker only flies to a pin that is off-screen, keeping the user's zoom
+  getBounds: vi.fn(() => ({ contains: () => false })),
+  getZoom: vi.fn(() => 14),
   addSource: mockAddSource,
   addLayer: mockAddLayer,
   getSource: mockGetSource.mockReturnValue({

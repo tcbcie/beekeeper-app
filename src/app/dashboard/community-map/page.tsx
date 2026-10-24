@@ -6,6 +6,7 @@ import { getCurrentUserId, isPowerUserOrAdmin } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
+import { useToast } from '@/components/ui/Toast'
 import { MapPin, Info, Map, Satellite, Users, Maximize2, Minimize2, Eye, EyeOff, Circle, Mountain, X, Calendar, TreeDeciduous, Crosshair } from 'lucide-react'
 // Types only: the library itself is loaded on demand in the map setup effect below.
 import type mapboxgl from 'mapbox-gl'
@@ -185,7 +186,9 @@ export default function CommunityMapPage() {
   // The mapbox-gl module, loaded on demand so the map library isn't part of the page's first load.
   const mapboxRef = useRef<typeof mapboxgl | null>(null)
   const router = useRouter()
+  const toast = useToast()
   const dca = useDCAPredictions(userApiaries)
+  const confirmDCA = dca.confirmDCA
 
   // Check auth and fetch shared apiaries
   useEffect(() => {
@@ -454,8 +457,8 @@ export default function CommunityMapPage() {
           }).setHTML(`
             <div style="padding: 4px 8px;">
               <div style="font-weight: 600; color: #22c55e;">${escapeHtml(apiary.name)}</div>
-              ${apiary.city ? `<div style="font-size: 12px; opacity: 0.7;">${escapeHtml(apiary.city)}</div>` : ''}
-              <div style="font-size: 11px; color: #22c55e; margin-top: 4px;">Your apiary</div>
+              ${apiary.city ? `<div style="font-size: 14px; opacity: 0.7;">${escapeHtml(apiary.city)}</div>` : ''}
+              <div style="font-size: 14px; color: #22c55e; margin-top: 4px;">Your apiary</div>
             </div>
           `)
 
@@ -475,7 +478,7 @@ export default function CommunityMapPage() {
 
           // Calculate distance to nearest user apiary
           const distance = calculateNearestDistance(apiary.latitude, apiary.longitude)
-          const distanceText = distance !== undefined ? `<div style="font-size: 11px; color: #34d399; margin-top: 4px;">${distance} km from your nearest apiary</div>` : ''
+          const distanceText = distance !== undefined ? `<div style="font-size: 14px; color: #34d399; margin-top: 4px;">${distance} km from your nearest apiary</div>` : ''
 
           const el = document.createElement('div')
           el.className = 'community-apiary-marker'
@@ -489,9 +492,9 @@ export default function CommunityMapPage() {
           }).setHTML(`
             <div style="padding: 4px 8px;">
               <div style="font-weight: 600; color: #a78bfa;">Shared Apiary</div>
-              ${apiary.city ? `<div style="font-size: 12px; opacity: 0.7;">Near ${escapeHtml(apiary.city)}</div>` : ''}
-              <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">${apiary.hive_count} ${apiary.hive_count === 1 ? 'hive' : 'hives'}</div>
-              <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
+              ${apiary.city ? `<div style="font-size: 14px; opacity: 0.7;">Near ${escapeHtml(apiary.city)}</div>` : ''}
+              <div style="font-size: 14px; opacity: 0.7; margin-top: 2px;">${apiary.hive_count} ${apiary.hive_count === 1 ? 'hive' : 'hives'}</div>
+              <div style="font-size: 14px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
               ${distanceText}
             </div>
           `)
@@ -513,7 +516,7 @@ export default function CommunityMapPage() {
           if (!map.current) return
 
           const distance = calculateNearestDistance(apiary.latitude, apiary.longitude)
-          const distanceText = distance !== undefined ? `<div style="font-size: 11px; color: #818cf8; margin-top: 4px;">${distance} km from your nearest apiary</div>` : ''
+          const distanceText = distance !== undefined ? `<div style="font-size: 14px; color: #818cf8; margin-top: 4px;">${distance} km from your nearest apiary</div>` : ''
 
           const el = document.createElement('div')
           el.className = 'all-apiary-marker'
@@ -527,9 +530,9 @@ export default function CommunityMapPage() {
           }).setHTML(`
             <div style="padding: 4px 8px;">
               <div style="font-weight: 600; color: #818cf8;">Registered Apiary</div>
-              ${apiary.city ? `<div style="font-size: 12px; opacity: 0.7;">Near ${escapeHtml(apiary.city)}</div>` : ''}
-              <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">${apiary.hive_count} ${apiary.hive_count === 1 ? 'hive' : 'hives'}</div>
-              <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
+              ${apiary.city ? `<div style="font-size: 14px; opacity: 0.7;">Near ${escapeHtml(apiary.city)}</div>` : ''}
+              <div style="font-size: 14px; opacity: 0.7; margin-top: 2px;">${apiary.hive_count} ${apiary.hive_count === 1 ? 'hive' : 'hives'}</div>
+              <div style="font-size: 14px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
               ${distanceText}
             </div>
           `)
@@ -573,9 +576,9 @@ export default function CommunityMapPage() {
           }).setHTML(`
             <div style="padding: 4px 8px;">
               <div style="font-weight: 600; color: #f59e0b;">Wild Colony</div>
-              <div style="font-size: 12px; opacity: 0.7;">${escapeHtml(nestingLabel)}</div>
-              <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">Status: ${escapeHtml(colony.status)}</div>
-              <div style="font-size: 11px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
+              <div style="font-size: 14px; opacity: 0.7;">${escapeHtml(nestingLabel)}</div>
+              <div style="font-size: 14px; opacity: 0.7; margin-top: 2px;">Status: ${escapeHtml(colony.status)}</div>
+              <div style="font-size: 14px; opacity: 0.6; margin-top: 4px;">~5km accuracy</div>
             </div>
           `)
 
@@ -630,7 +633,7 @@ export default function CommunityMapPage() {
         // Validate nihbs_url is a safe https link before rendering as href
         const safeUrl = ca.nihbs_url && ca.nihbs_url.startsWith('https://') ? ca.nihbs_url : null
         const nihbsLink = safeUrl
-          ? `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 4px; font-size: 11px; color: #0d9488;">View NIHBS →</a>`
+          ? `<a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" style="display: inline-block; margin-top: 4px; font-size: 14px; color: #0d9488;">View NIHBS →</a>`
           : ''
         const typeLabel = ca.type === 'apiary' ? 'Apiary CA' : 'Land CA'
 
@@ -641,9 +644,9 @@ export default function CommunityMapPage() {
         }).setHTML(`
           <div style="padding: 4px 8px; max-width: 200px;">
             <div style="font-weight: 600; color: #0d9488;">${escapeHtml(ca.name)}</div>
-            <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">${escapeHtml(typeLabel)}${ca.county ? ` · ${escapeHtml(ca.county)}` : ''}</div>
-            ${ca.description ? `<div style="font-size: 12px; margin-top: 4px; opacity: 0.85;">${escapeHtml(ca.description)}</div>` : ''}
-            <div style="font-size: 11px; color: #0d9488; margin-top: 2px;">Radius: ${ca.radius_km} km</div>
+            <div style="font-size: 14px; opacity: 0.7; margin-top: 2px;">${escapeHtml(typeLabel)}${ca.county ? ` · ${escapeHtml(ca.county)}` : ''}</div>
+            ${ca.description ? `<div style="font-size: 14px; margin-top: 4px; opacity: 0.85;">${escapeHtml(ca.description)}</div>` : ''}
+            <div style="font-size: 14px; color: #0d9488; margin-top: 2px;">Radius: ${ca.radius_km} km</div>
             ${nihbsLink}
           </div>
         `)
@@ -749,37 +752,55 @@ export default function CommunityMapPage() {
             : 'Predicted DCA'
         const titleColour = match ? (match.confirmed ? '#059669' : '#9ca3af') : '#e11d48'
 
-        let footerHtml: string
+        let footerHtml = ''
         if (match) {
           const statusLabel = match.confirmed ? 'Confirmed' : 'Denied'
           const statusColour = match.confirmed ? '#059669' : '#9ca3af'
-          footerHtml = `<div style="font-size: 10px; color: ${statusColour}; margin-top: 4px;">${statusLabel} on ${escapeHtml(match.observation_date)}</div>`
+          footerHtml = `<div style="font-size: 14px; color: ${statusColour}; margin-top: 4px;">${statusLabel} on ${escapeHtml(match.observation_date)}</div>`
         } else if (pred.isFallback) {
-          footerHtml = `<div style="font-size: 10px; color: #9ca3af; margin-top: 4px;">Low-confidence fallback hotspot for this apiary</div>`
-        } else {
-          footerHtml = `<div style="display: flex; gap: 6px; margin-top: 6px;">
-            <button onclick="window.__dcaConfirm(${pred.latitude}, ${pred.longitude}, true)" style="font-size: 10px; padding: 2px 8px; border-radius: 4px; border: 1px solid #059669; background: #ecfdf5; color: #059669; cursor: pointer;">Drones seen</button>
-            <button onclick="window.__dcaConfirm(${pred.latitude}, ${pred.longitude}, false)" style="font-size: 10px; padding: 2px 8px; border-radius: 4px; border: 1px solid #9ca3af; background: #f9fafb; color: #6b7280; cursor: pointer;">No drones</button>
-          </div>`
+          footerHtml = `<div style="font-size: 14px; color: #9ca3af; margin-top: 4px;">Low-confidence fallback hotspot for this apiary</div>`
+        }
+
+        // Built as DOM, not an HTML string with inline onclick calling a window global: inline
+        // handlers break under a stricter CSP, and the global let any script write confirmations (C7a-18)
+        const content = document.createElement('div')
+        content.innerHTML = `
+          <div style="padding: 4px 8px; max-width: 240px;">
+            <div style="font-weight: 600; color: ${titleColour};">${escapeHtml(popupTitle)}</div>
+            <div style="font-size: 14px; margin-top: 2px;">Direction: ${escapeHtml(pred.direction)} · Score: ${pred.score}</div>
+            <div style="font-size: 14px; margin-top: 2px;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${confidenceColour}; margin-right: 4px;"></span>
+              ${escapeHtml(pred.confidence)} confidence
+            </div>
+            <div style="font-size: 14px; opacity: 0.8; margin-top: 4px;">Signals: ${signalSummary}</div>
+            <div style="font-size: 14px; opacity: 0.7; margin-top: 4px;">From: ${apiaryNames}</div>
+            ${footerHtml}
+          </div>
+        `
+        if (!match && !pred.isFallback) {
+          const actions = document.createElement('div')
+          actions.style.cssText = 'display: flex; gap: 6px; margin: 6px 8px 4px;'
+          const addAction = (label: string, confirmed: boolean, colours: string) => {
+            const button = document.createElement('button')
+            button.type = 'button'
+            button.textContent = label
+            button.style.cssText = `font-size: 14px; min-height: 48px; padding: 4px 10px; border-radius: 6px; cursor: pointer; ${colours}`
+            button.addEventListener('click', async () => {
+              const saved = await confirmDCA(pred.latitude, pred.longitude, confirmed)
+              if (!saved) toast.error("Couldn't save your DCA observation. Please try again.")
+            })
+            actions.appendChild(button)
+          }
+          addAction('Drones seen', true, 'border: 1px solid #059669; background: #ecfdf5; color: #059669;')
+          addAction('No drones', false, 'border: 1px solid #9ca3af; background: #f9fafb; color: #6b7280;')
+          content.appendChild(actions)
         }
 
         const popup = new mb.Popup({
           offset: 15,
           closeButton: false,
           closeOnClick: true,
-        }).setHTML(`
-          <div style="padding: 4px 8px; max-width: 220px;">
-            <div style="font-weight: 600; color: ${titleColour};">${escapeHtml(popupTitle)}</div>
-            <div style="font-size: 11px; margin-top: 2px;">Direction: ${escapeHtml(pred.direction)} · Score: ${pred.score}</div>
-            <div style="font-size: 11px; margin-top: 2px;">
-              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: ${confidenceColour}; margin-right: 4px;"></span>
-              ${escapeHtml(pred.confidence)} confidence
-            </div>
-            <div style="font-size: 10px; opacity: 0.8; margin-top: 4px;">Signals: ${signalSummary}</div>
-            <div style="font-size: 11px; opacity: 0.7; margin-top: 4px;">From: ${apiaryNames}</div>
-            ${footerHtml}
-          </div>
-        `)
+        }).setDOMContent(content)
 
         const marker = new mb.Marker({ element: el })
           .setLngLat([pred.longitude, pred.latitude])
@@ -790,7 +811,7 @@ export default function CommunityMapPage() {
       })
     }
 
-  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations, allApiaries, showAllApiaries, styleVersion])
+  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, timeFilter, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations, confirmDCA, toast, allApiaries, showAllApiaries, styleVersion])
 
   // Handle style change
   const handleStyleChange = (newStyle: MapStyleKey) => {
@@ -828,19 +849,6 @@ export default function CommunityMapPage() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isFullscreen])
 
-  // Global callback for DCA confirmation buttons in Mapbox popups
-  useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(window as any).__dcaConfirm = async (lat: number, lng: number, confirmed: boolean) => {
-      const saved = await dca.confirmDCA(lat, lng, confirmed)
-      if (!saved) {
-        console.warn('Failed to save DCA confirmation')
-      }
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return () => { delete (window as any).__dcaConfirm }
-  }, [dca])
-
   if (loading) return <LoadingSpinner text="Loading community map..." />
 
   // Fullscreen layout wrapper
@@ -855,7 +863,7 @@ export default function CommunityMapPage() {
           <Button
             type="button"
             onClick={() => handleStyleChange('outdoors')}
-            className={`p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-text-secondary hover:bg-surface-secondary'}`}
+            className={`min-w-[48px] p-2 rounded-l-lg transition-colors ${mapStyle === 'outdoors' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-text-secondary hover:bg-surface-secondary'}`}
             title="Outdoors map"
           >
             <Map size={18} />
@@ -863,7 +871,7 @@ export default function CommunityMapPage() {
           <Button
             type="button"
             onClick={() => handleStyleChange('satellite')}
-            className={`p-2 transition-colors ${mapStyle === 'satellite' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-text-secondary hover:bg-surface-secondary'}`}
+            className={`min-w-[48px] p-2 transition-colors ${mapStyle === 'satellite' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-text-secondary hover:bg-surface-secondary'}`}
             title="Satellite view"
           >
             <Satellite size={18} />
@@ -871,7 +879,7 @@ export default function CommunityMapPage() {
           <Button
             type="button"
             onClick={() => handleStyleChange('terrain')}
-            className={`p-2 rounded-r-lg transition-colors ${mapStyle === 'terrain' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-text-secondary hover:bg-surface-secondary'}`}
+            className={`min-w-[48px] p-2 rounded-r-lg transition-colors ${mapStyle === 'terrain' ? 'bg-purple-100 dark:bg-purple-900 text-purple-900 dark:text-purple-300' : 'text-text-secondary hover:bg-surface-secondary'}`}
             title="Terrain view"
           >
             <Mountain size={18} />
@@ -884,7 +892,7 @@ export default function CommunityMapPage() {
           <select
             value={flightRadius}
             onChange={(e) => setFlightRadius(parseFloat(e.target.value))}
-            className="bg-transparent text-sm text-foreground border-none focus:ring-0 cursor-pointer"
+            className="min-h-[48px] bg-transparent text-sm text-foreground border-none focus:ring-0 cursor-pointer"
           >
             {FLIGHT_RADIUS_OPTIONS.map(option => (
               <option key={option.value} value={option.value}>
@@ -899,26 +907,26 @@ export default function CommunityMapPage() {
           <Button
             type="button"
             onClick={() => setShowUserApiaries(prev => !prev)}
-            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showUserApiaries ? 'text-green-600' : 'text-text-tertiary'}`}
+            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-sm transition-colors ${showUserApiaries ? 'text-green-600' : 'text-text-tertiary'}`}
           >
-            {showUserApiaries ? <Eye size={12} /> : <EyeOff size={12} />}
+            {showUserApiaries ? <Eye size={16} /> : <EyeOff size={16} />}
             <span>Your apiaries</span>
           </Button>
           <Button
             type="button"
             onClick={() => setShowSharedApiaries(prev => !prev)}
-            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showSharedApiaries ? 'text-purple-600' : 'text-text-tertiary'}`}
+            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-sm transition-colors ${showSharedApiaries ? 'text-purple-600' : 'text-text-tertiary'}`}
           >
-            {showSharedApiaries ? <Eye size={12} /> : <EyeOff size={12} />}
+            {showSharedApiaries ? <Eye size={16} /> : <EyeOff size={16} />}
             <span>Shared apiaries</span>
           </Button>
           {isPowerUser && (
             <Button
               type="button"
               onClick={() => setShowAllApiaries(prev => !prev)}
-              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showAllApiaries ? 'text-indigo-600' : 'text-text-tertiary'}`}
+              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-sm transition-colors ${showAllApiaries ? 'text-indigo-600' : 'text-text-tertiary'}`}
             >
-              {showAllApiaries ? <Eye size={12} /> : <EyeOff size={12} />}
+              {showAllApiaries ? <Eye size={16} /> : <EyeOff size={16} />}
               <span>All apiaries</span>
             </Button>
           )}
@@ -926,9 +934,9 @@ export default function CommunityMapPage() {
             <Button
               type="button"
               onClick={() => setShowWildColonies(prev => !prev)}
-              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showWildColonies ? 'text-amber-600' : 'text-text-tertiary'}`}
+              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-sm transition-colors ${showWildColonies ? 'text-amber-600' : 'text-text-tertiary'}`}
             >
-              {showWildColonies ? <Eye size={12} /> : <EyeOff size={12} />}
+              {showWildColonies ? <Eye size={16} /> : <EyeOff size={16} />}
               <TreeDeciduous size={12} />
               <span>Wild colonies</span>
             </Button>
@@ -936,9 +944,9 @@ export default function CommunityMapPage() {
           <Button
             type="button"
             onClick={() => setShowConservationAreas(prev => !prev)}
-            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showConservationAreas ? 'text-teal-600' : 'text-text-tertiary'}`}
+            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-sm transition-colors ${showConservationAreas ? 'text-teal-600' : 'text-text-tertiary'}`}
           >
-            {showConservationAreas ? <Eye size={12} /> : <EyeOff size={12} />}
+            {showConservationAreas ? <Eye size={16} /> : <EyeOff size={16} />}
             <span className="w-2.5 h-2.5 rounded-full bg-teal-600 inline-block flex-shrink-0" />
             <span>Conservation areas</span>
           </Button>
@@ -949,9 +957,9 @@ export default function CommunityMapPage() {
                 setShowDCAPredictions(prev => !prev)
                 if (showDCAPredictions) dca.clear()
               }}
-              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-xs transition-colors ${showDCAPredictions ? 'text-rose-600' : 'text-text-tertiary'}`}
+              className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded text-sm transition-colors ${showDCAPredictions ? 'text-rose-600' : 'text-text-tertiary'}`}
             >
-              {showDCAPredictions ? <Eye size={12} /> : <EyeOff size={12} />}
+              {showDCAPredictions ? <Eye size={16} /> : <EyeOff size={16} />}
               <Crosshair size={12} />
               <span>DCA predictions</span>
             </Button>
@@ -987,7 +995,7 @@ export default function CommunityMapPage() {
             <button
               onClick={() => dca.calculate(selectedDCAApiaries)}
               disabled={dca.loading || selectedDCAApiaries.length === 0}
-              className="mt-2 w-full px-2 py-1 text-xs font-medium rounded bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="mt-2 w-full min-h-[48px] px-2 py-1 text-sm font-medium rounded bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {dca.loading ? 'Analysing terrain...' : 'Predict DCAs'}
             </button>
@@ -1012,7 +1020,7 @@ export default function CommunityMapPage() {
           <select
             value={timeFilter}
             onChange={(e) => setTimeFilter(parseInt(e.target.value))}
-            className="bg-transparent text-sm text-foreground border-none focus:ring-0 cursor-pointer"
+            className="min-h-[48px] bg-transparent text-sm text-foreground border-none focus:ring-0 cursor-pointer"
           >
             {TIME_FILTER_OPTIONS.map(option => (
               <option key={option.value} value={option.value}>
@@ -1073,7 +1081,7 @@ export default function CommunityMapPage() {
         <Button
           type="button"
           onClick={toggleFullscreen}
-          className="bg-surface-elevated p-2 rounded-lg shadow-lg hover:bg-surface-secondary transition-colors border border-border"
+          className="min-w-[48px] bg-surface-elevated p-2 rounded-lg shadow-lg hover:bg-surface-secondary transition-colors border border-border"
           title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
         >
           {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
@@ -1084,7 +1092,7 @@ export default function CommunityMapPage() {
           <Button
             type="button"
             onClick={toggleFullscreen}
-            className="bg-red-100 dark:bg-red-900/30 p-2 rounded-lg shadow-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors border border-red-200 dark:border-red-800 text-red-800 dark:text-red-400"
+            className="min-w-[48px] bg-red-100 dark:bg-red-900/30 p-2 rounded-lg shadow-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors border border-red-200 dark:border-red-800 text-red-800 dark:text-red-400"
             title="Exit fullscreen"
           >
             <X size={18} />

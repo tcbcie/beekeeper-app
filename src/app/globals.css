@@ -1256,6 +1256,12 @@ textarea::placeholder {
   }
 }
 
+/* Mapbox popups inherit the map's 12px; 14px is the app's minimum for map text (C7a-19) */
+.mapboxgl-popup-content {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
 /* Mapbox popup dark mode styling */
 .dark .mapboxgl-popup-content {
   background-color: var(--surface-elevated);

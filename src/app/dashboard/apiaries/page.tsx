@@ -1,10 +1,11 @@
 'use client'
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { getTeamAccess } from '@/lib/team-access'
 import { isValidEircode, formatEircode } from '@/lib/eircode'
 import { deleteUploadedImages } from '@/lib/upload-image'
+import { fetchAllPages, fetchInChunks } from '@/lib/supabase-chunk'
 import { Plus, X, MapPin, Loader2, Map, UserPlus, Camera, MapPinOff } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
@@ -290,12 +291,25 @@ export default function ApiariesPage() {
     }
   }
 
+  const fetchSeqRef = useRef(0)
+
   const fetchApiaries = useCallback(async (userIdParam?: string) => {
     const currentUserId = userIdParam || userId
     if (!currentUserId) return
+    // Only the latest load may update the list (C7a-13)
+    const seq = ++fetchSeqRef.current
+    const isCurrent = () => seq === fetchSeqRef.current
+    // A failed load keeps the list on screen rather than showing "no apiaries" (C7a-12)
+    const loadFailed = (error: unknown) => {
+      console.error('Error fetching apiaries:', error)
+      if (!isCurrent()) return
+      toast.warning("Couldn't load your apiaries. Check your connection and try again.")
+      setLoading(false)
+    }
 
     // One memoised round trip for team membership + shared apiary access
     const { isTeamMember: hasTeams, sharedApiaryIds } = await getTeamAccess(currentUserId)
+    if (!isCurrent()) return
     setIsTeamMember(hasTeams)
 
     // Fetch own + shared apiaries
@@ -305,7 +319,9 @@ export default function ApiariesPage() {
     } else {
       query = query.eq('user_id', currentUserId)
     }
-    const { data } = await query.order('name')
+    const { data, error: apiariesError } = await query.order('name')
+    if (apiariesError) return loadFailed(apiariesError)
+    if (!isCurrent()) return
 
     if (data) {
       // Look up team names for shared apiaries
@@ -332,12 +348,17 @@ export default function ApiariesPage() {
       }
 
       // Enrich with hive counts and last inspection dates (active hives only)
+      // Chunked and paged: one request is cut at 1,000 rows, and long id lists overflow the URL (C7a-11)
       const apiaryIds = data.map(a => a.id)
-      const { data: activeHives } = await supabase
-        .from('hives')
-        .select('id, apiary_id')
-        .in('apiary_id', apiaryIds)
-        .is('archived_at', null)
+      const { data: activeHives, error: hivesError } = await fetchInChunks<{ id: string; apiary_id: string }>(apiaryIds, (chunk) =>
+        fetchAllPages((from, to) => supabase
+          .from('hives')
+          .select('id, apiary_id')
+          .in('apiary_id', chunk)
+          .is('archived_at', null)
+          .order('id')
+          .range(from, to)))
+      if (hivesError) return loadFailed(hivesError)
 
       const hiveCounts: Record<string, number> = {}
       const activeHiveIds: string[] = []
@@ -351,20 +372,26 @@ export default function ApiariesPage() {
       // Only fetch inspections for active hives
       const lastInspections: Record<string, string> = {}
       if (activeHiveIds.length > 0) {
-        const { data: inspData } = await supabase
-          .from('inspections')
-          .select('hive_id, inspection_date')
-          .in('hive_id', activeHiveIds)
-          .order('inspection_date', { ascending: false })
+        const { data: inspData, error: inspError } = await fetchInChunks<{ hive_id: string; inspection_date: string }>(activeHiveIds, (chunk) =>
+          fetchAllPages((from, to) => supabase
+            .from('inspections')
+            .select('hive_id, inspection_date')
+            .in('hive_id', chunk)
+            .order('inspection_date', { ascending: false })
+            .order('id')
+            .range(from, to)))
+        if (inspError) return loadFailed(inspError)
 
-        ;((inspData || []) as Array<{ hive_id: string; inspection_date: string }>).forEach(i => {
+        // Chunks merge out of date order, so keep the newest date per apiary explicitly
+        inspData.forEach(i => {
           const apiaryId = hiveToApiary[i.hive_id]
-          if (apiaryId && !lastInspections[apiaryId]) {
+          if (apiaryId && (!lastInspections[apiaryId] || i.inspection_date > lastInspections[apiaryId])) {
             lastInspections[apiaryId] = i.inspection_date
           }
         })
       }
 
+      if (!isCurrent()) return
       const enriched = data.map(a => ({
         ...a,
         image_url: normaliseStoragePublicUrl(a.image_url),
@@ -395,8 +422,8 @@ export default function ApiariesPage() {
         backfillGridReferences(missingGrid, currentUserId)
       }
     }
-    setLoading(false)
-  }, [userId])
+    if (isCurrent()) setLoading(false)
+  }, [userId, toast])
 
   useEffect(() => {
     const initUser = async () => {
@@ -409,7 +436,9 @@ export default function ApiariesPage() {
       fetchApiaries(id)
     }
     initUser()
-  }, [router, fetchApiaries])
+    // [router] only: fetchApiaries changes identity with userId, which re-ran this and loaded twice
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router])
 
   // One save at a time: a double tap must not create two apiaries.
   const { submitting, run } = useSubmitLock()
@@ -564,10 +593,14 @@ export default function ApiariesPage() {
       }
 
       // Handle conservation area record
-      const lat = formData.latitude ? parseFloat(formData.latitude) : null
-      const lng = formData.longitude ? parseFloat(formData.longitude) : null
+      // The coordinates just saved (possibly geocoded from the Eircode), not the raw form fields (C7a-08)
+      const lat = latitude ? parseFloat(latitude) : null
+      const lng = longitude ? parseFloat(longitude) : null
+      // The apiary is saved by now. A failure here must not leave the form open as "new", where
+      // saving again would insert a second apiary, so it warns instead of throwing.
+      let caError: unknown = null
       if (formData.is_conservation_area && formData.share_location && lat && lng) {
-        const { error: caError } = await supabase
+        const { error } = await supabase
           .from('conservation_areas')
           .upsert({
             apiary_id: apiaryId,
@@ -580,15 +613,19 @@ export default function ApiariesPage() {
             country: formData.is_uk_ni ? 'NI' : 'IE',
             is_active: true,
           }, { onConflict: 'apiary_id' })
-        if (caError) throw caError
+        caError = error
       } else {
         // Remove CA record if unchecked or location sharing disabled
-        const { error: caDelError } = await supabase
+        const { error } = await supabase
           .from('conservation_areas')
           .delete()
           .eq('apiary_id', apiaryId)
           .eq('user_id', userId!)
-        if (caDelError) throw caDelError
+        caError = error
+      }
+      if (caError) {
+        console.error('Error saving conservation area:', caError)
+        toast.warning('Apiary saved, but its conservation area could not be updated. Edit the apiary to try again.')
       }
 
       fetchApiaries()
@@ -597,7 +634,8 @@ export default function ApiariesPage() {
       // Only when the row never landed - past that point the saved apiary
       // references this photo and deleting it would break a real record.
       if (!recordSaved) await deleteUploadedImages(uploadedUrls)
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred'
+      // Supabase errors are plain objects, not Error instances
+      const errorMessage = (error as { message?: string } | null)?.message || 'An error occurred'
       toast.error(errorMessage)
     }
   }
@@ -726,10 +764,11 @@ export default function ApiariesPage() {
     }
   }
 
-  // Reset filter if "shared" is selected but user is no longer a team member
-  if (categoryFilter === 'shared' && !isTeamMember) {
-    setCategoryFilter('all')
-  }
+  // Reset filter if "shared" is selected but user is no longer a team member. Only once loaded:
+  // isTeamMember starts false, and resetting during the first render lost a saved choice (C7a-06).
+  useEffect(() => {
+    if (!loading && categoryFilter === 'shared' && !isTeamMember) setCategoryFilter('all')
+  }, [loading, categoryFilter, isTeamMember, setCategoryFilter])
 
   // Client-side category filtering
   const filteredApiaries = useMemo(() => apiaries.filter(a => {

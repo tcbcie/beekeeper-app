@@ -32,7 +32,7 @@ export default function ApiaryMapPage() {
         </div>
         <Link
           href={`/dashboard/apiaries/${apiaryId}/map/3d`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface border border-border rounded-full hover:border-forest-500 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
+          className="inline-flex min-h-[48px] items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface border border-border rounded-full hover:border-forest-500 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
         >
           <Box size={14} />
           3D view

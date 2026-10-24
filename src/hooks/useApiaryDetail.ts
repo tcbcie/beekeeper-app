@@ -40,17 +40,20 @@ interface UseApiaryDetailReturn {
   recentRecords: ApiaryRecentRecord[]
   stats: ApiaryStats
   loading: boolean
+  /** The load failed for a reason other than "no such apiary" (e.g. offline). */
+  loadError: boolean
   isOwner: boolean
   fetchApiaryData: (currentUserId: string) => Promise<void>
 }
 
 export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
   const toast = useToast()
-  const mountedRef = useRef(true)
+  // Each load is numbered; only the latest may update state, and unmounting retires them all (C7a-13)
+  const fetchSeqRef = useRef(0)
 
   useEffect(() => {
-    mountedRef.current = true
-    return () => { mountedRef.current = false }
+    const seqRef = fetchSeqRef
+    return () => { seqRef.current += 1 }
   }, [])
 
   const [apiary, setApiary] = useState<Apiary | null>(null)
@@ -64,9 +67,13 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
   })
   const [loading, setLoading] = useState(true)
   const [isOwner, setIsOwner] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   const fetchApiaryData = useCallback(async (currentUserId: string) => {
+    const seq = ++fetchSeqRef.current
+    const isCurrent = () => seq === fetchSeqRef.current
     setLoading(true)
+    setLoadError(false)
     try {
       // Fetch apiary details
       const { data: apiaryData, error: apiaryError } = await supabase
@@ -76,7 +83,7 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
         .single()
 
       if (apiaryError) throw apiaryError
-      if (!mountedRef.current) return
+      if (!isCurrent()) return
       setApiary({
         ...apiaryData,
         image_url: normaliseStoragePublicUrl(apiaryData.image_url)
@@ -91,7 +98,7 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
         .order('hive_number')
 
       if (hivesError) throw hivesError
-      if (!mountedRef.current) return
+      if (!isCurrent()) return
 
       // hives.queen_id → queens is a to-one embed: it arrives as one object (or null), while
       // the page reads `queens[0]`. Normalise it to the array shape here, as useApiaryMap does.
@@ -121,13 +128,17 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
           supabase.from('harvests').select('id, harvest_date, hive_id, hives(hive_number)').in('hive_id', hiveIds).order('harvest_date', { ascending: false }).limit(3),
         ])
 
-        if (!mountedRef.current) return
+        if (!isCurrent()) return
 
         if (inspRes.error) console.error('Failed to fetch inspections:', inspRes.error)
         if (treatRes.error) console.error('Failed to fetch treatments:', treatRes.error)
         if (checkRes.error) console.error('Failed to fetch varroa checks:', checkRes.error)
         if (feedRes.error) console.error('Failed to fetch feedings:', feedRes.error)
         if (harvestRes.error) console.error('Failed to fetch harvests:', harvestRes.error)
+        // Say so, rather than let "No inspections yet" or an empty Recent Activity pass as fact
+        if (inspRes.error || treatRes.error || checkRes.error || feedRes.error || harvestRes.error) {
+          toast.warning("Some recent records couldn't be loaded.")
+        }
 
         // record.hive_id → hives is a to-one embed, so it arrives as one object.
         type RecordRow = { id: string; hive_id: string; hives: { hive_number: string } | { hive_number: string }[] | null }
@@ -167,10 +178,16 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
         lastInspectionDate: lastInspDate,
       })
     } catch (error) {
+      if (!isCurrent()) return
       console.error('Error fetching apiary data:', error)
-      toast.error('Failed to load apiary details')
+      // PGRST116 = no row visible: the apiary doesn't exist or isn't shared, so "not found" is
+      // right. Anything else (offline, timeout) is a load failure, not a missing apiary (C7a-12).
+      if ((error as { code?: string } | null)?.code !== 'PGRST116') {
+        setLoadError(true)
+        toast.error('Failed to load apiary details')
+      }
     } finally {
-      setLoading(false)
+      if (isCurrent()) setLoading(false)
     }
   }, [apiaryId, toast])
 
@@ -180,6 +197,7 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
     recentRecords,
     stats,
     loading,
+    loadError,
     isOwner,
     fetchApiaryData,
   }

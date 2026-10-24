@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { MapPin, Crosshair, X, Circle, Layers, Map, Satellite, Maximize2, Minimize2 } from 'lucide-react'
@@ -189,6 +189,9 @@ interface ApiaryLocation {
   longitude: number | null
 }
 
+// One shared empty list, so the default doesn't change identity on every render
+const NO_APIARIES: ApiaryLocation[] = []
+
 interface MapLocationPickerProps {
   latitude: string
   longitude: string
@@ -205,7 +208,7 @@ export default function MapLocationPicker({
   onLocationChange,
   onCityChange,
   onClose,
-  existingApiaries = [],
+  existingApiaries = NO_APIARIES,
   editingApiaryId,
 }: MapLocationPickerProps) {
   const toast = useToast()
@@ -221,7 +224,11 @@ export default function MapLocationPicker({
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   // Filter out the apiary being edited from existing apiaries
-  const otherApiaries = existingApiaries.filter(a => a.id !== editingApiaryId && a.latitude && a.longitude)
+  // Memoised: the overlap and marker effects depend on it, and a new array each render re-ran them
+  const otherApiaries = useMemo(
+    () => existingApiaries.filter(a => a.id !== editingApiaryId && a.latitude && a.longitude),
+    [existingApiaries, editingApiaryId]
+  )
 
   // Store callbacks in refs to avoid stale closures
   const onLocationChangeRef = useRef(onLocationChange)
@@ -572,10 +579,19 @@ export default function MapLocationPicker({
 
     if (!isNaN(lat) && !isNaN(lng)) {
       marker.current.setLngLat([lng, lat])
-      map.current.flyTo({ center: [lng, lat], zoom: 14 })
+      // Only bring the pin into view when it is off-screen or the map is at country scale (the
+      // first tap on the zoom-6 Ireland view), never zooming out: flying to zoom 14 on every tap
+      // threw away the zoom the user had chosen to place the pin (C7a-10)
+      if (!map.current.getBounds()?.contains([lng, lat]) || map.current.getZoom() < 10) {
+        map.current.flyTo({ center: [lng, lat], zoom: Math.max(map.current.getZoom(), 14) })
+      }
       updateCircle(lng, lat, flightRadius)
+      // Every tap, drag and initial load comes back here as props, with fresh closures. The map's
+      // tap handler is registered once and holds stale state, so it never drew the zones (C7a-09).
+      setOverlapInfo(calculateTotalOverlap([lng, lat], flightRadius, otherApiaries, flightRadius))
+      updateOverlapLayer(lng, lat, flightRadius)
     }
-  }, [latitude, longitude, mapLoaded, flightRadius, updateCircle])
+  }, [latitude, longitude, mapLoaded, flightRadius, updateCircle, otherApiaries, updateOverlapLayer])
 
   // Get user's current location
   const handleGetCurrentLocation = () => {
@@ -847,8 +863,8 @@ export default function MapLocationPicker({
           </div>
         )}
 
-        {/* Bottom controls */}
-        <div className="absolute bottom-4 right-4 flex gap-2">
+        {/* Bottom controls: raised clear of the map credit in the corner */}
+        <div className="absolute bottom-8 right-4 flex gap-2">
           {/* Fullscreen toggle */}
           <Button
             type="button"

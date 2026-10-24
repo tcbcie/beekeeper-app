@@ -184,7 +184,7 @@ export default function BenchToken({ bench, isReadOnly, selected, occupiedSlots,
         <span
           aria-hidden
           data-noprint
-          className="absolute left-1/2 top-full mt-3 -translate-x-1/2 flex items-center justify-center gap-1 h-9 min-w-[64px] px-2 rounded-md border-2 border-amber-900 bg-amber-700 text-white text-sm font-bold shadow-md"
+          className="absolute left-1/2 top-full mt-3 -translate-x-1/2 flex items-center justify-center gap-1 h-12 min-w-[64px] px-2 rounded-md border-2 border-amber-900 bg-amber-700 text-white text-sm font-bold shadow-md"
         >
           <GripHorizontal className="w-4 h-4" /> bench
         </span>
@@ -197,7 +197,7 @@ export default function BenchToken({ bench, isReadOnly, selected, occupiedSlots,
           onPointerDown={handleRotateStart}
           onMouseDown={swallowEvent}
           onTouchStart={swallowEvent}
-          className="pointer-events-auto absolute top-1/2 -translate-y-1/2 h-9 w-9 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-sm font-bold"
+          className="pointer-events-auto absolute top-1/2 -translate-y-1/2 h-12 w-12 rounded-full border-2 border-forest-600 bg-white shadow-md cursor-grab active:cursor-grabbing flex items-center justify-center text-forest-700 text-sm font-bold"
           style={{ left: '100%', marginLeft: 14, touchAction: 'none' }}
         >
           ⟳

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 37: Apiaries and Maps</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    .decide { background: #fff7ed; border-left: 4px solid #ea580c; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 37: Apiaries and Maps</h1>
+<p><strong>Status:</strong> Implemented 24/10/2026, waiting for your test. This is Phase 2 fix batch 24. It covers the open Medium findings in chunk 7a: the apiaries pages, the location picker, the apiary layout map and the community map (C7a-06, 08 to 16, 18 to 21). Three agents checked each finding against the code, and I re-checked the key lines. No database change is needed.</p>
+
+<h2>A. Apiaries list: C7a-06, C7a-08, C7a-11, C7a-12, C7a-13</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7a-06, the "Shared" filter forgets itself:</strong> when the page loads, it doesn't know yet that you're in a team, so it switches a saved "Shared Apiaries" filter back to "All" and saves that. Now it only checks after loading has finished.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7a-08, conservation area silently not created:</strong> if you enter only an Eircode, tick "Declare as NIHBS Conservation Area" and save without pressing lookup, the apiary gets its position from the Eircode. The conservation area code reads the empty form fields, so no area is created, or an existing one is deleted. Now it uses the same position that was saved.
+  <ul><li>Also, if the conservation area can't be saved after a new apiary has been, the form stayed open as "new", and saving again made a second apiary. Now the apiary is kept, the form closes, and a warning tells you to edit it to try again.</li></ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7a-11, "last inspection" missing:</strong> the list fetches every inspection for every hive in one request to find each apiary's last inspection. Past 1,000 inspections the oldest are dropped, so an apiary inspected less often shows no date. With many hives, the request can also fail outright. It now reads in chunks and pages, as the hives list does.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7a-12 / C7a-13, failures shown as "no apiaries", and double loading:</strong> if the list fails to load, you see the empty "no apiaries" screen. Now you get a warning, and the list you had stays. The page also loads the whole list twice on every visit, with nothing deciding which answer wins; it now loads once, and only the latest load applies.</div>
+
+<h2>B. Apiary detail: C7a-12, C7a-13</h2>
+<div class="task"><input type="checkbox" checked disabled> A network failure shows "Apiary not found". Now it says "Couldn't load this apiary" with a Try again button. "Not found" is kept for an apiary that really doesn't exist or isn't shared with you. Loads are numbered, so an older answer can't overwrite a newer one.</div>
+
+<h2>C. Location picker (apiaries, wild colonies): C7a-09, C7a-10</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7a-09, overlap zones never drawn:</strong> the purple zones where your flight radius overlaps other apiaries only appear after you change the radius or the map style. Tapping, dragging the pin and opening an existing apiary never draw them, because the tap handler holds old state. They're now drawn whenever the position changes.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7a-10, zoom jumps on every tap:</strong> each tap flies the map back to zoom 14, so you can't zoom in to place the pin precisely. Now the map only moves when the pin is off-screen, and never zooms out. "Use my location" still flies there.</div>
+
+<h2>D. Apiary layout map: C7a-14, C7a-15, C7a-19, C7a-20</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7a-14, the map vanishes after a failed save:</strong> when a bench move, resize or delete fails, the map reloads and is swapped for "Loading apiary map…", which drops any drag or turn in progress and makes a phone page jump. Now a reload updates the map in place.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7a-15, wrong "entrance is to its left / right":</strong> the direction to the apiary entrance was worked out from percentages of width and depth. Those are different distances unless the apiary is square, so on a 20 m × 10 m apiary a hive facing the entrance could be told it's to its left. It now uses the apiary's real proportions.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7a-19 / C7a-20, small handles:</strong> the hive and bench turn handles and the bench grab tab go from 36px to 48px. The "3D view" and "Open 2D apiary map" links and the 3D view control go to 48px.</div>
+
+<h2>E. Community map: C7a-18, C7a-19, C7a-20, C7a-16</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7a-18, DCA buttons:</strong> "Drones seen" and "No drones" in the drone congregation area (DCA) popup call a global function through inline <code>onclick</code>. It works today, but it would stop the day the security policy is tightened, and any script on the page could call it. The buttons are now built properly, the batch 13 way, with no global. A failed save now shows a message instead of failing silently.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C7a-19 / C7a-20, small text and targets:</strong>
+  <ul>
+    <li><strong>Popups and layer toggles:</strong> popup text goes from 10–12px to 14px, and the layer toggle labels from 12px to 14px.</li>
+    <li><strong>DCA buttons:</strong> 14px text and 48px tall.</li>
+    <li><strong>"Predict DCAs" and the two selects:</strong> 48px tall.</li>
+    <li><strong>Map style, fullscreen and close buttons:</strong> 48px wide.</li>
+  </ul>
+</div>
+<div class="decide"><strong>C7a-16, all markers rebuilt on every toggle: left as it is (your decision).</strong> It's real. Hiding one layer redraws everything. But the redraw is a few dozen markers; "all apiaries" is a single clustered layer. Splitting the 450-line drawing step into "draw" and "show/hide" is the biggest, riskiest change here, and it touches the style-reload fix from batch 30. I'd record it as accepted. Say if you'd rather I do it.</div>
+
+<h2>F. Map credits: C7a-21</h2>
+<div class="task"><input type="checkbox" checked disabled> The small map on the public jar and batch trace pages uses OpenStreetMap tiles with the credit turned off, which their terms don't allow. It now shows "© OpenStreetMap contributors". The location picker's bottom buttons partly covered the Mapbox credit; they move up a little. The community map's credit was already fine.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; a short test for the entrance direction; the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/apiaries-maps-batch37-plan.md</code>, the relevant apiary map docs, the Phase 2 register and memory if a new rule comes out of it.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>Apiaries: pick "Shared Apiaries", reload the page: it stays on Shared.</li>
+    <li>Edit an apiary in the location picker: tap and drag the pin; the overlap zones draw and your zoom stays.</li>
+    <li>Apiary layout map: a hive facing the entrance says "Faces towards the apiary entrance". The turn handles are easier to grab.</li>
+    <li>Community map: open a predicted DCA and tap "Drones seen": it turns to "Confirmed". The popup text is readable.</li>
+    <li>Open a public jar trace page with a map: "© OpenStreetMap contributors" shows in the corner.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Saved “Shared” filter</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Reset to All on every load</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Kept</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Conservation area with only an Eircode</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Silently not created (or deleted)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Uses the saved position</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Conservation area save fails on a new apiary</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Form stays “new”; saving again duplicates</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Apiary kept, warning shown</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Apiary list “last inspection”</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Missing past 1,000 inspections</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Chunked, paged reads</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Apiary list or detail fails to load</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“No apiaries” / “Apiary not found”</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Warning, or “Couldn't load” with Try again</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Location picker</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Overlap zones never drawn; zoom snaps to 14</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Zones drawn; zoom kept</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Layout map after a failed save</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Canvas swapped for “Loading…”</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Updates in place</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Entrance direction</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Wrong on non-square apiaries</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Real proportions</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">DCA buttons</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Inline onclick, global function, 10px</td><td style="border:1px solid #e7d9b8;padding:0.4rem">DOM buttons, 14px, 48px, error toast</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Map text and targets</td><td style="border:1px solid #e7d9b8;padding:0.4rem">10–12px popups; 34–36px controls</td><td style="border:1px solid #e7d9b8;padding:0.4rem">14px; 48px</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Trace page map credit</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Missing</td><td style="border:1px solid #e7d9b8;padding:0.4rem">© OpenStreetMap contributors</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0; 837 tests pass (3 new); no database change</td></tr>
+</table>
+<ul>
+  <li><strong>Found on the way:</strong> the location picker rebuilt its other-apiaries list on every render, which re-ran its marker and circle effects (and the zoom jump) on every render too. It's now memoised.</li>
+  <li><strong>Tests:</strong>
+    <ul>
+      <li><code>tests/components/apiaries/entrance-relation.test.ts</code> covers the non-square case, which fails on the old formula, plus left/right and the no-entrance case.</li>
+      <li>The picker test's fake map gained <code>getBounds</code>/<code>getZoom</code>.</li>
+    </ul>
+  </li>
+  <li><strong>QA audit:</strong> no Critical, High or Medium issues. One Low was fixed: the first tap on the zoomed-out Ireland view still flies in to the pin. One Low was accepted: if team access can't be loaded (offline), a saved "Shared" filter falls back to All.</li>
+  <li><strong>C7a-16:</strong> left as it is, by your decision.</li>
+</ul>
+</body>
+</html>
