@@ -44,8 +44,11 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
   const [averages, setAverages] = useState<InspectionAverages | null>(null)
   const [loading, setLoading] = useState(true)
   const [isOwner, setIsOwner] = useState(false)
+  const fetchSeqRef = useRef(0)
 
   const fetchHiveData = useCallback(async (currentUserId: string) => {
+    // Refreshes keep the page on screen, so only the latest load may update it (C3-08)
+    const seq = ++fetchSeqRef.current
     setLoading(true)
     try {
       // The hive and its records need only the hive id, so they load together: one round trip
@@ -102,6 +105,7 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
           .order('start_date', { ascending: true })
       ])
 
+      if (seq !== fetchSeqRef.current) return
       if (hiveError) throw hiveError
 
       // Check if this hive's apiary is shared with teams
@@ -134,6 +138,7 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
         }
       }
 
+      if (seq !== fetchSeqRef.current) return
       setHive(hiveData)
       setIsOwner(hiveData.user_id === currentUserId)
 
@@ -184,10 +189,11 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
         setAverages(null)
       }
     } catch (error) {
+      if (seq !== fetchSeqRef.current) return
       console.error('Error fetching hive data:', error)
       toast.error('Failed to load hive data')
     } finally {
-      setLoading(false)
+      if (seq === fetchSeqRef.current) setLoading(false)
     }
   }, [hiveId, toast])
 

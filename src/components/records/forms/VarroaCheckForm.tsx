@@ -369,7 +369,7 @@ export default function VarroaCheckForm({
             type="datetime-local"
             value={formData.check_date}
             onChange={(e) => setFormData(prev => ({ ...prev, check_date: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             required
           />
         </div>
@@ -404,7 +404,7 @@ export default function VarroaCheckForm({
                 setOtherCheckMethod(e.target.value)
                 setFormData(prev => ({ ...prev, method: e.target.value }))
               }}
-              className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground mt-2"
+              className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground mt-2"
               placeholder="Specify other method"
               required
             />
@@ -419,7 +419,7 @@ export default function VarroaCheckForm({
             type="number"
             value={formData.mites_count ?? ''}
             onChange={(e) => handleMitesChange(e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="Optional"
           />
         </div>
@@ -432,7 +432,7 @@ export default function VarroaCheckForm({
             type="number"
             value={formData.sample_size ?? ''}
             onChange={(e) => handleSampleSizeChange(e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="Optional"
           />
         </div>
@@ -449,7 +449,7 @@ export default function VarroaCheckForm({
             step="0.01"
             value={formData.infestation_rate ?? ''}
             onChange={(e) => setFormData(prev => ({ ...prev, infestation_rate: e.target.value ? parseFloat(e.target.value) : null }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="Optional (or auto-calculated)"
           />
           {/* Season-based interpretation guidance */}
@@ -461,7 +461,7 @@ export default function VarroaCheckForm({
         </div>
 
         <div className="flex items-center">
-          <label className="flex items-center gap-3 cursor-pointer">
+          <label className="flex min-h-[48px] items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
               checked={formData.action_threshold_reached}
@@ -484,7 +484,7 @@ export default function VarroaCheckForm({
           <textarea
             value={formData.notes}
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             rows={4}
             placeholder="Optional notes about the check"
           />

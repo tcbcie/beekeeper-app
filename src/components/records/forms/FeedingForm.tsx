@@ -193,7 +193,7 @@ export default function FeedingForm({
             type="date"
             value={formData.feed_date}
             onChange={(e) => setFormData(prev => ({ ...prev, feed_date: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             required
           />
         </div>
@@ -226,7 +226,7 @@ export default function FeedingForm({
               type="text"
               value={otherFeedType}
               onChange={(e) => setOtherFeedType(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground mt-2"
+              className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground mt-2"
               placeholder="Enter custom feed type"
               required
             />
@@ -251,7 +251,7 @@ export default function FeedingForm({
             step="0.1"
             value={formData.quantity ?? ''}
             onChange={(e) => setFormData(prev => ({ ...prev, quantity: e.target.value ? parseFloat(e.target.value) : null }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="Optional"
           />
         </div>
@@ -275,7 +275,7 @@ export default function FeedingForm({
           <textarea
             value={formData.notes}
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             rows={4}
             placeholder="Optional notes about the feeding"
           />

@@ -7,6 +7,7 @@ import { getCurrentUserId } from '@/lib/auth'
 import { BookOpen, ChevronDown, Check, Trash2 } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { useLogbook } from '@/hooks/useLogbook'
 import { LOGBOOK_STAGES, getTotalSkillCount } from '@/lib/logbook-skills'
 import type { LogbookCategory, LogbookSkill, LogbookEntryFormData } from '@/types/logbook'
@@ -26,6 +27,7 @@ export default function LogbookPage() {
  const [saving, setSaving] = useState(false)
 
  const { entries, loading, fetchEntries, saveEntry, deleteEntry } = useLogbook()
+ const confirm = useConfirm()
 
  const stage = useMemo(
  () => LOGBOOK_STAGES.find(s => s.id === selectedStageId),
@@ -88,6 +90,14 @@ export default function LogbookPage() {
  }
 
  const handleDelete = async (skillId: string, entryId: string) => {
+ // An assessor's sign-off can't be recreated without the assessor, so ask first (C4-17)
+ const confirmed = await confirm({
+ title: 'Remove this sign-off?',
+ message: "This deletes the assessor's sign-off for this skill. It can't be undone.",
+ confirmLabel: 'Remove',
+ variant: 'danger',
+ })
+ if (!confirmed) return
  setSaving(true)
  await deleteEntry(skillId, entryId)
  if (activeSkillId === skillId) setActiveSkillId(null)
@@ -120,7 +130,7 @@ export default function LogbookPage() {
  setExpandedCategories({})
  setActiveSkillId(null)
  }}
- className="w-full sm:w-auto px-3 py-2 text-sm rounded-lg border border-border bg-surface text-foreground focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+ className="w-full sm:w-auto min-h-12 px-3 py-2 text-base rounded-lg border border-border bg-surface text-foreground focus:ring-2 focus:ring-forest-500 focus:border-transparent"
  >
  {LOGBOOK_STAGES.map(s => (
  <option key={s.id} value={s.id}>{s.name}</option>
@@ -226,7 +236,7 @@ export default function LogbookPage() {
  value={formData.assessor_name}
  onChange={e => setFormData(prev => ({ ...prev, assessor_name: e.target.value }))}
  maxLength={200}
- className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-surface text-foreground focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+ className="w-full min-h-12 px-3 py-2 text-base rounded-lg border border-border bg-surface text-foreground focus:ring-2 focus:ring-forest-500 focus:border-transparent"
  placeholder="Enter assessor name"
  />
  </div>
@@ -240,7 +250,7 @@ export default function LogbookPage() {
  value={formData.assessor_fibka_number}
  onChange={e => setFormData(prev => ({ ...prev, assessor_fibka_number: e.target.value }))}
  maxLength={50}
- className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-surface text-foreground focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+ className="w-full min-h-12 px-3 py-2 text-base rounded-lg border border-border bg-surface text-foreground focus:ring-2 focus:ring-forest-500 focus:border-transparent"
  placeholder="Optional"
  />
  </div>
@@ -253,7 +263,7 @@ export default function LogbookPage() {
  value={formData.completed_date}
  max={getCurrentDate()}
  onChange={e => setFormData(prev => ({ ...prev, completed_date: e.target.value }))}
- className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-surface text-foreground focus:ring-2 focus:ring-forest-500 focus:border-transparent"
+ className="w-full min-h-12 px-3 py-2 text-base rounded-lg border border-border bg-surface text-foreground focus:ring-2 focus:ring-forest-500 focus:border-transparent"
  />
  </div>
  </div>
@@ -265,7 +275,7 @@ export default function LogbookPage() {
  value={formData.notes}
  onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
  rows={2}
- className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-surface text-foreground focus:ring-2 focus:ring-forest-500 focus:border-transparent resize-none"
+ className="w-full px-3 py-2 text-base rounded-lg border border-border bg-surface text-foreground focus:ring-2 focus:ring-forest-500 focus:border-transparent resize-none"
  placeholder="Optional notes"
  />
  </div>

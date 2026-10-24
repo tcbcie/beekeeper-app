@@ -159,12 +159,15 @@ export default function InspectionCard({
                   <button
                     type="button"
                     onClick={() => setQrModalOpen(true)}
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-sm font-semibold bg-surface-secondary text-text-primary border border-border hover:bg-surface-elevated transition-colors max-w-full whitespace-nowrap"
+                    className="group inline-flex min-h-12 max-w-full items-center whitespace-nowrap"
                     title={`QR tag: ${hive.qr_tag_code} — tap to view`}
                     aria-label={`Show QR code ${hive.qr_tag_code}`}
                   >
-                    <QrCode size={12} className="flex-shrink-0 text-blue-500" />
-                    <span className="truncate">{hive.qr_tag_code}</span>
+                    {/* 48px tap area; the chip keeps its small look */}
+                    <span className="inline-flex max-w-full items-center gap-1 px-1.5 py-0.5 rounded text-sm font-semibold bg-surface-secondary text-text-primary border border-border group-hover:bg-surface-elevated transition-colors">
+                      <QrCode size={12} className="flex-shrink-0 text-blue-500" />
+                      <span className="truncate">{hive.qr_tag_code}</span>
+                    </span>
                   </button>
                 )}
               </h3>
@@ -195,7 +198,7 @@ export default function InspectionCard({
             <IconButton
               onClick={() => onEdit(inspection)}
               tone="blue"
-              className="min-h-[44px] min-w-[44px] touch-manipulation"
+              className="touch-manipulation"
               aria-label="Edit inspection"
             >
               <Edit2 size={18} />
@@ -203,7 +206,7 @@ export default function InspectionCard({
             <IconButton
               onClick={() => onDelete(inspection.id)}
               tone="danger"
-              className="min-h-[44px] min-w-[44px] touch-manipulation"
+              className="touch-manipulation"
               aria-label="Delete inspection"
             >
               <Trash2 size={18} />

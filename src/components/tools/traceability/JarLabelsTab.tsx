@@ -17,6 +17,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import RecordJarSaleModal from './RecordJarSaleModal'
 import Link from 'next/link'
 import { isAllowedPaymentUrl } from '@/lib/payment-links'
+import { SITE_URL } from '@/lib/site-url'
 import type { TraceLabel, TraceLabelFormData } from '@/types/traceability'
 
 /** Batches offered by the "point at batch" selector. */
@@ -388,10 +389,7 @@ export default function JarLabelsTab({
     onLabelsChanged?.()
   }
 
-  const labelUrl = (code: string) => {
-    const base = typeof window !== 'undefined' ? window.location.origin : 'https://www.hivecraic.com'
-    return `${base}/j/${code}`
-  }
+  const labelUrl = (code: string) => `${SITE_URL}/j/${code}`
 
   const saveQr = async (kind: 'png' | 'svg', elementId: string, label: TraceLabel) => {
     const filename = `qr-${label.code}.${kind}`

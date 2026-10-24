@@ -1416,7 +1416,7 @@ export default function TasksEventsPage() {
                   checked={formData.all_day}
                   onChange={(e) => setFormData({ ...formData, all_day: e.target.checked })}
                 />
-                <label htmlFor="all_day" className="text-sm font-medium text-text-secondary">
+                <label htmlFor="all_day" className="flex min-h-12 items-center text-sm font-medium text-text-secondary">
                   All day event
                 </label>
               </div>
@@ -1505,7 +1505,7 @@ export default function TasksEventsPage() {
                     checked={formData.reminder_enabled}
                     onChange={(e) => setFormData({ ...formData, reminder_enabled: e.target.checked })}
                   />
-                  <label htmlFor="reminder_enabled" className="text-sm font-semibold text-foreground">
+                  <label htmlFor="reminder_enabled" className="flex min-h-12 items-center text-sm font-semibold text-foreground">
                     Enable reminder <span className="fj-text-warning">(required for email notifications)</span>
                   </label>
                 </div>

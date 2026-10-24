@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import { getTeamAccess } from '@/lib/team-access'
+import { useToast } from '@/components/ui/Toast'
 
 // Helper to compare string arrays (avoids unnecessary state updates)
 function arraysEqual(a: string[], b: string[]): boolean {
@@ -64,26 +65,39 @@ interface UseRecordsDataReturn {
   fetchAllData: (userId: string, ownershipFilter: OwnershipFilter) => Promise<void>
 }
 
+/**
+ * The hive IDs the record lists are filtered by, or null if they couldn't be loaded. A failed
+ * lookup must not read as "no hives": every list would be emptied without a word (C4-15).
+ */
 async function getAccessibleHiveIds(userId: string): Promise<{
   ownHiveIds: string[]
   teamHiveIds: string[]
   allTeamHiveIds: string[]
-}> {
+} | null> {
   // Own hive IDs and team access resolved in parallel (one memoised RPC)
-  const [{ data: ownHivesData }, { sharedApiaryIds }] = await Promise.all([
+  const [{ data: ownHivesData, error: ownHivesError }, { sharedApiaryIds }] = await Promise.all([
     supabase.from('hives').select('id').eq('user_id', userId),
     getTeamAccess(userId),
   ])
 
+  if (ownHivesError) {
+    console.error('Error fetching own hive IDs:', ownHivesError)
+    return null
+  }
   const ownHiveIds = ownHivesData?.map(h => h.id) || []
 
   let teamHiveIds: string[] = []
   let allTeamHiveIds: string[] = []
   if (sharedApiaryIds.length > 0) {
-    const { data: teamHivesData } = await supabase
+    const { data: teamHivesData, error: teamHivesError } = await supabase
       .from('hives')
       .select('id, user_id')
       .in('apiary_id', sharedApiaryIds)
+
+    if (teamHivesError) {
+      console.error('Error fetching team hive IDs:', teamHivesError)
+      return null
+    }
 
     allTeamHiveIds = (teamHivesData || []).map(h => h.id)
     teamHiveIds = (teamHivesData || [])
@@ -94,7 +108,10 @@ async function getAccessibleHiveIds(userId: string): Promise<{
   return { ownHiveIds, teamHiveIds, allTeamHiveIds }
 }
 
+const RECORDS_LOAD_FAILED = "Couldn't load your records. Check your connection and try again."
+
 export function useRecordsData(): UseRecordsDataReturn {
+  const toast = useToast()
   // Data state
   const [inspections, setInspections] = useState<Inspection[]>([])
   const [varroaTreatments, setVarroaTreatments] = useState<VarroaTreatment[]>([])
@@ -134,7 +151,10 @@ export function useRecordsData(): UseRecordsDataReturn {
   }, [])
 
   const fetchInspections = useCallback(async (userId: string, ownershipFilter: OwnershipFilter, preloadedHiveIds?: { ownHiveIds: string[]; teamHiveIds: string[]; allTeamHiveIds: string[] }) => {
-    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = preloadedHiveIds || await getAccessibleHiveIds(userId)
+    const hiveIds = preloadedHiveIds || await getAccessibleHiveIds(userId)
+    // Keep what's on screen rather than empty the list when the hive IDs couldn't be loaded
+    if (!hiveIds) return
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = hiveIds
 
     updateSharedHiveIds(allTeamHiveIds)
 
@@ -169,9 +189,9 @@ export function useRecordsData(): UseRecordsDataReturn {
       .order('inspection_time', { ascending: false, nullsFirst: false })
       .limit(500)
 
+    // A failed refresh keeps the current list instead of emptying it
     if (error) {
       console.error('Error fetching inspections:', error)
-      setInspections([])
       return
     }
 
@@ -223,7 +243,10 @@ export function useRecordsData(): UseRecordsDataReturn {
   }, [updateSharedHiveIds])
 
   const fetchVarroaTreatments = useCallback(async (userId: string, ownershipFilter: OwnershipFilter, preloadedHiveIds?: { ownHiveIds: string[]; teamHiveIds: string[]; allTeamHiveIds: string[] }) => {
-    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = preloadedHiveIds || await getAccessibleHiveIds(userId)
+    const hiveIds = preloadedHiveIds || await getAccessibleHiveIds(userId)
+    // Keep what's on screen rather than empty the list when the hive IDs couldn't be loaded
+    if (!hiveIds) return
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = hiveIds
     updateSharedHiveIds(allTeamHiveIds)
 
     let targetHiveIds: string[]
@@ -240,18 +263,25 @@ export function useRecordsData(): UseRecordsDataReturn {
       return
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('varroa_treatments')
       .select('*, hives(hive_number, apiary_id), profiles(first_name, last_name, email), application_method:dropdown_values!varroa_treatments_application_method_id_fkey(value)')
       .in('hive_id', targetHiveIds)
       .order('treatment_date', { ascending: false })
       .limit(500)
 
+    if (error) {
+      console.error('Error fetching varroa treatments:', error)
+      return
+    }
     if (data) setVarroaTreatments(data as VarroaTreatment[])
   }, [updateSharedHiveIds])
 
   const fetchVarroaChecks = useCallback(async (userId: string, ownershipFilter: OwnershipFilter, preloadedHiveIds?: { ownHiveIds: string[]; teamHiveIds: string[]; allTeamHiveIds: string[] }) => {
-    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = preloadedHiveIds || await getAccessibleHiveIds(userId)
+    const hiveIds = preloadedHiveIds || await getAccessibleHiveIds(userId)
+    // Keep what's on screen rather than empty the list when the hive IDs couldn't be loaded
+    if (!hiveIds) return
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = hiveIds
     updateSharedHiveIds(allTeamHiveIds)
 
     let targetHiveIds: string[]
@@ -268,13 +298,17 @@ export function useRecordsData(): UseRecordsDataReturn {
       return
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('varroa_checks')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
       .in('hive_id', targetHiveIds)
       .order('check_date', { ascending: false })
       .limit(500)
 
+    if (error) {
+      console.error('Error fetching varroa checks:', error)
+      return
+    }
     if (data) {
       const normalisedChecks = data.map((check) => ({
         ...check,
@@ -285,7 +319,10 @@ export function useRecordsData(): UseRecordsDataReturn {
   }, [updateSharedHiveIds])
 
   const fetchFeedings = useCallback(async (userId: string, ownershipFilter: OwnershipFilter, preloadedHiveIds?: { ownHiveIds: string[]; teamHiveIds: string[]; allTeamHiveIds: string[] }) => {
-    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = preloadedHiveIds || await getAccessibleHiveIds(userId)
+    const hiveIds = preloadedHiveIds || await getAccessibleHiveIds(userId)
+    // Keep what's on screen rather than empty the list when the hive IDs couldn't be loaded
+    if (!hiveIds) return
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = hiveIds
     updateSharedHiveIds(allTeamHiveIds)
 
     let targetHiveIds: string[]
@@ -302,18 +339,25 @@ export function useRecordsData(): UseRecordsDataReturn {
       return
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('feedings')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
       .in('hive_id', targetHiveIds)
       .order('feed_date', { ascending: false })
       .limit(500)
 
+    if (error) {
+      console.error('Error fetching feedings:', error)
+      return
+    }
     if (data) setFeedings(data as Feeding[])
   }, [updateSharedHiveIds])
 
   const fetchHarvests = useCallback(async (userId: string, ownershipFilter: OwnershipFilter, preloadedHiveIds?: { ownHiveIds: string[]; teamHiveIds: string[]; allTeamHiveIds: string[] }) => {
-    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = preloadedHiveIds || await getAccessibleHiveIds(userId)
+    const hiveIds = preloadedHiveIds || await getAccessibleHiveIds(userId)
+    // Keep what's on screen rather than empty the list when the hive IDs couldn't be loaded
+    if (!hiveIds) return
+    const { ownHiveIds, teamHiveIds, allTeamHiveIds } = hiveIds
     updateSharedHiveIds(allTeamHiveIds)
 
     let targetHiveIds: string[]
@@ -330,13 +374,17 @@ export function useRecordsData(): UseRecordsDataReturn {
       return
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('harvests')
       .select('*, hives(hive_number), profiles(first_name, last_name, email)')
       .in('hive_id', targetHiveIds)
       .order('harvest_date', { ascending: false })
       .limit(500)
 
+    if (error) {
+      console.error('Error fetching harvests:', error)
+      return
+    }
     if (data) setHarvests(data as Harvest[])
   }, [updateSharedHiveIds])
 
@@ -380,11 +428,16 @@ export function useRecordsData(): UseRecordsDataReturn {
 
   const fetchHives = useCallback(async (userId: string) => {
     // Fetch user's own hives
-    const { data: ownHives } = await supabase
+    const { data: ownHives, error: ownHivesError } = await supabase
       .from('hives')
       .select('*')
       .eq('user_id', userId)
       .order('hive_number')
+    // A failed lookup keeps the current picker list rather than leaving it short
+    if (ownHivesError) {
+      console.error('Error fetching hives:', ownHivesError)
+      return
+    }
 
     // One memoised round trip for team membership + shared apiary access
     const { isTeamMember: hasTeams, sharedApiaryIds } = await getTeamAccess(userId)
@@ -392,11 +445,15 @@ export function useRecordsData(): UseRecordsDataReturn {
 
     let sharedHives: Hive[] = []
     if (sharedApiaryIds.length > 0) {
-      const { data: sharedHivesData } = await supabase
+      const { data: sharedHivesData, error: sharedHivesError } = await supabase
         .from('hives')
         .select('*')
         .in('apiary_id', sharedApiaryIds)
         .order('hive_number')
+      if (sharedHivesError) {
+        console.error('Error fetching shared hives:', sharedHivesError)
+        return
+      }
 
       sharedHives = sharedHivesData || []
     }
@@ -416,7 +473,8 @@ export function useRecordsData(): UseRecordsDataReturn {
         .select('hive_id, code')
         .in('hive_id', hiveIds)
         .not('hive_id', 'is', null)
-        .order('assigned_at', { ascending: false })
+        .order('assigned_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false, nullsFirst: false })
 
       // Keep only the first (most recent) code per hive
       for (const tag of qrTags ?? []) {
@@ -436,22 +494,30 @@ export function useRecordsData(): UseRecordsDataReturn {
 
   const fetchApiaries = useCallback(async (userId: string) => {
     // Fetch user's own apiaries
-    const { data: ownApiaries } = await supabase
+    const { data: ownApiaries, error: ownApiariesError } = await supabase
       .from('apiaries')
       .select('id, name, user_id')
       .eq('user_id', userId)
       .order('name')
+    if (ownApiariesError) {
+      console.error('Error fetching apiaries:', ownApiariesError)
+      return
+    }
 
     // One memoised round trip for shared apiary access
     const { sharedApiaryIds } = await getTeamAccess(userId)
 
     let sharedApiaries: Apiary[] = []
     if (sharedApiaryIds.length > 0) {
-      const { data: sharedApiaryData } = await supabase
+      const { data: sharedApiaryData, error: sharedApiariesError } = await supabase
         .from('apiaries')
         .select('id, name, user_id')
         .in('id', sharedApiaryIds)
         .neq('user_id', userId)
+      if (sharedApiariesError) {
+        console.error('Error fetching shared apiaries:', sharedApiariesError)
+        return
+      }
 
       sharedApiaries = (sharedApiaryData || []).map(apiary => ({
         id: apiary.id,
@@ -625,6 +691,10 @@ export function useRecordsData(): UseRecordsDataReturn {
     try {
       // Fetch accessible hive IDs once and pass to all record fetchers
       const hiveIds = await getAccessibleHiveIds(userId)
+      if (!hiveIds) {
+        toast.warning(RECORDS_LOAD_FAILED)
+        return
+      }
 
       // Fetch UK/NI resident flag
       supabase
@@ -650,8 +720,10 @@ export function useRecordsData(): UseRecordsDataReturn {
       ])
     } catch (error) {
       console.error('Failed to fetch records data:', error)
+      toast.warning(RECORDS_LOAD_FAILED)
     }
   }, [
+    toast,
     fetchInspections,
     fetchVarroaTreatments,
     fetchVarroaChecks,

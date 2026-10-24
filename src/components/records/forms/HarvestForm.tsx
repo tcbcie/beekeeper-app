@@ -184,7 +184,7 @@ export default function HarvestForm({
             type="date"
             value={formData.harvest_date}
             onChange={(e) => setFormData(prev => ({ ...prev, harvest_date: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             required
           />
         </div>
@@ -196,7 +196,7 @@ export default function HarvestForm({
             step="0.1"
             value={formData.honey_weight ?? ''}
             onChange={(e) => setFormData(prev => ({ ...prev, honey_weight: e.target.value ? parseFloat(e.target.value) : null }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="Optional"
           />
         </div>
@@ -208,7 +208,7 @@ export default function HarvestForm({
             step="0.1"
             value={formData.wax_weight ?? ''}
             onChange={(e) => setFormData(prev => ({ ...prev, wax_weight: e.target.value ? parseFloat(e.target.value) : null }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="Optional"
           />
         </div>
@@ -232,7 +232,7 @@ export default function HarvestForm({
             type="number"
             value={formData.frames_harvested ?? ''}
             onChange={(e) => setFormData(prev => ({ ...prev, frames_harvested: e.target.value ? parseInt(e.target.value) : null }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="Optional"
           />
         </div>
@@ -246,7 +246,7 @@ export default function HarvestForm({
             max="30"
             value={formData.moisture_content ?? ''}
             onChange={(e) => setFormData(prev => ({ ...prev, moisture_content: e.target.value ? parseFloat(e.target.value) : null }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="e.g., 18.5"
           />
           <p className="text-sm text-text-tertiary mt-1">EU limit: 20%</p>
@@ -271,7 +271,7 @@ export default function HarvestForm({
           <textarea
             value={formData.notes}
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             rows={4}
             placeholder="Optional notes about the harvest"
           />

@@ -14,6 +14,7 @@ import { calculateBestBeforeDate, formatDateForInput, harvestWeightKg } from '@/
 import { storyTemplates, replacePlaceholders, hasUnfilledPlaceholders, getUnfilledPlaceholders, stripMarkers } from '@/lib/story-templates'
 import type { BulkContainer, BatchRun, BatchJar, BatchFormData, JarConfig, BatchLabelPointer } from '@/types/traceability'
 import Button from '@/components/ui/Button'
+import { SITE_URL } from '@/lib/site-url'
 
 interface BatchesTabProps {
  userId: string
@@ -596,8 +597,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
   // Calculate origins for a container
 
   const getTraceUrl = (traceCode: string, jarWeightG?: number | null) => {
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://www.hivecraic.com'
-    const url = `${baseUrl}/trace/${traceCode}`
+    const url = `${SITE_URL}/trace/${traceCode}`
     return jarWeightG != null ? `${url}?w=${jarWeightG}` : url
   }
 

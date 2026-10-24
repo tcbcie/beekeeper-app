@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 36: Hive Detail and Records</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 36: Hive Detail and Records</h1>
+<p><strong>Status:</strong> Implemented 24/10/2026, waiting for your test. This is Phase 2 fix batch 23. It covers the remaining Medium findings in hives and scales (C3-08, C3-09, C3-10, C3-12, C3-18, C3-19, C3-20) and in records, tasks and the logbook (C4-13, C4-14, C4-15, C4-17, C4-18, C4-19). Three agents checked each finding against the code and the live database, and I re-checked the key facts. No database change is needed.</p>
+
+<h2>A. Hive detail page: C3-08, C3-09</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C3-09, the page blanks on every refresh:</strong> after you pick a scale (or unarchive a hive), the whole page turns into a spinner and comes back at the top. The scale chart resets to its first range, and everything below reloads. Now the spinner only shows on the first load; a refresh updates the page in place.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C3-08, an older answer can win:</strong> once the page stays on screen during a refresh, two quick refreshes could finish in the wrong order and show the older data. Each load is now numbered, and only the latest one updates the page, using the same pattern as the hives list.</div>
+
+<h2>B. Scale charts: C3-12</h2>
+<div class="task"><input type="checkbox" checked disabled> Switching Day → Month → Day quickly can leave Month's data under the "Day" button, because the slowest answer arrives last. The BEEP and Wolf charts now only show the answer to the latest request. A custom range is only fetched when both dates are filled in and the start is not after the end.</div>
+
+<h2>C. QR tags: C3-10, C3-18, C3-19, C3-20</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C3-18, printed codes can point at the wrong site:</strong> QR codes are built from the address the app is open on. A tag printed from a test or preview address keeps that address for ever. The hive and nuc QR codes, the QR tags page and the public jar and batch labels now always use <code>https://www.hivecraic.com</code>, from one new constant. Sign-in links still use the current address, which is correct for them.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C3-20, wrong message when you can't see the hive:</strong> scanning a tag whose hive you no longer have access to says "This tag is not yet assigned", and offers "Manage QR Tags". Now it says the tag is on a hive or nuc you don't have access to, and to ask its owner to share the apiary. "Tag not found" also mentions access.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C3-19, a button inside a link:</strong> the "Open hive" button on the apiary map's hive panel sits inside a link, which is invalid and gives screen readers and keyboards two stops. It becomes one link with the same look and size. The same pattern on the queens and orders pages belongs to other chunks and is left for their batches.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C3-10, QR order:</strong> the hive page and the records list sort tags newest first, but an undated tag would sort to the top. No live tag is undated, so nothing is wrong today; both sorts now put undated tags last, as the hives list already does.</div>
+
+<h2>D. Records: C4-13, C4-14, C4-15, C4-17</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-13, the microphone can stay on:</strong> if you close the inspection while the browser is still asking for microphone permission, and then allow it, recording starts with nothing to stop it. A double tap on "Record voice note" does the same. The recorder now stops a microphone that arrives after it was cancelled, and ignores a second tap while one is starting.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-14, a wasted weather call:</strong> every hive you pick in the inspection form fetches the weather, and the result is thrown away. The weather that is saved is fetched again when you save. That's 2 to 4 wasted requests per pick, even when editing. The unused call is removed.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-15, ignored errors:</strong> on the records page, if loading your hive list fails (for example on a poor signal), every records list is emptied without a word. To you, it looks like your records have vanished. Now the lists are left as they were and you get a "Couldn't load your records" warning. A failed refresh of one list also keeps it instead of leaving it half-updated, and the hive and apiary pickers keep their contents. <em>Unnamed embeds:</em> not real today; I checked the live foreign keys and none of these embeds is ambiguous.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-17, sign-off removed with one tap:</strong> "Remove" on a logbook assessor sign-off deletes it at once, and it can't be recreated without the assessor. It now asks first, using the app's usual confirm dialog.</div>
+
+<h2>E. Sizes for 50+ eyes: C4-18, C4-19</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-18, 7 fields with 14px text:</strong> the records date filters and the logbook sign-off form. They become 16px.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-19, 61 tap targets under 48px</strong> across the record forms, the records filters, the inspection card, the tasks form and the logbook. Most are inputs at about 42px, or <code>44px</code> classes, some of which cap a button that would otherwise be 48px. Each gets <code>min-h-12</code> (48px). Eight inspection buttons that shrink to 40px on tablets keep 48px. The two remove-photo buttons keep their small red circle inside a 48px tap area, as in batch 30.</div>
+<div class="note">This is a class-only sweep, with no layout or behaviour changes. Labels and button text keep their size; the 16px rule covers the fields you type in.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; a short test for the voice recorder's cancelled start; the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/hive-detail-records-batch36-plan.md</code>, the Phase 2 register and memory if a new rule comes out of it.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>On a hive with a scale, change the scale range quickly a few times: the chart matches the button. Assign a scale: the page stays where you were, with no full-page spinner.</li>
+    <li>Open a hive's QR code: it points at www.hivecraic.com.</li>
+    <li>Start a voice note in an inspection and close the form: the browser's microphone indicator goes off.</li>
+    <li>In the logbook, tap "Remove" on a sign-off: it asks first.</li>
+    <li>Look over the inspection, feeding, harvest and varroa forms on your phone: fields and buttons are the full size.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Hive page after a scale change</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Full-page spinner, back to the top, chart reset</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Updates in place; only the latest load applies</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Scale range switched quickly</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Slowest reply wins; data under the wrong button</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Only the latest request updates the chart</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">QR tags and labels</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Address of wherever the app was open</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Always www.hivecraic.com (<code>SITE_URL</code>)</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Tag on a hive you can't see</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“Not yet assigned”, offers Manage QR Tags</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Says you don't have access; real errors told apart</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Closing the form during the microphone prompt</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Microphone stays on</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Late stream stopped; second tap ignored</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Picking a hive in an inspection</td><td style="border:1px solid #e7d9b8;padding:0.4rem">2–4 wasted weather requests</td><td style="border:1px solid #e7d9b8;padding:0.4rem">None; weather fetched once at save</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Hive list fails to load</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Every records list emptied silently</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Lists kept, warning shown</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Removing a logbook sign-off</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Deleted on one tap</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Asks first</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Field and button sizes</td><td style="border:1px solid #e7d9b8;padding:0.4rem">7 fields at 14px; 61 targets under 48px</td><td style="border:1px solid #e7d9b8;padding:0.4rem">16px and 48px</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0; 834 tests pass (3 new); no database change</td></tr>
+</table>
+<ul>
+  <li><strong>New file:</strong> <code>src/lib/site-url.ts</code>, the one public address for anything printed or scanned.</li>
+  <li><strong>Tests:</strong>
+    <ul>
+      <li><code>tests/hooks/voice-recorder.test.tsx</code> covers a reset during the prompt, an unmount during the prompt and a double tap. All three fail without the fix.</li>
+      <li>One older test asserted the 44px/36px Clear button. It now asserts 48px on every screen size.</li>
+    </ul>
+  </li>
+  <li><strong>Not changed:</strong>
+    <ul>
+      <li>The unused <code>WolfHistoryChart.tsx</code>.</li>
+      <li>The button-in-link pattern on the queens and CRM orders pages (other chunks).</li>
+      <li><code>InspectionStepper</code>, which is already about 59px tall.</li>
+    </ul>
+  </li>
+  <li><strong>QA audit:</strong> no Critical, High or Medium issues. One Low was fixed: a microphone start cancelled during the permission prompt no longer shows an error afterwards.</li>
+</ul>
+</body>
+</html>

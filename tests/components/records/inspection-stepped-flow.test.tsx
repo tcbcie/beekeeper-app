@@ -57,7 +57,6 @@ function renderForm(overrides: Partial<React.ComponentProps<typeof InspectionFor
       userHasActiveSubscription={false}
       onSubmit={onSubmit}
       onCancel={vi.fn()}
-      onHiveChange={vi.fn(async () => {})}
       onImageClick={vi.fn()}
       {...overrides}
     />
@@ -111,7 +110,6 @@ describe('step gating', () => {
         userHasActiveSubscription={false}
         onSubmit={vi.fn(async () => {})}
         onCancel={vi.fn()}
-        onHiveChange={vi.fn(async () => {})}
         onImageClick={vi.fn()}
       />
     )
@@ -278,12 +276,12 @@ describe('previously-fixed mobile layouts survive the step grouping', () => {
     expect(row).toHaveClass('sm:flex-row')
   })
 
-  it('keeps the Clear control at a 44px target on mobile', () => {
+  it('keeps the Clear control at a 48px target on every screen size', () => {
     renderForm()
     goToStep(3)
     const clear = screen.getAllByRole('button', { name: /^Clear .* rating$/ })[0]
-    expect(clear).toHaveClass('min-h-[44px]')
-    expect(clear).toHaveClass('sm:min-h-[36px]')
+    expect(clear).toHaveClass('min-h-[48px]')
+    expect(clear).not.toHaveClass('sm:min-h-[36px]')
   })
 
   it('keeps the drone options at two columns on mobile', () => {

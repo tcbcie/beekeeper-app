@@ -168,7 +168,7 @@ export default function RecordFiltersBar({
               aria-label="Filter by record ownership"
               value={ownershipFilter}
               onChange={(e) => onOwnershipChange(e.target.value as OwnershipFilter)}
-              className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
+              className="min-h-12 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
             >
               <option value="my">My Records</option>
               <option value="team">Team Records</option>
@@ -181,7 +181,7 @@ export default function RecordFiltersBar({
             aria-label="Filter by record type"
             value={recordTypeFilter}
             onChange={(e) => onRecordTypeChange(e.target.value as RecordType | 'all')}
-            className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-forest-400 dark:hover:border-forest-500 focus:border-forest-500 dark:focus:border-forest-400 focus:ring-2 focus:ring-forest-200 dark:focus:ring-forest-800 transition-all"
+            className="min-h-12 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-forest-400 dark:hover:border-forest-500 focus:border-forest-500 dark:focus:border-forest-400 focus:ring-2 focus:ring-forest-200 dark:focus:ring-forest-800 transition-all"
           >
             <option value="all">All Types</option>
             <option value="inspection">Hive Inspection</option>
@@ -200,7 +200,7 @@ export default function RecordFiltersBar({
               onApiaryChange(e.target.value)
               onHiveChange('') // Clear hive filter when apiary changes
             }}
-            className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
+            className="min-h-12 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
           >
             <option value="">All Apiaries</option>
             {apiaries.map((apiary) => (
@@ -215,7 +215,7 @@ export default function RecordFiltersBar({
             aria-label="Filter by hive"
             value={hiveId}
             onChange={(e) => onHiveChange(e.target.value)}
-            className="px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
+            className="min-h-12 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
           >
             <option value="">All Hives</option>
             {filteredHives.map((hive) => (
@@ -226,7 +226,7 @@ export default function RecordFiltersBar({
           </select>
   
           {/* Show Archived Hives Toggle */}
-          <label className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer">
+          <label className="flex min-h-12 items-center gap-2 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer">
             <input
               type="checkbox"
               checked={showArchivedHives}
@@ -248,7 +248,7 @@ export default function RecordFiltersBar({
               type="date"
               value={customStartDate}
               onChange={(e) => onCustomStartDateChange(e.target.value)}
-              className="px-3 py-1.5 border border-border rounded-lg bg-surface text-foreground text-sm"
+              className="min-h-12 px-3 py-1.5 border border-border rounded-lg bg-surface text-foreground text-base"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -258,7 +258,7 @@ export default function RecordFiltersBar({
               type="date"
               value={customEndDate}
               onChange={(e) => onCustomEndDateChange(e.target.value)}
-              className="px-3 py-1.5 border border-border rounded-lg bg-surface text-foreground text-sm"
+              className="min-h-12 px-3 py-1.5 border border-border rounded-lg bg-surface text-foreground text-base"
             />
           </div>
         </div>

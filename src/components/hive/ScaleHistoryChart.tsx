@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { formatDateForInput } from '@/lib/date-utils'
 import { supabase } from '@/lib/supabase'
 import { RefreshCw, AlertCircle, Calendar } from 'lucide-react'
@@ -66,14 +66,23 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
   })
   const [customEndDate, setCustomEndDate] = useState<string>(() => formatDateForInput(new Date()))
 
+  const fetchSeqRef = useRef(0)
+
   const fetchHistory = useCallback(async () => {
+    // Only the latest request may update the chart: quick range switches can answer out of order (C3-12)
+    const seq = ++fetchSeqRef.current
+    // A half-typed or back-to-front custom range isn't worth a request
+    if (period === 'custom' && (!customStartDate || !customEndDate || customStartDate > customEndDate)) {
+      setLoading(false)
+      return
+    }
     try {
       setLoading(true)
       setError(null)
 
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        setError('Not authenticated')
+        if (seq === fetchSeqRef.current) setError('Not authenticated')
         return
       }
 
@@ -94,11 +103,13 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
       }
 
       const data = await response.json()
+      if (seq !== fetchSeqRef.current) return
       setHistory(data.history || [])
     } catch (err) {
+      if (seq !== fetchSeqRef.current) return
       setError(err instanceof Error ? err.message : 'Failed to load history')
     } finally {
-      setLoading(false)
+      if (seq === fetchSeqRef.current) setLoading(false)
     }
   }, [deviceId, period, hiveId, customStartDate, customEndDate])
 

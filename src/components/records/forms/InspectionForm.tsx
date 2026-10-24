@@ -29,7 +29,6 @@ interface InspectionFormProps {
   userHasActiveSubscription: boolean
   onSubmit: (formData: InspectionFormData, imageFiles: File[], followUpTasks: FollowUpTaskDraft[]) => Promise<void>
   onCancel: () => void
-  onHiveChange: (hiveId: string) => Promise<void>
   onImageClick: (urls: string[], startIndex: number) => void
   fetchingWeather?: boolean
   /** Reports whether the form holds unsaved work, so the parent can guard its own exit paths. */
@@ -173,7 +172,6 @@ export default function InspectionForm({
   userHasActiveSubscription,
   onSubmit,
   onCancel,
-  onHiveChange,
   onImageClick,
   fetchingWeather = false,
   onDirtyChange
@@ -1000,16 +998,9 @@ export default function InspectionForm({
     return () => { scaleFetchAbortRef.current?.abort() }
   }, [])
 
-  const handleHiveSelect = async (hiveId: string) => {
+  const handleHiveSelect = (hiveId: string) => {
     setFormData(prev => ({ ...prev, hive_id: hiveId }))
     setFormApiaryId(prev => hiveId ? getApiaryIdForHive(hiveId) : prev)
-    if (hiveId) {
-      try {
-        await onHiveChange(hiveId)
-      } catch (error) {
-        console.error('Failed to update hive inspection context:', error)
-      }
-    }
   }
 
   const setGivenTakenValue = useCallback((field: GivenTakenFieldKey, value: number) => {
@@ -1212,7 +1203,7 @@ export default function InspectionForm({
           type="button"
           onClick={() => onChange(0)}
           aria-label={`Clear ${label} rating`}
-          className="min-h-[44px] w-full px-3 sm:min-h-[36px] sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+          className="min-h-[48px] w-full px-3 sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
         >
           Clear
         </Button>
@@ -1226,7 +1217,7 @@ export default function InspectionForm({
             onClick={() => onChange(star)}
             aria-label={`${label}: ${star} star${star === 1 ? '' : 's'}`}
             aria-pressed={value === star}
-            className={`min-h-[48px] min-w-[44px] sm:min-h-[40px] sm:min-w-[40px] rounded-lg text-lg sm:text-xl flex items-center justify-center transition-all touch-manipulation ${
+            className={`min-h-[48px] min-w-[48px] rounded-lg text-lg sm:text-xl flex items-center justify-center transition-all touch-manipulation ${
               value >= star
                 ? 'bg-yellow-400 text-white'
                 : 'bg-surface-elevated border border-border hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
@@ -1296,7 +1287,7 @@ export default function InspectionForm({
           unstyled
             type="button"
             onClick={() => onPresentChange(true)}
-            className={`min-h-[48px] sm:min-h-[40px] w-full px-3 sm:w-auto sm:px-4 rounded-lg font-semibold transition-all flex items-center justify-center ${
+            className={`min-h-[48px] w-full px-3 sm:w-auto sm:px-4 rounded-lg font-semibold transition-all flex items-center justify-center ${
               present === true
                 ? 'bg-green-600 text-white shadow-lg'
                 : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
@@ -1312,7 +1303,7 @@ export default function InspectionForm({
               onCountChange(0)
               onRemovedAllChange(false)
             }}
-            className={`min-h-[48px] sm:min-h-[40px] w-full px-3 sm:w-auto sm:px-4 rounded-lg font-semibold transition-all flex items-center justify-center ${
+            className={`min-h-[48px] w-full px-3 sm:w-auto sm:px-4 rounded-lg font-semibold transition-all flex items-center justify-center ${
               present === false
                 ? 'bg-red-600 text-white shadow-lg'
                 : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
@@ -1331,7 +1322,7 @@ export default function InspectionForm({
           unstyled
                 type="button"
                 onClick={() => onCountChange(Math.max(0, count - 1))}
-                className="min-h-[48px] min-w-[48px] sm:min-h-[40px] sm:min-w-[40px] px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
+                className="min-h-[48px] min-w-[48px] px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
               >
                 -
               </Button>
@@ -1340,14 +1331,14 @@ export default function InspectionForm({
                 type="number"
                 value={count}
                 onChange={(e) => onCountChange(parseInt(e.target.value) || 0)}
-                className="h-[48px] sm:h-[40px] w-20 px-3 py-2 border rounded text-center"
+                className="h-[48px] w-20 px-3 py-2 border rounded text-center"
                 min="0"
               />
               <Button
           unstyled
                 type="button"
                 onClick={() => onCountChange(count + 1)}
-                className="min-h-[48px] min-w-[48px] sm:min-h-[40px] sm:min-w-[40px] px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
+                className="min-h-[48px] min-w-[48px] px-3 py-2 bg-surface-secondary hover:bg-surface-elevated rounded font-bold border border-border text-text-primary"
               >
                 +
               </Button>
@@ -1360,7 +1351,7 @@ export default function InspectionForm({
           unstyled
                 type="button"
                 onClick={() => onRemovedAllChange(true)}
-                className={`flex-1 min-h-[48px] sm:min-h-[40px] rounded-lg font-semibold transition-all ${
+                className={`flex-1 min-h-[48px] rounded-lg font-semibold transition-all ${
                   removedAll === true
                     ? 'bg-green-600 text-white shadow-lg'
                     : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
@@ -1372,7 +1363,7 @@ export default function InspectionForm({
           unstyled
                 type="button"
                 onClick={() => onRemovedAllChange(false)}
-                className={`flex-1 min-h-[48px] sm:min-h-[40px] rounded-lg font-semibold transition-all ${
+                className={`flex-1 min-h-[48px] rounded-lg font-semibold transition-all ${
                   removedAll === false
                     ? 'bg-red-600 text-white shadow-lg'
                     : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
@@ -1655,7 +1646,7 @@ export default function InspectionForm({
                     unstyled
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, drones_present: LEVEL_NOT_RECORDED }))}
-                    className="min-h-[44px] w-full px-3 sm:min-h-[36px] sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+                    className="min-h-[48px] w-full px-3 sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
                   >
                     Clear
                   </Button>
@@ -1672,7 +1663,7 @@ export default function InspectionForm({
                       key={option.value}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, drones_present: option.value }))}
-                      className={`min-h-[44px] sm:min-h-[48px] px-2 rounded-lg font-semibold text-sm leading-tight whitespace-nowrap transition-all ${
+                      className={`min-h-[48px] px-2 rounded-lg font-semibold text-sm leading-tight whitespace-nowrap transition-all ${
                         formData.drones_present === option.value
                           ? 'bg-amber-600 text-white shadow-lg'
                           : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
@@ -1718,7 +1709,7 @@ export default function InspectionForm({
                     unstyled
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, propolis_level: LEVEL_NOT_RECORDED }))}
-                    className="min-h-[44px] w-full px-3 sm:min-h-[36px] sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+                    className="min-h-[48px] w-full px-3 sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
                   >
                     Clear
                   </Button>
@@ -1735,7 +1726,7 @@ export default function InspectionForm({
                       key={option.value}
                       type="button"
                       onClick={() => setFormData(prev => ({ ...prev, propolis_level: option.value }))}
-                      className={`min-h-[44px] sm:min-h-[48px] px-2 rounded-lg font-semibold text-sm leading-tight whitespace-nowrap transition-all ${
+                      className={`min-h-[48px] px-2 rounded-lg font-semibold text-sm leading-tight whitespace-nowrap transition-all ${
                         formData.propolis_level === option.value
                           ? 'bg-amber-800 text-white shadow-lg'
                           : 'bg-surface-elevated text-foreground hover:bg-surface-elevated dark:hover:bg-surface-elevated border border-border'
@@ -1831,7 +1822,7 @@ export default function InspectionForm({
                         unstyled
                         type="button"
                         onClick={() => adjustGivenTakenValue(field.key, -5)}
-                        className="min-h-[44px] rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface active:bg-surface touch-manipulation"
+                        className="min-h-[48px] rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface active:bg-surface touch-manipulation"
                       >
                         -5
                       </Button>
@@ -1839,7 +1830,7 @@ export default function InspectionForm({
                         unstyled
                         type="button"
                         onClick={() => setGivenTakenValue(field.key, 0)}
-                        className="min-h-[44px] rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface active:bg-surface touch-manipulation"
+                        className="min-h-[48px] rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface active:bg-surface touch-manipulation"
                       >
                         Clear
                       </Button>
@@ -1847,7 +1838,7 @@ export default function InspectionForm({
                         unstyled
                         type="button"
                         onClick={() => adjustGivenTakenValue(field.key, 5)}
-                        className="min-h-[44px] rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface active:bg-surface touch-manipulation"
+                        className="min-h-[48px] rounded-lg border border-border bg-surface-elevated px-3 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface active:bg-surface touch-manipulation"
                       >
                         +5
                       </Button>
@@ -1898,7 +1889,7 @@ export default function InspectionForm({
                         value={value}
                         onChange={(e) => setSuperFullness(i, clampFullness(Number(e.target.value)))}
                         aria-label={`Super ${i + 1} fullness percentage`}
-                        className="h-6 w-full cursor-pointer accent-amber-600 touch-manipulation"
+                        className="h-12 w-full cursor-pointer accent-amber-600 touch-manipulation"
                       />
                     </div>
                   )
@@ -1940,7 +1931,7 @@ export default function InspectionForm({
                 <div className="mt-3 space-y-2" role="group" aria-labelledby="varroa-where-seen-label">
                   <p id="varroa-where-seen-label" className="text-sm font-medium text-text-secondary">Where seen</p>
                   <div className="flex flex-wrap gap-2">
-                    <label className="flex items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-purple-200 dark:border-purple-800">
+                    <label className="flex min-h-[48px] items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-purple-200 dark:border-purple-800">
                       <input
                         type="checkbox"
                         checked={formData.varroa_seen_on_bees}
@@ -1949,7 +1940,7 @@ export default function InspectionForm({
                       />
                       <span className="text-sm font-medium text-text-secondary">On bees</span>
                     </label>
-                    <label className="flex items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-purple-200 dark:border-purple-800">
+                    <label className="flex min-h-[48px] items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-purple-200 dark:border-purple-800">
                       <input
                         type="checkbox"
                         checked={formData.varroa_seen_in_brood}
@@ -1965,7 +1956,7 @@ export default function InspectionForm({
                   {formData.varroa_seen_in_brood && (
                     <div className="flex flex-wrap gap-2 pl-4" role="group" aria-labelledby="varroa-brood-type-label">
                       <p id="varroa-brood-type-label" className="sr-only">Brood type where varroa was observed</p>
-                      <label className="flex items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-border">
+                      <label className="flex min-h-[48px] items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-border">
                         <input
                           type="checkbox"
                           checked={formData.varroa_brood_worker}
@@ -1974,7 +1965,7 @@ export default function InspectionForm({
                         />
                         <span className="text-sm font-medium text-text-secondary">Worker brood</span>
                       </label>
-                      <label className="flex items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-border">
+                      <label className="flex min-h-[48px] items-center gap-2 px-3 py-2 bg-surface rounded-lg cursor-pointer touch-manipulation hover:bg-surface-elevated active:bg-surface-elevated border border-border">
                         <input
                           type="checkbox"
                           checked={formData.varroa_brood_drone}
@@ -2022,7 +2013,7 @@ export default function InspectionForm({
             id="inspection-notes"
             value={formData.notes}
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
             rows={4}
             placeholder="Optional notes about the inspection"
           />
@@ -2034,7 +2025,7 @@ export default function InspectionForm({
                 onClick={handleToggleVoice}
                 disabled={voiceProcessing}
                 aria-label={isVoiceRecording ? 'Stop voice recording' : 'Record voice note'}
-                className={`inline-flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-lg text-white font-medium transition-all touch-manipulation disabled:cursor-not-allowed ${
+                className={`inline-flex items-center gap-2 px-4 py-2 min-h-[48px] rounded-lg text-white font-medium transition-all touch-manipulation disabled:cursor-not-allowed ${
                   voiceProcessing
                     ? 'bg-purple-400 dark:bg-purple-500'
                     : isVoiceRecording
@@ -2108,7 +2099,7 @@ export default function InspectionForm({
                       type="button"
                       onClick={() => removeFollowUpDraft(index)}
                       aria-label={`Remove task ${index + 1}`}
-                      className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 inline-flex items-center gap-1 text-sm font-medium"
+                      className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 inline-flex min-h-[48px] items-center gap-1 px-2 text-sm font-medium"
                     >
                       <Trash2 size={14} />
                       Remove
@@ -2124,7 +2115,7 @@ export default function InspectionForm({
                       value={draft.title}
                       onChange={(e) => updateFollowUpDraft(index, { title: e.target.value })}
                       placeholder="e.g. Treat varroa"
-                      className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+                      className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2135,7 +2126,7 @@ export default function InspectionForm({
                         type="date"
                         value={draft.due_date}
                         onChange={(e) => updateFollowUpDraft(index, { due_date: e.target.value })}
-                        className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+                        className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
                       />
                     </div>
                     <div>
@@ -2144,7 +2135,7 @@ export default function InspectionForm({
                         id={`follow-up-priority-${index}`}
                         value={draft.priority}
                         onChange={(e) => updateFollowUpDraft(index, { priority: e.target.value as FollowUpTaskPriority })}
-                        className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+                        className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
                       >
                         <option value="low">Low</option>
                         <option value="normal">Normal</option>
@@ -2163,7 +2154,7 @@ export default function InspectionForm({
                       value={draft.equipment_needed}
                       onChange={(e) => updateFollowUpDraft(index, { equipment_needed: e.target.value })}
                       placeholder="e.g. oxalic acid, applicator"
-                      className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+                      className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
                     />
                     <p className="mt-1 text-sm text-text-tertiary">Separate multiple items with a comma.</p>
                   </div>
@@ -2175,7 +2166,7 @@ export default function InspectionForm({
                       onChange={(e) => updateFollowUpDraft(index, { description: e.target.value })}
                       rows={2}
                       placeholder="Optional details"
-                      className="w-full px-3 py-2 border border-border rounded-md bg-surface text-foreground"
+                      className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface text-foreground"
                     />
                   </div>
                 </div>
@@ -2184,7 +2175,7 @@ export default function InspectionForm({
                 unstyled
                 type="button"
                 onClick={addFollowUpTask}
-                className="inline-flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-lg border border-border bg-surface text-sm font-medium text-foreground hover:bg-surface-elevated transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 min-h-[48px] rounded-lg border border-border bg-surface text-sm font-medium text-foreground hover:bg-surface-elevated transition-colors"
               >
                 <Plus size={16} />
                 Add task
@@ -2231,11 +2222,14 @@ export default function InspectionForm({
                       unstyled
                       type="button"
                       onClick={() => handleRemoveSavedPhoto(url)}
-                      className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
+                      className="group absolute -top-[18px] -right-[18px] z-10 flex h-12 w-12 items-center justify-center"
                       aria-label={`Remove photo ${index + 1}`}
                       title="Remove photo"
                     >
-                      <X size={16} />
+                      {/* 48px tap area around the same small red circle */}
+                      <span className="rounded-full bg-red-600 p-1.5 text-white shadow-lg transition-all group-hover:bg-red-700">
+                        <X size={16} />
+                      </span>
                     </Button>
                   </div>
                 ))}
@@ -2265,11 +2259,14 @@ export default function InspectionForm({
                       unstyled
                       type="button"
                       onClick={() => removeStagedPhoto(photo.id)}
-                      className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full hover:bg-red-700 shadow-lg transition-all z-10"
+                      className="group absolute -top-[18px] -right-[18px] z-10 flex h-12 w-12 items-center justify-center"
                       aria-label={`Remove new photo ${index + 1}`}
                       title="Remove photo"
                     >
-                      <X size={16} />
+                      {/* 48px tap area around the same small red circle */}
+                      <span className="rounded-full bg-red-600 p-1.5 text-white shadow-lg transition-all group-hover:bg-red-700">
+                        <X size={16} />
+                      </span>
                     </Button>
                   </div>
                 ))}
@@ -2327,7 +2324,7 @@ export default function InspectionForm({
                 unstyled
                 type="button"
                 onClick={() => goToStep(outstandingErrors[0].step)}
-                className="mt-3 min-h-[44px] rounded-lg border border-red-300 px-4 py-2 font-medium text-red-900 hover:bg-red-100 dark:border-red-700 dark:text-red-200 dark:hover:bg-red-900/40"
+                className="mt-3 min-h-[48px] rounded-lg border border-red-300 px-4 py-2 font-medium text-red-900 hover:bg-red-100 dark:border-red-700 dark:text-red-200 dark:hover:bg-red-900/40"
               >
                 Go to step {outstandingErrors[0].step}
               </Button>
@@ -2342,7 +2339,7 @@ export default function InspectionForm({
                   unstyled
                   type="button"
                   onClick={() => goToStep(group.step)}
-                  className="min-h-[44px] rounded-md px-3 py-1 text-sm font-medium text-forest-800 underline hover:bg-surface-secondary dark:text-forest-300"
+                  className="min-h-[48px] rounded-md px-3 py-1 text-sm font-medium text-forest-800 underline hover:bg-surface-secondary dark:text-forest-300"
                 >
                   Edit
                 </Button>

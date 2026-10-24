@@ -97,10 +97,8 @@ export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemov
               <Undo2 className="w-4 h-4 mr-1" /> Remove from map
             </Button>
           )}
-          <Link href={`/dashboard/hives/${hive.id}`}>
-            <Button size="sm" tone="neutral">
-              <ExternalLink className="w-4 h-4 mr-1" /> Open hive
-            </Button>
+          <Link href={`/dashboard/hives/${hive.id}`} className="fj-btn fj-btn-neutral fj-btn-sm">
+            <ExternalLink className="w-4 h-4 mr-1" /> Open hive
           </Link>
         </div>
       </div>

@@ -1530,13 +1530,6 @@ export default function RecordsPage() {
 
   const handleImageClick = (url: string) => handleGalleryClick([url], 0)
 
-  const handleHiveChange = async (hiveId: string) => {
-    // Fetch weather data when hive changes (for inspection form)
-    if (hiveId) {
-      await handleFetchWeatherForHive(hiveId)
-    }
-  }
-
   if (loading) {
     // Top-aligned skeleton matching the loaded layout (header + filter bar +
     // record rows) so content lands where the placeholder was -- no layout jump.
@@ -1639,7 +1632,6 @@ export default function RecordsPage() {
                 userHasActiveSubscription={userHasActiveSubscription}
                 onSubmit={handleInspectionSubmit}
                 onCancel={resetForm}
-                onHiveChange={handleHiveChange}
                 onImageClick={handleGalleryClick}
                 fetchingWeather={fetchingWeather}
                 onDirtyChange={handleFormDirtyChange}

@@ -42,17 +42,20 @@ export default function TagScanPage() {
         .eq('code', code)
         .single()
 
-      if (fetchError || !data) {
-        setError('Tag not found. Please check the QR code is valid.')
+      if (fetchError && fetchError.code !== 'PGRST116') throw fetchError
+      if (!data) {
+        setError("Tag not found, or you don't have access to it. Please check the QR code is valid.")
         return
       }
 
       if (data.hive_id) {
-        const { data: hiveData } = await supabase
+        const { data: hiveData, error: hiveError } = await supabase
           .from('hives')
           .select('id, hive_number, apiaries(name)')
           .eq('id', data.hive_id)
           .single()
+        // PGRST116 = no row visible; anything else is a real failure, not a lack of access
+        if (hiveError && hiveError.code !== 'PGRST116') throw hiveError
 
         if (hiveData) {
           const apiaryData = hiveData.apiaries
@@ -69,11 +72,12 @@ export default function TagScanPage() {
       }
 
       if (data.mating_nuc_id) {
-        const { data: nucData } = await supabase
+        const { data: nucData, error: nucError } = await supabase
           .from('mating_nucs')
           .select('id, nuc_number, status, equipment_status, mating_location')
           .eq('id', data.mating_nuc_id)
           .single()
+        if (nucError && nucError.code !== 'PGRST116') throw nucError
 
         if (nucData) {
           setTag({
@@ -88,6 +92,13 @@ export default function TagScanPage() {
           })
           return
         }
+      }
+
+      // The tag is assigned, but its hive or nuc can't be read: usually it's no longer shared with
+      // you. Saying "not yet assigned" would send the user to re-assign someone else's tag (C3-20).
+      if (data.hive_id || data.mating_nuc_id) {
+        setError("This tag is on a hive or mating nuc you don't have access to. Ask its owner to share the apiary with you.")
+        return
       }
 
       setTag(data)

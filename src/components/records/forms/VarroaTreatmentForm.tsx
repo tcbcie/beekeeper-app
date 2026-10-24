@@ -378,7 +378,7 @@ export default function VarroaTreatmentForm({
             type="date"
             value={formData.treatment_date}
             onChange={(e) => setFormData(prev => ({ ...prev, treatment_date: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             required
           />
         </div>
@@ -420,7 +420,7 @@ export default function VarroaTreatmentForm({
               ))}
               <option value="Other">Other (specify below)</option>
             </select>
-            <label className="flex items-center gap-2 mt-2 cursor-pointer">
+            <label className="flex min-h-[48px] items-center gap-2 mt-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={showAllProducts}
@@ -539,7 +539,7 @@ export default function VarroaTreatmentForm({
 
           {formData.planned_removal_date && (
             <div>
-              <label className="flex items-center gap-2 cursor-pointer min-h-[44px]">
+              <label className="flex items-center gap-2 cursor-pointer min-h-[48px]">
                 <input
                   type="checkbox"
                   checked={Boolean(formData.removed_date)}
@@ -568,7 +568,7 @@ export default function VarroaTreatmentForm({
             type="text"
             value={formData.dosage}
             onChange={(e) => setFormData(prev => ({ ...prev, dosage: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="e.g., 5ml per hive"
             required
           />
@@ -580,7 +580,7 @@ export default function VarroaTreatmentForm({
             type="text"
             value={formData.batch_number || ''}
             onChange={(e) => setFormData(prev => ({ ...prev, batch_number: e.target.value || null }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder="Product batch/lot number (for DAFM records)"
           />
         </div>
@@ -611,7 +611,7 @@ export default function VarroaTreatmentForm({
             step="0.1"
             value={formData.temperature ?? ''}
             onChange={(e) => setFormData(prev => ({ ...prev, temperature: e.target.value ? parseFloat(e.target.value) : null }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder={fetchingWeather ? "Loading weather data..." : "Auto-populated from hive location"}
             disabled={fetchingWeather}
           />
@@ -626,7 +626,7 @@ export default function VarroaTreatmentForm({
             type="text"
             value={formData.weather_conditions}
             onChange={(e) => setFormData(prev => ({ ...prev, weather_conditions: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             placeholder={fetchingWeather ? "Loading weather data..." : "Auto-populated from hive location"}
             disabled={fetchingWeather}
           />
@@ -642,7 +642,7 @@ export default function VarroaTreatmentForm({
           <textarea
             value={formData.notes}
             onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface text-foreground"
+            className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
             rows={4}
             placeholder="Optional notes about the treatment"
           />

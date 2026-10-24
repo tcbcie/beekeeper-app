@@ -86,7 +86,6 @@ function renderForm(overrides: Partial<React.ComponentProps<typeof InspectionFor
       userHasActiveSubscription={false}
       onSubmit={vi.fn(async () => {})}
       onCancel={onCancel}
-      onHiveChange={vi.fn(async () => {})}
       onImageClick={vi.fn()}
       onDirtyChange={onDirtyChange}
       {...overrides}

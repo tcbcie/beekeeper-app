@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { formatDateForInput } from '@/lib/date-utils'
 import { supabase } from '@/lib/supabase'
 import { Scale, Thermometer, Droplets, RefreshCw, Clock, TrendingUp, TrendingDown, Flame, BatteryLow, BatteryMedium, BatteryFull, CloudRain, Wind, Compass, AlertCircle, Calendar } from 'lucide-react'
@@ -74,14 +74,23 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
   })
   const [customEndDate, setCustomEndDate] = useState<string>(() => formatDateForInput(new Date()))
 
+  const fetchSeqRef = useRef(0)
+
   const fetchData = useCallback(async () => {
+    // Only the latest request may update the chart: quick range switches can answer out of order (C3-12)
+    const seq = ++fetchSeqRef.current
+    // A half-typed or back-to-front custom range isn't worth a request
+    if (period === 'custom' && (!customStartDate || !customEndDate || customStartDate > customEndDate)) {
+      setLoading(false)
+      return
+    }
     try {
       setLoading(true)
       setError(null)
 
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        setError('Not authenticated')
+        if (seq === fetchSeqRef.current) setError('Not authenticated')
         return
       }
 
@@ -103,12 +112,14 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
       }
 
       const data = await response.json()
+      if (seq !== fetchSeqRef.current) return
       setHistory(data.history || [])
       setLastUpdated(new Date())
     } catch (err) {
+      if (seq !== fetchSeqRef.current) return
       setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
-      setLoading(false)
+      if (seq === fetchSeqRef.current) setLoading(false)
     }
   }, [scaleId, period, hiveId, customStartDate, customEndDate])
 

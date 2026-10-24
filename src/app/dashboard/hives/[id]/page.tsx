@@ -76,7 +76,8 @@ export default function HiveDetailPage() {
         .from('qr_tags')
         .select('code')
         .eq('hive_id', hiveId)
-        .order('assigned_at', { ascending: false })
+        .order('assigned_at', { ascending: false, nullsFirst: false })
+        .order('created_at', { ascending: false, nullsFirst: false })
         .limit(1)
         .maybeSingle()
       setAssignedTagCode(data?.code ?? null)
@@ -180,7 +181,8 @@ export default function HiveDetailPage() {
     initAuth()
   }, [fetchHiveData])
 
-  if (loading) {
+  // Spinner on the first load only: a refresh updates the page in place (C3-09)
+  if (loading && !hive) {
     return <LoadingSpinner />
   }
 

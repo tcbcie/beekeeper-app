@@ -14,6 +14,7 @@ import { usePersistentState } from '@/hooks/usePersistentState'
 import SelectField from '@/components/ui/SelectField'
 import Button from '@/components/ui/Button'
 import { generateTagCode } from '@/lib/qr-tags'
+import { SITE_URL } from '@/lib/site-url'
 import { QRCodeSVG } from 'qrcode.react'
 
 interface QrTag {
@@ -932,7 +933,7 @@ export default function QrTagsPage() {
  {/* Hidden QR codes for offline-safe batch print */}
  <div ref={qrContainerRef} className="hidden" aria-hidden="true">
  {allPrintTags.map(tag => {
- const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard/hive-scan/tag/${tag.code}`
+ const url = `${SITE_URL}/dashboard/hive-scan/tag/${tag.code}`
  return (
  <QRCodeSVG
  key={tag.id}

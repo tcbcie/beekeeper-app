@@ -33,6 +33,10 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
   const chunksRef = useRef<Blob[]>([])
   const mimeTypeRef = useRef<string>('')
   const mountedRef = useRef(true)
+  // Bumped by every start and every cleanup, so a microphone granted after the recorder was
+  // reset or unmounted (e.g. the form closed during the permission prompt) is stopped (C4-13)
+  const startIdRef = useRef(0)
+  const startingRef = useRef(false)
 
   const isSupported =
     typeof window !== 'undefined' &&
@@ -41,6 +45,7 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
     typeof MediaRecorder !== 'undefined'
 
   const cleanupStream = useCallback(() => {
+    startIdRef.current += 1
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop())
       streamRef.current = null
@@ -62,9 +67,17 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
       setError('Voice recording is not supported in this browser.')
       return
     }
+    // A second tap while one start is pending, or while recording, would open a second stream
+    if (startingRef.current || streamRef.current) return
+    startingRef.current = true
+    const startId = ++startIdRef.current
     setError(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      if (startId !== startIdRef.current || !mountedRef.current) {
+        stream.getTracks().forEach(track => track.stop())
+        return
+      }
       streamRef.current = stream
       const mimeType = pickMimeType()
       mimeTypeRef.current = mimeType
@@ -81,12 +94,16 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
         setIsRecording(true)
       }
     } catch (err) {
+      // A start cancelled while the prompt was open stays silent: the form has moved on
+      if (startId !== startIdRef.current) return
       cleanupStream()
       const message = err instanceof Error ? err.message : 'Could not access the microphone.'
       if (mountedRef.current) {
         setError(message)
         setIsRecording(false)
       }
+    } finally {
+      startingRef.current = false
     }
   }, [cleanupStream, isSupported])
 
