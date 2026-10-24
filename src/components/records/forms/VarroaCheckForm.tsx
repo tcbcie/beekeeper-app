@@ -79,9 +79,15 @@ export default function VarroaCheckForm({
   // Load the record once per check being edited. A refreshed hive list, apiary filter or
   // option list must not reset the form (and drop a new photo) and lose unsaved edits.
   const loadedCheckRef = useRef<typeof check>(null)
+  // The page's hive/apiary filter last applied to this form, and whether Days was typed by
+  // hand. Both reset for each record opened.
+  const appliedFilterRef = useRef<string | null>(null)
+  const daysTypedRef = useRef(false)
   useEffect(() => {
     if (check && check !== loadedCheckRef.current) {
       loadedCheckRef.current = check
+      appliedFilterRef.current = null
+      daysTypedRef.current = false
       // Ensure date format is compatible with datetime-local input (YYYY-MM-DDTHH:mm)
       const formattedCheck = {
         ...check,
@@ -107,8 +113,14 @@ export default function VarroaCheckForm({
     }
   }, [check, checkMethodOptions, hives, resetImage, selectedApiaryId, setPreviewFromUrl])
 
+  // Apply the page's filter once per filter value. Re-applying it whenever the hive list
+  // reloaded put the filter's hive back over the one picked in the form (C4-12).
   useEffect(() => {
     if (isEditing) {
+      return
+    }
+    const filterKey = `${selectedHiveId}|${selectedApiaryId}`
+    if (appliedFilterRef.current === filterKey) {
       return
     }
 
@@ -119,6 +131,7 @@ export default function VarroaCheckForm({
         return
       }
 
+      appliedFilterRef.current = filterKey
       const nextApiaryId = selectedHive.apiary_id ?? selectedApiaryId
       setFormApiaryId(prev => prev !== nextApiaryId ? nextApiaryId : prev)
       setFormData(prev => prev.hive_id !== selectedHiveId ? { ...prev, hive_id: selectedHiveId } : prev)
@@ -129,6 +142,7 @@ export default function VarroaCheckForm({
       return
     }
 
+    appliedFilterRef.current = filterKey
     setFormApiaryId(prev => prev !== selectedApiaryId ? selectedApiaryId : prev)
     setFormData(prev => {
       if (!prev.hive_id) {
@@ -178,9 +192,10 @@ export default function VarroaCheckForm({
     return { infestationRate, actionThreshold }
   }, [])
 
-  // Auto-populate Days from last check with same method for the selected hive (new checks only)
+  // Auto-populate Days from last check with same method for the selected hive (new checks
+  // only). A value typed by hand is kept: reloading the list of checks overwrote it (C4-12).
   useEffect(() => {
-    if (check?.id || !formData.hive_id || !isNaturalDrop) return
+    if (check?.id || !formData.hive_id || !isNaturalDrop || daysTypedRef.current) return
 
     const lastCheck = existingChecks
       .filter(c => c.hive_id === formData.hive_id && c.method === formData.method)
@@ -224,6 +239,7 @@ export default function VarroaCheckForm({
   }
 
   const handleSampleSizeChange = (value: string) => {
+    daysTypedRef.current = true
     const sampleSize = value ? parseInt(value) : null
     const { infestationRate, actionThreshold } = calculateRateAndThreshold(
       formData.mites_count,

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 35: Records and Hives</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 35: Records and Hives</h1>
+<p><strong>Status:</strong> Implemented 23/10/2026, waiting for your test. This is Phase 2 fix batch 22. It covers the open Medium findings in hives (C3-05, C3-11, C3-13) and in records and tasks (C4-08, C4-09, C4-12, C4-16, C4-20). Two agents checked each finding against the code and the live database, and I re-checked the key facts.</p>
+
+<h2>A. Varroa checks never create their treatment task: C4-08</h2>
+<p>When a varroa check passes the action threshold, the app is meant to add a "Treat hive X for varroa" task for the next day. It has <strong>never worked</strong>: the task is saved with the category "Treatment", but the database only accepts lowercase "treatment", so every insert is refused, and the failure isn't checked. 30 checks have passed the threshold, and 0 tasks exist.</p>
+<div class="task"><input type="checkbox" checked disabled> The task is saved as an all-day "treatment" task. If it can't be saved, you get the same warning the inspection follow-up tasks show.</div>
+<div class="task"><input type="checkbox" checked disabled> Editing a check so it newly passes the threshold also creates the task. Before, only new checks did.</div>
+<div class="task"><input type="checkbox" checked disabled> The description no longer says "Infestation rate: undefined%", and it shows natural mite drop as mites per day, not a percentage.</div>
+<div class="note">The 30 missed tasks are not created after the fact. They date back to 13/09/2026 and earlier, so they would all appear as overdue at once.</div>
+
+<h2>B. Tasks list: C4-09</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Old unfinished tasks disappear:</strong> the list only loads tasks from the last 12 months, so an unfinished task drops off the list once it is a year old. 124 overdue tasks will start dropping off from late November 2026. Now unfinished tasks always load, and finished ones keep the 12-month window.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>The 1,000-task cap:</strong> the list is sorted oldest first and cut at 1,000, so a busy account would lose its <em>newest</em> tasks first. The busiest account has 275 today. Now the list loads in pages of 1,000 until everything is in.</div>
+
+<h2>C. Forms: C4-12, C4-20</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-12, a form reset while you work:</strong> the photo loss itself was fixed in batch 14. Three smaller resets remain:
+  <ul>
+    <li>Opening a record from a shared-hive link could run twice and wipe photos you had just added. Each link is now handled once.</li>
+    <li>When the hive list reloads, the inspection and varroa check forms put the page's hive filter back over the hive you picked. In the inspection form, that also cleared your brood, frames and super values. Now a hive is only preselected while the form has none.</li>
+    <li>The varroa check form overwrote a Days value you had typed when its list reloaded. Now it only fills an empty field.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C4-20, "unsaved changes" when you changed nothing:</strong> the inspection and treatment forms fill in some values for you, such as the hive, frames, scale weight and weather. Those fills counted as your edits, so closing an untouched form asked about unsaved changes. Now automatic fills on an untouched form become part of its starting point. Anything you have changed still counts.</div>
+
+<h2>D. Hives and scales: C3-05, C3-11, C3-13</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C3-05, wrong "Last changed by":</strong> any save of a hive, even just its notes, stamped it as a configuration change by whoever saved it. The check compared the saved configuration with the form's copy, and their fields are in a different order, so they never matched. 98 hives have a stamp newer than their last real configuration change. Now both sides are built the same way before comparing. The configuration history itself was already correct.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C3-11, one scale on two hives:</strong> assigning a scale to a hive never took it off the hive it was on. The screen even shows "Currently assigned to Hive X", but it doesn't move it.
+  <ul>
+    <li>Assigning a BEEP or Wolf scale now takes it off your other hive first, so it moves.</li>
+    <li>The database refuses the same scale on two hives <em>in one account</em>. No account has a duplicate today. The demo copy account has the same scales as the original, which stays allowed.</li>
+    <li>Errors are shown properly instead of a generic message.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C3-13, failures remembered as "nothing":</strong> the scale cache was fine; the problem is the bloom forecast on the dashboard weather row. If a lookup failed, it was remembered as "no blooms" for up to 24 hours, so predicted and confirmed blooms stayed empty all day. Failures are now not remembered, so the next visit tries again.</div>
+
+<h2>E. Closed without a change: C4-16</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>"A deleted treatment leaves its reminder behind":</strong> not real. A treatment reminder is a task linked to the treatment, and the database deletes it with the treatment. On the live database: 0 reminders left over from deleted treatments. I'll record this in the register.</div>
+
+<div class="note"><strong>Database changes:</strong> one migration, applied through MCP and saved in <code>supabase/migrations/</code>. It adds two indexes: one scale per hive within an account, for BEEP and Wolf separately. Both build cleanly on today's data. I'll also remove two lines from the configuration history trigger that never had any effect. I'll run the security advisors afterwards.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; short tests for the configuration comparison and the inspection form's unsaved state; the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/records-hives-batch35-plan.md</code>, <code>beep-scale.md</code>, <code>wolf-waagen.md</code>, the Phase 2 register and memory.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>Add a varroa check over the threshold: a "Treat hive … for varroa" task appears for tomorrow.</li>
+    <li>Edit only a hive's notes: "Last changed by" on its card doesn't move.</li>
+    <li>Assign a scale already on another of your hives: it moves, and the old hive no longer shows it.</li>
+    <li>Open a new inspection for a multi-box hive and close it without touching anything: no "unsaved changes" prompt.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Varroa check over the threshold</td><td style="border:1px solid #e7d9b8;padding:0.4rem">No task ever created (category refused, error ignored)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">All-day “treatment” task for tomorrow; failure warned</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Old unfinished tasks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Dropped after 12 months; capped at 1,000 oldest first</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Always loaded; paged reads</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Shared-hive deep link</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Could open the record twice and wipe photos</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Acted on once</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Hive list reload in a form</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Filter's hive put back; brood/frames/supers cleared</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Filter applied once per value</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Untouched inspection/treatment form</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“Unsaved changes” prompt</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Fill-ins re-baseline; real edits still count</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Hive notes-only save</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Stamped as a configuration change</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Only real configuration changes stamp</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Assigning a scale in use</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Left on both hives</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Moves; per-account unique index</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Bloom lookup failure</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Cached as “no blooms” up to 24 h</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Not cached; retried next load</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0; 831 tests pass (4 new); advisors show nothing new</td></tr>
+</table>
+<ul>
+  <li><strong>Migration:</strong> <code>20261023200000_records_hives_batch35.sql</code>. It adds the two per-account scale indexes, which built cleanly on today's data, and removes the configuration trigger's two lines that never had any effect. The trigger function still has no client access.</li>
+  <li><strong>Tests:</strong>
+    <ul>
+      <li>Configuration comparison: key order and defaulted keys are ignored, and a real change is reported.</li>
+      <li>Inspection form: a preselected multi-box hive opens clean, and a real edit still counts. With the fix turned off, the first test fails.</li>
+    </ul>
+  </li>
+  <li><strong>C4-16:</strong> closed as not real; the database already deletes a treatment's reminder with it.</li>
+  <li><strong>QA audit:</strong> no Critical or High issues. One Low was fixed: the varroa treatment task is marked as a team task on a shared hive, as inspection follow-ups and treatment reminders are.</li>
+</ul>
+</body>
+</html>

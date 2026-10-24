@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface UseFormDirtyStateOptions<T> {
   /** The form state to watch. Compared by serialisation, not by reference. */
@@ -18,6 +18,12 @@ interface UseFormDirtyStateResult {
   isDirty: boolean
   /** Re-baseline, after a save or when the form is handed different data. */
   markPristine: () => void
+  /**
+   * Call inside a setState updater that fills a value in for the user (weather, a carried-over
+   * reading), only when it actually changes the state. On an untouched form the fill becomes
+   * part of the baseline, so closing it doesn't ask about unsaved changes.
+   */
+  noteAutoFill: () => void
 }
 
 /**
@@ -47,6 +53,9 @@ export function useFormDirtyState<T>({
 }: UseFormDirtyStateOptions<T>): UseFormDirtyStateResult {
   const pristineSnapshotRef = useRef<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
+  // The last computed answer, and whether the next change is the form's own fill-in.
+  const isDirtyRef = useRef(false)
+  const autoFillRef = useRef(false)
 
   // Serialising on every render is cheap next to the render itself, and keeps
   // the comparison honest for nested objects that a reference check would miss.
@@ -70,8 +79,20 @@ export function useFormDirtyState<T>({
   }, [])
 
   useEffect(() => {
-    if (pristineSnapshotRef.current === null) return
-    setIsDirty(snapshot !== pristineSnapshotRef.current || extraDirty)
+    if (pristineSnapshotRef.current === null) {
+      // The baseline, when it settles, includes this change anyway.
+      autoFillRef.current = false
+      return
+    }
+    // A fill-in on an untouched form re-baselines; once the user has changed something it
+    // counts like any other change (C4-20).
+    if (autoFillRef.current) {
+      autoFillRef.current = false
+      if (!isDirtyRef.current) pristineSnapshotRef.current = snapshot
+    }
+    const dirty = snapshot !== pristineSnapshotRef.current || extraDirty
+    isDirtyRef.current = dirty
+    setIsDirty(dirty)
   }, [snapshot, extraDirty])
 
   useEffect(() => {
@@ -93,8 +114,14 @@ export function useFormDirtyState<T>({
 
   const markPristine = () => {
     pristineSnapshotRef.current = latestSnapshotRef.current
+    isDirtyRef.current = extraDirty
     setIsDirty(extraDirty)
   }
 
-  return { isDirty, markPristine }
+  // Stable, so effects that fill values in can list it as a dependency.
+  const noteAutoFill = useCallback(() => {
+    autoFillRef.current = true
+  }, [])
+
+  return { isDirty, markPristine, noteAutoFill }
 }

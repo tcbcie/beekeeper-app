@@ -96,6 +96,19 @@ const formDataFromHive = (hive: Hive): HiveFormData => ({
 })
 
 /**
+ * Whether the form's configuration differs from the hive's saved one. The saved value is
+ * read as the form would show it (same defaults) and compared field by field. A raw
+ * JSON.stringify of the database value never matched (different key order, missing
+ * defaulted keys), so every save was stamped as a configuration change (C3-05).
+ */
+export const isConfigurationChanged = (hive: Hive, configuration: HiveFormData['configuration']): boolean => {
+ const saved: Record<string, unknown> = { ...formDataFromHive(hive).configuration }
+ const edited: Record<string, unknown> = { ...configuration }
+ return Array.from(new Set([...Object.keys(saved), ...Object.keys(edited)]))
+ .some(key => saved[key] !== edited[key])
+}
+
+/**
  * Inline add/edit hive form. Extracted verbatim from
  * src/app/dashboard/hives/page.tsx (Phase 6.3 decomposition); owns its form
  * state and the multi-step save (validation RPC, insert/update, history
@@ -186,7 +199,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
 
  // Check if configuration has changed (for existing hives)
  if (editingHive) {
- const configChanged = JSON.stringify(editingHive.configuration) !== JSON.stringify(formData.configuration)
+ const configChanged = isConfigurationChanged(editingHive, formData.configuration)
 
  if (configChanged) {
  dataToSubmit = {

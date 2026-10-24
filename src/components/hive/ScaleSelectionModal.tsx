@@ -80,7 +80,8 @@ export default function ScaleSelectionModal({
       await onDeviceSelect(deviceId, deviceName)
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to assign device')
+      // Supabase errors are plain objects, not Error instances.
+      setError((err as { message?: string } | null)?.message || 'Failed to assign device')
     } finally {
       setSelecting(null)
     }

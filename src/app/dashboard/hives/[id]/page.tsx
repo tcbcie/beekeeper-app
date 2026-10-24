@@ -35,6 +35,12 @@ const HiveQRCode = dynamic(() => import('@/components/hive/HiveQRCode'), {
   ssr: false,
 })
 
+/** A scale assignment error as an Error the scale modals can show (23505 = the per-account guard). */
+const scaleAssignError = (error: { code?: string; message?: string }) =>
+  error.code === '23505'
+    ? new Error('This scale is still on another of your hives. Remove it there first.')
+    : new Error(error.message || 'Failed to assign the scale')
+
 export default function HiveDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -104,7 +110,24 @@ export default function HiveDetailPage() {
     }
   }, [])
 
+  // A scale can only be on one of your hives. Assigning it here takes it off any other hive
+  // first, so it moves; before, it stayed on both (C3-11). The database also refuses the
+  // same scale on two hives in one account.
+  const releaseScaleFromOtherHives = useCallback(async (column: 'beep_device_id' | 'wolf_scale_id', scaleId: string) => {
+    const uid = await getCurrentUserId()
+    if (!uid) throw new Error('Please sign in again')
+    const nameColumn = column === 'beep_device_id' ? 'beep_device_name' : 'wolf_scale_name'
+    const { error } = await supabase
+      .from('hives')
+      .update({ [column]: null, [nameColumn]: null })
+      .eq('user_id', uid)
+      .eq(column, scaleId)
+      .neq('id', hiveId)
+    if (error) throw error
+  }, [hiveId])
+
   const handleDeviceSelect = useCallback(async (deviceId: string | null, deviceName: string | null) => {
+    if (deviceId) await releaseScaleFromOtherHives('beep_device_id', deviceId)
     // Clear Wolf scale when assigning BEEP scale (only one scale per hive)
     const { error } = await supabase
       .from('hives')
@@ -116,14 +139,15 @@ export default function HiveDetailPage() {
       })
       .eq('id', hiveId)
 
-    if (error) throw error
+    if (error) throw scaleAssignError(error)
 
     // Refresh hive data
     const id = await getCurrentUserId()
     if (id) fetchHiveData(id)
-  }, [hiveId, fetchHiveData])
+  }, [hiveId, fetchHiveData, releaseScaleFromOtherHives])
 
   const handleWolfScaleSelect = useCallback(async (scaleId: string | null, scaleName: string | null) => {
+    if (scaleId) await releaseScaleFromOtherHives('wolf_scale_id', scaleId)
     // Clear BEEP scale when assigning Wolf scale (only one scale per hive)
     const { error } = await supabase
       .from('hives')
@@ -135,12 +159,12 @@ export default function HiveDetailPage() {
       })
       .eq('id', hiveId)
 
-    if (error) throw error
+    if (error) throw scaleAssignError(error)
 
     // Refresh hive data
     const id = await getCurrentUserId()
     if (id) fetchHiveData(id)
-  }, [hiveId, fetchHiveData])
+  }, [hiveId, fetchHiveData, releaseScaleFromOtherHives])
 
   useEffect(() => {
     checkScaleConnections()

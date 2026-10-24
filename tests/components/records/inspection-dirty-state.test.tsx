@@ -207,3 +207,39 @@ describe('editing an existing inspection', () => {
     expect(onDirtyChange).toHaveBeenLastCalledWith(false)
   })
 })
+
+describe('values the form fills in for the user', () => {
+  // A preselected multi-box hive with a carried-over right-sized frame count: the form sets
+  // the hive, the brood boxes and the frame count itself after it opens.
+  const multiBoxHive = {
+    id: 'hive-2',
+    hive_number: 'H2',
+    apiary_id: 'apiary-1',
+    configuration: { brood_boxes: 2, brood_boxes_full: 2, brood_boxes_half: 0 },
+  } as unknown as Hive
+
+  function renderPreselected() {
+    return renderForm({
+      hives: [...hives, multiBoxHive],
+      selectedHiveId: 'hive-2',
+      selectedApiaryId: 'apiary-1',
+      previousRightSizedFramesByHive: { 'hive-2': 7 },
+    })
+  }
+
+  it('leaves an untouched form clean, so closing it does not ask', async () => {
+    const { onCancel, onDirtyChange } = renderPreselected()
+    await waitFor(() => expect(onDirtyChange).toHaveBeenCalled())
+    expect(onDirtyChange).toHaveBeenLastCalledWith(false)
+    clickCancel()
+    await waitFor(() => expect(onCancel).toHaveBeenCalledTimes(1))
+    expect(confirmSpy).not.toHaveBeenCalled()
+  })
+
+  it('still counts a real edit after the fill-ins', async () => {
+    const { onDirtyChange } = renderPreselected()
+    await waitFor(() => expect(onDirtyChange).toHaveBeenCalled())
+    editAFieldOnTheOpeningStep()
+    await waitFor(() => expect(onDirtyChange).toHaveBeenLastCalledWith(true))
+  })
+})

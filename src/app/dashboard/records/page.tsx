@@ -530,8 +530,21 @@ export default function RecordsPage() {
     openNewRecord(type, presetHiveId)
   }, [confirmDiscardOpenForm, openNewRecord])
 
+  // The deep link last acted on. The effect below re-runs whenever `hives` reloads (a
+  // shared-hive link switches the ownership filter, which reloads them), and before the URL
+  // is cleared that opened the new record a second time, wiping photos already added (C4-12).
+  const handledLinkRef = useRef<string | null>(null)
+
   // Handle URL query parameters
   useEffect(() => {
+    const linkKey = searchParams.toString()
+    if (!linkKey) {
+      // URL cleared: the same link may be followed again later.
+      handledLinkRef.current = null
+      return
+    }
+    if (handledLinkRef.current === linkKey) return
+
     const hiveParam = searchParams.get('hive')
     const typeParam = searchParams.get('type')
     const createParam = searchParams.get('create')
@@ -539,6 +552,7 @@ export default function RecordsPage() {
     const mappedType = mapTypeParamToRecordType(typeParam)
 
     if (hiveParam && hives.length > 0) {
+      handledLinkRef.current = linkKey
       // Auto-switch to 'all' if the hive is shared (not owned by current user)
       const targetHive = hives.find(h => h.id === hiveParam)
       if (targetHive && userId && targetHive.user_id !== userId) {
@@ -561,12 +575,14 @@ export default function RecordsPage() {
 
       router.replace('/dashboard/records')
     } else if (!hiveParam && recordParam && mappedType && RECORD_DEEP_LINK_TYPES.has(mappedType)) {
+      handledLinkRef.current = linkKey
       setShowArchivedHives(true)
       setRecordTypeFilter(mappedType)
       setHighlightedRecordKey(`${mappedType}-${recordParam}`)
       scrolledRecordKeyRef.current = null
       router.replace('/dashboard/records')
     } else if (createParam) {
+      handledLinkRef.current = linkKey
       // Handle quick action links from dashboard (optionally with apiary pre-selected)
       const apiaryParam = searchParams.get('apiary')
       if (apiaryParam) {
@@ -1162,29 +1178,45 @@ export default function RecordsPage() {
 
         if (error) throw error
         recordSaved = true
+      }
 
-        // Create treatment task if threshold reached
-        if (check.action_threshold_reached) {
-          const selectedHive = hives.find(h => h.id === check.hive_id)
-          const taskDate = new Date()
-          taskDate.setDate(taskDate.getDate() + 1)
+      // A treatment task for tomorrow when this save takes the check over the action
+      // threshold: a new check, or an edit that newly reaches it. The category must be
+      // lowercase; the database refused 'Treatment', and the unchecked insert meant no
+      // task was ever created (C4-08).
+      const newlyReached = check.action_threshold_reached && !(check.id && editingCheck?.action_threshold_reached)
+      if (newlyReached) {
+        const selectedHive = hives.find(h => h.id === check.hive_id)
+        const taskDate = new Date()
+        taskDate.setDate(taskDate.getDate() + 1)
+        // Natural drop and screening boards record mites per day, not a percentage.
+        const isDailyDrop = check.method === 'Natural Mite Drop' || check.method === 'Screening Board'
+        const reading = check.infestation_rate == null
+          ? ''
+          : isDailyDrop
+            ? ` Daily mite drop: ${check.infestation_rate.toFixed(2)} mites/day.`
+            : ` Infestation rate: ${check.infestation_rate.toFixed(2)}%.`
 
-          await supabase.from('tasks_events').insert([{
-            user_id: userId,
-            title: `Treat hive ${selectedHive?.hive_number || 'Unknown'} for varroa`,
-            description: `Action threshold reached. Infestation rate: ${check.infestation_rate?.toFixed(2)}%`,
-            event_type: 'task',
-            category: 'Treatment',
-            priority: 'high',
-            start_date: toLocalDateString(taskDate),
-            start_time: '09:00',
-            hive_id: check.hive_id,
-            apiary_id: selectedHive?.apiary_id || null,
-            reminder_enabled: true,
-            reminder_minutes_before: 60,
-            notes: `Auto-created from varroa check with ${check.method} method`,
-            completed: false
-          }])
+        const { error: taskError } = await supabase.from('tasks_events').insert([{
+          user_id: userId,
+          title: `Treat hive ${selectedHive?.hive_number || 'Unknown'} for varroa`,
+          description: `Action threshold reached.${reading}`,
+          event_type: 'task',
+          category: 'treatment',
+          priority: 'high',
+          start_date: toLocalDateString(taskDate),
+          all_day: true,
+          hive_id: check.hive_id,
+          apiary_id: selectedHive?.apiary_id || null,
+          reminder_enabled: true,
+          notes: `Auto-created from varroa check with ${check.method} method`,
+          // A shared hive's task is a team task, as for inspection follow-ups and reminders.
+          is_team_task: !!selectedHive && sharedHiveIds.includes(selectedHive.id),
+          completed: false
+        }])
+        if (taskError) {
+          console.error('Varroa treatment task insert failed:', taskError)
+          toast.warning('Varroa check saved, but the treatment task could not be created. Open Tasks to add it manually.')
         }
       }
 

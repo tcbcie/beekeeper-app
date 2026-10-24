@@ -74,7 +74,7 @@ export default function VarroaTreatmentForm({
   // Every exit guard on the records page asks one question: is there
   // unsaved work? Until this was wired, the answer for this form was
   // always no, so its contents could be discarded without a prompt.
-  useFormDirtyState({ value: formData, onDirtyChange })
+  const { noteAutoFill } = useFormDirtyState({ value: formData, onDirtyChange })
 
   // Pre-filter treatment products by resident jurisdiction
   const filteredProducts = useMemo(() => {
@@ -190,22 +190,23 @@ export default function VarroaTreatmentForm({
           return
         }
 
-        setFormData(prev => (
-          prev.hive_id === currentHiveId
-            ? {
+        setFormData(prev => {
+          if (prev.hive_id !== currentHiveId) return prev
+          // The weather arrives after the form opens; it isn't an edit by the user.
+          noteAutoFill()
+          return {
                 ...prev,
                 temperature: weatherData.temp,
                 weather_conditions: `${weatherData.condition}, ${weatherData.humidity}% humidity, ${weatherData.wind_speed} km/h wind`
               }
-            : prev
-        ))
+        })
       } finally {
         if (isMountedRef.current && requestId === weatherRequestIdRef.current) {
           setFetchingWeather(false)
         }
       }
     })()
-  }, [formData.hive_id, isEditing, onFetchWeather])
+  }, [formData.hive_id, isEditing, noteAutoFill, onFetchWeather])
 
   const handleHiveChange = (hiveId: string) => {
     setFormData(prev => ({ ...prev, hive_id: hiveId }))

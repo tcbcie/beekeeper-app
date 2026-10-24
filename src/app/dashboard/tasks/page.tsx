@@ -192,20 +192,33 @@ export default function TasksEventsPage() {
   }, [])
 
   // Fetch tasks/events (RLS handles permissions - both own and team tasks).
-  // Bounded to the last 12 months (plus everything in the future) so multi-year
-  // accounts do not download their entire task history on every visit.
+  // Finished tasks are bounded to the last 12 months (plus everything in the future) so
+  // multi-year accounts do not download their entire history on every visit. Unfinished
+  // tasks always load however old, because they are still due. Rows are read in pages:
+  // a single capped query sorted oldest first would drop the newest tasks (C4-09).
   const fetchTasks = useCallback(async () => {
     if (!userId) return
 
     const oneYearAgo = new Date()
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    const cutoff = toLocalDateString(oneYearAgo)
+    const PAGE_SIZE = 1000
 
-    const { data, error } = await supabase
-      .from('tasks_events')
-      .select('*')
-      .gte('start_date', toLocalDateString(oneYearAgo))
-      .order('start_date', { ascending: true })
-      .limit(1000)
+    const rows = []
+    let error = null
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const page = await supabase
+        .from('tasks_events')
+        .select('*')
+        .or(`completed.eq.false,start_date.gte.${cutoff}`)
+        .order('start_date', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, from + PAGE_SIZE - 1)
+      if (page.error) { error = page.error; break }
+      rows.push(...(page.data ?? []))
+      if ((page.data?.length ?? 0) < PAGE_SIZE) break
+    }
+    const data = rows
 
     if (error) {
       console.error('Error fetching tasks:', error)

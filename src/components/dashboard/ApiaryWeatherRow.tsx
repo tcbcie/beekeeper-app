@@ -400,9 +400,12 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
       if (!bloomDataInflight) {
         bloomDataInflight = (async () => {
           try {
-            const { data } = await supabase
+            const { data, error } = await supabase
               .from('vegetation_info')
               .select('vegetation_type_id, bloom_period, nectar_value, pollen_value, typical_gdd_range, dropdown_values:vegetation_type_id(value)')
+            // A failure must not be cached as "no plants" for 24 hours; throwing skips the
+            // cache so the next load tries again (C3-13).
+            if (error) throw error
 
             const entries: VegetationEntry[] = data
               ? data.map((row: Record<string, unknown>) => {
@@ -444,13 +447,18 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
       const currentYear = now.getFullYear()
       const todayStr = `${currentYear}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
+      // Cache the result only if every source answered: a failure cached as "no blooms"
+      // would hide confirmed blooms for an hour (C3-13).
+      let complete = true
+
       // User's own bloom records for this apiary, current year, still active
-      const { data: userRecords } = await supabase
+      const { data: userRecords, error: userRecordsError } = await supabase
         .from('gdd_records')
         .select('dropdown_values:vegetation_type_id(value), end_date')
         .eq('apiary_id', apiary.id)
         .eq('year', currentYear)
         .lte('start_date', todayStr)
+      if (userRecordsError) complete = false
 
       if (userRecords) {
         for (const rec of userRecords) {
@@ -473,7 +481,8 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
           if (!communityInflight) {
             communityInflight = (async () => {
               try {
-                const { data } = await supabase.rpc('get_shared_gdd_records')
+                const { data, error } = await supabase.rpc('get_shared_gdd_records')
+                if (error) throw error
                 const records = (data ?? []) as CommunityRecord[]
                 communityRecordsCache = { data: records, fetchedAt: Date.now() }
                 return records
@@ -504,9 +513,10 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
         }
       } catch {
         // Community data unavailable — continue with user records only
+        complete = false
       }
 
-      activeBloomCache.set(apiary.id, { data: confirmedNames, fetchedAt: Date.now() })
+      if (complete) activeBloomCache.set(apiary.id, { data: confirmedNames, fetchedAt: Date.now() })
     }
 
     if (!mountedRef.current) return

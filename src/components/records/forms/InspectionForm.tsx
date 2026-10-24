@@ -494,6 +494,13 @@ export default function InspectionForm({
   const stepHeadingRef = useRef<HTMLDivElement | null>(null)
   const pristineSnapshotRef = useRef<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
+  // The last computed answer, and whether the next change is the form's own fill-in
+  // (preselected hive, carried-over frames and supers, brood boxes, scale weight). Set only
+  // inside updaters that really change formData, so it can't linger onto a user edit.
+  const isDirtyRef = useRef(false)
+  const autoFillRef = useRef(false)
+  // The page's hive/apiary filter last applied to this form; reset for each record opened.
+  const appliedFilterRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (pristineSnapshotRef.current === null) {
@@ -506,12 +513,20 @@ export default function InspectionForm({
   useEffect(() => {
     if (pristineSnapshotRef.current === null) return
     const current = serialiseFormState(formData, givenTakenDrafts, followUpDrafts)
-    setIsDirty(
+    // A fill-in on an untouched form becomes part of its starting point, so closing it
+    // doesn't ask about unsaved changes. Once the user has changed something, fill-ins
+    // count like any other change (C4-20).
+    if (autoFillRef.current) {
+      autoFillRef.current = false
+      if (!isDirtyRef.current) pristineSnapshotRef.current = current
+    }
+    const dirty =
       current !== pristineSnapshotRef.current ||
       stagedPhotos.length > 0 ||
       isVoiceRecording ||
       voiceProcessing
-    )
+    isDirtyRef.current = dirty
+    setIsDirty(dirty)
   }, [formData, givenTakenDrafts, followUpDrafts, stagedPhotos, isVoiceRecording, voiceProcessing])
 
   useEffect(() => {
@@ -693,6 +708,8 @@ export default function InspectionForm({
         // of a flow whose contents just changed is disorienting.
         setStep(FIRST_STEP)
         setVisitedSteps(new Set([FIRST_STEP]))
+        appliedFilterRef.current = null
+        isDirtyRef.current = false
         // Re-baseline, or the freshly reset form reads as edited.
         pristineSnapshotRef.current = serialiseFormState(
           defaultFormData,
@@ -727,6 +744,8 @@ export default function InspectionForm({
     setFollowUpDrafts([])
     setStep(FIRST_STEP)
     setVisitedSteps(new Set([FIRST_STEP]))
+    appliedFilterRef.current = null
+    isDirtyRef.current = false
     // Re-baseline against the inspection now being edited.
     pristineSnapshotRef.current = serialiseFormState(
       initialData,
@@ -752,8 +771,15 @@ export default function InspectionForm({
     previousInitialDataRef.current = initialData
   }, [getApiaryIdForHive, initialData, resetStagedPhotos, resetVoiceRecorder, selectedApiaryId])
 
+  // Apply the page's filter once per filter value. Re-applying it whenever the hive list
+  // reloaded put the filter's hive back over the one picked in the form, which also cleared
+  // the brood, frames and super values entered for it (C4-12).
   useEffect(() => {
     if (isEditing || initialData?.hive_id) {
+      return
+    }
+    const filterKey = `${selectedHiveId}|${selectedApiaryId}`
+    if (appliedFilterRef.current === filterKey) {
       return
     }
 
@@ -764,9 +790,14 @@ export default function InspectionForm({
         return
       }
 
+      appliedFilterRef.current = filterKey
       const nextApiaryId = selectedHive.apiary_id ?? selectedApiaryId
       setFormApiaryId(prev => prev !== nextApiaryId ? nextApiaryId : prev)
-      setFormData(prev => prev.hive_id !== selectedHiveId ? { ...prev, hive_id: selectedHiveId } : prev)
+      setFormData(prev => {
+        if (prev.hive_id === selectedHiveId) return prev
+        autoFillRef.current = true
+        return { ...prev, hive_id: selectedHiveId }
+      })
       return
     }
 
@@ -774,6 +805,7 @@ export default function InspectionForm({
       return
     }
 
+    appliedFilterRef.current = filterKey
     setFormApiaryId(prev => prev !== selectedApiaryId ? selectedApiaryId : prev)
     setFormData(prev => {
       if (!prev.hive_id) {
@@ -815,11 +847,11 @@ export default function InspectionForm({
 
     lastRightSizedPrefillKeyRef.current = nextPrefillKey
 
-    setFormData(prev => (
-      prev.hive_id === currentHiveId && prev.right_sized_frames !== previousValue
-        ? { ...prev, right_sized_frames: previousValue }
-        : prev
-    ))
+    setFormData(prev => {
+      if (prev.hive_id !== currentHiveId || prev.right_sized_frames === previousValue) return prev
+      autoFillRef.current = true
+      return { ...prev, right_sized_frames: previousValue }
+    })
   }, [formData.hive_id, getPreviousRightSizedFrames, isEditing])
 
   // Pre-fill Super Fullness from the hive's most recent inspection when starting a new
@@ -870,11 +902,11 @@ export default function InspectionForm({
 
     // Copy the source array so later slider edits can never mutate the cached
     // `previousSuperFullnessByHive` (which references the fetched inspection rows).
-    setFormData(prev => (
-      prev.hive_id === currentHiveId
-        ? { ...prev, honey_super_fullness: previousValue ? [...previousValue] : null }
-        : prev
-    ))
+    setFormData(prev => {
+      if (prev.hive_id !== currentHiveId) return prev
+      autoFillRef.current = true
+      return { ...prev, honey_super_fullness: previousValue ? [...previousValue] : null }
+    })
 
     // Reveal the section so the carried-forward values are visible immediately;
     // otherwise a new inspection looks like it reset to 0 until the user expands it.
@@ -950,10 +982,11 @@ export default function InspectionForm({
         const kg = Math.round(kgRaw * 10) / 10
 
         // Only prefill if still no manual entry by the time the network resolves.
-        setFormData(prev => prev.weight !== null && prev.weight !== undefined
-          ? prev
-          : { ...prev, weight: kg }
-        )
+        setFormData(prev => {
+          if (prev.weight !== null && prev.weight !== undefined) return prev
+          autoFillRef.current = true
+          return { ...prev, weight: kg }
+        })
         setWeightFromScale({ kg, source: useWolf ? 'wolf' : 'beep' })
       } catch (err) {
         if ((err as { name?: string })?.name === 'AbortError') return
@@ -1155,6 +1188,7 @@ export default function InspectionForm({
       )
       if (unchanged) return prev
       const total = next.reduce((sum, b) => sum + b.frames, 0)
+      autoFillRef.current = true
       return { ...prev, brood_frames_per_box: next, brood_frames: total }
     })
   }, [isMultiBox, broodBoxList])

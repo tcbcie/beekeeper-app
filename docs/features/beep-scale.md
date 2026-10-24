@@ -188,7 +188,7 @@ Modal for selecting BEEP device:
 - List available devices from API
 - Show device name and last transmission time
 - Show current assignment status
-- Allow reassignment between hives
+- Allow reassignment between hives: assigning a scale takes it off your other hive, so it moves. A scale can be on only one hive per account; unique indexes on `hives (user_id, scale id)` enforce this (batch 35, 23/10/2026)
 
 ---
 
