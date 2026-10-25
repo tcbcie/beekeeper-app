@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 42: Research Screens</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 42: Research Screens</h1>
+<p><strong>Status:</strong> Implemented 25/10/2026, waiting for your test. This is Phase 2 fix batch 29, the second half of chunk 7b: the screen findings C7b-23 to C7b-25 in Research (GDD, Foraging Hours, Scale Overview, Diagnosis Images, Wild Colonies) and the tcbc.ie embed. The agent survey from batch 41 gives the exact list. No database change.</p>
+
+<h2>A. Tap targets: C7b-23</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>About 51 targets under 48px</strong>, 22 of them only 20–28px:
+  <ul>
+    <li><strong>Small icon buttons:</strong> wild colony expand and edit; diagnosis view, download, delete and comment delete; and the "view hive" link on scale cards.</li>
+    <li><strong>Small links:</strong> map, email and phone links; vegetation name links on the GDD tab and embed.</li>
+    <li><strong>Embed controls:</strong> the year, period, month and temperature chips, and the Chart/Table and Accumulation/Phenology toggles.</li>
+    <li><strong>Other:</strong> the "Add Records" links and the photo thumbnails.</li>
+  </ul>
+  They become 48px. Icon buttons keep their small look inside a 48px area. The diagnosis Send button also gets a label for screen readers.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>15 fields</strong> under 48px or at 14px text, on the GDD, Foraging, Key Events, Diagnosis and Wild Colony forms, become 48px and 16px.</div>
+
+<h2>B. Text and charts: C7b-24</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>43 bits of readable text at 12px</strong> (weather and sensor values on scale cards, comment and table text, chart captions) go to 14px. 17 badges, table headers and captions stay at 12px, which the app allows for secondary labels.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>8 charts:</strong> GDD accumulation, phenology and monthly temperatures; foraging accumulation and monthly; and the embed's three. Their labels are 9–12px and fixed to light-mode greys, so they're tiny and hard to read in dark mode. Changes:
+  <ul>
+    <li><strong>Text:</strong> chart text, axis labels and value labels go to 14px.</li>
+    <li><strong>Colours:</strong> they follow dark mode, the way the scale and TBR charts already do.</li>
+    <li><strong>Small temperature charts:</strong> they get a little taller so the larger labels fit.</li>
+    <li><strong>Phenology value labels:</strong> they hide when they would overlap.</li>
+    <li><strong>Key-event labels:</strong> they're spaced further apart.</li>
+  </ul>
+</div>
+
+<h2>C. The wide wild-colonies table: C7b-25</h2>
+<div class="task"><input type="checkbox" checked disabled> The "All Colonies" table has 12 columns and runs off a phone screen. Its opened inspection panel is as wide as the table. On phones, 5 low-value columns (Submitted By, Size, Description, the two photo columns) are hidden, as is Type on the smallest screens. They stay reachable through Edit. The opened panel stays within the screen. The 9-column Pending table gets the same treatment for its least useful columns.</div>
+
+<div class="note">These are class and chart-option changes only: no change to data, saving or behaviour. Colours in charts update on the next redraw after you switch dark mode, like the existing charts.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/research-screens-batch42-plan.md</code>, the Phase 2 register and memory if a new rule comes out of it.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>Research → GDD Data in dark mode: chart labels are readable and light on dark.</li>
+    <li>Scale Overview on your phone: the card's numbers are easier to read, and the "view hive" button is easy to tap.</li>
+    <li>Wild Colonies on your phone: the table fits better, and an opened colony's inspections stay on screen.</li>
+    <li>The tcbc.ie embed on a phone: the year and month chips are easy to tap.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Tap targets</td><td style="border:1px solid #e7d9b8;padding:0.4rem">About 51 at 18–44px (some 20px chips)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">48px; icon buttons keep their small look</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Fields</td><td style="border:1px solid #e7d9b8;padding:0.4rem">15 at ~38–42px or 14px text</td><td style="border:1px solid #e7d9b8;padding:0.4rem">48px, 16px</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Readable small text</td><td style="border:1px solid #e7d9b8;padding:0.4rem">12px</td><td style="border:1px solid #e7d9b8;padding:0.4rem">14px (badges, headers and captions stay 12px)</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">8 research charts</td><td style="border:1px solid #e7d9b8;padding:0.4rem">9–12px labels, light-mode greys</td><td style="border:1px solid #e7d9b8;padding:0.4rem">14px, dark-mode colours; labels kept in the chart</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Wild-colonies tables on phones</td><td style="border:1px solid #e7d9b8;padding:0.4rem">12 / 9 columns off-screen; panel as wide as the table</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Low-value columns hidden; panel stays on screen</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0; 855 tests pass (3 new)</td></tr>
+</table>
+<ul>
+  <li><strong>New:</strong> <code>src/lib/chart-theme.ts</code>. <code>themeChartOptions()</code> fills in 14px text and light/dark colours for the legend, title, value labels and every axis. It keeps any colour or larger size a chart sets itself, such as the red temperature axis. <code>tests/lib/chart-theme.test.ts</code> covers it.</li>
+  <li><strong>QA audit:</strong> no Critical or High issues. One Medium was fixed: the larger phenology value labels could be cut off above the tallest bar, or overlap in the embed. They are now kept inside the chart (<code>clamp</code>) and hidden when they would collide (<code>display: 'auto'</code>).</li>
+  <li><strong>Chunk 7b:</strong> now closed.</li>
+</ul>
+</body>
+</html>

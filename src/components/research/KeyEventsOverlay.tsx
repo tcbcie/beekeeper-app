@@ -88,9 +88,10 @@ export function buildEventAnnotations(
         position: 'start' as const,
         backgroundColor: YEAR_COLORS[colorIdx].bg,
         color: '#fff',
-        font: { size: 9 },
+        // 14px for readability (C7b-24); labels on the same day spaced to match
+        font: { size: 14 },
         rotation: 270,
-        xAdjust: countAtTick * 14,
+        xAdjust: countAtTick * 20,
         padding: { top: 2, bottom: 2, left: 3, right: 3 },
       },
     }
@@ -311,7 +312,7 @@ export function useKeyEvents({
             onClick={() => {
               if (showForm) { resetForm() } else { setShowForm(true) }
             }}
-            className="px-2 py-1 text-xs rounded-lg bg-forest-600 text-white hover:bg-forest-700 transition-colors flex items-center gap-1"
+            className="min-h-12 px-3 py-1 text-sm rounded-lg bg-forest-600 text-white hover:bg-forest-700 transition-colors flex items-center gap-1"
           >
             {showForm ? <X size={12} /> : <Plus size={12} />}
             {showForm ? 'Cancel' : 'Add'}
@@ -327,7 +328,7 @@ export function useKeyEvents({
                 type="date"
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
-                className="px-2 py-1.5 text-sm border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
+                className="min-h-12 px-2 py-1.5 text-base border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
               />
             </div>
             <div className="space-y-1">
@@ -335,7 +336,7 @@ export function useKeyEvents({
               <select
                 value={eventTypeId}
                 onChange={(e) => setEventTypeId(e.target.value)}
-                className="px-2 py-1.5 text-sm border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
+                className="min-h-12 px-2 py-1.5 text-base border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
               >
                 <option value="">Select...</option>
                 {eventTypes.map(t => (
@@ -350,7 +351,7 @@ export function useKeyEvents({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Brief note..."
-                className="px-2 py-1.5 text-sm border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
+                className="min-h-12 px-2 py-1.5 text-base border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
               />
             </div>
             <Button
@@ -375,11 +376,11 @@ export function useKeyEvents({
             {filteredEvents.map(evt => (
               <div key={evt.id} className="flex items-center justify-between gap-2 px-2 py-1.5 bg-surface-secondary dark:bg-surface-elevated rounded text-sm">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-xs text-text-tertiary tabular-nums shrink-0">
+                  <span className="text-sm text-text-tertiary tabular-nums shrink-0">
                     {new Date(evt.event_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </span>
                   <span className="font-medium text-foreground truncate">{getEventTypeName(evt)}</span>
-                  {evt.notes && <span className="text-xs text-text-tertiary truncate">— {evt.notes}</span>}
+                  {evt.notes && <span className="text-sm text-text-tertiary truncate">— {evt.notes}</span>}
                 </div>
                 {/* 48px tap areas with spoken labels (they were about 21px, C7b-05) */}
                 <div className="flex items-center gap-1 shrink-0">

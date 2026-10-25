@@ -20,6 +20,7 @@ import {
   Legend,
 } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
+import { themeChartOptions, isDarkMode } from '@/lib/chart-theme'
 import annotationPlugin from 'chartjs-plugin-annotation'
 import { Bar, Line } from 'react-chartjs-2'
 
@@ -588,7 +589,10 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
     }
   }, [filteredRecords, filteredCommunityRecords, showCommunityData])
 
-  const chartOptions = useMemo(() => ({
+  // Chart text at 14px with dark-mode colours (C7b-24)
+  const isDark = isDarkMode()
+
+  const chartOptions = useMemo(() => themeChartOptions({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -616,11 +620,12 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
           return date ? `${value.toFixed(1)}\n${date}` : value.toFixed(1)
         },
         font: {
-          size: 9,
           weight: 'bold' as const,
         },
-        color: '#374151',
-        display: true,
+        // 'auto' hides a two-line label that would overlap its neighbour at the larger size
+        display: 'auto' as const,
+        // Keep the larger labels inside the chart rather than cut off above the tallest bar
+        clamp: true,
         textAlign: 'center' as const,
       },
     },
@@ -639,7 +644,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         },
       },
     },
-  }), [dateMap, showTemperature])
+  }, isDark), [dateMap, showTemperature, isDark])
 
   // Chart year order for event annotations colour matching
   const gddChartYearOrder = useMemo(() =>
@@ -758,7 +763,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   // Check if we have temperature data for any year
   const hasMonthlyTemps = Object.keys(monthlyTemps).length > 0
 
-  const accumulationChartOptions = useMemo(() => ({
+  const accumulationChartOptions = useMemo(() => themeChartOptions({
     responsive: true,
     maintainAspectRatio: false,
     interaction: {
@@ -826,7 +831,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
         },
       },
     },
-  }), [showTemperature, hasMonthlyTemps, showEvents, keyEvents.annotations])
+  }, isDark), [showTemperature, hasMonthlyTemps, showEvents, keyEvents.annotations, isDark])
 
   const toggleYear = (year: number) => {
     setSelectedYears(prev =>
@@ -888,7 +893,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
           </div>
           <Link
             href="/dashboard/tools?section=gdd"
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
+            className="flex min-h-12 items-center gap-2 px-4 py-2 text-sm bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
           >
             <ExternalLink size={16} />
             Add Records
@@ -963,7 +968,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
               <select
                 value={selectedVegetation}
                 onChange={(e) => setSelectedVegetation(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
+                className="min-h-12 px-3 py-1.5 text-base border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
               >
                 <option value="">All vegetation</option>
                 {vegetationTypes.map(veg => (
@@ -978,7 +983,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
               <select
                 value={selectedApiary}
                 onChange={(e) => setSelectedApiary(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
+                className="min-h-12 px-3 py-1.5 text-base border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
               >
                 <option value="">All apiaries</option>
                 {apiaries.map(api => (
@@ -1016,7 +1021,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                           onClick={() => setSelectedMonths(prev =>
                             prev.includes(month) ? prev.filter(m => m !== month) : [...prev, month]
                           )}
-                          className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                          className={`min-w-12 px-2 py-0.5 text-sm rounded-full transition-colors ${
                             selectedMonths.includes(month)
                               ? 'bg-forest-600 text-white'
                               : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -1084,7 +1089,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             {chartType === 'vegetation' && apiaryCoordsList.length > 0 && (
               <Button
                 onClick={() => setShowTemperature(!showTemperature)}
-                className={`px-2 py-0.5 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                className={`px-2 py-0.5 text-sm rounded-full transition-colors flex items-center gap-1 ${
                   showTemperature
                     ? 'bg-red-500 text-white'
                     : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -1100,12 +1105,12 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             {chartType === 'accumulation' && apiaryCoordsList.length > 0 && (
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs text-text-secondary">Years:</span>
+                  <span className="text-sm text-text-secondary">Years:</span>
                   {availableAccumulationYears.map(year => (
                     <Button
                       key={year}
                       onClick={() => toggleAccumulationYear(year)}
-                      className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                      className={`px-2 py-0.5 text-sm rounded-full transition-colors ${
                         selectedAccumulationYears.includes(year)
                           ? 'bg-forest-600 text-white'
                           : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -1117,7 +1122,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                 </div>
                 <Button
                   onClick={() => setShowTemperature(!showTemperature)}
-                  className={`px-2 py-0.5 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                  className={`px-2 py-0.5 text-sm rounded-full transition-colors flex items-center gap-1 ${
                     showTemperature
                       ? 'bg-red-500 text-white'
                       : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -1129,7 +1134,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                 </Button>
                 <Button
                   onClick={() => setShowEvents(!showEvents)}
-                  className={`px-2 py-0.5 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                  className={`px-2 py-0.5 text-sm rounded-full transition-colors flex items-center gap-1 ${
                     showEvents
                       ? 'bg-amber-500 text-white'
                       : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -1203,11 +1208,11 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
               {/* Monthly Temperature Chart */}
               {showTemperature && hasMonthlyTemps && (
                 <div className="mt-2 pt-2 border-t border-border">
-                  <h4 className="text-xs font-medium text-foreground mb-1 flex items-center gap-1.5">
+                  <h4 className="text-sm font-medium text-foreground mb-1 flex items-center gap-1.5">
                     <Thermometer size={14} className="text-red-500" />
                     Avg Monthly Temps ({selectedYears.slice().sort((a, b) => a - b).join(', ')})
                   </h4>
-                  <div className="h-32">
+                  <div className="h-40">
                     <Bar
                       data={{
                         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
@@ -1223,7 +1228,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                           }
                         }),
                       }}
-                      options={{
+                      options={themeChartOptions({
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
@@ -1236,21 +1241,16 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                             anchor: 'end' as const,
                             align: 'top' as const,
                             formatter: (value: number | null) => value !== null ? `${value}°` : '',
-                            font: { size: 9 },
-                            color: '#6b7280',
                           },
                         },
                         scales: {
                           y: {
                             beginAtZero: true,
                             title: { display: true, text: '°C' },
-                            ticks: { font: { size: 10 } },
                           },
-                          x: {
-                            ticks: { font: { size: 10 } },
-                          },
+                          x: {},
                         },
-                      }}
+                      }, isDark)}
                     />
                   </div>
                 </div>
@@ -1283,7 +1283,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                     <td className="p-3 text-foreground font-medium">{record.year}</td>
                     <td className="p-3 text-foreground">{record.apiaries?.name || '-'}</td>
                     <td className="p-3 text-foreground">
-                      <Button type="button" className="!min-h-0 !border-0 !bg-transparent !p-0 font-normal hover:!bg-transparent hover:text-green-700 dark:hover:text-green-400 hover:underline text-left" onClick={() => { setVegModalName(record.dropdown_values?.value || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.dropdown_values?.value || '-'}</Button>
+                      <Button type="button" className="justify-start !border-0 !bg-transparent !p-0 font-normal hover:!bg-transparent hover:text-green-700 dark:hover:text-green-400 hover:underline text-left" onClick={() => { setVegModalName(record.dropdown_values?.value || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.dropdown_values?.value || '-'}</Button>
                     </td>
                     <td className="p-3 text-text-secondary">{new Date(record.start_date).toLocaleDateString()}</td>
                     <td className="p-3 text-text-secondary">
@@ -1321,7 +1321,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                       </span>
                     </td>
                     <td className="p-3 text-foreground">
-                      <Button type="button" className="!min-h-0 !border-0 !bg-transparent !p-0 font-normal hover:!bg-transparent hover:text-green-700 dark:hover:text-green-400 hover:underline text-left" onClick={() => { setVegModalName(record.vegetation_name || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.vegetation_name || '-'}</Button>
+                      <Button type="button" className="justify-start !border-0 !bg-transparent !p-0 font-normal hover:!bg-transparent hover:text-green-700 dark:hover:text-green-400 hover:underline text-left" onClick={() => { setVegModalName(record.vegetation_name || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.vegetation_name || '-'}</Button>
                     </td>
                     <td className="p-3 text-text-secondary">{new Date(record.start_date).toLocaleDateString()}</td>
                     <td className="p-3 text-text-secondary">
@@ -1353,7 +1353,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             {filteredRecords.map((record) => (
               <div key={record.id} className="p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <Button type="button" className="!min-h-0 !border-0 !bg-transparent !p-0 text-left font-semibold text-foreground hover:!bg-transparent hover:text-green-700 dark:hover:text-green-400 hover:underline" onClick={() => { setVegModalName(record.dropdown_values?.value || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.dropdown_values?.value || 'Unknown'}</Button>
+                  <Button type="button" className="justify-start !border-0 !bg-transparent !p-0 text-left font-semibold text-foreground hover:!bg-transparent hover:text-green-700 dark:hover:text-green-400 hover:underline" onClick={() => { setVegModalName(record.dropdown_values?.value || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.dropdown_values?.value || 'Unknown'}</Button>
                   <span className="text-sm text-text-secondary">{record.year}</span>
                 </div>
                 <div className="text-sm text-text-secondary">{record.apiaries?.name || '-'}</div>
@@ -1377,7 +1377,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
             {filteredCommunityRecords.map((record) => (
               <div key={`community-${record.id}`} className="p-4 space-y-2 bg-amber-50/50 dark:bg-amber-900/10">
                 <div className="flex items-center justify-between">
-                  <Button type="button" className="!min-h-0 !border-0 !bg-transparent !p-0 text-left font-semibold text-foreground hover:!bg-transparent hover:text-green-700 dark:hover:text-green-400 hover:underline" onClick={() => { setVegModalName(record.vegetation_name || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.vegetation_name || 'Unknown'}</Button>
+                  <Button type="button" className="justify-start !border-0 !bg-transparent !p-0 text-left font-semibold text-foreground hover:!bg-transparent hover:text-green-700 dark:hover:text-green-400 hover:underline" onClick={() => { setVegModalName(record.vegetation_name || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.vegetation_name || 'Unknown'}</Button>
                   <span className="text-sm text-text-secondary">{record.year}</span>
                 </div>
                 <div className="text-sm text-amber-700 dark:text-amber-400 flex items-center gap-1">
@@ -1437,7 +1437,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                           </span>
                         </td>
                         <td className="p-3 text-foreground">
-                          <Button type="button" className="!min-h-0 !border-0 !bg-transparent !p-0 font-normal hover:!bg-transparent hover:text-green-700 dark:hover:text-green-400 hover:underline text-left" onClick={() => { setVegModalName(record.vegetation_name || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.vegetation_name || '-'}</Button>
+                          <Button type="button" className="justify-start !border-0 !bg-transparent !p-0 font-normal hover:!bg-transparent hover:text-green-700 dark:hover:text-green-400 hover:underline text-left" onClick={() => { setVegModalName(record.vegetation_name || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.vegetation_name || '-'}</Button>
                         </td>
                         <td className="p-3 text-text-secondary">{new Date(record.start_date).toLocaleDateString()}</td>
                         <td className="p-3 text-right">
@@ -1457,7 +1457,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
                 {filteredCommunityRecords.map((record) => (
                   <div key={record.id} className="p-4 space-y-2 bg-amber-50/50 dark:bg-amber-900/10">
                     <div className="flex items-center justify-between">
-                      <Button type="button" className="!min-h-0 !border-0 !bg-transparent !p-0 text-left font-semibold text-foreground hover:!bg-transparent hover:text-green-700 dark:hover:text-green-400 hover:underline" onClick={() => { setVegModalName(record.vegetation_name || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.vegetation_name || 'Unknown'}</Button>
+                      <Button type="button" className="justify-start !border-0 !bg-transparent !p-0 text-left font-semibold text-foreground hover:!bg-transparent hover:text-green-700 dark:hover:text-green-400 hover:underline" onClick={() => { setVegModalName(record.vegetation_name || ''); setVegModalTypeId(record.vegetation_type_id); setVegModalOpen(true) }}>{record.vegetation_name || 'Unknown'}</Button>
                       <span className="text-sm text-text-secondary">{record.year}</span>
                     </div>
                     <div className="text-sm text-amber-700 dark:text-amber-400 flex items-center gap-1">
@@ -1480,7 +1480,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
               <p className="text-text-secondary mb-4">No GDD records yet.</p>
               <Link
                 href="/dashboard/tools?section=gdd"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
+                className="inline-flex min-h-12 items-center gap-2 px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 transition-colors"
               >
                 <ExternalLink size={16} />
                 Add Your First Record

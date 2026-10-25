@@ -50,6 +50,7 @@ import {
   Legend,
 } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
+import { themeChartOptions, isDarkMode } from '@/lib/chart-theme'
 import annotationPlugin from 'chartjs-plugin-annotation'
 import { Bar, Line } from 'react-chartjs-2'
 
@@ -393,7 +394,10 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
     }
   }, [filteredRecords])
 
-  const chartOptions = useMemo(() => ({
+  // Chart text at 14px with dark-mode colours (C7b-24)
+  const isDark = isDarkMode()
+
+  const chartOptions = useMemo(() => themeChartOptions({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -415,9 +419,10 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
           const date = dateMap[`${context.datasetIndex}-${context.dataIndex}`]
           return date ? `${value.toFixed(1)}\n${date}` : value.toFixed(1)
         },
-        font: { size: 9, weight: 'bold' as const },
-        color: '#374151',
-        display: true,
+        font: { weight: 'bold' as const },
+        // At 14px: hide a label that would overlap its neighbour, and keep labels inside the chart
+        display: 'auto' as const,
+        clamp: true,
         textAlign: 'center' as const,
       },
     },
@@ -430,7 +435,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
         title: { display: !showTemperature, text: 'Vegetation Type' },
       },
     },
-  }), [dateMap, showTemperature])
+  }, isDark), [dateMap, showTemperature, isDark])
 
   // Accumulation chart data
   const accumulationChartData = useMemo(() => {
@@ -519,7 +524,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
 
   const hasMonthlyTemps = Object.keys(monthlyTemps).length > 0
 
-  const accumulationChartOptions = useMemo(() => ({
+  const accumulationChartOptions = useMemo(() => themeChartOptions({
     responsive: true,
     maintainAspectRatio: false,
     interaction: { mode: 'index' as const, intersect: false },
@@ -560,7 +565,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
         ticks: { maxRotation: 0 },
       },
     },
-  }), [showTemperature, hasMonthlyTemps])
+  }, isDark), [showTemperature, hasMonthlyTemps, isDark])
 
   const toggleYear = (year: number) => {
     setSelectedYears(prev =>
@@ -596,7 +601,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
             <button
               type="button"
               onClick={() => setViewMode('chart')}
-              className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+              className={`min-h-12 px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
                 viewMode === 'chart'
                   ? 'bg-forest-600 text-white'
                   : 'bg-surface text-text-secondary hover:bg-surface-elevated'
@@ -608,7 +613,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
             <button
               type="button"
               onClick={() => setViewMode('table')}
-              className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+              className={`min-h-12 px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
                 viewMode === 'table'
                   ? 'bg-forest-600 text-white'
                   : 'bg-surface text-text-secondary hover:bg-surface-elevated'
@@ -639,7 +644,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
                     key={year}
                     type="button"
                     onClick={() => toggleYear(year)}
-                    className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                    className={`min-h-12 px-3 py-1 text-sm rounded-full transition-colors ${
                       selectedYears.includes(year)
                         ? 'bg-forest-600 text-white'
                         : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -657,7 +662,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
               <select
                 value={selectedVegetation}
                 onChange={(e) => setSelectedVegetation(e.target.value)}
-                className="px-3 py-1.5 text-sm border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
+                className="min-h-12 px-3 py-1.5 text-base border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
               >
                 <option value="">All vegetation</option>
                 {vegetationTypes.map(veg => (
@@ -676,7 +681,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
                       key={key}
                       type="button"
                       onClick={() => setPeriodFilter(key)}
-                      className={`px-3 py-1 text-sm rounded-full transition-colors ${
+                      className={`min-h-12 px-3 py-1 text-sm rounded-full transition-colors ${
                         periodFilter === key
                           ? 'bg-forest-600 text-white'
                           : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -697,7 +702,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
                           onClick={() => setSelectedMonths(prev =>
                             prev.includes(month) ? prev.filter(m => m !== month) : [...prev, month]
                           )}
-                          className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                          className={`min-h-12 min-w-12 px-2 py-0.5 text-sm rounded-full transition-colors ${
                             selectedMonths.includes(month)
                               ? 'bg-forest-600 text-white'
                               : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -721,7 +726,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
                   setPeriodFilter('all')
                   setSelectedMonths([])
                 }}
-                className="self-end px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                className="self-end min-h-12 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               >
                 Reset
               </button>
@@ -738,7 +743,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
               <button
                 type="button"
                 onClick={() => setChartType('accumulation')}
-                className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+                className={`min-h-12 px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
                   chartType === 'accumulation'
                     ? 'bg-forest-600 text-white'
                     : 'bg-surface text-text-secondary hover:bg-surface-elevated'
@@ -750,7 +755,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
               <button
                 type="button"
                 onClick={() => setChartType('vegetation')}
-                className={`px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
+                className={`min-h-12 px-3 py-1.5 text-sm flex items-center gap-1.5 transition-colors ${
                   chartType === 'vegetation'
                     ? 'bg-forest-600 text-white'
                     : 'bg-surface text-text-secondary hover:bg-surface-elevated'
@@ -766,7 +771,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
               <button
                 type="button"
                 onClick={() => setShowTemperature(!showTemperature)}
-                className={`px-2 py-0.5 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                className={`min-h-12 min-w-12 px-2 py-0.5 text-sm rounded-full transition-colors flex items-center gap-1 ${
                   showTemperature
                     ? 'bg-red-500 text-white'
                     : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -782,13 +787,13 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
             {chartType === 'accumulation' && (
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs text-text-secondary">Years:</span>
+                  <span className="text-sm text-text-secondary">Years:</span>
                   {availableAccumulationYears.map(year => (
                     <button
                       key={year}
                       type="button"
                       onClick={() => toggleAccumulationYear(year)}
-                      className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                      className={`min-h-12 min-w-12 px-2 py-0.5 text-sm rounded-full transition-colors ${
                         selectedAccumulationYears.includes(year)
                           ? 'bg-forest-600 text-white'
                           : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -801,7 +806,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
                 <button
                   type="button"
                   onClick={() => setShowTemperature(!showTemperature)}
-                  className={`px-2 py-0.5 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                  className={`min-h-12 min-w-12 px-2 py-0.5 text-sm rounded-full transition-colors flex items-center gap-1 ${
                     showTemperature
                       ? 'bg-red-500 text-white'
                       : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -863,11 +868,11 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
               {/* Monthly temps mini-chart */}
               {showTemperature && hasMonthlyTemps && (
                 <div className="mt-2 pt-2 border-t border-border">
-                  <h4 className="text-xs font-medium text-foreground mb-1 flex items-center gap-1.5">
+                  <h4 className="text-sm font-medium text-foreground mb-1 flex items-center gap-1.5">
                     <Thermometer size={14} className="text-red-500" />
                     Avg Monthly Temps ({selectedYears.slice().sort((a, b) => a - b).join(', ')})
                   </h4>
-                  <div className="h-32">
+                  <div className="h-40">
                     <Bar
                       data={{
                         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
@@ -883,7 +888,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
                           }
                         }),
                       }}
-                      options={{
+                      options={themeChartOptions({
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
@@ -893,19 +898,16 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
                             anchor: 'end' as const,
                             align: 'top' as const,
                             formatter: (value: number | null) => value !== null ? `${value}°` : '',
-                            font: { size: 9 },
-                            color: '#6b7280',
                           },
                         },
                         scales: {
                           y: {
                             beginAtZero: true,
                             title: { display: true, text: '°C' },
-                            ticks: { font: { size: 10 } },
                           },
-                          x: { ticks: { font: { size: 10 } } },
+                          x: {},
                         },
-                      }}
+                      }, isDark)}
                     />
                   </div>
                 </div>
@@ -938,7 +940,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
                     <td className="p-3 text-foreground">
                       <button
                         type="button"
-                        className="font-normal hover:text-green-700 dark:hover:text-green-400 hover:underline text-left bg-transparent border-0 p-0"
+                        className="inline-flex min-h-12 items-center font-normal hover:text-green-700 dark:hover:text-green-400 hover:underline text-left bg-transparent border-0 p-0"
                         onClick={() => {
                           setVegModalName(record.vegetation_name || '')
                           setVegModalTypeId(record.vegetation_type_id)
@@ -972,7 +974,7 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
                 <div className="flex items-center justify-between">
                   <button
                     type="button"
-                    className="text-left font-semibold text-foreground hover:text-green-700 dark:hover:text-green-400 hover:underline bg-transparent border-0 p-0"
+                    className="inline-flex min-h-12 items-center text-left font-semibold text-foreground hover:text-green-700 dark:hover:text-green-400 hover:underline bg-transparent border-0 p-0"
                     onClick={() => {
                       setVegModalName(record.vegetation_name || '')
                       setVegModalTypeId(record.vegetation_type_id)

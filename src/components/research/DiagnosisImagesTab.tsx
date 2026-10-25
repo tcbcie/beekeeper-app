@@ -276,14 +276,14 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  <div className="flex items-center border border-border rounded-lg overflow-hidden">
  <Button
  onClick={() => setViewMode('grid')}
- className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-forest-600 text-white' : 'text-text-secondary hover:bg-surface-elevated'}`}
+ className={`p-2 min-w-12 transition-colors ${viewMode === 'grid' ? 'bg-forest-600 text-white' : 'text-text-secondary hover:bg-surface-elevated'}`}
  title="Grid view"
  >
  <LayoutGrid size={18} />
  </Button>
  <Button
  onClick={() => setViewMode('list')}
- className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-forest-600 text-white' : 'text-text-secondary hover:bg-surface-elevated'}`}
+ className={`p-2 min-w-12 transition-colors ${viewMode === 'list' ? 'bg-forest-600 text-white' : 'text-text-secondary hover:bg-surface-elevated'}`}
  title="List view"
  >
  <List size={18} />
@@ -291,7 +291,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  </div>
  <Button
  onClick={fetchImages}
- className="p-2 text-text-secondary hover:text-foreground hover:bg-surface-elevated rounded-lg transition-colors"
+ className="p-2 min-w-12 text-text-secondary hover:text-foreground hover:bg-surface-elevated rounded-lg transition-colors"
  title="Refresh"
  >
  <RefreshCw size={20} />
@@ -336,7 +336,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  />
  </div>
  <div className="p-3 space-y-2">
- <div className="flex items-center gap-2 text-xs text-text-secondary">
+ <div className="flex items-center gap-2 text-sm text-text-secondary">
  <Tag size={14} />
  <span className="font-medium">{DIAGNOSIS_TYPE_LABELS[image.diagnosis_type] || image.diagnosis_type}</span>
  </div>
@@ -350,7 +350,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  <span>{imageComments.length} comment{imageComments.length !== 1 ? 's' : ''}</span>
  </div>
  {imageComments.slice(-2).map((comment) => (
- <div key={comment.id} className="text-xs">
+ <div key={comment.id} className="text-sm">
  <span className="font-medium text-text-secondary">{comment.user_name}:</span>
  <span className="text-foreground ml-1 line-clamp-1">{comment.comment}</span>
  </div>
@@ -366,14 +366,14 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  <div className="flex items-center gap-1">
  <Button
  onClick={(e) => { e.stopPropagation(); setSelectedImage(image); }}
- className="p-1.5 text-forest-600 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 rounded transition-colors"
+ className="p-1.5 min-w-12 text-forest-600 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 rounded transition-colors"
  title="View image"
  >
  <Eye size={16} />
  </Button>
  <Button
  onClick={(e) => { e.stopPropagation(); handleDownload(image); }}
- className="p-1.5 text-text-secondary hover:text-foreground hover:bg-surface-elevated rounded transition-colors"
+ className="p-1.5 min-w-12 text-text-secondary hover:text-foreground hover:bg-surface-elevated rounded transition-colors"
  title="Download image"
  >
  <Download size={16} />
@@ -381,7 +381,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  <Button
  onClick={(e) => { e.stopPropagation(); handleDelete(image); }}
  disabled={deleting === image.id}
- className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors disabled:opacity-50"
+ className="p-1.5 min-w-12 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors disabled:opacity-50"
  title="Delete image"
  >
  <Trash2 size={16} />
@@ -418,7 +418,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  </div>
  <div className="flex-1 p-3 flex flex-col justify-between min-w-0">
  <div className="space-y-1">
- <div className="flex items-center gap-2 text-xs text-text-secondary">
+ <div className="flex items-center gap-2 text-sm text-text-secondary">
  <Tag size={14} />
  <span className="font-medium">{DIAGNOSIS_TYPE_LABELS[image.diagnosis_type] || image.diagnosis_type}</span>
  <span className="text-text-tertiary">•</span>
@@ -430,14 +430,14 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  <div className="flex items-center gap-1 mt-2">
  <Button
  onClick={() => setSelectedImage(image)}
- className="p-1.5 text-forest-600 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 rounded transition-colors"
+ className="p-1.5 min-w-12 text-forest-600 dark:text-forest-400 hover:bg-forest-50 dark:hover:bg-forest-900/20 rounded transition-colors"
  title="View image"
  >
  <Eye size={16} />
  </Button>
  <Button
  onClick={() => handleDownload(image)}
- className="p-1.5 text-text-secondary hover:text-foreground hover:bg-surface-elevated rounded transition-colors"
+ className="p-1.5 min-w-12 text-text-secondary hover:text-foreground hover:bg-surface-elevated rounded transition-colors"
  title="Download image"
  >
  <Download size={16} />
@@ -445,7 +445,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  <Button
  onClick={() => handleDelete(image)}
  disabled={deleting === image.id}
- className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors disabled:opacity-50"
+ className="p-1.5 min-w-12 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors disabled:opacity-50"
  title="Delete image"
  >
  <Trash2 size={16} />
@@ -462,7 +462,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  </div>
  <div className="space-y-1">
  {imageComments.map((comment) => (
- <div key={comment.id} className="text-xs flex items-start gap-1">
+ <div key={comment.id} className="text-sm flex items-start gap-1">
  <span className="font-medium text-text-secondary whitespace-nowrap">{comment.user_name}:</span>
  <span className="text-foreground">{comment.comment}</span>
  <span className="text-text-tertiary whitespace-nowrap ml-auto">({formatDate(comment.created_at)})</span>
@@ -500,21 +500,21 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  <div className="flex items-center gap-2">
  <Button
  onClick={() => setZoomImageUrl(selectedImage.image_url)}
- className="p-2 text-text-secondary hover:text-foreground hover:bg-surface-elevated rounded-lg transition-colors"
+ className="p-2 min-w-12 text-text-secondary hover:text-foreground hover:bg-surface-elevated rounded-lg transition-colors"
  title="Zoom image"
  >
  <ZoomIn size={20} />
  </Button>
  <Button
  onClick={() => handleDownload(selectedImage)}
- className="p-2 text-text-secondary hover:text-foreground hover:bg-surface-elevated rounded-lg transition-colors"
+ className="p-2 min-w-12 text-text-secondary hover:text-foreground hover:bg-surface-elevated rounded-lg transition-colors"
  title="Download"
  >
  <Download size={20} />
  </Button>
  <Button
  onClick={() => setSelectedImage(null)}
- className="p-2 text-text-secondary hover:text-foreground hover:bg-surface-elevated rounded-lg transition-colors"
+ className="p-2 min-w-12 text-text-secondary hover:text-foreground hover:bg-surface-elevated rounded-lg transition-colors"
  title="Close"
  >
  <X size={20} />
@@ -565,7 +565,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  {comment.user_id === userId && (
  <Button
  onClick={() => handleDeleteComment(comment.id, selectedImage.id)}
- className="text-red-500 hover:text-red-700 p-0.5"
+ className="text-red-500 hover:text-red-700 p-0.5 min-w-12"
  title="Delete comment"
  >
  <Trash2 size={12} />
@@ -586,12 +586,13 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  onChange={(e) => setNewComment(e.target.value)}
  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleAddComment()}
  placeholder="Add a comment..."
- className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-surface text-foreground"
+ className="flex-1 min-h-12 px-3 py-2 text-base border border-border rounded-lg bg-surface text-foreground"
  />
  <Button
  onClick={handleAddComment}
  disabled={submittingComment || !newComment.trim()}
- className="px-3 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+ className="px-3 py-2 min-w-12 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+ aria-label="Send comment"
  >
  <Send size={16} />
  </Button>

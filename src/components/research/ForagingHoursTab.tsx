@@ -18,6 +18,7 @@ import {
   Legend,
 } from 'chart.js'
 import ChartDataLabels from 'chartjs-plugin-datalabels'
+import { themeChartOptions, isDarkMode } from '@/lib/chart-theme'
 import annotationPlugin from 'chartjs-plugin-annotation'
 import { Bar, Line } from 'react-chartjs-2'
 
@@ -316,7 +317,10 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
     return { labels, datasets }
   }, [accumulationData, currentYear])
 
-  const accumulationChartOptions = useMemo(() => ({
+  // Chart text at 14px with dark-mode colours (C7b-24)
+  const isDark = isDarkMode()
+
+  const accumulationChartOptions = useMemo(() => themeChartOptions({
     responsive: true,
     maintainAspectRatio: false,
     interaction: {
@@ -354,7 +358,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
                 position: 'end' as const,
                 backgroundColor: 'rgba(239, 68, 68, 0.8)',
                 color: '#fff',
-                font: { size: 10 },
+                font: { size: 14 },
               },
             },
           } : {}),
@@ -378,7 +382,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
         ticks: { maxRotation: 0 },
       },
     },
-  }), [currentYearTotal, showEvents, keyEvents.annotations])
+  }, isDark), [currentYearTotal, showEvents, keyEvents.annotations, isDark])
 
   // Monthly bar chart data
   const monthlyChartData = useMemo(() => {
@@ -406,7 +410,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
     return { labels, datasets }
   }, [monthlyHoursData, selectedYears, currentYear, allowedMonths])
 
-  const monthlyChartOptions = useMemo(() => ({
+  const monthlyChartOptions = useMemo(() => themeChartOptions({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -430,8 +434,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
           if (value === null || value === 0) return ''
           return value.toFixed(1)
         },
-        font: { size: 9, weight: 'bold' as const },
-        color: '#374151',
+        font: { weight: 'bold' as const },
         display: selectedYears.length <= 2,
       },
     },
@@ -444,7 +447,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
         title: { display: true, text: 'Month' },
       },
     },
-  }), [selectedYears.length])
+  }, isDark), [selectedYears.length, isDark])
 
   const toggleYear = (year: number) => {
     setSelectedYears(prev =>
@@ -474,7 +477,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
           <select
             value={selectedApiaryId || apiaries[0]?.id || ''}
             onChange={(e) => setSelectedApiaryId(e.target.value)}
-            className="px-3 py-1.5 text-sm border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
+            className="min-h-12 px-3 py-1.5 text-base border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground"
           >
             {apiaries.map(a => (
               <option key={a.id} value={a.id}>{a.name}</option>
@@ -531,7 +534,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
                             onClick={() => setSelectedMonths(prev =>
                               prev.includes(month) ? prev.filter(m => m !== month) : [...prev, month]
                             )}
-                            className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                            className={`min-w-12 px-2 py-0.5 text-sm rounded-full transition-colors ${
                               selectedMonths.includes(month)
                                 ? 'bg-forest-600 text-white'
                                 : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -592,12 +595,12 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
 
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs text-text-secondary">Years:</span>
+                  <span className="text-sm text-text-secondary">Years:</span>
                   {availableYears.map(year => (
                     <Button
                       key={year}
                       onClick={() => toggleYear(year)}
-                      className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                      className={`px-2 py-0.5 text-sm rounded-full transition-colors ${
                         selectedYears.includes(year)
                           ? 'bg-forest-600 text-white'
                           : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
@@ -612,7 +615,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
                 {chartType === 'accumulation' && selectedApiary && (
                   <Button
                     onClick={() => setShowEvents(!showEvents)}
-                    className={`px-2 py-0.5 text-xs rounded-full transition-colors flex items-center gap-1 ${
+                    className={`px-2 py-0.5 text-sm rounded-full transition-colors flex items-center gap-1 ${
                       showEvents
                         ? 'bg-amber-500 text-white'
                         : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'

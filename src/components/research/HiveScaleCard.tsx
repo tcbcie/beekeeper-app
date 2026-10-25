@@ -304,27 +304,28 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  </IconButton>
  <Link
  href={`/dashboard/hives/${hive.id}`}
- className="p-1 text-text-tertiary hover:text-foreground"
+ className="inline-flex min-h-12 min-w-12 items-center justify-center p-1 text-text-tertiary hover:text-foreground"
  title="View hive"
+ aria-label="View hive"
  >
- <ExternalLink size={12} />
+ <ExternalLink size={16} />
  </Link>
  </div>
  </div>
 
  {/* Apiary + Weather */}
  {hive.apiaries?.name && (
- <div className="px-3 py-1 text-xs text-text-secondary border-b border-border flex items-center justify-between">
+ <div className="px-3 py-1 text-sm text-text-secondary border-b border-border flex items-center justify-between">
  <span>{hive.apiaries.name}</span>
  {weather && (
  <span className="flex items-center gap-2 text-text-tertiary">
  {getWeatherIcon(weather.weatherCode)}
  <span className="flex items-center gap-0.5">
- <Thermometer size={10} className="text-orange-400" />
+ <Thermometer size={14} className="text-orange-400" />
  {Math.round(weather.temperature)}°C
  </span>
  <span className="flex items-center gap-0.5">
- <Droplets size={10} className="text-cyan-400" />
+ <Droplets size={14} className="text-cyan-400" />
  {weather.humidity}%
  </span>
  </span>
@@ -342,8 +343,8 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  </span>
  )}
  {data && data.weightChange24h !== null && (
- <span className={`text-xs flex items-center gap-0.5 ${data.weightChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
- {data.weightChange24h >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+ <span className={`text-sm flex items-center gap-0.5 ${data.weightChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+ {data.weightChange24h >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
  {data.weightChange24h >= 0 ? '+' : ''}{data.weightChange24h.toFixed(2)} 24h
  {data.prevWeightChange24h !== null && (
  <span className="text-text-tertiary ml-0.5">
@@ -353,8 +354,8 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  </span>
  )}
  {data && data.weightChange7d !== null && (
- <span className={`text-xs flex items-center gap-0.5 ${data.weightChange7d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
- {data.weightChange7d >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+ <span className={`text-sm flex items-center gap-0.5 ${data.weightChange7d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+ {data.weightChange7d >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
  {data.weightChange7d >= 0 ? '+' : ''}{data.weightChange7d.toFixed(2)} 7d
  {data.prevWeightChange7d !== null && (
  <span className="text-text-tertiary ml-0.5">
@@ -364,8 +365,8 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  </span>
  )}
  {data && data.weightChange30d !== null && (
- <span className={`text-xs flex items-center gap-0.5 ${data.weightChange30d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
- {data.weightChange30d >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+ <span className={`text-sm flex items-center gap-0.5 ${data.weightChange30d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+ {data.weightChange30d >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
  {data.weightChange30d >= 0 ? '+' : ''}{data.weightChange30d.toFixed(2)} 30d
  {data.prevWeightChange30d !== null && (
  <span className="text-text-tertiary ml-0.5">
@@ -377,7 +378,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  </div>
 
  {/* Sensor row */}
- <div className="flex items-center gap-3 text-xs text-text-secondary">
+ <div className="flex items-center gap-3 text-sm text-text-secondary">
  {data && data.temperature !== null && (
  <span className="flex items-center gap-1" title="Brood temperature">
  <Flame size={12} className="text-orange-500" />
@@ -406,7 +407,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
 
  {/* No data state */}
  {data && data.weight === null && data.temperature === null && (
- <p className="text-xs text-text-tertiary">No data available</p>
+ <p className="text-sm text-text-tertiary">No data available</p>
  )}
  </div>
  </div>

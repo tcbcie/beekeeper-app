@@ -482,24 +482,24 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
 
  <div className="grid grid-cols-2 gap-3">
  <div>
- <label className="block text-xs text-text-tertiary mb-1">Latitude</label>
+ <label className="block text-sm text-text-tertiary mb-1">Latitude</label>
  <input
  type="text"
  value={formData.latitude}
  onChange={(e) => setFormData({...formData, latitude: e.target.value})}
  placeholder="e.g., 53.2744"
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+ className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary text-base focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
  required
  />
  </div>
  <div>
- <label className="block text-xs text-text-tertiary mb-1">Longitude</label>
+ <label className="block text-sm text-text-tertiary mb-1">Longitude</label>
  <input
  type="text"
  value={formData.longitude}
  onChange={(e) => setFormData({...formData, longitude: e.target.value})}
  placeholder="e.g., -9.0490"
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+ className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary text-base focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
  required
  />
  </div>
@@ -512,7 +512,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <select
  value={formData.status}
  onChange={(e) => setFormData({...formData, status: e.target.value})}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+ className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
  required
  >
  {STATUS_OPTIONS.map(opt => (
@@ -527,7 +527,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  type="date"
  value={formData.observation_date}
  onChange={(e) => setFormData({...formData, observation_date: e.target.value})}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+ className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
  required
  />
  </div>
@@ -537,7 +537,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <select
  value={formData.estimated_size}
  onChange={(e) => setFormData({...formData, estimated_size: e.target.value})}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+ className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
  >
  {SIZE_OPTIONS.map(opt => (
  <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -551,7 +551,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <select
  value={formData.nesting_type}
  onChange={(e) => setFormData({...formData, nesting_type: e.target.value})}
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+ className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
  >
  {NESTING_TYPE_OPTIONS.map(opt => (
  <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -566,7 +566,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  value={formData.entrance_description}
  onChange={(e) => setFormData({...formData, entrance_description: e.target.value})}
  placeholder="e.g., Small hole facing south, 2m up in oak tree"
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+ className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
  />
  </div>
 
@@ -577,7 +577,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  onChange={(e) => setFormData({...formData, notes: e.target.value})}
  rows={3}
  placeholder="Additional observations, bee activity, etc..."
- className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+ className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground placeholder-text-tertiary focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
  />
  </div>
 
@@ -600,7 +600,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <Button
  type="button"
  onClick={handleRemoveLocationImage}
- className="absolute -top-2 -right-2 flex min-h-[2.75rem] min-w-[2.75rem] items-center justify-center bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+ className="absolute -top-2 -right-2 flex min-h-12 min-w-12 items-center justify-center bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
  >
  <X size={14} />
  </Button>
@@ -637,7 +637,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <Button
  type="button"
  onClick={handleRemoveColonyImage}
- className="absolute -top-2 -right-2 flex min-h-[2.75rem] min-w-[2.75rem] items-center justify-center bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+ className="absolute -top-2 -right-2 flex min-h-12 min-w-12 items-center justify-center bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
  >
  <X size={14} />
  </Button>
@@ -745,11 +745,11 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <th className="px-4 py-3">Date</th>
  <th className="px-4 py-3">Location</th>
  <th className="px-4 py-3">Type</th>
- <th className="px-4 py-3">Size</th>
+ <th className="hidden md:table-cell px-4 py-3">Size</th>
  <th className="px-4 py-3">Contact</th>
- <th className="px-4 py-3">Description</th>
- <th className="px-4 py-3">Location Photo</th>
- <th className="px-4 py-3">Colony Photo</th>
+ <th className="hidden md:table-cell px-4 py-3">Description</th>
+ <th className="hidden md:table-cell px-4 py-3">Location Photo</th>
+ <th className="hidden md:table-cell px-4 py-3">Colony Photo</th>
  </tr>
  </thead>
  <tbody className="divide-y divide-amber-100 dark:divide-amber-900/30">
@@ -758,8 +758,9 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <td className="px-4 py-3">
  <Button
  onClick={() => handleEdit(colony)}
- className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+ className="p-1.5 min-w-12 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
  title="Edit & Review"
+ aria-label="Edit and review colony"
  >
  <Edit2 size={18} />
  </Button>
@@ -772,7 +773,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  href={`https://www.google.com/maps/search/?api=1&query=${colony.latitude},${colony.longitude}`}
  target="_blank"
  rel="noopener noreferrer"
- className="hover:text-blue-600 flex items-center gap-1"
+ className="hover:text-blue-600 flex min-h-12 items-center gap-1"
  >
  <MapPin size={14} />
  {colony.latitude.toFixed(4)}, {colony.longitude.toFixed(4)}
@@ -781,26 +782,26 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <td className="px-4 py-3 text-sm text-text-primary">
  {getNestingTypeLabel(colony.nesting_type)}
  </td>
- <td className="px-4 py-3 text-sm text-text-primary">
+ <td className="hidden md:table-cell px-4 py-3 text-sm text-text-primary">
  {getSizeLabel(colony.estimated_size)}
  </td>
  <td className="px-4 py-3 text-sm">
  {colony.share_contact_details && (colony.contact_name || colony.contact_email || colony.contact_phone) ? (
- <div className="text-xs space-y-0.5">
+ <div className="text-sm space-y-0.5">
  {colony.contact_name && (
  <p className="text-text-primary">{colony.contact_name}</p>
  )}
  {colony.contact_email && (
  <TextLink
  href={`mailto:${colony.contact_email}`}
- className="text-blue-600 block truncate max-w-[150px]"
+ className="text-blue-600 flex min-h-12 items-center truncate max-w-[150px]"
  title={colony.contact_email}
  >
  {colony.contact_email}
  </TextLink>
  )}
  {colony.contact_phone && (
- <TextLink href={`tel:${colony.contact_phone}`} className="text-blue-600 block">
+ <TextLink href={`tel:${colony.contact_phone}`} className="text-blue-600 flex min-h-12 items-center">
  {colony.contact_phone}
  </TextLink>
  )}
@@ -809,31 +810,31 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <span className="text-text-tertiary">-</span>
  )}
  </td>
- <td className="px-4 py-3 text-sm text-text-secondary max-w-xs truncate" title={colony.entrance_description || colony.notes || ''}>
+ <td className="hidden md:table-cell px-4 py-3 text-sm text-text-secondary max-w-xs truncate" title={colony.entrance_description || colony.notes || ''}>
  {colony.entrance_description || colony.notes || '-'}
  </td>
- <td className="px-4 py-3">
+ <td className="hidden md:table-cell px-4 py-3">
  {colony.image_url_location ? (
  <Image
  src={colony.image_url_location}
  alt="Location"
- width={40}
- height={40}
- className="w-10 h-10 object-cover rounded border border-border cursor-pointer"
+ width={48}
+ height={48}
+ className="w-12 h-12 object-cover rounded border border-border cursor-pointer"
  onClick={() => window.open(colony.image_url_location!, '_blank')}
  />
  ) : (
  <span className="text-text-tertiary">-</span>
  )}
  </td>
- <td className="px-4 py-3">
+ <td className="hidden md:table-cell px-4 py-3">
  {colony.image_url ? (
  <Image
  src={colony.image_url}
  alt="Colony"
- width={40}
- height={40}
- className="w-10 h-10 object-cover rounded border border-border cursor-pointer"
+ width={48}
+ height={48}
+ className="w-12 h-12 object-cover rounded border border-border cursor-pointer"
  onClick={() => window.open(colony.image_url!, '_blank')}
  />
  ) : (
@@ -886,7 +887,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  {statusFilter.length > 0 && (
  <Button
  onClick={() => setStatusFilter([])}
- className="text-xs text-text-secondary hover:text-foreground"
+ className="text-sm text-text-secondary hover:text-foreground"
  >
  Clear all
  </Button>
@@ -902,14 +903,14 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <th className="px-2 py-2">Actions</th>
  <th className="px-2 py-2">Status</th>
  <th className="px-2 py-2">Inspections</th>
- <th className="px-2 py-2">Submitted By</th>
+ <th className="hidden md:table-cell px-2 py-2">Submitted By</th>
  <th className="px-2 py-2">Date</th>
  <th className="px-2 py-2">Location</th>
- <th className="px-2 py-2">Type</th>
- <th className="px-2 py-2">Size</th>
- <th className="px-2 py-2">Description</th>
- <th className="px-2 py-2">Loc Photo</th>
- <th className="px-2 py-2">Colony Photo</th>
+ <th className="hidden sm:table-cell px-2 py-2">Type</th>
+ <th className="hidden md:table-cell px-2 py-2">Size</th>
+ <th className="hidden md:table-cell px-2 py-2">Description</th>
+ <th className="hidden md:table-cell px-2 py-2">Loc Photo</th>
+ <th className="hidden md:table-cell px-2 py-2">Colony Photo</th>
  </tr>
  </thead>
  <tbody className="divide-y divide-border">
@@ -923,7 +924,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  >
  <td className="px-1 py-2">
  <Button
- className="p-0.5 text-text-secondary hover:text-foreground transition-colors"
+ className="p-0.5 min-w-12 text-text-secondary hover:text-foreground transition-colors"
  title={expandedColonyId === colony.id ? 'Collapse' : 'Expand inspections'}
  >
  {expandedColonyId === colony.id ? (
@@ -936,10 +937,11 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
  <Button
  onClick={() => handleEdit(colony)}
- className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+ className="p-1 min-w-12 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
  title="Edit"
+ aria-label="Edit colony"
  >
- <Edit2 size={14} />
+ <Edit2 size={16} />
  </Button>
  </td>
  <td className="px-2 py-2">
@@ -963,7 +965,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <span className="text-text-tertiary text-xs">-</span>
  )}
  </td>
- <td className="px-2 py-2 text-xs text-text-secondary">
+ <td className="hidden md:table-cell px-2 py-2 text-sm text-text-secondary">
  {getUserDisplayName(colony) ? (
  <span className="flex items-center gap-1">
  <User size={12} className="text-text-tertiary" />
@@ -973,51 +975,51 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <span className="text-text-tertiary">-</span>
  )}
  </td>
- <td className="px-2 py-2 text-xs text-text-primary whitespace-nowrap">
+ <td className="px-2 py-2 text-sm text-text-primary whitespace-nowrap">
  {formatDate(colony.observation_date)}
  </td>
- <td className="px-2 py-2 text-xs text-text-secondary whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+ <td className="px-2 py-2 text-sm text-text-secondary whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
  <a
  href={`https://www.google.com/maps/search/?api=1&query=${colony.latitude},${colony.longitude}`}
  target="_blank"
  rel="noopener noreferrer"
- className="hover:text-blue-600 flex items-center gap-1"
+ className="hover:text-blue-600 flex min-h-12 items-center gap-1"
  >
  <MapPin size={12} />
  {colony.latitude.toFixed(4)}, {colony.longitude.toFixed(4)}
  </a>
  </td>
- <td className="px-2 py-2 text-xs text-text-primary">
+ <td className="hidden sm:table-cell px-2 py-2 text-sm text-text-primary">
  {getNestingTypeLabel(colony.nesting_type)}
  </td>
- <td className="px-2 py-2 text-xs text-text-primary">
+ <td className="hidden md:table-cell px-2 py-2 text-sm text-text-primary">
  {getSizeLabel(colony.estimated_size)}
  </td>
- <td className="px-2 py-2 text-xs text-text-secondary max-w-[120px] truncate" title={colony.entrance_description || ''}>
+ <td className="hidden md:table-cell px-2 py-2 text-sm text-text-secondary max-w-[120px] truncate" title={colony.entrance_description || ''}>
  {colony.entrance_description || '-'}
  </td>
- <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
+ <td className="hidden md:table-cell px-2 py-2" onClick={(e) => e.stopPropagation()}>
  {colony.image_url_location ? (
  <Image
  src={colony.image_url_location}
  alt="Location"
- width={32}
- height={32}
- className="w-8 h-8 object-cover rounded border border-border cursor-pointer"
+ width={48}
+ height={48}
+ className="w-12 h-12 object-cover rounded border border-border cursor-pointer"
  onClick={() => window.open(colony.image_url_location!, '_blank')}
  />
  ) : (
  <span className="text-text-tertiary text-xs">-</span>
  )}
  </td>
- <td className="px-2 py-2" onClick={(e) => e.stopPropagation()}>
+ <td className="hidden md:table-cell px-2 py-2" onClick={(e) => e.stopPropagation()}>
  {colony.image_url ? (
  <Image
  src={colony.image_url}
  alt="Colony"
- width={32}
- height={32}
- className="w-8 h-8 object-cover rounded border border-border cursor-pointer"
+ width={48}
+ height={48}
+ className="w-12 h-12 object-cover rounded border border-border cursor-pointer"
  onClick={() => window.open(colony.image_url!, '_blank')}
  />
  ) : (
@@ -1029,6 +1031,8 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  {expandedColonyId === colony.id && (
  <tr>
  <td colSpan={12} className="p-0">
+ {/* Kept within the screen on phones rather than as wide as the table (C7b-25) */}
+ <div className="sticky left-0 max-w-[calc(100vw-4rem)] md:max-w-none">
  <WildColonyInspectionPanel
  colonyId={colony.id}
  userId={userId}
@@ -1037,6 +1041,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  onInspectionChange={fetchColonies}
  canEditAll={true}
  />
+ </div>
  </td>
  </tr>
  )}
