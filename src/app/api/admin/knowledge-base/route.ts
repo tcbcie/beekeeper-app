@@ -268,9 +268,10 @@ export async function POST(request: NextRequest) {
         // Reject by encoded length before decoding so a hostile 50MB base64
         // string is not first allocated into memory only to fail the size
         // check below. Base64 inflates payload by ~4/3, so the encoded
-        // string for a 5MB PDF is at most ~6.85MB.
-        if (pdfData.length > 7 * 1024 * 1024) {
-          return NextResponse.json({ error: 'PDF too large (max 5MB)' }, { status: 400 })
+        // string for a 3MB PDF is at most ~4.1MB, which keeps the request under
+        // the hosting's 4.5MB body limit (C9a-16).
+        if (pdfData.length > 4.2 * 1024 * 1024) {
+          return NextResponse.json({ error: 'PDF too large (max 3MB)' }, { status: 400 })
         }
 
         // Decode base64 and extract text
@@ -278,8 +279,8 @@ export async function POST(request: NextRequest) {
 
         // Final check on the decoded buffer (defence in depth -- the encoded-
         // length check above is the primary gate).
-        if (buffer.length > 5 * 1024 * 1024) {
-          return NextResponse.json({ error: 'PDF too large (max 5MB)' }, { status: 400 })
+        if (buffer.length > 3 * 1024 * 1024) {
+          return NextResponse.json({ error: 'PDF too large (max 3MB)' }, { status: 400 })
         }
 
         textContent = await extractTextFromPdf(buffer)

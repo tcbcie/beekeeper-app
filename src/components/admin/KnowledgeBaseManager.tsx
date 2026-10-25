@@ -6,6 +6,9 @@ import { Plus, Trash2, BookOpen, Loader2, Upload, Link, FileType, Pencil, X, Che
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
 
+// Base64 in a JSON body must stay under the hosting's 4.5 MB request limit
+const MAX_PDF_BYTES = 3 * 1024 * 1024
+
 type InputMode = 'text' | 'pdf' | 'url'
 type SortField = 'name' | 'author' | 'year' | 'chunks' | 'added' | 'updated'
 type SortDirection = 'asc' | 'desc'
@@ -180,9 +183,10 @@ export default function KnowledgeBaseManager() {
     setLoading(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) return
+      if (!session?.access_token) { toast.error('Your session has expired. Please sign in again.'); return }
 
-      const response = await fetch('/api/admin/knowledge-base?view=sources&limit=100', {
+      // The list is searched and filtered on screen, so it must hold every source (C9a-15)
+      const response = await fetch('/api/admin/knowledge-base?view=sources&limit=1000', {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
@@ -191,6 +195,9 @@ export default function KnowledgeBaseManager() {
       const data = await response.json()
       if (response.ok) {
         setSources(data.data || [])
+        if (typeof data.total === 'number' && data.total > (data.data?.length ?? 0)) {
+          toast.warning(`Showing ${data.data?.length ?? 0} of ${data.total} sources; search covers only those shown.`)
+        }
       } else {
         toast.error(data.error || 'Failed to load knowledge base')
       }
@@ -227,7 +234,7 @@ export default function KnowledgeBaseManager() {
     setAdding(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) return
+      if (!session?.access_token) { toast.error('Your session has expired. Please sign in again.'); return }
 
       const requestBody: Record<string, unknown> = {
         type: inputMode,
@@ -241,6 +248,12 @@ export default function KnowledgeBaseManager() {
       if (inputMode === 'text') {
         requestBody.content = newContent
       } else if (inputMode === 'pdf' && selectedFile) {
+        // The hosting refuses request bodies over 4.5 MB, and base64 adds about a third, so a PDF
+        // over 3 MB never reached the server. Catch it here with a clear message (C9a-16).
+        if (selectedFile.size > MAX_PDF_BYTES) {
+          toast.error('PDF too large (max 3 MB): split it or paste the text instead.')
+          return
+        }
         const buffer = await selectedFile.arrayBuffer()
         const base64 = Buffer.from(buffer).toString('base64')
         requestBody.pdfData = base64
@@ -260,7 +273,12 @@ export default function KnowledgeBaseManager() {
         body: JSON.stringify(requestBody)
       })
 
-      const data = await response.json()
+      // A refusal from the hosting (e.g. 413) is plain text, not JSON
+      const data = await response.json().catch(() => ({}))
+      if (response.status === 413) {
+        toast.error('That upload was too large for the server (max 3 MB). Split the PDF or paste the text.')
+        return
+      }
       if (response.ok) {
         toast.success(data.message || 'Content added successfully')
         setNewContent('')
@@ -292,7 +310,7 @@ export default function KnowledgeBaseManager() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) return
+      if (!session?.access_token) { toast.error('Your session has expired. Please sign in again.'); return }
 
       const response = await fetch(`/api/admin/knowledge-base?source_id=${id}`, {
         method: 'DELETE',
@@ -341,7 +359,7 @@ export default function KnowledgeBaseManager() {
     setSaving(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) return
+      if (!session?.access_token) { toast.error('Your session has expired. Please sign in again.'); return }
 
       const response = await fetch('/api/admin/knowledge-base', {
         method: 'PATCH',
@@ -557,7 +575,7 @@ export default function KnowledgeBaseManager() {
 
           <p className="text-sm text-text-tertiary">
             {inputMode === 'text' && 'Paste text from beekeeping books, guides, or articles.'}
-            {inputMode === 'pdf' && 'Upload a PDF file (max 5MB). Text will be extracted automatically.'}
+            {inputMode === 'pdf' && 'Upload a PDF file (max 3 MB). Text will be extracted automatically.'}
             {inputMode === 'url' && 'Enter a URL to a beekeeping article or guide.'}
           </p>
 
@@ -571,7 +589,7 @@ export default function KnowledgeBaseManager() {
                 value={newSource}
                 onChange={(e) => setNewSource(e.target.value)}
                 placeholder="e.g., The Beekeeper's Handbook"
-                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
               />
             </div>
             <div>
@@ -583,7 +601,7 @@ export default function KnowledgeBaseManager() {
                 value={newAuthor}
                 onChange={(e) => setNewAuthor(e.target.value)}
                 placeholder="e.g., Diana Sammataro"
-                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
               />
             </div>
             <div>
@@ -596,7 +614,7 @@ export default function KnowledgeBaseManager() {
                 onChange={(e) => setNewYear(e.target.value)}
                 placeholder="e.g., 2021"
                 maxLength={4}
-                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
               />
             </div>
           </div>
@@ -611,7 +629,7 @@ export default function KnowledgeBaseManager() {
                 value={newTopic}
                 onChange={(e) => setNewTopic(e.target.value)}
                 placeholder="e.g., Varroa Treatment"
-                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
               />
             </div>
             <div>
@@ -623,7 +641,7 @@ export default function KnowledgeBaseManager() {
                 value={newSourceUrl}
                 onChange={(e) => setNewSourceUrl(e.target.value)}
                 placeholder="https://example.com/source"
-                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
               />
             </div>
           </div>
@@ -658,7 +676,7 @@ export default function KnowledgeBaseManager() {
                 type="file"
                 accept=".pdf"
                 onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-forest-600 file:text-white file:text-sm"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-foreground file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-forest-600 file:text-white file:text-sm"
               />
               {selectedFile && (
                 <p className="text-sm text-text-muted mt-1">
@@ -679,7 +697,7 @@ export default function KnowledgeBaseManager() {
                 value={newUrl}
                 onChange={(e) => setNewUrl(e.target.value)}
                 placeholder="https://example.com/beekeeping-article"
-                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
               />
             </div>
           )}
@@ -722,12 +740,12 @@ export default function KnowledgeBaseManager() {
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
               placeholder="Search by name or author..."
-              className="w-full pl-9 pr-9 py-2 border border-border rounded-lg bg-surface text-foreground text-sm"
+              className="w-full min-h-12 pl-9 pr-12 py-2 border border-border rounded-lg bg-surface text-foreground text-base"
             />
             {searchQuery && (
               <Button
                 onClick={() => { setSearchQuery(''); setCurrentPage(1) }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-foreground"
+                className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex min-h-12 min-w-12 items-center justify-center text-text-tertiary hover:text-foreground"
                 title="Clear search"
               >
                 <X size={16} />
@@ -738,7 +756,7 @@ export default function KnowledgeBaseManager() {
             <select
               value={yearFilter}
               onChange={(e) => { setYearFilter(e.target.value); setCurrentPage(1) }}
-              className="px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-sm min-w-[120px]"
+              className="min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-base min-w-[120px]"
             >
               <option value="">All Years</option>
               {availableYears.map(year => (
@@ -749,7 +767,7 @@ export default function KnowledgeBaseManager() {
           <select
             value={typeFilter}
             onChange={(e) => { setTypeFilter(e.target.value as SourceTypeFilter); setCurrentPage(1) }}
-            className="px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-sm min-w-[130px]"
+            className="min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-base min-w-[130px]"
           >
             <option value="all">All Types</option>
             <option value="documents">Documents</option>
@@ -758,7 +776,7 @@ export default function KnowledgeBaseManager() {
           <select
             value={missingFilter}
             onChange={(e) => { setMissingFilter(e.target.value as MissingFilter); setCurrentPage(1) }}
-            className="px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-sm min-w-[150px]"
+            className="min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-base min-w-[150px]"
           >
             <option value="all">All Info</option>
             <option value="any_missing">Any Missing Info</option>
@@ -770,7 +788,7 @@ export default function KnowledgeBaseManager() {
             <select
               value={sortField}
               onChange={(e) => handleSortChange(e.target.value)}
-              className="px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-sm min-w-[150px]"
+              className="min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-foreground text-base min-w-[150px]"
             >
               <option value="name">Sort: Name</option>
               <option value="author">Sort: Author</option>
@@ -781,7 +799,7 @@ export default function KnowledgeBaseManager() {
             </select>
             <Button
               onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-              className="p-2 border border-border rounded-lg hover:bg-surface-secondary text-text-secondary"
+              className="inline-flex min-h-12 min-w-12 items-center justify-center p-2 border border-border rounded-lg hover:bg-surface-secondary text-text-secondary"
               title={sortDirection === 'asc' ? 'Ascending' : 'Descending'}
             >
               <ArrowUpDown size={16} />
@@ -794,7 +812,7 @@ export default function KnowledgeBaseManager() {
               </span>
               <Button
                 onClick={() => { setSearchQuery(''); setYearFilter(''); setTypeFilter('all'); setMissingFilter('all'); setCurrentPage(1) }}
-                className="text-xs text-forest-600 hover:underline"
+                className="text-sm text-forest-600 hover:underline"
               >
                 Clear all
               </Button>
@@ -832,7 +850,7 @@ export default function KnowledgeBaseManager() {
                         <div className="flex items-center gap-1">
                           <Button
                             onClick={() => risInputRef.current?.click()}
-                            className="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded"
+                            className="inline-flex min-h-12 min-w-12 items-center justify-center p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded"
                             title="Import from RIS citation"
                           >
                             <FileText size={16} />
@@ -840,14 +858,14 @@ export default function KnowledgeBaseManager() {
                           <Button
                             onClick={saveEditing}
                             disabled={saving}
-                            className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
+                            className="inline-flex min-h-12 min-w-12 items-center justify-center p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded"
                             title="Save"
                           >
                             {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                           </Button>
                           <Button
                             onClick={cancelEditing}
-                            className="p-1.5 text-text-secondary hover:bg-surface-secondary rounded"
+                            className="inline-flex min-h-12 min-w-12 items-center justify-center p-1.5 text-text-secondary hover:bg-surface-secondary rounded"
                             title="Cancel"
                           >
                             <X size={16} />
@@ -865,7 +883,7 @@ export default function KnowledgeBaseManager() {
                                 onChange={(e) => setEditName(e.target.value)}
                                 onKeyDown={handleEditKeyDown}
                                 placeholder="e.g., Nosema Disease - White (1919)"
-                                className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                                className="w-full min-h-12 px-2 py-1 border border-border rounded bg-surface text-foreground text-base"
                                 autoFocus
                               />
                             </div>
@@ -877,7 +895,7 @@ export default function KnowledgeBaseManager() {
                                 onChange={(e) => setEditAuthor(e.target.value)}
                                 onKeyDown={handleEditKeyDown}
                                 placeholder="Author"
-                                className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                                className="w-full min-h-12 px-2 py-1 border border-border rounded bg-surface text-foreground text-base"
                               />
                             </div>
                             <div className="w-20">
@@ -889,7 +907,7 @@ export default function KnowledgeBaseManager() {
                                 onKeyDown={handleEditKeyDown}
                                 placeholder="Year"
                                 maxLength={4}
-                                className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                                className="w-full min-h-12 px-2 py-1 border border-border rounded bg-surface text-foreground text-base"
                               />
                             </div>
                           </div>
@@ -902,7 +920,7 @@ export default function KnowledgeBaseManager() {
                                 onChange={(e) => setEditOriginalFilename(e.target.value)}
                                 onKeyDown={handleEditKeyDown}
                                 placeholder="e.g., White-GF (1919) Nosema-Disease.pdf"
-                                className="w-full px-2 py-1 border border-border rounded bg-surface text-text-secondary text-sm"
+                                className="w-full min-h-12 px-2 py-1 border border-border rounded bg-surface text-text-secondary text-base"
                               />
                             </div>
                             <div className="flex-1">
@@ -913,7 +931,7 @@ export default function KnowledgeBaseManager() {
                                 onChange={(e) => setEditSourceUrl(e.target.value)}
                                 onKeyDown={handleEditKeyDown}
                                 placeholder="https://example.com/source"
-                                className="w-full px-2 py-1 border border-border rounded bg-surface text-foreground text-sm"
+                                className="w-full min-h-12 px-2 py-1 border border-border rounded bg-surface text-foreground text-base"
                               />
                             </div>
                           </div>
@@ -929,14 +947,14 @@ export default function KnowledgeBaseManager() {
                         <div className="flex items-center gap-1">
                           <Button
                             onClick={() => startEditing(source)}
-                            className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                            className="inline-flex min-h-12 min-w-12 items-center justify-center p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
                             title="Edit"
                           >
                             <Pencil size={16} />
                           </Button>
                           <Button
                             onClick={() => handleDeleteSource(source.id, source.name, source.chunks_count)}
-                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                            className="inline-flex min-h-12 min-w-12 items-center justify-center p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                             title="Delete"
                           >
                             <Trash2 size={16} />
@@ -958,9 +976,10 @@ export default function KnowledgeBaseManager() {
                             href={source.source_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center gap-1"
+                            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 inline-flex min-h-12 min-w-12 items-center justify-center gap-1"
+                            aria-label="Open the source"
                           >
-                            <ExternalLink size={14} />
+                            <ExternalLink size={16} />
                           </a>
                         ) : '—'}
                       </td>
@@ -998,7 +1017,7 @@ export default function KnowledgeBaseManager() {
                 <Button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-lg border border-border hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex min-h-12 min-w-12 items-center justify-center p-2 rounded-lg border border-border hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Previous page"
                 >
                   <ChevronLeft size={16} />
@@ -1009,7 +1028,7 @@ export default function KnowledgeBaseManager() {
                 <Button
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg border border-border hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex min-h-12 min-w-12 items-center justify-center p-2 rounded-lg border border-border hover:bg-surface-secondary disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Next page"
                 >
                   <ChevronRight size={16} />

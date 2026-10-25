@@ -294,8 +294,10 @@ export default function SubscriptionHistoryPage() {
                             <TextLink
                               href={`https://dashboard.stripe.com/payments/${record.stripe_payment_intent_id}`}
                               external
+                              className="inline-flex min-h-12 min-w-12 items-center justify-center"
+                              aria-label="Open the payment in Stripe"
                             >
-                              <ExternalLink size={14} />
+                              <ExternalLink size={16} />
                             </TextLink>
                           </div>
                         ) : (

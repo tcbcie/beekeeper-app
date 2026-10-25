@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 43: Settings and Admin</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    .decide { background: #fff7ed; border-left: 4px solid #ea580c; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 43: Settings and Admin</h1>
+<p><strong>Status:</strong> Implemented 25/10/2026, waiting for your test. This is Phase 2 fix batch 30. It covers the open Medium findings in chunk 9a (settings, admin, profile, support): C9a-05, 07, 08, 10, 12 to 17, 25, 26. Three agents checked each finding against the code and the live database (counts only), and I re-checked the key lines. No database change.</p>
+
+<h2>A. Your profile: C9a-08, C9a-07, C9a-05</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9a-08, preferences that undo themselves:</strong> turning on CRM or Logbook saves it, but the page still remembers the old value. Press Edit Profile, then Cancel, and the toggle flips back off while the database still says on. Saving a new payment link and then making a typo snaps the field back to the old link. Two quick taps whose saves land out of order can also leave the screen out of step with what's stored. Now a save updates the page's remembered profile, and a failed save only rolls back if no newer change has been made since.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9a-07, subscription and feature checks:</strong>
+  <ul>
+    <li><strong>Failed checks were remembered:</strong> one failed check, for example on a poor signal at start-up, was remembered for 5 minutes. That locked CRM, the Apiary Map and Logbook, and hid the expiry warning. A failure is no longer remembered, so the next check tries again.</li>
+    <li><strong>Results could cross accounts:</strong> a check still running when you sign out could save its answer under the next account. Now it can't.</li>
+    <li><strong>Renewing didn't refresh:</strong> after renewing, menus and the profile's CRM, Apiary Map and data-export options stayed as "expired" until a reload. Renewing now refreshes them.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9a-05:</strong> the admin "enable/disable account" toggle would show an error after a successful change if the database ever returned nothing. It can't today, but the guard costs one character.</div>
+
+<h2>B. Admin tools: C9a-10, C9a-12 to C9a-17</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9a-10, ticket stats:</strong> the counts are worked out from the filtered list. With the default "open" filter, Total equals Open and every other count shows 0. Now all tickets load (15 today) and the filter only narrows the list, so the counts are right.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9a-12 to C9a-14, silent admin failures:</strong>
+  <ul>
+    <li><strong>News publish/unpublish:</strong> does nothing visible on failure.</li>
+    <li><strong>Association list:</strong> if it fails to load, you then can't create association codes, with no reason shown.</li>
+    <li><strong>New-owner list:</strong> the apiary transfer list can be silently empty.</li>
+    <li><strong>An expired session:</strong> stops knowledge base, news and transfer actions without a word.</li>
+    <li><strong>Error messages:</strong> about a dozen admin errors show "Unknown error" instead of the real reason, and the "code already exists" message could never appear.</li>
+  </ul>
+  Each now says what went wrong.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9a-15, lists capped at 100:</strong> the knowledge base and news lists load at most 100 items, and search only looks at those. There are 55 and 10 today. The limit goes to 1,000, with a warning if there are ever more.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9a-16, PDF uploads:</strong> the screen says PDFs up to 5 MB, but anything over about 3.3 MB is refused by the hosting before it arrives, with only "Failed to add content". Now the limit is 3 MB everywhere, a larger file is caught before uploading with "PDF too large (max 3 MB): split it or paste the text", and a server refusal gets its own message.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9a-17, search:</strong> the admin searches filter on screen and are fine. The live one is the news search on the About page, where an older, slower answer could replace newer results and stop the spinner early. Now an older search is cancelled.</div>
+
+<h2>C. Sizes for 50+ eyes: C9a-25, C9a-26</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>About 96 changes in 12 files</strong>: user management, associations, dropdowns, registration codes, tickets, treatments, the knowledge base, news, conservation areas, your profile, support and subscription history.
+  <ul>
+    <li><strong>Fields:</strong> 57 fields go from 14px or 12px to 16px and 48px.</li>
+    <li><strong>Checkboxes:</strong> 12 checkboxes, some only 12px, go to 20px inside a 48px tap area.</li>
+    <li><strong>Buttons and links:</strong> 27 narrow icon buttons and links become 48px wide.</li>
+    <li><strong>Search fields:</strong> two had their typing run under the search icon; that's fixed.</li>
+  </ul>
+  Class changes only. Also: "National Organization Memberships" becomes "Organisation".</div>
+<div class="decide"><strong>Decision: the shared checkbox size.</strong> The app's shared checkbox is 16px. Changing it to 20px in one place fixes the settings checkboxes and also enlarges the checkboxes on the apiaries, tasks and jar-label screens. <strong>Done (you approved).</strong></div>
+
+<h2>D. Closed without a change</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9a-09 (ticket filter ignored):</strong> already fixed in batch 25; the fallback uses the same filter.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9a-24 (UserManagement is 1,705 lines):</strong> splitting it carries risk with no bug to fix. Left as it is.</div>
+<div class="note">I also re-confirmed the two security fixes from earlier batches: changing your password checks your current one (C9a-01), and your personal export only includes your own data, profile included (C9a-02).</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; a short test for the profile preference rollback; the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/settings-admin-batch43-plan.md</code>, the Phase 2 register and memory if a new rule comes out of it.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>Profile: turn on Logbook, press Edit Profile, then Cancel: Logbook stays on.</li>
+    <li>Admin → Tickets: the totals stay the same when you change the filter.</li>
+    <li>Admin → Knowledge base: try a PDF over 3 MB; you get a clear message straight away.</li>
+    <li>Look over Admin → Users and Treatments on your phone: fields, checkboxes and buttons are full size.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Toggle a preference, then Edit → Cancel</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Toggle flipped back off (still saved on)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Stays as saved</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">A failed subscription check</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Locked CRM, Apiary Map, Logbook for 5 min</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Not remembered; retried</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">After renewing</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Still “expired” until reload</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Refreshes straight away</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Ticket stats</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Changed with the filter</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Count every status</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Admin failures</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Silent, or “Unknown error”</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Clear messages</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">KB / news lists</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Cut at 100</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Up to 1,000, warning beyond</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">PDF over ~3.3 MB</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Vague “Failed to add content”</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Caught before upload (max 3 MB)</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">About news search</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Older answer could win</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Older search cancelled</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Sizes</td><td style="border:1px solid #e7d9b8;padding:0.4rem">14px/12px fields, 12–16px checkboxes, narrow buttons</td><td style="border:1px solid #e7d9b8;padding:0.4rem">16px/48px; 20px checkboxes</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0; 858 tests pass (3 new)</td></tr>
+</table>
+<ul>
+  <li><strong>Test:</strong> <code>tests/hooks/subscription-cache.test.ts</code> covers three cases: a failed check isn't remembered, a cleared cache asks again, and a late answer after clearing is ignored. The profile page itself was too large to test well in isolation, so the test covers the shared cache its fix relies on instead.</li>
+  <li><strong>App-wide change:</strong> the shared checkbox (<code>.fj-checkbox</code>) is 20px, as you approved. The apiaries, tasks and jar-label checkboxes are larger too.</li>
+  <li><strong>QA audit:</strong> no Critical, High or Medium issues. One Low was fixed: the profile page made its own subscription request; it now uses the shared one.</li>
+  <li><strong>Closed:</strong> C9a-09 (fixed in batch 25), C9a-24 (left as it is). C9a-01 and C9a-02 are re-confirmed as fixed.</li>
+</ul>
+</body>
+</html>

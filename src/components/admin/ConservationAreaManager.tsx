@@ -249,7 +249,7 @@ export default function ConservationAreaManager() {
                         <>
                           <Button
                             onClick={() => openEdit(area)}
-                            className="p-1.5 text-text-tertiary hover:text-forest-600 dark:hover:text-forest-400 rounded"
+                            className="inline-flex min-h-12 min-w-12 items-center justify-center p-1.5 text-text-tertiary hover:text-forest-600 dark:hover:text-forest-400 rounded"
                             title="Edit"
                           >
                             <Pencil size={15} />
@@ -257,7 +257,7 @@ export default function ConservationAreaManager() {
                           <Button
                             onClick={() => handleDelete(area.id, area.name)}
                             disabled={deletingId === area.id}
-                            className="p-1.5 text-text-tertiary hover:text-red-600 dark:hover:text-red-400 rounded disabled:opacity-50"
+                            className="inline-flex min-h-12 min-w-12 items-center justify-center p-1.5 text-text-tertiary hover:text-red-600 dark:hover:text-red-400 rounded disabled:opacity-50"
                             title="Delete"
                           >
                             {deletingId === area.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
@@ -296,7 +296,7 @@ export default function ConservationAreaManager() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. Birr Castle"
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-base focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 />
               </div>
 
@@ -307,7 +307,7 @@ export default function ConservationAreaManager() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={2}
                   placeholder="Optional description..."
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-base focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 />
               </div>
 
@@ -320,7 +320,7 @@ export default function ConservationAreaManager() {
                     value={formData.latitude}
                     onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
                     placeholder="53.10"
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-base focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   />
                 </div>
                 <div>
@@ -331,7 +331,7 @@ export default function ConservationAreaManager() {
                     value={formData.longitude}
                     onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
                     placeholder="-7.90"
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-base focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   />
                 </div>
               </div>
@@ -346,7 +346,7 @@ export default function ConservationAreaManager() {
                     step="0.5"
                     value={formData.radius_km}
                     onChange={(e) => setFormData({ ...formData, radius_km: e.target.value })}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-base focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   />
                 </div>
                 <div>
@@ -354,7 +354,7 @@ export default function ConservationAreaManager() {
                   <select
                     value={formData.country}
                     onChange={(e) => setFormData({ ...formData, country: e.target.value as 'IE' | 'NI' })}
-                    className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-base focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                   >
                     <option value="IE">Republic of Ireland</option>
                     <option value="NI">Northern Ireland</option>
@@ -369,7 +369,7 @@ export default function ConservationAreaManager() {
                   value={formData.county}
                   onChange={(e) => setFormData({ ...formData, county: e.target.value })}
                   placeholder="e.g. Co. Offaly"
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-base focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 />
               </div>
 
@@ -380,16 +380,16 @@ export default function ConservationAreaManager() {
                   value={formData.nihbs_url}
                   onChange={(e) => setFormData({ ...formData, nihbs_url: e.target.value })}
                   placeholder="https://nihbs.org/..."
-                  className="w-full px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full min-h-12 px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground text-base focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 />
               </div>
 
-              <label className="flex items-center gap-2 cursor-pointer">
+              <label className="flex min-h-12 items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.is_active}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="h-4 w-4 text-teal-600 border-border rounded focus:ring-teal-500"
+                  className="h-5 w-5 text-teal-600 border-border rounded focus:ring-teal-500"
                 />
                 <span className="text-sm text-text-secondary">Active (visible on map)</span>
               </label>

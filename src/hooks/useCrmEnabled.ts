@@ -16,12 +16,16 @@ const PREF_EVENT = 'crm-pref-changed'
 const TTL_MS = 5 * 60 * 1000
 let prefCache: { value: boolean; at: number } | null = null
 let prefInFlight: Promise<boolean> | null = null
+// Bumped on every change of signed-in user: a lookup still running for the previous account must
+// not write its answer into the cache, or clear the next account's request (C9a-07)
+let generation = 0
 
 // Drop the cached preference whenever the signed-in user changes, so a previous
 // account's CRM flag can't surface for the next one in the same tab.
 if (typeof window !== 'undefined') {
   supabase.auth.onAuthStateChange((event) => {
     if (event === 'SIGNED_OUT' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+      generation++
       prefCache = null
       prefInFlight = null
     }
@@ -32,6 +36,7 @@ async function resolveCrmPref(): Promise<boolean> {
   if (prefCache && Date.now() - prefCache.at < TTL_MS) return prefCache.value
   if (prefInFlight) return prefInFlight
 
+  const gen = generation
   prefInFlight = (async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -41,14 +46,14 @@ async function resolveCrmPref(): Promise<boolean> {
         .from('profiles').select('enable_crm').eq('id', uid).maybeSingle()
       if (error) throw error
       const value = data?.enable_crm === true
-      prefCache = { value, at: Date.now() }
+      if (gen === generation) prefCache = { value, at: Date.now() }
       return value
     } catch (error) {
       console.error('Error checking CRM preference:', error)
-      prefCache = { value: false, at: Date.now() }
+      // Not cached: one failed lookup (e.g. a poor signal) used to hide the feature for 5 minutes
       return false
     } finally {
-      prefInFlight = null
+      if (gen === generation) prefInFlight = null
     }
   })()
 

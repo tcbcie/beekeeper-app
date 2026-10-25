@@ -294,7 +294,7 @@ export default function SupportPage() {
                 type="text"
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                className="w-full px-3 py-2 border border border-border rounded-md"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-md"
                 placeholder="Brief summary of your issue or suggestion"
                 required
               />
@@ -308,7 +308,7 @@ export default function SupportPage() {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={6}
-                className="w-full px-3 py-2 border border border-border rounded-md"
+                className="w-full min-h-12 px-3 py-2 border border-border rounded-md"
                 placeholder="Please provide as much detail as possible..."
                 required
               />

@@ -175,6 +175,11 @@ function AboutPageContent() {
 
  setSemanticSearching(true)
 
+ // A newer search (or leaving the box) cancels this one: an older, slower answer used to replace
+ // newer results and stop the spinner early (C9a-17)
+ const controller = new AbortController()
+ let cancelled = false
+
  // Debounce the API call by 300ms
  searchTimeoutRef.current = setTimeout(async () => {
  try {
@@ -183,12 +188,14 @@ function AboutPageContent() {
  const { data: { session } } = await supabase.auth.getSession()
  const token = session?.access_token
  if (!token) {
- setSemanticSearching(false)
+ if (!cancelled) setSemanticSearching(false)
  return
  }
  const response = await fetch(`/api/news/search?q=${encodeURIComponent(newsSearch.trim())}&limit=20`, {
- headers: { Authorization: `Bearer ${token}` }
+ headers: { Authorization: `Bearer ${token}` },
+ signal: controller.signal,
  })
+ if (cancelled) return
  if (response.ok) {
  const data = await response.json()
  // Map semantic results to NewsArticle format
@@ -203,16 +210,18 @@ function AboutPageContent() {
  author: r.author,
  created_at: r.created_at
  }))
- setSemanticResults(mapped)
+ if (!cancelled) setSemanticResults(mapped)
  }
  } catch (error) {
- console.error('Semantic search error:', error)
+ if (!cancelled) console.error('Semantic search error:', error)
  } finally {
- setSemanticSearching(false)
+ if (!cancelled) setSemanticSearching(false)
  }
  }, 300)
 
  return () => {
+ cancelled = true
+ controller.abort()
  if (searchTimeoutRef.current) {
  clearTimeout(searchTimeoutRef.current)
  }

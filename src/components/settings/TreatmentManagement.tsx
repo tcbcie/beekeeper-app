@@ -126,7 +126,7 @@ export default function TreatmentManagement() {
       resetForm()
     } catch (error) {
       console.error('Error saving varroa treatment product:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to save varroa treatment product: ${errorMessage}`)
     }
   }
@@ -209,7 +209,7 @@ export default function TreatmentManagement() {
               onClick={() => setRegionFilter(region)}
               size="xs"
               tone={regionFilter === region ? 'blue' : 'neutral'}
-              className={`text-sm ${
+              className={`min-w-12 text-sm ${
                 regionFilter === region
                   ? ''
                   : 'bg-surface-secondary text-text-secondary hover:bg-surface-secondary/80'
@@ -318,21 +318,21 @@ export default function TreatmentManagement() {
               </div>
 
               <div className="md:col-span-2 flex gap-6">
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex min-h-12 items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.approved_in_ireland}
                     onChange={(e) => setFormData({ ...formData, approved_in_ireland: e.target.checked })}
-                    className="w-4 h-4 rounded border-border text-forest-600 focus:ring-forest-500"
+                    className="w-5 h-5 rounded border-border text-forest-600 focus:ring-forest-500"
                   />
                   <span className="text-sm font-medium text-foreground">Approved in Ireland</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <label className="flex min-h-12 items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.approved_in_uk}
                     onChange={(e) => setFormData({ ...formData, approved_in_uk: e.target.checked })}
-                    className="w-4 h-4 rounded border-border text-forest-600 focus:ring-forest-500"
+                    className="w-5 h-5 rounded border-border text-forest-600 focus:ring-forest-500"
                   />
                   <span className="text-sm font-medium text-foreground">Approved in UK/NI</span>
                 </label>
@@ -439,7 +439,7 @@ export default function TreatmentManagement() {
                             type="text"
                             value={formData.product_name}
                             onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
-                            className="w-full px-2 py-1 text-sm rounded"
+                            className="w-full px-2 py-1 text-base rounded"
                             placeholder="Product name"
                           />
                         </td>
@@ -448,7 +448,7 @@ export default function TreatmentManagement() {
                             type="text"
                             value={formData.active_ingredients}
                             onChange={(e) => setFormData({ ...formData, active_ingredients: e.target.value })}
-                            className="w-full px-2 py-1 text-sm rounded"
+                            className="w-full px-2 py-1 text-base rounded"
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -456,7 +456,7 @@ export default function TreatmentManagement() {
                             type="text"
                             value={formData.application_method}
                             onChange={(e) => setFormData({ ...formData, application_method: e.target.value })}
-                            className="w-full px-2 py-1 text-sm rounded"
+                            className="w-full px-2 py-1 text-base rounded"
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -464,7 +464,7 @@ export default function TreatmentManagement() {
                             type="text"
                             value={formData.treatment_duration}
                             onChange={(e) => setFormData({ ...formData, treatment_duration: e.target.value })}
-                            className="w-full px-2 py-1 text-sm rounded"
+                            className="w-full px-2 py-1 text-base rounded"
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -472,7 +472,7 @@ export default function TreatmentManagement() {
                             type="text"
                             value={formData.temperature_range}
                             onChange={(e) => setFormData({ ...formData, temperature_range: e.target.value })}
-                            className="w-full px-2 py-1 text-sm rounded"
+                            className="w-full px-2 py-1 text-base rounded"
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -480,7 +480,7 @@ export default function TreatmentManagement() {
                             type="text"
                             value={formData.honey_flow_restrictions}
                             onChange={(e) => setFormData({ ...formData, honey_flow_restrictions: e.target.value })}
-                            className="w-full px-2 py-1 text-sm rounded"
+                            className="w-full px-2 py-1 text-base rounded"
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -488,27 +488,27 @@ export default function TreatmentManagement() {
                             type="number"
                             value={formData.withdrawal_period_days}
                             onChange={(e) => setFormData({ ...formData, withdrawal_period_days: parseInt(e.target.value) || 0 })}
-                            className="w-full px-2 py-1 text-sm rounded"
+                            className="w-full px-2 py-1 text-base rounded"
                             min="0"
                           />
                         </td>
                         <td className="px-4 py-3 text-center">
                           <div className="flex flex-col items-center gap-1">
-                            <label className="flex items-center gap-1 text-sm">
+                            <label className="flex min-h-12 items-center gap-2 text-sm cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={formData.approved_in_ireland}
                                 onChange={(e) => setFormData({ ...formData, approved_in_ireland: e.target.checked })}
-                                className="w-3 h-3 rounded border-border text-forest-600"
+                                className="w-5 h-5 rounded border-border text-forest-600"
                               />
                               IE
                             </label>
-                            <label className="flex items-center gap-1 text-sm">
+                            <label className="flex min-h-12 items-center gap-2 text-sm cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={formData.approved_in_uk}
                                 onChange={(e) => setFormData({ ...formData, approved_in_uk: e.target.checked })}
-                                className="w-3 h-3 rounded border-border text-forest-600"
+                                className="w-5 h-5 rounded border-border text-forest-600"
                               />
                               UK
                             </label>
@@ -518,7 +518,7 @@ export default function TreatmentManagement() {
                           <TextAreaField
                             value={formData.notes}
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                            className="w-full px-2 py-1 text-sm rounded"
+                            className="w-full px-2 py-1 text-base rounded"
                             rows={2}
                           />
                         </td>

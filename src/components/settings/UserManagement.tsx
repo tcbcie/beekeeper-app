@@ -312,7 +312,7 @@ export default function UserManagement() {
       }
     } catch (error) {
       console.error('❌ Exception approving reactivation:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to approve reactivation request: ${errorMessage}`)
     }
   }
@@ -455,7 +455,7 @@ export default function UserManagement() {
 
     } catch (error) {
       console.error('Error impersonating user:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to impersonate user')
+      toast.error((error as { message?: string } | null)?.message || 'Failed to impersonate user')
     } finally {
       setImpersonatingUserId(null)
     }
@@ -471,7 +471,7 @@ export default function UserManagement() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) return
+      if (!session?.access_token) { toast.error('Your session has expired. Please sign in again.'); return }
 
       // The user's apiaries (admin endpoint, bypasses RLS) and the users available for transfer
       // don't depend on each other, so both load together.
@@ -495,6 +495,9 @@ export default function UserManagement() {
         const data = await response.json()
         // Filter out the current user we're transferring FROM
         setTransferTargetUsers(data.users.filter((u: TransferUserOption) => u.id !== user.id))
+      } else {
+        // Otherwise the new-owner list is silently empty (C9a-12)
+        toast.error("Couldn't load the list of users to transfer to. Please try again.")
       }
     } catch (error) {
       console.error('Error loading apiaries:', error)
@@ -535,7 +538,7 @@ export default function UserManagement() {
       // Refresh user list to update counts
       fetchUsers()
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Transfer failed'
+      const errorMessage = (error as { message?: string } | null)?.message || 'Transfer failed'
       toast.error(errorMessage)
     } finally {
       setTransferring(false)
@@ -584,7 +587,7 @@ export default function UserManagement() {
       fetchUsers() // Refresh the list
     } catch (error) {
       console.error('❌ Error updating user role:', error)
-      toast.error(`Failed to update user role: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      toast.error(`Failed to update user role: ${(error as { message?: string } | null)?.message || 'Unknown error'}`)
     }
   }
 
@@ -644,7 +647,7 @@ export default function UserManagement() {
       fetchDeletedUsers()
     } catch (error) {
       console.error('❌ Error deleting user:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to delete user: ${errorMessage}`)
     }
   }
@@ -694,7 +697,7 @@ export default function UserManagement() {
       fetchDeletedUsers()
     } catch (error) {
       console.error('❌ Error hard deleting user:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to hard delete user: ${errorMessage}`)
     }
   }
@@ -735,12 +738,12 @@ export default function UserManagement() {
 
       if (error) throw error
 
-      toast.success(data.message || `Account ${action}d successfully!`)
+      toast.success(data?.message || `Account ${action}d successfully!`)
 
       await fetchUsers()
     } catch (error) {
       console.error('❌ Error toggling user account:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to ${action} account: ${errorMessage}`)
     }
   }
@@ -918,7 +921,7 @@ export default function UserManagement() {
                   value={roleFilter}
                   onChange={(e) => setRoleFilter(e.target.value as 'all' | 'User' | 'Power User' | 'Admin')}
                   tone="purple"
-                  className="fj-control-inline text-sm"
+                  className="fj-control-inline text-base"
                 >
                   <option value="all">All Roles</option>
                   <option value="User">Users</option>
@@ -931,7 +934,7 @@ export default function UserManagement() {
                   value={accountStatusFilter}
                   onChange={(e) => setAccountStatusFilter(e.target.value as 'all' | 'active' | 'disabled')}
                   tone="purple"
-                  className="fj-control-inline text-sm"
+                  className="fj-control-inline text-base"
                 >
                   <option value="all">All Accounts</option>
                   <option value="active">Active</option>
@@ -943,7 +946,7 @@ export default function UserManagement() {
                   value={subscriptionFilter}
                   onChange={(e) => setSubscriptionFilter(e.target.value as 'all' | 'active' | 'expiring' | 'expired' | 'none')}
                   tone="purple"
-                  className="fj-control-inline text-sm"
+                  className="fj-control-inline text-base"
                 >
                   <option value="all">All Subscriptions</option>
                   <option value="active">Active</option>
@@ -957,7 +960,7 @@ export default function UserManagement() {
                   value={lastActiveSort}
                   onChange={(e) => setLastActiveSort(e.target.value as 'default' | 'recent_first' | 'oldest_first' | 'never_first')}
                   tone="purple"
-                  className="fj-control-inline text-sm"
+                  className="fj-control-inline text-base"
                   aria-label="Sort by last activity"
                 >
                   <option value="default">Sort: Default</option>
@@ -1179,7 +1182,7 @@ export default function UserManagement() {
                                     value={user.role}
                                     onChange={(e) => handleRoleChange(user.id, e.target.value as 'User' | 'Power User' | 'Admin')}
                                     tone="purple"
-                                    className="fj-control-inline px-2 py-0.5 rounded text-xs"
+                                    className="fj-control-inline px-2 py-0.5 rounded text-base"
                                   >
                                     <option value="User">User</option>
                                     <option value="Power User">Power User</option>
@@ -1193,7 +1196,7 @@ export default function UserManagement() {
                                       disabled={impersonatingUserId === user.id}
                                       tone="purple"
                                       size="xs"
-                                      className="disabled:opacity-50"
+                                      className="min-w-12 disabled:opacity-50"
                                       title="Impersonate this user"
                                     >
                                       {impersonatingUserId === user.id ? '...' : 'Imp'}
@@ -1221,7 +1224,7 @@ export default function UserManagement() {
                                         size="xs"
                                         title="Permanently Delete (CANNOT BE UNDONE)"
                                       >
-                                        <Trash2 size={12} className="text-red-500" />
+                                        <Trash2 size={16} className="text-red-500" />
                                       </IconButton>
                                     </>
                                   ) : (
@@ -1231,6 +1234,7 @@ export default function UserManagement() {
                                         onClick={() => handleToggleUserAccount(user.id, user.is_active !== false, user.email || 'Unknown')}
                                         tone={user.is_active !== false ? 'amber' : 'success'}
                                         size="xs"
+                                        className="min-w-12"
                                         title={user.is_active !== false ? 'Disable' : 'Enable'}
                                       >
                                         {user.is_active !== false ? 'Off' : 'On'}
@@ -1241,9 +1245,11 @@ export default function UserManagement() {
                                         onClick={() => handleDeleteUser(user.id, user.email || 'Unknown')}
                                         tone="danger"
                                         size="xs"
+                                        className="min-w-12"
                                         title="Soft Delete (Recoverable)"
+                                        aria-label="Soft delete user"
                                       >
-                                        <Trash2 size={12} />
+                                        <Trash2 size={16} />
                                       </Button>
 
                                       {/* Hard Delete Button */}
@@ -1253,7 +1259,7 @@ export default function UserManagement() {
                                         size="xs"
                                         title="Hard Delete (PERMANENT)"
                                       >
-                                        <Trash2 size={12} className="text-red-500" />
+                                        <Trash2 size={16} className="text-red-500" />
                                       </IconButton>
                                     </>
                                   )}
@@ -1315,7 +1321,7 @@ export default function UserManagement() {
                                         href={`https://dashboard.stripe.com/payments/${user.latest_transaction_id}`}
                                         external
                                         tone="info"
-                                        className="text-xs mt-1 inline-block"
+                                        className="text-sm mt-1 inline-flex min-h-12 items-center"
                                       >
                                         View in Stripe →
                                       </TextLink>
@@ -1343,7 +1349,7 @@ export default function UserManagement() {
                                     }}
                                     onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
                                     tone="purple"
-                                    className="fj-control-inline px-2 py-1 rounded text-xs"
+                                    className="fj-control-inline px-2 py-1 rounded text-base"
                                   />
                                   {user.days_remaining !== undefined && user.subscription_expires_at && (
                                     <p className={`text-xs font-medium ${
@@ -1377,7 +1383,7 @@ export default function UserManagement() {
                                       size="xs"
                                       className="gap-1"
                                     >
-                                      <MapPin size={10} />
+                                      <MapPin size={14} />
                                       Manage
                                     </Button>
                                   )}

@@ -133,6 +133,8 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
       setAssociations(data || [])
     } catch (error) {
       console.error('Error fetching associations:', error)
+      // Without the list, association codes can't be created, so say why (C9a-12)
+      toast.error("Couldn't load the associations. Please refresh and try again.")
     } finally {
       setLoadingAssociations(false)
     }
@@ -174,9 +176,10 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
       fetchCodes()
     } catch (error) {
       console.error('Error creating registration code:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      // Supabase errors are plain objects: read .message and the code (23505 = already exists)
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
 
-      if (errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
+      if ((error as { code?: string } | null)?.code === '23505' || errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
         toast.error(`This code already exists. Please choose a different code.`)
       } else {
         toast.error(`Failed to create code: ${errorMessage}`)
@@ -357,7 +360,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                             type="date"
                             value={editingCodeData.subscription_expires_at}
                             onChange={(e) => setEditingCodeData({...editingCodeData, subscription_expires_at: e.target.value})}
-                            className="fj-control-inline px-2 py-1 text-sm"
+                            className="fj-control-inline px-2 py-1 text-base"
                             min={getCurrentDate()}
                           />
                         ) : isLifetime ? (
@@ -380,7 +383,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                               type="number"
                               value={editingCodeData.max_uses}
                               onChange={(e) => setEditingCodeData({...editingCodeData, max_uses: e.target.value})}
-                              className="fj-control-inline w-20 px-2 py-1 text-sm"
+                              className="fj-control-inline w-24 px-2 py-1 text-base"
                               min="0"
                               placeholder="Unlimited"
                             />

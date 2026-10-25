@@ -260,7 +260,7 @@ export default function DropdownManagement() {
                   type="text"
                   value={categoryFormData.category_key}
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, category_key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
-                  className="font-mono text-sm"
+                  className="font-mono text-base"
                   placeholder="e.g., queen_marking_colors"
                   required
                   disabled={!!editingCategory}
@@ -305,7 +305,7 @@ export default function DropdownManagement() {
           <SelectField
             value={selectedCategoryFilter}
             onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-            className="fj-control-inline text-sm"
+            className="fj-control-inline text-base"
           >
             <option value="all">All Categories</option>
             {categories.map((cat) => (
@@ -339,7 +339,7 @@ export default function DropdownManagement() {
                 <SelectField
                   value={editingValue.categoryId === '__new__' ? '' : editingValue.categoryId}
                   onChange={(e) => setEditingValue({ ...editingValue, categoryId: e.target.value })}
-                  className="text-sm"
+                  className="text-base"
                   required
                   disabled={!!editingValue.value}
                 >
@@ -357,7 +357,7 @@ export default function DropdownManagement() {
                   type="text"
                   value={valueFormData.value}
                   onChange={(e) => setValueFormData({ ...valueFormData, value: e.target.value })}
-                  className="text-sm"
+                  className="text-base"
                   placeholder="Enter value"
                   required
                 />
@@ -370,7 +370,7 @@ export default function DropdownManagement() {
                   type="number"
                   value={valueFormData.display_order}
                   onChange={(e) => setValueFormData({ ...valueFormData, display_order: parseInt(e.target.value) || 0 })}
-                  className="text-sm"
+                  className="text-base"
                   placeholder="0"
                 />
               </div>

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { fetchUserExportData, USER_EXPORT_TABLES } from '@/lib/database-export'
@@ -18,6 +18,7 @@ import { isAllowedPaymentUrl, allowedHostsDescription } from '@/lib/payment-link
 import { notifyCrmPrefChanged } from '@/hooks/useCrmEnabled'
 import { notifyLogbookPrefChanged } from '@/hooks/useLogbookEnabled'
 import { notifyYardMapPrefChanged } from '@/hooks/useYardMapEnabled'
+import { clearSubscriptionCache, resolveSubscriptionStatus } from '@/hooks/useHasActiveSubscription'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import CollapsibleSection from '@/components/ui/CollapsibleSection'
 import Panel from '@/components/ui/Panel'
@@ -125,14 +126,10 @@ export default function ProfilePage() {
  const [passwordError, setPasswordError] = useState('')
  const [subscriptionRefreshKey, setSubscriptionRefreshKey] = useState(0)
 
+ // Through the shared status, so this page and the menus make one request between them
  const fetchSubscriptionStatus = useCallback(async () => {
- try {
- const { data, error } = await supabase.rpc('get_subscription_status')
- if (error) throw error
- setSubscriptionStatus(data as SubscriptionStatusResponse)
- } catch (error) {
- console.error('Error fetching subscription status:', error)
- }
+ const status = await resolveSubscriptionStatus()
+ if (status) setSubscriptionStatus(status)
  }, [])
 
  const fetchAssociations = useCallback(async () => {
@@ -289,6 +286,9 @@ export default function ProfilePage() {
  }
  }
 
+ // Latest request per preference, so a slow failure can't roll back a newer change
+ const preferenceRequestRef = useRef<Record<string, number>>({})
+
  // Centralised optimistic update for a single profile preference. Writes the new
  // value, then reverts to the ACTUAL previous value if there is no signed-in user
  // or the save fails. Replaces five near-identical inline handlers.
@@ -299,6 +299,9 @@ export default function ProfilePage() {
  onSuccess?: () => void,
  ) => {
  const previous = profileFormData[key]
+ const requestId = (preferenceRequestRef.current[key] ?? 0) + 1
+ preferenceRequestRef.current[key] = requestId
+ const isLatest = () => preferenceRequestRef.current[key] === requestId
  // `null` clears a column. The form keeps '' locally so inputs stay
  // controlled, but a nullable column with a format CHECK must receive NULL —
  // an empty string would fail the constraint.
@@ -318,10 +321,15 @@ export default function ProfilePage() {
  if (error) {
  console.error(`Error updating ${String(key)}:`, error)
  toast.error('Could not save your setting. Please try again.')
- setProfileFormData(prev => ({ ...prev, [key]: previous }))
+ // Only if no newer change was made meanwhile: rolling that back would show a value
+ // that isn't the one being saved
+ if (isLatest()) setProfileFormData(prev => ({ ...prev, [key]: previous }))
  return
  }
 
+ // Keep the saved profile in step. Cancel and rejected inputs reset to it, and it still held
+ // the value from page load, so Cancel flipped saved toggles back off (C9a-08).
+ if (isLatest()) setUserProfile(prev => (prev ? { ...prev, [key]: value } as UserProfile : prev))
  onSuccess?.()
  },
  [profileFormData, userId, toast],
@@ -760,18 +768,18 @@ export default function ProfilePage() {
                   {/* Location */}
                   <div className="md:col-span-2 pt-4 border-t border-border">
                     <h3 className="text-md font-medium text-foreground mb-3">Location</h3>
-                    <label className="flex items-center gap-3 cursor-pointer">
+                    <label className="flex min-h-12 items-center gap-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={profileFormData.is_uk_ni_resident}
                         onChange={(e) =>
                           setProfileFormData({ ...profileFormData, is_uk_ni_resident: e.target.checked })
                         }
-                        className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
+                        className="w-5 h-5 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
                       />
                       <span className="text-sm text-foreground">Resident in NI/UK</span>
                     </label>
-                    <p className="text-sm text-text-tertiary mt-1 ml-7">Sets currency to GBP and pre-selects UK-authorised varroa treatments</p>
+                    <p className="text-sm text-text-tertiary mt-1 ml-8">Sets currency to GBP and pre-selects UK-authorised varroa treatments</p>
                   </div>
 
                   {/* Association Membership */}
@@ -804,45 +812,45 @@ export default function ProfilePage() {
 
                       <div>
                         <label className="block text-sm font-medium text-text-secondary mb-2">
-                          National Organization Memberships
+                          National Organisation Memberships
                         </label>
                         <div className="space-y-2">
-                          <label className="flex items-center gap-2">
+                          <label className="flex min-h-12 items-center gap-2 cursor-pointer">
                             <input
                               type="checkbox"
                               checked={profileFormData.member_fibka}
                               onChange={(e) =>
                                 setProfileFormData({ ...profileFormData, member_fibka: e.target.checked })
                               }
-                              className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
+                              className="w-5 h-5 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
                             />
                             <span className="text-sm text-text-secondary">
                               FIBKA (Federation of Irish Beekeepers Associations)
                             </span>
                           </label>
 
-                          <label className="flex items-center gap-2">
+                          <label className="flex min-h-12 items-center gap-2 cursor-pointer">
                             <input
                               type="checkbox"
                               checked={profileFormData.member_iba}
                               onChange={(e) =>
                                 setProfileFormData({ ...profileFormData, member_iba: e.target.checked })
                               }
-                              className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
+                              className="w-5 h-5 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
                             />
                             <span className="text-sm text-text-secondary">
                               IBA (Irish Beekeepers Association)
                             </span>
                           </label>
 
-                          <label className="flex items-center gap-2">
+                          <label className="flex min-h-12 items-center gap-2 cursor-pointer">
                             <input
                               type="checkbox"
                               checked={profileFormData.member_nihbs}
                               onChange={(e) =>
                                 setProfileFormData({ ...profileFormData, member_nihbs: e.target.checked })
                               }
-                              className="w-4 h-4 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
+                              className="w-5 h-5 text-forest-600 dark:text-indigo-600 border-border rounded focus:ring-forest-500 dark:focus:ring-emerald-500"
                             />
                             <span className="text-sm text-text-secondary">
                               NIHBS (Native Irish Honey Bee Society)
@@ -1388,7 +1396,7 @@ export default function ProfilePage() {
  placeholder="Type DELETE here"
  disabled={deletingAccount}
  danger
- className="text-sm"
+ className="text-base"
  autoComplete="off"
  />
  </div>
@@ -1403,6 +1411,10 @@ export default function ProfilePage() {
  // Increment the key to force re-render of subscription components
  setSubscriptionRefreshKey(prev => prev + 1)
  setShowRenewSubscriptionModal(false)
+ // Every gate (menus, CRM, Apiary Map, export) re-checks rather than keeping "expired" for up
+ // to 5 minutes, and this page's own status is fetched again (C9a-07)
+ clearSubscriptionCache()
+ fetchSubscriptionStatus()
  }}
  userId={userId || ''}
  />

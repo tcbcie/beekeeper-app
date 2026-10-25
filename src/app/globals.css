@@ -1079,9 +1079,10 @@ textarea::placeholder {
     width: auto;
   }
 
+  /* 20px: the 16px box was too small for the app's 50+ users (C9a-26). Owner approved app-wide. */
   .fj-checkbox {
-    width: 1rem;
-    height: 1rem;
+    width: 1.25rem;
+    height: 1.25rem;
     border-radius: 0.25rem;
     border: 1px solid var(--border-color);
     accent-color: var(--accent-primary);

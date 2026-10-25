@@ -146,7 +146,7 @@ export default function AssociationManagement() {
       resetForm()
     } catch (error) {
       console.error('Error saving beekeeping association:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to save beekeeping association: ${errorMessage}`)
     }
   }
@@ -278,7 +278,7 @@ export default function AssociationManagement() {
               value={countyFilter}
               onChange={(e) => { setCountyFilter(e.target.value); setCurrentPage(1) }}
               tone="purple"
-              className="fj-control-inline py-1.5 rounded-md text-sm"
+              className="fj-control-inline py-1.5 rounded-md text-base"
             >
               <option value="all">All Counties/Areas</option>
               {Array.from(new Set(associations.map(a => a.county_area))).sort().map(county => (
@@ -297,7 +297,7 @@ export default function AssociationManagement() {
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
                 placeholder="Name, email, county..."
                 tone="purple"
-                className="pl-8 pr-3 py-1.5 rounded-md text-sm w-52"
+                className="fj-control-inline !pl-9 pr-3 rounded-md text-base w-52"
               />
             </div>
           </div>
@@ -543,7 +543,7 @@ export default function AssociationManagement() {
                     disabled={currentPage === 1}
                     tone="neutral"
                     size="xs"
-                    className="border border-border disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="min-w-12 border border-border disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     First
                   </Button>
@@ -551,7 +551,7 @@ export default function AssociationManagement() {
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                     size="sm"
-                    className="border border-border disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="min-w-12 border border-border disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ChevronLeft size={18} />
                   </IconButton>
@@ -562,7 +562,7 @@ export default function AssociationManagement() {
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                     size="sm"
-                    className="border border-border disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="min-w-12 border border-border disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ChevronRight size={18} />
                   </IconButton>
@@ -571,7 +571,7 @@ export default function AssociationManagement() {
                     disabled={currentPage === totalPages}
                     tone="neutral"
                     size="xs"
-                    className="border border-border disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="min-w-12 border border-border disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Last
                   </Button>

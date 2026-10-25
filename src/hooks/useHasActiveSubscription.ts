@@ -16,11 +16,15 @@ const TTL_MS = 5 * 60 * 1000
 // The full status is cached so the Navbar's expiry warning shares this one request too (C1-18)
 let cache: { status: SubscriptionStatusResponse | null; at: number } | null = null
 let inFlight: Promise<SubscriptionStatusResponse | null> | null = null
+// Bumped on every change of signed-in user and by clearSubscriptionCache(): a request still running
+// for the previous account (or from before a renewal) must not write its answer (C9a-07)
+let generation = 0
 
 // Never let one account's cached entitlement bleed into another in the same tab.
 if (typeof window !== 'undefined') {
   supabase.auth.onAuthStateChange((event) => {
     if (event === 'SIGNED_OUT' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+      generation++
       cache = null
       inFlight = null
     }
@@ -32,23 +36,31 @@ export async function resolveSubscriptionStatus(): Promise<SubscriptionStatusRes
   if (cache && Date.now() - cache.at < TTL_MS) return cache.status
   if (inFlight) return inFlight
 
+  const gen = generation
   inFlight = (async () => {
     try {
       const { data, error } = await supabase.rpc('get_subscription_status')
       if (error) throw error
       const status = (data as SubscriptionStatusResponse | null) ?? null
-      cache = { status, at: Date.now() }
+      if (gen === generation) cache = { status, at: Date.now() }
       return status
     } catch (error) {
       console.error('Error checking subscription status:', error)
-      cache = { status: null, at: Date.now() }
+      // Not cached: one failed check used to lock gated features for 5 minutes
       return null
     } finally {
-      inFlight = null
+      if (gen === generation) inFlight = null
     }
   })()
 
   return inFlight
+}
+
+/** Forget the cached status, e.g. straight after a renewal, so every gate re-checks. */
+export function clearSubscriptionCache(): void {
+  generation++
+  cache = null
+  inFlight = null
 }
 
 export async function resolveActiveSubscription(): Promise<boolean> {

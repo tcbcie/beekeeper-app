@@ -61,7 +61,7 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
   const fetchTickets = useCallback(async () => {
     setLoadingTickets(true)
     try {
-      let query = supabase
+      const query = supabase
         .from('support_tickets')
         .select(`
           *,
@@ -70,10 +70,8 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
         `)
         .order('created_at', { ascending: false })
 
-      if (ticketFilter !== 'all') {
-        query = query.eq('status', ticketFilter)
-      }
-
+      // All tickets load (15 today) and the filter only narrows the list on screen, so the stats
+      // below count every status, not just the filtered one (C9a-10)
       const { data: ticketsData, error: ticketsError } = await query
 
       if (ticketsError) {
@@ -86,14 +84,10 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
         }
         console.warn('Join failed, falling back to manual lookup:', ticketsError)
 
-        let fallbackQuery = supabase
+        const fallbackQuery = supabase
           .from('support_tickets')
           .select('*')
           .order('created_at', { ascending: false })
-        // Same status filter as the main query.
-        if (ticketFilter !== 'all') {
-          fallbackQuery = fallbackQuery.eq('status', ticketFilter)
-        }
 
         const { data: fallbackData, error: fallbackError } = await fallbackQuery
 
@@ -124,13 +118,16 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
       setTickets(ticketsData || [])
     } catch (error) {
       console.error('Error fetching tickets:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      // Supabase errors are plain objects, not Error instances
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to fetch tickets: ${errorMessage}`)
       setTickets([])
     } finally {
       setLoadingTickets(false)
     }
-  }, [ticketFilter, toast])
+  }, [toast])
+
+  const visibleTickets = ticketFilter === 'all' ? tickets : tickets.filter((t) => t.status === ticketFilter)
 
   useEffect(() => {
     fetchTickets()
@@ -161,7 +158,7 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
       setEditingTicket(null)
     } catch (error) {
       console.error('Error updating ticket:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorMessage = (error as { message?: string } | null)?.message || 'Unknown error'
       toast.error(`Failed to update ticket: ${errorMessage}`)
     }
   }
@@ -214,13 +211,13 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
           <div className="text-center py-8">
             <LoadingSpinner text="Loading tickets..." />
           </div>
-        ) : tickets.length === 0 ? (
+        ) : visibleTickets.length === 0 ? (
           <div className="text-center py-8 text-text-tertiary">
             No tickets found for this filter.
           </div>
         ) : (
           <div className="space-y-4">
-            {tickets.map((ticket) => (
+            {visibleTickets.map((ticket) => (
               <Card key={ticket.id} padding="sm" className="bg-surface dark:bg-background">
                 {editingTicket?.id === ticket.id ? (
                   /* Edit Form */
@@ -341,6 +338,7 @@ export default function TicketManagement({ userId }: TicketManagementProps) {
                           onClick={() => setEditingTicket(ticket)}
                           tone="blue"
                           size="xs"
+                          className="min-w-12"
                         >
                           Edit
                         </Button>

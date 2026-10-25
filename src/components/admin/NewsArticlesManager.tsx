@@ -42,9 +42,10 @@ export default function NewsArticlesManager() {
     setLoading(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) return
+      if (!session?.access_token) { toast.error('Your session has expired. Please sign in again.'); return }
 
-      const response = await fetch('/api/admin/news-articles?limit=100', {
+      // The list is searched on screen, so it must hold every article (C9a-15)
+      const response = await fetch('/api/admin/news-articles?limit=1000', {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
         }
@@ -53,6 +54,9 @@ export default function NewsArticlesManager() {
       const data = await response.json()
       if (response.ok) {
         setArticles(data.data || [])
+        if (typeof data.total === 'number' && data.total > (data.data?.length ?? 0)) {
+          toast.warning(`Showing ${data.data?.length ?? 0} of ${data.total} articles; search covers only those shown.`)
+        }
       } else {
         toast.error(data.error || 'Failed to load articles')
       }
@@ -164,7 +168,7 @@ export default function NewsArticlesManager() {
   const handleTogglePublished = async (article: NewsArticle) => {
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) return
+      if (!session?.access_token) { toast.error('Your session has expired. Please sign in again.'); return }
 
       const response = await fetch('/api/admin/news-articles', {
         method: 'PATCH',
@@ -181,9 +185,13 @@ export default function NewsArticlesManager() {
       if (response.ok) {
         toast.success(article.is_published ? 'Article unpublished' : 'Article published')
         fetchArticles()
+      } else {
+        // It used to do nothing visible on failure (C9a-12)
+        toast.error(article.is_published ? "Couldn't unpublish the article. Please try again." : "Couldn't publish the article. Please try again.")
       }
     } catch (error) {
       console.error('Error toggling published:', error)
+      toast.error("Couldn't change the article. Please try again.")
     }
   }
 
@@ -195,7 +203,7 @@ export default function NewsArticlesManager() {
     setDeletingId(article.id)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) return
+      if (!session?.access_token) { toast.error('Your session has expired. Please sign in again.'); return }
 
       const response = await fetch(`/api/admin/news-articles?id=${article.id}`, {
         method: 'DELETE',
@@ -227,7 +235,7 @@ export default function NewsArticlesManager() {
     setRemovingKbId(article.id)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) return
+      if (!session?.access_token) { toast.error('Your session has expired. Please sign in again.'); return }
 
       const response = await fetch('/api/admin/news-articles', {
         method: 'PATCH',
@@ -317,7 +325,7 @@ export default function NewsArticlesManager() {
                   value={newUrl}
                   onChange={(e) => setNewUrl(e.target.value)}
                   placeholder="https://example.com/article..."
-                  className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-surface focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full min-h-12 pl-10 pr-4 py-2 border border-border rounded-lg bg-surface focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   onKeyDown={(e) => e.key === 'Enter' && handleAddArticle()}
                 />
               </div>
@@ -345,7 +353,7 @@ export default function NewsArticlesManager() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search articles..."
-          className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-surface focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full min-h-12 pl-10 pr-4 py-2 border border-border rounded-lg bg-surface focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
@@ -372,7 +380,7 @@ export default function NewsArticlesManager() {
                       type="text"
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm"
+                      className="w-full min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-base"
                     />
                   </div>
                   <div>
@@ -381,7 +389,7 @@ export default function NewsArticlesManager() {
                       value={editDescription}
                       onChange={(e) => setEditDescription(e.target.value)}
                       rows={2}
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm"
+                      className="w-full min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-base"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -391,7 +399,7 @@ export default function NewsArticlesManager() {
                         type="text"
                         value={editAuthor}
                         onChange={(e) => setEditAuthor(e.target.value)}
-                        className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm"
+                        className="w-full min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-base"
                       />
                     </div>
                     <div>
@@ -400,7 +408,7 @@ export default function NewsArticlesManager() {
                         type="date"
                         value={editPublishedDate}
                         onChange={(e) => setEditPublishedDate(e.target.value)}
-                        className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-sm"
+                        className="w-full min-h-12 px-3 py-2 border border-border rounded-lg bg-surface text-base"
                       />
                     </div>
                   </div>
@@ -459,7 +467,7 @@ export default function NewsArticlesManager() {
                           <Button
                             onClick={() => handleRemoveFromKB(article)}
                             disabled={removingKbId === article.id}
-                            className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-300 rounded flex items-center gap-1 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-900 dark:hover:text-red-300 transition-colors"
+                            className="min-h-12 min-w-12 px-2 py-1 text-sm bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-300 rounded flex items-center gap-1 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-900 dark:hover:text-red-300 transition-colors"
                             title="Remove from Knowledge Base"
                           >
                             {removingKbId === article.id ? (
@@ -472,7 +480,7 @@ export default function NewsArticlesManager() {
                         )}
                         <Button
                           onClick={() => handleTogglePublished(article)}
-                          className={`p-1.5 rounded hover:bg-surface-elevated ${
+                          className={`inline-flex min-h-12 min-w-12 items-center justify-center p-1.5 rounded hover:bg-surface-elevated ${
                             article.is_published ? 'text-green-600' : 'text-amber-500'
                           }`}
                           title={article.is_published ? 'Published (click to hide)' : 'Hidden (click to publish)'}
@@ -483,14 +491,14 @@ export default function NewsArticlesManager() {
                           href={article.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-1.5 rounded hover:bg-surface-elevated text-text-secondary"
+                          className="inline-flex min-h-12 min-w-12 items-center justify-center p-1.5 rounded hover:bg-surface-elevated text-text-secondary"
                           title="Open original"
                         >
                           <ExternalLink size={16} />
                         </TextLink>
                         <Button
                           onClick={() => handleEdit(article)}
-                          className="p-1.5 rounded hover:bg-surface-elevated text-text-secondary"
+                          className="inline-flex min-h-12 min-w-12 items-center justify-center p-1.5 rounded hover:bg-surface-elevated text-text-secondary"
                           title="Edit"
                         >
                           <Pencil size={16} />
@@ -498,7 +506,7 @@ export default function NewsArticlesManager() {
                         <Button
                           onClick={() => handleDelete(article)}
                           disabled={deletingId === article.id}
-                          className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 disabled:opacity-50"
+                          className="inline-flex min-h-12 min-w-12 items-center justify-center p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 disabled:opacity-50"
                           title="Delete"
                         >
                           {deletingId === article.id ? (
