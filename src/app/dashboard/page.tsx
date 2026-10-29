@@ -10,13 +10,17 @@ import { Skeleton, SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
 import Panel from '@/components/ui/Panel'
 import Button from '@/components/ui/Button'
 import Link from 'next/link'
-import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, ClipboardList, Plus, Egg, ListChecks, GripVertical } from 'lucide-react'
+import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, Plus, Egg, GripVertical } from 'lucide-react'
 import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
 import { useGeolocation, haversineKm } from '@/hooks/useGeolocation'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { DashboardApiary, RecentActivityRecord } from '@/types/dashboard'
 import { formatLocalDate } from '@/lib/date-utils'
-import { dashboardCardIcons, iconography } from '@/lib/iconography'
+import { buildApiaryTodos } from '@/lib/dashboard-todo'
+import InspectionWeatherCard from '@/components/dashboard/InspectionWeatherCard'
+import TodoList from '@/components/dashboard/TodoList'
+import SeasonalReminders from '@/components/dashboard/SeasonalReminders'
+import { iconography } from '@/lib/iconography'
 
 const UpcomingEvents = dynamic(
   () => import('@/components/UpcomingEvents'),
@@ -94,7 +98,7 @@ export default function DashboardPage() {
  const router = useRouter()
 
  // Custom hooks
- const { stats, apiaries, alerts, recentActivity, loading, error: dashboardError, recentActivityError, fetchDashboardData } = useDashboardStats()
+ const { apiaries, alerts, firstName, recentActivity, loading, error: dashboardError, recentActivityError, fetchDashboardData } = useDashboardStats()
  const {
  ownedTeams,
  memberTeams,
@@ -177,35 +181,31 @@ export default function DashboardPage() {
   return withDistance.map(entry => entry.apiary)
  }, [apiaries, devicePosition])
 
- // Apiaries with something to do come first; each group keeps the order above (the sort is stable)
+ // Apiaries with jobs come first, using the To do list's own rules; each group keeps the order
+ // above (the sort is stable)
  const sortedApiaries = useMemo(() => {
-  const needsAttention = (a: DashboardApiary) =>
-   (a.overdueInspectionHiveCount ?? 0) > 0 || a.queenIssueHiveCount > 0 ||
-   (a.highVarroaHiveCount ?? 0) > 0 || (a.dueTaskCount ?? 0) > 0
-  return [...apiariesByDistance].sort((a, b) => Number(needsAttention(b)) - Number(needsAttention(a)))
+  const hasJobs = (a: DashboardApiary) => buildApiaryTodos(a).length > 0
+  return [...apiariesByDistance].sort((a, b) => Number(hasJobs(b)) - Number(hasJobs(a)))
  }, [apiariesByDistance])
 
- // The "Today around your apiaries" strip shows the nearest apiary's weather and forage once;
- // a card more than 20 km from it keeps its own, so nothing is hidden where conditions differ
- const conditionsApiary = useMemo(
+ // "Can I open my hives today?" uses the nearest apiary with coordinates
+ const forecastApiary = useMemo(
   () => apiariesByDistance.find(a => a.latitude != null && a.longitude != null) ?? null,
   [apiariesByDistance]
  )
- const showsOwnConditions = useCallback((apiary: DashboardApiary) => {
-  if (!conditionsApiary || apiary.latitude == null || apiary.longitude == null) return false
-  return haversineKm(conditionsApiary.latitude!, conditionsApiary.longitude!, apiary.latitude, apiary.longitude) > 20
- }, [conditionsApiary])
+
+ // The line under the greeting: the totals that matter, in one sentence
+ const summary = useMemo(() => {
+  const hives = apiariesByDistance.reduce((sum, a) => sum + a.hiveCount, 0)
+  const overdue = apiariesByDistance.reduce((sum, a) => sum + (a.overdueInspectionHiveCount ?? 0), 0)
+  if (hives === 0) return null
+  const apiaryCount = apiariesByDistance.length
+  const base = `${hives} ${hives === 1 ? 'hive' : 'hives'} in ${apiaryCount} ${apiaryCount === 1 ? 'apiary' : 'apiaries'}`
+  return overdue > 0 ? `${base} · ${overdue} overdue for a check` : `${base} · all checked in the last 14 days`
+ }, [apiariesByDistance])
 
  const isTeamMember = useMemo(() => ownedTeams.length > 0 || memberTeams.length > 0, [ownedTeams, memberTeams])
  const isRearingGroupMember = useMemo(() => ownedRearingGroups.length > 0 || memberRearingGroups.length > 0, [ownedRearingGroups, memberRearingGroups])
-
- const statCards = useMemo(() => [
- { label: 'My Apiaries', value: stats.apiaries, icon: dashboardCardIcons.apiaries, color: 'bg-green-50 dark:bg-green-900/30 text-foreground dark:text-green-300', href: '/dashboard/apiaries' },
- { label: 'My Hives', value: stats.hives, icon: dashboardCardIcons.hives, color: 'bg-amber-50 dark:bg-amber-900/30 text-foreground dark:text-amber-300', href: '/dashboard/hives' },
- { label: 'Inspections (7d)', value: stats.recentInspections, icon: dashboardCardIcons.inspections, color: 'bg-indigo-50 dark:bg-indigo-900/30 text-foreground dark:text-indigo-300', href: '/dashboard/records' },
- { label: 'Active Queens', value: stats.queens, icon: dashboardCardIcons.queens, color: 'bg-purple-50 dark:bg-purple-900/30 text-foreground dark:text-purple-300', href: '/dashboard/queens' },
- { label: 'Active Tasks', value: stats.activeTasks, icon: dashboardCardIcons.tasks, color: 'bg-teal-50 dark:bg-teal-900/30 text-foreground dark:text-teal-300', href: '/dashboard/tasks' },
- ], [stats])
 
  const hasMySharedData = useMemo(() => mySharedStats.hives > 0 || mySharedStats.queens > 0 || mySharedStats.inspections > 0, [mySharedStats])
  const hasSharedWithMeData = useMemo(() => sharedWithMeStats.hives > 0 || sharedWithMeStats.queens > 0 || sharedWithMeStats.inspections > 0, [sharedWithMeStats])
@@ -236,15 +236,9 @@ export default function DashboardPage() {
  ))}
  </div>
  </div>
- {/* Apiary cards placeholder */}
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ {/* Forecast and To do placeholders */}
+ <SkeletonCard className="h-40" />
  <SkeletonCard className="h-48" />
- <SkeletonCard className="h-48" />
- </div>
- {/* Stats strip placeholder */}
- <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border">
- <Skeleton className="h-8 w-full" />
- </div>
  {/* Recent activity placeholder */}
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border space-y-3">
  <SkeletonRow />
@@ -259,7 +253,10 @@ export default function DashboardPage() {
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
  <div className="flex flex-col gap-2">
  <div className="flex items-center gap-3 flex-wrap">
- <h1 className="font-serif text-3xl sm:text-4xl leading-tight text-foreground">Dashboard Overview</h1>
+ <h1 className="font-serif text-3xl sm:text-4xl leading-tight text-foreground">
+  {(() => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening' })()}
+  {firstName ? `, ${firstName}` : ''}
+ </h1>
  {userRole === 'Admin' && (
  <div className="flex items-center gap-2">
  <span className="fj-badge fj-badge-neutral flex items-center gap-1">
@@ -309,6 +306,7 @@ export default function DashboardPage() {
  </Link>
  )}
  </div>
+ {summary && <p className="text-base text-text-secondary">{summary}</p>}
 </div>
 </div>
 
@@ -330,41 +328,20 @@ export default function DashboardPage() {
  </AlertPanel>
 )}
 
-{/* Attention Needed Alerts */}
-{(alerts.overdueInspections > 0 || alerts.oldQueens > 0 || alerts.highVarroa > 0 || alerts.todayTasks > 0) && (
- <div className="fj-panel-amber p-4">
- <div className="flex items-center gap-2 mb-3">
- <AlertTriangle size={18} className="fj-text-warning" />
- <h2 className="text-sm font-semibold fj-text-warning">Attention Needed</h2>
- </div>
- <div className="flex flex-wrap gap-3">
- {alerts.overdueInspections > 0 && (
- <Link href="/dashboard/hives" className="fj-chip fj-chip-amber font-semibold min-h-[44px] w-full sm:w-auto text-sm">
- <ClipboardList size={16} />
- {alerts.overdueInspections} hive{alerts.overdueInspections !== 1 ? 's' : ''} overdue inspection (14+ days)
- </Link>
- )}
- {alerts.oldQueens > 0 && (
- <Link href="/dashboard/queens" className="fj-chip fj-chip-amber font-semibold min-h-[44px] w-full sm:w-auto text-sm">
- <Crown size={16} />
- {alerts.oldQueens} queen{alerts.oldQueens !== 1 ? 's' : ''} over 2 years old
- </Link>
- )}
- {alerts.highVarroa > 0 && (
- <Link href="/dashboard/records?type=varroa_check" className="fj-chip fj-chip-amber font-semibold min-h-[44px] w-full sm:w-auto text-sm">
- <Bug size={16} />
- {alerts.highVarroa} high varroa check{alerts.highVarroa !== 1 ? 's' : ''} (&gt;3%)
- </Link>
- )}
- {alerts.todayTasks > 0 && (
- <Link href="/dashboard/tasks" className="fj-chip fj-chip-amber font-semibold min-h-[44px] w-full sm:w-auto text-sm">
- <ListChecks size={16} />
- {alerts.todayTasks} task{alerts.todayTasks !== 1 ? 's' : ''} due today
- </Link>
- )}
- </div>
- </div>
- )}
+{/* Can I open my hives today? */}
+{forecastApiary && (
+ <InspectionWeatherCard
+  key={forecastApiary.id}
+  latitude={forecastApiary.latitude!}
+  longitude={forecastApiary.longitude!}
+  apiaryName={forecastApiary.name}
+ />
+)}
+
+{/* To do: the hives behind every warning, each with a button that starts the job */}
+{(apiariesByDistance.length > 0 || alerts.oldQueens > 0) && (
+ <TodoList apiaries={apiariesByDistance} oldQueens={alerts.oldQueens} />
+)}
 
  {/* Quick Actions — desktop: drag onto apiary card · mobile: tap then tap apiary */}
  {activeAction && (
@@ -417,43 +394,25 @@ export default function DashboardPage() {
  })}
  </div>
 
- {/* Apiaries: shared conditions strip, then cards needing attention first, then nearest-first */}
+ {/* My apiaries: one row each, apiaries with jobs first, then nearest first */}
  {sortedApiaries.length > 0 && (
   <div>
-   {conditionsApiary && !activeAction && (
-    <div className="mb-4">
-     {/* Keyed by apiary: when GPS arrives and the nearest apiary changes, the strip starts afresh
-         instead of showing the previous apiary's weather and blooms under the new name */}
-     <ApiaryWeatherRow key={conditionsApiary.id} apiary={conditionsApiary} variant="conditions" />
-    </div>
-   )}
-   <h2 className="text-lg font-semibold text-foreground mb-3">My Apiaries</h2>
-   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   <h2 className="text-lg font-semibold text-foreground mb-3">My apiaries</h2>
+   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
     {sortedApiaries.map((apiary) => (
      <ApiaryWeatherRow
       key={apiary.id}
       apiary={apiary}
       activeAction={activeAction}
       onActionDrop={handleApiaryActionDrop}
-      showConditions={showsOwnConditions(apiary)}
      />
     ))}
    </div>
   </div>
  )}
 
- {/* Stats Strip */}
- <Panel padding="sm">
- <div className="flex flex-wrap items-center gap-1">
- {statCards.map((card) => (
- <Link key={card.label} href={card.href!} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-surface-secondary dark:hover:bg-surface-elevated transition-colors whitespace-nowrap">
- <AppIcon icon={card.icon} size="sm" className="text-text-secondary" />
- <span className="text-sm text-text-secondary">{card.label}:</span>
- <span className="text-base font-bold text-foreground">{card.value}</span>
- </Link>
- ))}
- </div>
- </Panel>
+ {/* This time of year */}
+ <SeasonalReminders />
 
  {/* Upcoming Events */}
  {userId && <UpcomingEvents userId={userId} />}

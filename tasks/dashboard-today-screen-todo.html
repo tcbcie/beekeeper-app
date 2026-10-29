@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Proposal &mdash; Dashboard as a "Today" Screen</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 70rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2.4rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  table.t { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
+  table.t th, table.t td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
+  table.t th { background: #eef3ef; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+  .layout { display: flex; flex-wrap: wrap; gap: 2rem; align-items: flex-start; }
+  .notes { flex: 1 1 24rem; }
+  .notes ol li { margin-bottom: .6rem; }
+
+  /* phone mock-up */
+  .phone { width: 390px; flex: 0 0 390px; border: 10px solid #1f2620; border-radius: 34px; background: #f6f4ef; overflow: hidden; font-size: 15px; box-shadow: 0 12px 30px rgba(0,0,0,.18); }
+  .scr { padding: 16px; max-height: 1180px; overflow: hidden; }
+  .hello { font-size: 22px; font-weight: 700; margin: 4px 0 2px; }
+  .sub { color: #4b5563; font-size: 15px; }
+  .card { background: #fff; border: 1px solid #e5e2da; border-radius: 14px; padding: 14px; margin-top: 14px; }
+  .card h3 { margin: 0 0 8px; font-size: 17px; }
+  .verdict { display: flex; gap: 12px; align-items: center; }
+  .badge { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; flex: 0 0 48px; }
+  .no { background: #fef3c7; } .yes { background: #dcfce7; }
+  .big { font-size: 18px; font-weight: 700; }
+  .muted { color: #4b5563; font-size: 14px; }
+  .days { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; text-align: center; }
+  .day { border-radius: 10px; padding: 6px 2px; font-size: 14px; background: #f3f4f6; }
+  .day b { display: block; font-size: 14px; }
+  .day.good { background: #dcfce7; color: #14532d; }
+  .day.ok { background: #fef9c3; color: #713f12; }
+  .day.bad { background: #f3f4f6; color: #6b7280; }
+  .task { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #eee; }
+  .task:first-of-type { border-top: 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 10px; }
+  .red { background: #dc2626; } .amber { background: #f59e0b; } .blue { background: #2563eb; }
+  .task .txt { flex: 1; }
+  .task .txt b { display: block; font-size: 15px; }
+  .act { border: 1px solid #166534; color: #166534; border-radius: 10px; padding: 0 12px; min-height: 44px; display: flex; align-items: center; font-weight: 600; font-size: 14px; white-space: nowrap; }
+  .grp { font-size: 14px; color: #4b5563; font-weight: 600; margin-top: 10px; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid #eee; }
+  .row:first-of-type { border-top: 0; }
+  .row .name { flex: 1; font-weight: 600; }
+  .row .meta { color: #4b5563; font-size: 14px; font-weight: 400; display: block; }
+  .pill { font-size: 13px; padding: 2px 8px; border-radius: 999px; }
+  .p-amber { background: #fef3c7; color: #78350f; } .p-green { background: #dcfce7; color: #14532d; }
+  .season li { margin: 6px 0; }
+  .more { color: #166534; font-weight: 600; font-size: 14px; margin-top: 8px; display: block; }
+</style>
+</head>
+<body>
+
+<h1>Proposal: The Dashboard as a &ldquo;Today&rdquo; Screen</h1>
+<p><strong>Status:</strong> Phase 1 implemented (with seasonal reminders), awaiting your test &nbsp;&middot;&nbsp; <strong>Date:</strong> 29 October 2026</p>
+
+<blockquote>
+<p><strong>Your instruction:</strong> the dashboard now looks naked; the &ldquo;Today around your apiaries&rdquo; card adds no value and the apiary cards feel like something is missing. It is the first screen users see. Take a fresh approach and suggest what the user should actually see.</p>
+</blockquote>
+
+<h2>1. Start from the beekeeper, not the data</h2>
+
+<p>When a beekeeper opens the app they want answers, not figures. Four questions, in this order:</p>
+<ol>
+  <li><strong>&ldquo;Can I open my hives today?&rdquo;</strong> &mdash; the weather question that matters. GDD and bloom lists don&rsquo;t answer it; a yes/no with the best hours does.</li>
+  <li><strong>&ldquo;What should I do, and where?&rdquo;</strong> &mdash; one to-do list naming <em>hives</em>, not counts (&ldquo;Hives 3, 5, 7 not opened since August&rdquo;), each with a button that starts the job.</li>
+  <li><strong>&ldquo;Is anything wrong?&rdquo;</strong> &mdash; only exceptions: queen problems, high varroa, a scale showing a hive getting light. Silence when all is fine.</li>
+  <li><strong>&ldquo;What should I be thinking about this time of year?&rdquo;</strong> &mdash; October is winter preparation, not swarm control.</li>
+</ol>
+
+<p>Why the last two versions failed: the first showed <em>every</em> figure, the second showed <em>counts</em> (&ldquo;9 hives due&rdquo;, &ldquo;0 tasks due&rdquo;, &ldquo;62 days&rdquo;). Counts tell you there is a problem but not what to do about it, so the screen feels empty even when it is busy. GDD, bloom chips, nectar/pollen ratings and the stats strip are interesting, but nobody makes a decision from them on the first screen.</p>
+
+<h2>2. Proposed screen</h2>
+<p class="muted">The counts come from your account (21 hives, 10 overdue, oldest checks of 62 and 70 days, the scale changes). The hive numbers, task title and forecast days are made up for illustration.</p>
+
+<div class="layout">
+  <div class="phone"><div class="scr">
+    <div class="hello">Good afternoon, Rico</div>
+    <div class="sub">21 hives in 4 apiaries &middot; 10 overdue for a check</div>
+
+    <div class="card">
+      <h3>Can I open my hives today?</h3>
+      <div class="verdict">
+        <div class="badge no">☁</div>
+        <div>
+          <div class="big">Not today &mdash; too cool</div>
+          <div class="muted">13°C and overcast. Bees want 15°C or more, dry and calm.</div>
+        </div>
+      </div>
+      <div class="days">
+        <div class="day bad"><b>Thu</b>13°</div>
+        <div class="day good"><b>Fri</b>16°<br>12–3</div>
+        <div class="day ok"><b>Sat</b>15°<br>1–2</div>
+        <div class="day bad"><b>Sun</b>rain</div>
+        <div class="day good"><b>Mon</b>17°<br>11–3</div>
+      </div>
+      <div class="muted" style="margin-top:8px">Best window: <b>Friday 12:00–15:00</b></div>
+    </div>
+
+    <div class="card">
+      <h3>To do</h3>
+      <div class="grp">AP03 - Stephen &middot; 4 km</div>
+      <div class="task"><span class="dot red"></span><div class="txt"><b>Inspect hives 3, 5, 7 +6 more</b><span class="muted">not opened since 28 August</span></div><span class="act">Inspect</span></div>
+      <div class="task"><span class="dot red"></span><div class="txt"><b>Hive 12 is queenless</b><span class="muted">removed queen, 9 days ago</span></div><span class="act">Open</span></div>
+      <div class="task"><span class="dot blue"></span><div class="txt"><b>Feed fondant</b><span class="muted">task due today, +5 more</span></div><span class="act">Tasks</span></div>
+      <div class="grp">Home &middot; 0.1 km</div>
+      <div class="task"><span class="dot amber"></span><div class="txt"><b>Hive 2 has no queen signal</b><span class="muted">no queen or eggs seen for 24 days</span></div><span class="act">Inspect</span></div>
+      <div class="grp">AP02 - Tom</div>
+      <div class="task"><span class="dot amber"></span><div class="txt"><b>Hive 26 getting light</b><span class="muted">scale: −2.7 kg in 7 days, check stores</span></div><span class="act">Open</span></div>
+      <span class="more">Show all 9 jobs</span>
+    </div>
+
+    <div class="card">
+      <h3>My apiaries</h3>
+      <div class="row"><div class="name">AP03 - Stephen<span class="meta">10 hives &middot; oldest check 62 days</span></div><span class="pill p-amber">3 jobs</span></div>
+      <div class="row"><div class="name">Home<span class="meta">2 hives &middot; oldest check 70 days</span></div><span class="pill p-amber">2 jobs</span></div>
+      <div class="row"><div class="name">AP02 - Tom<span class="meta">4 hives &middot; scales −2.1 kg this week</span></div><span class="pill p-amber">1 job</span></div>
+      <div class="row"><div class="name">AP01 - Colm<span class="meta">5 hives &middot; scales +1.3 kg this week</span></div><span class="pill p-green">All good</span></div>
+    </div>
+
+    <div class="card season">
+      <h3>Late October in Ireland</h3>
+      <ul>
+        <li>Heft or check scales: a colony needs about 18 kg of stores for winter.</li>
+        <li>Fit mouse guards before the first frosts.</li>
+        <li>Plan oxalic acid for the broodless spell in December.</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="notes">
+    <h3>What each part does</h3>
+    <ol>
+      <li><strong>Greeting + one-line verdict.</strong> Replaces the stats strip: the totals that matter in one sentence.</li>
+      <li><strong>&ldquo;Can I open my hives today?&rdquo;</strong> A yes/no with the reason and the best window, plus the next five days as coloured tiles. Rule of thumb used by beekeepers: 15°C or more, no rain, light wind, between about 10:00 and 17:00. One forecast request for the nearest apiary (hourly temperature, rain, wind from Open-Meteo, which the app already uses). Replaces the &ldquo;Today around your apiaries&rdquo; strip.</li>
+      <li><strong>To do</strong> &mdash; one list, grouped by apiary (nearest first), naming the <em>hives</em>. Red: overdue inspections, queenless; amber: no queen signal, high varroa, scale losing weight; blue: tasks due. Each line has one button that starts the job (inspection form already filled with apiary and hive; hive page; task list). Shows the top 5, &ldquo;Show all&rdquo; for the rest. When nothing is due: &ldquo;Nothing urgent. Next planned visit: …&rdquo;.</li>
+      <li><strong>My apiaries</strong> &mdash; a compact list, one row each: hives, oldest check or weekly scale change, and a status pill. Tap for the apiary page. Replaces the big cards; the detail lives on the apiary page.</li>
+      <li><strong>This time of year</strong> &mdash; 2&ndash;3 short seasonal reminders for Ireland, changing every half-month. Fixed text to start with; later it can point at the user&rsquo;s own data (&ldquo;Hive 26 is light&rdquo;).</li>
+      <li><strong>Kept below, unchanged:</strong> quick actions (New inspection, New task), pending invitations, &ldquo;Attention needed&rdquo; becomes part of To do; Upcoming events and Recent activity stay further down.</li>
+    </ol>
+
+    <h3>Moved off the first screen</h3>
+    <p>GDD, bloom chips, nectar/pollen ratings, 7-day temperature strip and the stats strip. They stay available where they belong: the apiary page (weather, forage) and Research/Tools (GDD).</p>
+  </div>
+</div>
+
+<h2>3. What it needs</h2>
+
+<table class="t">
+  <tr><th>Part</th><th>Data</th><th>Effort</th></tr>
+  <tr><td>Greeting and verdict</td><td>Existing dashboard data</td><td>Small</td></tr>
+  <tr><td>Can I open my hives?</td><td>One Open-Meteo hourly forecast (temperature, rain probability, wind) for the nearest apiary; a small rule function</td><td>Small&ndash;medium</td></tr>
+  <tr><td>To do (hive-level)</td><td>The dashboard database function returns, per apiary, the <em>hive numbers</em> behind each count (overdue, queenless, no queen signal, high varroa) plus the first due task titles. Scale &ldquo;getting light&rdquo; from the scale data the cards already fetch.</td><td>Medium (one database function change)</td></tr>
+  <tr><td>My apiaries list</td><td>Existing data</td><td>Small (replaces the card)</td></tr>
+  <tr><td>This time of year</td><td>A fixed table of reminders by half-month</td><td>Small (content needs your eye as a beekeeper)</td></tr>
+</table>
+
+<h2>4. Suggested order</h2>
+<ol>
+  <li><strong>Phase 1:</strong> greeting, &ldquo;Can I open my hives today?&rdquo;, To do with hive numbers and action buttons, compact apiary list. Remove the strip and the big cards.</li>
+  <li><strong>Phase 2:</strong> &ldquo;This time of year&rdquo; (you check the wording), scale &ldquo;getting light&rdquo; and possible-swarm alerts.</li>
+</ol>
+
+<h2>5. Questions for you</h2>
+<ul>
+  <li>Does the inspection rule (15°C+, dry, light wind, 10:00&ndash;17:00) match how you and your users decide?</li>
+  <li>Should the seasonal reminders be in Phase 1?</li>
+</ul>
+
+<h2>6. Decisions and to-do</h2>
+<ul>
+  <li>Inspection rule approved: 15°C or more, dry, light wind, 10:00&ndash;17:00. Seasonal reminders in Phase 1, wording as proposed; the other eleven months are written in the same style for your check.</li>
+  <li><strong>Correction:</strong> the apiary page does not show weather or forage today, so &ldquo;they stay on the apiary page&rdquo; was wrong. The existing weather-and-forage block moves there, so nothing is lost.</li>
+</ul>
+<ul class="todo">
+  <li>&#9745; Database: <code>get_dashboard_overview</code> returns the hives behind each count (overdue, queenless, queen check, high varroa), the first due tasks and the first name (MCP migration + file)</li>
+  <li>&#9745; Greeting and one-line summary (replaces the stats strip)</li>
+  <li>&#9745; &ldquo;Can I open my hives today?&rdquo; card</li>
+  <li>&#9745; To do list grouped by apiary with action buttons; replaces &ldquo;Attention needed&rdquo;</li>
+  <li>&#9745; Compact &ldquo;My apiaries&rdquo; list (replaces the big cards and the strip); quick actions still apply by tapping a row</li>
+  <li>&#9745; Seasonal reminders by month</li>
+  <li>&#9745; Weather and forage block on the apiary page</li>
+  <li>&#9745; Type check + ESLint; <code>qa-engineer</code> audit</li>
+  <li>&#9745; Docs: <span class="file">docs/features/dashboard-today-screen.md</span>; update <span class="file">dashboard-simplify-plan.md</span></li>
+  <li>&#9744; You test on phone and desktop</li>
+</ul>
+
+<h2>7. Review</h2>
+<h3>Changes</h3>
+<ul>
+  <li><strong>Database</strong> (<span class="file">supabase/migrations/20261029150000_dashboard_today_screen.sql</span>, applied through the MCP server): <code>get_dashboard_overview</code> also returns <code>firstName</code> and, per apiary, the hives behind each count (<code>overdueHives</code>, <code>queenlessHives</code>, <code>queenCheckHives</code>, <code>highVarroaHives</code>) and the first three due tasks. Additive, grants unchanged. Checked on your account: AP03 lists its 9 overdue hives (49-HMN+ first, last opened 28 August) and the queenless hive.</li>
+  <li><strong>New:</strong> <span class="file">InspectionWeatherCard.tsx</span> + <span class="file">lib/inspection-weather.ts</span> (the agreed rule), <span class="file">TodoList.tsx</span> + <span class="file">lib/dashboard-todo.ts</span> (one set of job rules for the list, the apiary pills and the order), <span class="file">SeasonalReminders.tsx</span> (12 months).</li>
+  <li><span class="file">ApiaryWeatherRow.tsx</span>: the dashboard card is now a compact row (hives, oldest check, scales this week, &ldquo;N jobs&rdquo; or &ldquo;All good&rdquo;) and still takes quick actions by drag or tap; the weather-and-forage block is the <code>conditions</code> variant, now shown on the apiary page. Code only the old card used was removed.</li>
+  <li><span class="file">dashboard/page.tsx</span>: greeting and summary line, forecast card, To do, quick actions, My apiaries, seasonal reminders; &ldquo;Attention needed&rdquo;, the strip and the stats strip removed.</li>
+  <li><span class="file">apiaries/[id]/page.tsx</span>: the weather, forecast and forage block, loaded on demand.</li>
+  <li>Docs: new <span class="file">docs/features/dashboard-today-screen.md</span>; notes in <span class="file">dashboard-simplify-plan.md</span>, <span class="file">dashboard-apiary-weather.md</span>, <span class="file">gdd-dashboard-bloom.md</span>.</li>
+</ul>
+<h3>QA audit (qa-engineer)</h3>
+<ul>
+  <li><strong>No Critical or High findings.</strong> <code>npx tsc --noEmit</code>: no errors. ESLint on every changed file: clean.</li>
+  <li>&#128993; Medium, fixed: an hour missing its temperature in the forecast would pass the 15°C test (<code>NaN &lt; 15</code> is false) and show as good weather. Hours that do not parse are now dropped.</li>
+  <li>&#128993; Medium, fixed: every job&rsquo;s button read only &ldquo;Inspect&rdquo; or &ldquo;Open&rdquo; to a screen reader; each now says which job, e.g. &ldquo;Inspect: Inspect hive 27-HMN+&rdquo;.</li>
+  <li>The greeting, month and forecast use the device clock only after the dashboard data has loaded on the device, so the server render and the device never disagree.</li>
+  <li>&#9898; Low, left as is: if the dashboard is left open past midnight, the forecast card keeps the earlier day until the page is reopened.</li>
+  <li>&#9898; Low, left as is: hive numbers sort as text (&ldquo;12-MN+&rdquo; before &ldquo;5-DA&rdquo;) within a job line.</li>
+</ul>
+
+</body>
+</html>

@@ -1,5 +1,6 @@
 'use client'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, MapPin, Map, Plus, Clock, Search } from 'lucide-react'
@@ -12,6 +13,10 @@ import { useApiaryDetail } from '@/hooks'
 import { useYardMapEnabled } from '@/hooks/useYardMapEnabled'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import { formatQueenlessLabel } from '@/lib/queenless'
+import type { DashboardApiary } from '@/types/dashboard'
+
+// Weather, forecast and forage (moved here from the dashboard, 29 October 2026); loads on demand
+const ApiaryConditions = dynamic(() => import('@/components/dashboard/ApiaryWeatherRow'), { ssr: false })
 
 export default function ApiaryDetailPage() {
   const params = useParams()
@@ -27,6 +32,20 @@ export default function ApiaryDetailPage() {
     fetchApiaryData,
   } = useApiaryDetail(apiaryId)
   const { yardMapEnabled } = useYardMapEnabled()
+
+  // The conditions block reads only the apiary's id, name and coordinates; the dashboard-only
+  // counts are left empty
+  const conditionsApiary = useMemo<DashboardApiary | null>(() => (
+    apiary && apiary.latitude != null && apiary.longitude != null
+      ? {
+          id: apiary.id, name: apiary.name, location: apiary.location, city: apiary.city,
+          latitude: apiary.latitude, longitude: apiary.longitude,
+          hiveCount: 0, lastInspectionDate: null, lastQueenrightDate: null,
+          queenIssueHiveCount: 0, queenrightAtRiskHiveCount: 0, broodAtRiskHiveCount: 0,
+          queenlessConfirmedHiveCount: 0, queenlessConfirmedReasons: [], scales: [], activeTaskCount: 0,
+        }
+      : null
+  ), [apiary])
 
   const load = useCallback(async () => {
     const id = await getCurrentUserId()
@@ -213,6 +232,8 @@ export default function ApiaryDetailPage() {
           </Link>
         )}
       </div>
+
+      {conditionsApiary && <ApiaryConditions apiary={conditionsApiary} variant="conditions" />}
 
       {/* Hives List */}
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">

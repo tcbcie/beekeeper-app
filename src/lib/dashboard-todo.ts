@@ -1,0 +1,121 @@
+import { parseLocalDate } from '@/lib/date-utils'
+import { formatQueenlessShortLabel } from '@/lib/queenless'
+import type { DashboardApiary, DashboardAttentionHive } from '@/types/dashboard'
+
+/**
+ * The dashboard's To do list, built from the hive lists get_dashboard_overview returns per apiary.
+ * One place decides what counts as a job, so the To do list and each apiary row's "N jobs" pill
+ * always agree.
+ */
+
+export type TodoTone = 'red' | 'amber' | 'blue'
+
+export interface TodoItem {
+  key: string
+  tone: TodoTone
+  title: string
+  detail: string
+  action: { label: string; href: string }
+}
+
+const TONE_ORDER: Record<TodoTone, number> = { red: 0, amber: 1, blue: 2 }
+
+/** "28 August" */
+function formatDayMonth(date: string | null | undefined): string | null {
+  if (!date) return null
+  const parsed = parseLocalDate(date)
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed.toLocaleDateString('en-IE', { day: 'numeric', month: 'long' })
+}
+
+// The RPC payload is jsonb at the wire boundary: a stale or partial payload must not crash the list
+function listOf<T>(value: T[] | undefined | null): T[] {
+  return Array.isArray(value) ? value : []
+}
+
+function hiveList(hives: DashboardAttentionHive[], shown: number): string {
+  const names = hives.slice(0, shown).map(h => h.number).join(', ')
+  return hives.length > shown ? `${names} +${hives.length - shown} more` : names
+}
+
+const inspectHiveHref = (hiveId: string) => `/dashboard/records?hive=${hiveId}&type=inspection`
+const openHiveHref = (hiveId: string) => `/dashboard/hives/${hiveId}`
+
+/** The jobs at one apiary, most pressing first (red, then amber, then blue). */
+export function buildApiaryTodos(apiary: DashboardApiary): TodoItem[] {
+  const items: TodoItem[] = []
+
+  const overdue = listOf(apiary.overdueHives)
+  if (overdue.length === 1) {
+    const [hive] = overdue
+    const since = formatDayMonth(hive.lastDate)
+    items.push({
+      key: `${apiary.id}:overdue`,
+      tone: 'red',
+      title: `Inspect hive ${hive.number}`,
+      detail: since ? `not opened since ${since}` : 'never inspected',
+      action: { label: 'Inspect', href: inspectHiveHref(hive.id) },
+    })
+  } else if (overdue.length > 1) {
+    // Never-inspected hives come first in the list, so the first entry is the longest wait
+    const oldest = formatDayMonth(overdue[0].lastDate)
+    items.push({
+      key: `${apiary.id}:overdue`,
+      tone: 'red',
+      title: `Inspect hives ${hiveList(overdue, 3)}`,
+      detail: oldest ? `not opened for 14 days or more, the longest since ${oldest}` : 'not opened for 14 days or more, one never inspected',
+      action: { label: 'Inspect', href: `/dashboard/records?create=inspection&apiary=${apiary.id}` },
+    })
+  }
+
+  for (const hive of listOf(apiary.queenlessHives)) {
+    const reason = formatQueenlessShortLabel(hive.reason)
+    items.push({
+      key: `${apiary.id}:queenless:${hive.id}`,
+      tone: 'red',
+      title: `Hive ${hive.number} is queenless`,
+      detail: reason ? `marked queenless: ${reason.toLowerCase()}` : 'marked queenless',
+      action: { label: 'Open', href: openHiveHref(hive.id) },
+    })
+  }
+
+  for (const hive of listOf(apiary.queenCheckHives)) {
+    const broodless = formatDayMonth(hive.broodlessSince)
+    const lastQueen = formatDayMonth(hive.lastQueenDate)
+    items.push({
+      key: `${apiary.id}:queen:${hive.id}`,
+      tone: 'amber',
+      title: `Hive ${hive.number}: check the queen`,
+      detail: broodless
+        ? `no brood seen since ${broodless}`
+        : lastQueen ? `no queen or eggs seen since ${lastQueen}` : 'no queen or eggs recorded yet',
+      action: { label: 'Inspect', href: inspectHiveHref(hive.id) },
+    })
+  }
+
+  for (const hive of listOf(apiary.highVarroaHives)) {
+    items.push({
+      key: `${apiary.id}:varroa:${hive.id}`,
+      tone: 'amber',
+      title: `Hive ${hive.number}: high varroa`,
+      detail: typeof hive.rate === 'number' ? `${hive.rate}% at a check in the last 30 days` : 'over 3% in the last 30 days',
+      action: { label: 'Open', href: openHiveHref(hive.id) },
+    })
+  }
+
+  const dueTasks = listOf(apiary.dueTasks)
+  const dueCount = Math.max(apiary.dueTaskCount ?? 0, dueTasks.length)
+  if (dueCount > 0) {
+    const others = dueCount - 1
+    items.push({
+      key: `${apiary.id}:tasks`,
+      tone: 'blue',
+      title: dueTasks[0]?.title || `${dueCount} tasks due`,
+      detail: others > 0 ? `task due, and ${others} more` : 'task due',
+      // The count is the Tasks page "Due" view, so the link opens that view for this apiary
+      action: { label: 'Tasks', href: `/dashboard/tasks?apiary=${apiary.id}&view=due` },
+    })
+  }
+
+  return items.sort((a, b) => TONE_ORDER[a.tone] - TONE_ORDER[b.tone])
+}

@@ -91,3 +91,7 @@ already query Open-Meteo by coordinates.
 ## Simplified layout (29 October 2026)
 
 Weather, the 7-day forecast and the forage rows now appear once, in a "Today around your apiaries" strip above the cards; a card keeps its own only when it is more than 20 km from the strip's apiary. The stats row became a "Needs attention" line plus hives, oldest check and tasks due. See [dashboard-simplify-plan.md](./dashboard-simplify-plan.md).
+
+## Moved to the apiary page (29 October 2026, later)
+
+The dashboard no longer shows weather on apiary cards; the weather, forecast and forage block is on the apiary page. See [dashboard-today-screen.md](./dashboard-today-screen.md).

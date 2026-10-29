@@ -47,3 +47,5 @@ The dashboard's apiary cards repeated the same weather, GDD, forage, nectar/poll
 - **Tasks page filters** for type, category and ownership are still remembered, so a user who narrowed those can see fewer tasks than the count.
 
 Related: [dashboard-apiary-weather.md](./dashboard-apiary-weather.md), [gdd-dashboard-bloom.md](./gdd-dashboard-bloom.md), [dashboard-redesign.md](./dashboard-redesign.md).
+
+> **Superseded the same day** by [dashboard-today-screen.md](./dashboard-today-screen.md): the strip and the apiary cards were replaced by the "Can I open my hives today?" card, a To do list naming the hives, compact apiary rows and seasonal reminders. The database fields added here are still used.

@@ -115,6 +115,26 @@ export interface DashboardApiary {
   highVarroaHiveCount?: number
   /** Open tasks due today or earlier, batch milestones left out: the Tasks page "Due" view */
   dueTaskCount?: number
+  // The hives behind the counts, for the dashboard's To do list (get_dashboard_overview, 29 October 2026)
+  /** No inspection in 14 days; never-inspected first, then the longest wait */
+  overdueHives?: DashboardAttentionHive[]
+  queenlessHives?: DashboardAttentionHive[]
+  /** No queen or eggs for 21 days, or broodless for 21 days; queenless hives left out */
+  queenCheckHives?: DashboardAttentionHive[]
+  /** A varroa check over 3% in the last 30 days, highest first */
+  highVarroaHives?: DashboardAttentionHive[]
+  /** The first three tasks counted by dueTaskCount */
+  dueTasks?: { id: string; title: string }[]
+}
+
+export interface DashboardAttentionHive {
+  id: string
+  number: string
+  lastDate?: string | null
+  reason?: string | null
+  lastQueenDate?: string | null
+  broodlessSince?: string | null
+  rate?: number | null
 }
 
 export interface DashboardStats {

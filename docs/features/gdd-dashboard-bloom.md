@@ -109,3 +109,7 @@ Only renders when the apiary has coordinates and GDD data loaded successfully.
 ## Shown once in the dashboard strip (29 October 2026)
 
 GDD, blooms, nectar/pollen and the foraging window now appear in the dashboard's "Today around your apiaries" strip rather than on every card ("Forage" reads "In bloom", the foraging window reads "Flying weather: X h today · Y h tomorrow"). Cards whose forage the strip covers skip these lookups. See [dashboard-simplify-plan.md](./dashboard-simplify-plan.md).
+
+## Moved to the apiary page (29 October 2026, later)
+
+GDD, blooms, nectar/pollen and flying weather now appear on the apiary page rather than the dashboard. See [dashboard-today-screen.md](./dashboard-today-screen.md).

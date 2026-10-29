@@ -12,6 +12,8 @@ interface UseDashboardStatsReturn {
   stats: DashboardStats
   apiaries: DashboardApiary[]
   alerts: AttentionAlerts
+  /** The user's first name, for the dashboard greeting */
+  firstName: string | null
   recentActivity: RecentActivityRecord[]
   loading: boolean
   error: string | null
@@ -34,6 +36,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
     todayTasks: 0,
   })
   const [apiaries, setApiaries] = useState<DashboardApiary[]>([])
+  const [firstName, setFirstName] = useState<string | null>(null)
   const [recentActivity, setRecentActivity] = useState<RecentActivityRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -79,11 +82,13 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           stats?: DashboardStats
           alerts?: AttentionAlerts
           apiaries?: DashboardApiary[]
+          firstName?: unknown
         }
 
         if (result.stats) setStats(result.stats)
         if (result.alerts) setAlerts(result.alerts)
         setApiaries(Array.isArray(result.apiaries) ? result.apiaries : [])
+        setFirstName(typeof result.firstName === 'string' && result.firstName.trim() ? result.firstName.trim() : null)
 
         // Overview + alerts are ready — unblock the page render immediately
         if (isCurrentRequest()) {
@@ -157,6 +162,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
     stats,
     apiaries,
     alerts,
+    firstName,
     recentActivity,
     loading,
     error,

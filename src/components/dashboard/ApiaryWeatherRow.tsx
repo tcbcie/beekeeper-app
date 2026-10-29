@@ -4,14 +4,14 @@ import { firstOf } from '@/lib/embed'
 import { useEffect, useState, useCallback, useRef, startTransition, memo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { MapPin, CloudOff, TrendingUp, TrendingDown, Scale, ChevronDown, ListChecks, AlertTriangle, Thermometer, Flower2, Check } from 'lucide-react'
+import { MapPin, ChevronDown, ChevronRight, Thermometer, Flower2, Check } from 'lucide-react'
 
 import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
 import { calculateForagingHours, fetchCurrentYearGDD, getBloomingPlants, getNectarConditions, getPollenConditions, haversineDistance, isBloomStale } from '@/lib/gdd'
 import type { BloomingPlant, NectarCondition, PollenCondition, VegetationEntry } from '@/lib/gdd'
 import { supabase } from '@/lib/supabase'
 import type { DashboardApiary } from '@/types/dashboard'
-import { formatQueenlessShortLabel } from '@/lib/queenless'
+import { buildApiaryTodos } from '@/lib/dashboard-todo'
 import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
 
 interface DailyForecast {
@@ -119,50 +119,6 @@ function getDaysSinceDate(dateString: string | null): number | null {
   return Math.max(differenceInCalendarDays(parsedDate, new Date()), 0)
 }
 
-// Inflects "{count} hive[s] {singularVerb|pluralVerb}" so the summary copy
-// stays grammatical at count=1. Verb args are optional for telegraphic
-// clauses like "no brood 21+d" where no verb is needed.
-function formatHiveClause(count: number, singularVerb: string, pluralVerb: string, predicate: string): string {
-  const noun = count === 1 ? 'hive' : 'hives'
-  const verb = count === 1 ? singularVerb : pluralVerb
-  return verb ? `${count} ${noun} ${verb} ${predicate}` : `${count} ${noun} ${predicate}`
-}
-
-function formatConfirmedQueenlessSuffix(reasons: readonly string[]): string {
-  const labels = reasons.map(formatQueenlessShortLabel).filter((s): s is string => !!s)
-  return labels.length === 0 ? '' : ` (${labels.join(', ')})`
-}
-
-function getQueenIssueSummary(apiary: DashboardApiary): string {
-  // The RPC payload is jsonb at the wire boundary — types are aspirational, not enforced.
-  // Normalise here so a stale/partial payload can't crash the row.
-  const confirmedCount = apiary.queenlessConfirmedHiveCount ?? 0
-  const confirmedReasons = Array.isArray(apiary.queenlessConfirmedReasons) ? apiary.queenlessConfirmedReasons : []
-  const queenAtRisk = apiary.queenrightAtRiskHiveCount ?? 0
-  const broodAtRisk = apiary.broodAtRiskHiveCount ?? 0
-  const totalIssue = apiary.queenIssueHiveCount ?? 0
-
-  const parts: string[] = []
-
-  if (confirmedCount > 0) {
-    const suffix = formatConfirmedQueenlessSuffix(confirmedReasons)
-    parts.push(`${confirmedCount} ${confirmedCount === 1 ? 'hive' : 'hives'} queenless${suffix}`)
-  }
-
-  if (queenAtRisk > 0 && broodAtRisk > 0) {
-    // Distinct count of hives flagged by inspection signals only — strip out
-    // any confirmed-queenless hives, which are already named above.
-    const inspectionIssueDistinct = Math.max(0, totalIssue - confirmedCount)
-    parts.push(formatHiveClause(inspectionIssueDistinct, 'needs', 'need', 'queen/brood check'))
-  } else if (queenAtRisk > 0) {
-    parts.push(formatHiveClause(queenAtRisk, 'lacks', 'lack', 'queen signal'))
-  } else if (broodAtRisk > 0) {
-    parts.push(formatHiveClause(broodAtRisk, '', '', 'no brood 21+d'))
-  }
-
-  return parts.length === 0 ? 'All hives recent' : parts.join(', ')
-}
-
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 /** Forecast for "lat,lon", fetched once however many cards ask at the same time. */
@@ -221,26 +177,6 @@ function requestWeather(cacheKey: string): Promise<ApiaryWeather> {
   return request
 }
 
-function WeightChip({ label, value }: { label: string; value: number }) {
-  // A hive getting heavier or lighter is neither good nor bad in itself, so the change is shown in
-  // ink with its sign and arrow; no change at all ("0.00") is grey, never green.
-  const shown = value.toFixed(2)
-  const isZero = Number(shown) === 0
-  const Icon = value > 0 ? TrendingUp : TrendingDown
-
-  return (
-    <div className="flex flex-col items-center">
-      <span className="text-sm font-medium text-text-secondary leading-none mb-0.5">{label}</span>
-      <span className={`flex items-center gap-0.5 text-base font-bold tabular-nums ${
-        isZero ? 'text-text-tertiary' : 'text-foreground'
-      }`}>
-        {!isZero && <Icon size={12} />}
-        {isZero ? '0.00' : `${value > 0 ? '+' : ''}${shown}`}
-      </span>
-    </div>
-  )
-}
-
 function pluralise(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`
 }
@@ -250,24 +186,18 @@ interface ApiaryWeatherRowProps {
   activeAction?: { type: string; label: string } | null
   onActionDrop?: (apiaryId: string) => void
   /**
-   * 'conditions' renders only this apiary's weather and forage, as the dashboard's shared
-   * "Today around your apiaries" strip; 'card' (default) is the apiary card.
+   * 'conditions' renders only this apiary's weather, forecast and forage (the apiary page);
+   * 'card' (default) is the dashboard's compact apiary row.
    */
   variant?: 'card' | 'conditions'
-  /** Card only: show its own weather and forage rows (an apiary far from the strip's apiary) */
-  showConditions?: boolean
 }
 
-function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card', showConditions = true }: ApiaryWeatherRowProps) {
+function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card' }: ApiaryWeatherRowProps) {
   const isStrip = variant === 'conditions'
-  const conditionsShown = isStrip || showConditions
   const router = useRouter()
   const [weather, setWeather] = useState<ApiaryWeather | null>(null)
-  const [weatherLoading, setWeatherLoading] = useState(false)
-  const [weatherError, setWeatherError] = useState(false)
   const [scaleData, setScaleData] = useState<ScaleWeight[]>([])
-  const [scaleLoading, setScaleLoading] = useState(false)
-  // The strip sits at the top of the page, so it loads at once rather than on scrolling into view
+  // The conditions block loads at once; a dashboard row waits until it scrolls into view
   const [shouldLoadData, setShouldLoadData] = useState(isStrip)
   const [forecastExpanded, setForecastExpanded] = useState(false)
   const [gddValue, setGddValue] = useState<number | null>(null)
@@ -317,16 +247,14 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
   }, [])
 
   const fetchWeather = useCallback(async () => {
-    if (!hasCoords || !weatherCacheKey || !shouldLoadData) return
+    // Only the conditions block shows weather; a dashboard row has none to fetch
+    if (!hasCoords || !weatherCacheKey || !shouldLoadData || !isStrip) return
 
     const cachedWeather = weatherCache.get(weatherCacheKey)
     if (cachedWeather && isCacheFresh(cachedWeather.fetchedAt, WEATHER_CACHE_TTL_MS)) {
       setWeather(cachedWeather.data)
       return
     }
-
-    setWeatherLoading(true)
-    setWeatherError(false)
 
     try {
       const nextWeather = await requestWeather(weatherCacheKey)
@@ -336,18 +264,12 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
         setWeather(nextWeather)
       })
     } catch {
-      if (mountedRef.current) {
-        setWeatherError(true)
-      }
-    } finally {
-      if (mountedRef.current) {
-        setWeatherLoading(false)
-      }
+      // Weather is supplementary: the block simply shows no weather rows
     }
-  }, [hasCoords, shouldLoadData, weatherCacheKey])
+  }, [hasCoords, shouldLoadData, weatherCacheKey, isStrip])
 
   const fetchScaleData = useCallback(async () => {
-    // The strip shows no scale row, so it must not cost scale-vendor calls
+    // The conditions block shows no scale figures, so it must not cost scale-vendor calls
     if (!hasScales || !shouldLoadData || isStrip) return
 
     const cachedScaleData = scaleCache.get(scaleCacheKey)
@@ -355,8 +277,6 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
       setScaleData(cachedScaleData.data)
       return
     }
-
-    setScaleLoading(true)
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -401,16 +321,12 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
       })
     } catch {
       // Scale data is supplementary — fail silently
-    } finally {
-      if (mountedRef.current) {
-        setScaleLoading(false)
-      }
     }
   }, [apiary.scales, hasScales, scaleCacheKey, shouldLoadData, isStrip])
 
   const fetchGDDAndBloom = useCallback(async () => {
-    // A card whose forage the strip already shows skips these lookups altogether
-    if (!hasCoords || !weatherCacheKey || !shouldLoadData || !conditionsShown) return
+    // Only the conditions block shows GDD and forage; a dashboard row skips these lookups
+    if (!hasCoords || !weatherCacheKey || !shouldLoadData || !isStrip) return
 
     try {
     // 1. Fetch current GDD (24h cache, deduplicated across same-location cards)
@@ -602,7 +518,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
     } catch {
       // GDD/bloom data is non-critical — fail silently, card still renders without it
     }
-  }, [apiary.id, apiary.latitude, apiary.longitude, hasCoords, shouldLoadData, weatherCacheKey, conditionsShown])
+  }, [apiary.id, apiary.latitude, apiary.longitude, hasCoords, shouldLoadData, weatherCacheKey, isStrip])
 
   useEffect(() => { fetchWeather() }, [fetchWeather])
   useEffect(() => { fetchScaleData() }, [fetchScaleData])
@@ -640,7 +556,6 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
     })
   }, [weather])
 
-  const locationText = apiary.city || apiary.location || null
   const avgWeight = scaleData.length > 0 ? {
     change24h: avg(scaleData.map(scale => scale.change24h)),
     change7d: avg(scaleData.map(scale => scale.change7d)),
@@ -651,23 +566,18 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
   // Falls back to the latest inspection for a payload from before the field existed.
   const daysSinceOldestCheck = getDaysSinceDate(apiary.oldestInspectionDate ?? apiary.lastInspectionDate)
   const neverInspected = (apiary.uninspectedHiveCount ?? 0) > 0
-  const daysSinceQueenright = getDaysSinceDate(apiary.lastQueenrightDate)
-  const hasQueenIssue = apiary.queenIssueHiveCount > 0
-  const dueTaskCount = apiary.dueTaskCount ?? 0
-  // The count is the Tasks page "Due" view, so the link opens that view for this apiary
-  const tasksDueHref = `/dashboard/tasks?apiary=${apiary.id}&view=due`
+  // Same rules as the To do list, so the pill and the list always agree
+  const jobCount = buildApiaryTodos(apiary).length
+  const weekChange = avgWeight?.change7d ?? null
+  const rowDetails = [
+    pluralise(apiary.hiveCount, 'hive', 'hives'),
+    neverInspected
+      ? 'a hive never inspected'
+      : daysSinceOldestCheck !== null ? `oldest check ${pluralise(daysSinceOldestCheck, 'day', 'days')}` : null,
+    weekChange !== null ? `scales ${weekChange > 0 ? '+' : ''}${weekChange.toFixed(1)} kg this week` : null,
+  ].filter(Boolean).join(' · ')
 
-  // What needs doing at this apiary, most pressing first
-  const overdueCount = apiary.overdueInspectionHiveCount ?? 0
-  const varroaCount = apiary.highVarroaHiveCount ?? 0
-  const attentionItems: string[] = []
-  if (overdueCount > 0) attentionItems.push(`${pluralise(overdueCount, 'hive', 'hives')} due for inspection`)
-  if (hasQueenIssue) attentionItems.push(getQueenIssueSummary(apiary))
-  if (varroaCount > 0) attentionItems.push(`${pluralise(varroaCount, 'hive', 'hives')} with high varroa`)
-  if (dueTaskCount > 0) attentionItems.push(`${pluralise(dueTaskCount, 'task', 'tasks')} due`)
-
-  // Weather, forecast and forage: shown once in the strip, and in a card only when it is far
-  // from the strip's apiary (the shared strip replaced four identical copies)
+  // Weather, forecast and forage for the apiary page (moved off the dashboard, 29 October 2026)
   const conditionsBlock = (
     <>
       {weather && !activeAction && (
@@ -822,15 +732,15 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
   )
 
   if (isStrip) {
-    // Not a drop target for quick actions, and nothing to show until weather or GDD arrives
-    if (activeAction || (!weather && gddValue === null)) return null
+    // Nothing to show until weather or GDD arrives
+    if (!weather && gddValue === null) return null
     return (
       <>
-      <section aria-label="Today around your apiaries" className="rounded-lg overflow-hidden border-2 border-border bg-surface dark:bg-surface shadow-sm">
+      <section aria-label="Weather and forage" className="rounded-lg overflow-hidden border-2 border-border bg-surface dark:bg-surface shadow-sm">
         <div className="px-4 py-2.5 bg-gradient-to-r from-forest-600 to-forest-700 dark:from-forest-700 dark:to-forest-800 flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <h2 className="font-semibold text-white text-base">Today around your apiaries</h2>
-            <p className="text-sm text-forest-100 truncate">Weather and forage at {apiary.name}</p>
+            <h2 className="font-semibold text-white text-base">Weather and forage</h2>
+            <p className="text-sm text-forest-100 truncate">Today at {apiary.name}</p>
           </div>
           {weather && (
             <div className="flex items-center gap-1 shrink-0">
@@ -853,7 +763,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
       href={`/dashboard/apiaries/${apiary.id}`}
       data-apiary-id={apiary.id}
       onClick={activeAction ? (e) => { e.preventDefault(); onActionDrop?.(apiary.id) } : undefined}
-      className={`group block rounded-lg overflow-hidden border-2 bg-surface dark:bg-surface shadow-sm hover:shadow-lg transition-all data-[dragover=true]:border-amber-400 data-[dragover=true]:dark:border-amber-500 data-[dragover=true]:ring-2 data-[dragover=true]:ring-amber-200 data-[dragover=true]:dark:ring-amber-800 data-[dragover=true]:shadow-lg ${
+      className={`group flex min-h-14 items-center gap-3 rounded-lg border-2 bg-surface dark:bg-surface px-4 py-3 shadow-sm hover:shadow-md transition-all data-[dragover=true]:border-amber-400 data-[dragover=true]:dark:border-amber-500 data-[dragover=true]:ring-2 data-[dragover=true]:ring-amber-200 data-[dragover=true]:dark:ring-amber-800 data-[dragover=true]:shadow-lg ${
         activeAction
           ? 'border-amber-300 dark:border-amber-600 ring-1 ring-amber-200/50 dark:ring-amber-800/50'
           : 'border-border hover:border-forest-500 dark:hover:border-forest-400'
@@ -894,124 +804,20 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
         }
       }}
     >
-      <div className="px-4 py-2.5 bg-gradient-to-r from-forest-600 to-forest-700 dark:from-forest-700 dark:to-forest-800 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <MapPin size={14} className="text-forest-200 shrink-0" />
-          <span className="font-semibold text-white text-base truncate">{apiary.name}</span>
-          {locationText && (
-            <span className="text-forest-200/80 text-sm truncate hidden sm:inline">({locationText})</span>
-          )}
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {weather && (
-            <>
-              <span className="text-base leading-none">{weatherIcon(weather.current.weatherCode)}</span>
-              <span className="text-lg font-bold text-white tabular-nums">{weather.current.temperature}&deg;</span>
-            </>
-          )}
-          {hasCoords && weatherLoading && (
-            <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white/40 border-t-white" />
-          )}
-          {hasCoords && weatherError && <span className="text-sm text-forest-300">--</span>}
-          {!hasCoords && <CloudOff size={13} className="text-forest-300" />}
-        </div>
+      <MapPin size={18} className="shrink-0 text-forest-700 dark:text-forest-400" aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        <span className="block truncate text-base font-semibold text-foreground">{apiary.name}</span>
+        <span className="block text-sm text-text-secondary">{rowDetails}</span>
       </div>
-
-      {showConditions && conditionsBlock}
-
-      {apiary.hiveCount > 0 && (
-        <div className="px-3 pt-2.5">
-          {attentionItems.length > 0 ? (
-            <div className="rounded-md px-3 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 text-sm">
-              <span className="flex items-center gap-1 font-semibold">
-                <AlertTriangle size={14} className="shrink-0" aria-hidden="true" />
-                Needs attention
-              </span>
-              <span className="block mt-0.5">{attentionItems.join(' · ')}</span>
-            </div>
-          ) : (
-            <div className="rounded-md px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 text-sm">
-              <span className="font-semibold">All good</span>
-              {daysSinceQueenright !== null && <span> · queens seen {daysSinceQueenright === 0 ? 'today' : `${pluralise(daysSinceQueenright, 'day', 'days')} ago`}</span>}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="px-3 py-2 grid grid-cols-3 items-center gap-2 border-b border-border dark:border-border/70">
-        <div className="flex flex-col min-w-0">
-          <span className="text-base font-bold text-foreground tabular-nums">{apiary.hiveCount}</span>
-          <span className="text-sm text-text-secondary">{apiary.hiveCount === 1 ? 'hive' : 'hives'}</span>
-        </div>
-        <div className="flex flex-col min-w-0" title="Days since the least recently inspected hive was checked">
-          {neverInspected ? (
-            <span className="text-base font-bold text-red-700 dark:text-red-400">Never</span>
-          ) : daysSinceOldestCheck !== null ? (
-            <span className={`text-base font-bold tabular-nums ${
-              daysSinceOldestCheck < 7
-                ? 'text-green-700 dark:text-green-400'
-                : daysSinceOldestCheck < 14
-                  ? 'text-amber-700 dark:text-amber-400'
-                  : 'text-red-700 dark:text-red-400'
-            }`}>{pluralise(daysSinceOldestCheck, 'day', 'days')}</span>
-          ) : (
-            <span className="text-base font-medium text-text-tertiary">&mdash;</span>
-          )}
-          <span className="text-sm text-text-secondary">oldest check</span>
-        </div>
-        {dueTaskCount > 0 && !activeAction ? (
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(tasksDueHref) }}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); router.push(tasksDueHref) } }}
-            aria-label={`Show ${pluralise(dueTaskCount, 'task', 'tasks')} due at ${apiary.name}`}
-            className="flex min-h-12 flex-col justify-center rounded-md px-2 bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200 hover:bg-teal-200 dark:hover:bg-teal-900/50 transition-colors cursor-pointer"
-          >
-            <span className="flex items-center gap-1 text-base font-bold tabular-nums">
-              <ListChecks size={14} aria-hidden="true" />
-              {dueTaskCount}
-            </span>
-            <span className="text-sm">{dueTaskCount === 1 ? 'task due' : 'tasks due'}</span>
-          </div>
-        ) : (
-          <div className="flex flex-col min-w-0">
-            <span className="text-base font-bold text-text-tertiary tabular-nums">0</span>
-            <span className="text-sm text-text-secondary">tasks due</span>
-          </div>
-        )}
-      </div>
-
-      {hasScales && (
-        <div className="px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <div className="flex items-center gap-1 shrink-0">
-            <Scale size={12} className="text-text-secondary" aria-hidden="true" />
-            <span className="text-sm font-semibold text-text-secondary">
-              Scale change (kg){apiary.scales.length > 1 ? `, average of ${apiary.scales.length}` : ''}
-            </span>
-          </div>
-          {scaleLoading && (
-            <div className="flex items-center gap-1">
-              <div className="animate-spin rounded-full h-3 w-3 border border-text-tertiary border-t-transparent" />
-              <span className="text-sm text-text-tertiary">Loading...</span>
-            </div>
-          )}
-          {!scaleLoading && avgWeight && (
-            <div className="flex items-center gap-2">
-              {avgWeight.change24h !== null && <WeightChip label="24 hours" value={avgWeight.change24h} />}
-              {avgWeight.change24h !== null && avgWeight.change7d !== null && <div className="w-px h-5 bg-border" />}
-              {avgWeight.change7d !== null && <WeightChip label="7 days" value={avgWeight.change7d} />}
-              {avgWeight.change7d !== null && avgWeight.change30d !== null && <div className="w-px h-5 bg-border" />}
-              {avgWeight.change30d !== null && <WeightChip label="30 days" value={avgWeight.change30d} />}
-            </div>
-          )}
-          {!scaleLoading && scaleData.length === 0 && (
-            <span className="text-sm text-text-tertiary">No data</span>
-          )}
-        </div>
-      )}
+      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-medium ${
+        jobCount > 0
+          ? 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200'
+          : 'bg-green-100 text-green-900 dark:bg-green-900/40 dark:text-green-200'
+      }`}>
+        {jobCount > 0 ? pluralise(jobCount, 'job', 'jobs') : 'All good'}
+      </span>
+      <ChevronRight size={18} className="shrink-0 text-text-tertiary" aria-hidden="true" />
     </Link>
-    {vegModal}
     </>
   )
 }
