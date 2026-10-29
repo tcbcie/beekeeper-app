@@ -80,6 +80,8 @@ Two scale alerts join the To do list, with thresholds agreed with the owner (`sr
 - **Hive numbers:** `get_dashboard_overview` adds `hiveNumber` to each scale (`supabase/migrations/20261029170000_dashboard_scale_hive_number.sql`, applied as `dashboard_scale_hive_number`; grants unchanged).
 - The alerts appear once the summaries arrive; the "N jobs" pill and apiary order update with them, as both use `buildApiaryTodos(apiary, scales)`.
 
-Still to come: seasonal reminders linked to the user's own data.
+### Seasonal reminders linked to the user's hives (29 October 2026)
+
+In stores months (September to February, and June for the June gap) the seasonal panel adds **"Your hives · Scales this week: 34-DA -2.7 kg, 26-DA -2.1 kg, 29-DA +1.3 kg"**, every scale hive's 7-day change with the fastest-losing first. It uses the scale summaries already loaded (`useScaleSummaries`), so it costs no request and no database change. The owner chose this line only; lines for feeding and varroa-treatment records were offered and not taken.
 
 Related: [dashboard-simplify-plan.md](./dashboard-simplify-plan.md), [dashboard-apiary-weather.md](./dashboard-apiary-weather.md), [gdd-dashboard-bloom.md](./gdd-dashboard-bloom.md).

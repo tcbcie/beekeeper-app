@@ -182,8 +182,10 @@ export default function DashboardPage() {
   return withDistance.map(entry => entry.apiary)
  }, [apiaries, devicePosition])
 
- // Every scale summary, loaded once and shared by the To do list (scale alerts) and the rows
+ // Every scale summary, loaded once and shared by the To do list (scale alerts), the rows and
+ // the seasonal reminders
  const scalesByApiary = useScaleSummaries(apiariesByDistance)
+ const allScales = useMemo(() => Object.values(scalesByApiary).flat(), [scalesByApiary])
 
  // Apiaries with jobs come first, using the To do list's own rules; each group keeps the order
  // above (the sort is stable)
@@ -417,7 +419,7 @@ export default function DashboardPage() {
  )}
 
  {/* This time of year */}
- <SeasonalReminders />
+ <SeasonalReminders scales={allScales} />
 
  {/* Upcoming Events */}
  {userId && <UpcomingEvents userId={userId} />}

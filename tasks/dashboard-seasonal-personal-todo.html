@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Plan &mdash; Seasonal Reminders Linked to Your Hives</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 62rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  table.t { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
+  table.t th, table.t td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
+  table.t th { background: #eef3ef; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+  .mock { background: #fff; border: 1px solid #e5e2da; border-radius: 14px; padding: 12px 16px; max-width: 30rem; }
+  .mock h3 { margin: 0 0 6px; font-size: 17px; }
+  .mock ul { margin: 0; padding-left: 20px; }
+  .yours { margin-top: 10px; padding-top: 8px; border-top: 1px solid #eee; }
+  .yours b { display: block; font-size: 15px; }
+  .yours p { margin: 4px 0; color: #374151; font-size: 15px; }
+</style>
+</head>
+<body>
+
+<h1>Seasonal Reminders Linked to Your Hives</h1>
+<p><strong>Status:</strong> implemented, awaiting your test &nbsp;&middot;&nbsp; <strong>Date:</strong> 29 October 2026</p>
+
+<blockquote><p><strong>Your instruction:</strong> yes &mdash; link the seasonal reminders to the user&rsquo;s own hives.</p></blockquote>
+
+<h2>1. Idea</h2>
+<p>Under the month&rsquo;s general reminders, a short &ldquo;Your hives&rdquo; part answers the reminder with the user&rsquo;s own records. Only where the records can actually answer it, and only lines with something in them.</p>
+
+<div class="mock">
+  <h3>October in Ireland</h3>
+  <ul>
+    <li>Heft or check scales: a colony needs about 18 kg of stores for winter.</li>
+    <li>Fit mouse guards before the first frosts.</li>
+    <li>Plan oxalic acid for the broodless spell in December.</li>
+  </ul>
+  <div class="yours">
+    <b>Your hives</b>
+    <p>Scales this week: 34-DA −2.7 kg, 26-DA −2.1 kg, 29-DA +1.3 kg</p>
+    <p>No feed recorded since 1 August: 49-HMN+, 12-MN+, 17-HMN+ +6 more</p>
+  </div>
+</div>
+<p style="color:#4b5563">Hive numbers are from your account; the feeding list is illustrative.</p>
+
+<h2>2. Proposed links</h2>
+<table class="t">
+  <tr><th>Line</th><th>Months</th><th>Data</th></tr>
+  <tr><td><strong>Scales this week</strong> &mdash; every scale hive&rsquo;s 7-day change, lightest first</td><td>September to February, and June (the June gap)</td><td>Already loaded; no new request</td></tr>
+  <tr><td><strong>No feed recorded since 1 August</strong> &mdash; the hives</td><td>September and October</td><td>Feeding records (one addition to the dashboard database function)</td></tr>
+  <tr><td><strong>No varroa treatment recorded since 1 July</strong> &mdash; the hives</td><td>August and September</td><td>Treatment records (same addition)</td></tr>
+  <tr><td><strong>No winter treatment recorded since 1 December</strong> &mdash; the hives</td><td>December and January</td><td>Treatment records (same addition)</td></tr>
+</table>
+<p>In the other months (March to July except June) the To do list already covers what matters (inspections, queens, swarms), so nothing is added there.</p>
+
+<h2>3. To-do</h2>
+<ul class="todo">
+  <li>&#9745; You chose <strong>Scales this week</strong> only, so no database change is needed</li>
+  <li>&#9745; <span class="file">SeasonalReminders.tsx</span>: a &ldquo;Your hives&rdquo; part with the scales line in stores months; the dashboard passes every scale summary it already loaded</li>
+  <li>&#9745; Type check + ESLint; <code>qa-engineer</code> audit</li>
+  <li>&#9745; Docs: <span class="file">dashboard-today-screen.md</span></li>
+  <li>&#9744; You test</li>
+</ul>
+
+<h2>4. Review</h2>
+<h3>Changes</h3>
+<ul>
+  <li><span class="file">src/components/dashboard/SeasonalReminders.tsx</span>: takes the scale summaries; in September to February and June shows &ldquo;Your hives &middot; Scales this week: …&rdquo;, fastest-losing first. Hidden when there are no scale figures.</li>
+  <li><span class="file">src/app/dashboard/page.tsx</span>: passes every scale summary (one memoised list from the summaries already loaded).</li>
+</ul>
+<h3>QA audit (qa-engineer)</h3>
+<ul>
+  <li><strong>No Critical, High or Medium findings.</strong> <code>npx tsc --noEmit</code>: no errors. ESLint: clean.</li>
+  <li>The list is filtered into a new array before sorting, so the shared summaries are never reordered; only finite 7-day figures are shown (the loader already drops anything else).</li>
+  <li>&#9898; Low, left as is: a hive with both a BEEP and a Wolf scale would be listed twice, once per scale.</li>
+</ul>
+</body>
+</html>
