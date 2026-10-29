@@ -239,10 +239,6 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  const scaleType = isBeep ? 'BEEP' : 'Wolf'
  const scaleName = isBeep ? hive.beep_device_name : hive.wolf_scale_name
 
- // Wolf has a brood-nest sensor; BEEP's reading is the inside temperature measured by the scale base
- const temperatureLabel = isBeep ? 'Inside temp.' : 'Brood temp.'
- const temperatureTitle = isBeep ? 'Temperature inside the hive, measured by the scale' : 'Brood-nest temperature'
-
  // Each period's change, with the change over the period of the same length before it for comparison
  const changes = data
  ? [
@@ -407,12 +403,12 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  {data && (data.temperature !== null || data.humidity !== null || data.battery !== null || gddValue !== null) && (
  <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border pt-3">
  {data.temperature !== null && (
- <div title={temperatureTitle}>
+ <div title="Brood temperature (the reading depends on where the sensor sits in the hive)">
  <div className="flex items-center gap-1 text-lg font-semibold text-foreground tabular-nums">
  <Flame size={16} className="text-orange-500" aria-hidden="true" />
  {data.temperature.toFixed(1)}°C
  </div>
- <div className="text-sm text-text-secondary">{temperatureLabel}</div>
+ <div className="text-sm text-text-secondary">Brood temp.</div>
  </div>
  )}
  {data.humidity !== null && (

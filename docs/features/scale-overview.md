@@ -57,7 +57,7 @@ Every value carries a label (29 October 2026, see [scale-card-labels-plan.md](./
 ```
 - "Outside now" is Open-Meteo weather at the apiary, not a scale reading.
 - "Period before" is the change over the period of the same length immediately before (48–24 h ago, the 7 days before, the 30 days before).
-- The temperature is "Brood temp." for Wolf (brood-nest sensor) and "Inside temp." for BEEP (`t_i ?? t ?? t_0`, measured by the scale base).
+- The temperature is "Brood temp." for both scale types (Wolf `brood_temp_c`; BEEP `t_i ?? t ?? t_0`). A low reading means the sensor sits outside the brood area, not that it is a different measurement.
 - GDD is growing degree days since 1 January at the apiary, shown as a whole number (Wolf calls it GTS).
 
 ### Responsive Grid

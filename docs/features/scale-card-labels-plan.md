@@ -13,7 +13,7 @@ The Scale Overview card showed all its data without saying what any number was. 
 | Weight | "Total weight" |
 | 24h / 7d / 30d change, in kg | Table: columns "24 hours / 7 days / 30 days", row "This period" |
 | Bracketed figure | Row "Period before": the change over the period of the same length before (48–24 h ago, the 7 days before, the 30 days before) |
-| Flame temperature | "Brood temp." (Wolf brood-nest sensor) or "Inside temp." (BEEP, scale base) |
+| Flame temperature | "Brood temp." for both scale types (BEEP: `t_i ?? t ?? t_0`; a low reading means the sensor sits outside the brood area) |
 | Humidity | "Scale humidity" (measured by the scale) |
 | Battery | "Battery" (red under 20%) |
 | Sprout figure | "GDD since 1 Jan", whole number (Wolf calls it GTS) |
@@ -21,7 +21,7 @@ The Scale Overview card showed all its data without saying what any number was. 
 ## 2. Fixes made on the way
 
 - **Wolf humidity never showed:** the card read `lastValues.humidity`, but the parsed Wolf reading names it `humidity_percent`.
-- **BEEP temperature was called brood temperature:** BEEP's `t_i ?? t ?? t_0` is the inside temperature at the scale base, now labelled "Inside temp.".
+- **BEEP temperature:** first labelled "Inside temp.", then reverted the same day on the owner's correction. BEEP's sensor is a brood temperature sensor; a low reading (e.g. 12°C) only means it sits outside the brood area. Both scale types show "Brood temp.".
 - **GDD decimal:** shown rounded.
 - Change colours gained dark-mode shades (`green-700/400`, `red-700/400`); arrows stay so the direction does not depend on colour alone.
 
