@@ -320,3 +320,10 @@ Uses `weight_kg_corrected` if available, falls back to `weight_kg`.
 ## Connect limits (security batch 11, 18/10/2026)
 
 `/api/beep/connect` and `/api/wolf-waagen/connect` allow 5 attempts per user per hour (`RATE_LIMITS.scaleConnect`), so they can't be used to test credentials against the vendors. Failures return a generic message ("Could not connect to BEEP. Check your email and password."), and the vendor's own error goes to the server log only. The disconnect routes now refuse deactivated accounts.
+
+## Batch 45 (29/10/2026): data route
+
+- **Chart requests:** a request with a `period` (the history chart) returns only `{ history, period }` and skips the 7 summary calls. Opening a hive's scale drops from 15 BEEP calls to 8, and each period change from 8 calls to 1.
+- **Custom dates:** checked before any BEEP call by `customRangeError()`: real `YYYY-MM-DD` dates, start not after end, at most 366 days. A bad range gets a 400.
+- **Time limits:** `beepFetch` uses `AbortSignal.timeout`, so the limit also covers reading the reply.
+- **Browser requests:** scale IDs in request addresses are encoded with `encodeURIComponent`.

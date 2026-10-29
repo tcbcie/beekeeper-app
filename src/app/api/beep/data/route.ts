@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUser } from '@/lib/server/api-auth'
 import { beepGetLastValues, beepGetMeasurements } from '@/lib/beep-api'
-import { addDaysISO, dublinDayStartUtc } from '@/lib/dublin-date'
+import { addDaysISO, dublinDayStartUtc, customRangeError } from '@/lib/dublin-date'
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,6 +20,12 @@ export async function GET(request: NextRequest) {
 
     if (!deviceId) {
       return NextResponse.json({ error: 'Device ID required' }, { status: 400 })
+    }
+
+    // Check custom dates before any vendor call: a bad date used to fail only after 7 calls.
+    if (period === 'custom') {
+      const rangeError = customRangeError(customStart, customEnd)
+      if (rangeError) return NextResponse.json({ error: rangeError }, { status: 400 })
     }
 
     let beepApiToken: string | null = null
@@ -78,6 +84,52 @@ export async function GET(request: NextRequest) {
 
     if (!beepApiToken) {
       return NextResponse.json({ error: 'BEEP not connected' }, { status: 400 })
+    }
+
+    // A chart asking for a period only reads the history, so skip the summary's vendor calls
+    if (period || (customStart && customEnd)) {
+      let history = null
+      const now = new Date()
+      let startDate: Date
+      let endDate: Date = now
+
+      if (period === 'custom' && customStart && customEnd) {
+        // Use custom date range: whole days in Ireland (the server runs in UTC, so a plain
+        // date read here would start and end an hour late in summer)
+        startDate = dublinDayStartUtc(customStart)
+        // End of the end day: one millisecond before the next Irish midnight
+        endDate = new Date(dublinDayStartUtc(addDaysISO(customEnd.slice(0, 10), 1)).getTime() - 1)
+      } else {
+        // Calculate date range based on period
+        switch (period) {
+          case 'hour':
+            startDate = new Date(now.getTime() - 60 * 60 * 1000)
+            break
+          case 'day':
+            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+            break
+          case 'week':
+            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+            break
+          case 'month':
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+            break
+          case 'year':
+            startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
+            break
+          default:
+            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000) // Default to day
+        }
+      }
+
+      history = await beepGetMeasurements(
+        beepApiToken,
+        deviceId,
+        startDate.toISOString(),
+        endDate.toISOString()
+      )
+
+      return NextResponse.json({ history, period })
     }
 
     // Calculate date ranges for weight changes (current and previous periods)
@@ -167,52 +219,9 @@ export async function GET(request: NextRequest) {
       prevWeightChange30d = newestPrev30d - oldestPrev30d
     }
 
-    let history = null
-    if (period || (customStart && customEnd)) {
-      const now = new Date()
-      let startDate: Date
-      let endDate: Date = now
-
-      if (period === 'custom' && customStart && customEnd) {
-        // Use custom date range: whole days in Ireland (the server runs in UTC, so a plain
-        // date read here would start and end an hour late in summer)
-        startDate = dublinDayStartUtc(customStart)
-        // End of the end day: one millisecond before the next Irish midnight
-        endDate = new Date(dublinDayStartUtc(addDaysISO(customEnd.slice(0, 10), 1)).getTime() - 1)
-      } else {
-        // Calculate date range based on period
-        switch (period) {
-          case 'hour':
-            startDate = new Date(now.getTime() - 60 * 60 * 1000)
-            break
-          case 'day':
-            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-            break
-          case 'week':
-            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-            break
-          case 'month':
-            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-            break
-          case 'year':
-            startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
-            break
-          default:
-            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000) // Default to day
-        }
-      }
-
-      history = await beepGetMeasurements(
-        beepApiToken,
-        deviceId,
-        startDate.toISOString(),
-        endDate.toISOString()
-      )
-    }
-
     return NextResponse.json({
       lastValues,
-      history,
+      history: null,
       period,
       weightChange24h,
       weightChange7d,

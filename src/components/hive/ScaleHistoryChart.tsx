@@ -86,7 +86,7 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
         return
       }
 
-      let url = `/api/beep/data?deviceId=${deviceId}&period=${period}`
+      let url = `/api/beep/data?deviceId=${encodeURIComponent(deviceId)}&period=${period}`
       if (hiveId) {
         url += `&hiveId=${hiveId}`
       }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getServiceSupabase } from '@/lib/server/api-auth'
 import Stripe from 'stripe'
 
 // Fail-fast at module init so a missing env surfaces at deploy time, not in a
@@ -15,19 +15,14 @@ function requireEnv(name: string): string {
 }
 const STRIPE_SECRET_KEY = requireEnv('STRIPE_SECRET_KEY')
 const STRIPE_WEBHOOK_SECRET = requireEnv('STRIPE_WEBHOOK_SECRET')
-const SUPABASE_URL = requireEnv('NEXT_PUBLIC_SUPABASE_URL')
-const SUPABASE_SERVICE_ROLE_KEY = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2025-10-29.clover'
 })
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-})
+// The one shared secret-key client (throws at module init if its env is missing). The Stripe
+// signature check is this route's own trust model.
+const supabase = getServiceSupabase()
 
 const EXPECTED_CURRENCY = 'eur'
 

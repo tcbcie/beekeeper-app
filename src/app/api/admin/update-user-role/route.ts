@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/server/api-auth'
+import { requireAdmin, readJsonBody, MALFORMED_BODY } from '@/lib/server/api-auth'
 import { logAdminAction } from '@/lib/admin-audit'
 
 // Fail-fast at module init so a missing env surfaces at deploy time, not in a
@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
     const { user, supabaseAdmin } = auth
 
     // Parse request body
-    const body = await request.json()
+    const body = await readJsonBody<{ targetUserId?: string; newRole?: string }>(request)
+    if (!body) return NextResponse.json({ error: MALFORMED_BODY }, { status: 400 })
     const { targetUserId, newRole } = body
 
     // Validate inputs

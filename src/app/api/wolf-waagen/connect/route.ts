@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireUser } from '@/lib/server/api-auth'
+import { requireUser, readJsonBody, MALFORMED_BODY } from '@/lib/server/api-auth'
 import { consumeRateLimits, RATE_LIMITS } from '@/lib/rate-limit'
 import { wolfGetScales } from '@/lib/wolf-waagen-api'
 
@@ -11,7 +11,8 @@ export async function POST(request: NextRequest) {
     const { user, supabaseAdmin } = auth
 
     // Get API token from request body
-    const body = await request.json()
+    const body = await readJsonBody<{ apiToken?: string }>(request)
+    if (!body) return NextResponse.json({ error: MALFORMED_BODY }, { status: 400 })
     const { apiToken } = body
 
     if (!apiToken) {

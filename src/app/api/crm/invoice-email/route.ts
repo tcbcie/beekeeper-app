@@ -160,6 +160,8 @@ export async function POST(request: NextRequest) {
 
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
+      // Resend gets 20 seconds (longer: the e-mail carries the invoice PDF); fetch has no time limit of its own.
+      signal: AbortSignal.timeout(20_000),
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${RESEND_API_KEY}`,

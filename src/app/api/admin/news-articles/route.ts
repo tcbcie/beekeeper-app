@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServiceSupabase, requireAdmin } from '@/lib/server/api-auth'
+import { getServiceSupabase, requireAdmin, readJsonBody, MALFORMED_BODY } from '@/lib/server/api-auth'
 import { generateEmbeddings } from '@/lib/openai'
 import {
   assertSafePublicUrl,
@@ -275,7 +275,8 @@ export async function POST(request: NextRequest) {
   const { userId: adminId } = authResult
 
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
+    if (!body) return NextResponse.json({ error: MALFORMED_BODY }, { status: 400 })
     const { url, autoIngestKB = true } = body as { url: string; autoIngestKB?: boolean }
 
     if (!url) {
@@ -397,7 +398,8 @@ export async function PATCH(request: NextRequest) {
   const { userId: adminId } = authResult
 
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
+    if (!body) return NextResponse.json({ error: MALFORMED_BODY }, { status: 400 })
     const { id, title, description, image_url, site_name, published_date, author, is_published, remove_from_kb } = body as {
       id: string
       title?: string
@@ -429,11 +431,16 @@ export async function PATCH(request: NextRequest) {
       }
 
       if (article.kb_source_id) {
-        // Delete knowledge source (cascades to knowledge_base entries)
-        await supabase
+        // Delete knowledge source (cascades to knowledge_base entries). If it fails, the text
+        // would keep feeding Mel, so stop here rather than unlink it.
+        const { error: kbError } = await supabase
           .from('knowledge_sources')
           .delete()
           .eq('id', article.kb_source_id)
+        if (kbError) {
+          console.error('News article: knowledge source not removed:', kbError.message)
+          return NextResponse.json({ error: 'Failed to remove the article from the knowledge base' }, { status: 500 })
+        }
 
         // Clear kb_source_id on article
         await supabase
@@ -516,12 +523,18 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Article not found' }, { status: 404 })
   }
 
-  // Delete from knowledge base if linked
+  // Delete from knowledge base if linked. If that fails, keep the article: deleting it would
+  // leave its text feeding Mel with nothing in the admin list to remove it by.
   if (article.kb_source_id) {
-    await supabase
+    const { error: kbError } = await supabase
       .from('knowledge_sources')
       .delete()
       .eq('id', article.kb_source_id)
+    if (kbError) {
+      console.warn(`[AUDIT] Admin news article delete: admin=${adminId} article_id=${id} status=failed reason=kb_source timestamp=${new Date().toISOString()}`)
+      console.error('News article: knowledge source not removed:', kbError.message)
+      return NextResponse.json({ error: 'Failed to remove the article from the knowledge base; the article was kept' }, { status: 500 })
+    }
   }
 
   // Delete article

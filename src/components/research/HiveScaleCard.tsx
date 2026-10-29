@@ -118,7 +118,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
 
  if (isBeep && hive.beep_device_id) {
  const response = await fetch(
- `/api/beep/data?deviceId=${hive.beep_device_id}&hiveId=${hive.id}`,
+ `/api/beep/data?deviceId=${encodeURIComponent(hive.beep_device_id)}&hiveId=${hive.id}`,
  { headers: { 'Authorization': `Bearer ${session.access_token}` } }
  )
  if (response.ok) {
@@ -147,7 +147,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  }
  } else if (isWolf && hive.wolf_scale_id) {
  const response = await fetch(
- `/api/wolf-waagen/data?scaleId=${hive.wolf_scale_id}&hiveId=${hive.id}`,
+ `/api/wolf-waagen/data?scaleId=${encodeURIComponent(hive.wolf_scale_id)}&hiveId=${hive.id}`,
  { headers: { 'Authorization': `Bearer ${session.access_token}` } }
  )
  if (response.ok) {

@@ -33,15 +33,11 @@ export async function GET(request: Request) {
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     // The time limit races the request rather than passing an abort signal, which can stop Next.js
-    // caching the response
-    const upstream = await Promise.race([
-      fetch(url, { next: { revalidate: maxAge } }),
+    // caching the response. It races reading the body too, so a slow reply can't hang the route.
+    const data = await Promise.race([
+      fetch(url, { next: { revalidate: maxAge } }).then(upstream => (upstream.ok ? upstream.json() : null)),
       new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('Weather archive timed out')), 15_000) }),
     ])
-    if (!upstream.ok) {
-      return NextResponse.json({ error: 'Weather archive unavailable' }, { status: 502 })
-    }
-    const data = await upstream.json()
     if (!data?.daily?.temperature_2m_max || !data?.daily?.time) {
       return NextResponse.json({ error: 'Weather archive unavailable' }, { status: 502 })
     }

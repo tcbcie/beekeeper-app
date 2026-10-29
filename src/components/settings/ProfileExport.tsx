@@ -39,7 +39,8 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
 
     setExporting(true)
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 120000)
+    // The server may take its full 5 minutes for the complete export (about 110 MB).
+    const timeoutId = setTimeout(() => controller.abort(), 300000)
 
     try {
       // If user is admin, use admin API to export ALL users' data
@@ -86,8 +87,12 @@ export default function ProfileExport({ isAdmin, hasActiveSubscription }: Profil
           throw new Error(errorMessage)
         }
 
-        // Get the SQL content from response
+        // Get the SQL content from response. It arrives in pieces; a file without the closing
+        // line was cut short and must not be saved as if it were complete.
         const sqlContent = await response.text()
+        if (!sqlContent.includes('-- END OF EXPORT')) {
+          throw new Error('The export was cut short. Please try again.')
+        }
         setAdminPassword('')
 
         // Create and download file

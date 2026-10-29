@@ -31,8 +31,8 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       }
 
       const url = hiveId
-        ? `/api/beep/data?deviceId=${deviceId}&hiveId=${hiveId}`
-        : `/api/beep/data?deviceId=${deviceId}`
+        ? `/api/beep/data?deviceId=${encodeURIComponent(deviceId)}&hiveId=${hiveId}`
+        : `/api/beep/data?deviceId=${encodeURIComponent(deviceId)}`
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       })

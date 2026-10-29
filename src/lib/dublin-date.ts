@@ -52,3 +52,19 @@ export function dublinDayStartUtc(isoDate: string): Date {
   const guess = midnightAsUtc - dublinOffsetMs(new Date(midnightAsUtc))
   return new Date(midnightAsUtc - dublinOffsetMs(new Date(guess)))
 }
+
+// A YYYY-MM-DD date that really exists (2026-02-31 is refused, not rolled over to March).
+export function isIsoDate(value: string | null | undefined): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const time = Date.parse(`${value}T00:00:00Z`)
+  return Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === value
+}
+
+// What is wrong with a custom date range sent to an API route, or null when it is fine: both
+// real dates, start not after end, and at most `maxDays` apart (a year by default).
+export function customRangeError(start: string | null, end: string | null, maxDays = 366): string | null {
+  if (!isIsoDate(start) || !isIsoDate(end)) return 'Dates must be real dates written as YYYY-MM-DD'
+  if (start > end) return 'The start date must be on or before the end date'
+  if ((Date.parse(end) - Date.parse(start)) / 86_400_000 > maxDays) return `The range can be at most ${maxDays} days`
+  return null
+}

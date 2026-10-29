@@ -3,8 +3,10 @@ import { getServiceSupabase, requireAdmin } from '@/lib/server/api-auth'
 import { createClient } from '@supabase/supabase-js'
 import { buildInsertSql, DATABASE_EXPORT_TABLES, sqlIdentifier, sqlValue } from '@/lib/database-export'
 import { logAdminAction } from '@/lib/admin-audit'
-import { mapInGroups } from '@/lib/supabase-chunk'
 import { todayInDublin } from '@/lib/dublin-date'
+
+// The complete export reads every table (about 110 MB of SQL): allow Vercel's full 5 minutes.
+export const maxDuration = 300
 
 const PUBLIC_SCHEMA = 'public'
 
@@ -1127,186 +1129,225 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Four tables at a time (one database under export load); the SQL keeps the table order.
-    const tableExports = await mapInGroups(tables, exportTable, 4)
-    tables.forEach((table, index) => {
-      const { count, sql, error } = tableExports[index]
-      exportResults[table] = count
-      if (error) exportErrors[table] = error
-      sqlContent += sql
-    })
+    // The header is complete: it goes first, then each table's SQL as it is built, then the footer.
+    const header = sqlContent
 
-    sqlContent += `\n-- Best effort: re-enable triggers after data load\n`
-    sqlContent += buildTriggerToggleBlock(tables, 'ENABLE')
-    sqlContent += `\nCOMMIT;\n`
+    // Everything after the data. Built once every table has been sent, because it lists their counts.
+    const buildFooter = (): string => {
+      let sqlContent = ''
+      sqlContent += `\n-- Best effort: re-enable triggers after data load\n`
+      sqlContent += buildTriggerToggleBlock(tables, 'ENABLE')
+      sqlContent += `\nCOMMIT;\n`
 
-    sqlContent += `\n-- =====================================================\n`
-    sqlContent += `-- POST-DATA FOREIGN KEYS\n`
-    sqlContent += `-- =====================================================\n`
-    for (const constraint of foreignKeyConstraints) {
-      const isAuthUsersDependency = constraint.ref_schema === 'auth' && constraint.ref_table === 'users'
-      sqlContent += buildAddConstraintBlock(
-        constraint.table_name,
-        constraint.constraint_name,
-        constraint.constraint_def,
-        isAuthUsersDependency ? constraint.ref_schema : null,
-        isAuthUsersDependency ? constraint.ref_table : null
-      )
-    }
-    sqlContent += '\n'
-
-    if (filteredFunctionMetadata.length > 0) {
+      sqlContent += `\n-- =====================================================\n`
+      sqlContent += `-- POST-DATA FOREIGN KEYS\n`
       sqlContent += `-- =====================================================\n`
-      sqlContent += `-- POST-DATA FUNCTIONS (PUBLIC)\n`
-      sqlContent += `-- =====================================================\n`
-      for (const fn of filteredFunctionMetadata) {
-        sqlContent += buildCreateFunctionStatement(fn.function_def)
-        sqlContent += '\n'
-      }
-    }
-
-    if (viewMetadata.length > 0) {
-      sqlContent += `-- =====================================================\n`
-      sqlContent += `-- POST-DATA VIEWS (PUBLIC)\n`
-      sqlContent += `-- =====================================================\n`
-      for (const view of viewMetadata) {
-        const viewDef = view.view_definition?.trim()
-        if (viewDef) {
-          sqlContent += `CREATE OR REPLACE VIEW ${sqlIdentifier(PUBLIC_SCHEMA)}.${sqlIdentifier(view.view_name)} AS\n${viewDef}\n\n`
-        }
-      }
-    }
-
-    if (filteredPolicyMetadata.length > 0 || filteredRlsTableMetadata.length > 0) {
-      sqlContent += `-- =====================================================\n`
-      sqlContent += `-- POST-DATA ROW LEVEL SECURITY\n`
-      sqlContent += `-- =====================================================\n`
-
-      if (filteredPolicyMetadata.length > 0) {
-        sqlContent += `-- Policies\n`
-        for (const policy of filteredPolicyMetadata) {
-          sqlContent += buildCreatePolicyBlock(policy)
-        }
-        sqlContent += '\n'
-      }
-
-      if (filteredRlsTableMetadata.length > 0) {
-        sqlContent += `-- Table RLS state\n`
-        for (const tableRls of filteredRlsTableMetadata) {
-          sqlContent += buildTableRlsStateBlock(
-            tableRls.table_name,
-            toBoolean(tableRls.rls_enabled),
-            toBoolean(tableRls.rls_forced)
-          )
-        }
-        sqlContent += '\n'
-      }
-    }
-
-    sqlContent += `-- =====================================================\n`
-    sqlContent += `-- STORAGE BUCKETS AND POLICIES\n`
-    sqlContent += `-- =====================================================\n`
-
-    if (storageBucketsExportError) {
-      sqlContent += `-- Skipping storage buckets due to source query error: ${storageBucketsExportError.replace(/\n/g, ' ')}\n\n`
-    } else if (storageBuckets.length > 0) {
-      sqlContent += `DO $$\nBEGIN\n  IF to_regclass('storage.buckets') IS NULL THEN\n    RAISE NOTICE 'Skipping storage bucket setup because storage.buckets is unavailable in target';\n  ELSE\n`
-      for (const bucket of storageBuckets) {
-        const mimeTypesValue = Array.isArray(bucket.allowed_mime_types)
-          ? `{${bucket.allowed_mime_types.map((m: string) => `"${m}"`).join(',')}}`
-          : null
-        const bucketRow: Record<string, unknown> = {
-          id: bucket.id,
-          name: bucket.name,
-          public: toBoolean(bucket.is_public),
-          file_size_limit: bucket.file_size_limit,
-          allowed_mime_types: mimeTypesValue,
-          avif_autodetection: toBoolean(bucket.avif_autodetection),
-        }
-        const insertSql = buildInsertOnConflictDoNothingSql('storage', 'buckets', bucketRow, ['id'])
-        sqlContent += `    EXECUTE '${escapeSqlLiteral(insertSql)}';\n`
-      }
-      sqlContent += `  END IF;\nEND $$;\n\n`
-    } else {
-      sqlContent += `-- No storage buckets found in source export\n\n`
-    }
-
-    if (storagePoliciesExportError) {
-      sqlContent += `-- Skipping storage policies due to source query error: ${storagePoliciesExportError.replace(/\n/g, ' ')}\n\n`
-    } else if (storagePolicies.length > 0) {
-      sqlContent += `DO $$\nBEGIN\n  IF to_regclass('storage.objects') IS NULL THEN\n    RAISE NOTICE 'Skipping storage policies because storage.objects is unavailable in target';\n  ELSE\n`
-      for (const policy of storagePolicies) {
-        const policyMode = toBoolean(policy.policy_permissive) ? 'PERMISSIVE' : 'RESTRICTIVE'
-        const policyCommand = mapPolicyCommand(policy.policy_command_key)
-        const rolesClause = policy.policy_roles?.trim() ? ` TO ${policy.policy_roles.trim()}` : ''
-        const usingClause = policy.using_expr?.trim() ? ` USING (${policy.using_expr.trim()})` : ''
-        const withCheckClause = policy.with_check_expr?.trim() ? ` WITH CHECK (${policy.with_check_expr.trim()})` : ''
-
-        const createSql = `CREATE POLICY ${sqlIdentifier(policy.policy_name)} ON storage.${sqlIdentifier(policy.table_name)} AS ${policyMode} FOR ${policyCommand}${rolesClause}${usingClause}${withCheckClause};`
-        const existsSql = `SELECT 1 FROM pg_policy pol JOIN pg_class tbl ON tbl.oid = pol.polrelid JOIN pg_namespace ns ON ns.oid = tbl.relnamespace WHERE ns.nspname = 'storage' AND tbl.relname = '${escapeSqlLiteral(policy.table_name)}' AND pol.polname = '${escapeSqlLiteral(policy.policy_name)}'`
-
-        sqlContent += `    IF NOT EXISTS (${existsSql}) THEN\n`
-        sqlContent += `      EXECUTE '${escapeSqlLiteral(createSql)}';\n`
-        sqlContent += `    END IF;\n`
-      }
-      sqlContent += `  END IF;\nEND $$;\n\n`
-    } else {
-      sqlContent += `-- No storage policies found in source export\n\n`
-    }
-
-    if (filteredSequenceMetadata.length > 0) {
-      sqlContent += `-- =====================================================\n`
-      sqlContent += `-- SEQUENCE ALIGNMENT\n`
-      sqlContent += `-- =====================================================\n`
-      const seenSequenceResets = new Set<string>()
-      for (const sequence of filteredSequenceMetadata) {
-        const key = `${sequence.sequence_schema}.${sequence.sequence_name}`
-        if (seenSequenceResets.has(key)) {
-          continue
-        }
-        seenSequenceResets.add(key)
-        sqlContent += buildSequenceResetStatement(sequence)
+      for (const constraint of foreignKeyConstraints) {
+        const isAuthUsersDependency = constraint.ref_schema === 'auth' && constraint.ref_table === 'users'
+        sqlContent += buildAddConstraintBlock(
+          constraint.table_name,
+          constraint.constraint_name,
+          constraint.constraint_def,
+          isAuthUsersDependency ? constraint.ref_schema : null,
+          isAuthUsersDependency ? constraint.ref_table : null
+        )
       }
       sqlContent += '\n'
-    }
 
-    sqlContent += `-- =====================================================\n`
-    sqlContent += `-- EXPORT SUMMARY\n`
-    sqlContent += `-- =====================================================\n`
-    sqlContent += `-- Mode: ${exportMode}\n`
-    sqlContent += `-- Sign-in secrets: ${includeSecrets ? 'included' : 'excluded (users must reset passwords and reconnect scales after a restore)'}\n`
-    sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}, functions=${filteredFunctionMetadata.length}, views=${viewMetadata.length}, rls_tables=${filteredRlsTableMetadata.length}, rls_policies=${filteredPolicyMetadata.length}, storage_buckets=${storageBuckets.length}, storage_policies=${storagePolicies.length}\n`
-    sqlContent += `-- auth.users rows exported: ${authUsers.length}\n`
-    if (authUsersExportError) {
-      sqlContent += `-- auth.users export error: ${authUsersExportError.replace(/\n/g, ' ')}\n`
-    }
-    sqlContent += `-- auth.identities rows exported: ${authIdentities.length}\n`
-    if (authIdentitiesExportError) {
-      sqlContent += `-- auth.identities export error: ${authIdentitiesExportError.replace(/\n/g, ' ')}\n`
-    }
-    sqlContent += `-- Total tables: ${tables.length}\n`
-    for (const [table, count] of Object.entries(exportResults)) {
-      sqlContent += `-- ${table}: ${count} records\n`
-    }
-    if (Object.keys(exportErrors).length > 0) {
-      sqlContent += `-- -----------------------------------------------------\n`
-      sqlContent += `-- TABLES WITH EXPORT ERRORS\n`
-      sqlContent += `-- -----------------------------------------------------\n`
-      for (const [table, message] of Object.entries(exportErrors)) {
-        sqlContent += `-- ${table}: ${message.replace(/\n/g, ' ')}\n`
+      if (filteredFunctionMetadata.length > 0) {
+        sqlContent += `-- =====================================================\n`
+        sqlContent += `-- POST-DATA FUNCTIONS (PUBLIC)\n`
+        sqlContent += `-- =====================================================\n`
+        for (const fn of filteredFunctionMetadata) {
+          sqlContent += buildCreateFunctionStatement(fn.function_def)
+          sqlContent += '\n'
+        }
       }
+
+      if (viewMetadata.length > 0) {
+        sqlContent += `-- =====================================================\n`
+        sqlContent += `-- POST-DATA VIEWS (PUBLIC)\n`
+        sqlContent += `-- =====================================================\n`
+        for (const view of viewMetadata) {
+          const viewDef = view.view_definition?.trim()
+          if (viewDef) {
+            sqlContent += `CREATE OR REPLACE VIEW ${sqlIdentifier(PUBLIC_SCHEMA)}.${sqlIdentifier(view.view_name)} AS\n${viewDef}\n\n`
+          }
+        }
+      }
+
+      if (filteredPolicyMetadata.length > 0 || filteredRlsTableMetadata.length > 0) {
+        sqlContent += `-- =====================================================\n`
+        sqlContent += `-- POST-DATA ROW LEVEL SECURITY\n`
+        sqlContent += `-- =====================================================\n`
+
+        if (filteredPolicyMetadata.length > 0) {
+          sqlContent += `-- Policies\n`
+          for (const policy of filteredPolicyMetadata) {
+            sqlContent += buildCreatePolicyBlock(policy)
+          }
+          sqlContent += '\n'
+        }
+
+        if (filteredRlsTableMetadata.length > 0) {
+          sqlContent += `-- Table RLS state\n`
+          for (const tableRls of filteredRlsTableMetadata) {
+            sqlContent += buildTableRlsStateBlock(
+              tableRls.table_name,
+              toBoolean(tableRls.rls_enabled),
+              toBoolean(tableRls.rls_forced)
+            )
+          }
+          sqlContent += '\n'
+        }
+      }
+
+      sqlContent += `-- =====================================================\n`
+      sqlContent += `-- STORAGE BUCKETS AND POLICIES\n`
+      sqlContent += `-- =====================================================\n`
+
+      if (storageBucketsExportError) {
+        sqlContent += `-- Skipping storage buckets due to source query error: ${storageBucketsExportError.replace(/\n/g, ' ')}\n\n`
+      } else if (storageBuckets.length > 0) {
+        sqlContent += `DO $$\nBEGIN\n  IF to_regclass('storage.buckets') IS NULL THEN\n    RAISE NOTICE 'Skipping storage bucket setup because storage.buckets is unavailable in target';\n  ELSE\n`
+        for (const bucket of storageBuckets) {
+          const mimeTypesValue = Array.isArray(bucket.allowed_mime_types)
+            ? `{${bucket.allowed_mime_types.map((m: string) => `"${m}"`).join(',')}}`
+            : null
+          const bucketRow: Record<string, unknown> = {
+            id: bucket.id,
+            name: bucket.name,
+            public: toBoolean(bucket.is_public),
+            file_size_limit: bucket.file_size_limit,
+            allowed_mime_types: mimeTypesValue,
+            avif_autodetection: toBoolean(bucket.avif_autodetection),
+          }
+          const insertSql = buildInsertOnConflictDoNothingSql('storage', 'buckets', bucketRow, ['id'])
+          sqlContent += `    EXECUTE '${escapeSqlLiteral(insertSql)}';\n`
+        }
+        sqlContent += `  END IF;\nEND $$;\n\n`
+      } else {
+        sqlContent += `-- No storage buckets found in source export\n\n`
+      }
+
+      if (storagePoliciesExportError) {
+        sqlContent += `-- Skipping storage policies due to source query error: ${storagePoliciesExportError.replace(/\n/g, ' ')}\n\n`
+      } else if (storagePolicies.length > 0) {
+        sqlContent += `DO $$\nBEGIN\n  IF to_regclass('storage.objects') IS NULL THEN\n    RAISE NOTICE 'Skipping storage policies because storage.objects is unavailable in target';\n  ELSE\n`
+        for (const policy of storagePolicies) {
+          const policyMode = toBoolean(policy.policy_permissive) ? 'PERMISSIVE' : 'RESTRICTIVE'
+          const policyCommand = mapPolicyCommand(policy.policy_command_key)
+          const rolesClause = policy.policy_roles?.trim() ? ` TO ${policy.policy_roles.trim()}` : ''
+          const usingClause = policy.using_expr?.trim() ? ` USING (${policy.using_expr.trim()})` : ''
+          const withCheckClause = policy.with_check_expr?.trim() ? ` WITH CHECK (${policy.with_check_expr.trim()})` : ''
+
+          const createSql = `CREATE POLICY ${sqlIdentifier(policy.policy_name)} ON storage.${sqlIdentifier(policy.table_name)} AS ${policyMode} FOR ${policyCommand}${rolesClause}${usingClause}${withCheckClause};`
+          const existsSql = `SELECT 1 FROM pg_policy pol JOIN pg_class tbl ON tbl.oid = pol.polrelid JOIN pg_namespace ns ON ns.oid = tbl.relnamespace WHERE ns.nspname = 'storage' AND tbl.relname = '${escapeSqlLiteral(policy.table_name)}' AND pol.polname = '${escapeSqlLiteral(policy.policy_name)}'`
+
+          sqlContent += `    IF NOT EXISTS (${existsSql}) THEN\n`
+          sqlContent += `      EXECUTE '${escapeSqlLiteral(createSql)}';\n`
+          sqlContent += `    END IF;\n`
+        }
+        sqlContent += `  END IF;\nEND $$;\n\n`
+      } else {
+        sqlContent += `-- No storage policies found in source export\n\n`
+      }
+
+      if (filteredSequenceMetadata.length > 0) {
+        sqlContent += `-- =====================================================\n`
+        sqlContent += `-- SEQUENCE ALIGNMENT\n`
+        sqlContent += `-- =====================================================\n`
+        const seenSequenceResets = new Set<string>()
+        for (const sequence of filteredSequenceMetadata) {
+          const key = `${sequence.sequence_schema}.${sequence.sequence_name}`
+          if (seenSequenceResets.has(key)) {
+            continue
+          }
+          seenSequenceResets.add(key)
+          sqlContent += buildSequenceResetStatement(sequence)
+        }
+        sqlContent += '\n'
+      }
+
+      sqlContent += `-- =====================================================\n`
+      sqlContent += `-- EXPORT SUMMARY\n`
+      sqlContent += `-- =====================================================\n`
+      sqlContent += `-- Mode: ${exportMode}\n`
+      sqlContent += `-- Sign-in secrets: ${includeSecrets ? 'included' : 'excluded (users must reset passwords and reconnect scales after a restore)'}\n`
+      sqlContent += `-- Metadata: columns=${filteredColumnMetadata.length}, constraints=${filteredConstraintMetadata.length}, indexes=${filteredIndexMetadata.length}, sequences=${filteredSequenceMetadata.length}, enum_rows=${filteredEnumMetadata.length}, functions=${filteredFunctionMetadata.length}, views=${viewMetadata.length}, rls_tables=${filteredRlsTableMetadata.length}, rls_policies=${filteredPolicyMetadata.length}, storage_buckets=${storageBuckets.length}, storage_policies=${storagePolicies.length}\n`
+      sqlContent += `-- auth.users rows exported: ${authUsers.length}\n`
+      if (authUsersExportError) {
+        sqlContent += `-- auth.users export error: ${authUsersExportError.replace(/\n/g, ' ')}\n`
+      }
+      sqlContent += `-- auth.identities rows exported: ${authIdentities.length}\n`
+      if (authIdentitiesExportError) {
+        sqlContent += `-- auth.identities export error: ${authIdentitiesExportError.replace(/\n/g, ' ')}\n`
+      }
+      sqlContent += `-- Total tables: ${tables.length}\n`
+      for (const [table, count] of Object.entries(exportResults)) {
+        sqlContent += `-- ${table}: ${count} records\n`
+      }
+      if (Object.keys(exportErrors).length > 0) {
+        sqlContent += `-- -----------------------------------------------------\n`
+        sqlContent += `-- TABLES WITH EXPORT ERRORS\n`
+        sqlContent += `-- -----------------------------------------------------\n`
+        for (const [table, message] of Object.entries(exportErrors)) {
+          sqlContent += `-- ${table}: ${message.replace(/\n/g, ' ')}\n`
+        }
+      }
+      sqlContent += `-- =====================================================\n`
+      sqlContent += `-- END OF EXPORT\n`
+      sqlContent += `-- =====================================================\n`
+      return sqlContent
     }
-    sqlContent += `-- =====================================================\n`
-    sqlContent += `-- END OF EXPORT\n`
-    sqlContent += `-- =====================================================\n`
 
-    console.warn(`[AUDIT] Admin data export: admin=${user.id} mode=${exportMode} tables=${tables.length} status=success timestamp=${new Date().toISOString()}`)
+    // Sent piece by piece instead of as one string: the complete export is about 110 MB (the
+    // knowledge base's embeddings), far over the 4.5 MB a function may return in one go. Four
+    // tables are exported at a time, in table order, and pull() only builds the next piece once
+    // the browser has taken the last one.
+    async function* exportParts(): AsyncGenerator<string> {
+      yield header
+      for (let index = 0; index < tables.length; index += 4) {
+        const group = tables.slice(index, index + 4)
+        const results = await Promise.all(group.map(exportTable))
+        for (let k = 0; k < group.length; k++) {
+          const { count, sql, error } = results[k]
+          exportResults[group[k]] = count
+          if (error) exportErrors[group[k]] = error
+          if (sql) yield sql
+        }
+      }
+      yield buildFooter()
+      console.warn(`[AUDIT] Admin data export: admin=${user.id} mode=${exportMode} tables=${tables.length} status=success timestamp=${new Date().toISOString()}`)
+    }
 
-    // Return the SQL content with appropriate headers
+    const parts = exportParts()
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        try {
+          const { value, done } = await parts.next()
+          if (done) controller.close()
+          else controller.enqueue(encoder.encode(value))
+        } catch (streamError) {
+          // The 200 is already sent: end the file with a marker. The browser checks for the
+          // END OF EXPORT line, so a cut-short file is reported, not saved as if complete.
+          console.error('Error in admin export while streaming:', streamError)
+          console.warn(`[AUDIT] Admin data export: admin=${user.id} mode=${exportMode} status=failed timestamp=${new Date().toISOString()}`)
+          controller.enqueue(encoder.encode('\n-- EXPORT FAILED: this file is incomplete\n'))
+          controller.close()
+        }
+      },
+      cancel() {
+        // The browser went away: stop reading tables.
+        void parts.return(undefined)
+      },
+    })
+
     const filePrefix = isSchemaAdminOnlyExport
       ? 'hivecraic-empty-schema-admin-export'
       : 'hivecraic-complete-export'
-    return new NextResponse(sqlContent, {
+    return new NextResponse(stream, {
       status: 200,
       headers: {
         'Content-Type': 'text/plain',

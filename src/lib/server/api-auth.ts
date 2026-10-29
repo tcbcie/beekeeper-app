@@ -30,6 +30,20 @@ export function getServiceSupabase(): SupabaseClient {
   return serviceClient
 }
 
+// The JSON object a route was sent, or null when the body is missing, malformed or not an
+// object, so the route answers 400 instead of a garbled body becoming a 500. The type is what
+// the route expects; check the fields themselves as before.
+export async function readJsonBody<T extends object = Record<string, unknown>>(request: Request): Promise<T | null> {
+  try {
+    const body: unknown = await request.json()
+    return body && typeof body === 'object' && !Array.isArray(body) ? body as T : null
+  } catch {
+    return null
+  }
+}
+
+export const MALFORMED_BODY = 'Malformed request body'
+
 export type AuthResult =
   // `token` is the caller's access token, for routes that act as the user (e.g. Mel's tools under RLS).
   | { user: User; supabaseAdmin: SupabaseClient; token: string }

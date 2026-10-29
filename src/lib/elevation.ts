@@ -60,14 +60,11 @@ export async function fetchElevationBatch(
     const lngs = chunk.map(p => p.longitude).join(',')
 
     try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS)
-
+      // The time limit stays armed while the body is read below.
       const response = await fetch(
         `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lngs}`,
-        { signal: controller.signal }
+        { signal: AbortSignal.timeout(TIMEOUT_MS) }
       )
-      clearTimeout(timeoutId)
 
       if (!response.ok) continue
 

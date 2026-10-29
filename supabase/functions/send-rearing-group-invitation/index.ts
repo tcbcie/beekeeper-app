@@ -226,6 +226,8 @@ If you have any questions, please contact ${inviterEmail}.
 
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
+      // Resend gets 10 seconds; fetch has no time limit of its own.
+      signal: AbortSignal.timeout(10_000),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${RESEND_API_KEY}`,

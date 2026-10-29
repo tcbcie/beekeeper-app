@@ -12,7 +12,7 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: vi.fn(() => ({ auth: { getUser: mockGetUser }, from: mockFrom })),
 }))
 
-import { requireUser, requireAdmin } from '@/lib/server/api-auth'
+import { requireUser, requireAdmin, readJsonBody } from '@/lib/server/api-auth'
 
 const USER = { id: 'user-1', email: 'user@example.com' }
 
@@ -102,5 +102,21 @@ describe('requireAdmin', () => {
     profile({ role: 'Admin', is_active: true })
     const result = await requireAdmin(request('Bearer good-token'))
     expect('response' in result).toBe(false)
+  })
+})
+
+// A garbled body must give the route a 400, not throw into its 500 path (C2-14).
+describe('readJsonBody', () => {
+  const post = (body: string) => new Request('http://localhost/api/test', { method: 'POST', body })
+
+  it('returns the JSON object', async () => {
+    expect(await readJsonBody(post('{"a":1}'))).toEqual({ a: 1 })
+  })
+
+  it('returns null for malformed JSON, an empty body, null or an array', async () => {
+    expect(await readJsonBody(post('{not json'))).toBeNull()
+    expect(await readJsonBody(post(''))).toBeNull()
+    expect(await readJsonBody(post('null'))).toBeNull()
+    expect(await readJsonBody(post('[1,2]'))).toBeNull()
   })
 })

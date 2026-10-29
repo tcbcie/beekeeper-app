@@ -94,7 +94,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
         return
       }
 
-      let url = `/api/wolf-waagen/data?scaleId=${scaleId}&period=${period}`
+      let url = `/api/wolf-waagen/data?scaleId=${encodeURIComponent(scaleId)}&period=${period}`
       if (hiveId) {
         url += `&hiveId=${hiveId}`
       }

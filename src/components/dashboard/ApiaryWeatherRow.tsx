@@ -348,8 +348,8 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
         apiary.scales.map(async scale => {
           try {
             const endpoint = scale.type === 'beep'
-              ? `/api/beep/data?deviceId=${scale.deviceId}&hiveId=${scale.hiveId}`
-              : `/api/wolf-waagen/data?scaleId=${scale.deviceId}&hiveId=${scale.hiveId}`
+              ? `/api/beep/data?deviceId=${encodeURIComponent(scale.deviceId)}&hiveId=${scale.hiveId}`
+              : `/api/wolf-waagen/data?scaleId=${encodeURIComponent(scale.deviceId)}&hiveId=${scale.hiveId}`
             const res = await fetch(endpoint, {
               headers: { Authorization: `Bearer ${session.access_token}` },
             })

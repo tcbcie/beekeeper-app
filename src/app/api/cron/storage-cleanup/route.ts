@@ -1,22 +1,13 @@
 import { timingSafeEqual } from 'crypto'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getServiceSupabase } from '@/lib/server/api-auth'
 
 import { canonicalStoragePublicUrl, storagePathFromPublicUrl } from '@/lib/storage-url'
 
-// Fail-fast at module init so a missing env surfaces at deploy time.
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error(
-    'storage-cleanup: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.'
-  )
-}
-
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false }
-})
+// The one shared secret-key client (it throws at module init if the env is missing, so a
+// missing key still surfaces at deploy time). The cron secret below is this route's own check.
+const supabaseAdmin = getServiceSupabase()
 
 /**
  * Photos wait this long before being removed for good, so a delete made by

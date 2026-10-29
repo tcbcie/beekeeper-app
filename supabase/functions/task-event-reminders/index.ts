@@ -6,6 +6,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { addDaysISO, dublinDate, dublinLocalToInstant, formatDateIrish } from '../_shared/dublin-time.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
+// Links in the e-mail go to the app, not the Supabase server (as in the invitation e-mails)
+const APP_URL = 'https://www.hivecraic.com'
 // New sb_secret_ key (SUPABASE_SECRET_KEYS is a JSON object keyed by key name), with the
 // legacy service_role key as a fallback until the legacy keys are deactivated.
 function readSecretKey(): string | undefined {
@@ -260,7 +262,7 @@ function generateEmailHTML(userName: string, reminders: ReminderItem[], frequenc
           <p>You're receiving this email because you enabled ${frequency} email reminders for tasks and events.</p>
           <p>
             To manage your notification preferences, visit
-            <a href="${SUPABASE_URL}/dashboard/profile" style="color: #2563eb; text-decoration: none;">your profile settings</a>.
+            <a href="${APP_URL}/dashboard/profile" style="color: #2563eb; text-decoration: none;">your profile settings</a>.
           </p>
         </div>
       </div>
@@ -381,6 +383,8 @@ serve(async (req) => {
         try {
           const resendResponse = await fetch('https://api.resend.com/emails', {
             method: 'POST',
+            // Resend gets 10 seconds (one stuck send would hold up every reminder after it); fetch has no time limit of its own.
+            signal: AbortSignal.timeout(10_000),
             headers: {
               'Authorization': `Bearer ${RESEND_API_KEY}`,
               'Content-Type': 'application/json',

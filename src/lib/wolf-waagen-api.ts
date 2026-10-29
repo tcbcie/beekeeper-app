@@ -102,7 +102,8 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 /**
  * Fetch with retry logic for rate limiting (429 errors). Each attempt has a
- * hard per-attempt timeout via AbortController; a hang aborts immediately
+ * hard per-attempt timeout via AbortSignal.timeout, which also covers the
+ * caller reading the body; a hang aborts immediately
  * rather than waiting up to the function-level deadline. The exponential
  * backoff between attempts only kicks in for 429s, not timeouts -- a hung
  * upstream is fail-fast.
@@ -113,14 +114,7 @@ async function fetchWithRetry(
   maxRetries: number = 3
 ): Promise<Response> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), WOLF_FETCH_TIMEOUT_MS)
-    let response: Response
-    try {
-      response = await fetch(url, { ...options, signal: controller.signal })
-    } finally {
-      clearTimeout(timeoutId)
-    }
+    const response = await fetch(url, { ...options, signal: AbortSignal.timeout(WOLF_FETCH_TIMEOUT_MS) })
 
     if (response.status === 429 && attempt < maxRetries) {
       // Rate limited - wait and retry with exponential backoff

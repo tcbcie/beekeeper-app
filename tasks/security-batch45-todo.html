@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 45: API Routes</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    .decide { background: #fff7ed; border-left: 4px solid #ea580c; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 45: API Routes</h1>
+<p><strong>Status:</strong> Implemented 29/10/2026, waiting for your test. This is Phase 2 fix batch 32. It covers the open findings in chunk 2 (API routes and e-mail functions): C2-05 to C2-09, C2-11 to C2-14, C2-16, C2-17 and C2-30. Three agents checked each finding against the code and the live database (counts only). Two e-mail functions need redeploying; no table changes.</p>
+
+<h2>A. Scales: C2-05 to C2-08</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C2-05, Wolf's "previous 24 hours" is always blank:</strong> it asks Wolf for one reading per day over exactly one day, so it never gets the two readings it needs. Also, the "last 24 hours" figure is really the last hour's change. One hourly fetch covering the last 48 hours now gives both figures properly.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C2-06 / C2-07, too many calls to BEEP and Wolf:</strong> opening a BEEP hive's scale makes 15 calls to BEEP, and each period change makes 8 more. A Wolf hive makes 9 calls one after another. The history chart only needs the history, but it gets the full summary too.
+  <ul>
+    <li>When a chart asks for a period, the route now returns just the history.</li>
+    <li>BEEP: 15 calls go down to 8 on opening, and 1 per period change.</li>
+    <li>Wolf chart: 9 calls go down to 1.</li>
+    <li>No screen changes are needed.</li>
+  </ul>
+  Merging the summary calls further belongs in the performance batch, after a check that BEEP doesn't thin out 60 days of data.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C2-08, custom dates aren't checked on the server:</strong> a mistyped date gives a server error, but only after 7 or 8 calls to the scale maker. A back-to-front range gives an empty chart. Ten years asks for about 87,600 hourly readings. The route now refuses a bad date, a back-to-front range or more than a year with a clear message, before calling anyone. Wolf ranges over a month use daily readings.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C2-09, time limit:</strong> Vercel now gives every route 5 minutes, so only the Wolf route needs its own cap. It makes calls one after another with retries, so a hanging Wolf server could keep it running (and billing) for the full 5 minutes. The cap is 90 seconds.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Small:</strong> scale IDs are encoded in the browser's request address.</div>
+
+<h2>B. Calls that can hang: C2-12, C2-13</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>E-mails have no time limit:</strong> all 7 places that send e-mail through Resend wait for ever. The task reminders and the weekly digest send one e-mail at a time, so one stuck e-mail stops everyone after it from getting theirs. Each send now gives up after 10 seconds (20 for the invoice with its PDF).</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>The clock stops too early:</strong> for BEEP, Wolf, the batch elevation lookup and the GDD embed's weather call, the time limit stops once the reply starts arriving, so a reply that trickles in slowly can hang. The time limit now covers reading the whole reply.</div>
+
+<h2>C. Bad requests: C2-14</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>A garbled request gets "server error":</strong> 7 routes answer it with a 500, and the BEEP connect route says "Check your email and password". These are impersonation, the knowledge base (2), news (2), user role and Wolf connect. One shared helper now answers "Malformed request body" (400).</div>
+
+<h2>D. Shared database client: C2-16</h2>
+<div class="task"><input type="checkbox" checked disabled> Mel's knowledge and news searches build a new admin database client on every call. The storage clean-up job and the Stripe webhook each build their own. All three now use the shared one, as the batch 20 rule says.</div>
+
+<h2>E. The complete export: C2-11</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>It can't work today:</strong> the admin "complete" export builds the whole file in memory and sends it in one go. Mel's knowledge base alone is about 103 MB as text, so the file is about 110 MB. Vercel refuses replies over 4.5 MB sent in one go. The admin log shows it has never been run since logging started, which is why nobody noticed. The "empty schema + admin" export is small and works.</div>
+<div class="decide"><strong>Decision 1: the complete export.</strong> <strong>Done: streamed</strong> (you approved). The file is sent table by table as it's built. Please run it once to confirm Vercel lets it through; if it doesn't, the fallback is to remove the "complete" option.</div>
+
+<h2>F. Knowledge base: C2-17</h2>
+<div class="task"><input type="checkbox" checked disabled> The database already deletes a source's chunks with it, and today there are 0 orphans. Three gaps remain:
+  <ul>
+    <li>The chunk count after an upload ignores errors. One source shows 0 chunks but has 19.</li>
+    <li>Deleting a single chunk never lowers the count.</li>
+    <li>If deleting a news article's knowledge source fails, the article is deleted anyway and its text still feeds Mel.</li>
+  </ul>
+  Each is checked or recounted now, and the article stays if its source can't be removed.</div>
+<div class="decide"><strong>Decision 2: one data fix.</strong> Set the chunk count of the one source that says 0 but has 19 chunks (added on 30/12/2025 by the local upload script). It's a single update to one row. <strong>Done</strong> (you approved): exactly one row changed, now 19. The upload script already checked its error, so it needed no change.</div>
+
+<h2>G. E-mail links: C2-30</h2>
+<div class="task"><input type="checkbox" checked disabled> The "change your settings" links in the task reminder e-mail and the weekly digest point at the Supabase server, not HiveCraic, so they lead nowhere. They now go to <code>https://www.hivecraic.com/dashboard/profile</code> and <code>/dashboard/batches</code>, as the invitation e-mails already do. Both functions get redeployed.</div>
+<div class="note">I also confirmed that the security fix from batch 13 (C2-31) is in place: every e-mail escapes the user's own text, including the deployed digest.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; short tests for the date check and the request-body helper; the qa-engineer audit; <code>get_advisors</code> after the function redeploys.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/api-routes-batch45-plan.md</code>, the scale docs, the Phase 2 register and memory.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>Open a Wolf hive's scale panel. The "previous 24 h" figure now shows, and changing the period is quick.</li>
+    <li>Open a BEEP hive's scale chart and change the period. It loads as before.</li>
+    <li>Settings, admin export: run the complete export once and check the file downloads (about 110 MB).</li>
+    <li>Next task reminder e-mail: the settings link opens your HiveCraic profile.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Wolf “previous 24 h”</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Always blank; “last 24 h” was the last hour</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Both from one hourly 48-hour series</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">BEEP scale opened</td><td style="border:1px solid #e7d9b8;padding:0.4rem">15 calls to BEEP; 8 per period change</td><td style="border:1px solid #e7d9b8;padding:0.4rem">8 on opening; 1 per period change</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Wolf chart</td><td style="border:1px solid #e7d9b8;padding:0.4rem">9 calls one after another</td><td style="border:1px solid #e7d9b8;padding:0.4rem">1 call</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Bad custom dates</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Server error after 7–8 vendor calls; 10 years allowed</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Clear message first; at most a year</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Wolf route time limit</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Up to 5 minutes</td><td style="border:1px solid #e7d9b8;padding:0.4rem">90 seconds</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">E-mail sends</td><td style="border:1px solid #e7d9b8;padding:0.4rem">No time limit; one stuck send held up the rest</td><td style="border:1px solid #e7d9b8;padding:0.4rem">10 s (invoice 20 s); 5 functions redeployed</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Outside calls</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Clock stopped before the reply was read</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Covers reading the whole reply</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Garbled request</td><td style="border:1px solid #e7d9b8;padding:0.4rem">500 “server error” on 8 routes</td><td style="border:1px solid #e7d9b8;padding:0.4rem">400 “Malformed request body”</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Admin database client</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Built per call in Mel; two extra copies</td><td style="border:1px solid #e7d9b8;padding:0.4rem">One shared client</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Complete export</td><td style="border:1px solid #e7d9b8;padding:0.4rem">~110 MB in one reply: could never work</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Sent in pieces; cut-short files refused</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Knowledge base</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Counts unchecked; article deleted while its text fed Mel</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Checked, recounted; article kept on failure</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">E-mail settings links</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Pointed at the Supabase server</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Point at hivecraic.com</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0 (outside the new design skill folder); 869 tests pass (6 new); security advisors unchanged (14/72)</td></tr>
+</table>
+<ul>
+  <li><strong>Redeployed:</strong> <code>task-event-reminders</code> (v16), <code>weekly-email-digest</code> (v18), <code>notify-admin-new-user</code> (v11), <code>send-team-invitation</code> (v17), <code>send-rearing-group-invitation</code> (v11). The deployed reminder function was compared with the repo before deploying, and matched.</li>
+  <li><strong>Tests:</strong> <code>tests/lib/dublin-date-range.test.ts</code> (real dates, impossible dates, back-to-front, over a year) and two <code>readJsonBody</code> cases in <code>tests/lib/api-auth.test.ts</code>.</li>
+  <li><strong>QA audit:</strong> no Critical, High or Medium issues. Checked:
+    <ul>
+      <li>The export stream: the header, then each table, then the footer with the counts.</li>
+      <li>The Wolf split: an unreadable time gives a blank figure, not a wrong one.</li>
+      <li>The weather race: a reply that loses the race can't cause an unhandled error.</li>
+    </ul>
+  </li>
+  <li><strong>Also:</strong> the export page now waits up to 5 minutes, which matches the server.</li>
+  <li><strong>Noted for the performance batch:</strong> merging the scale summary calls (Wolf 8 → 4, BEEP 7 → 2), and Wolf's battery tile, which never shows.</li>
+</ul>
+</body>
+</html>

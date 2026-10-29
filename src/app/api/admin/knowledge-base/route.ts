@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServiceSupabase, requireAdmin } from '@/lib/server/api-auth'
+import { getServiceSupabase, requireAdmin, readJsonBody, MALFORMED_BODY } from '@/lib/server/api-auth'
 import { generateEmbeddings } from '@/lib/openai'
 import {
   assertSafePublicUrl,
@@ -222,11 +222,13 @@ async function processAndStoreContent(
     return { success: false, chunks_created: 0, message: 'Failed to process the content; nothing was added' }
   }
 
-  // Update source with chunks count
-  await getSupabaseAdmin()
+  // Update source with chunks count. The chunks are stored either way; a failed count update is
+  // logged so a source showing 0 chunks beside real ones can be traced.
+  const { error: countError } = await getSupabaseAdmin()
     .from('knowledge_sources')
     .update({ chunks_count: chunks.length })
     .eq('id', sourceId)
+  if (countError) console.error(`Knowledge base: chunk count not saved for source ${sourceId}:`, countError.message)
 
   return {
     success: true,
@@ -243,7 +245,8 @@ export async function POST(request: NextRequest) {
   const { userId: adminId } = authResult
 
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
+    if (!body) return NextResponse.json({ error: MALFORMED_BODY }, { status: 400 })
     const { type = 'text', content, source, author, published_year, topic, pdfData, url, source_url } = body as {
       type?: 'text' | 'pdf' | 'url'
       content?: string
@@ -357,7 +360,8 @@ export async function PATCH(request: NextRequest) {
   const { userId: adminId } = authResult
 
   try {
-    const body = await request.json()
+    const body = await readJsonBody(request)
+    if (!body) return NextResponse.json({ error: MALFORMED_BODY }, { status: 400 })
     const { source_id, name, author, published_year, source_url, original_filename } = body as {
       source_id: string
       name?: string
@@ -472,15 +476,29 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'ID or source_id is required' }, { status: 400 })
   }
 
-  const { error } = await getSupabaseAdmin()
+  const { data: deleted, error } = await getSupabaseAdmin()
     .from('knowledge_base')
     .delete()
     .eq('id', id)
+    .select('source_id')
 
   if (error) {
     console.warn(`[AUDIT] Admin KB entry delete: admin=${adminId} entry_id=${id} status=failed timestamp=${new Date().toISOString()}`)
     console.error('Knowledge base database error:', error)
     return NextResponse.json({ error: 'Database error' }, { status: 500 })
+  }
+
+  // Keep the source's chunk count true: it never went down when a single chunk was deleted.
+  const sourceIdOfEntry = deleted?.[0]?.source_id as string | null | undefined
+  if (sourceIdOfEntry) {
+    const { count, error: countError } = await getSupabaseAdmin()
+      .from('knowledge_base')
+      .select('id', { count: 'exact', head: true })
+      .eq('source_id', sourceIdOfEntry)
+    const { error: updateError } = countError
+      ? { error: countError }
+      : await getSupabaseAdmin().from('knowledge_sources').update({ chunks_count: count ?? 0 }).eq('id', sourceIdOfEntry)
+    if (updateError) console.error(`Knowledge base: chunk count not updated for source ${sourceIdOfEntry}:`, updateError.message)
   }
 
   console.warn(`[AUDIT] Admin KB entry delete: admin=${adminId} entry_id=${id} status=success timestamp=${new Date().toISOString()}`)

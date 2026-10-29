@@ -9,20 +9,15 @@ const BEEP_FETCH_TIMEOUT_MS = 30_000
 /**
  * Internal fetch wrapper with a hard timeout. SDK fetch has no default
  * timeout; without this, a hung BEEP API will pin a Fluid Compute slot until
- * the function-level deadline. AbortController + signal is the standard
- * pattern.
+ * the function-level deadline. AbortSignal.timeout stays armed while the
+ * caller reads the body, so a reply that trickles in can't hang either (a
+ * timer cleared when the headers arrive would not cover the body).
  */
 async function beepFetch(path: string, init: RequestInit): Promise<Response> {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), BEEP_FETCH_TIMEOUT_MS)
-  try {
-    return await fetch(`${BEEP_API_BASE}${path}`, {
-      ...init,
-      signal: controller.signal,
-    })
-  } finally {
-    clearTimeout(timeoutId)
-  }
+  return fetch(`${BEEP_API_BASE}${path}`, {
+    ...init,
+    signal: AbortSignal.timeout(BEEP_FETCH_TIMEOUT_MS),
+  })
 }
 
 export interface BeepDevice {

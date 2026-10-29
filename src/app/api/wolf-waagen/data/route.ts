@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUser } from '@/lib/server/api-auth'
 import { wolfGetLastValues, wolfGetMeasurements, wolfGetBatteryVoltage, detectMaintenanceEvents, sumInterventions, WolfParsedReading } from '@/lib/wolf-waagen-api'
-import { addDaysISO, dublinDayStartUtc } from '@/lib/dublin-date'
+import { addDaysISO, dublinDayStartUtc, customRangeError } from '@/lib/dublin-date'
+
+// The summary makes several Wolf calls one after another, each with retries: cap the run so a
+// hanging Wolf server can't keep the function going for Vercel's full 5 minutes.
+export const maxDuration = 90
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,6 +24,12 @@ export async function GET(request: NextRequest) {
 
     if (!scaleId) {
       return NextResponse.json({ error: 'Scale ID required' }, { status: 400 })
+    }
+
+    // Check custom dates before any Wolf call: a bad date used to fail only after 8 calls.
+    if (period === 'custom') {
+      const rangeError = customRangeError(customStart, customEnd)
+      if (rangeError) return NextResponse.json({ error: rangeError }, { status: 400 })
     }
 
     let wolfApiToken: string | null = null
@@ -80,122 +90,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Wolf Waagen not connected' }, { status: 400 })
     }
 
-    // Fetch latest sensor values and historical data for weight changes
-    // Execute sequentially with error handling to avoid rate limiting (429 errors)
-    const now = Math.floor(Date.now() / 1000)
-    const oneDayAgo = now - (24 * 60 * 60)
-    const twoDaysAgo = now - (48 * 60 * 60)
-    const sevenDaysAgo = now - (7 * 24 * 60 * 60)
-    const fourteenDaysAgo = now - (14 * 24 * 60 * 60)
-    const thirtyDaysAgo = now - (30 * 24 * 60 * 60)
-    const sixtyDaysAgo = now - (60 * 24 * 60 * 60)
-
-    // Helper to calculate weight change from history array
-    const calcWeightChange = (history: { weight_kg?: number }[]): number | null => {
-      if (history.length >= 2) {
-        const oldestWeight = history[0]?.weight_kg
-        const newestWeight = history[history.length - 1]?.weight_kg
-        if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
-          return newestWeight - oldestWeight
-        }
-      }
-      return null
-    }
-
-    // Fetch essential data first (lastValues includes 24h data via yield_kg)
-    let lastValues = null
-    try {
-      lastValues = await wolfGetLastValues(wolfApiToken, scaleId)
-    } catch (err) {
-      console.warn('Wolf lastValues fetch failed:', err)
-    }
-
-    // Fetch current and previous period histories for weight change comparisons
-    let history7d: WolfParsedReading[] = []
-    let history30d: WolfParsedReading[] = []
-    let historyPrev24h: WolfParsedReading[] = []
-    let historyPrev7d: WolfParsedReading[] = []
-    let historyPrev30d: WolfParsedReading[] = []
-
-    try {
-      history7d = await wolfGetMeasurements(wolfApiToken, scaleId, sevenDaysAgo, now, 'daily')
-    } catch (err) {
-      console.warn('Wolf 7d history fetch failed:', err)
-    }
-
-    try {
-      history30d = await wolfGetMeasurements(wolfApiToken, scaleId, thirtyDaysAgo, now, 'daily')
-    } catch (err) {
-      console.warn('Wolf 30d history fetch failed:', err)
-    }
-
-    // Fetch previous period histories (for bracket comparison values)
-    try {
-      historyPrev24h = await wolfGetMeasurements(wolfApiToken, scaleId, twoDaysAgo, oneDayAgo, 'daily')
-    } catch (err) {
-      console.warn('Wolf prev 24h history fetch failed:', err)
-    }
-
-    try {
-      historyPrev7d = await wolfGetMeasurements(wolfApiToken, scaleId, fourteenDaysAgo, sevenDaysAgo, 'daily')
-    } catch (err) {
-      console.warn('Wolf prev 7d history fetch failed:', err)
-    }
-
-    try {
-      historyPrev30d = await wolfGetMeasurements(wolfApiToken, scaleId, sixtyDaysAgo, thirtyDaysAgo, 'daily')
-    } catch (err) {
-      console.warn('Wolf prev 30d history fetch failed:', err)
-    }
-
-    // Battery voltage is optional
-    let batteryVoltage: number | null = null
-    try {
-      batteryVoltage = await wolfGetBatteryVoltage(wolfApiToken, scaleId)
-    } catch {
-      // Battery endpoint may not be available for all scales
-    }
-
-    // Merge battery voltage into lastValues if available
-    if (lastValues && batteryVoltage !== null) {
-      lastValues.battery_voltage = batteryVoltage
-    }
-
-    // Calculate weight changes (adjusted to exclude maintenance events)
-    const weightChange24h = lastValues?.yield_kg ?? null
-
-    // Detect and subtract maintenance events (feeding, harvesting) from weight changes
-    const interventions7d = sumInterventions(detectMaintenanceEvents(history7d))
-    const interventions30d = sumInterventions(detectMaintenanceEvents(history30d))
-
-    const rawWeightChange7d = calcWeightChange(history7d)
-    const rawWeightChange30d = calcWeightChange(history30d)
-
-    const weightChange7d = rawWeightChange7d !== null
-      ? rawWeightChange7d - interventions7d
-      : null
-    const weightChange30d = rawWeightChange30d !== null
-      ? rawWeightChange30d - interventions30d
-      : null
-
-    // Calculate previous period changes (shown in brackets for comparison)
-    // Apply same maintenance event subtraction as current period values
-    const prevWeightChange24h = calcWeightChange(historyPrev24h)
-
-    const rawPrevWeightChange7d = calcWeightChange(historyPrev7d)
-    const interventionsPrev7d = sumInterventions(detectMaintenanceEvents(historyPrev7d))
-    const prevWeightChange7d = rawPrevWeightChange7d !== null
-      ? rawPrevWeightChange7d - interventionsPrev7d
-      : null
-
-    const rawPrevWeightChange30d = calcWeightChange(historyPrev30d)
-    const interventionsPrev30d = sumInterventions(detectMaintenanceEvents(historyPrev30d))
-    const prevWeightChange30d = rawPrevWeightChange30d !== null
-      ? rawPrevWeightChange30d - interventionsPrev30d
-      : null
-
-    let history = null
+    // A chart asking for a period only reads the history, so skip the summary's vendor calls
     if (period || (customStart && customEnd)) {
+      let history: WolfParsedReading[] = []
       const now = Math.floor(Date.now() / 1000)
       let startTimestamp: number
       let endTimestamp: number = now
@@ -230,8 +127,9 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Use daily resolution for longer periods
-      const resolution = (period === 'month' || period === 'year') ? 'daily' : 'hourly'
+      // Use daily resolution for longer periods (and custom ranges over a month)
+      const longCustom = period === 'custom' && endTimestamp - startTimestamp > 31 * 24 * 60 * 60
+      const resolution = (period === 'month' || period === 'year' || longCustom) ? 'daily' : 'hourly'
 
       try {
         history = await wolfGetMeasurements(
@@ -245,11 +143,134 @@ export async function GET(request: NextRequest) {
         console.warn('Wolf history fetch failed:', err)
         history = []
       }
+
+      return NextResponse.json({ history, period })
     }
+
+    // Fetch latest sensor values and historical data for weight changes
+    // Execute sequentially with error handling to avoid rate limiting (429 errors)
+    const now = Math.floor(Date.now() / 1000)
+    const oneDayAgo = now - (24 * 60 * 60)
+    const twoDaysAgo = now - (48 * 60 * 60)
+    const sevenDaysAgo = now - (7 * 24 * 60 * 60)
+    const fourteenDaysAgo = now - (14 * 24 * 60 * 60)
+    const thirtyDaysAgo = now - (30 * 24 * 60 * 60)
+    const sixtyDaysAgo = now - (60 * 24 * 60 * 60)
+
+    // Helper to calculate weight change from history array
+    const calcWeightChange = (history: { weight_kg?: number }[]): number | null => {
+      if (history.length >= 2) {
+        const oldestWeight = history[0]?.weight_kg
+        const newestWeight = history[history.length - 1]?.weight_kg
+        if (typeof oldestWeight === 'number' && typeof newestWeight === 'number') {
+          return newestWeight - oldestWeight
+        }
+      }
+      return null
+    }
+
+    // Fetch essential data first (lastValues includes 24h data via yield_kg)
+    let lastValues = null
+    try {
+      lastValues = await wolfGetLastValues(wolfApiToken, scaleId)
+    } catch (err) {
+      console.warn('Wolf lastValues fetch failed:', err)
+    }
+
+    // Fetch current and previous period histories for weight change comparisons
+    let history7d: WolfParsedReading[] = []
+    let history30d: WolfParsedReading[] = []
+    let history48h: WolfParsedReading[] = []
+    let historyPrev7d: WolfParsedReading[] = []
+    let historyPrev30d: WolfParsedReading[] = []
+
+    try {
+      history7d = await wolfGetMeasurements(wolfApiToken, scaleId, sevenDaysAgo, now, 'daily')
+    } catch (err) {
+      console.warn('Wolf 7d history fetch failed:', err)
+    }
+
+    try {
+      history30d = await wolfGetMeasurements(wolfApiToken, scaleId, thirtyDaysAgo, now, 'daily')
+    } catch (err) {
+      console.warn('Wolf 30d history fetch failed:', err)
+    }
+
+    // The last and previous 24 hours from one hourly series. Daily readings gave at most one
+    // reading per 24 hours, so the previous-24h change could never be worked out.
+    try {
+      history48h = await wolfGetMeasurements(wolfApiToken, scaleId, twoDaysAgo, now, 'hourly')
+    } catch (err) {
+      console.warn('Wolf 48h history fetch failed:', err)
+    }
+
+    try {
+      historyPrev7d = await wolfGetMeasurements(wolfApiToken, scaleId, fourteenDaysAgo, sevenDaysAgo, 'daily')
+    } catch (err) {
+      console.warn('Wolf prev 7d history fetch failed:', err)
+    }
+
+    try {
+      historyPrev30d = await wolfGetMeasurements(wolfApiToken, scaleId, sixtyDaysAgo, thirtyDaysAgo, 'daily')
+    } catch (err) {
+      console.warn('Wolf prev 30d history fetch failed:', err)
+    }
+
+    // Battery voltage is optional
+    let batteryVoltage: number | null = null
+    try {
+      batteryVoltage = await wolfGetBatteryVoltage(wolfApiToken, scaleId)
+    } catch {
+      // Battery endpoint may not be available for all scales
+    }
+
+    // Merge battery voltage into lastValues if available
+    if (lastValues && batteryVoltage !== null) {
+      lastValues.battery_voltage = batteryVoltage
+    }
+
+    // Split the 48 hours at "24 hours ago". The last-24h change used to be lastValues.yield_kg,
+    // which is Wolf's change since the previous (hourly) reading, not over 24 hours.
+    const readingTime = (r: WolfParsedReading) => Date.parse(r.time) / 1000
+    const historyLast24h = history48h.filter(r => readingTime(r) >= oneDayAgo)
+    const historyPrev24h = history48h.filter(r => readingTime(r) < oneDayAgo)
+
+    // Calculate weight changes (adjusted to exclude maintenance events)
+    const weightChange24h = calcWeightChange(historyLast24h)
+
+    // Detect and subtract maintenance events (feeding, harvesting) from weight changes
+    const interventions7d = sumInterventions(detectMaintenanceEvents(history7d))
+    const interventions30d = sumInterventions(detectMaintenanceEvents(history30d))
+
+    const rawWeightChange7d = calcWeightChange(history7d)
+    const rawWeightChange30d = calcWeightChange(history30d)
+
+    const weightChange7d = rawWeightChange7d !== null
+      ? rawWeightChange7d - interventions7d
+      : null
+    const weightChange30d = rawWeightChange30d !== null
+      ? rawWeightChange30d - interventions30d
+      : null
+
+    // Calculate previous period changes (shown in brackets for comparison)
+    // Apply same maintenance event subtraction as current period values
+    const prevWeightChange24h = calcWeightChange(historyPrev24h)
+
+    const rawPrevWeightChange7d = calcWeightChange(historyPrev7d)
+    const interventionsPrev7d = sumInterventions(detectMaintenanceEvents(historyPrev7d))
+    const prevWeightChange7d = rawPrevWeightChange7d !== null
+      ? rawPrevWeightChange7d - interventionsPrev7d
+      : null
+
+    const rawPrevWeightChange30d = calcWeightChange(historyPrev30d)
+    const interventionsPrev30d = sumInterventions(detectMaintenanceEvents(historyPrev30d))
+    const prevWeightChange30d = rawPrevWeightChange30d !== null
+      ? rawPrevWeightChange30d - interventionsPrev30d
+      : null
 
     return NextResponse.json({
       lastValues,
-      history,
+      history: null,
       period,
       weightChange24h,
       weightChange7d,

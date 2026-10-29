@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/server/api-auth'
+import { requireAdmin, readJsonBody, MALFORMED_BODY } from '@/lib/server/api-auth'
 import { logAdminAction } from '@/lib/admin-audit'
 
 // Fail-fast at module init so a missing env surfaces at deploy time.
@@ -34,6 +34,8 @@ async function notifyImpersonatedUser(email: string, firstName: string | null): 
   try {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
+      // Resend gets 10 seconds; fetch has no time limit of its own.
+      signal: AbortSignal.timeout(10_000),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_API_KEY}` },
       body: JSON.stringify({
         from: 'HiveCraic <info@hivecraic.com>',
@@ -62,7 +64,8 @@ export async function POST(request: NextRequest) {
     const { user, supabaseAdmin } = auth
 
     // Parse request body
-    const body = await request.json()
+    const body = await readJsonBody<{ targetUserId?: string }>(request)
+    if (!body) return NextResponse.json({ error: MALFORMED_BODY }, { status: 400 })
     const { targetUserId } = body
 
     if (!targetUserId) {

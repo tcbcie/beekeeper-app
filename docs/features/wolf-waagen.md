@@ -1034,3 +1034,16 @@ WolfScalePanel
 - When the data route is called with a `hiveId`, it reads with the **hive owner's** vendor token. So the requested `scaleId` must equal that hive's own `wolf_scale_id`; otherwise it returns 403. Without a `hiveId`, the route uses the caller's own token and can only reach the caller's own account.
 - Only the hive's owner can change its scale columns (`beep_device_*`, `wolf_scale_*`); a database trigger enforces this (`guard_hive_scale_columns`). Team members can still view a shared hive's scale but can't point the hive at a different device.
 - Errors from the vendor are logged on the server only. The browser gets a generic "Failed to fetch sensor data".
+
+## Batch 45 (29/10/2026): data route
+
+- **24-hour figures:** the last and previous 24 hours now come from one hourly 48-hour fetch, split at "24 hours ago".
+  - Before, the previous-24h window used daily resolution, so it held at most one reading and the figure was always blank.
+  - The last-24h figure was `lastValues.yield_kg`, which is Wolf's change since the previous (hourly) reading, not over 24 hours. The `yield_kg` notes above for the 24h figure no longer apply.
+- **Chart requests:** a request with a `period` (the history chart) returns only `{ history, period }` and skips the summary's calls. The chart drops from 9 Wolf calls to 1.
+- **Custom dates:** checked before any Wolf call by `customRangeError()` (`src/lib/dublin-date.ts`): real `YYYY-MM-DD` dates, start not after end, at most 366 days. A bad range gets a 400.
+- **Resolution:** custom ranges over 31 days use daily resolution.
+- **Time limits:**
+  - The route has `maxDuration = 90`.
+  - Every Wolf call's time limit (`AbortSignal.timeout`) also covers reading the reply.
+- **Not fixed:** the panel's battery tile reads `battery_voltage` from history, which is never set, so it doesn't show. To look at with the performance batch.
