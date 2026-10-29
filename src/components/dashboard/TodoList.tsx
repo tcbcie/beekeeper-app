@@ -7,13 +7,15 @@ import Panel from '@/components/ui/Panel'
 import Button from '@/components/ui/Button'
 import { buildApiaryTodos } from '@/lib/dashboard-todo'
 import type { TodoItem, TodoTone } from '@/lib/dashboard-todo'
-import type { DashboardApiary } from '@/types/dashboard'
+import type { DashboardApiary, DashboardScaleSummary } from '@/types/dashboard'
 
 interface TodoListProps {
   /** Apiaries in the order to visit them (nearest first when GPS is available) */
   apiaries: DashboardApiary[]
   /** Account-wide: active queens over two years old */
   oldQueens: number
+  /** Scale summaries by apiary id, for the scale alerts (empty until they load) */
+  scalesByApiary: Record<string, DashboardScaleSummary[]>
 }
 
 const VISIBLE_WHEN_COLLAPSED = 5
@@ -31,12 +33,12 @@ interface TodoGroup {
 }
 
 /** One list of jobs, grouped by apiary, each with a button that starts it. */
-export default function TodoList({ apiaries, oldQueens }: TodoListProps) {
+export default function TodoList({ apiaries, oldQueens, scalesByApiary }: TodoListProps) {
   const [showAll, setShowAll] = useState(false)
 
   const groups = useMemo<TodoGroup[]>(() => {
     const byApiary = apiaries
-      .map(apiary => ({ key: apiary.id, heading: apiary.name, items: buildApiaryTodos(apiary) }))
+      .map(apiary => ({ key: apiary.id, heading: apiary.name, items: buildApiaryTodos(apiary, scalesByApiary[apiary.id]) }))
       .filter(group => group.items.length > 0)
     if (oldQueens > 0) {
       byApiary.push({
@@ -52,7 +54,7 @@ export default function TodoList({ apiaries, oldQueens }: TodoListProps) {
       })
     }
     return byApiary
-  }, [apiaries, oldQueens])
+  }, [apiaries, oldQueens, scalesByApiary])
 
   const total = groups.reduce((sum, group) => sum + group.items.length, 0)
 

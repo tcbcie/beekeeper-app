@@ -13,6 +13,7 @@ import Link from 'next/link'
 import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, Plus, Egg, GripVertical } from 'lucide-react'
 import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
 import { useGeolocation, haversineKm } from '@/hooks/useGeolocation'
+import { useScaleSummaries } from '@/hooks/useScaleSummaries'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { DashboardApiary, RecentActivityRecord } from '@/types/dashboard'
 import { formatLocalDate } from '@/lib/date-utils'
@@ -181,12 +182,15 @@ export default function DashboardPage() {
   return withDistance.map(entry => entry.apiary)
  }, [apiaries, devicePosition])
 
+ // Every scale summary, loaded once and shared by the To do list (scale alerts) and the rows
+ const scalesByApiary = useScaleSummaries(apiariesByDistance)
+
  // Apiaries with jobs come first, using the To do list's own rules; each group keeps the order
  // above (the sort is stable)
  const sortedApiaries = useMemo(() => {
-  const hasJobs = (a: DashboardApiary) => buildApiaryTodos(a).length > 0
+  const hasJobs = (a: DashboardApiary) => buildApiaryTodos(a, scalesByApiary[a.id]).length > 0
   return [...apiariesByDistance].sort((a, b) => Number(hasJobs(b)) - Number(hasJobs(a)))
- }, [apiariesByDistance])
+ }, [apiariesByDistance, scalesByApiary])
 
  // "Can I open my hives today?" uses the nearest apiary with coordinates
  const forecastApiary = useMemo(
@@ -340,7 +344,7 @@ export default function DashboardPage() {
 
 {/* To do: the hives behind every warning, each with a button that starts the job */}
 {(apiariesByDistance.length > 0 || alerts.oldQueens > 0) && (
- <TodoList apiaries={apiariesByDistance} oldQueens={alerts.oldQueens} />
+ <TodoList apiaries={apiariesByDistance} oldQueens={alerts.oldQueens} scalesByApiary={scalesByApiary} />
 )}
 
  {/* Quick Actions — desktop: drag onto apiary card · mobile: tap then tap apiary */}
@@ -405,6 +409,7 @@ export default function DashboardPage() {
       apiary={apiary}
       activeAction={activeAction}
       onActionDrop={handleApiaryActionDrop}
+      scaleSummaries={scalesByApiary[apiary.id]}
      />
     ))}
    </div>

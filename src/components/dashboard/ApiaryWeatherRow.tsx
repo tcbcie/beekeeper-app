@@ -10,7 +10,7 @@ import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
 import { calculateForagingHours, fetchCurrentYearGDD, getBloomingPlants, getNectarConditions, getPollenConditions, haversineDistance, isBloomStale } from '@/lib/gdd'
 import type { BloomingPlant, NectarCondition, PollenCondition, VegetationEntry } from '@/lib/gdd'
 import { supabase } from '@/lib/supabase'
-import type { DashboardApiary } from '@/types/dashboard'
+import type { DashboardApiary, DashboardScaleSummary } from '@/types/dashboard'
 import { buildApiaryTodos } from '@/lib/dashboard-todo'
 import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
 
@@ -37,25 +37,16 @@ interface ApiaryWeather {
   daily: DailyForecast[]
 }
 
-interface ScaleWeight {
-  hiveId: string
-  change24h: number | null
-  change7d: number | null
-  change30d: number | null
-}
-
 interface CacheEntry<T> {
   data: T
   fetchedAt: number
 }
 
 const WEATHER_CACHE_TTL_MS = 15 * 60 * 1000
-const SCALE_CACHE_TTL_MS = 5 * 60 * 1000
 const GDD_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 const BLOOM_DATA_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 const ACTIVE_BLOOM_CACHE_TTL_MS = 60 * 60 * 1000
 const weatherCache = new Map<string, CacheEntry<ApiaryWeather>>()
-const scaleCache = new Map<string, CacheEntry<ScaleWeight[]>>()
 const gddCache = new Map<string, CacheEntry<number>>()
 const gddInflight = new Map<string, Promise<number | null>>()
 // Cards at the same coordinates share one weather request, as GDD already does (C7b-15)
@@ -190,13 +181,14 @@ interface ApiaryWeatherRowProps {
    * 'card' (default) is the dashboard's compact apiary row.
    */
   variant?: 'card' | 'conditions'
+  /** Card only: this apiary's scale summaries, loaded once by the dashboard (useScaleSummaries) */
+  scaleSummaries?: DashboardScaleSummary[]
 }
 
-function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card' }: ApiaryWeatherRowProps) {
+function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card', scaleSummaries }: ApiaryWeatherRowProps) {
   const isStrip = variant === 'conditions'
   const router = useRouter()
   const [weather, setWeather] = useState<ApiaryWeather | null>(null)
-  const [scaleData, setScaleData] = useState<ScaleWeight[]>([])
   // The conditions block loads at once; a dashboard row waits until it scrolls into view
   const [shouldLoadData, setShouldLoadData] = useState(isStrip)
   const [forecastExpanded, setForecastExpanded] = useState(false)
@@ -213,9 +205,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
   const mountedRef = useRef(true)
 
   const hasCoords = apiary.latitude != null && apiary.longitude != null
-  const hasScales = apiary.scales.length > 0
   const weatherCacheKey = hasCoords ? `${apiary.latitude},${apiary.longitude}` : null
-  const scaleCacheKey = `${apiary.id}:${apiary.scales.map(scale => `${scale.type}:${scale.deviceId}:${scale.hiveId}`).join('|')}`
 
   useEffect(() => {
     mountedRef.current = true
@@ -267,62 +257,6 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
       // Weather is supplementary: the block simply shows no weather rows
     }
   }, [hasCoords, shouldLoadData, weatherCacheKey, isStrip])
-
-  const fetchScaleData = useCallback(async () => {
-    // The conditions block shows no scale figures, so it must not cost scale-vendor calls
-    if (!hasScales || !shouldLoadData || isStrip) return
-
-    const cachedScaleData = scaleCache.get(scaleCacheKey)
-    if (cachedScaleData && isCacheFresh(cachedScaleData.fetchedAt, SCALE_CACHE_TTL_MS)) {
-      setScaleData(cachedScaleData.data)
-      return
-    }
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
-
-      const results = await Promise.all(
-        apiary.scales.map(async scale => {
-          try {
-            const endpoint = scale.type === 'beep'
-              ? `/api/beep/data?deviceId=${encodeURIComponent(scale.deviceId)}&hiveId=${scale.hiveId}`
-              : `/api/wolf-waagen/data?scaleId=${encodeURIComponent(scale.deviceId)}&hiveId=${scale.hiveId}`
-            const res = await fetch(endpoint, {
-              headers: { Authorization: `Bearer ${session.access_token}` },
-            })
-
-            if (!res.ok) {
-              return null
-            }
-
-            const json = await res.json()
-            return {
-              hiveId: scale.hiveId,
-              change24h: json.weightChange24h ?? null,
-              change7d: json.weightChange7d ?? null,
-              change30d: json.weightChange30d ?? null,
-            } satisfies ScaleWeight
-          } catch {
-            return null
-          }
-        })
-      )
-
-      const nextScaleData = results.filter((result): result is ScaleWeight => result !== null)
-      if (!mountedRef.current) return
-
-      if (nextScaleData.length === apiary.scales.length) {
-        scaleCache.set(scaleCacheKey, { data: nextScaleData, fetchedAt: Date.now() })
-      }
-
-      startTransition(() => {
-        setScaleData(nextScaleData)
-      })
-    } catch {
-      // Scale data is supplementary — fail silently
-    }
-  }, [apiary.scales, hasScales, scaleCacheKey, shouldLoadData, isStrip])
 
   const fetchGDDAndBloom = useCallback(async () => {
     // Only the conditions block shows GDD and forage; a dashboard row skips these lookups
@@ -521,7 +455,6 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
   }, [apiary.id, apiary.latitude, apiary.longitude, hasCoords, shouldLoadData, weatherCacheKey, isStrip])
 
   useEffect(() => { fetchWeather() }, [fetchWeather])
-  useEffect(() => { fetchScaleData() }, [fetchScaleData])
   useEffect(() => { fetchGDDAndBloom() }, [fetchGDDAndBloom])
 
   // Compute nectar condition and foraging hours when weather data is available
@@ -556,19 +489,14 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
     })
   }, [weather])
 
-  const avgWeight = scaleData.length > 0 ? {
-    change24h: avg(scaleData.map(scale => scale.change24h)),
-    change7d: avg(scaleData.map(scale => scale.change7d)),
-    change30d: avg(scaleData.map(scale => scale.change30d)),
-  } : null
 
   // The least recently inspected hive: a recent visit to one hive must not hide a neglected one.
   // Falls back to the latest inspection for a payload from before the field existed.
   const daysSinceOldestCheck = getDaysSinceDate(apiary.oldestInspectionDate ?? apiary.lastInspectionDate)
   const neverInspected = (apiary.uninspectedHiveCount ?? 0) > 0
   // Same rules as the To do list, so the pill and the list always agree
-  const jobCount = buildApiaryTodos(apiary).length
-  const weekChange = avgWeight?.change7d ?? null
+  const jobCount = buildApiaryTodos(apiary, scaleSummaries).length
+  const weekChange = scaleSummaries && scaleSummaries.length > 0 ? avg(scaleSummaries.map(scale => scale.change7d)) : null
   const rowDetails = [
     pluralise(apiary.hiveCount, 'hive', 'hives'),
     neverInspected

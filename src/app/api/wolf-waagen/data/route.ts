@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireUser } from '@/lib/server/api-auth'
 import { wolfGetLastValues, wolfGetMeasurements, wolfGetBatteryVoltage, detectMaintenanceEvents, sumInterventions, WolfParsedReading } from '@/lib/wolf-waagen-api'
 import { addDaysISO, dublinDayStartUtc, customRangeError } from '@/lib/dublin-date'
+import { largestDropWithin } from '@/lib/scale-alerts'
 
 // The summary makes several Wolf calls one after another, each with retries: cap the run so a
 // hanging Wolf server can't keep the function going for Vercel's full 5 minutes.
@@ -287,6 +288,12 @@ export async function GET(request: NextRequest) {
       ? rawPrevWeightChange30d - interventionsPrev30d
       : null
 
+    // The biggest loss within 3 hours over the last 48 hours, for the dashboard's swarm alert:
+    // from the hourly series already downloaded, so it costs no extra Wolf call
+    const largestDrop3h = largestDropWithin(
+      history48h.flatMap(r => (typeof r.weight_kg === 'number' ? [{ time: r.time, weight: r.weight_kg }] : []))
+    )
+
     return NextResponse.json({
       lastValues,
       history: null,
@@ -297,6 +304,7 @@ export async function GET(request: NextRequest) {
       prevWeightChange24h,
       prevWeightChange7d,
       prevWeightChange30d,
+      largestDrop3h,
     })
   } catch (error) {
     // Log the vendor's error server-side only; never pass its raw text to the browser.

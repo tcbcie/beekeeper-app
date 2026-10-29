@@ -1055,3 +1055,7 @@ WolfScalePanel
 - **Summary:** `lastValues` comes from the 48-hour hourly series it already fetches, so 7 calls instead of 8.
 - **Battery (`battery=1`):** asked for once by `WolfScalePanel` on its first load. The route adds `batteryVoltage`, and the battery tile now shows when the scale reports one.
 - **Unused code:** `WolfSensorDisplay.tsx` and `WolfHistoryChart.tsx` are deleted; nothing imported them.
+
+## Largest drop for the dashboard swarm alert (29 October 2026)
+
+The summary response also returns `largestDrop3h` (`{ kg, at, stillDownKg }` or `null`; `stillDownKg` is how much is still missing at the latest reading): the biggest loss between hourly readings no more than 3 hours apart in the 48-hour series the summary already downloads, so it costs no extra Wolf call. The dashboard reports 1.5–5 kg from April to July as a possible swarm. See [dashboard-today-screen.md](./dashboard-today-screen.md).

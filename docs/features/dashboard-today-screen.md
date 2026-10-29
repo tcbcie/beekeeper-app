@@ -66,9 +66,20 @@ Fixed text, one set per month, heading "{Month} in Ireland". October's wording w
 - **Older cached payload without the hive lists:** read as empty lists; nothing crashes.
 - **A hive both overdue and queenless** appears in both jobs: both need doing.
 
-## 8. Phase 2 (not built)
+## 8. Phase 2: scale alerts (implemented 29 October 2026)
 
-- Scale alerts: a hive getting light (stores) or a sudden drop (possible swarm).
-- Seasonal reminders linked to the user's own data.
+Two scale alerts join the To do list, with thresholds agreed with the owner (`src/lib/scale-alerts.ts`):
+
+| Alert | Rule | Line |
+|---|---|---|
+| Possible swarm (red) | 1 April – 31 July: the scale lost **1.5 to 5 kg within 3 hours** in the last 48 hours, and at least half of it still missing at the latest reading (over 5 kg is a super taken off; a drop that comes back is an inspection) | "Hive 26-DA: possible swarm · lost 2.1 kg within 3 hours, Tuesday afternoon" [Inspect] |
+| Getting light (amber) | All year: **−2 kg or more in 7 days** (Mel's "may need feeding" rule). Wolf ignores feeding/harvest jumps; BEEP cannot | "Hive 34-DA getting light · −2.7 kg in 7 days, check stores" [Open] |
+
+- **No extra vendor calls:** both summary routes (`/api/beep/data`, `/api/wolf-waagen/data`) now also return `largestDrop3h` (`{ kg, at, stillDownKg }`), worked out from the 48 hours of readings they already download.
+- **Loaded once:** `src/hooks/useScaleSummaries.ts` fetches every scale summary when the dashboard opens (5-minute cache per scale) and shares them with the To do list and the apiary rows; the rows no longer fetch their own.
+- **Hive numbers:** `get_dashboard_overview` adds `hiveNumber` to each scale (`supabase/migrations/20261029170000_dashboard_scale_hive_number.sql`, applied as `dashboard_scale_hive_number`; grants unchanged).
+- The alerts appear once the summaries arrive; the "N jobs" pill and apiary order update with them, as both use `buildApiaryTodos(apiary, scales)`.
+
+Still to come: seasonal reminders linked to the user's own data.
 
 Related: [dashboard-simplify-plan.md](./dashboard-simplify-plan.md), [dashboard-apiary-weather.md](./dashboard-apiary-weather.md), [gdd-dashboard-bloom.md](./gdd-dashboard-bloom.md).

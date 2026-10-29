@@ -1,6 +1,7 @@
 import { parseLocalDate } from '@/lib/date-utils'
 import { formatQueenlessShortLabel } from '@/lib/queenless'
-import type { DashboardApiary, DashboardAttentionHive } from '@/types/dashboard'
+import { isGettingLight, isPossibleSwarm, SWARM_DROP_WINDOW_HOURS } from '@/lib/scale-alerts'
+import type { DashboardApiary, DashboardAttentionHive, DashboardScaleSummary } from '@/types/dashboard'
 
 /**
  * The dashboard's To do list, built from the hive lists get_dashboard_overview returns per apiary.
@@ -38,11 +39,22 @@ function hiveList(hives: DashboardAttentionHive[], shown: number): string {
   return hives.length > shown ? `${names} +${hives.length - shown} more` : names
 }
 
+/** "Tuesday afternoon" */
+function describeWhen(iso: string): string {
+  const date = new Date(iso)
+  const hour = date.getHours()
+  const part = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening'
+  return `${date.toLocaleDateString('en-IE', { weekday: 'long' })} ${part}`
+}
+
 const inspectHiveHref = (hiveId: string) => `/dashboard/records?hive=${hiveId}&type=inspection`
 const openHiveHref = (hiveId: string) => `/dashboard/hives/${hiveId}`
 
-/** The jobs at one apiary, most pressing first (red, then amber, then blue). */
-export function buildApiaryTodos(apiary: DashboardApiary): TodoItem[] {
+/**
+ * The jobs at one apiary, most pressing first (red, then amber, then blue). `scales` adds the
+ * scale alerts once the summaries have loaded (src/hooks/useScaleSummaries.ts).
+ */
+export function buildApiaryTodos(apiary: DashboardApiary, scales?: DashboardScaleSummary[]): TodoItem[] {
   const items: TodoItem[] = []
 
   const overdue = listOf(apiary.overdueHives)
@@ -101,6 +113,28 @@ export function buildApiaryTodos(apiary: DashboardApiary): TodoItem[] {
       detail: typeof hive.rate === 'number' ? `${hive.rate}% at a check in the last 30 days` : 'over 3% in the last 30 days',
       action: { label: 'Open', href: openHiveHref(hive.id) },
     })
+  }
+
+  for (const scale of listOf(scales)) {
+    const hive = scale.hiveNumber ? `Hive ${scale.hiveNumber}` : 'A hive with a scale'
+    if (isPossibleSwarm(scale.largestDrop3h)) {
+      items.push({
+        key: `${apiary.id}:swarm:${scale.hiveId}`,
+        tone: 'red',
+        title: `${hive}: possible swarm`,
+        detail: `lost ${scale.largestDrop3h.kg.toFixed(1)} kg within ${SWARM_DROP_WINDOW_HOURS} hours, ${describeWhen(scale.largestDrop3h.at)}`,
+        action: { label: 'Inspect', href: inspectHiveHref(scale.hiveId) },
+      })
+    }
+    if (isGettingLight(scale.change7d)) {
+      items.push({
+        key: `${apiary.id}:light:${scale.hiveId}`,
+        tone: 'amber',
+        title: `${hive} getting light`,
+        detail: `${scale.change7d.toFixed(1)} kg in 7 days, check stores`,
+        action: { label: 'Open', href: openHiveHref(scale.hiveId) },
+      })
+    }
   }
 
   const dueTasks = listOf(apiary.dueTasks)

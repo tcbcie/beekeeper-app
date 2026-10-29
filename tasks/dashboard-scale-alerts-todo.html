@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Plan &mdash; Dashboard Phase 2: Scale Alerts</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 62rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  table.t { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
+  table.t th, table.t td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
+  table.t th { background: #eef3ef; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+  .mock { background: #fff; border: 1px solid #e5e2da; border-radius: 14px; padding: 12px 14px; max-width: 26rem; font-size: 15px; }
+  .task { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #eee; }
+  .task:first-of-type { border-top: 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 10px; }
+  .red { background: #dc2626; } .amber { background: #f59e0b; }
+  .txt { flex: 1; } .txt b { display: block; } .txt span { color: #4b5563; font-size: 14px; }
+  .act { border: 1px solid #166534; color: #166534; border-radius: 10px; padding: 0 12px; min-height: 44px; display: flex; align-items: center; font-weight: 600; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<h1>Dashboard Phase 2: Scale Alerts</h1>
+<p><strong>Status:</strong> implemented, awaiting your test &nbsp;&middot;&nbsp; <strong>Date:</strong> 29 October 2026</p>
+
+<blockquote><p><strong>Your instruction:</strong> start Phase 2 &mdash; scale alerts in the To do list: a hive getting light, and a possible swarm.</p></blockquote>
+
+<h2>1. What I found</h2>
+<ul>
+  <li><strong>The data is already fetched.</strong> Each scale summary (one request per scale, as the dashboard makes today) already downloads the last 48 hours of readings and then throws them away. A &ldquo;biggest drop within 3 hours&rdquo; figure can be worked out from them on the server with <strong>no extra calls</strong> to BEEP or Wolf.</li>
+  <li><strong>Mel already uses thresholds</strong> (<span class="file">src/lib/ai/tools/scales.ts</span>): a drop of more than 2 kg between readings = &ldquo;possible swarm or robbing&rdquo;; a loss of more than 2 kg over 7 days = &ldquo;may need feeding&rdquo;. I suggest the dashboard matches, so Mel and the To do list agree.</li>
+  <li><strong>Wolf</strong> 7-day figures already leave out feeding and harvest jumps; <strong>BEEP</strong> figures are raw.</li>
+  <li><strong>Today the scale figures load only when an apiary row scrolls into view,</strong> and only as an apiary average. For alerts at the top of the page they must load up front and per hive. The hive number is also missing from the scale list.</li>
+</ul>
+
+<h2>2. Proposed rules (please confirm or change)</h2>
+<table class="t">
+  <tr><th>Alert</th><th>Rule</th><th>To do line</th></tr>
+  <tr><td><strong>Possible swarm</strong> (red)</td><td>From <strong>1 April to 31 July</strong>: the scale lost <strong>between 1.5 and 5 kg within 3 hours</strong> in the last 48 hours. Over 5 kg is treated as a super taken off, not a swarm.</td><td>&ldquo;Hive 26-DA: possible swarm &middot; lost 2.1 kg within 3 hours, Tuesday afternoon&rdquo; [Inspect]</td></tr>
+  <tr><td><strong>Getting light</strong> (amber)</td><td>All year: the scale lost <strong>2 kg or more in 7 days</strong> (Mel&rsquo;s rule). Wolf ignores feeding and harvest jumps; BEEP cannot, so a BEEP harvest week may trigger it once.</td><td>&ldquo;Hive 34-DA getting light &middot; −2.7 kg in 7 days, check stores&rdquo; [Open]</td></tr>
+</table>
+
+<div class="mock">
+  <div class="task"><span class="dot red"></span><div class="txt"><b>Hive 26-DA: possible swarm</b><span>lost 2.1 kg within 3 hours, Tuesday afternoon</span></div><span class="act">Inspect</span></div>
+  <div class="task"><span class="dot amber"></span><div class="txt"><b>Hive 34-DA getting light</b><span>−2.7 kg in 7 days, check stores</span></div><span class="act">Open</span></div>
+</div>
+
+<h2>3. The change</h2>
+<ol>
+  <li><strong>Server</strong> (<span class="file">api/beep/data</span>, <span class="file">api/wolf-waagen/data</span>): the summary also returns <code>largestDrop3h</code> (kg and time), from readings it already has. One shared helper in <span class="file">src/lib/scale-alerts.ts</span>.</li>
+  <li><strong>Database:</strong> the dashboard function adds the hive number to each scale (MCP migration, additive).</li>
+  <li><strong>Dashboard:</strong> one small hook loads every scale summary once when the dashboard opens (same requests as today, just not waiting for scrolling) and shares them with the To do list and the apiary rows. Rows stop fetching on their own.</li>
+  <li><strong>To do rules</strong> (<span class="file">dashboard-todo.ts</span>): the two alerts above, so the &ldquo;N jobs&rdquo; pill and the list still agree.</li>
+</ol>
+
+<h2>4. To-do</h2>
+<ul class="todo">
+  <li>&#9745; Shared drop helper + <code>largestDrop3h</code> in both summary routes</li>
+  <li>&#9745; Hive number in the dashboard function&rsquo;s scale list (MCP migration + file)</li>
+  <li>&#9745; Hook loading all scale summaries once; rows use it</li>
+  <li>&#9745; Two alert rules in the To do list</li>
+  <li>&#9745; Type check + ESLint; <code>qa-engineer</code> audit</li>
+  <li>&#9745; Docs: update <span class="file">dashboard-today-screen.md</span>, <span class="file">wolf-waagen.md</span>, <span class="file">beep-scale.md</span></li>
+  <li>&#9744; You test</li>
+</ul>
+
+<h2>5. Review</h2>
+<p><strong>Thresholds confirmed by you:</strong> possible swarm 1.5–5 kg within 3 hours, 1 April–31 July; getting light −2 kg in 7 days, all year.</p>
+<h3>Changes</h3>
+<ul>
+  <li><span class="file">src/lib/scale-alerts.ts</span> (new): the drop helper and both rules.</li>
+  <li><span class="file">api/beep/data</span>, <span class="file">api/wolf-waagen/data</span>: summary also returns <code>largestDrop3h</code> from readings already downloaded &mdash; no extra vendor calls.</li>
+  <li>Database (<span class="file">supabase/migrations/20261029170000_dashboard_scale_hive_number.sql</span>, applied through the MCP server): each scale carries its hive number. Checked: 29-DA (BEEP), 26-DA and 34-DA (Wolf). Grants unchanged.</li>
+  <li><span class="file">src/hooks/useScaleSummaries.ts</span> (new): loads every scale summary once and shares it; <span class="file">ApiaryWeatherRow.tsx</span> no longer fetches its own.</li>
+  <li><span class="file">dashboard-todo.ts</span>, <span class="file">TodoList.tsx</span>, <span class="file">dashboard/page.tsx</span>: the two alerts in the To do list, the &ldquo;N jobs&rdquo; pill and the apiary order.</li>
+  <li>Docs: <span class="file">dashboard-today-screen.md</span> (Phase 2 section), <span class="file">wolf-waagen.md</span>, <span class="file">beep-scale.md</span>.</li>
+</ul>
+<h3>QA audit (qa-engineer)</h3>
+<ul>
+  <li><strong>No Critical or High findings.</strong> <code>npx tsc --noEmit</code>: no errors. ESLint: clean.</li>
+  <li>&#128993; Medium, fixed: an inspection takes supers off and puts them back, which looks like a sudden drop. A drop now counts as a possible swarm only if at least half of it is still missing at the latest reading.</li>
+  <li>&#128993; Medium, fixed: when GPS arrives the apiaries re-sort and the loading ran again before the first answers, repeating every vendor call. Requests already on their way are now shared.</li>
+  <li>&#9898; Low, left as is: BEEP figures are raw, so a BEEP harvest week can trigger &ldquo;getting light&rdquo; once (as noted in the plan).</li>
+</ul>
+</body>
+</html>

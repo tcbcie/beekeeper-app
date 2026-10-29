@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireUser } from '@/lib/server/api-auth'
 import { beepGetLastValues, beepGetMeasurements } from '@/lib/beep-api'
 import { addDaysISO, dublinDayStartUtc, customRangeError } from '@/lib/dublin-date'
+import { largestDropWithin } from '@/lib/scale-alerts'
 
 export async function GET(request: NextRequest) {
   try {
@@ -225,6 +226,15 @@ export async function GET(request: NextRequest) {
       prevWeightChange30d = newestPrev30d - oldestPrev30d
     }
 
+    // The biggest loss within 3 hours over the last 48 hours, for the dashboard's swarm alert:
+    // from the two 24-hour series already downloaded, so it costs no extra BEEP call
+    const largestDrop3h = largestDropWithin(
+      [...(historyPrev24h ?? []), ...(history24h ?? [])].flatMap(r => {
+        const weight = r.weight_kg_corrected ?? r.weight_kg
+        return typeof weight === 'number' ? [{ time: r.time, weight }] : []
+      })
+    )
+
     return NextResponse.json({
       lastValues,
       history: null,
@@ -235,6 +245,7 @@ export async function GET(request: NextRequest) {
       prevWeightChange24h,
       prevWeightChange7d,
       prevWeightChange30d,
+      largestDrop3h,
     })
   } catch (error) {
     // Log the vendor's error server-side only; never pass its raw text to the browser.

@@ -331,3 +331,7 @@ Uses `weight_kg_corrected` if available, falls back to `weight_kg`.
 ## Batch 46 (29/10/2026)
 
 - **`latest=1`:** returns only `{ lastValues }` (1 BEEP call instead of 7). The inspection form uses it to fill in the weight.
+
+## Largest drop for the dashboard swarm alert (29 October 2026)
+
+The summary response also returns `largestDrop3h` (`{ kg, at, stillDownKg }` or `null`; `stillDownKg` is how much is still missing at the latest reading): the biggest loss between readings no more than 3 hours apart across the two 24-hour series the summary already downloads, so it costs no extra BEEP call. The dashboard reports 1.5–5 kg from April to July as a possible swarm. See [dashboard-today-screen.md](./dashboard-today-screen.md).

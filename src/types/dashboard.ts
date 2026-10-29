@@ -86,8 +86,21 @@ export interface TeamApiaryWithOwner {
 
 export interface DashboardApiaryScale {
   hiveId: string
+  /** The hive's number (get_dashboard_overview, 29 October 2026); absent in an older payload */
+  hiveNumber?: string | null
   type: 'beep' | 'wolf'
   deviceId: string
+}
+
+/** One scale's summary as the dashboard uses it (from /api/beep/data or /api/wolf-waagen/data) */
+export interface DashboardScaleSummary {
+  hiveId: string
+  hiveNumber: string | null
+  change24h: number | null
+  change7d: number | null
+  change30d: number | null
+  /** Biggest loss within 3 hours over the last 48 hours, for the possible-swarm alert */
+  largestDrop3h: { kg: number; at: string; stillDownKg: number } | null
 }
 
 export interface DashboardApiary {
