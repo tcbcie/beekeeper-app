@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, findHiveByName, formatDate, daysUntil, daysSince, logToolError, todayInDublin, addDaysISO } from './utils'
+import { getSupabase, findHiveByName, formatDate, daysUntil, daysSince, logToolError, todayInDublin, addDaysISO, boundedInt } from './utils'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -22,7 +22,7 @@ export const getUpcomingTasks: Tool = {
   name: 'getUpcomingTasks',
   description: 'Get tasks due in the next specified number of days',
   parameters: z.object({
-    days: z.number().optional().describe('Look ahead period in days (default 7)')
+    days: boundedInt(365).optional().describe('Look ahead period in days (default 7)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { days?: number }
@@ -126,6 +126,7 @@ export const getTasksForHive: Tool = {
     let query = supabase
       .from('tasks_events')
       .select('title, description, start_date, priority, completed, category, created_at')
+      .eq('user_id', userId)
       .eq('hive_id', hive.id)
       .order('start_date', { ascending: true })
 

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getServiceSupabase, findHiveByName, formatDate, logToolError } from './utils'
+import { getSupabase, getServiceSupabase, findHiveByName, formatDate, logToolError, boundedInt, getOwnApiaryIds } from './utils'
 import { wolfGetMeasurements } from '../../wolf-waagen-api'
 import { beepGetMeasurements } from '../../beep-api'
 import { mapInGroups } from '../../supabase-chunk'
@@ -143,12 +143,18 @@ export const getScaleData: Tool = {
     // Get hive details including scale IDs
     const { data: hiveData, error } = await supabase
       .from('hives')
-      .select('beep_device_id, beep_device_name, wolf_scale_id, wolf_scale_name')
+      .select('apiary_id, beep_device_id, beep_device_name, wolf_scale_id, wolf_scale_name')
       .eq('id', hive.id)
       .single()
 
     if (error || !hiveData) {
       return `Error fetching hive data: ${logToolError(error)}`
+    }
+
+    // Mel reads scales with the caller's own BEEP/Wolf account, so only scales on the caller's
+    // own apiaries can be read; a team-mate's scale needs their account.
+    if (!(await getOwnApiaryIds(userId)).includes(hiveData.apiary_id)) {
+      return `Hive "${hive.hive_number}" is in a team apiary. Mel can only read scales connected to your own account.`
     }
 
     // Check if hive has any scale
@@ -229,7 +235,7 @@ export const getScaleHistory: Tool = {
   description: 'Get historical scale data (weight, temperature trends) for a hive over a time period. Shows daily averages.',
   parameters: z.object({
     hiveName: z.string().describe('Name or number of the hive'),
-    days: z.number().optional().describe('Number of days of history (default 7, max 30)')
+    days: boundedInt(30).optional().describe('Number of days of history (default 7, max 30)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { hiveName: string; days?: number }
@@ -245,12 +251,18 @@ export const getScaleHistory: Tool = {
     // Get hive details including scale IDs
     const { data: hiveData, error } = await supabase
       .from('hives')
-      .select('beep_device_id, beep_device_name, wolf_scale_id, wolf_scale_name')
+      .select('apiary_id, beep_device_id, beep_device_name, wolf_scale_id, wolf_scale_name')
       .eq('id', hive.id)
       .single()
 
     if (error || !hiveData) {
       return `Error fetching hive data: ${logToolError(error)}`
+    }
+
+    // Mel reads scales with the caller's own BEEP/Wolf account, so only scales on the caller's
+    // own apiaries can be read; a team-mate's scale needs their account.
+    if (!(await getOwnApiaryIds(userId)).includes(hiveData.apiary_id)) {
+      return `Hive "${hive.hive_number}" is in a team apiary. Mel can only read scales connected to your own account.`
     }
 
     if (!hiveData.beep_device_id && !hiveData.wolf_scale_id) {
@@ -403,7 +415,8 @@ export const compareScaleReadings: Tool = {
       .is('archived_at', null)
       .or('beep_device_id.not.is.null,wolf_scale_id.not.is.null')
 
-    if (error || !hives?.length) {
+    if (error) return `Error fetching hives: ${logToolError(error)}`
+    if (!hives?.length) {
       return 'No hives with scales found.'
     }
 
@@ -464,7 +477,7 @@ export const checkScaleAlerts: Tool = {
   name: 'checkScaleAlerts',
   description: 'Check for unusual weight changes in hives with scales. Detects potential swarming (sudden weight loss), robbing, or rapid weight gain.',
   parameters: z.object({
-    days: z.number().optional().describe('Number of days to analyze (default 7)')
+    days: boundedInt(30).optional().describe('Number of days to analyze (default 7)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { days?: number }
@@ -494,7 +507,8 @@ export const checkScaleAlerts: Tool = {
       .is('archived_at', null)
       .or('beep_device_id.not.is.null,wolf_scale_id.not.is.null')
 
-    if (error || !hives?.length) {
+    if (error) return `Error fetching hives: ${logToolError(error)}`
+    if (!hives?.length) {
       return 'No hives with scales found.'
     }
 

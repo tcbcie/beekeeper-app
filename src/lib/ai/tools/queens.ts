@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, findQueenByNumber, findBatchByName, formatDate, daysSince, daysUntil, logToolError, todayInDublin, addDaysISO } from './utils'
+import { getSupabase, findQueenByNumber, findBatchByName, formatDate, daysSince, daysUntil, logToolError, todayInDublin, addDaysISO, boundedInt } from './utils'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -165,7 +165,7 @@ export const getUpcomingBatchEvents: Tool = {
   name: 'getUpcomingBatchEvents',
   description: 'Get next milestone dates for active queen rearing batches',
   parameters: z.object({
-    days: z.number().optional().describe('Look ahead period in days (default 7)')
+    days: boundedInt(365).optional().describe('Look ahead period in days (default 7)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { days?: number }

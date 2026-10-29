@@ -9,6 +9,7 @@ import type { DAFMTreatmentRecord, TimePeriod } from '@/types/reports'
 import { useReportFilters } from '@/hooks/useReportFilters'
 import ReportFilters from './ReportFilters'
 import ReportExportBar from './ReportExportBar'
+import { ReportLoadError } from './ReportTable'
 
 interface DAFMVarroaReportProps {
   userId: string
@@ -18,6 +19,7 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
   const { apiaries, hives, profile, loading, fetchBaseData, fetchDAFMTreatments } = useReportsData()
   const [treatments, setTreatments] = useState<DAFMTreatmentRecord[]>([])
   const [dataLoading, setDataLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
 
   const [filters, setFilters] = useReportFilters('dafm-varroa', (() => {
@@ -36,13 +38,27 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
   }, [userId, fetchBaseData])
 
   useEffect(() => {
-    const loadTreatments = async () => {
-      setDataLoading(true)
-      const data = await fetchDAFMTreatments(userId, filters.apiaryId, filters.startDate, filters.endDate)
-      setTreatments(data)
-      setDataLoading(false)
+    // Only the latest filters' answer counts, and a failed load says so instead of showing "no data".
+    let cancelled = false
+    setDataLoading(true)
+    setLoadError(false)
+    fetchDAFMTreatments(userId, filters.apiaryId, filters.startDate, filters.endDate)
+      .then((data) => {
+        if (!cancelled) setTreatments(data)
+      })
+      .catch((error) => {
+        console.error('Error loading report:', error)
+        if (!cancelled) {
+          setTreatments([])
+          setLoadError(true)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDataLoading(false)
+      })
+    return () => {
+      cancelled = true
     }
-    loadTreatments()
   }, [userId, filters.apiaryId, filters.startDate, filters.endDate, fetchDAFMTreatments])
 
   const handleTimePeriodChange = (period: TimePeriod) => {
@@ -283,6 +299,8 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
               <div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4"></div>
               Loading treatment records...
             </div>
+          ) : loadError ? (
+            <ReportLoadError />
           ) : treatments.length === 0 ? (
             <div className="text-center py-12 bg-surface-secondary rounded-lg border-2 border-dashed border-border">
               

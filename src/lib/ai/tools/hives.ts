@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getOwnApiaryIds, getAccessibleApiaryIds, findHiveByName, formatDate, logToolError } from './utils'
+import { harvestWeightKg } from '@/lib/traceability-utils'
+import { getSupabase, getOwnApiaryIds, getAccessibleApiaryIds, findHiveByName, formatDate, logToolError, boundedInt } from './utils'
 
 // Helper to extract apiary name from Supabase join
 function getApiaryName(apiaries: unknown): string {
@@ -14,16 +15,17 @@ function getApiaryName(apiaries: unknown): string {
 // Get apiary statistics
 export const getApiaryStats: Tool = {
   name: 'getApiaryStats',
-  description: 'Get statistics about apiaries and hives: count of apiaries, hives per apiary, total active/archived hives. By default shows only your own apiaries.',
+  description: 'Get statistics about apiaries and hives: count of apiaries, hives per apiary, total active/archived hives. Includes team apiaries unless the user asks for their own apiaries only.',
   parameters: z.object({
-    includeShared: z.boolean().optional().describe('Include shared/team apiaries (default false)')
+    includeShared: z.boolean().optional().describe('Include shared/team apiaries (default true)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { includeShared?: boolean }
     const supabase = getSupabase()
-    const apiaryIds = args.includeShared
-      ? await getAccessibleApiaryIds(userId)
-      : await getOwnApiaryIds(userId)
+    // Team apiaries are included unless the question asks for own hives only (as on the Hives page).
+    const apiaryIds = args.includeShared === false
+      ? await getOwnApiaryIds(userId)
+      : await getAccessibleApiaryIds(userId)
 
     if (apiaryIds.length === 0) {
       return 'No apiaries found.'
@@ -65,17 +67,18 @@ export const getApiaryStats: Tool = {
 // Get hive overview
 export const getHiveOverview: Tool = {
   name: 'getHiveOverview',
-  description: 'Get a list of all hives with their apiary, status, and queen info. By default shows only your own hives.',
+  description: 'Get a list of all hives with their apiary, status, and queen info. Includes team apiaries unless the user asks for their own hives only.',
   parameters: z.object({
     includeArchived: z.boolean().optional().describe('Include archived hives'),
-    includeShared: z.boolean().optional().describe('Include shared/team hives (default false)')
+    includeShared: z.boolean().optional().describe('Include shared/team hives (default true)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { includeArchived?: boolean; includeShared?: boolean }
     const supabase = getSupabase()
-    const apiaryIds = args.includeShared
-      ? await getAccessibleApiaryIds(userId)
-      : await getOwnApiaryIds(userId)
+    // Team apiaries are included unless the question asks for own hives only (as on the Hives page).
+    const apiaryIds = args.includeShared === false
+      ? await getOwnApiaryIds(userId)
+      : await getAccessibleApiaryIds(userId)
 
     if (apiaryIds.length === 0) {
       return 'No apiaries found.'
@@ -123,7 +126,7 @@ export const getHiveTimeline: Tool = {
   description: 'Get all records for a specific hive in chronological order (inspections, treatments, feedings, harvests)',
   parameters: z.object({
     hiveName: z.string().describe('Name or number of the hive'),
-    limit: z.number().optional().describe('Maximum number of records to return (default 20)')
+    limit: boundedInt(100).optional().describe('Maximum number of records to return (default 20)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { hiveName: string; limit?: number }
@@ -141,8 +144,11 @@ export const getHiveTimeline: Tool = {
       supabase.from('varroa_checks').select('id, check_date, mites_count, method, infestation_rate').eq('hive_id', hive.id).order('check_date', { ascending: false }).limit(limit),
       supabase.from('varroa_treatments').select('id, treatment_date, treatment_type').eq('hive_id', hive.id).order('treatment_date', { ascending: false }).limit(limit),
       supabase.from('feedings').select('id, feed_date, feed_type, syrup_inverted, quantity, unit').eq('hive_id', hive.id).order('feed_date', { ascending: false }).limit(limit),
-      supabase.from('harvests').select('id, harvest_date, honey_weight, notes').eq('hive_id', hive.id).order('harvest_date', { ascending: false }).limit(limit)
+      supabase.from('harvests').select('id, harvest_date, honey_weight, unit, notes').eq('hive_id', hive.id).order('harvest_date', { ascending: false }).limit(limit)
     ])
+
+    const failed = [inspections, varroaChecks, treatments, feedings, harvests].find(r => r.error)
+    if (failed) return `Error fetching hive records: ${logToolError(failed.error)}`
 
     const timeline: Array<{ date: string; type: string; details: string }> = []
 
@@ -182,7 +188,7 @@ export const getHiveTimeline: Tool = {
       timeline.push({
         date: h.harvest_date,
         type: 'Harvest',
-        details: `${h.honey_weight} kg${h.notes ? `, Notes: ${h.notes.substring(0, 50)}` : ''}`
+        details: `${harvestWeightKg(h).toFixed(1)} kg${h.notes ? `, Notes: ${h.notes.substring(0, 50)}` : ''}`
       })
     })
 

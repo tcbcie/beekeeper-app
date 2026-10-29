@@ -39,6 +39,14 @@ When creating a new tool, you **MUST** adhere to these non-negotiable rules to e
     * "Latest record per hive" stays one query per hive. Never replace it with one `.in('hive_id', ...)` query: Supabase caps a response at 1,000 rows and would silently drop the oldest hives.
     * Calls to the scale vendors (BEEP, Wolf) go five at a time (`mapInGroups` in `scales.ts`), with the tokens read once (`getScaleTokens`).
     * Lineage: one `.in('id', ...)` query per generation, scoped to the user. Never use a queens→queens embed.
+
+8.  **Lookups, numbers and failures (batch 44):**
+    * Find a record by the label the user typed with `resolveByLabel()` or the `find*` helpers (`./utils`): exact case-insensitive match first, a partial match only when it is the only one, and several candidates throw `AmbiguousMatchError` (executeTool turns it into a "which one?" question). Never `.ilike('%x%').limit(1)`: "1" would quietly become Hive 12.
+    * Use `.maybeSingle()`, never `.single()`, for "latest" or "find" queries, and check `error` and `!data` separately, so "not found" and "database error" never swap.
+    * Every count or look-back argument uses `boundedInt(max)`: limits up to 100, days up to 365, scale days up to 30.
+    * A failed query must not read as zero. Return `` `Error fetching X: ${logToolError(error)}` `` or throw; the chat handler then answers "couldn't look that up" itself and the failure never reaches the model as data.
+    * Team apiaries are included by default (`includeShared === false` for own only). Scales are the exception: Mel reads them with the caller's own BEEP/Wolf token, so only scales on the caller's own apiaries.
+    * A colony whose status isn't `active` is not in any hive. Harvest weights go through `harvestWeightKg()` and per-hive totals are keyed by hive id.
 Only use data either based on the users data or on the Knowledge in the database. Never use any data that is part of the model.
 
 ## Tool Structure Template

@@ -254,6 +254,11 @@ Print-specific CSS is included in `src/app/globals.css` with the `@media print` 
 - `.print-date-box` ensures date box text is visible
 - Summary cards converted to bordered boxes with dark text
 
+### Loading and failures (batch 44)
+- The fetchers in `useReportsData.ts` throw when a query fails instead of returning an empty list.
+- Each report's load effect has a `cancelled` flag (only the latest filters' answer counts), always stops its spinner, and shows `ReportLoadError` (exported from `ReportTable.tsx`) on a failure. A failed load never reads as "No records found", which on the DAFM report would look like a clean record.
+- The Varroa Monitoring average infestation counts only checks with a recorded rate.
+
 ### TypeScript Notes
 - `ReportTable.tsx` exports a generic `Column<T>` interface for typed table columns
 - Report components import the type as `ReportFiltersState` to avoid naming conflict with the `ReportFilters` component

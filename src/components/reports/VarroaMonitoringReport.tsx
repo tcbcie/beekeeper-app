@@ -8,7 +8,7 @@ import type { VarroaMonitoringRecord, TimePeriod } from '@/types/reports'
 import { useReportFilters } from '@/hooks/useReportFilters'
 import ReportFilters from './ReportFilters'
 import ReportExportBar from './ReportExportBar'
-import ReportTable, { type Column } from './ReportTable'
+import ReportTable, { type Column, ReportLoadError } from './ReportTable'
 import PrintableReport from './PrintableReport'
 
 interface VarroaMonitoringReportProps {
@@ -19,6 +19,7 @@ export default function VarroaMonitoringReport({ userId }: VarroaMonitoringRepor
   const { apiaries, hives, profile, loading, fetchBaseData, fetchVarroaMonitoring } = useReportsData()
   const [records, setRecords] = useState<VarroaMonitoringRecord[]>([])
   const [dataLoading, setDataLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   const [filters, setFilters] = useReportFilters('varroa', (() => {
     const today = new Date()
@@ -36,13 +37,27 @@ export default function VarroaMonitoringReport({ userId }: VarroaMonitoringRepor
   }, [userId, fetchBaseData])
 
   useEffect(() => {
-    const loadData = async () => {
-      setDataLoading(true)
-      const data = await fetchVarroaMonitoring(userId, filters.apiaryId, filters.hiveId, filters.startDate, filters.endDate)
-      setRecords(data)
-      setDataLoading(false)
+    // Only the latest filters' answer counts, and a failed load says so instead of showing "no data".
+    let cancelled = false
+    setDataLoading(true)
+    setLoadError(false)
+    fetchVarroaMonitoring(userId, filters.apiaryId, filters.hiveId, filters.startDate, filters.endDate)
+      .then((data) => {
+        if (!cancelled) setRecords(data)
+      })
+      .catch((error) => {
+        console.error('Error loading report:', error)
+        if (!cancelled) {
+          setRecords([])
+          setLoadError(true)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDataLoading(false)
+      })
+    return () => {
+      cancelled = true
     }
-    loadData()
   }, [userId, filters.apiaryId, filters.hiveId, filters.startDate, filters.endDate, fetchVarroaMonitoring])
 
   const handleTimePeriodChange = (period: TimePeriod) => {
@@ -97,8 +112,10 @@ export default function VarroaMonitoringReport({ userId }: VarroaMonitoringRepor
   // Calculate summary stats
   const checks = records.filter(r => r.type === 'check')
   const treatments = records.filter(r => r.type === 'treatment')
-  const avgInfestation = checks.length > 0
-    ? checks.reduce((sum, c) => sum + (c.infestation_rate || 0), 0) / checks.length
+  // Only checks with a recorded rate are averaged; a missing rate is not 0%.
+  const ratedChecks = checks.filter(c => typeof c.infestation_rate === 'number')
+  const avgInfestation = ratedChecks.length > 0
+    ? ratedChecks.reduce((sum, c) => sum + (c.infestation_rate as number), 0) / ratedChecks.length
     : 0
   const thresholdBreaches = checks.filter(c => c.action_threshold_reached).length
 
@@ -204,6 +221,8 @@ export default function VarroaMonitoringReport({ userId }: VarroaMonitoringRepor
 
         {dataLoading ? (
           <div className="text-center py-8 text-text-secondary">Loading data...</div>
+        ) : loadError ? (
+          <ReportLoadError />
         ) : (
           <ReportTable
             columns={columns}

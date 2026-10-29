@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate, daysSince, logToolError, todayInDublin, addDaysISO } from './utils'
+import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate, daysSince, logToolError, todayInDublin, addDaysISO, boundedInt } from './utils'
 
 // Helper to extract names from Supabase joins
 function getApiaryName(apiaries: unknown): string {
@@ -25,7 +25,7 @@ export const getAllInspections: Tool = {
   name: 'getAllInspections',
   description: 'Get all recent inspections across all hives. Use this when user asks to see all inspections, recent inspections, or inspection records without specifying a hive.',
   parameters: z.object({
-    limit: z.number().optional().describe('Maximum number of inspections to return (default 20)')
+    limit: boundedInt(100).optional().describe('Maximum number of inspections to return (default 20)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { limit?: number }
@@ -90,9 +90,10 @@ export const getLastInspection: Tool = {
       .eq('hive_id', hive.id)
       .order('inspection_date', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
-    if (error || !data) {
+    if (error) return `Error fetching inspection: ${logToolError(error)}`
+    if (!data) {
       return `No inspections found for hive "${hive.hive_number}".`
     }
 
@@ -121,7 +122,7 @@ export const getInspectionHistory: Tool = {
   description: 'Get inspection history for a specific hive over time',
   parameters: z.object({
     hiveName: z.string().describe('Name or number of the hive'),
-    limit: z.number().optional().describe('Maximum number of inspections to return (default 10)')
+    limit: boundedInt(100).optional().describe('Maximum number of inspections to return (default 10)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { hiveName: string; limit?: number }
@@ -164,7 +165,7 @@ export const getHivesNeedingInspection: Tool = {
   name: 'getHivesNeedingInspection',
   description: 'Get hives that have not been inspected within a specified number of days',
   parameters: z.object({
-    daysSinceInspection: z.number().optional().describe('Days since last inspection threshold (default 14)')
+    daysSinceInspection: boundedInt(365).optional().describe('Days since last inspection threshold (default 14)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { daysSinceInspection?: number }
@@ -307,7 +308,7 @@ export const getDiseaseAlerts: Tool = {
   name: 'getDiseaseAlerts',
   description: 'Get hives with any disease signs noted in recent inspections',
   parameters: z.object({
-    days: z.number().optional().describe('Look back period in days (default 30)')
+    days: boundedInt(365).optional().describe('Look back period in days (default 30)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { days?: number }
@@ -354,7 +355,7 @@ export const getSwarmRiskHives: Tool = {
   name: 'getSwarmRiskHives',
   description: 'Get hives with queen cells or swarm cells in recent inspections indicating swarm risk',
   parameters: z.object({
-    days: z.number().optional().describe('Look back period in days (default 14)')
+    days: boundedInt(365).optional().describe('Look back period in days (default 14)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { days?: number }
@@ -402,7 +403,7 @@ export const getInspectionCounts: Tool = {
   name: 'getInspectionCounts',
   description: 'Get the number of inspections per hive, sorted by most inspections first. Use this to find which hive has the most inspection records.',
   parameters: z.object({
-    limit: z.number().optional().describe('Maximum number of hives to return (default 10)')
+    limit: boundedInt(100).optional().describe('Maximum number of hives to return (default 10)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { limit?: number }

@@ -8,7 +8,7 @@ import type { ArchivedHiveRecord, TimePeriod } from '@/types/reports'
 import { useReportFilters } from '@/hooks/useReportFilters'
 import ReportFilters from './ReportFilters'
 import ReportExportBar from './ReportExportBar'
-import ReportTable, { type Column } from './ReportTable'
+import ReportTable, { type Column, ReportLoadError } from './ReportTable'
 import PrintableReport from './PrintableReport'
 
 interface ArchivedHivesReportProps {
@@ -19,6 +19,7 @@ export default function ArchivedHivesReport({ userId }: ArchivedHivesReportProps
   const { apiaries, hives, profile, loading, fetchBaseData, fetchArchivedHives } = useReportsData()
   const [archivedHives, setArchivedHives] = useState<ArchivedHiveRecord[]>([])
   const [dataLoading, setDataLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   const [filters, setFilters] = useReportFilters('archived-hives', (() => {
     const today = new Date()
@@ -36,13 +37,27 @@ export default function ArchivedHivesReport({ userId }: ArchivedHivesReportProps
   }, [userId, fetchBaseData])
 
   useEffect(() => {
-    const loadData = async () => {
-      setDataLoading(true)
-      const data = await fetchArchivedHives(userId, filters.apiaryId, filters.startDate, filters.endDate)
-      setArchivedHives(data)
-      setDataLoading(false)
+    // Only the latest filters' answer counts, and a failed load says so instead of showing "no data".
+    let cancelled = false
+    setDataLoading(true)
+    setLoadError(false)
+    fetchArchivedHives(userId, filters.apiaryId, filters.startDate, filters.endDate)
+      .then((data) => {
+        if (!cancelled) setArchivedHives(data)
+      })
+      .catch((error) => {
+        console.error('Error loading report:', error)
+        if (!cancelled) {
+          setArchivedHives([])
+          setLoadError(true)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDataLoading(false)
+      })
+    return () => {
+      cancelled = true
     }
-    loadData()
   }, [userId, filters.apiaryId, filters.startDate, filters.endDate, fetchArchivedHives])
 
   const handleTimePeriodChange = (period: TimePeriod) => {
@@ -173,6 +188,8 @@ export default function ArchivedHivesReport({ userId }: ArchivedHivesReportProps
 
         {dataLoading ? (
           <div className="text-center py-8 text-text-secondary">Loading archived hives...</div>
+        ) : loadError ? (
+          <ReportLoadError />
         ) : (
           <ReportTable
             columns={columns}

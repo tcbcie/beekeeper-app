@@ -120,7 +120,9 @@ export function useReportsData(): UseReportsDataReturn {
       query = query.eq('hives.apiary_id', apiaryId)
     }
 
-    const { data } = await query
+    // A failed query throws, so the report shows "couldn't load" rather than "no treatments".
+    const { data, error } = await query
+    if (error) throw error
 
     if (!data) return []
 
@@ -189,10 +191,12 @@ export function useReportsData(): UseReportsDataReturn {
     }
 
     // Checks and treatments are independent: one round trip for both.
-    const [{ data: checksData }, { data: treatmentsData }] = await Promise.all([
+    const [{ data: checksData, error: checksError }, { data: treatmentsData, error: treatmentsError }] = await Promise.all([
       checksRequest,
       treatmentsQuery.order('treatment_date', { ascending: false }),
     ])
+    if (checksError) throw checksError
+    if (treatmentsError) throw treatmentsError
 
     if (checksData) {
       checksData.forEach((c) => {
@@ -234,7 +238,7 @@ export function useReportsData(): UseReportsDataReturn {
   ): Promise<InspectionSummaryRecord[]> => {
     if (!hiveId) return []
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('inspections')
       .select('inspection_date, queen_seen, eggs_present, brood_pattern_rating, temperament_rating, population_strength, honey_supers, notes')
       .eq('user_id', userId)
@@ -242,6 +246,7 @@ export function useReportsData(): UseReportsDataReturn {
       .gte('inspection_date', startDate)
       .lte('inspection_date', endDate)
       .order('inspection_date', { ascending: false })
+    if (error) throw error
 
     if (!data) return []
 
@@ -264,23 +269,26 @@ export function useReportsData(): UseReportsDataReturn {
     if (!apiaryId) return []
 
     // Fetch hives in the apiary
-    const { data: hivesData } = await supabase
+    const { data: hivesData, error: hivesError } = await supabase
       .from('hives')
       .select('id, hive_number, status')
       .eq('user_id', userId)
       .eq('apiary_id', apiaryId)
       .is('archived_at', null)
       .order('hive_number')
+    if (hivesError) throw hivesError
 
     if (!hivesData || hivesData.length === 0) return []
 
     // Fetch latest inspection for each hive
     const hiveIds = hivesData.map(h => h.id)
-    const { data: inspectionsData } = await supabase
+    const { data: inspectionsData, error: inspectionsError } = await supabase
       .from('inspections')
       .select('hive_id, inspection_date, queen_seen, population_strength, notes')
       .in('hive_id', hiveIds)
       .order('inspection_date', { ascending: false })
+    // Without this every hive would show as never inspected.
+    if (inspectionsError) throw inspectionsError
 
     // Group by hive_id, taking only the latest
     const latestInspections = new Map<string, {
@@ -334,7 +342,8 @@ export function useReportsData(): UseReportsDataReturn {
       query = query.eq('hives.apiary_id', apiaryId)
     }
 
-    const { data } = await query.order('harvest_date', { ascending: false })
+    const { data, error } = await query.order('harvest_date', { ascending: false })
+    if (error) throw error
 
     if (!data) return []
 
@@ -378,7 +387,8 @@ export function useReportsData(): UseReportsDataReturn {
       query = query.eq('apiary_id', apiaryId)
     }
 
-    const { data } = await query.order('archived_at', { ascending: false })
+    const { data, error } = await query.order('archived_at', { ascending: false })
+    if (error) throw error
 
     if (!data) return []
 
@@ -420,10 +430,7 @@ export function useReportsData(): UseReportsDataReturn {
       .eq('user_id', userId)
       .eq('queen_failed', true)
 
-    if (error) {
-      console.error('Error fetching queen failures for report:', error)
-      return []
-    }
+    if (error) throw error
     if (!data) return []
 
     type GraftJoin = { cell_number: number | null; queen_number: string | null }

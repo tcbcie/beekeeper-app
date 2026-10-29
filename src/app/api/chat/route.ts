@@ -6,7 +6,8 @@ import { consumeRateLimits, RATE_LIMITS, RATE_LIMITED_MESSAGE } from '@/lib/rate
 import { createUserSupabase, runWithUserSupabase } from '@/lib/ai/tools/utils'
 
 const MAX_MESSAGE_CHARS = 2000
-const MAX_HISTORY_MESSAGES = 20
+// The answer uses the last 6 messages (src/lib/rag.ts); more would only be parsed and dropped.
+const MAX_HISTORY_MESSAGES = 6
 const MAX_HISTORY_CHARS_PER_MESSAGE = 4000
 
 export async function POST(request: NextRequest) {

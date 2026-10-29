@@ -48,7 +48,7 @@ export default function ChatInput({ onSend, isLoading, disabled }: ChatInputProp
         disabled={isLoading || disabled}
         rows={1}
         className="flex-1 resize-none rounded-lg border border-border bg-surface-secondary
-                   px-3 py-2 text-sm text-text-primary placeholder:text-text-muted
+                   px-3 py-2 text-base text-text-primary placeholder:text-text-muted
                    focus:outline-none focus:ring-2 focus:ring-forest-500
                    disabled:opacity-50 disabled:cursor-not-allowed
                    dark:bg-surface-elevated dark:border-border"

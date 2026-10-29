@@ -89,7 +89,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
             <p className="text-sm text-text-muted mb-1">Sources:</p>
             <ul className="space-y-0.5">
               {message.sources!.map((source, idx) => (
-                <li key={idx} className="text-xs">
+                <li key={idx} className="text-sm">
                   {parseMarkdownLinks(source, false)}
                 </li>
               ))}
@@ -97,7 +97,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
           </div>
         )}
         <span
-          className={`text-xs mt-1 block ${
+          className={`text-sm mt-1 block ${
             isUser ? 'text-green-200' : 'text-text-muted'
           }`}
         >

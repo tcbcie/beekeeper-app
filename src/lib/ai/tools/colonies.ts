@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, formatDate, daysSince, logToolError, escapeLike } from './utils'
+import { getSupabase, formatDate, daysSince, logToolError, boundedInt, resolveByLabel, findHiveByName } from './utils'
 
 // Helper to get hive info from join
 function getHiveInfo(hive: unknown): { hive_number: string; apiary_name: string } {
@@ -22,15 +22,18 @@ async function findColonyByNumber(userId: string, colonyNumber: string): Promise
   colony_number: string
 } | null> {
   const supabase = getSupabase()
-  const { data } = await supabase
-    .from('colonies')
-    .select('id, colony_number')
-    .eq('user_id', userId)
-    .ilike('colony_number', `%${escapeLike(colonyNumber)}%`)
-    .limit(1)
-    .maybeSingle()
-
-  return data
+  return resolveByLabel(
+    'colony',
+    colonyNumber,
+    (pattern, limit) => supabase
+      .from('colonies')
+      .select('id, colony_number')
+      .eq('user_id', userId)
+      .ilike('colony_number', pattern)
+      .order('colony_number')
+      .limit(limit),
+    (row) => `Colony ${row.colony_number}`
+  )
 }
 
 // Get current hive for a colony (most recent movement with to_hive_id)
@@ -100,8 +103,9 @@ export const getColonyOverview: Tool = {
         originType: colony.origin_type,
         originDate: formatDate(colony.origin_date),
         ageMonths: Math.floor((daysSince(colony.origin_date) || 0) / 30),
-        currentHive: currentHive?.hive_number || 'Not assigned',
-        apiary: currentHive?.apiary_name || 'N/A',
+        // A deceased, swarmed, sold... colony is no longer in its last hive.
+        currentHive: colony.status === 'active' ? currentHive?.hive_number || 'Not assigned' : 'None (no longer active)',
+        apiary: colony.status === 'active' ? currentHive?.apiary_name || 'N/A' : 'N/A',
         statusReason: colony.status_reason || null,
         notes: colony.notes?.substring(0, 80) || null
       }
@@ -143,13 +147,14 @@ export const getColonyDetails: Tool = {
 
     if (error || !data) return `Error fetching colony: ${logToolError(error)}`
 
-    // Get current hive
-    const currentHive = await getCurrentHiveForColony(data.id)
+    // Get current hive (only a living colony is still in it)
+    const currentHive = data.status === 'active' ? await getCurrentHiveForColony(data.id) : null
 
-    // Get child colonies (colonies where this is a parent)
+    // Get child colonies (colonies where this is a parent), the user's own as in getColonyLineage
     const { data: children } = await supabase
       .from('colonies')
       .select('colony_number, status, origin_type, origin_date')
+      .eq('user_id', userId)
       .or(`parent_colony_id.eq.${data.id},secondary_parent_colony_id.eq.${data.id}`)
 
     // Get movement count
@@ -205,7 +210,7 @@ export const getColonyHistory: Tool = {
   description: 'Get the movement history for a colony - all the hives it has lived in over time',
   parameters: z.object({
     colonyNumber: z.string().describe('Colony number or identifier'),
-    limit: z.number().optional().describe('Maximum number of movements to return (default 20)')
+    limit: boundedInt(100).optional().describe('Maximum number of movements to return (default 20)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { colonyNumber: string; limit?: number }
@@ -403,70 +408,55 @@ export const getColonyInHive: Tool = {
     const args = rawArgs as { hiveName: string }
     const supabase = getSupabase()
 
-    // First find the hive
-    const { data: hive } = await supabase
-      .from('hives')
-      .select('id, hive_number, apiaries(name)')
-      .eq('user_id', userId)
-      .ilike('hive_number', `%${escapeLike(args.hiveName)}%`)
-      .limit(1)
-      .maybeSingle()
-
+    // Own and team hives, as every other hive lookup
+    const hive = await findHiveByName(userId, args.hiveName)
     if (!hive) {
       return `Hive "${args.hiveName}" not found.`
     }
 
-    // Find most recent movement TO this hive
-    const { data: movement } = await supabase
-      .from('colony_movements')
-      .select(`
-        movement_date, movement_type,
-        colonies(id, colony_number, status, origin_type, origin_date)
-      `)
-      .eq('to_hive_id', hive.id)
-      .order('movement_date', { ascending: false })
-      .limit(1)
+    // hives.colony_id is the hive's colony; the movement log follows it.
+    const { data: hiveRow, error } = await supabase
+      .from('hives')
+      .select('colonies!hives_colony_id_fkey(id, colony_number, status, status_date, origin_type, origin_date)')
+      .eq('id', hive.id)
       .maybeSingle()
 
-    if (!movement?.colonies) {
-      return `No colony currently assigned to hive "${hive.hive_number}".`
-    }
+    if (error) return `Error fetching colony: ${logToolError(error)}`
 
-    // Handle join returning array or object
-    type ColonyType = { id: string; colony_number: string; status: string; origin_type: string; origin_date: string }
-    const coloniesRaw = movement.colonies as unknown
+    type ColonyType = { id: string; colony_number: string; status: string; status_date: string | null; origin_type: string; origin_date: string }
+    const coloniesRaw = hiveRow?.colonies as unknown
     const colony = Array.isArray(coloniesRaw) ? coloniesRaw[0] as ColonyType | undefined : coloniesRaw as ColonyType | null
 
     if (!colony) {
       return `No colony currently assigned to hive "${hive.hive_number}".`
     }
 
-    // Check if colony has moved OUT of this hive since
-    const { data: laterMovement } = await supabase
+    // A dead, swarmed, sold or combined colony is no longer living in the hive.
+    if (colony.status !== 'active') {
+      const when = colony.status_date ? ` on ${formatDate(colony.status_date)}` : ''
+      return `The last colony recorded in hive "${hive.hive_number}" was "${colony.colony_number}", which is ${colony.status.replace('_', ' ')}${when}. No living colony is recorded in this hive.`
+    }
+
+    // When it arrived: its latest movement into this hive
+    const { data: movement } = await supabase
       .from('colony_movements')
-      .select('movement_date, to_hive_id')
+      .select('movement_date')
       .eq('colony_id', colony.id)
-      .eq('from_hive_id', hive.id)
-      .gt('movement_date', movement.movement_date)
+      .eq('to_hive_id', hive.id)
+      .order('movement_date', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    if (laterMovement) {
-      return `Colony "${colony.colony_number}" was in hive "${hive.hive_number}" but moved out on ${formatDate(laterMovement.movement_date)}.`
-    }
-
-    const hiveInfo = getHiveInfo(hive)
-
     return {
       hive: hive.hive_number,
-      apiary: hiveInfo.apiary_name,
+      apiary: hive.apiary_name,
       colony: {
         colonyNumber: colony.colony_number,
         status: colony.status,
         originType: colony.origin_type,
         originDate: formatDate(colony.origin_date),
         ageMonths: Math.floor((daysSince(colony.origin_date) || 0) / 30),
-        inHiveSince: formatDate(movement.movement_date)
+        inHiveSince: movement?.movement_date ? formatDate(movement.movement_date) : 'Not recorded'
       }
     }
   }
@@ -477,7 +467,7 @@ export const getDeceasedColonies: Tool = {
   name: 'getDeceasedColonies',
   description: 'Get colonies that have died or been lost, with reasons and dates',
   parameters: z.object({
-    limit: z.number().optional().describe('Maximum number to return (default 20)')
+    limit: boundedInt(100).optional().describe('Maximum number to return (default 20)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { limit?: number }
@@ -566,7 +556,7 @@ export const searchWildColonies: Tool = {
   parameters: z.object({
     status: z.enum(['observed', 'confirmed', 'lost', 'removed', 'relocated', 'unknown', 'pending_review', 'unconfirmed']).optional().describe('Filter by colony status'),
     nestingType: z.enum(['tree_cavity', 'wall_cavity', 'ground', 'building', 'rock_crevice', 'other']).optional().describe('Filter by nesting type'),
-    limit: z.number().optional().describe('Maximum number of results (default 5)')
+    limit: boundedInt(100).optional().describe('Maximum number of results (default 5)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as {

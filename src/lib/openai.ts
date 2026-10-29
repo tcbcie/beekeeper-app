@@ -75,6 +75,24 @@ export async function generateChatResponse(
   return response.choices?.[0]?.message?.content || ''
 }
 
+// A short JSON answer at temperature 0 (the tool router): the same question always routes the
+// same way, and JSON mode means no hand-stripped code fences.
+export async function generateJsonResponse(
+  messages: OpenAI.Chat.ChatCompletionMessageParam[],
+  maxTokens: number
+): Promise<string> {
+  const response = await getOpenAI().chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages,
+    temperature: 0,
+    max_tokens: maxTokens,
+    response_format: { type: 'json_object' },
+  })
+  return response.choices?.[0]?.message?.content || ''
+}
+
+const INTENTS = ['sql', 'knowledge', 'hybrid', 'general'] as const
+
 // Classify user query intent
 export async function classifyQuery(query: string): Promise<{
   intent: 'sql' | 'knowledge' | 'hybrid' | 'general'
@@ -126,9 +144,10 @@ Respond with JSON only: {"intent": "category", "confidence": 0.0-1.0}`
 
   try {
     const result = JSON.parse(response.choices?.[0]?.message?.content || '{}')
+    // Only the four known intents; anything else the model writes counts as general.
     return {
-      intent: result.intent || 'general',
-      confidence: result.confidence || 0.5
+      intent: INTENTS.includes(result.intent) ? result.intent : 'general',
+      confidence: typeof result.confidence === 'number' ? result.confidence : 0.5
     }
   } catch (err) {
     console.error('Failed to parse query classification response:', err, response.choices?.[0]?.message?.content)

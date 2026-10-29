@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleHiveIds, findHiveByName, formatDate, logToolError, todayInDublin, addDaysISO } from './utils'
+import { getSupabase, getAccessibleHiveIds, findHiveByName, formatDate, logToolError, todayInDublin, addDaysISO, boundedInt } from './utils'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -23,7 +23,7 @@ export const getFeedingHistory: Tool = {
   description: 'Get feeding records for a specific hive',
   parameters: z.object({
     hiveName: z.string().describe('Name or number of the hive'),
-    limit: z.number().optional().describe('Maximum number of feedings to return (default 10)')
+    limit: boundedInt(100).optional().describe('Maximum number of feedings to return (default 10)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { hiveName: string; limit?: number }
@@ -62,7 +62,7 @@ export const getHivesNeedingFeeding: Tool = {
   name: 'getHivesNeedingFeeding',
   description: 'Get hives with low honey stores from recent inspections',
   parameters: z.object({
-    daysBack: z.number().optional().describe('Look back period for inspections (default 14)')
+    daysBack: boundedInt(365).optional().describe('Look back period for inspections (default 14)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { daysBack?: number }
@@ -86,7 +86,8 @@ export const getHivesNeedingFeeding: Tool = {
     if (error) return `Error fetching inspections: ${logToolError(error)}`
     if (!data?.length) return `No inspections found in the last ${daysBack} days.`
 
-    const lowStoresKeywords = ['low', 'empty', 'light', 'needs feeding', 'starving', 'minimal']
+    // Whole words only: a plain "low" would also match "flow", "slow" and "below", and "light" "flight".
+    const lowStoresPattern = /\b(low|empty|light|starving|minimal)\b|needs feeding/
     const needsFeeding: Array<{
       hive: string
       apiary: string
@@ -101,17 +102,20 @@ export const getHivesNeedingFeeding: Tool = {
     for (const inspection of data) {
       const info = getHiveInfo(inspection.hives)
 
-      if (seenHives.has(info.hive_number)) continue
+      // Rows are newest first: only each hive's latest inspection counts, so an old "low stores"
+      // note can't flag a hive whose latest inspection was fine.
+      const hiveKey = `${info.apiary_name}|${info.hive_number}`
+      if (seenHives.has(hiveKey)) continue
+      seenHives.add(hiveKey)
 
       const honeySupers = inspection.honey_supers
       const honeyStores = inspection.honey_stores?.toLowerCase() || ''
       const notes = inspection.notes?.toLowerCase() || ''
 
       const isLowSupers = honeySupers !== null && honeySupers <= 1
-      const isLowStores = lowStoresKeywords.some(kw => honeyStores.includes(kw) || notes.includes(kw))
+      const isLowStores = lowStoresPattern.test(honeyStores) || lowStoresPattern.test(notes)
 
       if (isLowSupers || isLowStores) {
-        seenHives.add(info.hive_number)
         needsFeeding.push({
           hive: info.hive_number,
           apiary: info.apiary_name,

@@ -16,6 +16,15 @@ interface ReportTableProps<T> {
   emptyMessage?: string
 }
 
+// Shown instead of the table when the report's data failed to load, so a failure never reads as "no records".
+export function ReportLoadError() {
+  return (
+    <div role="alert" className="text-center py-8 text-red-700 dark:text-red-300">
+      Couldn&apos;t load this report. Check your connection and try again.
+    </div>
+  )
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function ReportTable<T = any>({
   columns,

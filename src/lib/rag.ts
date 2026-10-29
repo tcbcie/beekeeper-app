@@ -1,6 +1,12 @@
-import { generateChatResponse, generateEmbedding, classifyQuery } from './openai'
+import { generateChatResponse, generateJsonResponse, generateEmbedding, classifyQuery } from './openai'
 import { createClient } from '@supabase/supabase-js'
-import { tools, executeTool, getToolDescriptions } from './ai/tools'
+import { getTool, executeTool, getToolDescriptions, TOOL_FAILED } from './ai/tools'
+import { TOOL_DB_ERROR } from './ai/tools/utils'
+import { todayInDublin } from './dublin-date'
+
+// Fixed replies, so a miss or a failure doesn't cost another model call or reach the model as data.
+const NO_TOOL_REPLY = "I don't have that information in your records yet. I've noted the question so we can add it."
+const LOOKUP_FAILED_REPLY = "Sorry, I couldn't look that up just now. Please try again in a moment."
 
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -32,7 +38,7 @@ async function matchQueryToTool(query: string): Promise<{
 } | null> {
   const toolList = getToolDescriptions()
 
-  const currentYear = new Date().getFullYear()
+  const currentYear = todayInDublin().slice(0, 4)
   const systemPrompt = `You are a tool router for a beekeeping app. Given a user query, determine if any of the available tools can answer it.
 
 Current year: ${currentYear}
@@ -42,26 +48,24 @@ ${toolList}
 
 RULES:
 1. If a tool matches, return JSON: {"toolName": "tool_name", "args": {}}
-2. Extract ALL parameters from the query including: hive names, numbers, years, dates, limits
-3. IMPORTANT: If the user mentions a specific year (e.g. "in 2025", "for 2024"), ALWAYS include it as {"year": YYYY} in args
+2. Each tool lists the parameters it takes in brackets. Only use those names, and fill them from the query (hive names, numbers, years, days, limits)
+3. If the user mentions a specific year (e.g. "in 2025", "for 2024") and the tool takes "year", include it as {"year": YYYY}
 4. If no tool matches well, return: {"toolName": null, "args": {}}
 5. Return ONLY valid JSON, nothing else`
 
   try {
-    const response = await generateChatResponse([
+    const response = await generateJsonResponse([
       { role: 'system', content: systemPrompt },
       { role: 'user', content: query }
-    ], 'gpt-4o-mini')
+    ], 300)
 
-    // Clean response - remove markdown code blocks if present
-    let cleanResponse = response.trim()
-    if (cleanResponse.startsWith('```')) {
-      cleanResponse = cleanResponse.replace(/^```(?:json)?\s*\n?/, '')
-      cleanResponse = cleanResponse.replace(/\n?```\s*$/, '')
-    }
-
-    const result = JSON.parse(cleanResponse)
-    return result
+    // Check the shape: a tool name (or null) and an args object.
+    const result: unknown = JSON.parse(response)
+    if (!result || typeof result !== 'object') return null
+    const { toolName, args } = result as { toolName?: unknown; args?: unknown }
+    if (typeof toolName !== 'string' && toolName !== null) return null
+    const safeArgs = args && typeof args === 'object' && !Array.isArray(args) ? args as Record<string, unknown> : {}
+    return { toolName, args: safeArgs }
   } catch (error) {
     console.error('Tool matching error:', error)
     return null
@@ -194,16 +198,19 @@ export async function searchNewsArticles(query: string, limit: number = 10): Pro
 // public.execute_safe_query is retained because /api/admin/export-all-data
 // still uses it for hardcoded schema-metadata queries (not LLM output).
 
-// Log queries that no tool covered, for developer insight into tool gaps.
+// Log queries that no tool covered, for developer insight into tool gaps. Awaited by the caller,
+// so the serverless function can't end before the row is written.
 async function logToolSuggestion(query: string, userId: string) {
   try {
     const supabase = getServerSupabase()
-    await supabase.from('tool_suggestions').insert({
+    // Supabase reports a failed insert in `error`, not by throwing.
+    const { error } = await supabase.from('tool_suggestions').insert({
       query,
       generated_sql: null,
       had_results: false,
       user_id: userId
     })
+    if (error) console.error('Failed to log tool suggestion:', error.message)
   } catch (error) {
     // Silent fail - this is just analytics
     console.error('Failed to log tool suggestion:', error)
@@ -255,24 +262,25 @@ export async function handleChatQuery(
       // data" response -- no free-form SQL ever reaches the database.
       const toolMatch = await matchQueryToTool(query)
 
-      if (toolMatch?.toolName && tools[toolMatch.toolName]) {
-        try {
-          const toolResult = await executeTool(toolMatch.toolName, toolMatch.args, userId)
-          if (typeof toolResult === 'string') {
-            context = toolResult
-          } else {
-            context = `Here is the data from your records:\n\n${JSON.stringify(toolResult, null, 2)}\n\nUse this data to answer the user's question directly.`
-          }
-        } catch (error) {
-          console.error('Tool execution error:', error)
+      if (toolMatch?.toolName && getTool(toolMatch.toolName)) {
+        const toolResult = await executeTool(toolMatch.toolName, toolMatch.args, userId)
+        // A failed lookup (logged where it happened) is answered here, not handed to the model
+        // as if it were the user's records.
+        if (toolResult === TOOL_FAILED || (typeof toolResult === 'string' && toolResult.includes(TOOL_DB_ERROR))) {
+          return { response: LOOKUP_FAILED_REPLY, intent: classification.intent }
+        }
+        if (typeof toolResult === 'string') {
+          context = toolResult
+        } else {
+          context = `Here is the data from your records:\n\n${JSON.stringify(toolResult, null, 2)}\n\nUse this data to answer the user's question directly.`
         }
       }
 
       if (!context) {
-        // No tool covered this query (or the tool threw). Log for tool-gap
-        // analysis and tell the user we don't have that data.
-        logToolSuggestion(query, userId)
-        context = `This question requires data that isn't available in your records.`
+        // No tool covered this query. Log it for tool-gap analysis and reply without a
+        // further model call.
+        await logToolSuggestion(query, userId)
+        return { response: NO_TOOL_REPLY, intent: classification.intent }
       }
       break
     }

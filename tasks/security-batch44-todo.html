@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 44: Reports and Mel</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    .decide { background: #fff7ed; border-left: 4px solid #ea580c; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 44: Reports and Mel</h1>
+<p><strong>Status:</strong> Implemented 29/10/2026, waiting for your test. This is Phase 2 fix batch 31. It covers the open Medium findings in chunk 9b (reports and Mel): C9b-08, 09, 15 to 19 and 21 to 27, plus a few cheap Low ones the agents found along the way. Three agents checked each finding against the code and the live database (counts only). No database change.</p>
+
+<h2>A. Reports: C9b-08, C9b-09</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Failed loads show as "no data":</strong> in all 7 reports a database error is dropped and the report says, for example, "No varroa treatments found". On the DAFM compliance report that reads like a clean record when nothing was loaded. If the connection drops mid-load the spinner stays on for good. An older, slower answer can also replace the report for the filter you just picked.
+  <ul>
+    <li><code>useReportsData.ts</code>: a failed query now raises an error instead of returning an empty list.</li>
+    <li>Each report: a cancel flag so only the latest load counts, the spinner always stops, and a clear "Couldn't load this report. Check your connection and try again." message. Copies the pattern already used in the queen report tab.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Varroa average (Low):</strong> checks with no infestation rate count as 0%, pulling the average down. Only checks with a rate are averaged.</div>
+
+<h2>B. Mel finds the right record: C9b-15, C9b-24, C9b-21, C9b-27</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-15, "hive 1" answered with Hive 12:</strong> Mel looks up hives, queens, batches, colonies, nucs and containers with a "contains" search and takes whichever row comes first. 78 of 330 hives have a number that sits inside another hive number in the same account, so asking about Hive 1 can return Hive 10 or 12. One shared lookup replaces the 8 copies: an exact match first; if there is none, a partial match only when it is the only one; if several fit, Mel asks "Which one: Hive 10 (Home apiary) or Hive 12 (Bog road)?".</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-24, "not found" versus "database error":</strong> asking for a container or batch that doesn't exist says "a database error occurred", and a real database failure on a hive lookup says "Hive not found". The lookups now tell the two apart.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-21, dead colonies still "in" their hive:</strong> a colony marked deceased, swarmed, sold and so on is still reported as living in its last hive, and a removal on the same day is missed. Mel now says "last colony C3, deceased; no living colony recorded". All 22 colonies are active today, so nobody has seen it yet.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-27, "recent activity" isn't recent:</strong> the five "latest" inspections and treatments are whichever rows come back first. They're now sorted newest first.</div>
+
+<h2>C. Mel's questions and answers: C9b-16, C9b-17, C9b-19, C9b-23</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-16, odd numbers from the model:</strong> limits and day counts accept negative, zero, decimal or huge values ("no disease signs in the last -5 days"; years of scale data in one go). A shared bounded number rule: limits 1 to 100, days 1 to 365, scale days 1 to 30. A number sent as text ("30") is accepted.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-16, the "year" rule:</strong> the router is told to always add a year, but most tools don't take one, so it's silently dropped and "best hives in 2024" is answered with all-time figures. The router now sees each tool's parameter names and only adds a year where the tool accepts it.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-17, the tool router:</strong> it runs at a creative setting (0.7) with up to 1,000 words of output and no JSON mode, then strips code fences by hand. Now: setting 0, JSON mode, 300 tokens, and the answer's shape is checked. A tool name like "constructor" can no longer slip through as a "found" tool.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-19, failures passed as data:</strong> a failed lookup ("Error executing getHives") is handed to the model as if it were your records, so it may repeat that text or make something of it. A failure now gets a fixed instruction ("the lookup failed; ask the user to try again"), and the miss is logged. Six tools that ignored errors and reported zeros (activity summary, hive timeline, compare hives, traceability summary, two scale tools) now report the failure.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-23, "low stores":</strong> the keyword "low" also matches "flow", "slow", "below" and "yellow", and "light" matches "flight". Whole words only. Also, an old "low stores" inspection still flagged a hive whose latest inspection was fine; only the latest inspection counts now.</div>
+
+<h2>D. Cost: C9b-18</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Three model calls per data question</strong> (classify, pick a tool, answer). Merging them is a big rewrite with a real risk of Mel misrouting questions, so I'd do the cheap parts:
+  <ul>
+    <li>The router change above (shorter, fixed output).</li>
+    <li>When no tool fits, Mel replies with a fixed message instead of a third call: "I don't have that information in your records yet. I've noted the question so we can add it."</li>
+    <li>The route keeps 6 history messages, not 20; only 6 were ever used.</li>
+  </ul>
+</div>
+
+<h2>E. Who's included: C9b-22</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Missing filters:</strong> "colony in hive X" only looks at hives you created, so it misses team apiaries. "Tasks for hive X" and a colony's child colonies have no owner filter. They get the same rules as their sister tools.</div>
+<div class="decide"><strong>Decision 1: team hives.</strong> "Hives needing inspection" includes team apiaries, but "hives needing treatment", apiary stats and hive overview only include them when asked. <strong>Done: team hives are included by default everywhere</strong> (you approved), as on the Hives page. Scales stay your own only: Mel reads scales with your own BEEP or Wolf account, so it can't read a team-mate's scale. Asking about a team hive's scale will say so, instead of trying with the wrong account.</div>
+
+<h2>F. The chat window: C9b-25, C9b-26</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-25, errors:</strong> a server timeout shows "Unexpected token '&lt;'" and a dropped connection shows "Failed to fetch". Now these show friendly messages, for example "Mel is busy, try again in a moment" (429), "Mel couldn't answer, try again" (server error) or "No connection". A 70-second time limit stops a request hanging. A double tap can't send twice (the shared submit lock). A question that failed is left out of the history sent next time.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>C9b-26, accessibility:</strong> screen readers aren't told it's a dialog, and new replies and errors aren't announced. Escape doesn't close it, and focus doesn't move in and back. The typing box is 14px (iPhones zoom in), and the times under messages are 12px. Now it uses the shared dialog hook, announces replies and errors, has a 16px typing box and 14px small text.</div>
+<div class="decide"><strong>Decision 2: Mel on a computer.</strong> On phones Mel covers the page and a tap outside closes it. On a computer the page behind stays clickable. A proper dialog keeps keyboard focus inside Mel, which clashes with a clickable page. <strong>Done: the same as on phones</strong> (you approved). A click outside closes Mel, and the conversation is kept when you reopen it.</div>
+
+<h2>G. Small extras (Low)</h2>
+<div class="task"><input type="checkbox" checked disabled> Harvest totals in Mel read the unit through the shared <code>harvestWeightKg</code>, so pounds aren't added as kilograms (all 84 harvests are kg today). The harvest summary groups by hive, not by hive number, so two "Hive 3"s in different apiaries no longer merge.</div>
+<div class="task"><input type="checkbox" checked disabled> "This year" uses the Irish date in two harvest and traceability tools. The intent label the model returns is checked against the four allowed values. Logging a missing-tool question is awaited and its error is read.</div>
+<div class="note"><strong>Left as they are:</strong> the duplicated helpers across Mel's tool files, a circular import that works, and loose types in the report table. These are tidy-ups with no bug to fix, and they would add risk to this batch.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; a short test for the new record lookup (exact match, single partial match, ambiguous); the qa-engineer audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/reports-mel-batch44-plan.md</code>, <code>docs/features/reports.md</code>, the Mel tools skill rules, the Phase 2 register, and memory if a new rule comes out of it.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>Reports: open the DAFM report with Wi-Fi off; you see "Couldn't load", not "No treatments".</li>
+    <li>Ask Mel "How is hive 1?"; you get Hive 1 (or a "Which one?" question), not Hive 12.</li>
+    <li>Ask Mel "Which hives have low stores?"; hives with "honey flow" in their notes aren't listed.</li>
+    <li>Mel on your phone: the typing box doesn't zoom in; on a computer, Escape closes it.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">A report that fails to load</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“No records found” (on DAFM: looks clean); spinner could stick</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“Couldn’t load this report”; spinner always stops; latest filter wins</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Varroa average</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks without a rate counted as 0%</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Only checks with a rate</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">“How is hive 1?”</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Could answer with Hive 10 or 12</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Hive 1, or “Which one: Hive 10 or Hive 12?”</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Not found / database error</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Swapped in places</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Told apart</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Dead colony</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Still “in” its last hive</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“No living colony recorded”</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Recent activity</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Unordered</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Newest first</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Numbers from the model</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-5 days, years of scale data</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Limits 1–100, days 1–365, scale days 1–30</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">A failed lookup</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Handed to the model as data; some tools said 0</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Fixed reply: “couldn’t look that up”</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">No tool fits</td><td style="border:1px solid #e7d9b8;padding:0.4rem">A third model call</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Fixed reply, question logged</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Low stores</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Matched “flow”, “flight”; old inspections</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Whole words; latest inspection only</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Team hives</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Some tools yes, some no</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Yes everywhere; scales your own only</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Chat errors</td><td style="border:1px solid #e7d9b8;padding:0.4rem">“Unexpected token”, “Failed to fetch”; double send</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Friendly messages; timeout; one send per tap</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Chat accessibility</td><td style="border:1px solid #e7d9b8;padding:0.4rem">No dialog role, no Escape, 14px typing box</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Dialog hook, announcements, 16px box, 14px small text</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0 (outside the new design skill folder); 863 tests pass (5 new)</td></tr>
+</table>
+<ul>
+  <li><strong>How the failures work:</strong> a tool that fails now either returns its usual “Error fetching …” text or throws. Either way the chat handler answers “Sorry, I couldn’t look that up just now” itself, so the failure never reaches the model.</li>
+  <li><strong>The shared lookup:</strong> <code>resolveByLabel()</code> in <code>src/lib/ai/tools/utils.ts</code> replaces 8 copies. Several matches throw a “which one?” question that <code>executeTool</code> hands back, so no tool needed its own handling. The batch lookup also stopped putting the typed code straight into the database filter; the code was already restricted to letters, digits and hyphens.</li>
+  <li><strong>Test:</strong> <code>tests/lib/ai-resolve-by-label.test.ts</code> covers five cases: an exact match beats longer numbers, a single partial match, “which one?”, nothing found, and a database failure.</li>
+  <li><strong>QA audit:</strong> no Critical or High issues. Two Medium issues were fixed. Seven tool descriptions still said “only your own hives”, which would have steered the router away from team hives. The model’s <code>null</code> arguments made the whole lookup fail; they now count as not given.</li>
+  <li><strong>Lint note:</strong> <code>eslint .</code> reports 3 errors in <code>.agents/skills/design-taste-frontend/scripts/</code>, the skill folder you installed. It is untracked, so CI doesn’t see it. It needs an ignore entry before it is ever committed.</li>
+  <li><strong>Left as they are:</strong> merging Mel’s three model calls, the duplicated tool helpers, the circular import and the report table’s loose types.</li>
+</ul>
+</body>
+</html>

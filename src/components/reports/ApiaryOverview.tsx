@@ -6,7 +6,7 @@ import { useSelection } from '@/contexts/SelectionContext'
 import { exportToCSV, printReport } from '@/lib/export-utils'
 import type { HiveOverviewRecord } from '@/types/reports'
 import ReportExportBar from './ReportExportBar'
-import ReportTable, { type Column } from './ReportTable'
+import ReportTable, { type Column, ReportLoadError } from './ReportTable'
 import PrintableReport from './PrintableReport'
 
 interface ApiaryOverviewProps {
@@ -19,23 +19,40 @@ export default function ApiaryOverview({ userId }: ApiaryOverviewProps) {
   const { selectedApiaryId: selectedApiary, setSelectedApiaryId: setSelectedApiary } = useSelection()
   const [hiveData, setHiveData] = useState<HiveOverviewRecord[]>([])
   const [dataLoading, setDataLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   useEffect(() => {
     fetchBaseData(userId)
   }, [userId, fetchBaseData])
 
   useEffect(() => {
-    const loadData = async () => {
-      if (!selectedApiary) {
-        setHiveData([])
-        return
-      }
-      setDataLoading(true)
-      const data = await fetchApiaryOverview(userId, selectedApiary)
-      setHiveData(data)
+    // Only the latest filters' answer counts, and a failed load says so instead of showing "no data".
+    if (!selectedApiary) {
+      setHiveData([])
       setDataLoading(false)
+      setLoadError(false)
+      return
     }
-    loadData()
+    let cancelled = false
+    setDataLoading(true)
+    setLoadError(false)
+    fetchApiaryOverview(userId, selectedApiary)
+      .then((data) => {
+        if (!cancelled) setHiveData(data)
+      })
+      .catch((error) => {
+        console.error('Error loading report:', error)
+        if (!cancelled) {
+          setHiveData([])
+          setLoadError(true)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDataLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [userId, selectedApiary, fetchApiaryOverview])
 
   const handleExportCSV = () => {
@@ -175,6 +192,8 @@ export default function ApiaryOverview({ userId }: ApiaryOverviewProps) {
 
             {dataLoading ? (
               <div className="text-center py-8 text-text-secondary">Loading hives...</div>
+            ) : loadError ? (
+              <ReportLoadError />
             ) : (
               <ReportTable
                 columns={columns}

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, formatDate, logToolError, escapeLike } from './utils'
+import { getSupabase, formatDate, logToolError, resolveByLabel, todayInDublin } from './utils'
 import { harvestWeightKg } from '@/lib/traceability-utils'
 
 // Get all bulk honey containers for user
@@ -79,23 +79,29 @@ export const getContainerDetails: Tool = {
     const args = rawArgs as { containerCode: string }
     const supabase = getSupabase()
 
-    const { data: container, error } = await supabase
-      .from('bulk_containers')
-      .select(`
-        id, container_code, container_type, extraction_date, total_weight_kg, notes,
-        container_harvests(
-          harvest:harvests(
-            harvest_date, honey_weight, unit, floral_source, moisture_content,
-            hives(hive_number, apiaries(name, city))
+    // Exact code first; several partial matches ask "which one?". A missing container is
+    // "not found", a failed lookup is reported as a failure (not the other way round).
+    const container = await resolveByLabel(
+      'container',
+      args.containerCode,
+      (pattern, limit) => supabase
+        .from('bulk_containers')
+        .select(`
+          id, container_code, container_type, extraction_date, total_weight_kg, notes,
+          container_harvests(
+            harvest:harvests(
+              harvest_date, honey_weight, unit, floral_source, moisture_content,
+              hives(hive_number, apiaries(name, city))
+            )
           )
-        )
-      `)
-      .eq('user_id', userId)
-      .ilike('container_code', `%${escapeLike(args.containerCode)}%`)
-      .limit(1)
-      .single()
+        `)
+        .eq('user_id', userId)
+        .ilike('container_code', pattern)
+        .order('container_code')
+        .limit(limit),
+      (row) => row.container_code
+    )
 
-    if (error) return `Container not found: ${logToolError(error)}`
     if (!container) return `No container found matching "${args.containerCode}"`
 
     // Calculate origin percentages
@@ -225,31 +231,37 @@ export const getBatchDetails: Tool = {
     const supabase = getSupabase()
 
     // Try to find by batch_code or trace_code
-    const { data: batch, error } = await supabase
-      .from('batch_runs')
-      .select(`
-        id, batch_code, trace_code, batch_date, total_weight_kg, jar_size_ml,
-        jar_weight_g, jar_count, best_before_date, is_public, is_creamed,
-        public_title, public_origin, public_story, notes,
-        batch_containers(
-          weight_used_kg,
-          container:bulk_containers(
-            container_code, container_type, total_weight_kg,
-            container_harvests(
-              harvest:harvests(
-                id, honey_weight, unit,
-                hives(apiaries(name, city))
+    const batch = await resolveByLabel(
+      'batch',
+      args.batchCode,
+      (pattern, limit) => supabase
+        .from('batch_runs')
+        .select(`
+          id, batch_code, trace_code, batch_date, total_weight_kg, jar_size_ml,
+          jar_weight_g, jar_count, best_before_date, is_public, is_creamed,
+          public_title, public_origin, public_story, notes,
+          batch_containers(
+            weight_used_kg,
+            container:bulk_containers(
+              container_code, container_type, total_weight_kg,
+              container_harvests(
+                harvest:harvests(
+                  id, honey_weight, unit,
+                  hives(apiaries(name, city))
+                )
               )
             )
           )
-        )
-      `)
-      .eq('user_id', userId)
-      .or(`batch_code.ilike.%${args.batchCode}%,trace_code.ilike.%${args.batchCode}%`)
-      .limit(1)
-      .single()
+        `)
+        .eq('user_id', userId)
+        // The schema allows only letters, digits and hyphens, so the code can't change the filter
+        // itself. Exact match first; several partial matches ask "which one?".
+        .or(`batch_code.ilike.${pattern},trace_code.ilike.${pattern}`)
+        .order('batch_code')
+        .limit(limit),
+      (row) => row.batch_code
+    )
 
-    if (error) return `Batch not found: ${logToolError(error)}`
     if (!batch) return `No batch found matching "${args.batchCode}"`
 
     // Calculate origin percentages from linked containers
@@ -341,10 +353,10 @@ export const getTraceabilitySummary: Tool = {
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { year?: number }
     const supabase = getSupabase()
-    const year = args.year || new Date().getFullYear()
+    const year = args.year || Number(todayInDublin().slice(0, 4))
 
     // Get containers
-    const { data: containers } = await supabase
+    const { data: containers, error: containersError } = await supabase
       .from('bulk_containers')
       .select('id, total_weight_kg, extraction_date')
       .eq('user_id', userId)
@@ -352,12 +364,17 @@ export const getTraceabilitySummary: Tool = {
       .lte('extraction_date', `${year}-12-31`)
 
     // Get batches
-    const { data: batches } = await supabase
+    const { data: batches, error: batchesError } = await supabase
       .from('batch_runs')
       .select('id, total_weight_kg, jar_count, batch_date, is_public')
       .eq('user_id', userId)
       .gte('batch_date', `${year}-01-01`)
       .lte('batch_date', `${year}-12-31`)
+
+    // A failed lookup must not read as "0 containers, 0 kg".
+    if (containersError || batchesError) {
+      return `Error fetching traceability data: ${logToolError(containersError || batchesError)}`
+    }
 
     const containerCount = containers?.length || 0
     const containerWeight = containers?.reduce((sum, c) => sum + (c.total_weight_kg || 0), 0) || 0

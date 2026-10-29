@@ -8,7 +8,7 @@ import type { InspectionSummaryRecord, TimePeriod } from '@/types/reports'
 import { useReportFilters } from '@/hooks/useReportFilters'
 import ReportFilters from './ReportFilters'
 import ReportExportBar from './ReportExportBar'
-import ReportTable, { type Column } from './ReportTable'
+import ReportTable, { type Column, ReportLoadError } from './ReportTable'
 import PrintableReport from './PrintableReport'
 
 interface HiveInspectionSummaryProps {
@@ -19,6 +19,7 @@ export default function HiveInspectionSummary({ userId }: HiveInspectionSummaryP
   const { apiaries, hives, profile, loading, fetchBaseData, fetchInspectionSummary } = useReportsData()
   const [inspections, setInspections] = useState<InspectionSummaryRecord[]>([])
   const [dataLoading, setDataLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   const [filters, setFilters] = useReportFilters('hive-inspection-summary', (() => {
     const today = new Date()
@@ -36,17 +37,33 @@ export default function HiveInspectionSummary({ userId }: HiveInspectionSummaryP
   }, [userId, fetchBaseData])
 
   useEffect(() => {
-    const loadData = async () => {
-      if (!filters.hiveId) {
-        setInspections([])
-        return
-      }
-      setDataLoading(true)
-      const data = await fetchInspectionSummary(userId, filters.hiveId, filters.startDate, filters.endDate)
-      setInspections(data)
+    // Only the latest filters' answer counts, and a failed load says so instead of showing "no data".
+    if (!filters.hiveId) {
+      setInspections([])
       setDataLoading(false)
+      setLoadError(false)
+      return
     }
-    loadData()
+    let cancelled = false
+    setDataLoading(true)
+    setLoadError(false)
+    fetchInspectionSummary(userId, filters.hiveId, filters.startDate, filters.endDate)
+      .then((data) => {
+        if (!cancelled) setInspections(data)
+      })
+      .catch((error) => {
+        console.error('Error loading report:', error)
+        if (!cancelled) {
+          setInspections([])
+          setLoadError(true)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDataLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [userId, filters.hiveId, filters.startDate, filters.endDate, fetchInspectionSummary])
 
   const handleTimePeriodChange = (period: TimePeriod) => {
@@ -190,6 +207,8 @@ export default function HiveInspectionSummary({ userId }: HiveInspectionSummaryP
           >
             {dataLoading ? (
               <div className="text-center py-8 text-text-secondary">Loading inspections...</div>
+            ) : loadError ? (
+              <ReportLoadError />
             ) : (
               <ReportTable
                 columns={columns}

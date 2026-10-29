@@ -1,12 +1,28 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useId } from 'react'
 import { X, Sparkles } from 'lucide-react'
 import { ChatMessage as ChatMessageType } from '@/types/chat'
 import ChatMessage from './ChatMessage'
 import ChatInput from './ChatInput'
 import { supabase } from '@/lib/supabase'
 import IconButton from '@/components/ui/IconButton'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
+import { useDialogA11y } from '@/hooks/useDialogA11y'
+
+// Long enough for Mel's slowest answers (the server allows 60 seconds per model call).
+const REQUEST_TIMEOUT_MS = 70_000
+
+// What the user sees when a request fails: never raw browser or parser text.
+function friendlyError(status: number, data: { error?: string; code?: string }): string {
+  if (data.code === 'SUBSCRIPTION_REQUIRED') {
+    return 'This feature requires a premium subscription. Please upgrade to access Mel.'
+  }
+  if (status === 401) return 'Your session has expired. Please sign in again.'
+  if (status === 429) return data.error || 'Mel is busy. Please try again in a moment.'
+  if (status >= 500) return 'Mel couldn\'t answer just now. Please try again.'
+  return data.error || 'Mel couldn\'t answer just now. Please try again.'
+}
 
 interface ChatDialogProps {
   isOpen: boolean
@@ -18,6 +34,14 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  // Questions that got no answer stay on screen but aren't sent as history next time.
+  const failedIdsRef = useRef(new Set<string>())
+  const titleId = useId()
+  const { run } = useSubmitLock()
+
+  // Escape closes, focus moves into Mel and back to the button afterwards, Tab stays inside.
+  useDialogA11y({ isOpen, onClose, containerRef: dialogRef })
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -38,7 +62,8 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
     }
   }, [isOpen, messages.length])
 
-  const sendMessage = async (content: string) => {
+  // The submit lock stops a double tap sending the same question twice.
+  const sendMessage = (content: string) => run(async () => {
     setError(null)
 
     // Add user message
@@ -50,12 +75,14 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
     }
     setMessages(prev => [...prev, userMessage])
     setIsLoading(true)
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
     try {
       // Get auth token
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.access_token) {
-        throw new Error('Not authenticated')
+        throw new Error('Your session has expired. Please sign in again.')
       }
 
       // Send to API
@@ -67,17 +94,16 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
         },
         body: JSON.stringify({
           message: content,
-          conversationHistory: messages.filter(m => m.id !== 'welcome')
-        })
+          conversationHistory: messages.filter(m => m.id !== 'welcome' && !failedIdsRef.current.has(m.id))
+        }),
+        signal: controller.signal
       })
 
-      const data = await response.json()
+      // A timeout or gateway error returns an HTML page, not JSON.
+      const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        if (data.code === 'SUBSCRIPTION_REQUIRED') {
-          throw new Error('This feature requires a premium subscription. Please upgrade to access Mel.')
-        }
-        throw new Error(data.error || 'Failed to get response')
+        throw new Error(friendlyError(response.status, data))
       }
 
       // Add assistant response
@@ -91,24 +117,38 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
       setMessages(prev => [...prev, assistantMessage])
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      failedIdsRef.current.add(userMessage.id)
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError('Mel took too long to answer. Please try again.')
+      } else if (err instanceof TypeError) {
+        // fetch rejects with a TypeError when there is no connection.
+        setError('No connection. Check your internet and try again.')
+      } else {
+        setError(err instanceof Error ? err.message : 'Something went wrong')
+      }
     } finally {
+      clearTimeout(timer)
       setIsLoading(false)
     }
-  }
+  })
 
   if (!isOpen) return null
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop: a click outside closes Mel on every screen size (the conversation is kept). */}
       <div
-        className="fixed inset-0 bg-black/50 z-50 md:bg-transparent md:pointer-events-none"
+        className="fixed inset-0 bg-black/50 z-50 md:bg-transparent"
         onClick={onClose}
       />
 
       {/* Dialog */}
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         className="fixed above-bottom-nav md:bottom-24 left-0 right-0 md:right-6 md:left-auto
                    z-50 w-full md:w-96 h-[70vh] md:h-[500px] md:max-h-[70vh]
                    bg-surface rounded-t-2xl md:rounded-2xl shadow-2xl
@@ -120,7 +160,7 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface-secondary">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-amber-500" />
-          <h2 className="font-semibold text-text-primary">Mel your Virtual Assistant</h2>
+          <h2 id={titleId} className="font-semibold text-text-primary">Mel your Virtual Assistant</h2>
         </div>
           <IconButton
             onClick={onClose}
@@ -132,8 +172,8 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
           </IconButton>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Messages: new replies are read out by screen readers */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4" role="log" aria-live="polite">
           {messages.map((message) => (
             <ChatMessage key={message.id} message={message} />
           ))}
@@ -154,7 +194,7 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
           )}
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+            <div role="alert" className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
             </div>
           )}

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleHiveIds, logToolError } from './utils'
+import { getSupabase, getAccessibleHiveIds, logToolError, todayInDublin } from './utils'
+import { harvestWeightKg } from '@/lib/traceability-utils'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -33,13 +34,13 @@ export const getHarvestSummary: Tool = {
       return 'No hives found.'
     }
 
-    const year = args.year || new Date().getFullYear()
+    const year = args.year || Number(todayInDublin().slice(0, 4))
     const startDate = `${year}-01-01`
     const endDate = `${year}-12-31`
 
     const { data: harvests, error } = await supabase
       .from('harvests')
-      .select('harvest_date, honey_weight, frames_harvested, hives(hive_number, apiaries(name))')
+      .select('hive_id, harvest_date, honey_weight, unit, frames_harvested, hives(hive_number, apiaries(name))')
       .in('hive_id', hiveIds)
       .gte('harvest_date', startDate)
       .lte('harvest_date', endDate)
@@ -51,20 +52,21 @@ export const getHarvestSummary: Tool = {
       return `No harvests recorded for ${year}.`
     }
 
-    const hiveStats: Record<string, { apiary: string; total: number; count: number }> = {}
+    // Keyed by hive id: two "Hive 3"s in different apiaries stay separate.
+    const hiveStats: Record<string, { hive: string; apiary: string; total: number; count: number }> = {}
     const apiaryStats: Record<string, { total: number; count: number }> = {}
     let grandTotal = 0
     let harvestCount = 0
 
     for (const harvest of harvests) {
       const info = getHiveInfo(harvest.hives)
-      const weight = harvest.honey_weight || 0
+      const weight = harvestWeightKg(harvest)
 
-      if (!hiveStats[info.hive_number]) {
-        hiveStats[info.hive_number] = { apiary: info.apiary_name, total: 0, count: 0 }
+      if (!hiveStats[harvest.hive_id]) {
+        hiveStats[harvest.hive_id] = { hive: info.hive_number, apiary: info.apiary_name, total: 0, count: 0 }
       }
-      hiveStats[info.hive_number].total += weight
-      hiveStats[info.hive_number].count++
+      hiveStats[harvest.hive_id].total += weight
+      hiveStats[harvest.hive_id].count++
 
       if (!apiaryStats[info.apiary_name]) {
         apiaryStats[info.apiary_name] = { total: 0, count: 0 }
@@ -85,8 +87,8 @@ export const getHarvestSummary: Tool = {
         totalKg: stats.total.toFixed(1),
         harvestCount: stats.count
       })),
-      byHive: Object.entries(hiveStats).map(([name, stats]) => ({
-        hive: name,
+      byHive: Object.values(hiveStats).map((stats) => ({
+        hive: stats.hive,
         apiary: stats.apiary,
         totalKg: stats.total.toFixed(1),
         harvestCount: stats.count

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, formatDate, daysSince, logToolError, escapeLike } from './utils'
+import { getSupabase, formatDate, daysSince, logToolError, boundedInt, resolveByLabel } from './utils'
 
 // Nuc statuses where a queen is still on the way to laying (mating_nucs.status check
 // constraint). Laying, failed, sold and merged nucs are past this stage.
@@ -106,21 +106,26 @@ export const getNucDetails: Tool = {
     const args = rawArgs as { nucNumber: string }
     const supabase = getSupabase()
 
-    // Find the nuc
-    const { data: nuc, error } = await supabase
-      .from('mating_nucs')
-      .select(`
-        id, nuc_number, status, setup_date, mating_location, notes, updated_at,
-        batch_grafts(cell_number, status),
-        rearing_batches(batch_name),
-        queens!mating_nucs_queen_id_fkey(queen_number)
-      `)
-      .eq('user_id', userId)
-      .ilike('nuc_number', `%${escapeLike(args.nucNumber)}%`)
-      .limit(1)
-      .single()
+    // Find the nuc (exact number first; several partial matches ask "which one?")
+    const nuc = await resolveByLabel(
+      'nuc',
+      args.nucNumber,
+      (pattern, limit) => supabase
+        .from('mating_nucs')
+        .select(`
+          id, nuc_number, status, setup_date, mating_location, notes, updated_at,
+          batch_grafts(cell_number, status),
+          rearing_batches(batch_name),
+          queens!mating_nucs_queen_id_fkey(queen_number)
+        `)
+        .eq('user_id', userId)
+        .ilike('nuc_number', pattern)
+        .order('nuc_number')
+        .limit(limit),
+      (row) => `Nuc ${row.nuc_number}`
+    )
 
-    if (error || !nuc) return `Nuc "${args.nucNumber}" not found.`
+    if (!nuc) return `Nuc "${args.nucNumber}" not found.`
 
     // Fetch inspections for this nuc
     const { data: inspections } = await supabase
@@ -204,7 +209,7 @@ export const getNucsNeedingInspection: Tool = {
   name: 'getNucsNeedingInspection',
   description: 'Get active mating nucs that have not been inspected recently',
   parameters: z.object({
-    days: z.number().optional().describe('Days since last inspection to consider overdue (default 7)')
+    days: boundedInt(365).optional().describe('Days since last inspection to consider overdue (default 7)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { days?: number }

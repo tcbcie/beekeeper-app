@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { z } from 'zod'
 import { BEEKEEPER_TIME_ZONE, toDublinDate, todayInDublin, addDaysISO } from '@/lib/dublin-date'
 
 // Fail-fast at module init. Returns a non-nullable string so the values can
@@ -48,11 +49,64 @@ export function escapeLike(value: string): string {
   return value.slice(0, 100).replace(/[\\%_]/g, (ch) => '\\' + ch)
 }
 
+// The phrase every failed tool lookup carries. The chat handler spots it and answers "couldn't
+// look that up" itself, instead of handing the failure to the model as if it were the user's data.
+export const TOOL_DB_ERROR = 'a database error occurred'
+
 // Log a tool's database error on the server and give the AI only a generic phrase, so raw
 // database text never reaches the model (or, through it, the user).
 export function logToolError(error: unknown): string {
   console.error('AI tool database error:', error)
-  return 'a database error occurred'
+  return TOOL_DB_ERROR
+}
+
+// A whole number the model may pass as a count or a look-back period: 1 to `max`, and a number
+// written as text ("30") is accepted. Stops negative, zero, decimal or huge values.
+export function boundedInt(max: number) {
+  return z.coerce.number().int().min(1).max(max)
+}
+
+// Thrown by resolveByLabel; executeTool turns these into a question or a failed-lookup answer,
+// so no tool needs its own handling.
+export class AmbiguousMatchError extends Error {}
+export class ToolLookupError extends Error {}
+
+type LabelQuery<T> = (pattern: string, limit: number) => PromiseLike<{ data: T[] | null; error: unknown }>
+
+// Find one record by the label the user typed (hive number, queen number, batch name...).
+// An exact case-insensitive match wins; otherwise a partial match only counts when it is the only
+// one. "1" must never quietly become Hive 12, so several candidates raise a "which one?" question.
+// `run` builds the query for a LIKE pattern and a row limit (it should sort by the label).
+export async function resolveByLabel<T>(
+  kind: string,
+  label: string,
+  run: LabelQuery<T>,
+  describe: (row: T) => string
+): Promise<T | null> {
+  const text = escapeLike(label.trim())
+  if (!text) return null
+
+  const exact = await run(text, 6)
+  if (exact.error) {
+    logToolError(exact.error)
+    throw new ToolLookupError(`${kind} lookup failed`)
+  }
+  let rows = exact.data ?? []
+  if (rows.length === 0) {
+    const partial = await run(`%${text}%`, 6)
+    if (partial.error) {
+      logToolError(partial.error)
+      throw new ToolLookupError(`${kind} lookup failed`)
+    }
+    rows = partial.data ?? []
+  }
+
+  if (rows.length === 0) return null
+  if (rows.length === 1) return rows[0]
+  const options = rows.slice(0, 5).map(describe).join(', ')
+  throw new AmbiguousMatchError(
+    `More than one ${kind} matches "${label.trim().slice(0, 100)}": ${options}. Ask the user which one they mean.`
+  )
 }
 
 // Secret-key client that bypasses RLS. Only for data users may not read through RLS but a tool
@@ -104,7 +158,7 @@ export async function getAccessibleHiveIds(userId: string): Promise<string[]> {
   return data?.map(h => h.id) || []
 }
 
-// Find hive by name/number (case-insensitive, partial match)
+// Find a hive in the user's own or team apiaries by its number (see resolveByLabel)
 export async function findHiveByName(userId: string, hiveName: string): Promise<{
   id: string
   hive_number: string
@@ -114,61 +168,71 @@ export async function findHiveByName(userId: string, hiveName: string): Promise<
   if (apiaryIds.length === 0) return null
 
   const supabase = getSupabase()
-  const { data } = await supabase
-    .from('hives')
-    .select('id, hive_number, apiaries(name)')
-    .in('apiary_id', apiaryIds)
-    .ilike('hive_number', `%${escapeLike(hiveName)}%`)
-    .limit(1)
-    .single()
-
-  if (!data) return null
-
   // Handle Supabase join result which could be object or null
-  let apiaryName = 'Unknown'
-  if (data.apiaries && typeof data.apiaries === 'object' && 'name' in data.apiaries) {
-    apiaryName = (data.apiaries as { name: string }).name
-  }
+  const apiaryOf = (row: { apiaries: unknown }) =>
+    row.apiaries && typeof row.apiaries === 'object' && 'name' in row.apiaries
+      ? (row.apiaries as { name: string }).name
+      : 'Unknown'
+
+  const data = await resolveByLabel(
+    'hive',
+    hiveName,
+    (pattern, limit) => supabase
+      .from('hives')
+      .select('id, hive_number, apiaries(name)')
+      .in('apiary_id', apiaryIds)
+      .ilike('hive_number', pattern)
+      .order('hive_number')
+      .limit(limit),
+    (row) => `Hive ${row.hive_number} (${apiaryOf(row)})`
+  )
+  if (!data) return null
 
   return {
     id: data.id,
     hive_number: data.hive_number,
-    apiary_name: apiaryName
+    apiary_name: apiaryOf(data)
   }
 }
 
-// Find queen by number (case-insensitive, partial match)
+// Find one of the user's queens by number (see resolveByLabel)
 export async function findQueenByNumber(userId: string, queenNumber: string): Promise<{
   id: string
   queen_number: string
 } | null> {
   const supabase = getSupabase()
-  const { data } = await supabase
-    .from('queens')
-    .select('id, queen_number')
-    .eq('user_id', userId)
-    .ilike('queen_number', `%${escapeLike(queenNumber)}%`)
-    .limit(1)
-    .single()
-
-  return data
+  return resolveByLabel(
+    'queen',
+    queenNumber,
+    (pattern, limit) => supabase
+      .from('queens')
+      .select('id, queen_number')
+      .eq('user_id', userId)
+      .ilike('queen_number', pattern)
+      .order('queen_number')
+      .limit(limit),
+    (row) => `Queen ${row.queen_number}`
+  )
 }
 
-// Find batch by name (case-insensitive, partial match)
+// Find one of the user's rearing batches by name (see resolveByLabel)
 export async function findBatchByName(userId: string, batchName: string): Promise<{
   id: string
   batch_name: string
 } | null> {
   const supabase = getSupabase()
-  const { data } = await supabase
-    .from('rearing_batches')
-    .select('id, batch_name')
-    .eq('user_id', userId)
-    .ilike('batch_name', `%${escapeLike(batchName)}%`)
-    .limit(1)
-    .single()
-
-  return data
+  return resolveByLabel(
+    'batch',
+    batchName,
+    (pattern, limit) => supabase
+      .from('rearing_batches')
+      .select('id, batch_name')
+      .eq('user_id', userId)
+      .ilike('batch_name', pattern)
+      .order('batch_name')
+      .limit(limit),
+    (row) => row.batch_name
+  )
 }
 
 // The tools run on the server (UTC), but "today" and day counts must follow the beekeeper's

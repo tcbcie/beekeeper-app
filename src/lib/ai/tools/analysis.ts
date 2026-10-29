@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { Tool } from './index'
-import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate, logToolError, todayInDublin, addDaysISO } from './utils'
+import { harvestWeightKg } from '@/lib/traceability-utils'
+import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate, logToolError, todayInDublin, addDaysISO, boundedInt } from './utils'
 
 // Helper to extract apiary name from Supabase join
 function getApiaryName(apiaries: unknown): string {
@@ -48,16 +49,21 @@ export const compareHives: Tool = {
     ] = await Promise.all([
       supabase.from('hives').select('status, queen_marked, queen_marking_color').eq('id', hive1Data.id).single(),
       supabase.from('hives').select('status, queen_marked, queen_marking_color').eq('id', hive2Data.id).single(),
-      supabase.from('inspections').select('inspection_date, temperament_rating, brood_pattern_rating, brood_frames, honey_supers, population_strength').eq('hive_id', hive1Data.id).order('inspection_date', { ascending: false }).limit(1).single(),
-      supabase.from('inspections').select('inspection_date, temperament_rating, brood_pattern_rating, brood_frames, honey_supers, population_strength').eq('hive_id', hive2Data.id).order('inspection_date', { ascending: false }).limit(1).single(),
-      supabase.from('varroa_checks').select('check_date, mites_count, infestation_rate').eq('hive_id', hive1Data.id).order('check_date', { ascending: false }).limit(1).single(),
-      supabase.from('varroa_checks').select('check_date, mites_count, infestation_rate').eq('hive_id', hive2Data.id).order('check_date', { ascending: false }).limit(1).single(),
-      supabase.from('harvests').select('honey_weight').eq('hive_id', hive1Data.id),
-      supabase.from('harvests').select('honey_weight').eq('hive_id', hive2Data.id)
+      supabase.from('inspections').select('inspection_date, temperament_rating, brood_pattern_rating, brood_frames, honey_supers, population_strength').eq('hive_id', hive1Data.id).order('inspection_date', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('inspections').select('inspection_date, temperament_rating, brood_pattern_rating, brood_frames, honey_supers, population_strength').eq('hive_id', hive2Data.id).order('inspection_date', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('varroa_checks').select('check_date, mites_count, infestation_rate').eq('hive_id', hive1Data.id).order('check_date', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('varroa_checks').select('check_date, mites_count, infestation_rate').eq('hive_id', hive2Data.id).order('check_date', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('harvests').select('honey_weight, unit').eq('hive_id', hive1Data.id),
+      supabase.from('harvests').select('honey_weight, unit').eq('hive_id', hive2Data.id)
     ])
 
-    const totalHarvest1 = hive1Harvests.data?.reduce((sum, h) => sum + (h.honey_weight || 0), 0) || 0
-    const totalHarvest2 = hive2Harvests.data?.reduce((sum, h) => sum + (h.honey_weight || 0), 0) || 0
+    // A failed lookup must not read as "never inspected" or "0 kg".
+    const failed = [hive1Info, hive2Info, hive1Inspection, hive2Inspection, hive1Varroa, hive2Varroa, hive1Harvests, hive2Harvests]
+      .find(r => r.error)
+    if (failed) return `Error comparing hives: ${logToolError(failed.error)}`
+
+    const totalHarvest1 = hive1Harvests.data?.reduce((sum, h) => sum + harvestWeightKg(h), 0) || 0
+    const totalHarvest2 = hive2Harvests.data?.reduce((sum, h) => sum + harvestWeightKg(h), 0) || 0
 
     return {
       hive1: {
@@ -104,7 +110,7 @@ export const getBestPerformingHives: Tool = {
   description: 'Get hives ranked by a specific metric: temperament, laying_pattern, honey_production, or population',
   parameters: z.object({
     metric: z.enum(['temperament', 'laying_pattern', 'honey_production', 'population']).describe('Metric to rank hives by'),
-    limit: z.number().optional().describe('Number of top hives to return (default 5)')
+    limit: boundedInt(100).optional().describe('Number of top hives to return (default 5)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { metric: string; limit?: number }
@@ -133,12 +139,14 @@ export const getBestPerformingHives: Tool = {
       // "latest per item" stays exact (one capped .in() query could silently drop rows);
       // results keep the original order.
       const perItem = await Promise.all(hives.map(async (hive) => {
-        const { data: harvests } = await supabase
+        const { data: harvests, error: harvestError } = await supabase
           .from('harvests')
-          .select('honey_weight')
+          .select('honey_weight, unit')
           .eq('hive_id', hive.id)
+        // Thrown failures reach executeTool, which reports a failed lookup instead of 0 kg.
+        if (harvestError) throw harvestError
 
-        const total = harvests?.reduce((sum, h) => sum + (h.honey_weight || 0), 0) || 0
+        const total = harvests?.reduce((sum, h) => sum + harvestWeightKg(h), 0) || 0
         return {
           hive: hive.hive_number,
           apiary: getApiaryName(hive.apiaries),
@@ -168,13 +176,14 @@ export const getBestPerformingHives: Tool = {
     // "latest per item" stays exact (one capped .in() query could silently drop rows);
     // results keep the original order.
     const perItem = await Promise.all(hives.map(async (hive) => {
-      const { data: inspection } = await supabase
+      const { data: inspection, error: inspectionError } = await supabase
         .from('inspections')
         .select('temperament_rating, brood_pattern_rating, population_strength')
         .eq('hive_id', hive.id)
         .order('inspection_date', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
+      if (inspectionError) throw inspectionError
 
       if (!inspection) return null
 
@@ -222,7 +231,7 @@ export const getRecentActivitySummary: Tool = {
   name: 'getRecentActivitySummary',
   description: 'Get a summary of recent beekeeping activity: inspections, treatments, feedings, harvests',
   parameters: z.object({
-    days: z.number().optional().describe('Look back period in days (default 7)')
+    days: boundedInt(365).optional().describe('Look back period in days (default 7)')
   }),
   execute: async (rawArgs: unknown, userId: string) => {
     const args = rawArgs as { days?: number }
@@ -237,14 +246,18 @@ export const getRecentActivitySummary: Tool = {
     const cutoff = addDaysISO(todayInDublin(), -days)
 
     const [inspections, varroaChecks, treatments, feedings, harvests] = await Promise.all([
-      supabase.from('inspections').select('id, inspection_date, hives(hive_number)').in('hive_id', hiveIds).gte('inspection_date', cutoff),
+      // Newest first: the "recent" lists below take the first five.
+      supabase.from('inspections').select('id, inspection_date, hives(hive_number)').in('hive_id', hiveIds).gte('inspection_date', cutoff).order('inspection_date', { ascending: false }),
       supabase.from('varroa_checks').select('id, check_date, hives(hive_number)').in('hive_id', hiveIds).gte('check_date', cutoff),
-      supabase.from('varroa_treatments').select('id, treatment_date, hives(hive_number)').in('hive_id', hiveIds).gte('treatment_date', cutoff),
+      supabase.from('varroa_treatments').select('id, treatment_date, hives(hive_number)').in('hive_id', hiveIds).gte('treatment_date', cutoff).order('treatment_date', { ascending: false }),
       supabase.from('feedings').select('id, feed_date, hives(hive_number)').in('hive_id', hiveIds).gte('feed_date', cutoff),
-      supabase.from('harvests').select('id, harvest_date, honey_weight, hives(hive_number)').in('hive_id', hiveIds).gte('harvest_date', cutoff)
+      supabase.from('harvests').select('id, harvest_date, honey_weight, unit, hives(hive_number)').in('hive_id', hiveIds).gte('harvest_date', cutoff)
     ])
 
-    const totalHoneyKg = harvests.data?.reduce((sum, h) => sum + (h.honey_weight || 0), 0) || 0
+    const failed = [inspections, varroaChecks, treatments, feedings, harvests].find(r => r.error)
+    if (failed) return `Error fetching recent activity: ${logToolError(failed.error)}`
+
+    const totalHoneyKg = harvests.data?.reduce((sum, h) => sum + harvestWeightKg(h), 0) || 0
 
     const hivesInspected = new Set(inspections.data?.map(i => getHiveNumber(i.hives)).filter(n => n !== 'Unknown'))
 
