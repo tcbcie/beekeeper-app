@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Plan &mdash; Scale Card: Chart per Reporting Period</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 62rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  table.t { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
+  table.t th, table.t td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
+  table.t th { background: #eef3ef; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  ul.todo li { margin: .35rem 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+  .mocks { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-start; }
+  .card { border: 2px solid #fcd34d; border-radius: 8px; padding: .75rem; width: 19rem; font-size: 14px; background: #fff; }
+  .card table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .card th, .card td { text-align: right; padding: .15rem 0; }
+  .card th:first-child, .card td:first-child { text-align: left; color: #4b5563; font-weight: 400; }
+  .card .btn { color: #1f2620; text-decoration: underline; text-underline-offset: 3px; font-weight: 500; display: inline-flex; gap: .2rem; align-items: center; min-height: 48px; }
+  .down { color: #b91c1c; font-weight: 600; } .up { color: #15803d; font-weight: 600; }
+  .muted { color: #4b5563; }
+  .modal { border: 1px solid #d1d5db; border-radius: 10px; width: 24rem; background: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.15); font-size: 14px; }
+  .modal .hd { display: flex; justify-content: space-between; padding: .75rem 1rem; border-bottom: 1px solid #e5e7eb; font-weight: 600; font-size: 16px; }
+  .modal .bd { padding: 1rem; }
+  .pills span { display: inline-block; border: 1px solid #d1d5db; border-radius: 6px; padding: .3rem .6rem; margin: 0 .25rem .25rem 0; }
+  .pills .on { background: #fcd34d; border-color: #f59e0b; }
+  .chart { height: 9rem; border: 1px dashed #d1d5db; border-radius: 6px; margin-top: .5rem; display: flex; align-items: center; justify-content: center; color: #6b7280; }
+</style>
+</head>
+<body>
+
+<h1>Scale Card: Chart per Reporting Period</h1>
+
+<p><strong>Status:</strong> plan, awaiting approval &nbsp;&middot;&nbsp; <strong>Date:</strong> 29 October 2026</p>
+
+<blockquote>
+<p><strong>Your instruction:</strong> for the reporting periods (24 hours, 7 days, 30 days) on the scale card, make individual charts available that pop out on request.</p>
+</blockquote>
+
+<h2>1. What already exists</h2>
+
+<ul>
+  <li><strong>BEEP chart:</strong> <span class="file">src/components/hive/ScaleHistoryChart.tsx</span> &mdash; weight and brood temperature over time, with Hour / Day / Week / Month / Year / Custom buttons. Fetches its own data. Used on the hive page.</li>
+  <li><strong>Wolf chart:</strong> <span class="file">src/components/hive/WolfScalePanel.tsx</span> &mdash; the same chart plus stat tiles for the chosen period. Fetches its own data. Used on the hive page.</li>
+  <li><strong>Period mapping:</strong> the data routes know <code>day</code> = last 24 hours, <code>week</code> = last 7 days, <code>month</code> = last 30 days &mdash; exactly the card&rsquo;s three columns.</li>
+  <li><strong>Dialog:</strong> <span class="file">src/components/ui/ModalShell.tsx</span> (Escape to close, focus kept inside, 48px close button).</li>
+</ul>
+
+<p>So no new chart is needed: the pop-out shows the hive page&rsquo;s own chart, opened on the period that was tapped. The one thing missing is a way to tell each chart which period to start on.</p>
+
+<h2>2. The change</h2>
+
+<div class="mocks">
+  <div>
+    <h4>Card: column headings become buttons</h4>
+    <div class="card">
+      <table>
+        <tr><th>Change (kg)</th><th><span class="btn">📈 24 hours</span></th><th><span class="btn">📈 7 days</span></th><th><span class="btn">📈 30 days</span></th></tr>
+        <tr><td>This period</td><td class="down">↘ -0.63</td><td class="down">↘ -2.77</td><td class="down">↘ -3.55</td></tr>
+        <tr><td>Period before</td><td class="muted">-0.67</td><td class="muted">-1.79</td><td class="muted">+9.19</td></tr>
+      </table>
+    </div>
+    <p class="muted">📈 stands in for a small chart icon. Each heading is a 48px tap target.</p>
+  </div>
+  <div>
+    <h4>Tap &ldquo;7 days&rdquo; &rarr; chart pops out</h4>
+    <div class="modal">
+      <div class="hd"><span>Hive #29-DA &middot; weight chart</span><span>✕</span></div>
+      <div class="bd">
+        <div class="pills"><span>Hour</span><span>Day</span><span class="on">Week</span><span>Month</span><span>Year</span><span>Custom</span></div>
+        <div class="chart">weight + brood temp., last 7 days</div>
+      </div>
+    </div>
+    <p class="muted">Opens on the tapped period; the user can switch period inside. Escape, the ✕ or Back closes it.</p>
+  </div>
+</div>
+
+<h3>Details</h3>
+<ul>
+  <li><strong>Card</strong> (<span class="file">HiveScaleCard.tsx</span>): each period gets its chart period (<code>day</code>/<code>week</code>/<code>month</code>); its column heading becomes a button with a chart icon and underline, <code>aria-label</code> e.g. &ldquo;Show the 7-day weight chart&rdquo;. Tapping opens a <code>ModalShell</code> (wide on desktop, scrolls on a phone).</li>
+  <li><strong>Charts</strong>: one optional prop <code>initialPeriod</code> on <span class="file">ScaleHistoryChart.tsx</span> and <span class="file">WolfScalePanel.tsx</span>. Default stays as today (Day / Week), so the hive page is unchanged.</li>
+  <li><strong>Loaded on demand</strong> with <code>next/dynamic</code>: nothing chart-related loads until a heading is tapped, and each tap costs one scale request (Wolf: three on first open, for battery, as on the hive page).</li>
+  <li><strong>Wolf note in the pop-out:</strong> Wolf&rsquo;s 7- and 30-day figures on the card leave out feeding and harvest jumps, but the chart draws the raw weight, so the chart&rsquo;s start-to-end difference can differ from the number tapped. A one-line note under the Wolf chart says so, so nobody thinks one of them is wrong.</li>
+</ul>
+
+<h2>3. To-do</h2>
+<ul class="todo">
+  <li>&#9745; <code>initialPeriod</code> prop on <span class="file">ScaleHistoryChart.tsx</span></li>
+  <li>&#9745; <code>initialPeriod</code> prop on <span class="file">WolfScalePanel.tsx</span></li>
+  <li>&#9745; Card: period headings as buttons; pop-out with the BEEP or Wolf chart (dynamic import); Wolf note</li>
+  <li>&#9745; Type check + ESLint</li>
+  <li>&#9745; Docs: <span class="file">docs/features/scale-card-period-charts.md</span>; update <span class="file">scale-overview.md</span></li>
+  <li>&#9745; <code>qa-engineer</code> audit</li>
+  <li>&#9744; You test: tap each heading on a BEEP and a Wolf card, phone and desktop, light and dark</li>
+  <li>&#9745; Review section</li>
+</ul>
+
+<h2>4. Not in this change</h2>
+<ul>
+  <li>A chart for &ldquo;Period before&rdquo; on its own: the routes only serve windows ending now. The Custom range in the chart covers it if needed.</li>
+  <li>Restyling the existing charts (14px chart text via <code>themeChartOptions</code>, period buttons with <code>aria-pressed</code>). They would change the hive page too; worth a separate small change.</li>
+</ul>
+
+<h2>5. Review</h2>
+<h3>Changes</h3>
+<ul>
+  <li><span class="file">ScaleHistoryChart.tsx</span> and <span class="file">WolfScalePanel.tsx</span>: optional <code>initialPeriod</code> prop (defaults unchanged: Day and Week), so the hive page behaves as before.</li>
+  <li><span class="file">HiveScaleCard.tsx</span>: the three period headings are buttons (chart icon, underline, 48px tap area, <code>aria-label</code>). Tapping opens a <code>ModalShell</code> with the BEEP or Wolf chart on that period, both loaded with <code>next/dynamic</code>. The Wolf pop-out carries the note on feeding and harvest jumps.</li>
+  <li>Docs: new <span class="file">docs/features/scale-card-period-charts.md</span>; a line in <span class="file">scale-overview.md</span>.</li>
+</ul>
+<h3>QA audit (qa-engineer)</h3>
+<ul>
+  <li><strong>No Critical, High or Medium findings.</strong> <code>npx tsc --noEmit</code>: no errors. ESLint on the three files: clean.</li>
+  <li>The dialog is rendered inside the card, which has <code>overflow-hidden</code>. A fixed overlay escapes that unless an ancestor has a transform or filter; none of the card&rsquo;s ancestors (Scale Overview tab, Research page, dashboard layout) has one, so the dialog covers the screen.</li>
+  <li><code>chartPeriod</code> state sits with the other hooks, above the loading and error early returns, so hook order is stable.</li>
+  <li>The chart components fetch their own data with their existing sequence guard; the card&rsquo;s 5-minute polling is unaffected. &ldquo;Refresh All&rdquo; remounts the cards and so closes an open chart, which is expected.</li>
+  <li>&#9898; Low, left as is: the charts keep Chart.js&rsquo;s 12px text and their own dark-mode colours (see section 4).</li>
+</ul>
+
+</body>
+</html>

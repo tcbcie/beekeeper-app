@@ -59,6 +59,7 @@ Every value carries a label (29 October 2026, see [scale-card-labels-plan.md](./
 - "Period before" is the change over the period of the same length immediately before (48–24 h ago, the 7 days before, the 30 days before).
 - The temperature is "Brood temp." for both scale types (Wolf `brood_temp_c`; BEEP `t_i ?? t ?? t_0`). A low reading means the sensor sits outside the brood area, not that it is a different measurement.
 - GDD is growing degree days since 1 January at the apiary, shown as a whole number (Wolf calls it GTS).
+- The "24 hours / 7 days / 30 days" headings are buttons that open the scale's weight chart on that period (see [scale-card-period-charts.md](./scale-card-period-charts.md)).
 
 ### Responsive Grid
 - Mobile: 1 column

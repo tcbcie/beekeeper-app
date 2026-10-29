@@ -39,6 +39,8 @@ interface WolfScalePanelProps {
   scaleId: string
   scaleName?: string
   hiveId?: string
+  /** Period shown first, e.g. the one tapped on the Scale Overview card. Defaults to Week. */
+  initialPeriod?: Period
 }
 
 const PERIODS: { value: Period; label: string }[] = [
@@ -59,8 +61,8 @@ const getCardinalDirection = (degrees: number): string => {
   return directions[index]
 }
 
-export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScalePanelProps) {
-  const [period, setPeriod] = useState<Period>('week')
+export default function WolfScalePanel({ scaleId, scaleName, hiveId, initialPeriod = 'week' }: WolfScalePanelProps) {
+  const [period, setPeriod] = useState<Period>(initialPeriod)
   const [history, setHistory] = useState<WolfParsedReading[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

@@ -39,6 +39,8 @@ interface ScaleHistoryChartProps {
   deviceId: string
   deviceName?: string
   hiveId?: string
+  /** Period shown first, e.g. the one tapped on the Scale Overview card. Defaults to Day. */
+  initialPeriod?: Period
 }
 
 const PERIODS: { value: Period; label: string }[] = [
@@ -52,8 +54,8 @@ const PERIODS: { value: Period; label: string }[] = [
 
 // Get date string in YYYY-MM-DD format for input[type="date"]
 
-export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: ScaleHistoryChartProps) {
-  const [period, setPeriod] = useState<Period>('day')
+export default function ScaleHistoryChart({ deviceId, deviceName, hiveId, initialPeriod = 'day' }: ScaleHistoryChartProps) {
+  const [period, setPeriod] = useState<Period>(initialPeriod)
   const [history, setHistory] = useState<BeepSensorReading[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

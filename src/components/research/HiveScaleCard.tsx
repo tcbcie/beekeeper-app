@@ -1,11 +1,27 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink, Sun, Cloud, CloudRain, CloudSnow, CloudFog, Sprout, MapPin } from 'lucide-react'
+import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink, Sun, Cloud, CloudRain, CloudSnow, CloudFog, Sprout, MapPin, LineChart } from 'lucide-react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import ModalShell from '@/components/ui/ModalShell'
 import { fetchCurrentYearGDD } from '@/lib/gdd'
+
+// The hive page's own charts, downloaded only when a period's chart is opened (chart.js stays out of the first load)
+const ScaleHistoryChart = dynamic(() => import('@/components/hive/ScaleHistoryChart'), {
+ loading: () => <LoadingSpinner text="Loading scale chart..." />,
+ ssr: false,
+})
+const WolfScalePanel = dynamic(() => import('@/components/hive/WolfScalePanel'), {
+ loading: () => <LoadingSpinner text="Loading scale chart..." />,
+ ssr: false,
+})
+
+// The chart periods matching the card's columns: the data routes serve day = 24 hours, week = 7 days, month = 30 days
+type ChartPeriod = 'day' | 'week' | 'month'
 
 interface HiveScaleCardProps {
  hive: {
@@ -90,6 +106,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  const [error, setError] = useState<string | null>(null)
  const [weather, setWeather] = useState<WeatherData | null>(null)
  const [gddValue, setGddValue] = useState<number | null>(null)
+ const [chartPeriod, setChartPeriod] = useState<ChartPeriod | null>(null)
 
  const isBeep = !!hive.beep_device_id
  const isWolf = !!hive.wolf_scale_id
@@ -242,9 +259,9 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  // Each period's change, with the change over the period of the same length before it for comparison
  const changes = data
  ? [
- { label: '24 hours', now: data.weightChange24h, before: data.prevWeightChange24h },
- { label: '7 days', now: data.weightChange7d, before: data.prevWeightChange7d },
- { label: '30 days', now: data.weightChange30d, before: data.prevWeightChange30d },
+ { label: '24 hours', chart: 'day' as ChartPeriod, now: data.weightChange24h, before: data.prevWeightChange24h },
+ { label: '7 days', chart: 'week' as ChartPeriod, now: data.weightChange7d, before: data.prevWeightChange7d },
+ { label: '30 days', chart: 'month' as ChartPeriod, now: data.weightChange30d, before: data.prevWeightChange30d },
  ]
  : []
  const hasChanges = changes.some(c => c.now !== null)
@@ -367,7 +384,17 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  <tr className="text-sm text-text-secondary">
  <th scope="col" className="text-left font-normal pb-1">Change (kg)</th>
  {changes.map(c => (
- <th key={c.label} scope="col" className="text-right font-normal pb-1">{c.label}</th>
+ <th key={c.label} scope="col" className="text-right font-normal pb-1">
+ <button
+ type="button"
+ onClick={() => setChartPeriod(c.chart)}
+ className="inline-flex min-h-12 items-center justify-end gap-1 text-foreground underline underline-offset-4 hover:text-text-secondary"
+ aria-label={`Show the ${c.label} weight chart`}
+ >
+ <LineChart size={14} aria-hidden="true" />
+ {c.label}
+ </button>
+ </th>
  ))}
  </tr>
  </thead>
@@ -446,6 +473,39 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  <p className="text-sm text-text-tertiary">No data available</p>
  )}
  </div>
+
+ {/* Chart for the tapped period; the user can switch period inside it */}
+ {chartPeriod && (
+ <ModalShell
+ title={`Hive #${hive.hive_number} · weight chart`}
+ onClose={() => setChartPeriod(null)}
+ closeOnBackdrop
+ maxWidthClassName="max-w-3xl"
+ shellClassName="max-h-[90vh] overflow-y-auto"
+ bodyClassName="p-4"
+ >
+ {isBeep && hive.beep_device_id ? (
+ <ScaleHistoryChart
+ deviceId={hive.beep_device_id}
+ deviceName={hive.beep_device_name ?? undefined}
+ hiveId={hive.id}
+ initialPeriod={chartPeriod}
+ />
+ ) : isWolf && hive.wolf_scale_id ? (
+ <>
+ <WolfScalePanel
+ scaleId={hive.wolf_scale_id}
+ scaleName={hive.wolf_scale_name ?? undefined}
+ hiveId={hive.id}
+ initialPeriod={chartPeriod}
+ />
+ <p className="mt-3 text-sm text-text-secondary">
+ The card&apos;s 7-day and 30-day changes leave out feeding and harvest jumps; the chart shows the raw weight, so its start-to-end difference can differ.
+ </p>
+ </>
+ ) : null}
+ </ModalShell>
+ )}
  </div>
  )
 }
