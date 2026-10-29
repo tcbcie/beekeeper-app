@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Plan &mdash; Scale Card: Label What Each Number Means</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 62rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  table.t { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
+  table.t th, table.t td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
+  table.t th { background: #eef3ef; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  ul.todo li { margin: .35rem 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+  .bad { color: #a32020; font-weight: 600; }
+
+  /* Mock-ups */
+  .mocks { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-start; margin: 1rem 0; }
+  .mock-wrap { flex: 1 1 22rem; max-width: 24rem; }
+  .mock-wrap h4 { margin: 0 0 .5rem; }
+  .card { border: 2px solid #93c5fd; border-radius: 8px; background: #fff; overflow: hidden; font-size: 14px; }
+  .card .hd { background: #eff6ff; padding: .5rem .75rem; display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; }
+  .card .title { font-weight: 600; font-size: 17px; color: #172554; }
+  .card .sub { color: #1e40af; font-size: 14px; }
+  .pill { background: #bfdbfe; color: #1e40af; padding: .1rem .4rem; border-radius: 4px; font-size: 14px; }
+  .icons { color: #6b7280; display: flex; gap: .6rem; align-items: center; }
+  .row { padding: .35rem .75rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; flex-wrap: wrap; gap: .25rem; color: #374151; }
+  .body { padding: .75rem; }
+  .big { font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .lbl { color: #4b5563; font-size: 14px; }
+  .grid4 { display: grid; grid-template-columns: auto 1fr 1fr 1fr; gap: .25rem .5rem; margin-top: .9rem; font-variant-numeric: tabular-nums; align-items: baseline; }
+  .grid4 .h { color: #4b5563; font-size: 14px; text-align: right; }
+  .grid4 .k { color: #4b5563; font-size: 14px; }
+  .grid4 .v { text-align: right; font-size: 16px; font-weight: 600; }
+  .grid4 .p { text-align: right; font-size: 14px; color: #4b5563; }
+  .up { color: #15803d; } .down { color: #b91c1c; }
+  .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-top: 1rem; border-top: 1px solid #e5e7eb; padding-top: .75rem; }
+  .tile .v { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .old .row, .old .body { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<h1>Scale Card: Label What Each Number Means</h1>
+
+<p><strong>Status:</strong> plan, awaiting approval &nbsp;&middot;&nbsp; <strong>Date:</strong> 29 October 2026</p>
+
+<blockquote>
+<p><strong>Your instruction:</strong> the Scale Overview card has all the data, but it is hard to tell what you are looking at. Wolf&rsquo;s own app labels every value. Keep all the information on our card, but make it clear what each number is.</p>
+</blockquote>
+
+<h2>1. What each value on today&rsquo;s card actually is</h2>
+
+<table class="t">
+  <tr><th>On the card</th><th>What it is</th><th>Labelled today?</th></tr>
+  <tr><td>Hive #26-DA (42J04513 (PE8QO7))</td><td>Hive number, then the scale&rsquo;s name/serial as stored when it was linked</td><td>No</td></tr>
+  <tr><td>AP02 - Tom &nbsp;☁ 15°C 💧74%</td><td>Apiary, then <strong>current outside weather</strong> at the apiary (Open-Meteo), not from the scale</td><td>No</td></tr>
+  <tr><td>45.8 kg</td><td>Total weight now</td><td>No</td></tr>
+  <tr><td>↘ -0.40 24h</td><td>Weight change over the last 24 hours, in kg (unit not shown)</td><td>Only &ldquo;24h&rdquo;</td></tr>
+  <tr><td>(-0.23)</td><td>Change over the <strong>period before</strong> of the same length (48&ndash;24 h ago; the 7 days before; the 30 days before), for comparison</td><td class="bad">No &mdash; the main source of confusion</td></tr>
+  <tr><td>🔥 33.8°C</td><td>Brood temperature (inside the hive)</td><td>Hover tooltip only (no hover on a phone)</td></tr>
+  <tr><td>🔋 90%</td><td>Scale battery</td><td>No</td></tr>
+  <tr><td>🌱 3366</td><td>Growing degree days since 1 January at the apiary &mdash; the same figure Wolf shows as <strong>GTS</strong></td><td>Hover tooltip only</td></tr>
+</table>
+
+<h3>Two data bugs found on the way (root causes)</h3>
+<ul>
+  <li><strong>Wolf humidity never shows.</strong> The Wolf data route sends <code>humidity_percent</code>; the card reads <code>lv?.humidity</code> (<span class="file">HiveScaleCard.tsx:164</span>), which is always empty. Fix: read <code>humidity_percent</code>.</li>
+  <li><strong>The flame temperature is not the same thing on both scales.</strong> Wolf sends a brood-nest sensor (<code>brood_temp_c</code>). BEEP sends its inside temperature (<code>t_i ?? t ?? t_0</code>), measured by the scale base, which is why your BEEP card shows 13.8°C. Today both are called &ldquo;Brood temperature&rdquo;. Fix: label Wolf &ldquo;Brood temp.&rdquo; and BEEP &ldquo;Inside temp.&rdquo;.</li>
+  <li><strong>GDD can show a decimal</strong> (the helper rounds to 0.1). It will be shown as a whole number, as Wolf does.</li>
+</ul>
+
+<h2>2. Proposed card (all values kept, every value labelled)</h2>
+
+<p>Borrowing Wolf&rsquo;s idea: <strong>big value, small label underneath</strong>, and a small table for the weight changes so &ldquo;this period&rdquo; and &ldquo;period before&rdquo; are named.</p>
+
+<div class="mocks">
+  <div class="mock-wrap old">
+    <h4>Today</h4>
+    <div class="card">
+      <div class="hd">
+        <div><span class="title">Hive #26-DA</span> <span class="sub">(42J04513 (PE8QO7))</span></div>
+        <div class="icons"><span class="pill">Wolf</span> ⟳ ↗</div>
+      </div>
+      <div class="row"><span>AP02 - Tom</span><span>☁ 🌡15°C 💧74%</span></div>
+      <div class="body">
+        <div><b style="font-size:18px">45.8 kg</b> <span class="down">↘ -0.40 24h</span> <span class="lbl">(-0.23)</span></div>
+        <div style="margin-top:.4rem"><span class="down">↘ -1.48 7d</span> <span class="lbl">(+1.35)</span> &nbsp;<span class="up">↗ +0.44 30d</span> <span class="lbl">(+5.05)</span></div>
+        <div style="margin-top:.4rem">🔥 33.8°C &nbsp; 🔋 90% &nbsp; 🌱 3366</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mock-wrap">
+    <h4>Proposed</h4>
+    <div class="card">
+      <div class="hd">
+        <div>
+          <div class="title">Hive #26-DA</div>
+          <div class="sub">Scale 42J04513 (PE8QO7)</div>
+        </div>
+        <div class="icons"><span class="pill">Wolf</span> ⟳ ↗</div>
+      </div>
+      <div class="row"><span>📍 AP02 - Tom</span><span>Outside now: ☁ 15°C · 74%</span></div>
+      <div class="body">
+        <div class="big">45.8 kg</div>
+        <div class="lbl">Total weight</div>
+
+        <div class="grid4">
+          <span class="k">Change (kg)</span><span class="h">24 hours</span><span class="h">7 days</span><span class="h">30 days</span>
+          <span class="k">This period</span><span class="v down">↘ −0.40</span><span class="v down">↘ −1.48</span><span class="v up">↗ +0.44</span>
+          <span class="k">Period before</span><span class="p">−0.23</span><span class="p">+1.35</span><span class="p">+5.05</span>
+        </div>
+
+        <div class="tiles">
+          <div class="tile"><div class="v">🔥 33.8°C</div><div class="lbl">Brood temp.</div></div>
+          <div class="tile"><div class="v">🔋 90%</div><div class="lbl">Battery</div></div>
+          <div class="tile"><div class="v">🌱 3366</div><div class="lbl">GDD since 1 Jan</div></div>
+        </div>
+      </div>
+    </div>
+    <p class="lbl">Emoji stand in for the existing Lucide icons, which stay. When a scale reports humidity, a fourth tile &ldquo;Scale humidity&rdquo; appears (the grid wraps to two rows).</p>
+  </div>
+</div>
+
+<h3>Details</h3>
+<ul>
+  <li><strong>Header:</strong> hive number on its own line; the scale serial moves to a second line prefixed &ldquo;Scale&rdquo;, so the double brackets go. Wolf/BEEP pill, refresh and &ldquo;View hive&rdquo; stay. The refresh button grows to a 48px tap target.</li>
+  <li><strong>Weather row:</strong> prefixed &ldquo;Outside now:&rdquo; so it is not mistaken for scale readings; apiary gets a location pin.</li>
+  <li><strong>Weight:</strong> larger, with &ldquo;Total weight&rdquo; under it.</li>
+  <li><strong>Changes:</strong> a 3-column table &mdash; columns &ldquo;24 hours / 7 days / 30 days&rdquo;, rows &ldquo;This period&rdquo; and &ldquo;Period before&rdquo;, unit in the corner label &ldquo;Change (kg)&rdquo;. Arrows stay (so it does not rely on colour alone); green/red get dark-mode variants and stronger shades for contrast.</li>
+  <li><strong>Readings:</strong> labelled tiles &mdash; &ldquo;Brood temp.&rdquo; (Wolf) or &ldquo;Inside temp.&rdquo; (BEEP), &ldquo;Battery&rdquo; (red when under 20%, as now), &ldquo;GDD since 1 Jan&rdquo; (tooltip: &ldquo;Growing degree days since 1 January &ndash; Wolf calls this GTS&rdquo;), &ldquo;Scale humidity&rdquo; when the scale reports it (tooltip: measured by the scale, not the weather forecast).</li>
+  <li><strong>Text:</strong> nothing under 14px, sentence-case labels, <code>tabular-nums</code> so figures line up. Tooltips stay as a bonus, but nothing depends on hovering.</li>
+  <li><strong>No new data or requests</strong> &mdash; same fetches, same values; only <span class="file">src/components/research/HiveScaleCard.tsx</span> changes.</li>
+</ul>
+
+<h2>3. To-do</h2>
+<ul class="todo">
+  <li>&#9745; Header: hive number line + &ldquo;Scale &hellip;&rdquo; line; 48px refresh button</li>
+  <li>&#9745; Weather row: &ldquo;Outside now:&rdquo; + apiary pin</li>
+  <li>&#9745; Weight + &ldquo;Total weight&rdquo; label</li>
+  <li>&#9745; Change table (24 hours / 7 days / 30 days &times; this period / period before), one small helper instead of three copied blocks</li>
+  <li>&#9745; Labelled reading tiles (brood/scale temp., humidity, battery, GDD)</li>
+  <li>&#9745; Fix Wolf humidity (<code>humidity_percent</code>), BEEP temperature label, whole-number GDD</li>
+  <li>&#9745; Type check + ESLint</li>
+  <li>&#9745; Docs: new <span class="file">docs/features/scale-card-labels-plan.md</span>; update <span class="file">scale-overview.md</span> (stale card description) and the card section of <span class="file">wolf-waagen.md</span></li>
+  <li>&#9745; <code>qa-engineer</code> audit</li>
+  <li>&#9744; You test: Scale Overview on phone and desktop, light and dark</li>
+  <li>&#9745; Review section</li>
+</ul>
+
+<h2>4. Not in this change</h2>
+<ul>
+  <li>Wolf&rsquo;s chart, photo, tasks, rain and wind on the card &mdash; you asked to keep our information, not add Wolf&rsquo;s. The hive page&rsquo;s scale panel already has the charts.</li>
+  <li>Battery %: the card uses a 2.5&ndash;4.2 V scale, the hive page&rsquo;s Wolf panel 3.2&ndash;4.2 V, so the same scale can show different percentages. Today the card&rsquo;s 90% matches Wolf&rsquo;s own 89%, so I would leave the card alone and align the hive panel separately if you want.</li>
+</ul>
+
+<h2>5. Review</h2>
+<h3>Changes</h3>
+<ul>
+  <li><span class="file">src/components/research/HiveScaleCard.tsx</span>: header (hive number, then &ldquo;Scale &hellip;&rdquo;), weather row (&ldquo;Outside now:&rdquo;, apiary pin, wraps on narrow screens), &ldquo;Total weight&rdquo;, change table (a real <code>&lt;table&gt;</code> with row and column headers, built from one <code>changes</code> array instead of three copied blocks), two-column reading tiles with labels, Wolf humidity from <code>humidity_percent</code>, &ldquo;Brood temp.&rdquo;/&ldquo;Inside temp.&rdquo;, GDD rounded, dark-mode change colours, larger refresh icon with a screen-reader label (the 48px tap area was already there).</li>
+  <li>Docs: new <span class="file">docs/features/scale-card-labels-plan.md</span>; card layout and change maths updated in <span class="file">scale-overview.md</span>; note added to the card section of <span class="file">wolf-waagen.md</span>.</li>
+</ul>
+<h3>QA audit (qa-engineer)</h3>
+<ul>
+  <li><strong>No Critical, High or Medium findings.</strong> <code>npx tsc --noEmit</code>: no errors. ESLint: clean.</li>
+  <li>Wolf humidity: <code>parseWolfValue</code> already drops NaN and Infinity, so the new tile cannot show &ldquo;NaN%&rdquo;.</li>
+  <li>Null handling: each change cell and reading tile renders only when its value is present; a missing change shows &ldquo;&ndash;&rdquo;; the table hides when no period has a change, and the &ldquo;Period before&rdquo; row when none has a previous figure.</li>
+  <li>No new requests, effects or state; the fetch, polling and caches are untouched.</li>
+  <li>&#9898; Low, left as is (unchanged behaviour): a change that rounds to zero but is slightly negative shows as red &ldquo;-0.00&rdquo;.</li>
+</ul>
+
+</body>
+</html>

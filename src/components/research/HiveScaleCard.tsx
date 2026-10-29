@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink, Sun, Cloud, CloudRain, CloudSnow, CloudFog, Sprout } from 'lucide-react'
+import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink, Sun, Cloud, CloudRain, CloudSnow, CloudFog, Sprout, MapPin } from 'lucide-react'
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
@@ -161,7 +161,8 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  result.prevWeightChange7d = json.prevWeightChange7d ?? null
  result.prevWeightChange30d = json.prevWeightChange30d ?? null
  result.temperature = lv?.brood_temp_c ?? null
- result.humidity = lv?.humidity ?? null
+ // The parsed Wolf reading names it humidity_percent; reading `humidity` left it always empty
+ result.humidity = lv?.humidity_percent ?? null
  // Wolf battery voltage to percentage
  if (lv?.battery_voltage) {
  const voltage = lv.battery_voltage
@@ -238,6 +239,22 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  const scaleType = isBeep ? 'BEEP' : 'Wolf'
  const scaleName = isBeep ? hive.beep_device_name : hive.wolf_scale_name
 
+ // Wolf has a brood-nest sensor; BEEP's reading is the inside temperature measured by the scale base
+ const temperatureLabel = isBeep ? 'Inside temp.' : 'Brood temp.'
+ const temperatureTitle = isBeep ? 'Temperature inside the hive, measured by the scale' : 'Brood-nest temperature'
+
+ // Each period's change, with the change over the period of the same length before it for comparison
+ const changes = data
+ ? [
+ { label: '24 hours', now: data.weightChange24h, before: data.prevWeightChange24h },
+ { label: '7 days', now: data.weightChange7d, before: data.prevWeightChange7d },
+ { label: '30 days', now: data.weightChange30d, before: data.prevWeightChange30d },
+ ]
+ : []
+ const hasChanges = changes.some(c => c.now !== null)
+ const hasPreviousChanges = changes.some(c => c.before !== null)
+ const formatChange = (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}`
+
  if (loading) {
  return (
  <div className={`bg-surface rounded-lg border-2 ${borderColor} overflow-hidden animate-pulse`}>
@@ -280,17 +297,17 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  return (
  <div className={`bg-surface rounded-lg border-2 ${borderColor} overflow-hidden`}>
  {/* Header */}
- <div className={`px-3 py-2 ${headerBg} flex items-center justify-between`}>
+ <div className={`px-3 py-2 ${headerBg} flex items-center justify-between gap-2`}>
  <div className="flex items-center gap-2 min-w-0">
- <Scale size={16} className={isBeep ? 'text-amber-600' : 'text-blue-600'} />
+ <Scale size={16} className={isBeep ? 'text-amber-600' : 'text-blue-600'} aria-hidden="true" />
  <div className="min-w-0">
- <span className={`font-semibold ${headerTitleColour}`}>Hive #{hive.hive_number}</span>
+ <div className={`font-semibold text-base ${headerTitleColour}`}>Hive #{hive.hive_number}</div>
  {scaleName && (
- <span className={`ml-1 text-sm ${headerMetaColour}`}>({scaleName})</span>
+ <div className={`text-sm break-words ${headerMetaColour}`}>Scale {scaleName}</div>
  )}
  </div>
  </div>
- <div className="flex items-center gap-1">
+ <div className="flex items-center gap-1 flex-shrink-0">
  <span className={`text-sm px-1.5 py-0.5 rounded ${isBeep ? 'bg-amber-200 text-amber-800 dark:bg-amber-800 dark:text-amber-200' : 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200'}`}>
  {scaleType}
  </span>
@@ -299,8 +316,9 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  size="xs"
  className="text-text-tertiary hover:text-foreground"
  title="Refresh"
+ aria-label="Refresh scale readings"
  >
- <RefreshCw size={12} />
+ <RefreshCw size={16} />
  </IconButton>
  <Link
  href={`/dashboard/hives/${hive.id}`}
@@ -315,17 +333,21 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
 
  {/* Apiary + Weather */}
  {hive.apiaries?.name && (
- <div className="px-3 py-1 text-sm text-text-secondary border-b border-border flex items-center justify-between">
- <span>{hive.apiaries.name}</span>
+ <div className="px-3 py-1.5 text-sm text-text-secondary border-b border-border flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+ <span className="flex items-center gap-1">
+ <MapPin size={14} className="text-text-tertiary" aria-hidden="true" />
+ {hive.apiaries.name}
+ </span>
  {weather && (
- <span className="flex items-center gap-2 text-text-tertiary">
+ <span className="flex items-center gap-2" title="Current weather at the apiary, from the forecast service">
+ <span>Outside now:</span>
  {getWeatherIcon(weather.weatherCode)}
  <span className="flex items-center gap-0.5">
- <Thermometer size={14} className="text-orange-400" />
+ <Thermometer size={14} className="text-orange-400" aria-hidden="true" />
  {Math.round(weather.temperature)}°C
  </span>
  <span className="flex items-center gap-0.5">
- <Droplets size={14} className="text-cyan-400" />
+ <Droplets size={14} className="text-cyan-400" aria-hidden="true" />
  {weather.humidity}%
  </span>
  </span>
@@ -334,76 +356,94 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  )}
 
  {/* Data */}
- <div className="p-3 space-y-2">
- {/* Weight row */}
- <div className="flex items-center gap-2 flex-wrap">
+ <div className="p-3 space-y-3">
  {data && data.weight !== null && (
- <span className="font-bold text-lg text-foreground">
- {data.weight.toFixed(1)} kg
- </span>
- )}
- {data && data.weightChange24h !== null && (
- <span className={`text-sm flex items-center gap-0.5 ${data.weightChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
- {data.weightChange24h >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
- {data.weightChange24h >= 0 ? '+' : ''}{data.weightChange24h.toFixed(2)} 24h
- {data.prevWeightChange24h !== null && (
- <span className="text-text-tertiary ml-0.5">
- ({data.prevWeightChange24h >= 0 ? '+' : ''}{data.prevWeightChange24h.toFixed(2)})
- </span>
- )}
- </span>
- )}
- {data && data.weightChange7d !== null && (
- <span className={`text-sm flex items-center gap-0.5 ${data.weightChange7d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
- {data.weightChange7d >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
- {data.weightChange7d >= 0 ? '+' : ''}{data.weightChange7d.toFixed(2)} 7d
- {data.prevWeightChange7d !== null && (
- <span className="text-text-tertiary ml-0.5">
- ({data.prevWeightChange7d >= 0 ? '+' : ''}{data.prevWeightChange7d.toFixed(2)})
- </span>
- )}
- </span>
- )}
- {data && data.weightChange30d !== null && (
- <span className={`text-sm flex items-center gap-0.5 ${data.weightChange30d >= 0 ? 'text-green-600' : 'text-red-600'}`}>
- {data.weightChange30d >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
- {data.weightChange30d >= 0 ? '+' : ''}{data.weightChange30d.toFixed(2)} 30d
- {data.prevWeightChange30d !== null && (
- <span className="text-text-tertiary ml-0.5">
- ({data.prevWeightChange30d >= 0 ? '+' : ''}{data.prevWeightChange30d.toFixed(2)})
- </span>
- )}
- </span>
- )}
+ <div>
+ <div className="text-2xl font-bold text-foreground tabular-nums">{data.weight.toFixed(1)} kg</div>
+ <div className="text-sm text-text-secondary">Total weight</div>
  </div>
+ )}
 
- {/* Sensor row */}
- <div className="flex items-center gap-3 text-sm text-text-secondary">
- {data && data.temperature !== null && (
- <span className="flex items-center gap-1" title="Brood temperature">
- <Flame size={12} className="text-orange-500" />
+ {/* Weight changes: this period against the period of the same length before it */}
+ {hasChanges && (
+ <table className="w-full tabular-nums">
+ <thead>
+ <tr className="text-sm text-text-secondary">
+ <th scope="col" className="text-left font-normal pb-1">Change (kg)</th>
+ {changes.map(c => (
+ <th key={c.label} scope="col" className="text-right font-normal pb-1">{c.label}</th>
+ ))}
+ </tr>
+ </thead>
+ <tbody>
+ <tr>
+ <th scope="row" className="text-left text-sm font-normal text-text-secondary">This period</th>
+ {changes.map(c => (
+ <td key={c.label} className="text-right text-base font-semibold">
+ {c.now === null ? (
+ <span className="text-text-tertiary">–</span>
+ ) : (
+ <span className={`inline-flex items-center justify-end gap-0.5 ${c.now >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+ {c.now >= 0 ? <TrendingUp size={14} aria-hidden="true" /> : <TrendingDown size={14} aria-hidden="true" />}
+ {formatChange(c.now)}
+ </span>
+ )}
+ </td>
+ ))}
+ </tr>
+ {hasPreviousChanges && (
+ <tr className="text-sm text-text-secondary">
+ <th scope="row" className="text-left font-normal">Period before</th>
+ {changes.map(c => (
+ <td key={c.label} className="text-right">{c.before === null ? '–' : formatChange(c.before)}</td>
+ ))}
+ </tr>
+ )}
+ </tbody>
+ </table>
+ )}
+
+ {/* Readings, each with its label underneath */}
+ {data && (data.temperature !== null || data.humidity !== null || data.battery !== null || gddValue !== null) && (
+ <div className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border pt-3">
+ {data.temperature !== null && (
+ <div title={temperatureTitle}>
+ <div className="flex items-center gap-1 text-lg font-semibold text-foreground tabular-nums">
+ <Flame size={16} className="text-orange-500" aria-hidden="true" />
  {data.temperature.toFixed(1)}°C
- </span>
+ </div>
+ <div className="text-sm text-text-secondary">{temperatureLabel}</div>
+ </div>
  )}
- {data && data.humidity !== null && (
- <span className="flex items-center gap-1">
- <Droplets size={12} className="text-cyan-500" />
+ {data.humidity !== null && (
+ <div title="Measured by the scale, not the weather forecast">
+ <div className="flex items-center gap-1 text-lg font-semibold text-foreground tabular-nums">
+ <Droplets size={16} className="text-cyan-500" aria-hidden="true" />
  {data.humidity.toFixed(0)}%
- </span>
+ </div>
+ <div className="text-sm text-text-secondary">Scale humidity</div>
+ </div>
  )}
- {data && data.battery !== null && (
- <span className={`flex items-center gap-1 ${data.battery < 20 ? 'text-red-500' : ''}`}>
- <Battery size={12} className={data.battery < 20 ? 'text-red-500' : 'text-green-500'} />
+ {data.battery !== null && (
+ <div>
+ <div className={`flex items-center gap-1 text-lg font-semibold tabular-nums ${data.battery < 20 ? 'text-red-700 dark:text-red-400' : 'text-foreground'}`}>
+ <Battery size={16} className={data.battery < 20 ? 'text-red-500' : 'text-green-500'} aria-hidden="true" />
  {data.battery}%
- </span>
+ </div>
+ <div className="text-sm text-text-secondary">Battery</div>
+ </div>
  )}
  {gddValue !== null && (
- <span className="flex items-center gap-1" title="Growing Degree Days (Jan 1 to today)">
- <Sprout size={12} className="text-green-500" />
- {gddValue}
- </span>
+ <div title="Growing degree days since 1 January (Wolf calls this GTS)">
+ <div className="flex items-center gap-1 text-lg font-semibold text-foreground tabular-nums">
+ <Sprout size={16} className="text-green-500" aria-hidden="true" />
+ {Math.round(gddValue)}
+ </div>
+ <div className="text-sm text-text-secondary">GDD since 1 Jan</div>
+ </div>
  )}
  </div>
+ )}
 
  {/* No data state */}
  {data && data.weight === null && data.temperature === null && (

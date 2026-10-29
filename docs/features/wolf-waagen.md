@@ -817,6 +817,7 @@ Updated to show brood temperature (instead of ambient) consistently across the a
 - Changed Wolf scales to display `brood_temp_c` instead of `temperature_c`
 - Now uses Flame icon (same as BEEP) instead of Thermometer icon
 - Title updated to "Brood temperature" for both scale types
+- **29 October 2026:** the card now labels this "Brood temp." for Wolf and "Inside temp." for BEEP (BEEP has no brood-nest sensor), and Wolf humidity is read from `humidity_percent` (the card read `humidity`, so it never showed). See [scale-card-labels-plan.md](./scale-card-labels-plan.md).
 
 #### History Chart (`src/components/hive/WolfHistoryChart.tsx`)
 

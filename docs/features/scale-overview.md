@@ -35,15 +35,30 @@ Compact card component that:
 ## UI Design
 
 ### Card Layout
+Every value carries a label (29 October 2026, see [scale-card-labels-plan.md](./scale-card-labels-plan.md)):
 ```
 +------------------------------------------------+
-| [Scale] Hive #1 (Scale Name)  [BEEP] [↻] [→]   |
-| Apiary Name                                    |
+| [Scale] Hive #26-DA            [Wolf] [↻] [→]  |
+|         Scale 42J04513 (PE8QO7)                |
 +------------------------------------------------+
-| 45.2 kg  +0.5kg 24h  +2.1kg 7d  +5.3kg 30d    |
-| 34.5°C  60%  Battery: 85%                     |
+| AP02 - Tom        Outside now: ☁ 15°C · 74%    |
++------------------------------------------------+
+| 45.8 kg                                        |
+| Total weight                                   |
+| Change (kg)    24 hours   7 days   30 days     |
+| This period    ↘ -0.40   ↘ -1.48   ↗ +0.44     |
+| Period before    -0.23     +1.35     +5.05     |
+|------------------------------------------------|
+| 33.8°C            90%                          |
+| Brood temp.       Scale humidity               |
+| 90%               3366                         |
+| Battery           GDD since 1 Jan              |
 +------------------------------------------------+
 ```
+- "Outside now" is Open-Meteo weather at the apiary, not a scale reading.
+- "Period before" is the change over the period of the same length immediately before (48–24 h ago, the 7 days before, the 30 days before).
+- The temperature is "Brood temp." for Wolf (brood-nest sensor) and "Inside temp." for BEEP (`t_i ?? t ?? t_0`, measured by the scale base).
+- GDD is growing degree days since 1 January at the apiary, shown as a whole number (Wolf calls it GTS).
 
 ### Responsive Grid
 - Mobile: 1 column
@@ -113,16 +128,17 @@ All scales display weight changes for three time periods:
 - **7d** - Change over the last 7 days
 - **30d** - Change over the last 30 days
 
-Both APIs calculate weight changes by comparing the oldest reading in each period to the current weight:
+Each period also returns the change over the period of the same length before it (`prevWeightChange24h/7d/30d`), shown in the "Period before" row.
+
+How each API calculates the changes:
 
 **BEEP API** (`/api/beep/data`):
 - Fetches hourly measurements for 24h, 7d, and 30d periods
 - Compares oldest weight in each period to current `weight_kg_corrected` or `weight_kg`
 
 **Wolf Waagen API** (`/api/wolf-waagen/data`):
-- Fetches hourly measurements for 24h period
-- Fetches daily measurements for 7d and 30d periods
-- Compares oldest to newest weight in each period
+- 24h: newest minus oldest over the last 24 hourly readings (not corrected for interventions)
+- 7d and 30d: daily readings, newest minus oldest, with feeding/harvest jumps over 0.5 kg removed (see [wolf-waagen.md](./wolf-waagen.md))
 
 ## Access Control
 
