@@ -373,12 +373,19 @@ export default function TasksEventsPage() {
     if (apiaryId && appliedApiaryFilterRef.current !== apiaryId) {
       appliedApiaryFilterRef.current = apiaryId
       setFilterApiary(apiaryId)
+      // The dashboard's "tasks due" link names the view its count was taken from, so the list
+      // opens on the same tasks: that view, the whole apiary (not a hive remembered from before)
+      const viewParam = searchParams.get('view')
+      if (isTaskView(viewParam)) {
+        setView(viewParam)
+        setFilterHive('all')
+      }
       if (searchParams.get('create') === 'true') {
         setFormData(prev => ({ ...prev, apiary_id: apiaryId, start_date: toLocalDateString(new Date()) }))
         setShowForm(true)
       }
     }
-  }, [searchParams, setFilterApiary])
+  }, [searchParams, setFilterApiary, setView, setFilterHive])
 
   useEffect(() => {
     const taskId = searchParams.get('task')

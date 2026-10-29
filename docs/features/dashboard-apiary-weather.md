@@ -87,3 +87,7 @@ already query Open-Meteo by coordinates.
 - `src/lib/queenless.ts` - shared reason list and `formatQueenlessShortLabel` helper used by both the hive badge and the dashboard summary
 - `src/sql/create_dashboard_rpc_functions.sql` - `get_dashboard_overview` RPC, including the `confirmed_queenless` CTE that emits `queenlessConfirmedHiveCount` and `queenlessConfirmedReasons` per apiary
 - `src/app/dashboard/page.tsx` - "My Apiaries" section that renders the cards
+
+## Simplified layout (29 October 2026)
+
+Weather, the 7-day forecast and the forage rows now appear once, in a "Today around your apiaries" strip above the cards; a card keeps its own only when it is more than 20 km from the strip's apiary. The stats row became a "Needs attention" line plus hives, oldest check and tasks due. See [dashboard-simplify-plan.md](./dashboard-simplify-plan.md).

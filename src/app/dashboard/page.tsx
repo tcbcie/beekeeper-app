@@ -14,7 +14,7 @@ import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, 
 import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
 import { useGeolocation, haversineKm } from '@/hooks/useGeolocation'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
-import type { RecentActivityRecord } from '@/types/dashboard'
+import type { DashboardApiary, RecentActivityRecord } from '@/types/dashboard'
 import { formatLocalDate } from '@/lib/date-utils'
 import { dashboardCardIcons, iconography } from '@/lib/iconography'
 
@@ -162,8 +162,8 @@ export default function DashboardPage() {
  }, [userId, fetchTeams, fetchRearingGroups])
 
  // Memoised computed values (must be above early return to satisfy rules-of-hooks)
- // Sort apiaries nearest-first when GPS is available
- const sortedApiaries = useMemo(() => {
+ // Apiaries nearest-first when GPS is available (name order otherwise)
+ const apiariesByDistance = useMemo(() => {
   const withHives = apiaries.filter(a => a.hiveCount > 0)
   if (!devicePosition || withHives.length === 0) return withHives
   // Pre-compute distances once (O(n)), then sort by lookup
@@ -176,6 +176,25 @@ export default function DashboardPage() {
   withDistance.sort((a, b) => a.dist - b.dist)
   return withDistance.map(entry => entry.apiary)
  }, [apiaries, devicePosition])
+
+ // Apiaries with something to do come first; each group keeps the order above (the sort is stable)
+ const sortedApiaries = useMemo(() => {
+  const needsAttention = (a: DashboardApiary) =>
+   (a.overdueInspectionHiveCount ?? 0) > 0 || a.queenIssueHiveCount > 0 ||
+   (a.highVarroaHiveCount ?? 0) > 0 || (a.dueTaskCount ?? 0) > 0
+  return [...apiariesByDistance].sort((a, b) => Number(needsAttention(b)) - Number(needsAttention(a)))
+ }, [apiariesByDistance])
+
+ // The "Today around your apiaries" strip shows the nearest apiary's weather and forage once;
+ // a card more than 20 km from it keeps its own, so nothing is hidden where conditions differ
+ const conditionsApiary = useMemo(
+  () => apiariesByDistance.find(a => a.latitude != null && a.longitude != null) ?? null,
+  [apiariesByDistance]
+ )
+ const showsOwnConditions = useCallback((apiary: DashboardApiary) => {
+  if (!conditionsApiary || apiary.latitude == null || apiary.longitude == null) return false
+  return haversineKm(conditionsApiary.latitude!, conditionsApiary.longitude!, apiary.latitude, apiary.longitude) > 20
+ }, [conditionsApiary])
 
  const isTeamMember = useMemo(() => ownedTeams.length > 0 || memberTeams.length > 0, [ownedTeams, memberTeams])
  const isRearingGroupMember = useMemo(() => ownedRearingGroups.length > 0 || memberRearingGroups.length > 0, [ownedRearingGroups, memberRearingGroups])
@@ -212,7 +231,7 @@ export default function DashboardPage() {
  {/* Quick actions placeholder */}
  <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border">
  <div className="flex flex-wrap gap-2">
- {Array.from({ length: 6 }).map((_, i) => (
+ {Array.from({ length: 2 }).map((_, i) => (
  <Skeleton key={i} className="h-8 w-28" />
  ))}
  </div>
@@ -398,13 +417,26 @@ export default function DashboardPage() {
  })}
  </div>
 
- {/* Apiary Weather (sorted nearest-first when GPS available) */}
+ {/* Apiaries: shared conditions strip, then cards needing attention first, then nearest-first */}
  {sortedApiaries.length > 0 && (
   <div>
+   {conditionsApiary && !activeAction && (
+    <div className="mb-4">
+     {/* Keyed by apiary: when GPS arrives and the nearest apiary changes, the strip starts afresh
+         instead of showing the previous apiary's weather and blooms under the new name */}
+     <ApiaryWeatherRow key={conditionsApiary.id} apiary={conditionsApiary} variant="conditions" />
+    </div>
+   )}
    <h2 className="text-lg font-semibold text-foreground mb-3">My Apiaries</h2>
    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     {sortedApiaries.map((apiary) => (
-     <ApiaryWeatherRow key={apiary.id} apiary={apiary} activeAction={activeAction} onActionDrop={handleApiaryActionDrop} />
+     <ApiaryWeatherRow
+      key={apiary.id}
+      apiary={apiary}
+      activeAction={activeAction}
+      onActionDrop={handleApiaryActionDrop}
+      showConditions={showsOwnConditions(apiary)}
+     />
     ))}
    </div>
   </div>

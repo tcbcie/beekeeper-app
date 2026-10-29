@@ -105,3 +105,7 @@ Only renders when the apiary has coordinates and GDD data loaded successfully.
 - **No plants in bloom:** Shows GDD value + nectar conditions only
 - **Community data unavailable:** Shows predicted blooms only
 - **Wide GDD ranges (e.g., Erica 200-1200):** Correctly shows across full season
+
+## Shown once in the dashboard strip (29 October 2026)
+
+GDD, blooms, nectar/pollen and the foraging window now appear in the dashboard's "Today around your apiaries" strip rather than on every card ("Forage" reads "In bloom", the foraging window reads "Flying weather: X h today · Y h tomorrow"). Cards whose forage the strip covers skip these lookups. See [dashboard-simplify-plan.md](./dashboard-simplify-plan.md).

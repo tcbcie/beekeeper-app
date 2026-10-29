@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Proposal &mdash; Simpler Dashboard</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 64rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  table.t { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
+  table.t th, table.t td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
+  table.t th { background: #eef3ef; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  ul.todo li { margin: .35rem 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+  .bug { color: #a32020; font-weight: 600; }
+
+  /* mock-up */
+  .mock { background: #f7f5f0; border: 1px solid #e5e7eb; border-radius: 10px; padding: 1rem; font-size: 14px; }
+  .strip { background: #fff; border: 1px solid #d1e7d6; border-radius: 10px; padding: .75rem 1rem; margin-bottom: 1rem; }
+  .strip h4 { margin: 0 0 .4rem; font-size: 16px; }
+  .strip .row { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; align-items: baseline; }
+  .strip .big { font-size: 18px; font-weight: 600; }
+  .lbl { color: #4b5563; }
+  .chip { display: inline-block; background: #e7f5ea; border-radius: 999px; padding: .1rem .55rem; margin-right: .25rem; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; }
+  .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
+  .card .hd { background: #15803d; color: #fff; padding: .6rem .9rem; display: flex; justify-content: space-between; font-weight: 600; font-size: 16px; }
+  .card .bd { padding: .7rem .9rem; }
+  .att { border-radius: 6px; padding: .45rem .6rem; margin-bottom: .55rem; }
+  .att.warn { background: #fef3c7; color: #78350f; }
+  .att.ok { background: #e7f5ea; color: #14532d; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: .3rem; }
+  .facts .v { font-size: 18px; font-weight: 600; }
+  .scale { border-top: 1px solid #e5e7eb; margin-top: .6rem; padding-top: .5rem; }
+  .down { color: #b91c1c; font-weight: 600; } .up { color: #15803d; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Proposal: Simpler Dashboard That Tells You What to Do</h1>
+
+<p><strong>Status:</strong> Step A and Step B implemented, awaiting your test &nbsp;&middot;&nbsp; <strong>Date:</strong> 29 October 2026</p>
+
+<blockquote>
+<p><strong>Your instruction:</strong> the dashboard looks overloaded. Suggest how to simplify it, but add value.</p>
+</blockquote>
+
+<h2>1. Why it feels overloaded</h2>
+
+<ol>
+  <li><strong>The same facts four times.</strong> Your four apiaries are a few kilometres apart, so every card repeats the same weather, &ldquo;3366 GDD&rdquo;, the same forage chips (Ivy, Erica, Daisies), &ldquo;Nectar: Good&rdquo;, &ldquo;Pollen: Good&rdquo; and nearly the same foraging window. That is two-thirds of each card.</li>
+  <li><strong>Cryptic lines.</strong> &ldquo;Foraging window: (-1d) 0.8h · Today 2.8h · (+1d) 0.3h&rdquo; and &ldquo;Avg (2) Today -0.51&rdquo; need decoding.</li>
+  <li><strong>The cards describe, they don&rsquo;t direct.</strong> &ldquo;Last inspected 13d ago&rdquo; is the <em>most recently</em> inspected hive, so an apiary can show &ldquo;4d ago&rdquo; while another hive there has not been seen for a month. The real per-hive warnings (overdue inspections, high varroa) are worked out already but only shown as totals at the top of the page.</li>
+  <li><strong>Tasks in four places</strong> (alert chip, card pill, stats strip, Upcoming events).</li>
+</ol>
+
+<h3>Two bugs found on the way</h3>
+<ul>
+  <li class="bug">&ldquo;6 tasks&rdquo; can open a list showing fewer.</li>
+  <li>The pill counts every open task, including future ones, but the Tasks page opens on &ldquo;Due&rdquo; (start date today or earlier). <span class="file">ApiaryWeatherRow.tsx:897-907</span>, <span class="file">tasks/page.tsx:119</span>.</li>
+  <li>The loading skeleton still draws 6 quick-action placeholders; the page has 2 (<span class="file">dashboard/page.tsx:208-236</span>).</li>
+</ul>
+
+<h2>2. Proposed layout</h2>
+
+<div class="mock">
+  <div class="strip">
+    <h4>Today around your apiaries</h4>
+    <div class="row">
+      <span><span class="big">☁ 13°C</span> <span class="lbl">overcast</span></span>
+      <span><span class="big">2.8 h</span> <span class="lbl">flying weather today (tomorrow 0.3 h)</span></span>
+      <span><span class="lbl">Nectar</span> <b>good</b> · <span class="lbl">pollen</span> <b>good</b></span>
+      <span><span class="big">3366</span> <span class="lbl">GDD</span></span>
+    </div>
+    <div style="margin-top:.45rem"><span class="lbl">In bloom:</span> <span class="chip">Ivy</span><span class="chip">Erica</span><span class="chip">Daisies</span> &nbsp;<span class="lbl">▸ 7-day forecast</span></div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="hd"><span>AP03 - Stephen</span><span>13°</span></div>
+      <div class="bd">
+        <div class="att warn"><b>Needs attention:</b> 3 hives due for inspection · 1 queenless · 2 tasks overdue</div>
+        <div class="facts">
+          <div><div class="v">10</div><div class="lbl">hives</div></div>
+          <div><div class="v">10 d</div><div class="lbl">oldest check</div></div>
+          <div><div class="v">6</div><div class="lbl">open tasks</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="hd"><span>AP01 - Colm</span><span>13°</span></div>
+      <div class="bd">
+        <div class="att ok"><b>All good</b> &middot; queens seen 11 days ago</div>
+        <div class="facts">
+          <div><div class="v">5</div><div class="lbl">hives</div></div>
+          <div><div class="v">4 d</div><div class="lbl">oldest check</div></div>
+          <div><div class="v">1</div><div class="lbl">open task</div></div>
+        </div>
+        <div class="scale"><span class="lbl">Scale weight change (kg):</span> today <span class="down">-0.70</span> · 7 days <span class="up">+1.29</span> · 30 days <span class="up">+10.49</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="lbl">Emoji stand in for the existing icons. Cards with something to do come first; the &ldquo;Attention needed&rdquo; totals at the top of the page stay.</p>
+
+<h2>3. The changes, in two steps</h2>
+
+<h3>Step A &mdash; simplify (no database change)</h3>
+<table class="t">
+  <tr><th>#</th><th>Change</th><th>Value</th></tr>
+  <tr><td>A1</td><td><strong>One &ldquo;Today around your apiaries&rdquo; strip</strong> above the cards: weather, 7-day forecast, flying hours, nectar/pollen, GDD and what is in bloom. Taken from the nearest apiary. The cards drop those rows. If an apiary is more than 20 km from the others it keeps its own forage line, so nothing is hidden where conditions really differ.</td><td>Each card loses about two-thirds of its height; the page is roughly half as long on a phone.</td></tr>
+  <tr><td>A2</td><td><strong>Plain wording:</strong> &ldquo;2.8 h flying weather today (tomorrow 0.3 h)&rdquo;; scale row &ldquo;Scale weight change (kg): today / 7 days / 30 days&rdquo;, matching the Scale Overview card.</td><td>Nothing to decode.</td></tr>
+  <tr><td>A3</td><td><strong>Fix the task pill</strong>: count and link agree (the pill opens the list showing all of that apiary&rsquo;s open tasks).</td><td>Bug fix.</td></tr>
+  <tr><td>A4</td><td>48px tap areas for the 7-day toggle, bloom chips and task pill; skeleton shows 2 quick actions.</td><td>Easier with gloves; no jump on load.</td></tr>
+</table>
+
+<h3>Step B &mdash; add value (one database function change, via the MCP server)</h3>
+<table class="t">
+  <tr><th>#</th><th>Change</th><th>Value</th></tr>
+  <tr><td>B1</td><td><strong>&ldquo;Needs attention&rdquo; line per apiary</strong>: hives due for inspection (14+ days), queen issues, high varroa (&gt;3% in 30 days), overdue tasks. Green &ldquo;All good&rdquo; when there is nothing. The dashboard function already works these out for the whole account; it would also return them per apiary.</td><td>Answers &ldquo;where do I go today, and why?&rdquo; at a glance.</td></tr>
+  <tr><td>B2</td><td><strong>&ldquo;Oldest check&rdquo;</strong> instead of &ldquo;Last inspected&rdquo;: days since the <em>least recently</em> inspected hive.</td><td>Stops a recent visit hiding a neglected hive.</td></tr>
+  <tr><td>B3</td><td><strong>Cards that need attention first</strong>, then nearest first (as now).</td><td>The apiary to visit is at the top.</td></tr>
+</table>
+
+<h3>Not proposed</h3>
+<ul>
+  <li>Removing the stats strip, Recent activity or Upcoming events &mdash; they sit below the apiaries and are already compact. I would revisit them after Step A.</li>
+  <li>Swarm risk or treatment-strip reminders on the card &mdash; possible later, but not computed for the dashboard today.</li>
+</ul>
+
+<h2>4. To-do (once you choose)</h2>
+<ul class="todo">
+  <li>&#9745; Step A: A1 strip, A2 wording, A3 task pill, A4 tap areas and skeleton</li>
+  <li>&#9745; Step B: per-apiary attention counts in <code>get_dashboard_overview</code> (MCP migration, grants checked), B1 line, B2 oldest check, B3 order</li>
+  <li>&#9745; Type check + ESLint; <code>qa-engineer</code> audit</li>
+  <li>&#9745; Docs: new <span class="file">docs/features/dashboard-simplify-plan.md</span>; update <span class="file">dashboard-apiary-weather.md</span> and <span class="file">gdd-dashboard-bloom.md</span></li>
+  <li>&#9744; You test on phone and desktop</li>
+  <li>&#9745; Review section</li>
+</ul>
+
+<h2>5. Review</h2>
+<h3>Changes</h3>
+<ul>
+  <li><strong>Database</strong> (<span class="file">supabase/migrations/20261029120000_dashboard_apiary_attention.sql</span>, applied through the MCP server): <code>get_dashboard_overview</code> also returns per apiary <code>oldestInspectionDate</code>, <code>uninspectedHiveCount</code>, <code>overdueInspectionHiveCount</code>, <code>highVarroaHiveCount</code>, <code>dueTaskCount</code>. Every existing field kept, grants unchanged, security advisors show nothing new. On your account AP03 shows why it matters: latest inspection 19 October, but 9 of 10 hives overdue and the oldest check 28 August.</li>
+  <li><span class="file">ApiaryWeatherRow.tsx</span>: <code>variant="conditions"</code> renders the &ldquo;Today around your apiaries&rdquo; strip; weather/forecast/forage rows are one shared block; cards show a &ldquo;Needs attention&rdquo; or &ldquo;All good&rdquo; line and three facts (hives, oldest check, tasks due); &ldquo;In bloom&rdquo;, &ldquo;Flying weather: X h today &middot; Y h tomorrow&rdquo;, &ldquo;Scale change (kg)&rdquo; with 24 hours / 7 days / 30 days; 48px tap areas. Cards whose forage the strip covers skip the GDD and bloom lookups; the strip makes no scale calls.</li>
+  <li><span class="file">dashboard/page.tsx</span>: strip above &ldquo;My Apiaries&rdquo;; cards needing attention first, then nearest first; cards over 20 km from the strip&rsquo;s apiary keep their own conditions; loading skeleton shows 2 quick actions.</li>
+  <li><span class="file">tasks/page.tsx</span>: <code>?view=</code> applied with <code>?apiary=</code>, clearing a remembered hive filter, so &ldquo;N tasks due&rdquo; opens exactly those tasks.</li>
+  <li><span class="file">types/dashboard.ts</span>: the new fields, optional.</li>
+  <li>Docs: new <span class="file">docs/features/dashboard-simplify-plan.md</span>; notes in <span class="file">dashboard-apiary-weather.md</span> and <span class="file">gdd-dashboard-bloom.md</span>.</li>
+</ul>
+<h3>QA audit (qa-engineer)</h3>
+<ul>
+  <li><strong>No Critical or High findings.</strong> <code>npx tsc --noEmit</code>: no errors. ESLint on the four files: clean.</li>
+  <li>&#128993; Medium, fixed: when GPS arrived and the nearest apiary changed, the strip kept the previous apiary&rsquo;s weather and blooms on screen under the new name until the new data loaded. The strip is now keyed by apiary, so it starts afresh.</li>
+  <li>&#128993; Medium, fixed: &ldquo;All good &middot; queens seen 0 days ago&rdquo; now reads &ldquo;queens seen today&rdquo;.</li>
+  <li>Hook order: every hook sits above the strip&rsquo;s early return. The GDD/bloom effect re-runs when <code>showConditions</code> changes (it is in its dependencies), so a card that becomes &ldquo;far&rdquo; once GPS arrives loads its forage.</li>
+  <li>Old payloads: the new fields are read with <code>?? 0</code>, and &ldquo;oldest check&rdquo; falls back to the latest inspection.</li>
+  <li>&#9898; Low, left as is: the per-apiary high-varroa count includes checks a team-mate logged on your hive, while the account-wide alert counts only your own checks. The per-apiary figure is the more useful one.</li>
+  <li>&#9898; Low, left as is: remembered Tasks page filters for type, category and ownership can still narrow the list below the count.</li>
+</ul>
+
+</body>
+</html>

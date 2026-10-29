@@ -107,6 +107,14 @@ export interface DashboardApiary {
   queenlessConfirmedReasons: string[]
   scales: DashboardApiaryScale[]
   activeTaskCount: number
+  // Per-apiary attention counts (get_dashboard_overview, 29 October 2026). Optional: an older cached
+  // payload can lack them, so the card reads them with `?? 0`.
+  oldestInspectionDate?: string | null
+  uninspectedHiveCount?: number
+  overdueInspectionHiveCount?: number
+  highVarroaHiveCount?: number
+  /** Open tasks due today or earlier, batch milestones left out: the Tasks page "Due" view */
+  dueTaskCount?: number
 }
 
 export interface DashboardStats {

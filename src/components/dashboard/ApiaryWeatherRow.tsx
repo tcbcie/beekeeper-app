@@ -241,20 +241,34 @@ function WeightChip({ label, value }: { label: string; value: number }) {
   )
 }
 
+function pluralise(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`
+}
+
 interface ApiaryWeatherRowProps {
   apiary: DashboardApiary
   activeAction?: { type: string; label: string } | null
   onActionDrop?: (apiaryId: string) => void
+  /**
+   * 'conditions' renders only this apiary's weather and forage, as the dashboard's shared
+   * "Today around your apiaries" strip; 'card' (default) is the apiary card.
+   */
+  variant?: 'card' | 'conditions'
+  /** Card only: show its own weather and forage rows (an apiary far from the strip's apiary) */
+  showConditions?: boolean
 }
 
-function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherRowProps) {
+function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card', showConditions = true }: ApiaryWeatherRowProps) {
+  const isStrip = variant === 'conditions'
+  const conditionsShown = isStrip || showConditions
   const router = useRouter()
   const [weather, setWeather] = useState<ApiaryWeather | null>(null)
   const [weatherLoading, setWeatherLoading] = useState(false)
   const [weatherError, setWeatherError] = useState(false)
   const [scaleData, setScaleData] = useState<ScaleWeight[]>([])
   const [scaleLoading, setScaleLoading] = useState(false)
-  const [shouldLoadData, setShouldLoadData] = useState(false)
+  // The strip sits at the top of the page, so it loads at once rather than on scrolling into view
+  const [shouldLoadData, setShouldLoadData] = useState(isStrip)
   const [forecastExpanded, setForecastExpanded] = useState(false)
   const [gddValue, setGddValue] = useState<number | null>(null)
   const [bloomingPlants, setBloomingPlants] = useState<BloomingPlant[]>([])
@@ -263,7 +277,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
   const [vegModalPlant, setVegModalPlant] = useState<{ name: string; typeId: string } | null>(null)
   const [nectarCondition, setNectarCondition] = useState<NectarCondition | null>(null)
   const [pollenCondition, setPollenCondition] = useState<PollenCondition | null>(null)
-  const [foragingHours, setForagingHours] = useState<{ yesterday: number | null; today: number | null; tomorrow: number | null } | null>(null)
+  const [foragingHours, setForagingHours] = useState<{ today: number | null; tomorrow: number | null } | null>(null)
   const dragCounterRef = useRef(0)
   const cardRef = useRef<HTMLAnchorElement | null>(null)
   const mountedRef = useRef(true)
@@ -333,7 +347,8 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
   }, [hasCoords, shouldLoadData, weatherCacheKey])
 
   const fetchScaleData = useCallback(async () => {
-    if (!hasScales || !shouldLoadData) return
+    // The strip shows no scale row, so it must not cost scale-vendor calls
+    if (!hasScales || !shouldLoadData || isStrip) return
 
     const cachedScaleData = scaleCache.get(scaleCacheKey)
     if (cachedScaleData && isCacheFresh(cachedScaleData.fetchedAt, SCALE_CACHE_TTL_MS)) {
@@ -391,10 +406,11 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
         setScaleLoading(false)
       }
     }
-  }, [apiary.scales, hasScales, scaleCacheKey, shouldLoadData])
+  }, [apiary.scales, hasScales, scaleCacheKey, shouldLoadData, isStrip])
 
   const fetchGDDAndBloom = useCallback(async () => {
-    if (!hasCoords || !weatherCacheKey || !shouldLoadData) return
+    // A card whose forage the strip already shows skips these lookups altogether
+    if (!hasCoords || !weatherCacheKey || !shouldLoadData || !conditionsShown) return
 
     try {
     // 1. Fetch current GDD (24h cache, deduplicated across same-location cards)
@@ -586,7 +602,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
     } catch {
       // GDD/bloom data is non-critical — fail silently, card still renders without it
     }
-  }, [apiary.id, apiary.latitude, apiary.longitude, hasCoords, shouldLoadData, weatherCacheKey])
+  }, [apiary.id, apiary.latitude, apiary.longitude, hasCoords, shouldLoadData, weatherCacheKey, conditionsShown])
 
   useEffect(() => { fetchWeather() }, [fetchWeather])
   useEffect(() => { fetchScaleData() }, [fetchScaleData])
@@ -615,11 +631,10 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
       today.precipitationSum
     ))
 
-    // Foraging window: yesterday / today / tomorrow (use raw temps for precision)
+    // Flying weather: today / tomorrow (use raw temps for precision)
     const calcHours = (d: DailyForecast | null | undefined) =>
       d ? calculateForagingHours(d.tempMinRaw, d.tempMaxRaw, d.sunshineDuration, d.precipitationSum) : null
     setForagingHours({
-      yesterday: calcHours(weather.yesterday),
       today: calcHours(today),
       tomorrow: calcHours(weather.daily[1]),
     })
@@ -632,9 +647,204 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
     change30d: avg(scaleData.map(scale => scale.change30d)),
   } : null
 
-  const daysSinceInspection = getDaysSinceDate(apiary.lastInspectionDate)
+  // The least recently inspected hive: a recent visit to one hive must not hide a neglected one.
+  // Falls back to the latest inspection for a payload from before the field existed.
+  const daysSinceOldestCheck = getDaysSinceDate(apiary.oldestInspectionDate ?? apiary.lastInspectionDate)
+  const neverInspected = (apiary.uninspectedHiveCount ?? 0) > 0
   const daysSinceQueenright = getDaysSinceDate(apiary.lastQueenrightDate)
   const hasQueenIssue = apiary.queenIssueHiveCount > 0
+  const dueTaskCount = apiary.dueTaskCount ?? 0
+  // The count is the Tasks page "Due" view, so the link opens that view for this apiary
+  const tasksDueHref = `/dashboard/tasks?apiary=${apiary.id}&view=due`
+
+  // What needs doing at this apiary, most pressing first
+  const overdueCount = apiary.overdueInspectionHiveCount ?? 0
+  const varroaCount = apiary.highVarroaHiveCount ?? 0
+  const attentionItems: string[] = []
+  if (overdueCount > 0) attentionItems.push(`${pluralise(overdueCount, 'hive', 'hives')} due for inspection`)
+  if (hasQueenIssue) attentionItems.push(getQueenIssueSummary(apiary))
+  if (varroaCount > 0) attentionItems.push(`${pluralise(varroaCount, 'hive', 'hives')} with high varroa`)
+  if (dueTaskCount > 0) attentionItems.push(`${pluralise(dueTaskCount, 'task', 'tasks')} due`)
+
+  // Weather, forecast and forage: shown once in the strip, and in a card only when it is far
+  // from the strip's apiary (the shared strip replaced four identical copies)
+  const conditionsBlock = (
+    <>
+      {weather && !activeAction && (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setForecastExpanded(!forecastExpanded) }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setForecastExpanded(!forecastExpanded) } }}
+          aria-expanded={forecastExpanded}
+          aria-label={forecastExpanded ? 'Hide 7-day forecast' : 'Show 7-day forecast'}
+          className="w-full flex min-h-12 items-center justify-between px-4 bg-forest-50 dark:bg-surface-elevated text-sm text-forest-700 dark:text-forest-300 hover:bg-forest-100 dark:hover:bg-surface-secondary transition-colors cursor-pointer"
+        >
+          <span>{weatherLabel(weather.current.weatherCode)}</span>
+          <span className="flex items-center gap-1 text-forest-600 dark:text-forest-400">
+            <span className="text-sm font-medium">{forecastExpanded ? 'Hide' : '7-day'}</span>
+            <ChevronDown size={12} className={`transition-transform ${forecastExpanded ? 'rotate-180' : ''}`} />
+          </span>
+        </div>
+      )}
+
+      {weather && forecastExpanded && (
+        <div className="border-b border-border">
+          <div className="flex items-stretch">
+            {weather.daily.map((day, index) => (
+              <div
+                key={index}
+                className={`flex-1 flex flex-col items-center py-1.5 ${
+                  index === 0 ? 'bg-forest-50/50 dark:bg-surface-elevated' : ''
+                } ${index < weather.daily.length - 1 ? 'border-r border-border/40' : ''}`}
+              >
+                <span className={`text-sm font-semibold leading-none ${
+                  index === 0 ? 'text-forest-700 dark:text-forest-300' : 'text-text-secondary'
+                }`}>{day.day}</span>
+                <span className="text-sm leading-none my-0.5">{weatherIcon(day.weatherCode)}</span>
+                <span className="flex flex-col items-center text-sm leading-tight tabular-nums">
+                  <span className="font-semibold text-foreground">{day.tempMax}&deg;</span>
+                  <span className="text-text-secondary font-medium">{day.tempMin}&deg;</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {gddValue !== null && !activeAction && (
+        <div className="px-3 py-1.5 bg-green-50/50 dark:bg-surface-secondary border-b border-border dark:border-border/70">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 shrink-0">
+              <Thermometer size={13} className="text-forest-600 dark:text-forest-400" />
+              <span className="text-sm font-bold text-forest-700 dark:text-forest-300 tabular-nums">
+                {Math.round(gddValue)} GDD
+              </span>
+            </div>
+            {bloomingPlants.length > 0 && (
+              <>
+                <div className="w-px h-4 bg-border" />
+                <span className="text-sm font-medium text-text-secondary dark:text-gray-300 shrink-0">In bloom:</span>
+                <Flower2 size={13} className="text-green-600 dark:text-green-400 shrink-0" />
+                <div className="flex items-center gap-1 min-w-0 flex-wrap">
+                  {(bloomExpanded ? bloomingPlants : bloomingPlants.slice(0, 3)).map((plant) => (
+                    <span
+                      key={plant.name}
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setVegModalPlant({ name: plant.name, typeId: plant.vegetationTypeId }); setVegModalOpen(true) }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setVegModalPlant({ name: plant.name, typeId: plant.vegetationTypeId }); setVegModalOpen(true) } }}
+                      className="inline-flex min-h-12 items-center cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                      <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-sm font-medium rounded-full whitespace-nowrap ${
+                        plant.confirmed
+                          ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200'
+                          : 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200'
+                      }`}>
+                        {plant.confirmed && <Check size={10} className="shrink-0" />}
+                        {plant.name}
+                      </span>
+                    </span>
+                  ))}
+                  {bloomingPlants.length > 3 && (
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setBloomExpanded(!bloomExpanded) }}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setBloomExpanded(!bloomExpanded) } }}
+                      className="inline-flex min-h-12 items-center px-1 text-sm font-medium text-forest-600 dark:text-forest-400 whitespace-nowrap cursor-pointer hover:underline"
+                    >
+                      {bloomExpanded ? 'less' : `+${bloomingPlants.length - 3} more`}
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+            {nectarCondition && (
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-medium text-text-secondary dark:text-gray-300">Nectar:</span>
+                <span className={`text-sm font-bold ${
+                  nectarCondition === 'good'
+                    ? 'text-green-700 dark:text-green-400'
+                    : nectarCondition === 'fair'
+                      ? 'text-amber-700 dark:text-amber-400'
+                      : 'text-text-tertiary'
+                }`}>
+                  {nectarCondition === 'good' ? 'Good' : nectarCondition === 'fair' ? 'Fair' : 'Poor'}
+                </span>
+              </div>
+            )}
+            {pollenCondition && (
+              <>
+                {nectarCondition && <div className="w-px h-3 bg-border" />}
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium text-text-secondary dark:text-gray-300">Pollen:</span>
+                  <span className={`text-sm font-bold ${
+                    pollenCondition === 'good'
+                      ? 'text-green-700 dark:text-green-400'
+                      : pollenCondition === 'fair'
+                        ? 'text-amber-700 dark:text-amber-400'
+                        : 'text-text-tertiary'
+                  }`}>
+                    {pollenCondition === 'good' ? 'Good' : pollenCondition === 'fair' ? 'Fair' : 'Poor'}
+                  </span>
+                </div>
+              </>
+            )}
+            {foragingHours && (
+              <>
+                {(nectarCondition || pollenCondition) && <div className="w-px h-3 bg-border" />}
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium text-text-secondary dark:text-gray-300" title="Hours warm, dry and sunny enough for bees to fly">Flying weather:</span>
+                  <span className="text-sm font-bold tabular-nums text-foreground">
+                    {foragingHours.today !== null && <span className={foragingHours.today >= 4 ? 'text-green-700 dark:text-green-400' : foragingHours.today >= 2 ? 'text-amber-700 dark:text-amber-400' : 'text-text-tertiary dark:text-gray-400'}>{foragingHours.today} h today</span>}
+                    {foragingHours.today !== null && foragingHours.tomorrow !== null && <span className="text-text-tertiary dark:text-gray-400"> · </span>}
+                    {foragingHours.tomorrow !== null && <span className="text-text-secondary dark:text-gray-300 font-medium">{foragingHours.tomorrow} h tomorrow</span>}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  )
+
+  const vegModal = vegModalOpen && vegModalPlant && (
+    <VegetationInfoModal
+      isOpen={vegModalOpen}
+      onClose={() => { setVegModalOpen(false); setVegModalPlant(null) }}
+      vegetationName={vegModalPlant.name}
+      vegetationTypeId={vegModalPlant.typeId}
+    />
+  )
+
+  if (isStrip) {
+    // Not a drop target for quick actions, and nothing to show until weather or GDD arrives
+    if (activeAction || (!weather && gddValue === null)) return null
+    return (
+      <>
+      <section aria-label="Today around your apiaries" className="rounded-lg overflow-hidden border-2 border-border bg-surface dark:bg-surface shadow-sm">
+        <div className="px-4 py-2.5 bg-gradient-to-r from-forest-600 to-forest-700 dark:from-forest-700 dark:to-forest-800 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h2 className="font-semibold text-white text-base">Today around your apiaries</h2>
+            <p className="text-sm text-forest-100 truncate">Weather and forage at {apiary.name}</p>
+          </div>
+          {weather && (
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="text-base leading-none">{weatherIcon(weather.current.weatherCode)}</span>
+              <span className="text-lg font-bold text-white tabular-nums">{weather.current.temperature}&deg;</span>
+            </div>
+          )}
+        </div>
+        {conditionsBlock}
+      </section>
+      {vegModal}
+      </>
+    )
+  }
 
   return (
     <>
@@ -707,213 +917,77 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
         </div>
       </div>
 
-      {weather && !activeAction && (
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setForecastExpanded(!forecastExpanded) }}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setForecastExpanded(!forecastExpanded) } }}
-          aria-expanded={forecastExpanded}
-          aria-label={forecastExpanded ? 'Hide 7-day forecast' : 'Show 7-day forecast'}
-          className="w-full flex items-center justify-between px-4 py-1 bg-forest-50 dark:bg-surface-elevated text-sm text-forest-700 dark:text-forest-300 hover:bg-forest-100 dark:hover:bg-surface-secondary transition-colors cursor-pointer"
-        >
-          <span>{weatherLabel(weather.current.weatherCode)}</span>
-          <span className="flex items-center gap-1 text-forest-600 dark:text-forest-400">
-            <span className="text-sm font-medium">{forecastExpanded ? 'Hide' : '7-day'}</span>
-            <ChevronDown size={12} className={`transition-transform ${forecastExpanded ? 'rotate-180' : ''}`} />
-          </span>
-        </div>
-      )}
+      {showConditions && conditionsBlock}
 
-      {weather && forecastExpanded && (
-        <div className="border-b border-border">
-          <div className="flex items-stretch">
-            {weather.daily.map((day, index) => (
-              <div
-                key={index}
-                className={`flex-1 flex flex-col items-center py-1.5 ${
-                  index === 0 ? 'bg-forest-50/50 dark:bg-surface-elevated' : ''
-                } ${index < weather.daily.length - 1 ? 'border-r border-border/40' : ''}`}
-              >
-                <span className={`text-sm font-semibold leading-none ${
-                  index === 0 ? 'text-forest-700 dark:text-forest-300' : 'text-text-secondary'
-                }`}>{day.day}</span>
-                <span className="text-sm leading-none my-0.5">{weatherIcon(day.weatherCode)}</span>
-                <span className="flex flex-col items-center text-sm leading-tight tabular-nums">
-                  <span className="font-semibold text-foreground">{day.tempMax}&deg;</span>
-                  <span className="text-text-secondary font-medium">{day.tempMin}&deg;</span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {gddValue !== null && !activeAction && (
-        <div className="px-3 py-1.5 bg-green-50/50 dark:bg-surface-secondary border-b border-border dark:border-border/70">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 shrink-0">
-              <Thermometer size={13} className="text-forest-600 dark:text-forest-400" />
-              <span className="text-sm font-bold text-forest-700 dark:text-forest-300 tabular-nums">
-                {Math.round(gddValue)} GDD
+      {apiary.hiveCount > 0 && (
+        <div className="px-3 pt-2.5">
+          {attentionItems.length > 0 ? (
+            <div className="rounded-md px-3 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 text-sm">
+              <span className="flex items-center gap-1 font-semibold">
+                <AlertTriangle size={14} className="shrink-0" aria-hidden="true" />
+                Needs attention
               </span>
+              <span className="block mt-0.5">{attentionItems.join(' · ')}</span>
             </div>
-            {bloomingPlants.length > 0 && (
-              <>
-                <div className="w-px h-4 bg-border" />
-                <span className="text-sm font-medium text-text-secondary dark:text-gray-300 shrink-0">Forage:</span>
-                <Flower2 size={13} className="text-green-600 dark:text-green-400 shrink-0" />
-                <div className="flex items-center gap-1 min-w-0 flex-wrap">
-                  {(bloomExpanded ? bloomingPlants : bloomingPlants.slice(0, 3)).map((plant) => (
-                    <span
-                      key={plant.name}
-                      role="button"
-                      tabIndex={0}
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setVegModalPlant({ name: plant.name, typeId: plant.vegetationTypeId }); setVegModalOpen(true) }}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setVegModalPlant({ name: plant.name, typeId: plant.vegetationTypeId }); setVegModalOpen(true) } }}
-                      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 text-sm font-medium rounded-full whitespace-nowrap cursor-pointer hover:opacity-80 transition-opacity ${
-                        plant.confirmed
-                          ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200'
-                          : 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200'
-                      }`}
-                    >
-                      {plant.confirmed && <Check size={10} className="shrink-0" />}
-                      {plant.name}
-                    </span>
-                  ))}
-                  {bloomingPlants.length > 3 && (
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setBloomExpanded(!bloomExpanded) }}
-                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setBloomExpanded(!bloomExpanded) } }}
-                      className="text-sm font-medium text-forest-600 dark:text-forest-400 whitespace-nowrap cursor-pointer hover:underline"
-                    >
-                      {bloomExpanded ? 'less' : `+${bloomingPlants.length - 3} more`}
-                    </span>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-3 mt-1">
-            {nectarCondition && (
-              <div className="flex items-center gap-1">
-                <span className="text-sm font-medium text-text-secondary dark:text-gray-300">Nectar:</span>
-                <span className={`text-sm font-bold ${
-                  nectarCondition === 'good'
-                    ? 'text-green-700 dark:text-green-400'
-                    : nectarCondition === 'fair'
-                      ? 'text-amber-700 dark:text-amber-400'
-                      : 'text-text-tertiary'
-                }`}>
-                  {nectarCondition === 'good' ? 'Good' : nectarCondition === 'fair' ? 'Fair' : 'Poor'}
-                </span>
-              </div>
-            )}
-            {pollenCondition && (
-              <>
-                {nectarCondition && <div className="w-px h-3 bg-border" />}
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-text-secondary dark:text-gray-300">Pollen:</span>
-                  <span className={`text-sm font-bold ${
-                    pollenCondition === 'good'
-                      ? 'text-green-700 dark:text-green-400'
-                      : pollenCondition === 'fair'
-                        ? 'text-amber-700 dark:text-amber-400'
-                        : 'text-text-tertiary'
-                  }`}>
-                    {pollenCondition === 'good' ? 'Good' : pollenCondition === 'fair' ? 'Fair' : 'Poor'}
-                  </span>
-                </div>
-              </>
-            )}
-            {foragingHours && (
-              <>
-                {(nectarCondition || pollenCondition) && <div className="w-px h-3 bg-border" />}
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-text-secondary dark:text-gray-300">Foraging window:</span>
-                  <span className="text-sm font-bold tabular-nums text-foreground">
-                    {foragingHours.yesterday !== null && <span className="text-text-secondary dark:text-gray-300 font-medium">(-1d) {foragingHours.yesterday}h</span>}
-                    {foragingHours.yesterday !== null && foragingHours.today !== null && <span className="text-text-tertiary dark:text-gray-400"> · </span>}
-                    {foragingHours.today !== null && <span className={foragingHours.today >= 4 ? 'text-green-700 dark:text-green-400' : foragingHours.today >= 2 ? 'text-amber-700 dark:text-amber-400' : 'text-text-tertiary dark:text-gray-400'}>Today {foragingHours.today}h</span>}
-                    {foragingHours.today !== null && foragingHours.tomorrow !== null && <span className="text-text-tertiary dark:text-gray-400"> · </span>}
-                    {foragingHours.tomorrow !== null && <span className="text-text-secondary dark:text-gray-300 font-medium">(+1d) {foragingHours.tomorrow}h</span>}
-                  </span>
-                </div>
-              </>
-            )}
-          </div>
+          ) : (
+            <div className="rounded-md px-3 py-2 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300 text-sm">
+              <span className="font-semibold">All good</span>
+              {daysSinceQueenright !== null && <span> · queens seen {daysSinceQueenright === 0 ? 'today' : `${pluralise(daysSinceQueenright, 'day', 'days')} ago`}</span>}
+            </div>
+          )}
         </div>
       )}
 
-      <div className="px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border dark:border-border/70">
+      <div className="px-3 py-2 grid grid-cols-3 items-center gap-2 border-b border-border dark:border-border/70">
         <div className="flex flex-col min-w-0">
-          <span className="text-sm font-medium text-text-secondary leading-none mb-0.5">Hives</span>
           <span className="text-base font-bold text-foreground tabular-nums">{apiary.hiveCount}</span>
+          <span className="text-sm text-text-secondary">{apiary.hiveCount === 1 ? 'hive' : 'hives'}</span>
         </div>
-        <div className="w-px h-5 bg-border" />
-        <div className="flex flex-col min-w-0">
-          <span className="text-sm font-medium text-text-secondary leading-none mb-0.5">Last Inspected</span>
-          {daysSinceInspection !== null ? (
+        <div className="flex flex-col min-w-0" title="Days since the least recently inspected hive was checked">
+          {neverInspected ? (
+            <span className="text-base font-bold text-red-700 dark:text-red-400">Never</span>
+          ) : daysSinceOldestCheck !== null ? (
             <span className={`text-base font-bold tabular-nums ${
-              daysSinceInspection < 7
+              daysSinceOldestCheck < 7
                 ? 'text-green-700 dark:text-green-400'
-                : daysSinceInspection < 14
+                : daysSinceOldestCheck < 14
                   ? 'text-amber-700 dark:text-amber-400'
                   : 'text-red-700 dark:text-red-400'
-            }`}>{daysSinceInspection}d ago</span>
-          ) : apiary.hiveCount > 0 ? (
-            <span className="text-base font-medium text-text-tertiary">Never</span>
+            }`}>{pluralise(daysSinceOldestCheck, 'day', 'days')}</span>
           ) : (
             <span className="text-base font-medium text-text-tertiary">&mdash;</span>
           )}
+          <span className="text-sm text-text-secondary">oldest check</span>
         </div>
-        <div className="w-px h-5 bg-border" />
-        <div className="flex flex-col min-w-0">
-          <span className="text-sm font-medium text-text-secondary leading-none mb-0.5">Queen Status</span>
-          {apiary.hiveCount === 0 ? (
-            <span className="text-base font-medium text-text-tertiary">&mdash;</span>
-          ) : hasQueenIssue ? (
-            <>
-              <span className="flex items-center gap-1 text-base font-bold text-amber-700 dark:text-amber-400 leading-none">
-                <AlertTriangle size={14} className="shrink-0" />
-                Possible issue
-              </span>
-              <span className="text-sm font-medium text-amber-700/90 dark:text-amber-300 leading-none mt-0.5">
-                {getQueenIssueSummary(apiary)}
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="text-base font-bold text-green-700 dark:text-green-400 leading-none">Healthy</span>
-              <span className="text-sm font-medium text-text-secondary leading-none mt-0.5">
-                {daysSinceQueenright !== null ? `Latest ${daysSinceQueenright}d ago` : 'All hives recent'}
-              </span>
-            </>
-          )}
-        </div>
-        {apiary.activeTaskCount > 0 && !activeAction && (
+        {dueTaskCount > 0 && !activeAction ? (
           <div
             role="button"
             tabIndex={0}
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/dashboard/tasks?apiary=${apiary.id}`) }}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); router.push(`/dashboard/tasks?apiary=${apiary.id}`) } }}
-            className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200 hover:bg-teal-200 dark:hover:bg-teal-900/50 transition-colors cursor-pointer"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(tasksDueHref) }}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); router.push(tasksDueHref) } }}
+            aria-label={`Show ${pluralise(dueTaskCount, 'task', 'tasks')} due at ${apiary.name}`}
+            className="flex min-h-12 flex-col justify-center rounded-md px-2 bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-200 hover:bg-teal-200 dark:hover:bg-teal-900/50 transition-colors cursor-pointer"
           >
-            <ListChecks size={14} />
-            <span className="text-sm font-semibold tabular-nums">{apiary.activeTaskCount}</span>
-            <span className="text-sm font-medium">task{apiary.activeTaskCount !== 1 ? 's' : ''}</span>
+            <span className="flex items-center gap-1 text-base font-bold tabular-nums">
+              <ListChecks size={14} aria-hidden="true" />
+              {dueTaskCount}
+            </span>
+            <span className="text-sm">{dueTaskCount === 1 ? 'task due' : 'tasks due'}</span>
+          </div>
+        ) : (
+          <div className="flex flex-col min-w-0">
+            <span className="text-base font-bold text-text-tertiary tabular-nums">0</span>
+            <span className="text-sm text-text-secondary">tasks due</span>
           </div>
         )}
       </div>
 
       {hasScales && (
-        <div className="px-3 py-2 flex items-center gap-2">
+        <div className="px-3 py-2 flex flex-wrap items-center gap-x-3 gap-y-1">
           <div className="flex items-center gap-1 shrink-0">
-            <Scale size={12} className="text-text-tertiary" />
-            <span className="text-sm font-semibold text-text-tertiary">
-              Avg ({apiary.scales.length})
+            <Scale size={12} className="text-text-secondary" aria-hidden="true" />
+            <span className="text-sm font-semibold text-text-secondary">
+              Scale change (kg){apiary.scales.length > 1 ? `, average of ${apiary.scales.length}` : ''}
             </span>
           </div>
           {scaleLoading && (
@@ -924,11 +998,11 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
           )}
           {!scaleLoading && avgWeight && (
             <div className="flex items-center gap-2">
-              {avgWeight.change24h !== null && <WeightChip label="Today" value={avgWeight.change24h} />}
+              {avgWeight.change24h !== null && <WeightChip label="24 hours" value={avgWeight.change24h} />}
               {avgWeight.change24h !== null && avgWeight.change7d !== null && <div className="w-px h-5 bg-border" />}
-              {avgWeight.change7d !== null && <WeightChip label="7 Days" value={avgWeight.change7d} />}
+              {avgWeight.change7d !== null && <WeightChip label="7 days" value={avgWeight.change7d} />}
               {avgWeight.change7d !== null && avgWeight.change30d !== null && <div className="w-px h-5 bg-border" />}
-              {avgWeight.change30d !== null && <WeightChip label="30 Days" value={avgWeight.change30d} />}
+              {avgWeight.change30d !== null && <WeightChip label="30 days" value={avgWeight.change30d} />}
             </div>
           )}
           {!scaleLoading && scaleData.length === 0 && (
@@ -937,14 +1011,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
         </div>
       )}
     </Link>
-    {vegModalOpen && vegModalPlant && (
-      <VegetationInfoModal
-        isOpen={vegModalOpen}
-        onClose={() => { setVegModalOpen(false); setVegModalPlant(null) }}
-        vegetationName={vegModalPlant.name}
-        vegetationTypeId={vegModalPlant.typeId}
-      />
-    )}
+    {vegModal}
     </>
   )
 }
