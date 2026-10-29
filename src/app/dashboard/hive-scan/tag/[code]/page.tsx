@@ -152,10 +152,10 @@ export default function TagScanPage() {
           </Link>
           <h1 className="text-3xl font-bold text-foreground">Nuc {nuc.nuc_number}</h1>
           <div className="flex flex-wrap gap-2 mt-2">
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${equipmentColour}`}>
+            <span className={`px-2 py-1 rounded-full text-sm font-medium ${equipmentColour}`}>
               {equipmentLabel}
             </span>
-            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+            <span className="px-2 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
               {statusLabel}
             </span>
           </div>

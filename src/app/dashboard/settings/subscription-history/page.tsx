@@ -225,25 +225,25 @@ export default function SubscriptionHistoryPage() {
               <table className="w-full">
                 <thead className="bg-surface dark:bg-background border-b border-border">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-text-tertiary ">
                       User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-text-tertiary ">
                       Code
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-text-tertiary ">
                       Payment Method
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-text-tertiary ">
                       Amount
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-text-tertiary ">
                       Activated
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-text-tertiary ">
                       Expires
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-sm font-medium text-text-tertiary ">
                       Transaction ID
                     </th>
                   </tr>
@@ -258,7 +258,7 @@ export default function SubscriptionHistoryPage() {
                         {record.code || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
                           record.payment_method === 'credit_card'
                             ? 'bg-blue-100 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300'
                             : 'bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-300'
@@ -288,7 +288,7 @@ export default function SubscriptionHistoryPage() {
                       <td className="px-6 py-4 text-sm">
                         {record.stripe_payment_intent_id ? (
                           <div className="flex items-center gap-2">
-                            <code className="text-xs text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded">
+                            <code className="text-sm text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded">
                               {record.stripe_payment_intent_id.slice(0, 20)}...
                             </code>
                             <TextLink
@@ -301,7 +301,7 @@ export default function SubscriptionHistoryPage() {
                             </TextLink>
                           </div>
                         ) : (
-                          <span className="text-text-tertiary text-xs">-</span>
+                          <span className="text-text-tertiary text-sm">-</span>
                         )}
                       </td>
                     </tr>

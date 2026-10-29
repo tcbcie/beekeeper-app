@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
 import { X, Download, Smartphone } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
@@ -26,6 +27,9 @@ export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showBanner, setShowBanner] = useState(false)
   const [isInstalled, setIsInstalled] = useState(false)
+  // Only inside the app, where it sits above the bottom bar. On the login page there is no bar,
+  // so it floated over the form and covered the Log in button on phones.
+  const pathname = usePathname()
 
   useEffect(() => {
     // Check if already installed as PWA
@@ -101,14 +105,14 @@ export default function InstallPrompt() {
   }, [])
 
   // Yields to an available update, and waits while a form is in progress.
-  const mayShow = useBottomSurfaceSlot('install', !isInstalled && showBanner)
+  const mayShow = useBottomSurfaceSlot('install', !isInstalled && showBanner && !!pathname?.startsWith('/dashboard'))
 
   if (!mayShow) {
     return null
   }
 
   return (
-    <div className="fixed above-bottom-nav md:bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-r from-amber-500 to-amber-600 shadow-lg animate-slide-up">
+    <div className="fixed above-bottom-nav md:bottom-0 left-0 right-0 z-50 p-4 bg-amber-800 shadow-lg animate-slide-up">
       <div className="max-w-lg mx-auto flex items-center gap-3">
         <div className="flex-shrink-0 w-12 h-12 bg-black/10 rounded-xl flex items-center justify-center">
           <Smartphone size={24} className="text-white" />
@@ -118,7 +122,7 @@ export default function InstallPrompt() {
           <h3 className="text-white font-semibold text-sm">
             Install HiveCraic
           </h3>
-          <p className="text-white/80 text-sm">
+          <p className="text-white text-sm">
             Add to your home screen for quick access
           </p>
         </div>
@@ -136,7 +140,7 @@ export default function InstallPrompt() {
 
           <IconButton
             onClick={handleDismiss}
-            className="touch-manipulation text-white/80 hover:text-white hover:bg-black/10 border-white/20"
+            className="touch-manipulation text-white hover:bg-black/10 border-white/20"
             aria-label="Dismiss"
           >
             <X size={20} />

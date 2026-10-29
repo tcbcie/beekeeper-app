@@ -121,7 +121,7 @@ export default function SalesInsightsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-foreground">Sales Insights 📊</h1>
+      <h1 className="text-3xl font-bold text-foreground">Sales Insights</h1>
 
       {orders.length === 0 ? (
         <EmptyState

@@ -164,7 +164,7 @@ export default function SubscriptionStatusCard({ onRenewClick }: SubscriptionSta
  {subscriptionStatus.current_code && (
  <div className="flex justify-between text-sm">
  <span className="text-text-secondary">Current plan:</span>
- <span className="font-mono text-xs bg-surface-secondary text-foreground px-2 py-1 rounded">
+ <span className="font-mono text-sm bg-surface-secondary text-foreground px-2 py-1 rounded">
  {subscriptionStatus.current_code}
  </span>
  </div>

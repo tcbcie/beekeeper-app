@@ -117,7 +117,7 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border">
         <div className="flex flex-wrap items-center gap-4">
           <div>
-            <label className="block text-sm font-semibold text-text-tertiary uppercase mb-1">
+            <label className="block text-sm font-semibold text-text-tertiary mb-1">
               Time Window
             </label>
             <select
@@ -131,7 +131,7 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
             </select>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-text-tertiary uppercase mb-1">
+            <label className="block text-sm font-semibold text-text-tertiary mb-1">
               Min Inspections
             </label>
             <select
@@ -310,7 +310,7 @@ export default function QueenReportTab({ queen, hive, fetchQueenReport }: QueenR
               <div className="flex items-start gap-2 mt-2 p-3 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-300 dark:border-amber-700">
                 <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 uppercase">Disease flags</p>
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 ">Disease flags</p>
                   <p className="text-sm text-amber-800 dark:text-amber-300">{report.latestSnapshot.diseases.join(', ')}</p>
                 </div>
               </div>

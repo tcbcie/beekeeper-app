@@ -379,7 +379,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
           {/* Weight Section */}
           {(stats.currentWeight !== undefined || stats.yieldSum !== null) && (
             <div className="p-3 border border-border rounded-lg space-y-2">
-              <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
+              <p className="text-sm font-medium text-text-tertiary ">Weight</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {/* Current Weight */}
                 {stats.currentWeight !== undefined && (
@@ -427,7 +427,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
           {/* Colony Section - Brood Temperature */}
           {stats.avgBroodTemp !== null && (
             <div className="p-3 border border-border rounded-lg space-y-2">
-              <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
+              <p className="text-sm font-medium text-text-tertiary ">Colony</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
                   <div className="flex items-center gap-1.5">
@@ -447,7 +447,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
           {/* Environmental Section */}
           {(stats.avgTemp !== null || stats.avgHumidity !== null || stats.totalRain !== null || stats.avgWind !== null) && (
             <div className="p-3 border border-border rounded-lg space-y-2">
-              <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
+              <p className="text-sm font-medium text-text-tertiary ">Environmental</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {/* Average Temperature */}
                 {stats.avgTemp !== null && (
@@ -532,7 +532,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
             const { Icon, color, percent } = getBatteryInfo(stats.batteryVoltage)
             return (
               <div className="p-3 border border-border rounded-lg space-y-2">
-                <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
+                <p className="text-sm font-medium text-text-tertiary ">Technical</p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div className={`p-2 rounded border ${
                     color === 'green' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :

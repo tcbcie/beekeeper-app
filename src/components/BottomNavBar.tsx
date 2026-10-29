@@ -104,7 +104,7 @@ export default function BottomNavBar({ onMoreClick, isMoreOpen = false }: Bottom
               aria-current={isActive ? 'page' : undefined}
               className={`${slotClasses} ${
                 isActive
-                  ? 'text-forest-600 dark:text-forest-400'
+                  ? 'text-forest-800 dark:text-forest-400'
                   : 'text-text-tertiary hover:text-foreground'
               }`}
             >

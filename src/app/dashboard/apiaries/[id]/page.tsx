@@ -113,7 +113,7 @@ export default function ApiaryDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Location Details */}
           <div>
-            <h3 className="text-sm font-semibold text-text-tertiary uppercase mb-2">Location</h3>
+            <h3 className="text-sm font-semibold text-text-tertiary mb-2">Location</h3>
             {apiary.eircode && (
               <p className="text-sm text-text-primary font-medium">{apiary.eircode}</p>
             )}
@@ -142,7 +142,7 @@ export default function ApiaryDetailPage() {
 
           {/* Stats */}
           <div>
-            <h3 className="text-sm font-semibold text-text-tertiary uppercase mb-2">Hives</h3>
+            <h3 className="text-sm font-semibold text-text-tertiary mb-2">Hives</h3>
             <p className="text-2xl font-bold text-foreground">{stats.activeHives}</p>
             <p className="text-sm text-text-tertiary">
               {stats.archivedHives > 0 && `+ ${stats.archivedHives} archived`}
@@ -151,7 +151,7 @@ export default function ApiaryDetailPage() {
 
           {/* Last Inspection */}
           <div>
-            <h3 className="text-sm font-semibold text-text-tertiary uppercase mb-2">Last Inspection</h3>
+            <h3 className="text-sm font-semibold text-text-tertiary mb-2">Last Inspection</h3>
             {daysSinceInspection !== null ? (
               <>
                 <p className={`text-lg font-bold ${

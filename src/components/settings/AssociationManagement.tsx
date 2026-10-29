@@ -455,9 +455,9 @@ export default function AssociationManagement() {
               <table className="w-full border-collapse">
                 <thead>
                   <TableHeaderRow>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">Actions</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-text-secondary ">Actions</th>
                     <th
-                      className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer"
+                      className="px-4 py-3 text-left text-sm font-semibold text-text-secondary cursor-pointer"
                       onClick={() => handleSort('name')}
                     >
                       <div className="flex items-center gap-1">
@@ -466,7 +466,7 @@ export default function AssociationManagement() {
                       </div>
                     </th>
                     <th
-                      className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer"
+                      className="px-4 py-3 text-left text-sm font-semibold text-text-secondary cursor-pointer"
                       onClick={() => handleSort('county_area')}
                     >
                       <div className="flex items-center gap-1">
@@ -475,7 +475,7 @@ export default function AssociationManagement() {
                       </div>
                     </th>
                     <th
-                      className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider cursor-pointer"
+                      className="px-4 py-3 text-left text-sm font-semibold text-text-secondary cursor-pointer"
                       onClick={() => handleSort('email')}
                     >
                       <div className="flex items-center gap-1">
@@ -483,8 +483,8 @@ export default function AssociationManagement() {
                         <SortIcon field="email" />
                       </div>
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">Contacted</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Comments</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold text-text-secondary ">Contacted</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-text-secondary ">Comments</th>
                   </TableHeaderRow>
                 </thead>
                 <TableBody>
@@ -520,7 +520,7 @@ export default function AssociationManagement() {
                         ) : '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-center">
-                        {association.contacted ? '✓' : '-'}
+                        {association.contacted ? 'Yes' : '-'}
                       </td>
                       <td className="px-4 py-3 text-sm text-foreground max-w-[200px] truncate" title={association.comments || ''}>
                         {association.comments || '-'}

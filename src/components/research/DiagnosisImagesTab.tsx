@@ -345,7 +345,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  {/* Comments Preview */}
  {imageComments.length > 0 && (
  <div className="bg-surface-secondary rounded p-2 space-y-1">
- <div className="flex items-center gap-1 text-xs text-text-secondary">
+ <div className="flex items-center gap-1 text-sm text-text-secondary">
  <MessageSquare size={12} />
  <span>{imageComments.length} comment{imageComments.length !== 1 ? 's' : ''}</span>
  </div>
@@ -359,7 +359,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  )}
 
  <div className="flex items-center justify-between pt-2 border-t border-border">
- <div className="flex items-center gap-1 text-xs text-text-tertiary">
+ <div className="flex items-center gap-1 text-sm text-text-tertiary">
  <Calendar size={12} />
  {formatDate(image.created_at)}
  </div>
@@ -456,7 +456,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  {/* Comments shown below in list view */}
  {imageComments.length > 0 && (
  <div className="border-t border-border px-3 py-2 bg-surface-secondary">
- <div className="flex items-center gap-1 text-xs text-text-secondary mb-1">
+ <div className="flex items-center gap-1 text-sm text-text-secondary mb-1">
  <MessageSquare size={12} />
  <span>{imageComments.length} comment{imageComments.length !== 1 ? 's' : ''}</span>
  </div>
@@ -556,7 +556,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  getImageComments(selectedImage.id).map((comment) => (
  <div key={comment.id} className="bg-surface-secondary rounded-lg p-2 text-sm">
  <div className="flex items-center justify-between mb-1">
- <div className="flex items-center gap-1 text-xs text-text-secondary">
+ <div className="flex items-center gap-1 text-sm text-text-secondary">
  <User size={12} />
  <span className="font-medium">{comment.user_name}</span>
  <span className="text-text-tertiary">•</span>

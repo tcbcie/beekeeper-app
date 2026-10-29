@@ -102,50 +102,55 @@ export default function RecordFiltersBar({
       <div className="flex flex-wrap gap-2">
         <Button
           onClick={() => onTimePeriodChange('all')}
+          aria-pressed={timePeriod === 'all'}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             timePeriod === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-surface border border-border text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30'
+              ? 'bg-forest-800 text-white border border-forest-800'
+              : 'bg-surface border border-border text-foreground hover:bg-surface-secondary'
           }`}
         >
           All Time {timePeriodCounts && `(${timePeriodCounts.all})`}
         </Button>
         <Button
           onClick={() => onTimePeriodChange('3months')}
+          aria-pressed={timePeriod === '3months'}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             timePeriod === '3months'
-              ? 'bg-blue-600 text-white'
-              : 'bg-surface border border-border text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30'
+              ? 'bg-forest-800 text-white border border-forest-800'
+              : 'bg-surface border border-border text-foreground hover:bg-surface-secondary'
           }`}
         >
           3 Months {timePeriodCounts && `(${timePeriodCounts.threeMonths})`}
         </Button>
         <Button
           onClick={() => onTimePeriodChange('6months')}
+          aria-pressed={timePeriod === '6months'}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             timePeriod === '6months'
-              ? 'bg-blue-600 text-white'
-              : 'bg-surface border border-border text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30'
+              ? 'bg-forest-800 text-white border border-forest-800'
+              : 'bg-surface border border-border text-foreground hover:bg-surface-secondary'
           }`}
         >
           6 Months {timePeriodCounts && `(${timePeriodCounts.sixMonths})`}
         </Button>
         <Button
           onClick={() => onTimePeriodChange('1year')}
+          aria-pressed={timePeriod === '1year'}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             timePeriod === '1year'
-              ? 'bg-blue-600 text-white'
-              : 'bg-surface border border-border text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30'
+              ? 'bg-forest-800 text-white border border-forest-800'
+              : 'bg-surface border border-border text-foreground hover:bg-surface-secondary'
           }`}
         >
           1 Year {timePeriodCounts && `(${timePeriodCounts.oneYear})`}
         </Button>
         <Button
           onClick={() => onTimePeriodChange('custom')}
+          aria-pressed={timePeriod === 'custom'}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             timePeriod === 'custom'
-              ? 'bg-blue-600 text-white'
-              : 'bg-surface border border-border text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30'
+              ? 'bg-forest-800 text-white border border-forest-800'
+              : 'bg-surface border border-border text-foreground hover:bg-surface-secondary'
           }`}
         >
           Custom {timePeriodCounts && `(${timePeriodCounts.custom})`}

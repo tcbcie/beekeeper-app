@@ -72,12 +72,12 @@ export default function PurchaseItemCard({
               {item.name}
             </span>
             {/* Priority badge */}
-            <span className={`text-xs font-medium px-2 py-0.5 rounded ${style.badge}`}>
+            <span className={`text-sm font-medium px-2 py-0.5 rounded ${style.badge}`}>
               {item.priority}
             </span>
             {/* Category badge */}
             {item.category?.value && (
-              <span className="text-xs font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+              <span className="text-sm font-medium px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
                 {item.category.value}
               </span>
             )}
@@ -106,7 +106,7 @@ export default function PurchaseItemCard({
 
           {/* Notes */}
           {item.notes && (
-            <p className="text-xs text-text-tertiary mt-1 italic truncate">
+            <p className="text-sm text-text-tertiary mt-1 italic truncate">
               {item.notes}
             </p>
           )}

@@ -67,7 +67,7 @@ const StarRatingInput = ({
           <Button
             type="button"
             onClick={() => onChange(0)}
-            className="ml-2 text-xs text-text-tertiary hover:text-red-500"
+            className="ml-2 text-sm text-text-tertiary hover:text-red-500"
           >
             Clear
           </Button>
@@ -501,7 +501,7 @@ export default function WildColonyInspectionForm({
           ) : (
             <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
               <Camera size={24} className="text-text-tertiary mb-1" />
-              <span className="text-xs text-text-tertiary">Add photo</span>
+              <span className="text-sm text-text-tertiary">Add photo</span>
               <input
                 type="file"
                 accept="image/*"

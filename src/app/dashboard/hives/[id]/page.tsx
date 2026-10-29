@@ -617,7 +617,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
         {/* Basic Details */}
         <div>
-          <h3 className="font-semibold text-text-tertiary mb-3 text-sm uppercase tracking-wide">Hive Details</h3>
+          <h3 className="font-semibold text-text-tertiary mb-3 text-sm ">Hive Details</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between items-center">
               <span className="text-text-tertiary">Status:</span>
@@ -684,7 +684,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
 
         {/* Queen Information */}
         <div>
-          <h3 className="font-semibold text-text-tertiary mb-3 text-sm uppercase tracking-wide">Queen</h3>
+          <h3 className="font-semibold text-text-tertiary mb-3 text-sm ">Queen</h3>
           <div className="space-y-2 text-sm">
             {hive.queens ? (
               <>
@@ -782,7 +782,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
 
         {/* Recent Observations */}
         <div>
-          <h3 className="font-semibold text-text-tertiary mb-3 text-sm uppercase tracking-wide">Recent Observations</h3>
+          <h3 className="font-semibold text-text-tertiary mb-3 text-sm ">Recent Observations</h3>
           <div className="space-y-2 text-sm">
             {hive.queen_last_seen ? (
               <div className="flex justify-between">
@@ -807,7 +807,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
       {/* Inspection Averages */}
       {averages && averages.inspection_count > 0 && (
         <div className="mt-6 pt-6 border-t border-border">
-          <h3 className="font-semibold text-text-tertiary mb-3 text-sm uppercase tracking-wide">
+          <h3 className="font-semibold text-text-tertiary mb-3 text-sm ">
             Inspection Averages ({averages.inspection_count} inspection{averages.inspection_count !== 1 ? 's' : ''})
           </h3>
           <div className="space-y-2 text-sm">
@@ -843,7 +843,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
       {tasks.length > 0 && (
         <div className="mt-6 pt-6 border-t border-border">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-text-tertiary text-sm uppercase tracking-wide flex items-center gap-2">
+            <h3 className="font-semibold text-text-tertiary text-sm flex items-center gap-2">
               <ListTodo size={16} />
               Open Tasks ({tasks.length})
             </h3>
@@ -927,7 +927,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
 
       {hive.notes && (
         <div className="mt-6 pt-6 border-t border-border">
-          <h3 className="font-semibold text-text-tertiary mb-2 text-sm uppercase tracking-wide">Notes</h3>
+          <h3 className="font-semibold text-text-tertiary mb-2 text-sm ">Notes</h3>
           <p className="text-sm text-text-secondary bg-surface-secondary p-3 rounded">{hive.notes}</p>
         </div>
       )}

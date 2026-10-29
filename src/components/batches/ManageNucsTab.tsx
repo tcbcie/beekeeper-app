@@ -359,14 +359,14 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+            className={`min-h-12 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
               filter === f
                 ? 'bg-forest-600 text-white'
                 : 'bg-surface-secondary text-text-secondary hover:bg-surface-elevated'
             }`}
           >
             {f === 'all' ? 'All' : formatStatus(f)}
-            <span className="ml-1.5 text-xs opacity-75">
+            <span className="ml-1.5 text-sm opacity-75">
               ({f === 'all' ? nucs.length : nucs.filter(n => n.equipment_status === f).length})
             </span>
           </button>
@@ -402,7 +402,7 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
                         {formatStatus(nuc.equipment_status)}
                       </Badge>
                       {nuc.qr_tag_code && (
-                        <span className="inline-flex items-center gap-1 text-xs text-text-tertiary font-mono">
+                        <span className="inline-flex items-center gap-1 text-sm text-text-tertiary font-mono">
                           <QrCode size={12} /> {nuc.qr_tag_code}
                         </span>
                       )}
@@ -435,7 +435,7 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
                           </SelectField>
                           <Button
                             onClick={() => handleEquipmentStatusChange(nuc.id, editingStatusValue)}
-                            className="fj-btn fj-btn-blue fj-btn-sm"
+                            className="fj-btn-sm"
                           >
                             Save
                           </Button>
@@ -498,13 +498,13 @@ export default function ManageNucsTab({ userId }: ManageNucsTabProps) {
                           <span className="text-sm text-text-secondary">Delete this nuc permanently?</span>
                           <Button
                             onClick={() => handleDeleteNuc(nuc.id)}
-                            className="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                            className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
                           >
                             Confirm
                           </Button>
                           <Button
                             onClick={() => setDeletingNucId(null)}
-                            className="px-3 py-1 text-xs bg-surface-secondary text-foreground rounded"
+                            className="px-3 py-1 text-sm bg-surface-secondary text-foreground rounded"
                           >
                             Cancel
                           </Button>

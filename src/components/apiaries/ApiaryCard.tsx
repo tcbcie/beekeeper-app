@@ -57,12 +57,12 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
           )}
           {apiary.is_shared && (
             <span className="inline-flex items-center px-2 py-0.5 text-sm font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full border border-blue-300 dark:border-blue-700 mt-1">
-              👥 Shared via {apiary.team_name || 'team'}
+              Shared via {apiary.team_name || 'team'}
             </span>
           )}
           {!apiary.is_shared && apiary.team_name && (
             <span className="inline-flex items-center px-2 py-0.5 text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full border border-purple-300 dark:border-purple-700 mt-1">
-              📤 Shared with {apiary.team_name}
+              Shared with {apiary.team_name}
             </span>
           )}
           {apiary.is_mating_apiary && !apiary.is_shared && (
@@ -79,7 +79,7 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
           {apiary.share_location && apiary.latitude && apiary.longitude && (
             <Button
               onClick={() => router.push('/dashboard/community-map')}
-              tone="purple"
+              tone="neutral"
               size="xs"
               className="mt-1 inline-flex items-center gap-1"
             >
@@ -142,9 +142,10 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
 
       {!isReadOnly && (
         <div className="flex gap-2">
+          {/* Edit leads; Delete is smaller red text so the two can't be mistaken for equals */}
           <Button
             onClick={() => onEdit(apiary)}
-            tone="blue"
+            tone="neutral"
             className="flex-1 min-h-[48px] inline-flex items-center justify-center gap-2"
           >
             <Edit2 size={16} />
@@ -152,8 +153,8 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
           </Button>
           <Button
             onClick={() => onDelete(apiary.id)}
-            tone="danger"
-            className="flex-1 min-h-[48px] inline-flex items-center justify-center gap-2"
+            tone="neutral"
+            className="flex-none px-4 min-h-[48px] inline-flex items-center justify-center gap-2 text-red-700 dark:text-red-400"
           >
             <Trash2 size={16} />
             Delete

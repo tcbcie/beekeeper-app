@@ -726,14 +726,14 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                               href={url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-amber-600 dark:text-amber-400 hover:underline break-all"
+                              className="text-sm text-amber-600 dark:text-amber-400 hover:underline break-all"
                             >
                               {url}
                             </a>
                             <Button
                               type="button"
                               onClick={() => downloadQrCode(svgId, `qr-${editingBatch.batch_code}-${jar.jar_weight_g}g.png`)}
-                              className="mt-1 flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline"
+                              className="mt-1 flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400 hover:underline"
                             >
                               <Download size={14} /> Download PNG
                             </Button>
@@ -826,7 +826,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                   <div key={index} className="flex flex-wrap items-end gap-2">
                     <div className="flex-1 min-w-[110px]">
                       {index === 0 && (
-                        <span className="block text-xs text-text-secondary mb-1">Jar Size (ml)</span>
+                        <span className="block text-sm text-text-secondary mb-1">Jar Size (ml)</span>
                       )}
                       <select
                         value={jar.jar_size_ml}
@@ -840,7 +840,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                     </div>
                     <div className="flex-1 min-w-[90px]">
                       {index === 0 && (
-                        <span className="block text-xs text-text-secondary mb-1">Net Weight (g)</span>
+                        <span className="block text-sm text-text-secondary mb-1">Net Weight (g)</span>
                       )}
                       <input
                         type="number"
@@ -852,7 +852,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                     </div>
                     <div className="flex-1 min-w-[80px]">
                       {index === 0 && (
-                        <span className="block text-xs text-text-secondary mb-1">Jar Count</span>
+                        <span className="block text-sm text-text-secondary mb-1">Jar Count</span>
                       )}
                       <input
                         type="number"
@@ -988,7 +988,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
               <div className="border border-amber-200 dark:border-amber-800 rounded-xl overflow-hidden bg-amber-50/50 dark:bg-amber-900/10">
                 <div className="bg-amber-100 dark:bg-amber-900/30 px-4 py-2 border-b border-amber-200 dark:border-amber-800">
                   <h4 className="font-medium text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                    <span>🍯</span> Public Preview
+                    Public Preview
                   </h4>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
                     This is what consumers will see when they scan the QR code
@@ -1124,7 +1124,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                             />
                             <div>
                               <span className="text-sm font-medium">{template.name}</span>
-                              <span className="text-xs text-text-secondary ml-1">- {template.description}</span>
+                              <span className="text-sm text-text-secondary ml-1">- {template.description}</span>
                             </div>
                           </label>
                         ))}
@@ -1147,7 +1147,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                         <div className="mt-2 p-3 bg-surface-secondary rounded-lg border border-border">
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-sm font-medium text-text-secondary">Preview:</p>
-                            <div className="flex items-center gap-3 text-xs">
+                            <div className="flex items-center gap-3 text-sm">
                               <span className="flex items-center gap-1">
                                 <span className="w-2 h-2 rounded-full bg-green-500"></span>
                                 <span className="text-text-secondary">Auto-filled</span>
@@ -1215,7 +1215,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                       )}
                       <div className="flex justify-between text-text-tertiary">
                         <span>Batch</span>
-                        <span className="font-mono text-xs">{editingBatch?.batch_code || 'L-YYYY-MM-NNN'}</span>
+                        <span className="font-mono text-sm">{editingBatch?.batch_code || 'L-YYYY-MM-NNN'}</span>
                       </div>
                     </div>
 
@@ -1311,12 +1311,12 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                     <Milk size={20} className="text-amber-600 flex-shrink-0" />
                     <h3 className="text-lg font-semibold font-mono">{batch.batch_code}</h3>
                     {batch.is_creamed && (
-                      <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-xs">
+                      <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-sm">
                         Creamed
                       </span>
                     )}
                     {batch.is_public && (
-                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs">
+                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-sm">
                         Public
                       </span>
                     )}
@@ -1588,7 +1588,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
                           />
                         ))}
                       </div>
-                      <span className="text-xs text-text-tertiary">
+                      <span className="text-sm text-text-tertiary">
                         {new Date(item.created_at).toLocaleDateString()}
                       </span>
                     </div>

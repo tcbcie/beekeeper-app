@@ -550,7 +550,7 @@ export default function QueenDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Identity */}
           <div>
-            <h3 className="text-sm font-semibold text-text-tertiary uppercase mb-2">Identity</h3>
+            <h3 className="text-sm font-semibold text-text-tertiary mb-2">Identity</h3>
             <div className="space-y-1.5 text-sm">
               <p><span className="text-text-tertiary">Source:</span> <span className="text-text-primary">{queen.source || 'N/A'}</span></p>
               <p><span className="text-text-tertiary">Born:</span> <span className="text-text-primary">{queen.birth_date ? new Date(queen.birth_date).toLocaleDateString('en-IE') : 'N/A'}</span></p>
@@ -566,7 +566,7 @@ export default function QueenDetailPage() {
 
           {/* Genetics */}
           <div>
-            <h3 className="text-sm font-semibold text-text-tertiary uppercase mb-2">Genetics</h3>
+            <h3 className="text-sm font-semibold text-text-tertiary mb-2">Genetics</h3>
             <div className="space-y-1.5 text-sm">
               <p>
                 <span className="text-text-tertiary">Mother:</span>{' '}
@@ -616,7 +616,7 @@ export default function QueenDetailPage() {
 
           {/* Assignment */}
           <div>
-            <h3 className="text-sm font-semibold text-text-tertiary uppercase mb-2">Assignment</h3>
+            <h3 className="text-sm font-semibold text-text-tertiary mb-2">Assignment</h3>
             {hive ? (
               <div className="space-y-1.5 text-sm">
                 <p>

@@ -28,7 +28,7 @@ export default function FinancialSummary({
       <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
         <div className="flex items-center gap-2 mb-1">
           <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400" />
-          <span className="text-xs font-medium text-green-700 dark:text-green-300">Income</span>
+          <span className="text-sm font-medium text-green-700 dark:text-green-300">Income</span>
         </div>
         <p className="text-lg font-bold text-green-600 dark:text-green-400">
           {formatAmount(totalIncome)}
@@ -39,7 +39,7 @@ export default function FinancialSummary({
       <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 border border-red-200 dark:border-red-800">
         <div className="flex items-center gap-2 mb-1">
           <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400" />
-          <span className="text-xs font-medium text-red-700 dark:text-red-300">Expenses</span>
+          <span className="text-sm font-medium text-red-700 dark:text-red-300">Expenses</span>
         </div>
         <p className="text-lg font-bold text-red-600 dark:text-red-400">
           {formatAmount(totalExpenses)}
@@ -58,7 +58,7 @@ export default function FinancialSummary({
           ) : (
             <Minus className="w-4 h-4 text-orange-600 dark:text-orange-400" />
           )}
-          <span className={`text-xs font-medium ${
+          <span className={`text-sm font-medium ${
             netProfit >= 0
               ? 'text-blue-700 dark:text-blue-300'
               : 'text-orange-700 dark:text-orange-300'

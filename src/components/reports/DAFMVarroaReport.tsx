@@ -159,7 +159,7 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
       <div ref={reportRef} className="print-container bg-surface-elevated rounded-lg border-2 border-[#006853] dark:border-[#00a67d] shadow-lg overflow-hidden">
 
         {/* Official Header with DAFM Branding */}
-        <div className="bg-gradient-to-r from-[#006853] to-[#008060] text-white p-6 print-header">
+        <div className="bg-[#006853] text-white p-6 print-header">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
               {/* DAFM Logo */}
@@ -176,7 +176,7 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
                   }}
                 />
                 {/* Fallback text if no logo */}
-                <div className="hidden text-[#006853] font-bold text-center text-xs">
+                <div className="hidden text-[#006853] font-bold text-center text-sm">
                   DAFM
                 </div>
               </div>
@@ -187,14 +187,14 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
                 <p className="text-emerald-100 text-sm mt-1">
                   Department of Agriculture, Food and the Marine
                 </p>
-                <p className="text-emerald-200 text-xs mt-0.5">
+                <p className="text-emerald-200 text-sm mt-0.5">
                   An Roinn Talmhaíochta, Bia agus Mara
                 </p>
               </div>
             </div>
             <div className="text-right text-sm">
               <div className="print-date-box bg-black/10 rounded-lg px-4 py-2 backdrop-blur-sm">
-                <p className="text-emerald-100 text-xs uppercase tracking-wider">Report Generated</p>
+                <p className="text-emerald-100 text-sm ">Report Generated</p>
                 <p className="font-semibold">{new Date().toLocaleDateString('en-GB', {
                   day: 'numeric',
                   month: 'long',
@@ -206,11 +206,11 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
         </div>
 
         {/* Beekeeper & Period Information */}
-        <div className="bg-gradient-to-b from-emerald-50 to-surface p-6 border-b border-emerald-200 dark:border-emerald-900/40">
+        <div className="bg-emerald-50 dark:bg-emerald-950/20 p-6 border-b border-emerald-200 dark:border-emerald-900/40">
           <div className="grid md:grid-cols-2 gap-6">
             {/* Beekeeper Details */}
             <div className="bg-surface-elevated rounded-lg p-4 shadow-sm border border-emerald-100 dark:border-emerald-900/40">
-              <h3 className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-3">
+              <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 mb-3">
                 Beekeeper Details
               </h3>
               <div className="space-y-2">
@@ -235,7 +235,7 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
 
             {/* Reporting Period */}
             <div className="bg-surface-elevated rounded-lg p-4 shadow-sm border border-emerald-100 dark:border-emerald-900/40">
-              <h3 className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider mb-3">
+              <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 mb-3">
                 Reporting Period
               </h3>
               <div className="space-y-2">
@@ -265,32 +265,32 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
 
         {/* Summary Statistics */}
         <div className="p-6 border-b border-border">
-          <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-4">
+          <h3 className="text-sm font-semibold text-text-secondary mb-4">
             Treatment Summary
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg">
-              <div className="text-3xl font-bold">{treatments.length}</div>
-              <div className="text-emerald-100 text-sm font-medium">Total Treatments</div>
+            <div className="bg-surface border border-border rounded-xl p-4">
+              <div className="text-3xl font-bold text-foreground">{treatments.length}</div>
+              <div className="text-text-secondary text-sm font-medium">Total Treatments</div>
             </div>
-            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
-              <div className="text-3xl font-bold">{uniqueHives.length}</div>
-              <div className="text-blue-100 text-sm font-medium">Hives Treated</div>
+            <div className="bg-surface border border-border rounded-xl p-4">
+              <div className="text-3xl font-bold text-foreground">{uniqueHives.length}</div>
+              <div className="text-text-secondary text-sm font-medium">Hives Treated</div>
             </div>
-            <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-4 text-white shadow-lg">
-              <div className="text-3xl font-bold">{uniqueProducts.length}</div>
-              <div className="text-amber-100 text-sm font-medium">Products Used</div>
+            <div className="bg-surface border border-border rounded-xl p-4">
+              <div className="text-3xl font-bold text-foreground">{uniqueProducts.length}</div>
+              <div className="text-text-secondary text-sm font-medium">Products Used</div>
             </div>
-            <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
-              <div className="text-3xl font-bold">{uniqueApiaries.length}</div>
-              <div className="text-purple-100 text-sm font-medium">Apiaries</div>
+            <div className="bg-surface border border-border rounded-xl p-4">
+              <div className="text-3xl font-bold text-foreground">{uniqueApiaries.length}</div>
+              <div className="text-text-secondary text-sm font-medium">Apiaries</div>
             </div>
           </div>
         </div>
 
         {/* Treatment Records Table */}
         <div className="p-6">
-          <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-4">
+          <h3 className="text-sm font-semibold text-text-secondary mb-4">
             Treatment Records
           </h3>
 
@@ -312,25 +312,25 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
               <table className="w-full print-table">
                 <thead>
                   <tr className="bg-surface-secondary">
-                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-sm font-bold text-text-secondary border-b-2 border-emerald-500">
                       Date
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-sm font-bold text-text-secondary border-b-2 border-emerald-500">
                       Hive
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-sm font-bold text-text-secondary border-b-2 border-emerald-500">
                       Apiary / Eircode
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-sm font-bold text-text-secondary border-b-2 border-emerald-500">
                       Product
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-sm font-bold text-text-secondary border-b-2 border-emerald-500">
                       Batch No.
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-sm font-bold text-text-secondary border-b-2 border-emerald-500">
                       Dosage
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-bold text-text-secondary uppercase tracking-wider border-b-2 border-emerald-500">
+                    <th className="px-4 py-3 text-left text-sm font-bold text-text-secondary border-b-2 border-emerald-500">
                       Method
                     </th>
                   </tr>
@@ -349,14 +349,14 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
                         })}
                       </td>
                       <td className="px-4 py-3 text-sm text-text-secondary">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
                           {treatment.hive_number}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-text-secondary">
                         <div>{treatment.apiary_name}</div>
                         {treatment.eircode && (
-                          <div className="text-xs text-text-secondary font-mono">{treatment.eircode}</div>
+                          <div className="text-sm text-text-secondary font-mono">{treatment.eircode}</div>
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-foreground">
@@ -385,7 +385,7 @@ export default function DAFMVarroaReport({ userId }: DAFMVarroaReportProps) {
 
         {/* Footer */}
         <div className="bg-surface-secondary px-6 py-4 border-t border-border">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-text-secondary">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-2 text-sm text-text-secondary">
             <p>
               This record is maintained in accordance with DAFM requirements for varroa treatment documentation.
             </p>

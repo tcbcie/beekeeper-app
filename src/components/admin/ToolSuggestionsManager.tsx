@@ -154,7 +154,7 @@ export default function ToolSuggestionsManager() {
                     ) : (
                       <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                     )}
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                       {formatDate(suggestion.created_at)}
                     </span>
                   </div>
@@ -182,7 +182,7 @@ export default function ToolSuggestionsManager() {
                     <Code className="w-3 h-3" />
                     View generated SQL
                   </summary>
-                  <pre className="mt-2 p-3 bg-surface-secondary rounded text-xs overflow-x-auto whitespace-pre-wrap break-all">
+                  <pre className="mt-2 p-3 bg-surface-secondary rounded text-sm overflow-x-auto whitespace-pre-wrap break-all">
                     {suggestion.generated_sql}
                   </pre>
                 </details>

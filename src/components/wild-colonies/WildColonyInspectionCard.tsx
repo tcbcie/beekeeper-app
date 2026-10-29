@@ -113,7 +113,7 @@ export default function WildColonyInspectionCard({
  </div>
  )}
  {inspection.colony_status && (
- <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+ <span className={`px-2 py-0.5 text-sm font-medium rounded-full ${
  inspection.colony_status === 'active' || inspection.colony_status === 'strong'
  ? 'bg-green-100 text-foreground dark:bg-green-900/30 dark:text-green-300'
  : inspection.colony_status === 'weak'
@@ -132,7 +132,7 @@ export default function WildColonyInspectionCard({
  {/* Activity Level */}
  {inspection.activity_level > 0 && (
  <div>
- <span className="text-text-tertiary text-xs">Activity</span>
+ <span className="text-text-tertiary text-sm">Activity</span>
  <div className="flex items-center gap-1">
  <StarRating value={inspection.activity_level} />
  </div>
@@ -142,7 +142,7 @@ export default function WildColonyInspectionCard({
  {/* Forager Traffic */}
  {inspection.forager_traffic > 0 && (
  <div>
- <span className="text-text-tertiary text-xs">Foragers</span>
+ <span className="text-text-tertiary text-sm">Foragers</span>
  <div className="flex items-center gap-1">
  <StarRating value={inspection.forager_traffic} />
  </div>
@@ -152,7 +152,7 @@ export default function WildColonyInspectionCard({
  {/* Temperament */}
  {inspection.temperament > 0 && (
  <div>
- <span className="text-text-tertiary text-xs">Temperament</span>
+ <span className="text-text-tertiary text-sm">Temperament</span>
  <div className="flex items-center gap-1">
  <StarRating value={inspection.temperament} />
  </div>
@@ -162,7 +162,7 @@ export default function WildColonyInspectionCard({
  {/* Population */}
  {inspection.population_estimate && (
  <div>
- <span className="text-text-tertiary text-xs">Population</span>
+ <span className="text-text-tertiary text-sm">Population</span>
  <div className="flex items-center gap-1 text-text-primary">
  <Users size={12} />
  <span>{getPopulationLabel(inspection.population_estimate)}</span>
@@ -174,27 +174,27 @@ export default function WildColonyInspectionCard({
  {/* Boolean Indicators */}
  <div className="flex flex-wrap gap-1.5 mt-2">
  {inspection.pollen_observed && (
- <span className="px-2 py-0.5 text-xs bg-yellow-100 text-foreground dark:bg-yellow-900/30 dark:text-yellow-300 rounded">
+ <span className="px-2 py-0.5 text-sm bg-yellow-100 text-foreground dark:bg-yellow-900/30 dark:text-yellow-300 rounded">
  Pollen
  </span>
  )}
  {inspection.drones_observed && (
- <span className="px-2 py-0.5 text-xs bg-blue-100 text-foreground dark:bg-blue-900/30 dark:text-blue-300 rounded">
+ <span className="px-2 py-0.5 text-sm bg-blue-100 text-foreground dark:bg-blue-900/30 dark:text-blue-300 rounded">
  Drones
  </span>
  )}
  {inspection.orientation_flights && (
- <span className="px-2 py-0.5 text-xs bg-purple-100 text-foreground dark:bg-purple-900/30 dark:text-purple-300 rounded">
+ <span className="px-2 py-0.5 text-sm bg-purple-100 text-foreground dark:bg-purple-900/30 dark:text-purple-300 rounded">
  Orientation Flights
  </span>
  )}
  {inspection.robbing_activity && (
- <span className="px-2 py-0.5 text-xs bg-orange-100 text-foreground dark:bg-orange-900/30 dark:text-orange-300 rounded">
+ <span className="px-2 py-0.5 text-sm bg-orange-100 text-foreground dark:bg-orange-900/30 dark:text-orange-300 rounded">
  Robbing
  </span>
  )}
  {inspection.swarm_activity_observed && (
- <span className="px-2 py-0.5 text-xs bg-pink-100 text-foreground dark:bg-pink-900/30 dark:text-pink-300 rounded">
+ <span className="px-2 py-0.5 text-sm bg-pink-100 text-foreground dark:bg-pink-900/30 dark:text-pink-300 rounded">
  Swarm Activity
  </span>
  )}
@@ -218,7 +218,7 @@ export default function WildColonyInspectionCard({
  {/* Weather */}
  {/* != null, not truthiness: 0°C is a real reading (C7b-12) */}
  {(inspection.weather_temp != null || inspection.weather_condition) && (
- <div className="flex items-center gap-2 mt-2 text-xs text-text-tertiary">
+ <div className="flex items-center gap-2 mt-2 text-sm text-text-tertiary">
  <Thermometer size={12} />
  {inspection.weather_temp != null && <span>{inspection.weather_temp}°C</span>}
  {inspection.weather_condition && <span>{getWeatherLabel(inspection.weather_condition)}</span>}
@@ -233,7 +233,7 @@ export default function WildColonyInspectionCard({
  )}
 
  {/* Record Info: Created by and last edited */}
- <div className="mt-2 pt-2 border-t border-border/50 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-tertiary">
+ <div className="mt-2 pt-2 border-t border-border/50 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-tertiary">
  {getUserDisplayName() && (
  <div className="flex items-center gap-1">
  <User size={12} />

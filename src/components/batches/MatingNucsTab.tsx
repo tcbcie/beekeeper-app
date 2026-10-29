@@ -1457,7 +1457,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <div className="border border-border rounded-md p-3 space-y-3">
  <div className="flex flex-wrap items-center justify-between gap-2">
  <h4 className="text-sm font-semibold text-foreground">Sealed Cells</h4>
- <span className="text-xs text-text-secondary">
+ <span className="text-sm text-text-secondary">
  Available: {availableBulkGrafts.length} | Selected: {bulkFormData.selected_graft_ids.length}
  </span>
  </div>
@@ -1472,8 +1472,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  placeholder="Search by cell number"
  className="min-h-12 px-3 py-2 border border-border rounded-md bg-surface text-foreground text-base"
  />
- <Button type="button" onClick={selectAllFilteredBulkCells} className="text-xs">Select Filtered</Button>
- <Button type="button" onClick={clearAllBulkCells} className="text-xs">Clear</Button>
+ <Button type="button" onClick={selectAllFilteredBulkCells} className="text-sm">Select Filtered</Button>
+ <Button type="button" onClick={clearAllBulkCells} className="text-sm">Clear</Button>
  </div>
  <div className="max-h-48 overflow-y-auto border border-border rounded-md p-2 space-y-1">
  {bulkVisibleGrafts.length === 0 ? (
@@ -1537,7 +1537,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <Button
  type="button"
  onClick={() => setActiveBatchId(null)}
- className="text-xs px-3 py-1 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 rounded"
+ className="text-sm px-3 py-1 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 rounded"
  >
  Clear Batch Filter
  </Button>
@@ -1579,7 +1579,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
    <Button
    type="button"
    onClick={() => setActiveBatchId(summary.batch_id)}
-   className="text-xs px-3 py-1.5 bg-surface-secondary text-foreground rounded border border-border hover:bg-surface-elevated"
+   className="text-sm px-3 py-1.5 bg-surface-secondary text-foreground rounded border border-border hover:bg-surface-elevated"
    >
    View Nucs
    </Button>
@@ -1613,7 +1613,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  type="button"
  onClick={() => setNucSearch('')}
  aria-label="Clear nuc search"
- className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-text-tertiary hover:text-foreground"
+ className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex min-h-12 min-w-12 items-center justify-center rounded-full text-text-tertiary hover:text-foreground"
  >
  <X size={18} />
  </button>
@@ -1798,7 +1798,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  {isExpanded && (
  <div className="border-t border-border">
  <div className="bg-surface-secondary/30 px-4 py-3 dark:bg-surface/35">
- <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
+ <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
  <span className="text-text-tertiary">Setup: <span className="font-medium text-foreground">{formatDateIrish(nuc.setup_date)}</span></span>
  {nuc.cell_introduced_at && (
  <span className="text-text-tertiary">Cell in: <span className="font-medium text-foreground">{formatDateIrish(nuc.cell_introduced_at)}</span></span>
@@ -1880,7 +1880,7 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  <span className="font-medium text-foreground">
  Cycle {historyData.length - index}
  </span>
- <span className={`px-2 py-0.5 rounded text-xs font-medium ${getStatusBadge(nuc.status)}`}>
+ <span className={`px-2 py-0.5 rounded text-sm font-medium ${getStatusBadge(nuc.status)}`}>
  {NUC_STATUSES.find(s => s.value === nuc.status)?.label}
  </span>
  </div>

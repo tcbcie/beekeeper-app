@@ -358,7 +358,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
           <History size={18} className="flex-shrink-0" />
           <span>Configuration History</span>
           {history.length > 0 && (
-            <span className="text-xs text-text-tertiary">({history.length} {history.length === 1 ? 'entry' : 'entries'})</span>
+            <span className="text-sm text-text-tertiary">({history.length} {history.length === 1 ? 'entry' : 'entries'})</span>
           )}
         </div>
         {isSectionExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
@@ -397,11 +397,11 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
             <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex items-center gap-2">
                 <History size={16} className="text-forest-600 dark:text-forest-400 flex-shrink-0" />
-                <span className="text-xs font-medium text-text-secondary">
+                <span className="text-sm font-medium text-text-secondary">
                   {isInitial ? 'Initial Configuration' : 'Configuration Updated'}
                 </span>
               </div>
-              <div className="text-xs text-text-tertiary text-right">
+              <div className="text-sm text-text-tertiary text-right">
                 {new Date(entry.changed_at).toLocaleDateString('en-IE', {
                   day: '2-digit',
                   month: '2-digit',
@@ -417,7 +417,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
 
             {/* Only show "Changed by" if hive is shared or changed by someone other than current user */}
             {isHiveShared && entry.changed_by !== currentUserId && (
-              <div className="flex items-center gap-2 mb-3 text-xs text-text-secondary">
+              <div className="flex items-center gap-2 mb-3 text-sm text-text-secondary">
                 <User size={14} className="flex-shrink-0" />
                 <span>Changed by: <span className="font-medium text-text-primary">{changerName}</span></span>
               </div>
@@ -428,7 +428,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
                 {allChanges.map((change, idx) => (
                   <div
                     key={idx}
-                    className="text-xs bg-surface-secondary/50 px-3 py-2 rounded border border-border"
+                    className="text-sm bg-surface-secondary/50 px-3 py-2 rounded border border-border"
                   >
                     <span className="font-medium text-text-primary">{change.field}:</span>
                     {change.before !== '-' && (
@@ -439,7 +439,7 @@ export default function HiveConfigurationHistory({ hiveId }: HiveConfigurationHi
                 ))}
               </div>
             ) : (
-              <div className="text-xs text-text-tertiary italic bg-surface-secondary px-3 py-2 rounded border border-border">
+              <div className="text-sm text-text-tertiary italic bg-surface-secondary px-3 py-2 rounded border border-border">
                 No changes detected (configuration may have been saved without modifications)
               </div>
             )}

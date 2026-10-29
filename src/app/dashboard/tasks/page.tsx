@@ -916,7 +916,7 @@ export default function TasksEventsPage() {
     <div className="max-w-6xl mx-auto p-4 sm:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-responsive-3xl font-bold text-foreground">Tasks & Events 📅</h1>
+        <h1 className="text-responsive-3xl font-bold text-foreground">Tasks & Events</h1>
         <div className="flex flex-wrap items-center gap-2">
           <Button
             onClick={openChecklist}
@@ -972,8 +972,8 @@ export default function TasksEventsPage() {
                 aria-pressed={view === candidate}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   view === candidate
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-surface border border-border text-foreground hover:bg-blue-50 dark:hover:bg-blue-950/30'
+                    ? 'bg-forest-800 text-white border border-forest-800'
+                    : 'bg-surface border border-border text-foreground hover:bg-surface-secondary'
                 }`}
               >
                 {TASK_VIEW_LABELS[candidate]} ({viewCounts[candidate]})
@@ -988,8 +988,8 @@ export default function TasksEventsPage() {
               title="Acceptance checks, caging dates and expected emergence, generated from your rearing batches"
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors sm:ml-2 ${
                 includeBatchMilestones
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-surface border border-border text-foreground hover:bg-purple-50 dark:hover:bg-purple-950/30'
+                  ? 'bg-forest-800 text-white border border-forest-800'
+                  : 'bg-surface border border-border text-foreground hover:bg-surface-secondary'
               }`}
             >
               Batch milestones ({batchMilestoneCount})
@@ -1177,7 +1177,7 @@ export default function TasksEventsPage() {
                         {hiveNumber && <span className="whitespace-nowrap">· Hive {hiveNumber}</span>}
                         {apiaryName && <span className="truncate max-w-full">· {apiaryName}</span>}
                         {(task.priority === 'high' || task.priority === 'urgent') && (
-                          <Badge tone={getPriorityBadgeTone(task.priority)} className="uppercase">
+                          <Badge tone={getPriorityBadgeTone(task.priority)} className="capitalize">
                             {task.priority}
                           </Badge>
                         )}
@@ -1238,7 +1238,7 @@ export default function TasksEventsPage() {
                           <Badge tone="green">{getCategoryLabel(task.category)}</Badge>
                         )}
                         {task.reminder_enabled && (
-                          <Badge tone="amber">📧 Email Reminder</Badge>
+                          <Badge tone="amber">Email reminder</Badge>
                         )}
                         {task.is_team_task && (
                           <Badge tone="purple">Team Task</Badge>
@@ -1603,7 +1603,7 @@ export default function TasksEventsPage() {
               {/* Equipment Section */}
               <div>
                 <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <span>📦</span> Equipment to bring
+                  Equipment to bring
                 </h3>
                 {getEquipmentList().length > 0 ? (
                   <Surface tone="amber" padded="sm">
@@ -1649,12 +1649,12 @@ export default function TasksEventsPage() {
                         {overviewRows.length > 0 && (
                           <div>
                             <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <span aria-hidden="true">🐝</span> Hive overview
+                              Hive overview
                             </h3>
                             <div className="overflow-x-auto">
                               <table className="min-w-full border-collapse text-sm">
                                 <thead>
-                                  <tr className="bg-surface-elevated text-xs uppercase tracking-wide text-text-secondary">
+                                  <tr className="bg-surface-elevated text-sm text-text-secondary">
                                     <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Hive</th>
                                     <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Status</th>
                                     <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Last inspected</th>
@@ -1697,12 +1697,12 @@ export default function TasksEventsPage() {
                         {/* Tasks table */}
                         <div>
                           <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                            <span aria-hidden="true">✅</span> Tasks for this visit
+                            Tasks for this visit
                           </h3>
                           <div className="overflow-x-auto">
                             <table className="min-w-full border-collapse text-sm">
                               <thead>
-                                <tr className="bg-surface-elevated text-xs uppercase tracking-wide text-text-secondary">
+                                <tr className="bg-surface-elevated text-sm text-text-secondary">
                                   <th className="border border-border px-3 py-2 text-center font-semibold w-10 print:border-black" aria-label="Done"></th>
                                   <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Hive</th>
                                   <th className="border border-border px-3 py-2 text-left font-semibold print:border-black">Task</th>
@@ -1727,7 +1727,7 @@ export default function TasksEventsPage() {
                                     <td className="border border-border px-3 py-2 align-top text-foreground print:border-black whitespace-nowrap">{formatLocalDate(task.start_date)}</td>
                                     <td className="border border-border px-3 py-2 align-top print:border-black capitalize">
                                       {task.priority && task.priority !== 'normal' ? (
-                                        <Badge tone={getPriorityBadgeTone(task.priority)} className="uppercase print:border print:border-black">
+                                        <Badge tone={getPriorityBadgeTone(task.priority)} className="capitalize print:border print:border-black">
                                           {task.priority}
                                         </Badge>
                                       ) : (
@@ -1752,7 +1752,7 @@ export default function TasksEventsPage() {
               {/* Notes Section */}
               <div className="print:block">
                 <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <span>📝</span> Notes
+                  Notes
                 </h3>
                 <Surface padded="sm" className="bg-surface-secondary min-h-[80px] print:min-h-[150px] print:border-dashed">
                   <p className="text-text-tertiary text-sm print:hidden">Space for field notes...</p>

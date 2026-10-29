@@ -138,12 +138,12 @@ export default function HiveInspectionSummary({ userId }: HiveInspectionSummaryP
     {
       key: 'queen_seen',
       header: 'Queen',
-      render: (row: InspectionSummaryRecord) => row.queen_seen ? '✓' : '✗'
+      render: (row: InspectionSummaryRecord) => row.queen_seen ? 'Yes' : 'No'
     },
     {
       key: 'eggs_present',
       header: 'Eggs',
-      render: (row: InspectionSummaryRecord) => row.eggs_present ? '✓' : '✗'
+      render: (row: InspectionSummaryRecord) => row.eggs_present ? 'Yes' : 'No'
     },
     {
       key: 'brood_pattern_rating',

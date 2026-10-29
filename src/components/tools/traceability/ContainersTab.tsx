@@ -576,11 +576,11 @@ export default function ContainersTab({ userId, containers, fetchContainers, lab
                       <div className="flex items-center gap-2 mb-2">
                         <Package size={20} className="text-amber-600" />
                         <h3 className="text-lg font-semibold">{container.container_code}</h3>
-                        <span className="px-2 py-0.5 bg-surface rounded text-xs text-text-secondary">
+                        <span className="px-2 py-0.5 bg-surface rounded text-sm text-text-secondary">
                           {container.container_type}
                         </span>
                         {container.excluded && (
-                          <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-xs font-medium">
+                          <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-sm font-medium">
                             {container.excluded_reason === 'Other' && container.excluded_note
                               ? container.excluded_note
                               : container.excluded_reason || 'Excluded'}
@@ -624,7 +624,7 @@ export default function ContainersTab({ userId, containers, fetchContainers, lab
                             )}
                             <div className="col-span-2">
                               <span className="font-medium">Batches:</span>{' '}
-                              <span className="text-text-secondary font-mono text-xs">
+                              <span className="text-text-secondary font-mono text-sm">
                                 {batchCodes.join(', ')}
                               </span>
                             </div>

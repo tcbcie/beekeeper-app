@@ -93,7 +93,7 @@ export default function QueenTrackingSection({
         <button
           type="button"
           onClick={() => setCollapsed(!collapsed)}
-          className="flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-text-secondary transition-colors"
+          className="flex min-h-12 items-center gap-1.5 text-sm font-semibold text-foreground hover:text-text-secondary transition-colors"
         >
           {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
           Queen Tracking ({tableGrafts.length})

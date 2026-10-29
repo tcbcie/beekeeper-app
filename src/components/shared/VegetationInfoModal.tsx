@@ -135,13 +135,13 @@ export default function VegetationInfoModal({
               {/* Ratings */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-muted flex items-center gap-1">
+                  <span className="text-sm font-medium text-muted flex items-center gap-1">
                     <Droplets className="w-3.5 h-3.5" /> Nectar Value
                   </span>
                   {renderStars(info.nectar_value)}
                 </div>
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs font-medium text-muted flex items-center gap-1">
+                  <span className="text-sm font-medium text-muted flex items-center gap-1">
                     <CircleDot className="w-3.5 h-3.5" /> Pollen Value
                   </span>
                   {renderStars(info.pollen_value)}
@@ -152,13 +152,13 @@ export default function VegetationInfoModal({
               <div className="grid grid-cols-2 gap-3">
                 {info.bloom_period && (
                   <div>
-                    <span className="text-xs font-medium text-muted block">Bloom Period</span>
+                    <span className="text-sm font-medium text-muted block">Bloom Period</span>
                     <span className="text-sm text-foreground">{info.bloom_period}</span>
                   </div>
                 )}
                 {info.typical_gdd_range && (
                   <div>
-                    <span className="text-xs font-medium text-muted block">GDD Range</span>
+                    <span className="text-sm font-medium text-muted block">GDD Range</span>
                     <span className="text-sm text-foreground">{info.typical_gdd_range}&deg;C</span>
                   </div>
                 )}
@@ -167,7 +167,7 @@ export default function VegetationInfoModal({
               {/* Honey Characteristics */}
               {info.honey_characteristics && (
                 <div>
-                  <span className="text-xs font-medium text-muted block mb-1">Honey Characteristics</span>
+                  <span className="text-sm font-medium text-muted block mb-1">Honey Characteristics</span>
                   <p className="text-sm text-foreground">{info.honey_characteristics}</p>
                 </div>
               )}
@@ -175,7 +175,7 @@ export default function VegetationInfoModal({
               {/* Description */}
               {info.description && (
                 <div>
-                  <span className="text-xs font-medium text-muted block mb-1">About</span>
+                  <span className="text-sm font-medium text-muted block mb-1">About</span>
                   <p className="text-sm text-foreground">{info.description}</p>
                 </div>
               )}

@@ -115,7 +115,7 @@ const SectionHeading = ({ label, colCount }: { label: string; colCount: number }
   <tr>
     <td
       colSpan={colCount + 1}
-      className="px-4 py-2 bg-surface-secondary/60 dark:bg-surface-elevated text-sm font-semibold text-text-tertiary uppercase tracking-wide"
+      className="px-4 py-2 bg-surface-secondary/60 dark:bg-surface-elevated text-sm font-semibold text-text-tertiary "
     >
       {label}
     </td>
@@ -129,7 +129,7 @@ const AttrCell = ({ children }: { children: React.ReactNode }) => (
 const AttrLabel = ({ children }: { children: React.ReactNode }) => (
   <th
     scope="row"
-    className="px-4 py-3 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wide align-top sticky left-0 bg-surface dark:bg-surface whitespace-nowrap"
+    className="px-4 py-3 text-left text-sm font-semibold text-text-tertiary align-top sticky left-0 bg-surface dark:bg-surface whitespace-nowrap"
   >
     {children}
   </th>
@@ -160,7 +160,7 @@ export default function QueenCompareTable({ columns }: QueenCompareTableProps) {
           <tr>
             <th
               scope="col"
-              className="px-4 py-3 text-left text-xs font-semibold text-text-tertiary uppercase tracking-wide sticky left-0 bg-surface dark:bg-surface w-[160px]"
+              className="px-4 py-3 text-left text-sm font-semibold text-text-tertiary sticky left-0 bg-surface dark:bg-surface w-[160px]"
             >
               Attribute
             </th>

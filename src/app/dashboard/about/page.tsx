@@ -557,7 +557,7 @@ function AboutPageContent() {
  className="w-full pl-10 pr-4 bg-surface-elevated focus:ring-blue-500"
  />
  {newsSearch.trim().length >= 3 && (
- <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-amber-600 dark:text-amber-400">
+ <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-amber-600 dark:text-amber-400">
  AI Search
  </span>
  )}
@@ -619,7 +619,7 @@ function AboutPageContent() {
  <span className="line-clamp-2">{article.title}</span>
  <ExternalLink size={14} className="flex-shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity" />
  </a>
- <p className="text-xs sm:text-sm text-text-tertiary mb-1 truncate">
+ <p className="text-sm sm:text-sm text-text-tertiary mb-1 truncate">
  {article.site_name || new URL(article.url).hostname}
  {' • '}
  {article.published_date
@@ -713,7 +713,7 @@ function AboutPageContent() {
  <AlertTriangle size={24} className="text-red-600 dark:text-red-400" />
  <div className="text-center">
  <div className="font-semibold">Problem</div>
- <div className="text-xs text-text-tertiary">Report an issue</div>
+ <div className="text-sm text-text-tertiary">Report an issue</div>
  </div>
  </Button>
  <Button
@@ -729,7 +729,7 @@ function AboutPageContent() {
  <Lightbulb size={24} className="text-blue-600 dark:text-blue-400" />
  <div className="text-center">
  <div className="font-semibold">Suggestion</div>
- <div className="text-xs text-text-tertiary">Share an idea</div>
+ <div className="text-sm text-text-tertiary">Share an idea</div>
  </div>
  </Button>
  <Button
@@ -745,7 +745,7 @@ function AboutPageContent() {
  <CreditCard size={24} className="text-amber-600 dark:text-amber-400" />
  <div className="text-center">
  <div className="font-semibold">Subscription</div>
- <div className="text-xs text-text-tertiary">Billing/subscription</div>
+ <div className="text-sm text-text-tertiary">Billing/subscription</div>
  </div>
  </Button>
  </div>
@@ -848,7 +848,7 @@ function AboutPageContent() {
 
  <div className="flex flex-wrap gap-2 mb-3">
  <span
- className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${getStatusBadge(
+ className={`px-2 py-1 rounded text-sm font-medium flex items-center gap-1 ${getStatusBadge(
  ticket.status
  )}`}
  >
@@ -856,13 +856,13 @@ function AboutPageContent() {
  {ticket.status.replace('_', ' ').toUpperCase()}
  </span>
  <span
- className={`px-2 py-1 rounded text-xs font-medium ${getPriorityBadge(
+ className={`px-2 py-1 rounded text-sm font-medium ${getPriorityBadge(
  ticket.priority
  )}`}
  >
  {ticket.priority.toUpperCase()} PRIORITY
  </span>
- <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-900">
+ <span className="px-2 py-1 rounded text-sm font-medium bg-purple-100 text-purple-900">
  {ticket.ticket_type.toUpperCase()}
  </span>
  </div>
@@ -876,7 +876,7 @@ function AboutPageContent() {
  </div>
  )}
 
- <div className="flex justify-between items-center text-xs text-text-tertiary">
+ <div className="flex justify-between items-center text-sm text-text-tertiary">
  <span>Created: {new Date(ticket.created_at).toLocaleString()}</span>
  <span>Updated: {new Date(ticket.updated_at).toLocaleString()}</span>
  </div>

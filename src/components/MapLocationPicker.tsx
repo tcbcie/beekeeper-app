@@ -768,7 +768,7 @@ export default function MapLocationPicker({
         <div className="flex items-center gap-2">
           {isFullscreen && (
             <>
-              <span className="text-xs text-text-tertiary hidden sm:inline">Press Esc to exit</span>
+              <span className="text-sm text-text-tertiary hidden sm:inline">Press Esc to exit</span>
               <Button
                 type="button"
                 onClick={toggleFullscreen}
@@ -855,7 +855,7 @@ export default function MapLocationPicker({
               <span className="text-sm font-medium">{overlapInfo.totalOverlap}% overlap</span>
             </div>
             {overlapInfo.overlappingApiaries.length > 0 && (
-              <p className="text-xs text-text-tertiary mt-1 truncate" title={overlapInfo.overlappingApiaries.join(', ')}>
+              <p className="text-sm text-text-tertiary mt-1 truncate" title={overlapInfo.overlappingApiaries.join(', ')}>
                 with: {overlapInfo.overlappingApiaries.slice(0, 2).join(', ')}
                 {overlapInfo.overlappingApiaries.length > 2 && ` +${overlapInfo.overlappingApiaries.length - 2}`}
               </p>
@@ -896,7 +896,7 @@ export default function MapLocationPicker({
       </div>
 
       {/* Coordinates display */}
-      <div className="mt-2 flex items-center gap-4 text-xs text-text-tertiary">
+      <div className="mt-2 flex items-center gap-4 text-sm text-text-tertiary">
         <span>
           Lat: <span className="font-mono text-text-secondary">{latitude || '—'}</span>
         </span>

@@ -406,7 +406,7 @@ export default function DistributeGraftModal({
             <label className="block text-sm font-medium text-text-secondary mb-2">Recipient *</label>
 
             {/* Mode toggles */}
-            <div className="flex rounded-lg border border-border overflow-hidden text-xs font-medium mb-3">
+            <div className="flex rounded-lg border border-border overflow-hidden text-sm font-medium mb-3">
               {hasGroup && (
                 <Button
                   type="button"
@@ -449,10 +449,10 @@ export default function DistributeGraftModal({
                   <div className="text-sm font-medium text-foreground truncate">
                     {selectedUser.full_name || 'No name'}
                   </div>
-                  <div className="text-xs text-text-tertiary truncate">{selectedUser.email}</div>
+                  <div className="text-sm text-text-tertiary truncate">{selectedUser.email}</div>
                 </div>
                 {isGroupMember && (
-                  <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                  <span className="px-2 py-0.5 text-sm rounded bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
                     Group
                   </span>
                 )}
@@ -501,7 +501,7 @@ export default function DistributeGraftModal({
                             <div className="text-sm font-medium text-foreground truncate">
                               {user.full_name || 'No name'}
                             </div>
-                            <div className="text-xs text-text-tertiary truncate">{user.email}</div>
+                            <div className="text-sm text-text-tertiary truncate">{user.email}</div>
                           </div>
                         </div>
                       </Button>
@@ -548,10 +548,10 @@ export default function DistributeGraftModal({
                               <div className="text-sm font-medium text-foreground truncate">
                                 {user.full_name || 'No name'}
                               </div>
-                              <div className="text-xs text-text-tertiary truncate">{user.email}</div>
+                              <div className="text-sm text-text-tertiary truncate">{user.email}</div>
                             </div>
                             {groupMemberIds?.includes(user.id) && (
-                              <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 shrink-0">
+                              <span className="px-2 py-0.5 text-sm rounded bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 shrink-0">
                                 Group
                               </span>
                             )}

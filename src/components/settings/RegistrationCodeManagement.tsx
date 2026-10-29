@@ -317,13 +317,13 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
             <table className="w-full">
               <thead className="bg-surface dark:bg-background">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">Code</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">Description</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">Type / Association</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">Subscription Expires</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">Usage</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">Actions</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Code</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Description</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Type / Association</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Subscription Expires</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Usage</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-surface dark:bg-surface-elevated divide-y divide-border">
@@ -347,7 +347,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                           <div className="flex flex-col gap-1">
                             <Badge tone="purple">Association</Badge>
                             {code.association && (
-                              <span className="text-xs text-text-tertiary">
+                              <span className="text-sm text-text-tertiary">
                                 {code.association.name}
                               </span>
                             )}
@@ -366,12 +366,12 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                         ) : isLifetime ? (
                           <div className="flex flex-col">
                             <span className="font-semibold fj-text-info">Never</span>
-                            <span className="text-xs text-text-tertiary">Lifetime access</span>
+                            <span className="text-sm text-text-tertiary">Lifetime access</span>
                           </div>
                         ) : (
                           <div className="flex flex-col">
                             <span className="font-semibold text-foreground">{expiryDate.toLocaleDateString()}</span>
-                            <span className="text-xs text-text-tertiary">Fixed expiry</span>
+                            <span className="text-sm text-text-tertiary">Fixed expiry</span>
                           </div>
                         )}
                       </td>
@@ -503,7 +503,7 @@ export default function RegistrationCodeManagement({ userId }: RegistrationCodeM
                   required
                   autoComplete="off"
                 />
-                <p className="mt-1 text-sm text-text-tertiary">Will be automatically converted to uppercase</p>
+                <p className="mt-1 text-sm text-text-tertiary">Will be automatically converted to </p>
               </div>
 
               <div>

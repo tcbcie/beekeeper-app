@@ -815,9 +815,9 @@ export default function UserManagement() {
                   </div>
                   <div>
                     <p className="font-medium text-sm text-text-tertiary mb-1">Subscription Status:</p>
-                    <div className="grid grid-cols-2 gap-1 ml-2 text-xs">
+                    <div className="grid grid-cols-2 gap-1 ml-2 text-sm">
                       <span className="flex items-center gap-1">
-                        <Badge tone="green">✓</Badge>
+                        <Badge tone="green">Active</Badge>
                         Active
                       </span>
                       <span className="flex items-center gap-1">
@@ -829,7 +829,7 @@ export default function UserManagement() {
                         Expiring very soon
                       </span>
                       <span className="flex items-center gap-1">
-                        <Badge tone="red">✗</Badge>
+                        <Badge tone="red">Expired</Badge>
                         Expired
                       </span>
                       <span className="flex items-center gap-1">
@@ -1116,7 +1116,7 @@ export default function UserManagement() {
                                 </Badge>
                               )}
                               {/* Apiary & Hive Counts */}
-                              <div className="flex items-center gap-2 text-xs text-text-tertiary flex-shrink-0">
+                              <div className="flex items-center gap-2 text-sm text-text-tertiary flex-shrink-0">
                                 <span title="Apiaries" className="flex items-center gap-0.5">
                                   <Building2 size={12} />
                                   {user.apiaries_count ?? 0}
@@ -1155,16 +1155,16 @@ export default function UserManagement() {
                                     ? 'amber'
                                     : 'neutral'
                                 }>
-                                  {user.subscription_status === 'active' ? '✓' :
+                                  {user.subscription_status === 'active' ? 'Active' :
                                    user.subscription_status === 'expiring_soon' ? `${user.days_remaining}d` :
                                    user.subscription_status === 'expiring_very_soon' ? `${user.days_remaining}d!` :
-                                   user.subscription_status === 'expired' ? '✗' : '−'}
+                                   user.subscription_status === 'expired' ? 'Expired' : '−'}
                                 </Badge>
                               )}
 
                               {/* Last Active */}
                               <span
-                                className="text-xs text-text-tertiary min-w-[50px] text-right"
+                                className="text-sm text-text-tertiary min-w-[50px] text-right"
                                 title={user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : 'Never signed in'}
                               >
                                 {formatLastActive(user.last_sign_in_at)}
@@ -1174,7 +1174,7 @@ export default function UserManagement() {
                             {/* Actions */}
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               {user.id === userId ? (
-                                <span className="text-text-tertiary text-xs italic px-2">Your account</span>
+                                <span className="text-text-tertiary text-sm italic px-2">Your account</span>
                               ) : (
                                 <>
                                   {/* Role Selector */}
@@ -1270,7 +1270,7 @@ export default function UserManagement() {
 
                           {/* Expanded Details */}
                           {isExpanded && (
-                            <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                            <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                               {/* User ID */}
                               <div>
                                 <span className="text-text-tertiary block mb-1">User ID</span>
@@ -1352,7 +1352,7 @@ export default function UserManagement() {
                                     className="fj-control-inline px-2 py-1 rounded text-base"
                                   />
                                   {user.days_remaining !== undefined && user.subscription_expires_at && (
-                                    <p className={`text-xs font-medium ${
+                                    <p className={`text-sm font-medium ${
                                       user.days_remaining > 30
                                         ? 'text-green-600'
                                         : user.days_remaining > 7
@@ -1436,7 +1436,7 @@ export default function UserManagement() {
                                         minute: '2-digit'
                                       })}
                                     </p>
-                                    <span className="text-xs text-text-tertiary">
+                                    <span className="text-sm text-text-tertiary">
                                       ({Math.floor((Date.now() - new Date(user.deleted_at).getTime()) / (1000 * 60 * 60 * 24))} days ago)
                                     </span>
                                   </div>
@@ -1454,7 +1454,7 @@ export default function UserManagement() {
                   </div>
                   {totalPages > 1 && (
                     <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                      <span className="text-xs text-text-tertiary">
+                      <span className="text-sm text-text-tertiary">
                         Page {safeCurrentUsersPage} of {totalPages}
                       </span>
                       <div className="flex items-center gap-2">
@@ -1549,7 +1549,7 @@ export default function UserManagement() {
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
                               <h4 className="font-semibold text-foreground text-lg">{request.original_email}</h4>
-                              <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${
+                              <span className={`px-2 py-1 rounded-full text-sm font-bold ${
                                 request.status === 'pending' ? 'bg-yellow-200 text-yellow-900 dark:bg-yellow-900/40 dark:text-yellow-200' :
                                 request.status === 'approved' ? 'bg-green-200 text-green-900 dark:bg-green-900/40 dark:text-green-200' :
                                 'bg-red-200 text-red-900 dark:bg-red-900/40 dark:text-red-200'
@@ -1592,7 +1592,7 @@ export default function UserManagement() {
                                 className="rounded-md"
                                 title="Approve and restore account"
                               >
-                                ✓ Approve
+                                Approve
                               </Button>
                               <Button
                                 onClick={() => handleRejectReactivation(request.id, request.original_email)}
@@ -1601,7 +1601,7 @@ export default function UserManagement() {
                                 className="rounded-md"
                                 title="Reject request"
                               >
-                                ✗ Reject
+                                Reject
                               </Button>
                             </div>
                           )}

@@ -237,7 +237,7 @@ export default function CustomersPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-foreground">Customers 👥</h1>
+        <h1 className="text-3xl font-bold text-foreground">Customers</h1>
         <Button
           onClick={() => (showForm ? resetForm() : setShowForm(true))}
           tone="success"
@@ -438,7 +438,7 @@ export default function CustomersPage() {
                       <Link href={`/dashboard/crm/customers/${c.id}`} className="font-medium text-foreground hover:underline focus:underline focus:outline-none">
                         {c.name}
                       </Link>
-                      {c.company && <div className="text-xs text-text-tertiary">{c.company}</div>}
+                      {c.company && <div className="text-sm text-text-tertiary">{c.company}</div>}
                     </td>
                     <td className="py-3 px-4 text-text-secondary">
                       {c.email && <div className="truncate max-w-[220px]">{c.email}</div>}

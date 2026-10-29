@@ -685,7 +685,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
       )}
 
       {/* Legend */}
-      <div className="text-xs text-text-tertiary">
+      <div className="text-sm text-text-tertiary">
         <p>GDD = Σ max(0, (T<sub>max</sub> + T<sub>min</sub>) / 2) × multiplier. Seasonal multipliers: Jan ×0.5, Feb ×0.75, Mar-Dec ×1.0.</p>
       </div>
 

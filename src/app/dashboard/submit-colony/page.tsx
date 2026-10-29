@@ -418,7 +418,7 @@ export default function SubmitColonyPage() {
                 ) : (
                   <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
                     <Camera size={24} className="text-text-tertiary mb-1" />
-                    <span className="text-xs text-text-tertiary text-center">Location</span>
+                    <span className="text-sm text-text-tertiary text-center">Location</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -455,7 +455,7 @@ export default function SubmitColonyPage() {
                 ) : (
                   <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
                     <Camera size={24} className="text-text-tertiary mb-1" />
-                    <span className="text-xs text-text-tertiary text-center">Colony</span>
+                    <span className="text-sm text-text-tertiary text-center">Colony</span>
                     <input
                       type="file"
                       accept="image/*"

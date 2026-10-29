@@ -224,12 +224,12 @@ export default function InspectionCard({
 
         {/* Queen & Brood + Drones + Propolis */}
         <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-          <span><span className="text-text-secondary">Queen:</span> {inspection.queen_seen ? '✅' : '❌'}</span>
-          <span><span className="text-text-secondary">Eggs:</span> {inspection.eggs_present ? '✅' : '❌'}</span>
+          <span><span className="text-text-secondary">Queen:</span> {inspection.queen_seen ? 'Yes' : 'No'}</span>
+          <span><span className="text-text-secondary">Eggs:</span> {inspection.eggs_present ? 'Yes' : 'No'}</span>
           {inspection.brood_frames !== null && (
             <span>
               <span className="text-text-secondary">Brood:</span>{' '}
-              <span className="font-bold text-purple-800">{inspection.brood_frames}</span>
+              <span className="font-bold text-purple-800 dark:text-purple-300">{inspection.brood_frames}</span>
               {inspection.brood_frames_per_box && inspection.brood_frames_per_box.length > 1 && (
                 <span className="text-text-tertiary">
                   {' '}({inspection.brood_frames_per_box.map(b => `B${b.box ?? '?'} ${b.frames ?? 0}`).join(', ')})
@@ -238,23 +238,23 @@ export default function InspectionCard({
             </span>
           )}
           {hive?.configuration?.right_sized_broodbox && inspection.right_sized_frames !== null && (
-            <span><span className="text-text-secondary">Right-Sized:</span> <span className="font-bold text-amber-800">{inspection.right_sized_frames}</span></span>
+            <span><span className="text-text-secondary">Right-Sized:</span> <span className="font-bold text-amber-800 dark:text-amber-300">{inspection.right_sized_frames}</span></span>
           )}
           {droneLabel !== null && (
-            <span><span className="text-text-secondary">Drones:</span> <span className="font-semibold text-amber-800">{droneLabel}</span></span>
+            <span><span className="text-text-secondary">Drones:</span> <span className="font-semibold text-amber-800 dark:text-amber-300">{droneLabel}</span></span>
           )}
           {inspection.drone_brood_present !== null && (
-            <span><span className="text-text-secondary">Drone Brood:</span> {inspection.drone_brood_present ? '✅' : '❌'}</span>
+            <span><span className="text-text-secondary">Drone Brood:</span> {inspection.drone_brood_present ? 'Yes' : 'No'}</span>
           )}
           {propolisLabel !== null && (
-            <span><span className="text-text-secondary">Propolis:</span> <span className="font-semibold text-amber-800">{propolisLabel}</span></span>
+            <span><span className="text-text-secondary">Propolis:</span> <span className="font-semibold text-amber-800 dark:text-amber-300">{propolisLabel}</span></span>
           )}
         </div>
 
         {/* Queen Cells */}
         {hasQueenCells && (
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-            <span className="text-sm font-semibold text-text-tertiary uppercase tracking-wide self-center">Cells:</span>
+            <span className="text-sm font-semibold text-text-tertiary self-center">Cells:</span>
             {inspection.queen_cups && (
               <span>
                 <span className="text-text-secondary">Cups:</span> <span className="font-medium">{inspection.queen_cups_number || 0}</span>
@@ -306,7 +306,7 @@ export default function InspectionCard({
         {/* Given/Taken */}
         {givenTakenItems.length > 0 && (
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-            <span className="text-sm font-semibold text-text-tertiary uppercase tracking-wide self-center">Given/Taken:</span>
+            <span className="text-sm font-semibold text-text-tertiary self-center">Given/Taken:</span>
             {givenTakenItems.map(item => (
               <span key={item.label}>
                 <span className="text-text-secondary">{item.label}:</span>{' '}
@@ -321,7 +321,7 @@ export default function InspectionCard({
         {/* Honey Super Fullness */}
         {superFullness.length > 0 && (
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-            <span className="text-sm font-semibold text-text-tertiary uppercase tracking-wide self-center">Super Fullness:</span>
+            <span className="text-sm font-semibold text-text-tertiary self-center">Super Fullness:</span>
             {superFullness.map((value, i) => (
               <span key={`super-fullness-${i}`}>
                 <span className="text-text-secondary">Super {i + 1}:</span>{' '}
@@ -334,7 +334,7 @@ export default function InspectionCard({
         {/* Hygienic Behaviour */}
         {hasHygienic && (
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-            <span className="text-sm font-semibold text-text-tertiary uppercase tracking-wide self-center">Hygienic:</span>
+            <span className="text-sm font-semibold text-text-tertiary self-center">Hygienic:</span>
             {inspection.recapping !== 3 && inspection.recapping !== 0 && (
               <span><span className="text-text-secondary">Recapping:</span> {renderStars(inspection.recapping)}</span>
             )}
@@ -350,7 +350,7 @@ export default function InspectionCard({
         {/* Disease */}
         {hasDisease && (
           <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-            <span className="text-sm font-semibold text-text-tertiary uppercase tracking-wide self-center">Disease:</span>
+            <span className="text-sm font-semibold text-text-tertiary self-center">Disease:</span>
             {inspection.afb_disease > 0 && <span><span className="text-text-secondary">AFB:</span> {renderStars(inspection.afb_disease)}</span>}
             {inspection.efb_disease > 0 && <span><span className="text-text-secondary">EFB:</span> {renderStars(inspection.efb_disease)}</span>}
             {inspection.chalkbrood_disease > 0 && <span><span className="text-text-secondary">Chalkbrood:</span> {renderStars(inspection.chalkbrood_disease)}</span>}

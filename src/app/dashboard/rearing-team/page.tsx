@@ -429,7 +429,7 @@ export default function RearingTeamPage() {
         <HelpCircle size={16} />
       </IconButton>
       {skillLevelInfoTarget === targetId && (
-        <div className="absolute left-0 sm:left-0 right-auto top-6 z-50 w-72 max-w-[calc(100vw-2rem)] p-3 bg-surface dark:bg-surface-elevated border border-border rounded-lg shadow-lg text-xs">
+        <div className="absolute left-0 sm:left-0 right-auto top-6 z-50 w-72 max-w-[calc(100vw-2rem)] p-3 bg-surface dark:bg-surface-elevated border border-border rounded-lg shadow-lg text-sm">
           <p className="font-semibold text-foreground mb-2">Experience Level Guide</p>
           <ul className="space-y-1.5 text-text-secondary">
             <li><span className="font-medium text-foreground">Experienced/Advanced</span> — were already using colony selection and queen rearing, for a number of seasons, before joining group</li>
@@ -493,7 +493,7 @@ export default function RearingTeamPage() {
                       <div className="flex flex-col gap-3 mb-2">
                         <div className="flex items-center gap-3">
                           <h4 className="font-semibold text-foreground">{group.name}</h4>
-                          <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs rounded font-medium">
+                          <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-sm rounded font-medium">
                             Owner
                           </span>
                         </div>
@@ -565,7 +565,7 @@ export default function RearingTeamPage() {
                       <div className="text-sm text-text-tertiary">
                         <span className="font-medium">{group.member_count || 0}</span> member{(group.member_count || 0) !== 1 ? 's' : ''}
                       </div>
-                      <div className="text-xs text-text-tertiary mt-1">
+                      <div className="text-sm text-text-tertiary mt-1">
                         Created {new Date(group.created_at).toLocaleDateString()}
                       </div>
 
@@ -593,10 +593,10 @@ export default function RearingTeamPage() {
                                           : member.user_email}
                                       </div>
                                       {member.first_name && member.last_name && (
-                                        <div className="text-xs text-text-tertiary">{member.user_email}</div>
+                                        <div className="text-sm text-text-tertiary">{member.user_email}</div>
                                       )}
                                     </div>
-                                    <span className={`px-2 py-1 text-xs rounded font-medium capitalize ${
+                                    <span className={`px-2 py-1 text-sm rounded font-medium capitalize ${
                                       member.role === 'owner'
                                         ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200'
                                         : 'bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground border border-border'
@@ -658,7 +658,7 @@ export default function RearingTeamPage() {
                                         <Mail size={16} className="text-orange-400" />
                                         <div className="flex-1">
                                           <div className="text-sm font-medium text-foreground">{invitation.email}</div>
-                                          <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
+                                          <div className="text-sm text-text-tertiary flex items-center gap-2 mt-1">
                                             <Clock size={12} />
                                             {isExpired ? (
                                               <span className="text-red-600 dark:text-red-400 font-medium">Expired</span>
@@ -669,7 +669,7 @@ export default function RearingTeamPage() {
                                             )}
                                           </div>
                                         </div>
-                                        <span className="px-2 py-1 text-xs rounded font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-200">
+                                        <span className="px-2 py-1 text-sm rounded font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-200">
                                           Pending
                                         </span>
                                       </div>
@@ -707,7 +707,7 @@ export default function RearingTeamPage() {
                                       icon={<User size={16} className="text-green-600 dark:text-green-400" />}
                                       title={invitation.email}
                                       titleClassName="text-foreground"
-                                      bodyClassName="text-xs text-text-tertiary"
+                                      bodyClassName="text-sm text-text-tertiary"
                                       endSlot={<Badge tone="green">Accepted</Badge>}
                                       endSlotClassName="self-center"
                                     >
@@ -743,7 +743,7 @@ export default function RearingTeamPage() {
                                       icon={<X size={16} className="text-red-600 dark:text-red-400" />}
                                       title={invitation.email}
                                       titleClassName="text-foreground"
-                                      bodyClassName="text-xs text-text-tertiary"
+                                      bodyClassName="text-sm text-text-tertiary"
                                       endSlot={<Badge tone="red">Declined</Badge>}
                                       endSlotClassName="self-center"
                                     >
@@ -779,7 +779,7 @@ export default function RearingTeamPage() {
                       <div className="flex flex-col gap-3 mb-2">
                         <div className="flex items-center gap-3">
                           <h4 className="font-semibold text-foreground">{group.name}</h4>
-                          <span className="px-2 py-1 bg-surface-secondary text-text-primary text-xs rounded font-medium capitalize">
+                          <span className="px-2 py-1 bg-surface-secondary text-text-primary text-sm rounded font-medium capitalize">
                             {group.user_role}
                           </span>
                         </div>
@@ -853,10 +853,10 @@ export default function RearingTeamPage() {
                                         : member.user_email}
                                     </div>
                                     {member.first_name && member.last_name && (
-                                      <div className="text-xs text-text-tertiary truncate">{member.user_email}</div>
+                                      <div className="text-sm text-text-tertiary truncate">{member.user_email}</div>
                                     )}
                                   </div>
-                                  <span className={`px-2 py-1 text-xs rounded font-medium capitalize shrink-0 ${
+                                  <span className={`px-2 py-1 text-sm rounded font-medium capitalize shrink-0 ${
                                     member.role === 'owner'
                                       ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200'
                                       : 'bg-surface-elevated dark:bg-surface-elevated text-foreground border border-border'
@@ -1033,7 +1033,7 @@ export default function RearingTeamPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground text-xs rounded font-medium capitalize border border-border">
+                        <span className="px-3 py-1 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground text-sm rounded font-medium capitalize border border-border">
                           {member.role}
                         </span>
                         {member.role !== 'owner' && (
@@ -1066,7 +1066,7 @@ export default function RearingTeamPage() {
                       icon={<Clock size={16} className="text-amber-600 dark:text-amber-300" />}
                       title={invitation.email}
                       titleClassName="text-foreground"
-                      bodyClassName="text-xs text-text-tertiary"
+                      bodyClassName="text-sm text-text-tertiary"
                       endSlot={
                         <Button
                           onClick={() => handleCancelRgInvitation(invitation.id, invitation.email)}

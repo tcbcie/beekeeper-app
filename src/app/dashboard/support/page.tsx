@@ -248,7 +248,7 @@ export default function SupportPage() {
                   <AlertCircle size={24} className="text-red-600" />
                   <div className="text-center">
                     <div className="font-semibold">Problem</div>
-                    <div className="text-xs text-text-tertiary">Report an issue</div>
+                    <div className="text-sm text-text-tertiary">Report an issue</div>
                   </div>
                 </Button>
                 <Button
@@ -264,7 +264,7 @@ export default function SupportPage() {
                   <Lightbulb size={24} className="text-blue-600" />
                   <div className="text-center">
                     <div className="font-semibold">Suggestion</div>
-                    <div className="text-xs text-text-tertiary">Share an idea</div>
+                    <div className="text-sm text-text-tertiary">Share an idea</div>
                   </div>
                 </Button>
                 <Button
@@ -280,7 +280,7 @@ export default function SupportPage() {
                   <CreditCard size={24} className="text-amber-600" />
                   <div className="text-center">
                     <div className="font-semibold">Subscription</div>
-                    <div className="text-xs text-text-tertiary">Billing/subscription</div>
+                    <div className="text-sm text-text-tertiary">Billing/subscription</div>
                   </div>
                 </Button>
               </div>
@@ -380,7 +380,7 @@ export default function SupportPage() {
 
                 <div className="flex flex-wrap gap-2 mb-3">
                   <span
-                    className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${getStatusBadge(
+                    className={`px-2 py-1 rounded text-sm font-medium flex items-center gap-1 ${getStatusBadge(
                       ticket.status
                     )}`}
                   >
@@ -388,13 +388,13 @@ export default function SupportPage() {
                     {ticket.status.replace('_', ' ').toUpperCase()}
                   </span>
                   <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${getPriorityBadge(
+                    className={`px-2 py-1 rounded text-sm font-medium ${getPriorityBadge(
                       ticket.priority
                     )}`}
                   >
                     {ticket.priority.toUpperCase()} PRIORITY
                   </span>
-                  <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                  <span className="px-2 py-1 rounded text-sm font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
                     {ticket.ticket_type.toUpperCase()}
                   </span>
                 </div>
@@ -408,7 +408,7 @@ export default function SupportPage() {
                   </div>
                 )}
 
-                <div className="flex justify-between items-center text-xs text-text-tertiary">
+                <div className="flex justify-between items-center text-sm text-text-tertiary">
                   <span>Created: {new Date(ticket.created_at).toLocaleString()}</span>
                   <span>Updated: {new Date(ticket.updated_at).toLocaleString()}</span>
                 </div>

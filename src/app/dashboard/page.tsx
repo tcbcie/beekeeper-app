@@ -239,17 +239,20 @@ export default function DashboardPage() {
  <div className="space-y-6">
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
  <div className="flex flex-col gap-2">
- <p className="text-sm font-semibold uppercase tracking-[0.14em] text-text-tertiary">Dashboard</p>
  <div className="flex items-center gap-3 flex-wrap">
  <h1 className="font-serif text-3xl sm:text-4xl leading-tight text-foreground">Dashboard Overview</h1>
  {userRole === 'Admin' && (
  <div className="flex items-center gap-2">
- <span className="px-3 py-1 bg-purple-900/50 dark:bg-purple-900/30 text-purple-300 dark:text-purple-200 text-sm font-medium rounded-full flex items-center gap-1 border border-purple-700 dark:border-purple-600">
+ <span className="fj-badge fj-badge-neutral flex items-center gap-1">
  <Shield size={14} />
  Admin
  </span>
  {openTicketsCount > 0 && (
- <span className="px-2 py-1 bg-red-500 dark:bg-red-600 text-white text-sm font-bold rounded-full flex items-center gap-1 min-w-[24px] justify-center">
+ <span
+ className="px-2 py-1 bg-red-700 text-white text-sm font-bold rounded-full flex items-center gap-1 min-w-[24px] justify-center"
+ aria-label={`${openTicketsCount} open support ticket${openTicketsCount === 1 ? '' : 's'}`}
+ title="Open support tickets"
+ >
  {openTicketsCount}
  </span>
  )}
@@ -261,7 +264,7 @@ export default function DashboardPage() {
  <MessageCircle size={14} />
  <span>Tickets:</span>
  {userTicketStatus.has_response > 0 && (
- <span className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-500 text-white text-sm font-bold rounded-full animate-pulse" title={`${userTicketStatus.has_response} ticket(s) have a new response - click to view`}>
+ <span className="flex items-center gap-1 px-1.5 py-0.5 bg-purple-700 text-white text-sm font-bold rounded-full" title={`${userTicketStatus.has_response} ticket(s) have a new response - click to view`}>
  {userTicketStatus.has_response}
  <Reply size={10} />
  </span>
@@ -273,13 +276,13 @@ export default function DashboardPage() {
  </span>
  )}
  {userTicketStatus.in_progress > 0 && (
- <span className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-500 text-white text-sm font-bold rounded-full" title={`${userTicketStatus.in_progress} ticket(s) being addressed`}>
+ <span className="flex items-center gap-1 px-1.5 py-0.5 bg-blue-700 text-white text-sm font-bold rounded-full" title={`${userTicketStatus.in_progress} ticket(s) being addressed`}>
  {userTicketStatus.in_progress}
- <span className="animate-pulse">●</span>
+ <span aria-hidden="true">●</span>
  </span>
  )}
  {userTicketStatus.resolved > 0 && (
- <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-500 text-white text-sm font-bold rounded-full" title={`${userTicketStatus.resolved} ticket(s) resolved - review & close`}>
+ <span className="flex items-center gap-1 px-1.5 py-0.5 bg-green-800 text-white text-sm font-bold rounded-full" title={`${userTicketStatus.resolved} ticket(s) resolved - review & close`}>
  {userTicketStatus.resolved}
  <CheckCircle size={10} />
  </span>

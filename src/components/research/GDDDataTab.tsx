@@ -924,7 +924,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
               )}
               <span>Nearby Data</span>
               {showCommunityData && communityRecords.length > 0 && (
-                <span className="px-1.5 py-0.5 text-xs bg-amber-200 dark:bg-amber-800 rounded-full">
+                <span className="px-1.5 py-0.5 text-sm bg-amber-200 dark:bg-amber-800 rounded-full">
                   {communityRecords.length}
                 </span>
               )}
@@ -1504,7 +1504,7 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
       )}
 
       {/* Legend */}
-      <div className="text-xs text-text-tertiary">
+      <div className="text-sm text-text-tertiary">
         <p>GDD = Σ max(0, (T<sub>max</sub> + T<sub>min</sub>) / 2) × multiplier. Seasonal multipliers: Jan ×0.5, Feb ×0.75, Mar-Dec ×1.0.</p>
       </div>
 

@@ -184,7 +184,8 @@ export default function ScaleHistoryChart({ deviceId, deviceName, hiveId }: Scal
       intersect: false,
     },
     font: {
-      family: "'DM Sans', sans-serif",
+      // The app's own font stack (globals.css --font-ui-sans); DM Sans was never loaded
+      family: "'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
     },
     plugins: {
       legend: {

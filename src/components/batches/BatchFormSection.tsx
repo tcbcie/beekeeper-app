@@ -733,7 +733,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  <div className="md:col-span-2 bg-surface-elevated dark:bg-surface-elevated p-4 rounded-lg border border-border overflow-hidden">
  <div className="flex items-center justify-between">
  <h4 className="text-sm font-semibold text-foreground">Batch Quantities</h4>
- <button type="button" onClick={() => setQuantitiesOpen(!quantitiesOpen)} className="flex items-center gap-1 px-2 py-1.5 text-sm text-text-tertiary hover:text-foreground rounded">
+ <button type="button" onClick={() => setQuantitiesOpen(!quantitiesOpen)} className="flex min-h-12 items-center gap-1 px-2 py-1.5 text-sm text-text-tertiary hover:text-foreground rounded">
  {quantitiesOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
  {quantitiesOpen ? 'Hide' : 'Show'}
  </button>
@@ -1050,7 +1050,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  onClick={handleToggleVoice}
  disabled={voiceProcessing}
  aria-label={isVoiceRecording ? 'Stop voice recording' : 'Record voice note'}
- className={`inline-flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-lg text-white font-medium transition-all touch-manipulation disabled:cursor-not-allowed ${
+ className={`inline-flex items-center gap-2 px-4 py-2 min-h-12 rounded-lg text-white font-medium transition-all touch-manipulation disabled:cursor-not-allowed ${
  voiceProcessing
  ? 'bg-purple-400 dark:bg-purple-500'
  : isVoiceRecording
@@ -1091,7 +1091,7 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  <button
  type="button"
  onClick={() => setNotificationPrefsOpen(!notificationPrefsOpen)}
- className="flex items-center gap-1 px-2 py-1.5 text-sm text-amber-800 dark:text-amber-200 hover:text-amber-900 dark:hover:text-amber-100 rounded"
+ className="flex min-h-12 items-center gap-1 px-2 py-1.5 text-sm text-amber-800 dark:text-amber-200 hover:text-amber-900 dark:hover:text-amber-100 rounded"
  aria-expanded={notificationPrefsOpen}
  >
  {notificationPrefsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}

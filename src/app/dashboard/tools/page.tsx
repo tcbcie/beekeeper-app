@@ -194,7 +194,7 @@ export default function ToolsPage() {
  <div className="space-y-8">
  {toolCategories.map((category, catIndex) => (
  <div key={category.name} className={`animate-fade-in-up stagger-${catIndex + 1}`}>
- <h2 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary mb-3">
+ <h2 className="text-sm font-semibold text-text-tertiary mb-3">
  {category.name}
  </h2>
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

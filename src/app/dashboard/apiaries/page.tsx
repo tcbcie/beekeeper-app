@@ -782,12 +782,12 @@ export default function ApiariesPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-foreground">Apiaries 📍</h1>
+        <h1 className="text-3xl font-bold text-foreground">Apiaries</h1>
         <Button
           // "Cancel" discards the form like the form's own Cancel button. Only hiding it left the
           // edited apiary selected, so the next "Add Apiary" reopened it in edit mode.
           onClick={() => (showForm ? resetForm() : setShowForm(true))}
-          className="fj-btn fj-btn-success min-h-[48px]"
+          tone="success" className="min-h-[48px]"
         >
           {showForm ? <X size={16} /> : <Plus size={16} />}
           {showForm ? 'Cancel' : 'Add Apiary'}
@@ -922,7 +922,7 @@ export default function ApiariesPage() {
                   <Button
                     type="button"
                     onClick={() => setShowMapPicker(!showMapPicker)}
-                    className="fj-btn fj-btn-blue fj-btn-sm"
+                    className="fj-btn-sm"
                   >
                     <Map size={14} />
                     {showMapPicker ? 'Hide Map' : 'Pick on Map'}
@@ -931,7 +931,7 @@ export default function ApiariesPage() {
                     type="button"
                     onClick={handleLookupCoordinates}
                     disabled={geocoding || (!formData.city && !formData.eircode)}
-                    className="fj-btn fj-btn-success fj-btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    tone="success" className="fj-btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {geocoding ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
                     Get Coordinates
@@ -1020,7 +1020,7 @@ export default function ApiariesPage() {
                   <Button
                     type="button"
                     onClick={() => setShowMapPicker(true)}
-                    className="fj-btn fj-btn-blue fj-btn-sm mt-2"
+                    className="fj-btn-sm mt-2"
                   >
                     <Map size={14} />
                     Pick on Map
@@ -1132,7 +1132,7 @@ export default function ApiariesPage() {
             )}
 
             <div className="flex gap-3 flex-wrap">
-              <Button type="submit" disabled={submitting || uploading} className="fj-btn fj-btn-success min-h-[48px] px-6">
+              <Button type="submit" disabled={submitting || uploading} tone="success" className="min-h-[48px] px-6">
                 {submitting ? 'Saving…' : `${editingApiary ? 'Update' : 'Add'} Apiary`}
               </Button>
               <Button type="button" onClick={resetForm} className="fj-btn fj-btn-neutral min-h-[48px] px-6">
@@ -1142,7 +1142,7 @@ export default function ApiariesPage() {
                 <Button
                   type="button"
                   onClick={openTransferModal}
-                  className="fj-btn fj-btn-purple min-h-[48px] px-6"
+                  className="min-h-[48px] px-6"
                 >
                   <UserPlus size={16} />
                   Transfer Ownership
@@ -1171,7 +1171,7 @@ export default function ApiariesPage() {
               <Button
                 onClick={handleTransferOwnership}
                 disabled={!transferEmail.trim() || transferring}
-                className="fj-btn fj-btn-blue disabled:opacity-50 disabled:cursor-not-allowed"
+                className="disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {transferring ? (
                   <>

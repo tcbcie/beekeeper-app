@@ -18,7 +18,7 @@ export default function PublicLayout({
                 <Image src="/logo.png" alt="HiveCraic" width={40} height={40} className="h-10 w-10" />
                 <div className="leading-tight">
                   <span className="block font-serif text-xl text-foreground">HiveCraic</span>
-                  <span className="block text-xs uppercase tracking-[0.14em] text-text-tertiary">
+                  <span className="block text-sm text-text-tertiary">
                     Field Journal
                   </span>
                 </div>
@@ -64,7 +64,7 @@ export default function PublicLayout({
               </div>
 
               <div>
-                <h4 className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-text-tertiary">Quick Links</h4>
+                <h4 className="mb-4 text-sm font-semibold text-text-tertiary">Quick Links</h4>
                 <ul className="space-y-2 text-sm">
                   <li>
                     <Link href="/about" className="text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors">
@@ -75,7 +75,7 @@ export default function PublicLayout({
               </div>
 
               <div>
-                <h4 className="mb-4 text-sm font-semibold uppercase tracking-[0.12em] text-text-tertiary">Legal</h4>
+                <h4 className="mb-4 text-sm font-semibold text-text-tertiary">Legal</h4>
                 <ul className="space-y-2 text-sm">
                   <li>
                     <Link href="/privacy" className="text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors">

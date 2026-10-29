@@ -574,7 +574,7 @@ export default function QrTagsPage() {
  {f === 'all' ? 'All' : f === 'assigned' ? 'Assigned' : 'Unassigned'}
  </button>
  ))}
- <span className="text-xs text-text-tertiary ml-1">({filteredTags.length})</span>
+ <span className="text-sm text-text-tertiary ml-1">({filteredTags.length})</span>
  </div>
 
  {filteredTags.length === 0 ? (
@@ -589,7 +589,7 @@ export default function QrTagsPage() {
  <div className="flex items-center gap-2">
  <span className="font-mono font-bold text-foreground">{tag.code}</span>
  {tag.team_id && teamNames[tag.team_id] && (
-  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
+  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
   <Users size={10} />{teamNames[tag.team_id]}
   </span>
  )}
@@ -612,13 +612,13 @@ export default function QrTagsPage() {
  <div className="flex gap-1">
  <Button
  onClick={() => handleDelete(tag.id)}
- className="px-2 py-1 text-xs bg-red-600 text-white rounded"
+ className="px-2 py-1 text-sm bg-red-600 text-white rounded"
  >
  Confirm
  </Button>
  <Button
  onClick={() => setDeletingTagId(null)}
- className="px-2 py-1 text-xs bg-surface-secondary text-foreground rounded"
+ className="px-2 py-1 text-sm bg-surface-secondary text-foreground rounded"
  >
  Cancel
  </Button>
@@ -673,7 +673,7 @@ export default function QrTagsPage() {
  <td className="px-4 py-3 font-mono font-bold text-foreground">
  <span>{tag.code}</span>
  {tag.team_id && teamNames[tag.team_id] && (
-  <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
+  <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
   <Users size={10} />{teamNames[tag.team_id]}
   </span>
  )}
@@ -715,13 +715,13 @@ export default function QrTagsPage() {
  <div className="flex gap-1">
  <Button
  onClick={() => handleDelete(tag.id)}
- className="px-2 py-1 text-xs bg-red-600 text-white rounded"
+ className="px-2 py-1 text-sm bg-red-600 text-white rounded"
  >
  Confirm
  </Button>
  <Button
  onClick={() => setDeletingTagId(null)}
- className="px-2 py-1 text-xs bg-surface-secondary text-foreground rounded"
+ className="px-2 py-1 text-sm bg-surface-secondary text-foreground rounded"
  >
  Cancel
  </Button>
@@ -762,7 +762,7 @@ export default function QrTagsPage() {
   <div className="flex items-center gap-2">
    <span className="font-mono font-bold text-foreground">{tag.code}</span>
    {tag.team_id && teamNames[tag.team_id] && (
-   <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
+   <span className="inline-flex items-center gap-1 px-2 py-0.5 text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
    <Users size={10} />{teamNames[tag.team_id]}
    </span>
    )}
@@ -822,7 +822,7 @@ export default function QrTagsPage() {
    <td className="px-4 py-3 font-mono font-bold text-foreground">{tag.code}</td>
    <td className="px-4 py-3 text-sm">
     {tag.team_id && teamNames[tag.team_id] && (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full">
      <Users size={10} />{teamNames[tag.team_id]}
     </span>
     )}
@@ -923,7 +923,7 @@ export default function QrTagsPage() {
  <Button
  onClick={handleGenerate}
  disabled={generating}
- className="fj-btn fj-btn-blue w-full disabled:opacity-50"
+ className="w-full disabled:opacity-50"
  >
  {generating ? 'Generating...' : `Generate ${generateQuantity} Tag${generateQuantity > 1 ? 's' : ''}`}
  </Button>
@@ -1021,7 +1021,7 @@ export default function QrTagsPage() {
  <FormActionRow>
  <Button
  onClick={handleAssign}
- className="fj-btn fj-btn-blue fj-btn-sm flex-1"
+ className="fj-btn-sm flex-1"
  >
  {(assignTargetType === 'hive' ? selectedHiveId : selectedNucId) ? 'Assign' : 'Unassign'}
  </Button>

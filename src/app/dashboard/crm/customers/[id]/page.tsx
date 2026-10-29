@@ -103,13 +103,13 @@ export default function CustomerDetailPage() {
           {customer.company && <p className="text-text-secondary">{customer.company}</p>}
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => router.push(`/dashboard/crm/orders?customer=${customer.id}`)} tone="success" className="min-h-[44px]">
+          <Button onClick={() => router.push(`/dashboard/crm/orders?customer=${customer.id}`)} tone="success" className="min-h-12">
             <Plus size={16} /> New order
           </Button>
-          <Button onClick={() => router.push(`/dashboard/crm/customers?edit=${customer.id}`)} tone="neutral" className="min-h-[44px]" aria-label="Edit customer">
+          <Button onClick={() => router.push(`/dashboard/crm/customers?edit=${customer.id}`)} tone="neutral" className="min-h-12" aria-label="Edit customer">
             <Pencil size={16} />
           </Button>
-          <Button onClick={handleDelete} tone="danger" disabled={deleting} className="min-h-[44px]" aria-label="Delete customer">
+          <Button onClick={handleDelete} tone="danger" disabled={deleting} className="min-h-12" aria-label="Delete customer">
             <Trash2 size={16} />
           </Button>
         </div>

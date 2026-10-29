@@ -125,7 +125,7 @@ export default function PurchaseItemForm({
                   type="button"
                   onClick={() => setPriority(opt.value as typeof priority)}
                   size="xs"
-                  className={`flex-1 text-xs transition-colors ${
+                  className={`flex-1 text-sm transition-colors ${
                     priority === opt.value
                       ? opt.color
                       : 'bg-surface-secondary text-text-secondary hover:bg-surface-secondary/80'

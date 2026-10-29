@@ -10,9 +10,12 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --font-dm-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --font-dm-serif: Georgia, "Times New Roman", Times, serif;
-  --font-geist-mono: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  /* Each device's own fonts (Segoe UI on Windows, Helvetica on Apple, Roboto on Android): very
+     readable, familiar and free to load, so nothing is downloaded. The names used to say DM Sans
+     and DM Serif, which were never loaded (owner decision, batch 47). */
+  --font-ui-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-ui-serif: Georgia, "Times New Roman", Times, serif;
+  --font-ui-mono: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 
   /* LIGHT THEME (Field Work - DEFAULT) */
   /* Optimized for outdoor work in bright sunlight */
@@ -171,9 +174,9 @@
   --color-viz-neutral: var(--viz-neutral);
 
   /* Fonts */
-  --font-sans: var(--font-dm-sans);
-  --font-serif: var(--font-dm-serif);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-ui-sans);
+  --font-serif: var(--font-ui-serif);
+  --font-mono: var(--font-ui-mono);
 }
 
 /* DARK THEME (Evening/Indoor Planning) */
@@ -222,7 +225,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-dm-sans), 'DM Sans', Arial, Helvetica, sans-serif;
+  font-family: var(--font-ui-sans);
 }
 
 /* Mobile-first touch optimization */
@@ -387,30 +390,6 @@ textarea::placeholder {
   outline-offset: 2px;
 }
 
-/* Glassmorphism utilities */
-@layer utilities {
-  .glass {
-    background: rgba(17, 24, 39, 0.8);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .glass-light {
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-  }
-
-  .glass-card {
-    background: rgba(30, 41, 59, 0.6);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-  }
-}
-
 /* Custom animations */
 @keyframes shimmer {
   0% {
@@ -451,10 +430,10 @@ textarea::placeholder {
 }
 
 @layer utilities {
+  /* Loading placeholders stay flat and still (batch 47): a looping sweep is an attention loop,
+     and the shorthand reset the placeholder's grey fill. */
   .animate-shimmer {
-    animation: shimmer 2s infinite linear;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-    background-size: 200% 100%;
+    background-image: none;
   }
 
   .animate-pulse-soft {

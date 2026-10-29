@@ -315,7 +315,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
               tone="success"
               icon={<Check className="w-6 h-6 text-green-600 dark:text-green-400" />}
               title="Subscription activated successfully!"
-              bodyClassName="text-xs"
+              bodyClassName="text-sm"
             >
               <p>Your subscription has been extended</p>
             </AlertPanel>
@@ -404,7 +404,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                   </AlertPanel>
                 )}
 
-                <InfoPanel tone="blue" title="Tip:" className="p-3" contentClassName="text-xs">
+                <InfoPanel tone="blue" title="Tip:" className="p-3" contentClassName="text-sm">
                   <p>
                     If your subscription is still active, the new code will extend from your current expiry date. If expired, it will start from today.
                   </p>
@@ -466,7 +466,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                   </AlertPanel>
                 )}
 
-                <InfoPanel tone="blue" title="Secure Payment:" className="p-3" contentClassName="text-xs">
+                <InfoPanel tone="blue" title="Secure Payment:" className="p-3" contentClassName="text-sm">
                   <p>You&apos;ll be redirected to Stripe for secure card payment processing.</p>
                 </InfoPanel>
 
@@ -546,7 +546,7 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
                   </AlertPanel>
                 )}
 
-                <InfoPanel tone="purple" title="Association Member Benefit:" className="p-3" contentClassName="text-xs">
+                <InfoPanel tone="purple" title="Association Member Benefit:" className="p-3" contentClassName="text-sm">
                   <p>After validating your code, you&apos;ll pay EUR 12 (50% off) instead of the standard EUR 24 rate.</p>
                 </InfoPanel>
 

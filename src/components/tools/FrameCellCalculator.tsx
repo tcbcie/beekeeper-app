@@ -238,7 +238,7 @@ export default function FrameCellCalculator() {
       {/* Reference Info */}
       <div className="bg-muted/50 dark:bg-muted/20 rounded-lg p-4 text-sm text-text-secondary">
         <p className="font-medium text-foreground mb-2">Typical Cell Counts:</p>
-        <ul className="space-y-1 text-xs">
+        <ul className="space-y-1 text-sm">
           <li>British National Deep: ~5,000-6,000 cells (both sides)</li>
           <li>Langstroth Deep: ~7,000-8,000 cells (both sides)</li>
           <li>Dadant Modified Deep: ~9,000-10,000 cells (both sides)</li>

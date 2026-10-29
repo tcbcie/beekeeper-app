@@ -1925,7 +1925,7 @@ export default function RecordsPage() {
                 <li><strong>Drone Comb Trapping:</strong> Insert drone foundation frames, allow bees to build and queen to lay, then remove and freeze before drones emerge.</li>
                 <li><strong>Brood Breaks:</strong> Cage the queen or create splits to interrupt the mite reproduction cycle.</li>
                 <li><strong>Screened Bottom Boards:</strong> Allow mites to fall through and away from the colony.</li>
-                <li><strong>Powdered Sugar Dusting:</strong> Encourages grooming behavior.</li>
+                <li><strong>Icing Sugar Dusting:</strong> Encourages grooming behaviour.</li>
                 <li><strong>Regular Monitoring:</strong> Check mite levels every 4-6 weeks during the active season.</li>
               </ul>
               <p className="text-amber-800 dark:text-amber-400 font-medium">

@@ -643,9 +643,11 @@ export default function NucInspectionPanel({ nucId, nucNumber, userId, graftId, 
                     {w.notes && <span className="text-text-tertiary">— {w.notes}</span>}
                     {!readOnly && (
                       <button
+                        type="button"
                         onClick={() => handleDeleteWeight(w.id)}
-                        className="text-red-500 hover:text-red-700 p-0.5"
+                        className="inline-flex min-h-12 min-w-12 items-center justify-center text-red-700 hover:text-red-800 dark:text-red-400"
                         title="Delete weight record"
+                        aria-label="Delete weight record"
                       >
                         <Trash2 size={14} />
                       </button>

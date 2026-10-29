@@ -758,7 +758,7 @@ export default function ProfilePage() {
                       }
                       placeholder="e.g. RZ"
                       maxLength={10}
-                      className="uppercase"
+                      className=""
                     />
                     <p className="mt-1 text-sm text-text-tertiary">
                       Used in the composite queen code (e.g. IE-RZ-7W-2026). Unique across HiveCraic. If blank, your initials are used.
@@ -790,7 +790,7 @@ export default function ProfilePage() {
                       <div>
                         <FieldLabel className="mb-1">
                           Local Beekeeping Association
-                          <span className="ml-2 text-xs text-text-tertiary font-normal">
+                          <span className="ml-2 text-sm text-text-tertiary font-normal">
                             (If you are a member of a local association, select from list below)
                           </span>
                         </FieldLabel>
@@ -1302,7 +1302,7 @@ export default function ProfilePage() {
 
  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
  <p className="text-blue-900 dark:text-blue-100 font-semibold text-sm mb-1">Password Requirements:</p>
- <ul className="list-disc pl-4 text-blue-800 dark:text-blue-200 text-xs space-y-1">
+ <ul className="list-disc pl-4 text-blue-800 dark:text-blue-200 text-sm space-y-1">
  <li>At least 8 characters long</li>
  <li>Different from your current password</li>
  <li>Both new password fields must match</li>
@@ -1364,7 +1364,7 @@ export default function ProfilePage() {
  >
  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
  <p className="text-blue-900 dark:text-blue-100 font-semibold text-sm mb-1.5">What Happens:</p>
- <ul className="list-disc pl-4 text-blue-800 dark:text-blue-200 text-xs space-y-1">
+ <ul className="list-disc pl-4 text-blue-800 dark:text-blue-200 text-sm space-y-1">
  <li>Account deactivated immediately</li>
  <li>Data retained for 12 months</li>
  <li>Reactivation available anytime</li>
@@ -1386,8 +1386,8 @@ export default function ProfilePage() {
  </div>
 
  <div className="pt-2">
- <FieldLabel className="text-xs mb-1.5">
- Type <span className="font-mono bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded text-red-600 dark:text-red-400 text-xs">DELETE</span> to confirm:
+ <FieldLabel className="text-sm mb-1.5">
+ Type <span className="font-mono bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded text-red-600 dark:text-red-400 text-sm">DELETE</span> to confirm:
  </FieldLabel>
  <TextInput
  type="text"

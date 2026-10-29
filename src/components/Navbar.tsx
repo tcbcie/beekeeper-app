@@ -95,14 +95,15 @@ export default function Navbar({ currentUser }: NavbarProps) {
           : 'Your subscription has expired. Renew now to continue using the app.'
 
   return (
-    <nav className="bg-surface/80 dark:bg-surface/80 backdrop-blur-xl shadow-lg border-b border-border sticky top-0 z-30">
+    <nav className="bg-surface border-b border-border sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
         <div className="flex justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl sm:text-2xl font-bold text-forest-600 dark:text-forest-400 whitespace-nowrap flex items-center gap-2">
-              <Image src="/logo.png" alt="HiveCraic" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
+            {/* The app name, not the page's heading: each page has its own h1 */}
+            <p className="text-xl sm:text-2xl font-bold text-forest-800 dark:text-forest-400 whitespace-nowrap flex items-center gap-2">
+              <Image src="/logo.png" alt="" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
               HiveCraic
-            </h1>
+            </p>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden sm:flex items-center gap-2">
@@ -148,7 +149,7 @@ export default function Navbar({ currentUser }: NavbarProps) {
                   <AlertCircle
                     className={`w-5 h-5 ${
                       subscriptionStatus.status === 'no_subscription'
-                        ? 'text-blue-600 dark:text-blue-400'
+                        ? 'text-amber-700 dark:text-amber-400'
                         : subscriptionStatus.status === 'expiring_soon'
                         ? 'text-yellow-600 dark:text-yellow-400'
                         : subscriptionStatus.status === 'expiring_very_soon'
@@ -167,15 +168,16 @@ export default function Navbar({ currentUser }: NavbarProps) {
                 </div>
               </div>
             )}
+            {/* Logging out is routine, so a plain button: red is kept for what is dangerous */}
             <Button
               onClick={handleLogout}
-              tone="danger"
+              tone="neutral"
               size="sm"
               className="min-h-[48px] px-3 touch-manipulation sm:px-4"
-              aria-label="Logout"
+              aria-label="Log out"
             >
               <LogOut size={16} />
-              <span className="hidden sm:inline">Logout</span>
+              <span className="hidden sm:inline">Log out</span>
             </Button>
           </div>
         </div>

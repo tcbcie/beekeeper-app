@@ -123,7 +123,7 @@ export default function ProvenanceExplainer({ activeTab }: ProvenanceExplainerPr
                     <Icon size={18} className="flex-shrink-0 text-amber-700 dark:text-amber-400" aria-hidden="true" />
                     <span className="text-base font-semibold text-foreground">{step.title}</span>
                     {isActive && (
-                      <span className="rounded-full bg-amber-600 px-2 py-0.5 text-xs font-semibold text-white">
+                      <span className="rounded-full bg-amber-600 px-2 py-0.5 text-sm font-semibold text-white">
                         You are here
                       </span>
                     )}

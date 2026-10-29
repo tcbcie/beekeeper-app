@@ -1875,7 +1875,7 @@ export default function InspectionForm({
                     <div key={`super-fullness-${i}`} className="rounded-xl border border-border bg-surface-secondary/60 p-3">
                       <div className="mb-2 flex items-center justify-between gap-3">
                         <label htmlFor={`super-fullness-${i}`} className="text-sm font-medium text-text-secondary">
-                          🍯 Super {i + 1}
+                          Super {i + 1}
                         </label>
                         <span className="min-w-[3.5rem] rounded-full bg-amber-100 px-3 py-1 text-center text-lg font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
                           {value}%
@@ -2094,7 +2094,7 @@ export default function InspectionForm({
               {followUpDrafts.map((draft, index) => (
                 <div key={index} className="rounded-lg border border-border bg-surface-secondary/40 p-3 space-y-3">
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-sm font-semibold text-text-secondary uppercase tracking-wide">Task {index + 1}</span>
+                    <span className="text-sm font-semibold text-text-secondary ">Task {index + 1}</span>
                     <Button
                       unstyled
                       type="button"
@@ -2392,7 +2392,7 @@ export default function InspectionForm({
             unstyled
               type="submit"
               disabled={submitting || fetchingWeather || outstandingErrors.length > 0}
-              className="px-6 py-3 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 active:bg-blue-800 dark:active:bg-blue-700 disabled:bg-surface-secondary disabled:cursor-not-allowed transition-all touch-manipulation font-medium w-full sm:w-auto"
+              className="px-6 py-3 min-h-[48px] bg-forest-800 text-white rounded-lg hover:bg-forest-900 active:bg-forest-900 disabled:bg-surface-secondary disabled:cursor-not-allowed transition-all touch-manipulation font-medium w-full sm:w-auto"
             >
               {submitting ? 'Saving...' : fetchingWeather ? 'Fetching Weather...' : isEditing ? 'Update' : 'Save'} Inspection
             </Button>

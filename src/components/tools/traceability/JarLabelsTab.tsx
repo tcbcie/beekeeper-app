@@ -695,7 +695,7 @@ export default function JarLabelsTab({
                     {label.code}
                   </span>
                   {!label.is_active && (
-                    <span className="rounded bg-surface-secondary px-2 py-0.5 text-xs text-text-secondary">
+                    <span className="rounded bg-surface-secondary px-2 py-0.5 text-sm text-text-secondary">
                       Inactive
                     </span>
                   )}

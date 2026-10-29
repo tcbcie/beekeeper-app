@@ -687,7 +687,7 @@ export default function ForagingHoursTab({ userId }: ForagingHoursTabProps) {
           </div>
 
           {/* Formula legend */}
-          <div className="text-xs text-text-tertiary space-y-0.5">
+          <div className="text-sm text-text-tertiary space-y-0.5">
             <p>F<sub>day</sub> = S<sub>hrs</sub> × W<sub>frac</sub> × R<sub>pen</sub>, where S<sub>hrs</sub> = sunshine duration (hours), W<sub>frac</sub> = acos((2T<sub>thresh</sub> − T<sub>max</sub> − T<sub>min</sub>) / (T<sub>max</sub> − T<sub>min</sub>)) / π, T<sub>thresh</sub> = 12°C.</p>
             <p>Rain penalty R<sub>pen</sub>: {'<'} 1 mm → 1.0, 1–5 mm → 0.75, {'>'} 5 mm → 0.50. Returns 0 if T<sub>max</sub> {'<'} 12°C or S<sub>hrs</sub> = 0.</p>
           </div>

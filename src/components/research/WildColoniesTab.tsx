@@ -586,7 +586,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  {/* Location Aid Photo */}
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-2">Location Aid Photo</label>
- <p className="text-xs text-text-tertiary mb-2">A photo to help find the location</p>
+ <p className="text-sm text-text-tertiary mb-2">A photo to help find the location</p>
  <div className="flex items-start">
  {locationImagePreview ? (
  <div className="relative">
@@ -608,7 +608,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  ) : (
  <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
  <Camera size={24} className="text-text-tertiary mb-1" />
- <span className="text-xs text-text-tertiary text-center">Location</span>
+ <span className="text-sm text-text-tertiary text-center">Location</span>
  <input
  type="file"
  accept="image/*"
@@ -623,7 +623,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  {/* Colony Photo */}
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-2">Colony Photo</label>
- <p className="text-xs text-text-tertiary mb-2">A photo of the colony entrance or bees</p>
+ <p className="text-sm text-text-tertiary mb-2">A photo of the colony entrance or bees</p>
  <div className="flex items-start">
  {colonyImagePreview ? (
  <div className="relative">
@@ -645,7 +645,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  ) : (
  <label className="flex flex-col items-center justify-center w-30 h-30 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-amber-500 transition-colors">
  <Camera size={24} className="text-text-tertiary mb-1" />
- <span className="text-xs text-text-tertiary text-center">Colony</span>
+ <span className="text-sm text-text-tertiary text-center">Colony</span>
  <input
  type="file"
  accept="image/*"
@@ -740,7 +740,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <div className="overflow-x-auto">
  <table className="w-full text-left border-collapse">
  <thead>
- <tr className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 text-xs uppercase text-text-secondary font-semibold">
+ <tr className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 text-sm text-text-secondary font-semibold">
  <th className="px-4 py-3 w-16">Actions</th>
  <th className="px-4 py-3">Date</th>
  <th className="px-4 py-3">Location</th>
@@ -898,7 +898,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  <div className="overflow-x-auto">
  <table className="w-full text-left border-collapse">
  <thead>
- <tr className="bg-surface-secondary border-b border-border text-xs uppercase text-text-secondary font-semibold">
+ <tr className="bg-surface-secondary border-b border-border text-sm text-text-secondary font-semibold">
  <th className="px-1 py-2 w-8"></th>
  <th className="px-2 py-2">Actions</th>
  <th className="px-2 py-2">Status</th>
@@ -945,7 +945,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  </Button>
  </td>
  <td className="px-2 py-2">
- <span className={`px-2 py-0.5 text-xs font-medium rounded-full inline-flex items-center gap-1.5 ${
+ <span className={`px-2 py-0.5 text-sm font-medium rounded-full inline-flex items-center gap-1.5 ${
  colony.status === 'confirmed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
  colony.status === 'observed' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' :
  colony.status === 'unconfirmed' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
@@ -957,12 +957,12 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  </td>
  <td className="px-2 py-2">
  {colony.inspection_count && colony.inspection_count > 0 ? (
- <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+ <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-sm font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
  <ClipboardList size={10} />
  {colony.inspection_count}
  </span>
  ) : (
- <span className="text-text-tertiary text-xs">-</span>
+ <span className="text-text-tertiary text-sm">-</span>
  )}
  </td>
  <td className="hidden md:table-cell px-2 py-2 text-sm text-text-secondary">
@@ -1009,7 +1009,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  onClick={() => window.open(colony.image_url_location!, '_blank')}
  />
  ) : (
- <span className="text-text-tertiary text-xs">-</span>
+ <span className="text-text-tertiary text-sm">-</span>
  )}
  </td>
  <td className="hidden md:table-cell px-2 py-2" onClick={(e) => e.stopPropagation()}>
@@ -1023,7 +1023,7 @@ export default function WildColoniesTab({ userId }: WildColoniesTabProps) {
  onClick={() => window.open(colony.image_url!, '_blank')}
  />
  ) : (
- <span className="text-text-tertiary text-xs">-</span>
+ <span className="text-text-tertiary text-sm">-</span>
  )}
  </td>
  </tr>

@@ -173,7 +173,7 @@ function LoginForm() {
         <Panel className="overflow-hidden" padding="lg">
           <div className="space-y-7">
             <div className="flex justify-center">
-              <span className="inline-flex items-center rounded-full border border-amber-300/70 bg-amber-100/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+              <span className="inline-flex items-center rounded-full border border-amber-300/70 bg-amber-100/80 px-3 py-1 text-sm font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
                 Field Journal Access
               </span>
             </div>
@@ -319,7 +319,7 @@ function LoginForm() {
               <span className="font-medium text-foreground">Continue with Google</span>
             </Button>
 
-            <div className="flex items-center justify-center gap-2 text-xs text-text-tertiary">
+            <div className="flex items-center justify-center gap-2 text-sm text-text-tertiary">
               <span className="rounded-full border border-forest-200 bg-forest-50 px-2 py-1 font-mono text-forest-700 dark:border-forest-900 dark:bg-forest-950/30 dark:text-forest-300">
                 v1.12.1
               </span>

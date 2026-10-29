@@ -247,7 +247,7 @@ export default function DropdownManagement() {
                   type="text"
                   value={categoryFormData.category_name}
                   onChange={(e) => setCategoryFormData({ ...categoryFormData, category_name: e.target.value })}
-                  placeholder="e.g., Queen Marking Colors"
+                  placeholder="e.g., Queen Marking Colours"
                   required
                 />
               </div>
@@ -410,19 +410,19 @@ export default function DropdownManagement() {
             <table className="min-w-full">
               <thead>
                 <TableHeaderRow className="bg-surface dark:bg-background border-b border-border">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-sm font-medium text-text-tertiary ">
                     Category
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-sm font-medium text-text-tertiary ">
                     Value
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-sm font-medium text-text-tertiary ">
                     Order
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-sm font-medium text-text-tertiary ">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-text-tertiary uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-sm font-medium text-text-tertiary ">
                     Actions
                   </th>
                 </TableHeaderRow>
@@ -440,7 +440,7 @@ export default function DropdownManagement() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-foreground">{category.category_name}</div>
-                          <div className="text-xs text-text-tertiary font-mono">{category.category_key}</div>
+                          <div className="text-sm text-text-tertiary font-mono">{category.category_key}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4">

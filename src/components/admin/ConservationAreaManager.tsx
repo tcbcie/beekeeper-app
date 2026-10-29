@@ -171,13 +171,13 @@ export default function ConservationAreaManager() {
   const typeBadge = (type: string) => {
     if (type === 'apiary') {
       return (
-        <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+        <span className="px-2 py-0.5 text-sm rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
           Apiary-linked
         </span>
       )
     }
     return (
-      <span className="px-2 py-0.5 text-xs rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-700">
+      <span className="px-2 py-0.5 text-sm rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-700">
         Land plot
       </span>
     )
@@ -238,7 +238,7 @@ export default function ConservationAreaManager() {
                   <td className="px-4 py-3 text-text-secondary">{area.country}</td>
                   <td className="px-4 py-3 text-text-secondary">{area.radius_km}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${area.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-surface-secondary text-text-tertiary border border-border'}`}>
+                    <span className={`px-2 py-0.5 text-sm rounded-full ${area.is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-surface-secondary text-text-tertiary border border-border'}`}>
                       {area.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </td>
@@ -264,7 +264,7 @@ export default function ConservationAreaManager() {
                           </Button>
                         </>
                       ) : (
-                        <span className="text-xs text-text-tertiary italic">Owner only</span>
+                        <span className="text-sm text-text-tertiary italic">Owner only</span>
                       )}
                     </div>
                   </td>

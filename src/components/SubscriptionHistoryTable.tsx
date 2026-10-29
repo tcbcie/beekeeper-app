@@ -79,16 +79,16 @@ export default function SubscriptionHistoryTable() {
         <table className="w-full">
           <thead className="bg-surface-elevated dark:bg-surface-elevated">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-sm font-medium text-text-secondary ">
                 Code
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-sm font-medium text-text-secondary ">
                 Activated
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-sm font-medium text-text-secondary ">
                 Expires
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-sm font-medium text-text-secondary ">
                 Status
               </th>
             </tr>
@@ -106,7 +106,7 @@ export default function SubscriptionHistoryTable() {
                         {item.code}
                       </span>
                       {isCurrent && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-forest-100 dark:bg-forest-900/50 text-forest-800 dark:text-forest-300">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-sm font-medium bg-forest-100 dark:bg-forest-900/50 text-forest-800 dark:text-forest-300">
                           Current
                         </span>
                       )}
@@ -120,15 +120,15 @@ export default function SubscriptionHistoryTable() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {isExpired ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-secondary text-text-secondary">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-surface-secondary text-text-secondary">
                         Expired
                       </span>
                     ) : isCurrent ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-300">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 dark:bg-green-950/30 text-green-800 dark:text-green-300">
                         Active
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-secondary text-text-secondary">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-surface-secondary text-text-secondary">
                         Past
                       </span>
                     )}

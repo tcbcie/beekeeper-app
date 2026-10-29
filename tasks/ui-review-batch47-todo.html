@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 47: UI Review</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    .decide { background: #fff7ed; border-left: 4px solid #ea580c; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 47: UI Review</h1>
+<p><strong>Status:</strong> Implemented 29/10/2026, waiting for your test. This is the UI review you added on 25/10/2026, done with the <code>design-taste-frontend</code> skill and its rules for app screens.</p>
+<p>How it was checked:</p>
+<ul>
+  <li><strong>Lint:</strong> the skill's design check ran over all the code.</li>
+  <li><strong>Login page:</strong> measured in a real browser at computer, tablet and phone width.</li>
+  <li><strong>Signed-in screens:</strong> I took screenshots of six of them in your own Chrome (dashboard, hives, records, queens, apiaries, reports), looking only.</li>
+  <li><strong>Code review:</strong> three agents went through the app's frame, the main working screens and the remaining screens.</li>
+</ul>
+<p>This is <strong>not a redesign</strong>. The green and amber field-journal look stays. The changes fix what hurts reading and tapping for 50+ users, then the clearest inconsistencies. Class and wording changes only.</p>
+
+<h2>A. Things that get in the way (fix first)</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>The install banner covers the Login button on phones.</strong> It shows on every page and floats as if a bottom bar were there, so on the login screen it sits over Log in. It will only show inside the app, above the bottom bar. Its white text on light orange is hard to read (about 2–3:1), so it becomes a solid dark amber. The notification banner gets the same colour.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>The "Update available" card squeezes into a narrow column on phones</strong> and grows up over the page. It gets a proper width.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Text that's too faint to read comfortably:</strong>
+  <ul>
+    <li><strong>White text on the mid-green buttons</strong> (Add Hive, Done, Clone, New Record) is 3.3:1. They'll use the darker green the app already has for this, at 7:1.</li>
+    <li><strong>The phone bottom bar:</strong> the label for the screen you're on is light green on white (3.3:1). It becomes dark green.</li>
+    <li><strong>The dashboard's Admin label</strong> is pale purple on purple (about 1.6:1). <strong>The ticket count and status chips</strong> are white on light colours and two of them pulse. All get dark, steady colours, and the count says what it counts.</li>
+    <li><strong>DAFM report tiles:</strong> the four summary tiles are white text on bright gradients (about 2:1). They become plain tiles with dark text.</li>
+    <li><strong>Dark mode:</strong> some figures on inspection, varroa and harvest cards almost disappear. They get dark-mode colours.</li>
+    <li><strong>Lineage page:</strong> labels are small and faded. They become 14px at full strength.</li>
+  </ul>
+</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Delete as loud as Edit:</strong> each apiary card has a big red Delete the same size as Edit, side by side. Delete becomes a smaller red-text button, as on the hive card's menu. On the hives bulk bar, the four coloured fills (Move blue, Treatment red, Feeding amber, Clone green) become plain buttons with their icons.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Buttons that lost their colour by accident:</strong> on the Apiaries page "Add Apiary" and Save are meant to be green but show grey, because of a CSS ordering slip. So the loudest things on the page are each card's Edit and Delete. They'll use the button's proper green setting. The same slip appears on the QR tags page and Manage Nucs.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Tap targets under 48px (about 22):</strong> small clear-search ✕ buttons, Save/Cancel in the queen tracker, cell Select all, distribution actions, the period buttons on Batches and a few CRM buttons. All go to 48px.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>✓ and ✗ as answers</strong> in report tables and admin lists (11 places): screen readers read them as "check mark" and "ballot x", and they're hard to tell apart at a glance. They become the words Yes and No, and Approve and Reject on buttons.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Mel's chat button covers the bottom-right corner</strong> of every page; the page now leaves room for it.</div>
+
+<h2>B. Text under 14px and tiny capital labels</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Text under 14px:</strong> earlier batches fixed the research screens, but 329 bits of text across the app are still 12px. They include password rules, "Type DELETE to confirm", save messages, the queen tracker and the DAFM report. The sidebar's group headings (Manage, Activity) are 12px as well, boxed like buttons.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Tiny capitals:</strong> about 105 labels and table headers are small letter-spaced capitals ("ACTIONS", "COLOR", "DASHBOARD" above the dashboard title). They're harder to read than normal sentence case, so they become ordinary 14px words.</div>
+<div class="decide"><strong>Decision 1: how far to take the 14px sweep.</strong> <strong>Done: all screens</strong> (you approved). 323 bits of text went from 12px to 14px, and 157 capital labels became plain words, in 81 files. Printed labels, the PDF invoice, code entry boxes and your HiveListCard were left as they are.</div>
+
+<h2>C. Consistency</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Emoji in titles and labels</strong> ("Queens 👑", "Apiaries 📍", "Tasks 📅", CRM titles, task labels, the 🥇🥈🥉 ranking): about 20 places. Removed, and the ranking shows 1, 2, 3.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>American spellings:</strong> the queens table says "COLOR", the colour list's placeholder "Colors", and the IPM tips "behavior". They become Colour, Colours and behaviour. "Powdered sugar" becomes "icing sugar".</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Blue where the app's selection colour is green:</strong> the Records time-period chips, the Tasks view toggles and the Save Inspection button are blue. Everything else in the app selects and saves in green. They become green, and the chips also tell screen readers which one is on. "View on community map" on apiary cards is purple and becomes plain.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Red Logout button:</strong> red means danger, and logging out is routine. It becomes a plain "Log out".</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Scale changes coloured by direction:</strong> any weight change of zero or more shows green, so "no change" looks like good news. A weight going up or down isn't good or bad in itself. Changes show in dark text with their sign, and a zero in grey.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Two page titles:</strong> "HiveCraic" in the top bar is marked as the page's main heading, so every page has two. It becomes plain text, and each page's own title is the one heading.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Small polish:</strong>
+  <ul>
+    <li><strong>Top bar:</strong> the see-through blurred bar becomes solid with a thin line under it.</li>
+    <li><strong>Loading:</strong> the placeholder shimmer stops.</li>
+    <li><strong>Unused styles:</strong> three glass effects and two blurred colour blobs that nothing uses are removed.</li>
+  </ul>
+</div>
+
+<h2>D. The font</h2>
+<div class="note">The styles are named after <strong>DM Sans</strong>, but the name actually points to each device's own font: Segoe UI on Windows, Helvetica on iPhones, Roboto on Android. DM Sans is never downloaded. A Google font download was removed on 28/02/2026 because it broke building without internet.</div>
+<div class="decide"><strong>Decision 2: the font.</strong>
+  <ul>
+    <li><strong>(a) Load DM Sans</strong> from our own files: the free font file goes into the app, so it works offline and needs no new web address. The app then looks the same on every device. It means downloading the font package from npm (about 40 KB to users) and re-checking the phone bottom bar, whose label widths were measured against today's fonts.</li>
+    <li><strong>(b) Keep the device fonts</strong>, which are very readable, familiar and cost nothing to load. Rename the setting so the code says what it does.</li>
+  </ul>
+  <strong>Done: (b)</strong> (you approved). The device fonts stay, and the setting is now named for what it is (<code>--font-ui-sans</code>).</div>
+
+<h2>Left out on purpose</h2>
+<div class="note">These would change the look of many screens at once, so each needs its own decision:
+  <ul>
+    <li><strong>Dark mode's navy colours.</strong> The skill's rules ask for true neutral darks.</li>
+    <li><strong>Blue and purple button styles</strong>, used about 120 times, mostly on admin screens.</li>
+    <li><strong>Shadows</strong> on about 110 cards that already have a border.</li>
+    <li><strong>The field-journal background texture and glow.</strong></li>
+    <li><strong>Right-aligned numbers</strong> in report tables.</li>
+  </ul>
+Also, <code>HiveListCard.tsx</code> has your own uncommitted changes, so I won't touch it. Two things to note for you there: its "Overview &amp; Records" button has the same faint white-on-green (use <code>tone="success"</code>), and it has about ten emoji.</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint, the whole test suite (updating tests that look for the old wording), the design lint again for before-and-after counts, the qa-engineer audit, and a fresh browser check of the login page at phone width.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/ui-review-batch47-plan.md</code>, the design system notes, and memory.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>On a phone, open the login page: the install banner no longer covers Log in.</li>
+    <li>Apiaries: "Add Apiary" is green; Delete on each card is a smaller red-text button.</li>
+    <li>Records: the selected time period is green; small text and table headers read more easily.</li>
+    <li>Try dark mode on an inspection card: every figure is readable.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Login on a phone</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Install banner over the Log in button</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Banner only inside the app, solid dark amber</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Update card on a phone</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Narrow column growing up the page</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Full width card</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Faint text</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Bottom bar, Admin pill, ticket chips, DAFM tiles, dark-mode figures</td><td style="border:1px solid #e7d9b8;padding:0.4rem">All dark or plain, readable</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Apiary cards</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Purple map, blue Edit, red Delete at equal size</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Plain map and Edit; small red-text Delete</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Add Apiary and Save</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Grey (colour lost in the CSS)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Green</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Small tap targets</td><td style="border:1px solid #e7d9b8;padding:0.4rem">About 22 under 48px</td><td style="border:1px solid #e7d9b8;padding:0.4rem">48px</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">✓ / ✗</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Symbols read as "check mark" / "ballot x"</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Yes / No, Approve / Reject</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">12px text</td><td style="border:1px solid #e7d9b8;padding:0.4rem">323 places</td><td style="border:1px solid #e7d9b8;padding:0.4rem">14px</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Tiny capitals</td><td style="border:1px solid #e7d9b8;padding:0.4rem">157 labels and headers</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Sentence case</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Emoji in titles and labels</td><td style="border:1px solid #e7d9b8;padding:0.4rem">About 20</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Removed; ranking shows 1, 2, 3</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Spellings</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Color, Colors, behavior, powdered sugar</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Colour, Colours, behaviour, icing sugar</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Selections and saves</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Blue on Records, Tasks and Save Inspection</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Green</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Log out</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Red button</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Plain button</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Scale changes</td><td style="border:1px solid #e7d9b8;padding:0.4rem">No change shown green</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Ink with sign; zero grey</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Main headings</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Two per page</td><td style="border:1px solid #e7d9b8;padding:0.4rem">One</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Design lint</td><td style="border:1px solid #e7d9b8;padding:0.4rem">347 FAIL, 544 WARN</td><td style="border:1px solid #e7d9b8;padding:0.4rem">241 FAIL, 530 WARN</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0 (outside the design skill folder); 869 tests pass</td></tr>
+</table>
+<ul>
+  <li><strong>Correction:</strong> the review flagged white on the mid-green buttons as too faint. An existing app-wide rule already darkens those to 7:1, so they needed no change.</li>
+  <li><strong>QA audit:</strong> no Critical or High issues. One Medium was fixed: task priority badges had relied on the removed capitals and would have shown "high" in lower case. They now show "High".</li>
+  <li><strong>Not checked in a browser yet:</strong> the login page on a phone. The change goes live with the deploy, so please check it (step 1 above).</li>
+  <li><strong>Left for separate decisions:</strong> the dark theme's navy colours, the blue and purple button styles on admin screens, card shadows, the background texture, right-aligned report numbers and the 36px dashboard title.</li>
+</ul>
+</body>
+</html>

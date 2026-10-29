@@ -29,4 +29,4 @@ No database queries or schema changes are required for this feature.
 ## 6. Implementation Notes
 * Removed `next/font/google` imports and loader initialisation in `src/app/layout.tsx`.
 * Preserved app-wide font variable names and set offline-safe font stacks in `src/app/globals.css`.
-* Kept typography wiring unchanged for components that already depend on `--font-dm-sans`, `--font-dm-serif`, and `--font-geist-mono`.
+* Kept typography wiring unchanged for components that already depend on `--font-dm-sans`, `--font-dm-serif`, and `--font-geist-mono`. *(Batch 47, 29/10/2026: renamed `--font-ui-sans`, `--font-ui-serif` and `--font-ui-mono`, since they hold the device fonts; the owner chose to keep the device fonts rather than load DM Sans.)*

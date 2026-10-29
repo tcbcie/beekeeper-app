@@ -47,7 +47,7 @@ describe('UpdateNotification', () => {
     render(<UpdateNotification />)
 
     await waitFor(() => {
-      expect(screen.getByText('Update Available')).toBeInTheDocument()
+      expect(screen.getByText('Update available')).toBeInTheDocument()
     })
 
     expect(screen.getByText(/A new version of HiveCraic is ready/i)).toBeInTheDocument()
@@ -166,7 +166,7 @@ describe('UpdateNotification', () => {
 
     // Should now be visible
     await waitFor(() => {
-      expect(screen.getByText('Update Available')).toBeInTheDocument()
+      expect(screen.getByText('Update available')).toBeInTheDocument()
     })
   })
 
@@ -183,7 +183,7 @@ describe('UpdateNotification', () => {
 
     // Initially visible
     await waitFor(() => {
-      expect(screen.getByText('Update Available')).toBeInTheDocument()
+      expect(screen.getByText('Update available')).toBeInTheDocument()
     })
 
     // Simulate state change to no-update
@@ -206,7 +206,7 @@ describe('UpdateNotification', () => {
     const { container } = render(<UpdateNotification />)
 
     await waitFor(() => {
-      expect(screen.getByText('Update Available')).toBeInTheDocument()
+      expect(screen.getByText('Update available')).toBeInTheDocument()
     })
 
     // Check for SVG icon

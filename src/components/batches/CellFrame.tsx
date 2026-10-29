@@ -61,7 +61,7 @@ export default function CellFrame({
         <p className="text-sm text-text-secondary mb-3">
           Generate individual cell records to track each graft&apos;s progress from cup to mated queen.
         </p>
-        <ul className="text-xs text-text-tertiary space-y-1 max-w-xs mx-auto text-left">
+        <ul className="text-sm text-text-tertiary space-y-1 max-w-xs mx-auto text-left">
           <li className="flex items-start gap-1.5">
             <span className="text-amber-600 dark:text-amber-400 mt-0.5">&#x2022;</span>
             Creates a tracking record for each cell in your frame
@@ -85,11 +85,11 @@ export default function CellFrame({
       {selectMode && (
         <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-forest-200 bg-forest-50 dark:border-forest-800 dark:bg-forest-950/20 p-3">
           <span className="text-sm font-medium text-foreground">{selectedIds.size} selected</span>
-          <Button type="button" onClick={selectAll} className="text-xs text-forest-600 dark:text-forest-400 hover:underline">
+          <Button type="button" onClick={selectAll} className="text-sm text-forest-600 dark:text-forest-400 hover:underline">
             Select All
           </Button>
           {selectedIds.size > 0 && (
-            <Button type="button" onClick={deselectAll} className="text-xs text-text-secondary hover:underline">
+            <Button type="button" onClick={deselectAll} className="text-sm text-text-secondary hover:underline">
               Deselect All
             </Button>
           )}
@@ -114,7 +114,7 @@ export default function CellFrame({
           <Button
             type="button"
             onClick={handleBulkDelete}
-            className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
+            className="px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1"
           >
             <Trash2 size={12} />
             Delete
@@ -124,11 +124,11 @@ export default function CellFrame({
 
       {/* Frame Header */}
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs font-medium text-text-secondary uppercase tracking-wide">Cell Frame</span>
+        <span className="text-sm font-medium text-text-secondary ">Cell Frame</span>
         <Button
           type="button"
           onClick={() => setFrameCollapsed(prev => !prev)}
-          className="flex items-center gap-1 rounded border border-border bg-surface/80 px-2 py-1.5 text-xs text-text-tertiary hover:bg-surface-elevated hover:text-foreground dark:bg-surface-elevated/80"
+          className="flex items-center gap-1 rounded border border-border bg-surface/80 px-2 py-1.5 text-sm text-text-tertiary hover:bg-surface-elevated hover:text-foreground dark:bg-surface-elevated/80"
         >
           {frameCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
           {frameCollapsed ? 'Show' : 'Hide'}

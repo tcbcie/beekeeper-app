@@ -25,7 +25,7 @@ export default function GraftHelpBanner({ show, onClose }: GraftHelpBannerProps)
         <X size={14} />
       </IconButton>
       <h5 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">How Graft Tracking Works</h5>
-      <div className="text-xs text-blue-700 dark:text-blue-300 space-y-2">
+      <div className="text-sm text-blue-700 dark:text-blue-300 space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`rounded px-2 py-0.5 font-medium ${getStatusChipClassName('grafted')}`}>Grafted</span>
           <span className="text-blue-400 dark:text-blue-500">&rarr;</span>

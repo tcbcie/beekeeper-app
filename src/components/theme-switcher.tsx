@@ -44,7 +44,7 @@ export function ThemeSwitcher() {
               {label}
             </span>
             <span
-              className={`text-xs ${
+              className={`text-sm ${
                 theme === value
                   ? 'text-text-secondary'
                   : 'text-text-tertiary'

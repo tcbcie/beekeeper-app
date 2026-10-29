@@ -89,7 +89,7 @@ function SortableTh({ label, colKey, sortKey, sortDir, onToggle, paddingClass = 
     <th
       scope="col"
       aria-sort={ariaSort}
-      className={`${paddingClass} py-3 text-left text-sm font-medium text-text-tertiary uppercase`}
+      className={`${paddingClass} py-3 text-left text-sm font-medium text-text-tertiary `}
     >
       <button
         type="button"
@@ -496,7 +496,7 @@ export default function QueensPage() {
  return (
  <div className="space-y-6">
  <div className="flex justify-between items-center">
- <h1 className="text-3xl font-bold text-foreground">Queens 👑</h1>
+ <h1 className="text-3xl font-bold text-foreground">Queens</h1>
  <div className="flex gap-2">
  <Button
  onClick={handleCompare}
@@ -775,16 +775,16 @@ export default function QueensPage() {
  <table className="min-w-full divide-y divide-border">
  <thead className="bg-surface-secondary">
  <tr>
- <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary ">
  Actions
  </th>
  <SortableTh label="Queen Number" colKey="queen_number" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
  <SortableTh label="Mother" colKey="mother" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
  <SortableTh label="Age" colKey="age" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
- <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">
- Color
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary ">
+ Colour
  </th>
- <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary ">
  Hive
  </th>
  <SortableTh label="Apiary" colKey="apiary" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} paddingClass="px-3" />

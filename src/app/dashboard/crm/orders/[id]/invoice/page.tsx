@@ -154,10 +154,10 @@ export default function OrderInvoicePage() {
           closeOnBackdrop
           footer={
             <div className="border-t border-border px-6 py-4 flex justify-end gap-3">
-              <Button onClick={() => setEmailOpen(false)} tone="neutral" disabled={sending} className="min-h-[44px] px-5">
+              <Button onClick={() => setEmailOpen(false)} tone="neutral" disabled={sending} className="min-h-12 px-5">
                 Cancel
               </Button>
-              <Button onClick={handleSendEmail} tone="success" disabled={sending} className="min-h-[44px] px-5">
+              <Button onClick={handleSendEmail} tone="success" disabled={sending} className="min-h-12 px-5">
                 <Mail size={16} /> {sending ? 'Sending…' : 'Send'}
               </Button>
             </div>

@@ -783,28 +783,28 @@ export default function HivesPage() {
  </span>
  <Button
  onClick={() => setShowMoveModal(true)}
- className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2 whitespace-nowrap"
+ className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] rounded-lg font-medium flex items-center justify-center gap-2 whitespace-nowrap"
  >
  <FolderInput size={18} className="flex-shrink-0" />
  <span>Move<span className="hidden sm:inline"> to apiary</span></span>
  </Button>
  <Button
  onClick={() => void openBulkModal('treatment')}
- className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium flex items-center justify-center gap-2 whitespace-nowrap"
+ className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] rounded-lg font-medium flex items-center justify-center gap-2 whitespace-nowrap"
  >
  <Syringe size={18} className="flex-shrink-0" />
  <span>Treat<span className="hidden sm:inline">ment</span></span>
  </Button>
  <Button
  onClick={() => void openBulkModal('feeding')}
- className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] bg-amber-600 dark:bg-amber-500 text-white rounded-lg hover:bg-amber-700 dark:hover:bg-amber-600 font-medium flex items-center justify-center gap-2 whitespace-nowrap"
+ className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] rounded-lg font-medium flex items-center justify-center gap-2 whitespace-nowrap"
  >
  <Droplet size={18} className="flex-shrink-0" />
  <span>Feed<span className="hidden sm:inline">ing</span></span>
  </Button>
  <Button
  onClick={handleBulkClone}
- className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 font-medium flex items-center justify-center gap-2 whitespace-nowrap"
+ className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] rounded-lg font-medium flex items-center justify-center gap-2 whitespace-nowrap"
  >
  <Copy size={18} className="flex-shrink-0" />
  Clone

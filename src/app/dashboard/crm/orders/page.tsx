@@ -297,7 +297,7 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-foreground">Orders 🧾</h1>
+        <h1 className="text-3xl font-bold text-foreground">Orders</h1>
         <Button
           onClick={() => (showForm ? resetForm() : setShowForm(true))}
           tone="success"

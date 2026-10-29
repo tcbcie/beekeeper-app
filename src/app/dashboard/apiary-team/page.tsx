@@ -820,7 +820,7 @@ export default function ApiaryTeamPage() {
                       <div className="flex flex-col gap-3 mb-2">
                         <div className="flex items-center gap-3">
                           <h4 className="font-semibold text-foreground">{team.name}</h4>
-                          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 text-xs rounded font-medium">
+                          <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 text-sm rounded font-medium">
                             Owner
                           </span>
                         </div>
@@ -891,7 +891,7 @@ export default function ApiaryTeamPage() {
                       <div className="text-sm text-text-tertiary">
                         <span className="font-medium">{team.member_count || 0}</span> member{(team.member_count || 0) !== 1 ? 's' : ''}
                       </div>
-                      <div className="text-xs text-text-tertiary mt-1">
+                      <div className="text-sm text-text-tertiary mt-1">
                         Created {new Date(team.created_at).toLocaleDateString()}
                       </div>
 
@@ -916,10 +916,10 @@ export default function ApiaryTeamPage() {
                                           : member.user_email}
                                       </div>
                                       {member.first_name && member.last_name && (
-                                        <div className="text-xs text-text-tertiary">{member.user_email}</div>
+                                        <div className="text-sm text-text-tertiary">{member.user_email}</div>
                                       )}
                                     </div>
-                                    <span className={`px-2 py-1 text-xs rounded font-medium capitalize ${
+                                    <span className={`px-2 py-1 text-sm rounded font-medium capitalize ${
                                       member.role === 'owner'
                                         ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200'
                                         : member.role === 'admin'
@@ -971,7 +971,7 @@ export default function ApiaryTeamPage() {
                                         <Mail size={16} className="text-orange-400" />
                                         <div className="flex-1">
                                           <div className="text-sm font-medium text-foreground">{invitation.email}</div>
-                                          <div className="text-xs text-text-tertiary flex items-center gap-2 mt-1">
+                                          <div className="text-sm text-text-tertiary flex items-center gap-2 mt-1">
                                             <Clock size={12} />
                                             {isExpired ? (
                                               <span className="text-red-600 dark:text-red-400 font-medium">Expired</span>
@@ -982,7 +982,7 @@ export default function ApiaryTeamPage() {
                                             )}
                                           </div>
                                         </div>
-                                        <span className="px-2 py-1 text-xs rounded font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-200">
+                                        <span className="px-2 py-1 text-sm rounded font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-200">
                                           Pending
                                         </span>
                                       </div>
@@ -1021,7 +1021,7 @@ export default function ApiaryTeamPage() {
                                       icon={<User size={16} className="text-green-600 dark:text-green-400" />}
                                       title={invitation.email}
                                       titleClassName="text-foreground"
-                                      bodyClassName="text-xs text-text-tertiary"
+                                      bodyClassName="text-sm text-text-tertiary"
                                       endSlot={<Badge tone="green">Accepted</Badge>}
                                       endSlotClassName="self-center"
                                     >
@@ -1058,7 +1058,7 @@ export default function ApiaryTeamPage() {
                                       icon={<X size={16} className="text-red-600 dark:text-red-400" />}
                                       title={invitation.email}
                                       titleClassName="text-foreground"
-                                      bodyClassName="text-xs text-text-tertiary"
+                                      bodyClassName="text-sm text-text-tertiary"
                                       endSlot={<Badge tone="red">Declined</Badge>}
                                       endSlotClassName="self-center"
                                     >
@@ -1095,7 +1095,7 @@ export default function ApiaryTeamPage() {
                                             ? `${ta.apiary.name} - ${ta.apiary.eircode}`
                                             : (ta.apiary?.eircode || 'Unknown Location')}
                                         </div>
-                                        <div className="text-xs text-text-tertiary mt-1">
+                                        <div className="text-sm text-text-tertiary mt-1">
                                           Shared {new Date(ta.added_at).toLocaleDateString()}
                                         </div>
                                       </div>
@@ -1143,7 +1143,7 @@ export default function ApiaryTeamPage() {
                       <div className="flex flex-col gap-3 mb-2">
                         <div className="flex items-center gap-3">
                           <h4 className="font-semibold text-foreground">{team.name}</h4>
-                          <span className="px-2 py-1 bg-surface-secondary text-text-primary text-xs rounded font-medium capitalize">
+                          <span className="px-2 py-1 bg-surface-secondary text-text-primary text-sm rounded font-medium capitalize">
                             {team.user_role}
                           </span>
                         </div>
@@ -1176,7 +1176,7 @@ export default function ApiaryTeamPage() {
                       <div className="text-sm text-text-tertiary">
                         <span className="font-medium">{team.member_count || 0}</span> member{(team.member_count || 0) !== 1 ? 's' : ''}
                       </div>
-                      <div className="text-xs text-text-tertiary mt-1">
+                      <div className="text-sm text-text-tertiary mt-1">
                         Joined {new Date(team.created_at).toLocaleDateString()}
                       </div>
 
@@ -1201,10 +1201,10 @@ export default function ApiaryTeamPage() {
                                           : member.user_email}
                                       </div>
                                       {member.first_name && member.last_name && (
-                                        <div className="text-xs text-text-tertiary">{member.user_email}</div>
+                                        <div className="text-sm text-text-tertiary">{member.user_email}</div>
                                       )}
                                     </div>
-                                    <span className={`px-2 py-1 text-xs rounded font-medium capitalize ${
+                                    <span className={`px-2 py-1 text-sm rounded font-medium capitalize ${
                                       member.role === 'owner'
                                         ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200'
                                         : member.role === 'admin'
@@ -1401,7 +1401,7 @@ export default function ApiaryTeamPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground text-xs rounded font-medium capitalize border border-border">
+                        <span className="px-3 py-1 bg-surface-elevated dark:bg-surface-elevated text-foreground dark:text-foreground text-sm rounded font-medium capitalize border border-border">
                           {member.role}
                         </span>
                         {member.role !== 'owner' && (
@@ -1434,7 +1434,7 @@ export default function ApiaryTeamPage() {
                       icon={<Clock size={16} className="text-amber-600 dark:text-amber-300" />}
                       title={invitation.email}
                       titleClassName="text-foreground"
-                      bodyClassName="text-xs text-text-tertiary"
+                      bodyClassName="text-sm text-text-tertiary"
                       endSlot={
                         <Button
                           onClick={() => handleCancelInvitation(invitation.id, invitation.email)}

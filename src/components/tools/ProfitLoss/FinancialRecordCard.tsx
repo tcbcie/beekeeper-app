@@ -67,7 +67,7 @@ export default function FinancialRecordCard({
             <div className="flex items-center gap-2 flex-wrap">
               {/* Type Badge */}
               <span
-                className={`text-xs font-medium px-2 py-0.5 rounded ${
+                className={`text-sm font-medium px-2 py-0.5 rounded ${
                   isIncome
                     ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'
                     : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
@@ -95,7 +95,7 @@ export default function FinancialRecordCard({
 
             {/* Notes */}
             {record.notes && (
-              <p className="text-xs text-text-tertiary mt-1 italic truncate">
+              <p className="text-sm text-text-tertiary mt-1 italic truncate">
                 {record.notes}
               </p>
             )}

@@ -293,7 +293,7 @@ export default function QueenComparePage() {
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 border border-border">
         <div className="flex flex-wrap items-center gap-4">
           <div>
-            <label className="block text-sm font-semibold text-text-tertiary uppercase mb-1">
+            <label className="block text-sm font-semibold text-text-tertiary mb-1">
               Time Window
             </label>
             <select

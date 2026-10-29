@@ -344,7 +344,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
           </div>
 
           {/* Crop data-availability legend (derived from the level maps so they can't drift) */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-tertiary">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-tertiary">
             <span className="font-medium text-text-secondary">At this apiary:</span>
             {(['observed', 'projected', 'estimated', 'none'] as CropDataLevel[]).map((l) => (
               <LevelKey key={l} dot={LEVEL_DOT[l]} label={LEVEL_WORD[l]} />
@@ -493,7 +493,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                       className="w-full h-3 accent-forest-600 cursor-pointer"
                       aria-label="TBR date"
                     />
-                    <div className="flex justify-between text-xs text-text-tertiary mt-1">
+                    <div className="flex justify-between text-sm text-text-tertiary mt-1">
                       <span>{formatDate(result.bounds.sliderEarliest)}</span>
                       <span>{formatDate(result.bounds.latest)}</span>
                     </div>
@@ -524,7 +524,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                     className="w-full h-3 accent-forest-600 cursor-pointer"
                     aria-label="Swarm season start date"
                   />
-                  <div className="flex justify-between text-xs text-text-tertiary mt-1">
+                  <div className="flex justify-between text-sm text-text-tertiary mt-1">
                     <span>{formatDate(swarmSeason.min)}</span>
                     <span>{formatDate(swarmSeason.max)}</span>
                   </div>
@@ -637,7 +637,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                   <div className="h-64 relative">
                     <Line data={charts.population.data} options={charts.population.options} plugins={[bandsPlugin]} />
                   </div>
-                  <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-xs text-text-tertiary">
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 mt-3 text-sm text-text-tertiary">
                     <Legend swatch="bg-amber-600" label="Forager strength" />
                     <Legend swatch="bg-emerald-600" label="Colony population" />
                     <Legend swatch="bg-green-500/40" label="Spring crop" />
@@ -690,7 +690,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                   <h4 className="font-semibold text-foreground flex items-center gap-2 mb-3">
                     <Wheat size={18} className="text-forest-600 dark:text-forest-400" />
                     Rebuild food budget
-                    <span className="text-xs font-normal text-text-tertiary">
+                    <span className="text-sm font-normal text-text-tertiary">
                       ({isCaging ? 'comb retained — no foundation to draw' : `${foodPlan.budget.framesToDraw} frames of foundation to draw`})
                     </span>
                   </h4>
@@ -700,7 +700,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                         <span className="font-semibold text-foreground">≈ {foodPlan.budget.totalHoneyKg.toFixed(1)} kg honey</span>{' '}
                         — funded from stores
                       </p>
-                      <ul className="text-xs text-text-secondary mt-1 space-y-0.5">
+                      <ul className="text-sm text-text-secondary mt-1 space-y-0.5">
                         {!isCaging && <li>Comb drawing: {foodPlan.budget.combHoneyKg.toFixed(1)} kg</li>}
                         <li>Brood food: {foodPlan.budget.broodHoneyKg.toFixed(1)} kg</li>
                         <li>Upkeep + warmth: {foodPlan.budget.upkeepHoneyKg.toFixed(1)} kg</li>
@@ -770,7 +770,7 @@ export default function TBRPlanner({ userId }: { userId: string }) {
                           className="w-full h-3 accent-forest-600 cursor-pointer"
                           aria-label={f.label}
                         />
-                        <div className="flex justify-between text-xs text-text-tertiary mt-0.5">
+                        <div className="flex justify-between text-sm text-text-tertiary mt-0.5">
                           <span>{f.min}</span>
                           <span>{f.max}</span>
                         </div>
@@ -822,7 +822,7 @@ function CropPicker({
         <span className="text-sm font-semibold text-foreground">
           {formatDate(resolvedDate)}{resolvedDate && resolvedEndDate ? ` → ${formatDate(resolvedEndDate)}` : ''}
         </span>
-        {badge && <span className={`text-xs px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>}
+        {badge && <span className={`text-sm px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>}
       </div>
       {note && <p className="text-sm text-text-tertiary mt-1">{note}</p>}
     </div>
@@ -943,7 +943,7 @@ function CropSelect({
                 <span className={`inline-block w-3 h-3 rounded-full flex-shrink-0 ${LEVEL_DOT[o.dataLevel]}`} />
                 <span className="truncate">{o.name}</span>
               </span>
-              <span className="text-xs text-text-tertiary flex-shrink-0">{LEVEL_WORD[o.dataLevel]}</span>
+              <span className="text-sm text-text-tertiary flex-shrink-0">{LEVEL_WORD[o.dataLevel]}</span>
             </li>
           ))}
         </ul>

@@ -100,7 +100,7 @@ export default function NucInspectionCard({ inspection, onEdit, onDelete, readOn
               <span className="font-medium">{formatDate(inspection.inspection_date)}</span>
             </div>
             {inspection.queen_status && (
-              <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getQueenStatusBadge(inspection.queen_status)}`}>
+              <span className={`px-2 py-0.5 text-sm font-medium rounded-full ${getQueenStatusBadge(inspection.queen_status)}`}>
                 {inspection.queen_status.charAt(0).toUpperCase() + inspection.queen_status.slice(1)}
               </span>
             )}
@@ -109,22 +109,22 @@ export default function NucInspectionCard({ inspection, onEdit, onDelete, readOn
           {/* Queen & Brood Indicators */}
           <div className="flex flex-wrap gap-1.5 mb-2">
             {inspection.queen_seen && (
-              <span className="px-2 py-0.5 text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 rounded flex items-center gap-1">
+              <span className="px-2 py-0.5 text-sm bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 rounded flex items-center gap-1">
                 <Crown size={12} /> Queen Seen
               </span>
             )}
             {inspection.eggs_present && (
-              <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded flex items-center gap-1">
+              <span className="px-2 py-0.5 text-sm bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 rounded flex items-center gap-1">
                 <Egg size={12} /> Eggs
               </span>
             )}
             {inspection.larvae_present && (
-              <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded">
+              <span className="px-2 py-0.5 text-sm bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded">
                 Larvae
               </span>
             )}
             {inspection.capped_brood_present && (
-              <span className="px-2 py-0.5 text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 rounded">
+              <span className="px-2 py-0.5 text-sm bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 rounded">
                 Capped Brood
               </span>
             )}
@@ -134,16 +134,16 @@ export default function NucInspectionCard({ inspection, onEdit, onDelete, readOn
           <div className="flex flex-wrap gap-2 text-sm">
             {inspection.population && (
               <div className="flex items-center gap-1">
-                <span className="text-text-tertiary text-xs">Pop:</span>
-                <span className={`px-2 py-0.5 text-xs rounded ${getPopulationBadge(inspection.population)}`}>
+                <span className="text-text-tertiary text-sm">Pop:</span>
+                <span className={`px-2 py-0.5 text-sm rounded ${getPopulationBadge(inspection.population)}`}>
                   {inspection.population.charAt(0).toUpperCase() + inspection.population.slice(1)}
                 </span>
               </div>
             )}
             {inspection.temperament && (
               <div className="flex items-center gap-1">
-                <span className="text-text-tertiary text-xs">Temp:</span>
-                <span className={`px-2 py-0.5 text-xs rounded ${getTemperamentBadge(inspection.temperament)}`}>
+                <span className="text-text-tertiary text-sm">Temp:</span>
+                <span className={`px-2 py-0.5 text-sm rounded ${getTemperamentBadge(inspection.temperament)}`}>
                   {inspection.temperament.charAt(0).toUpperCase() + inspection.temperament.slice(1)}
                 </span>
               </div>

@@ -94,7 +94,7 @@ export default function ApiaryOverview({ userId }: ApiaryOverviewProps) {
       key: 'status',
       header: 'Status',
       render: (row: HiveOverviewRecord) => (
-        <span className={`px-2 py-1 rounded text-xs font-medium ${
+        <span className={`px-2 py-1 rounded text-sm font-medium ${
           row.status === 'active'
             ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
             : 'bg-surface-secondary text-text-secondary border border-border'
@@ -113,7 +113,7 @@ export default function ApiaryOverview({ userId }: ApiaryOverviewProps) {
     {
       key: 'queen_seen',
       header: 'Queen',
-      render: (row: HiveOverviewRecord) => row.queen_seen === null ? '-' : row.queen_seen ? '✓' : '✗'
+      render: (row: HiveOverviewRecord) => row.queen_seen === null ? '-' : row.queen_seen ? 'Yes' : 'No'
     },
     {
       key: 'population_strength',

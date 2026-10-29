@@ -71,7 +71,7 @@ export default function AboutPage() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-100/70 via-transparent to-forest-100/40 dark:from-amber-900/15 dark:to-forest-900/10" />
         <div aria-hidden="true" className="pointer-events-none absolute right-0 top-0 h-40 w-40 rounded-full bg-amber-300/20 blur-3xl dark:bg-amber-500/10" />
         <div className="relative">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-amber-100/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-300/70 bg-amber-100/80 px-3 py-1 text-sm font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
             <span aria-hidden="true">Honey Season Tools</span>
           </div>
 
@@ -145,7 +145,7 @@ export default function AboutPage() {
       <Panel padding="lg" className="relative overflow-hidden border border-amber-300/70 dark:border-amber-800/70">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-amber-500/15 via-transparent to-orange-500/10 dark:from-amber-500/10 dark:to-orange-500/10" />
         <div className="relative text-center">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.14em] text-amber-800 dark:text-amber-300">
+          <p className="mb-2 text-sm font-semibold text-amber-800 dark:text-amber-300">
             Credits
           </p>
           <h2 className="mb-4 font-serif text-2xl sm:text-3xl text-foreground">

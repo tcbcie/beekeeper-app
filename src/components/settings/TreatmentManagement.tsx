@@ -377,34 +377,34 @@ export default function TreatmentManagement() {
             <table className="w-full border-collapse">
               <thead>
                 <TableHeaderRow>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-text-secondary ">
                     Actions
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-secondary ">
                     Product Name
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-secondary ">
                     Active Ingredients
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-secondary ">
                     Application Method
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-secondary ">
                     Duration
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-secondary ">
                     Temperature
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-secondary ">
                     Honey Flow
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-secondary ">
                     Withdrawal (days)
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-text-secondary ">
                     Approved In
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-secondary ">
                     Notes
                   </th>
                 </TableHeaderRow>
@@ -570,12 +570,12 @@ export default function TreatmentManagement() {
                         <td className="px-4 py-3 text-sm text-center">
                           <div className="flex flex-wrap justify-center gap-1">
                             {treatment.approved_in_ireland && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
                                 IE
                               </span>
                             )}
                             {treatment.approved_in_uk && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
                                 UK
                               </span>
                             )}

@@ -411,7 +411,7 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
             }`}
           >
             <div className="font-semibold">Brood Present</div>
-            <div className="text-xs mt-1 opacity-75">Active season</div>
+            <div className="text-sm mt-1 opacity-75">Active season</div>
           </Button>
           <Button
             onClick={() => setBroodStatus('broodless')}
@@ -423,7 +423,7 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
             }`}
           >
             <div className="font-semibold">Broodless</div>
-            <div className="text-xs mt-1 opacity-75">Winter cluster</div>
+            <div className="text-sm mt-1 opacity-75">Winter cluster</div>
           </Button>
         </div>
         <p className="text-sm text-text-secondary mt-2">
@@ -459,7 +459,7 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
                   {forecast.map((day) => (
                     <th key={day.date} className="text-center p-2 text-sm font-semibold text-foreground border-b border-border min-w-[60px]">
                       <div>{day.dayName}</div>
-                      <div className="text-xs font-normal text-text-secondary">
+                      <div className="text-sm font-normal text-text-secondary">
                         {new Date(day.date).toLocaleDateString('en-IE', { day: 'numeric', month: 'short' })}
                       </div>
                     </th>
@@ -471,7 +471,7 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
                   <tr key={treatment.id} className="border-b border-border bg-surface-elevated hover:bg-surface-secondary">
                     <td className="p-3">
                       <div className="font-medium text-foreground text-sm">{treatment.product_name}</div>
-                      <div className="text-xs text-text-secondary">{treatment.temperature_range}</div>
+                      <div className="text-sm text-text-secondary">{treatment.temperature_range}</div>
                     </td>
                     {forecast.map((day) => (
                       <td key={`${treatment.id}-${day.date}`} className="p-2 text-center">
@@ -507,7 +507,7 @@ export default function VarroaWeather({ userId }: VarroaWeatherProps) {
                     Conditions
                   </td>
                   {forecast.map((day) => (
-                    <td key={day.date} className="p-2 text-center text-xs text-foreground">
+                    <td key={day.date} className="p-2 text-center text-sm text-foreground">
                       {getWeatherDescription(day.weatherCode)}
                     </td>
                   ))}

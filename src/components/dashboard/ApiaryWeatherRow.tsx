@@ -222,17 +222,20 @@ function requestWeather(cacheKey: string): Promise<ApiaryWeather> {
 }
 
 function WeightChip({ label, value }: { label: string; value: number }) {
-  const positive = value >= 0
-  const Icon = positive ? TrendingUp : TrendingDown
+  // A hive getting heavier or lighter is neither good nor bad in itself, so the change is shown in
+  // ink with its sign and arrow; no change at all ("0.00") is grey, never green.
+  const shown = value.toFixed(2)
+  const isZero = Number(shown) === 0
+  const Icon = value > 0 ? TrendingUp : TrendingDown
 
   return (
     <div className="flex flex-col items-center">
       <span className="text-sm font-medium text-text-secondary leading-none mb-0.5">{label}</span>
       <span className={`flex items-center gap-0.5 text-base font-bold tabular-nums ${
-        positive ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
+        isZero ? 'text-text-tertiary' : 'text-foreground'
       }`}>
-        <Icon size={12} />
-        {positive ? '+' : ''}{value.toFixed(2)}
+        {!isZero && <Icon size={12} />}
+        {isZero ? '0.00' : `${value > 0 ? '+' : ''}${shown}`}
       </span>
     </div>
   )
@@ -909,7 +912,7 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop }: ApiaryWeatherR
         <div className="px-3 py-2 flex items-center gap-2">
           <div className="flex items-center gap-1 shrink-0">
             <Scale size={12} className="text-text-tertiary" />
-            <span className="text-sm font-semibold uppercase tracking-wider text-text-tertiary">
+            <span className="text-sm font-semibold text-text-tertiary">
               Avg ({apiary.scales.length})
             </span>
           </div>

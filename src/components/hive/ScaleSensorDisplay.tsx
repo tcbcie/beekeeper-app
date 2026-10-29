@@ -149,7 +149,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       {/* Weight Section */}
       {(weight !== undefined || weightChange24h !== null || weightChange7d !== null || weightChange30d !== null) && (
         <div className="p-3 border border-border rounded-lg space-y-2">
-          <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Weight</p>
+          <p className="text-sm font-medium text-text-tertiary ">Weight</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {/* Current Weight */}
             {weight !== undefined && (
@@ -241,7 +241,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       {/* Colony Section - Brood Temperature */}
       {temperature !== undefined && (
         <div className="p-3 border border-border rounded-lg space-y-2">
-          <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Colony</p>
+          <p className="text-sm font-medium text-text-tertiary ">Colony</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className="p-2 bg-orange-50 dark:bg-orange-900/20 rounded border border-orange-200 dark:border-orange-800">
               <div className="flex items-center gap-1.5">
@@ -261,7 +261,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       {/* Environmental Section - Humidity */}
       {humidity !== undefined && (
         <div className="p-3 border border-border rounded-lg space-y-2">
-          <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Environmental</p>
+          <p className="text-sm font-medium text-text-tertiary ">Environmental</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className="p-2 bg-cyan-50 dark:bg-cyan-900/20 rounded border border-cyan-200 dark:border-cyan-800">
               <div className="flex items-center gap-1.5">
@@ -281,7 +281,7 @@ export default function ScaleSensorDisplay({ deviceId, deviceName, hiveId }: Sca
       {/* Technical Section - Battery */}
       {batteryInfo !== null && (
         <div className="p-3 border border-border rounded-lg space-y-2">
-          <p className="text-sm font-medium text-text-tertiary uppercase tracking-wide">Technical</p>
+          <p className="text-sm font-medium text-text-tertiary ">Technical</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <div className={`p-2 rounded border ${
               batteryInfo.percent < 20

@@ -65,7 +65,7 @@ export default function ChangelogDisplay({ versionLimit = 5 }: ChangelogDisplayP
       {changelog.map((versionGroup, index) => (
         <div key={versionGroup.version}>
           <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-            <span className={`px-2 py-1 text-xs rounded font-semibold ${
+            <span className={`px-2 py-1 text-sm rounded font-semibold ${
               index === 0
                 ? 'bg-emerald-100 text-emerald-800'
                 : 'bg-surface-secondary text-text-secondary'

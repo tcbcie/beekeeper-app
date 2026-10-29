@@ -142,7 +142,7 @@ export default function BatchGraftsSection({ batchId, userId, cellCount, frameRo
       {hook.grafts.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {GRAFT_STATUSES.filter(s => hook.statusCounts[s.value] > 0).map(s => (
-            <span key={s.value} className={`px-2 py-1 rounded text-xs font-medium ${s.color}`}>
+            <span key={s.value} className={`px-2 py-1 rounded text-sm font-medium ${s.color}`}>
               {s.label}: {hook.statusCounts[s.value]}
             </span>
           ))}

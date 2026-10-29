@@ -138,11 +138,11 @@ export default function Sidebar() {
             const groupRegionId = `nav-group-${group.id}`
             return (
               <div key={group.id} className="pt-2">
+                {/* A plain heading row at 14px, not a 12px boxed capital label */}
                 <Button
                   onClick={() => toggleGroup(group.id)}
-                  tone="neutral"
-                  size="xs"
-                  className="w-full justify-between px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-text-tertiary hover:text-text-secondary"
+                  unstyled
+                  className="flex min-h-12 w-full items-center justify-between rounded-lg px-4 text-sm font-semibold text-text-tertiary hover:text-text-secondary"
                   aria-expanded={!isGroupCollapsed}
                   aria-controls={groupRegionId}
                 >

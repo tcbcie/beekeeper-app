@@ -160,7 +160,7 @@ export default function VarroaCheckCard({
               <span className="text-text-tertiary">
                 {isNaturalDrop ? 'Daily Mite Drop:' : 'Infestation Rate:'}
               </span>{' '}
-              <span className={`font-bold ${check.infestation_rate > 3 ? 'text-red-800' : 'text-green-800'}`}>
+              <span className={`font-bold ${check.infestation_rate > 3 ? 'text-red-800 dark:text-red-300' : 'text-green-800 dark:text-green-300'}`}>
                 {isNaturalDrop ? check.infestation_rate : `${check.infestation_rate}%`}
               </span>
             </span>
@@ -168,8 +168,8 @@ export default function VarroaCheckCard({
         </div>
         <div className="mt-1.5 pt-1.5 border-t border-orange-200">
           <span className="text-text-tertiary text-sm">Action Threshold: </span>
-          <span className={`text-sm font-bold ${check.action_threshold_reached ? 'text-red-800' : 'text-green-800'}`}>
-            {check.action_threshold_reached ? '⚠️ Reached - Treatment Needed' : '✓ Not Reached'}
+          <span className={`text-sm font-bold ${check.action_threshold_reached ? 'text-red-800 dark:text-red-300' : 'text-green-800 dark:text-green-300'}`}>
+            {check.action_threshold_reached ? 'Reached: treatment needed' : 'Not reached'}
           </span>
         </div>
       </div>

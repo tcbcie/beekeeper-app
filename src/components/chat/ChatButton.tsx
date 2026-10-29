@@ -21,7 +21,7 @@ export default function ChatButton() {
       <IconButton
         onClick={() => setIsOpen(!isOpen)}
         className={`fixed above-bottom-nav md:bottom-6 right-6 z-40 rounded-full
-                    ${isFormActive && !isOpen ? 'w-11 h-11 opacity-60' : 'w-14 h-14'}
+                    ${isFormActive && !isOpen ? 'w-12 h-12 opacity-80' : 'w-14 h-14'}
                     shadow-lg hover:shadow-xl transition-all duration-200
                     flex items-center justify-center
                     ${isOpen

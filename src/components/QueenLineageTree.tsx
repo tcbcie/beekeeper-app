@@ -87,7 +87,7 @@ const QueenCard = ({ queen, label, isMain = false, fallbackLabel }: { queen: Que
   if (!queen) {
     return (
       <div className="flex flex-col items-center">
-        <span className="text-xs text-text-tertiary mb-1">{label}</span>
+        <span className="text-sm text-text-tertiary mb-1">{label}</span>
         <div className="px-3 py-2 rounded-lg border border-dashed border-border bg-surface-elevated/50 text-text-tertiary text-sm" title={fallbackLabel || undefined}>
           {fallbackLabel ? fallbackLabel.split(' (')[0] : 'Unknown'}
         </div>
@@ -106,10 +106,10 @@ const QueenCard = ({ queen, label, isMain = false, fallbackLabel }: { queen: Que
         <span className="font-medium text-sm">{queen.queen_number}</span>
       </div>
       {queen.status && queen.status !== 'active' && (
-        <span className="text-xs opacity-70">({queen.status})</span>
+        <span className="text-sm opacity-70">({queen.status})</span>
       )}
       {(queen.hive_number || queen.apiary_name) && (
-        <div className="text-xs opacity-70 mt-0.5">
+        <div className="text-sm opacity-70 mt-0.5">
           {queen.hive_number && <span>{queen.hive_number}</span>}
           {queen.hive_number && queen.apiary_name && <span> · </span>}
           {queen.apiary_name && <span>{queen.apiary_name}</span>}
@@ -120,7 +120,7 @@ const QueenCard = ({ queen, label, isMain = false, fallbackLabel }: { queen: Que
 
   return (
     <div className="flex flex-col items-center">
-      <span className="text-xs text-text-tertiary mb-1">{label}</span>
+      <span className="text-sm text-text-tertiary mb-1">{label}</span>
       {isMain ? cardContent : (
         <Link href={`/dashboard/queens/${queen.id}`}>
           {cardContent}
@@ -412,7 +412,7 @@ export default function QueenLineageTree({ queenId, expanded, onToggle, motherFa
                       {lineage.children.slice(0, 6).map((child) => (
                         <Link key={child.id} href={`/dashboard/queens/${child.id}`}>
                           <div
-                            className={`inline-flex min-h-12 items-center px-3 py-1 rounded border text-xs hover:opacity-80 cursor-pointer ${getColorClass(child.marking_color)}`}
+                            className={`inline-flex min-h-12 items-center px-3 py-1 rounded border text-sm hover:opacity-80 cursor-pointer ${getColorClass(child.marking_color)}`}
                           >
                             <div>{child.queen_number}</div>
                             {(child.hive_number || child.apiary_name) && (
@@ -424,7 +424,7 @@ export default function QueenLineageTree({ queenId, expanded, onToggle, motherFa
                         </Link>
                       ))}
                       {lineage.children.length > 6 && (
-                        <span className="text-xs text-text-tertiary self-center">
+                        <span className="text-sm text-text-tertiary self-center">
                           +{lineage.children.length - 6} more
                         </span>
                       )}
@@ -443,7 +443,7 @@ export default function QueenLineageTree({ queenId, expanded, onToggle, motherFa
                     {lineage.siblings.map((sibling) => (
                       <Link key={sibling.id} href={`/dashboard/queens/${sibling.id}`}>
                         <div
-                          className={`inline-flex min-h-12 items-center px-3 py-1 rounded border text-xs hover:opacity-80 cursor-pointer ${getColorClass(sibling.marking_color)}`}
+                          className={`inline-flex min-h-12 items-center px-3 py-1 rounded border text-sm hover:opacity-80 cursor-pointer ${getColorClass(sibling.marking_color)}`}
                         >
                           <div>{sibling.queen_number}</div>
                           {(sibling.hive_number || sibling.apiary_name) && (

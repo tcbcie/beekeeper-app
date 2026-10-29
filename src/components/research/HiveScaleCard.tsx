@@ -286,7 +286,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  <div className="min-w-0">
  <span className={`font-semibold ${headerTitleColour}`}>Hive #{hive.hive_number}</span>
  {scaleName && (
- <span className={`ml-1 text-xs ${headerMetaColour}`}>({scaleName})</span>
+ <span className={`ml-1 text-sm ${headerMetaColour}`}>({scaleName})</span>
  )}
  </div>
  </div>

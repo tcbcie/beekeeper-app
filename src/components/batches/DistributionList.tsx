@@ -123,7 +123,7 @@ export default function DistributionList({
         <button
           type="button"
           onClick={() => setCollapsed(!collapsed)}
-          className="flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-text-secondary transition-colors"
+          className="flex min-h-12 items-center gap-1.5 text-sm font-semibold text-foreground hover:text-text-secondary transition-colors"
         >
           {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
           Distributions ({distributions.length})
@@ -153,13 +153,13 @@ export default function DistributionList({
                   <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Type</th>
                   <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Recipient</th>
                   <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">
-                    <button type="button" onClick={() => handleSort('date')} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                    <button type="button" onClick={() => handleSort('date')} className="inline-flex min-h-12 items-center gap-1 hover:text-foreground transition-colors">
                       Date <SortIcon col="date" />
                     </button>
                   </th>
                   <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Mating Location</th>
                   <th className="px-3 py-2 text-center text-sm font-medium text-text-secondary">
-                    <button type="button" onClick={() => handleSort('mated')} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                    <button type="button" onClick={() => handleSort('mated')} className="inline-flex min-h-12 items-center gap-1 hover:text-foreground transition-colors">
                       Mated <SortIcon col="mated" />
                     </button>
                   </th>

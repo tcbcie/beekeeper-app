@@ -333,8 +333,8 @@ export default function BatchesPage() {
  </div>
  )
 
- const timePeriodButtonClassName = 'min-h-[44px] text-sm touch-manipulation'
- const weightButtonClassName = 'w-10 h-10 !min-h-10 !px-0 !py-0 rounded-md font-semibold transition-all'
+ const timePeriodButtonClassName = 'min-h-12 text-sm touch-manipulation'
+ const weightButtonClassName = 'w-12 h-12 !min-h-12 !px-0 !py-0 rounded-md font-semibold transition-all'
 
  return (
  <>
@@ -342,7 +342,7 @@ export default function BatchesPage() {
  <div className="space-y-6">
  <div className="flex justify-between items-center">
  <div>
- <h1 className="text-3xl font-bold text-foreground">Queen Rearing 🥚</h1>
+ <h1 className="text-3xl font-bold text-foreground">Queen Rearing</h1>
  <p className="text-sm text-text-secondary mt-1">3-5-8 - The Queen is made!</p>
  </div>
  {activeTab === 'grafting' && (
@@ -436,7 +436,7 @@ export default function BatchesPage() {
  <IconButton
  onClick={() => handleEdit(batch)}
  tone="blue"
- className="min-h-[44px] min-w-[44px] touch-manipulation"
+ className="min-h-12 min-w-12 touch-manipulation"
  aria-label="Edit batch"
  >
  <Edit2 size={20} />
@@ -444,7 +444,7 @@ export default function BatchesPage() {
  <IconButton
  onClick={() => handleDelete(batch.id)}
  tone="danger"
- className="min-h-[44px] min-w-[44px] touch-manipulation"
+ className="min-h-12 min-w-12 touch-manipulation"
  aria-label="Delete batch"
  >
  <Trash2 size={20} />
@@ -499,15 +499,15 @@ export default function BatchesPage() {
  <table className="min-w-full divide-y divide-border">
  <thead className="bg-surface-secondary">
  <tr>
- <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Actions</th>
- <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Batch Name</th>
- <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Breeder Queen</th>
- <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Graft Date</th>
- <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Grafts</th>
- <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Accepted</th>
- <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Hatched</th>
- <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Mated</th>
- <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Sealed Dist.</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary ">Actions</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary ">Batch Name</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary ">Breeder Queen</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary ">Graft Date</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary ">Grafts</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary ">Accepted</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary ">Hatched</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary ">Mated</th>
+ <th className="px-3 py-3 text-left text-sm font-medium text-text-tertiary ">Sealed Dist.</th>
  </tr>
  </thead>
  <tbody className="bg-surface dark:bg-surface divide-y divide-border">
@@ -917,30 +917,30 @@ export default function BatchesPage() {
  <table className="min-w-full divide-y divide-border">
  <thead className="bg-surface-secondary">
  <tr>
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Rank</th>
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Hive</th>
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Apiary</th>
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Inspections</th>
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Score</th>
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Brood Pattern</th>
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Population</th>
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Temperament</th>
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Swarming (Low=Good)</th>
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Honey Yield</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Rank</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Hive</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Apiary</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Inspections</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Score</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Brood Pattern</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Population</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Temperament</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Swarming (Low=Good)</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Honey Yield</th>
  {optionalColumns.calmness && (
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Calmness</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Calmness</th>
  )}
  {optionalColumns.recapping && (
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Recapping</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Recapping</th>
  )}
  {optionalColumns.vsh && (
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">VSH</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">VSH</th>
  )}
  {optionalColumns.smr && (
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">SMR</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">SMR</th>
  )}
  {optionalColumns.chalkbrood && (
- <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary uppercase">Chalkbrood</th>
+ <th className="px-4 py-3 text-left text-sm font-medium text-text-tertiary ">Chalkbrood</th>
  )}
  </tr>
  </thead>
@@ -948,10 +948,8 @@ export default function BatchesPage() {
  {hiveScores.map((hive, index) => (
  <tr key={hive.hive_id} className={index < 3 ? 'bg-green-50 dark:bg-green-950/20' : ''}>
  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground">
- {index === 0 && <span className="text-yellow-500">🥇</span>}
- {index === 1 && <span className="text-text-tertiary">🥈</span>}
- {index === 2 && <span className="text-orange-400">🥉</span>}
- {index > 2 && <span className="text-text-tertiary">{index + 1}</span>}
+ {/* The rank as a number: the top three keep their green row and a bold figure */}
+ <span className={index < 3 ? 'font-bold text-foreground' : 'text-text-tertiary'}>{index + 1}</span>
  </td>
  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-foreground">
  {hive.hive_number}

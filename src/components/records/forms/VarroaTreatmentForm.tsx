@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { HelpCircle } from 'lucide-react'
+import { AlertTriangle, HelpCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
 import type { VarroaTreatment, Hive, Apiary, TreatmentProduct, DropdownValue } from '@/types/records'
@@ -363,7 +363,7 @@ export default function VarroaTreatmentForm({
           {selectedHiveHasHoneySupers && (
             <div className="mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-400 dark:border-yellow-600 rounded-md">
               <p className="text-sm text-yellow-800 dark:text-yellow-200 flex items-start gap-2">
-                <span className="text-lg">⚠️</span>
+                <AlertTriangle size={18} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <span>
                   <strong>Warning:</strong> This hive has honey supers installed. Please ensure the treatment product is safe for use with honey supers and check the withdrawal period before harvesting honey.
                 </span>

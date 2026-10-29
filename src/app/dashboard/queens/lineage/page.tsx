@@ -64,17 +64,17 @@ function TreeNode({ node, depth = 0 }: { node: FamilyTree; depth?: number }) {
             {depth === 0 && <Crown size={14} className="text-amber-500" />}
             <span className="font-medium">{node.queen.queen_number}</span>
             {node.queen.status !== 'active' && (
-              <span className="text-xs opacity-70">({node.queen.status})</span>
+              <span className="text-sm">({node.queen.status})</span>
             )}
             {(node.queen.hive_number || node.queen.apiary_name) && (
-              <span className="text-xs opacity-70">
+              <span className="text-sm">
                 {node.queen.hive_number}
                 {node.queen.hive_number && node.queen.apiary_name ? ' | ' : ''}
                 {node.queen.apiary_name}
               </span>
             )}
             {hasChildren && (
-              <span className="text-xs opacity-60">
+              <span className="text-sm">
                 ({node.children.length} daughter{node.children.length !== 1 ? 's' : ''})
               </span>
             )}

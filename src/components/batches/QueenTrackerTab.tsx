@@ -180,7 +180,7 @@ function OutcomeActionEditor({
 
   return (
     <div className="mt-3 rounded-2xl border border-emerald-200/80 bg-white/90 p-3 shadow-sm dark:border-emerald-900/60 dark:bg-surface-elevated/95">
-      <div className="mb-3 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-tertiary">
         <CalendarDays size={14} className="text-emerald-700 dark:text-emerald-300" />
         <span>{getOutcomeActionTitle(draft.kind)}</span>
       </div>
@@ -199,7 +199,7 @@ function OutcomeActionEditor({
                 type="button"
                 onClick={() => onValueChange(option.value)}
                 disabled={disabled}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                className={`min-h-12 rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
                   isActive
                     ? 'border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/35 dark:text-emerald-200'
                     : 'border-border bg-surface text-text-secondary dark:bg-surface'
@@ -215,7 +215,7 @@ function OutcomeActionEditor({
       {isFailed && (
         <div className="mb-3 space-y-3">
           <div className="space-y-2">
-            <label className="block text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+            <label className="block text-sm font-semibold text-text-tertiary">
               Reason (optional)
             </label>
             <select
@@ -235,7 +235,7 @@ function OutcomeActionEditor({
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
-              <label className="block text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+              <label className="block text-sm font-semibold text-text-tertiary">
                 Comment (optional)
               </label>
               <span className="text-sm text-text-tertiary">{draft.comment.length}/{MAX_FAILURE_COMMENT_LENGTH}</span>
@@ -252,7 +252,7 @@ function OutcomeActionEditor({
       )}
 
       <div className="space-y-2">
-        <label className="block text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+        <label className="block text-sm font-semibold text-text-tertiary">
           Date
         </label>
         <input
@@ -263,7 +263,7 @@ function OutcomeActionEditor({
           className="w-full rounded-xl border border-border bg-surface min-h-12 px-3 py-2 text-base text-foreground shadow-sm disabled:cursor-not-allowed disabled:bg-surface-secondary/70 disabled:text-text-tertiary dark:bg-surface-elevated"
         />
         {!needsDate && (
-          <p className="text-xs text-text-secondary">No date is needed for the selected outcome.</p>
+          <p className="text-sm text-text-secondary">No date is needed for the selected outcome.</p>
         )}
       </div>
 
@@ -272,7 +272,7 @@ function OutcomeActionEditor({
           type="button"
           onClick={onCancel}
           disabled={disabled}
-          className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+          className="min-h-12 rounded-full border border-border px-4 py-1.5 text-sm font-medium text-text-secondary transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
         >
           Cancel
         </button>
@@ -280,7 +280,7 @@ function OutcomeActionEditor({
           type="button"
           onClick={onSave}
           disabled={saveDisabled}
-          className="rounded-full border border-emerald-500 bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+          className="min-h-12 rounded-full border border-forest-800 bg-forest-800 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-forest-900 disabled:cursor-not-allowed disabled:opacity-60"
         >
           Save
         </button>
@@ -438,7 +438,7 @@ function OutcomeDateField({
 
   return (
     <div className="space-y-1">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
+      <p className="text-sm font-semibold text-text-tertiary">{label}</p>
       <input
         type="date"
         value={dateEnabled ? draftDate : ''}
@@ -493,7 +493,7 @@ function OutcomeCommentField({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
+        <p className="text-sm font-semibold text-text-tertiary">{label}</p>
         <span className="text-sm text-text-tertiary">{disabled ? 0 : draftComment.length}/{maxLength}</span>
       </div>
       <textarea
@@ -523,7 +523,7 @@ function OutcomeReasonField({
 }) {
   return (
     <div className="space-y-1">
-      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">{label}</p>
+      <p className="text-sm font-semibold text-text-tertiary">{label}</p>
       <select
         value={reason ?? ''}
         onChange={(event) => void onReasonChange(id, event.target.value)}
@@ -544,7 +544,7 @@ function OutcomeReasonField({
 
 function SectionHeading({ children }: { children: ReactNode }) {
   return (
-    <p className="mb-2 border-b border-border pb-1.5 text-sm font-semibold uppercase tracking-[0.22em] text-text-tertiary">
+    <p className="mb-2 border-b border-border pb-1.5 text-sm font-semibold text-text-tertiary">
       {children}
     </p>
   )
@@ -563,7 +563,7 @@ function DetailItem({
 }) {
   return (
     <div className={`flex items-baseline gap-2 ${className}`}>
-      <span className="shrink-0 text-xs text-text-tertiary">{label}:</span>
+      <span className="shrink-0 text-sm text-text-tertiary">{label}:</span>
       <span className={valueClassName}>{value}</span>
     </div>
   )
@@ -652,7 +652,7 @@ function ExpandedTrackerRowContent({
         <SectionHeading>Outcomes</SectionHeading>
 
         {isReadOnly && (
-          <p className="text-xs text-text-secondary">
+          <p className="text-sm text-text-secondary">
             Only the distributing member can update outcomes for this record.
           </p>
         )}
@@ -715,7 +715,7 @@ function ExpandedTrackerRowContent({
           || (distribution.offspring_hybridised === true && !distribution.queen_failed)
         ) && (
           <div className="mt-2 space-y-2 border-t border-border pt-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+            <p className="text-sm font-semibold text-text-tertiary">
               Record details
             </p>
             <div className="grid gap-2">
@@ -1572,10 +1572,10 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         <div className="rounded-2xl border border-border bg-surface-secondary/55 p-4 shadow-sm dark:bg-surface-elevated/55">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-text-tertiary">Ledger filters</p>
-              <p className="mt-1 text-xs text-text-secondary">{summaryLabel}</p>
+              <p className="text-sm font-semibold text-text-tertiary">Ledger filters</p>
+              <p className="mt-1 text-sm text-text-secondary">{summaryLabel}</p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="inline-flex items-center gap-1.5 text-text-secondary"><span className="h-2 w-2 rounded-full bg-slate-500" />{stats.total} tracked</span>
               <span className="inline-flex items-center gap-1.5 text-text-secondary"><span className="h-2 w-2 rounded-full bg-green-500" />{stats.mated} mated</span>
               <span className="inline-flex items-center gap-1.5 text-text-secondary"><span className="h-2 w-2 rounded-full bg-blue-500" />{stats.overwintered} overwintered</span>
@@ -1600,7 +1600,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                   type="button"
                   onClick={() => setQueenQuery('')}
                   aria-label="Clear queen search"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-text-tertiary hover:text-foreground"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 inline-flex min-h-12 min-w-12 items-center justify-center rounded text-text-tertiary hover:text-foreground"
                 >
                   <X size={16} />
                 </button>
@@ -1754,7 +1754,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
         </div>
       ) : (
         <div className="overflow-hidden rounded-[1.6rem] border border-border bg-surface shadow-sm dark:bg-surface-elevated/95">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2.5 text-xs text-text-secondary">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2.5 text-sm text-text-secondary">
             <span className="font-medium text-text-tertiary">Marking colour:</span>
             {MARKING_COLOUR_LEGEND.map((item) => (
               <span key={item.label} className="inline-flex items-center gap-1.5">
@@ -1763,7 +1763,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
               </span>
             ))}
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2.5 text-xs text-text-secondary">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border px-4 py-2.5 text-sm text-text-secondary">
             <span className="font-medium text-text-tertiary">Recipient dot:</span>
             {RECIPIENT_TYPE_LEGEND.map((item) => (
               <span key={item.label} className="inline-flex items-center gap-1.5">
@@ -1777,10 +1777,10 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
             <table className="min-w-[36rem] md:min-w-[48rem] w-full border-separate border-spacing-0 text-sm">
               <thead className="bg-surface-secondary/70 dark:bg-surface-elevated/85">
                 <tr>
-                  <th className="sticky left-0 z-10 bg-surface-secondary dark:bg-surface-elevated px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Queen</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Actions</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold uppercase tracking-[0.18em] text-text-tertiary">Distribution</th>
+                  <th className="sticky left-0 z-10 bg-surface-secondary dark:bg-surface-elevated px-4 py-3 text-left text-sm font-semibold text-text-tertiary">Queen</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-tertiary">Actions</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-tertiary">Status</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-text-tertiary">Distribution</th>
                 </tr>
               </thead>
               <tbody>
@@ -1865,10 +1865,10 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             </span>
                           </div>
                           {distribution.breeder_summary_label && (
-                            <p className="mt-0.5 pl-5 text-xs text-text-secondary">Breeder {distribution.breeder_summary_label}</p>
+                            <p className="mt-0.5 pl-5 text-sm text-text-secondary">Breeder {distribution.breeder_summary_label}</p>
                           )}
                           {distribution.queen_secondary_label && (
-                            <p className="mt-0.5 pl-5 text-xs text-text-secondary">{distribution.queen_secondary_label}</p>
+                            <p className="mt-0.5 pl-5 text-sm text-text-secondary">{distribution.queen_secondary_label}</p>
                           )}
                         </td>
                         <td className={`border-t border-border pl-2 pr-3 py-2 align-top ${cellHighlightClass} ${rowFrameClass}`}>
@@ -1925,7 +1925,7 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                           )}
                         </td>
                         <td className={`border-t border-border px-4 py-2 align-top ${cellHighlightClass} ${rowFrameClass}`}>
-                          <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${distribution.lifecycle_class}`}>
+                          <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-sm font-medium ${distribution.lifecycle_class}`}>
                             {distribution.lifecycle_label}
                           </span>
                         </td>
@@ -1934,11 +1934,11 @@ export default function QueenTrackerTab({ userId }: QueenTrackerTabProps) {
                             <span className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${distribution.recipient_type_dot}`} title={distribution.recipient_type_label} />
                             <span className="font-medium text-foreground">{distribution.recipient_display_name}</span>
                             {distribution.recipient_is_club_member && (
-                              <span className="inline-flex items-center rounded-full border border-forest-300 bg-forest-100 px-1.5 py-0.5 text-sm font-semibold uppercase tracking-wide text-forest-800 dark:border-forest-700 dark:bg-forest-900/40 dark:text-forest-300" title="Club member (mated-queen pricing differs)">
+                              <span className="inline-flex items-center rounded-full border border-forest-300 bg-forest-100 px-1.5 py-0.5 text-sm font-semibold text-forest-800 dark:border-forest-700 dark:bg-forest-900/40 dark:text-forest-300" title="Club member (mated-queen pricing differs)">
                                 Club
                               </span>
                             )}
-                            <span className="text-xs text-text-secondary">
+                            <span className="text-sm text-text-secondary">
                               {formatOptionalDate(distribution.distribution_date)}
                             </span>
                           </div>

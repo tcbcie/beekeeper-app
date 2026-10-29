@@ -513,7 +513,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                 <h4 className="font-semibold text-foreground">{MONTH_NAMES[md.month - 1]} {md.year}</h4>
                 <div className="flex items-center gap-2">
                   {saveStatus?.month === md.month && (
-                    <span className={`text-xs ${saveStatus.success ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`text-sm ${saveStatus.success ? 'text-green-600' : 'text-red-600'}`}>
                       {saveStatus.success ? 'Saved' : 'Failed to save'}
                     </span>
                   )}
@@ -522,7 +522,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                     disabled={savingMonth === md.month}
                     tone="blue"
                     size="xs"
-                    className="text-xs disabled:opacity-50"
+                    className="text-sm disabled:opacity-50"
                   >
                     <Save size={12} />
                     {savingMonth === md.month ? 'Saving...' : 'Save'}
@@ -571,7 +571,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                       <td className="py-2 px-3 text-foreground">
                         Hybridised offspring
                         {md.auto_hybridised_offspring > 0 && (
-                          <div className="text-xs text-text-tertiary mt-0.5">Auto: {md.auto_hybridised_offspring} from records</div>
+                          <div className="text-sm text-text-tertiary mt-0.5">Auto: {md.auto_hybridised_offspring} from records</div>
                         )}
                       </td>
                       <td className="py-2 px-3 text-right">
@@ -589,7 +589,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                       <td className="py-2 px-3 text-foreground">
                         Virgin queens distributed outside group
                         {md.auto_virgins_distributed_external > 0 && (
-                          <div className="text-xs text-text-tertiary mt-0.5">Auto: {md.auto_virgins_distributed_external} from records</div>
+                          <div className="text-sm text-text-tertiary mt-0.5">Auto: {md.auto_virgins_distributed_external} from records</div>
                         )}
                       </td>
                       <td className="py-2 px-3 text-right">
@@ -607,7 +607,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                       <td className="py-2 px-3 text-foreground">
                         Virgins distributed outside - successfully mated
                         {md.auto_virgins_external_mated > 0 && (
-                          <div className="text-xs text-text-tertiary mt-0.5">Auto: {md.auto_virgins_external_mated} from records</div>
+                          <div className="text-sm text-text-tertiary mt-0.5">Auto: {md.auto_virgins_external_mated} from records</div>
                         )}
                       </td>
                       <td className="py-2 px-3 text-right">
@@ -659,7 +659,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                       />
                     </div>
                     {md.auto_hybridised_offspring > 0 && (
-                      <div className="text-xs text-text-tertiary mt-0.5">Auto: {md.auto_hybridised_offspring} from records</div>
+                      <div className="text-sm text-text-tertiary mt-0.5">Auto: {md.auto_hybridised_offspring} from records</div>
                     )}
                   </div>
                   <div className="text-sm">
@@ -674,7 +674,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                       />
                     </div>
                     {md.auto_virgins_distributed_external > 0 && (
-                      <div className="text-xs text-text-tertiary mt-0.5">Auto: {md.auto_virgins_distributed_external} from records</div>
+                      <div className="text-sm text-text-tertiary mt-0.5">Auto: {md.auto_virgins_distributed_external} from records</div>
                     )}
                   </div>
                   <div className="text-sm">
@@ -689,7 +689,7 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
                       />
                     </div>
                     {md.auto_virgins_external_mated > 0 && (
-                      <div className="text-xs text-text-tertiary mt-0.5">Auto: {md.auto_virgins_external_mated} from records</div>
+                      <div className="text-sm text-text-tertiary mt-0.5">Auto: {md.auto_virgins_external_mated} from records</div>
                     )}
                   </div>
                 </div>
