@@ -288,6 +288,29 @@ export default function VarroaTreatmentForm({
     })
   }
 
+  // Shown in the header and again at the foot of the form, so the two can never drift apart.
+  const actions = (
+    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+      <Button
+        type="submit"
+        form="treatment-form"
+        disabled={submitting}
+        tone="success"
+        className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium disabled:opacity-50"
+      >
+        {submitting ? 'Saving...' : (treatment?.id ? 'Update' : 'Save')} Treatment
+      </Button>
+      <Button
+        type="button"
+        onClick={onCancel}
+        tone="neutral"
+        className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium"
+      >
+        Cancel
+      </Button>
+    </div>
+  )
+
   return (
     <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
@@ -305,25 +328,7 @@ export default function VarroaTreatmentForm({
             <HelpCircle size={20} />
           </IconButton>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <Button
-            type="submit"
-            form="treatment-form"
-            disabled={submitting}
-            tone="danger"
-            className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium disabled:opacity-50"
-          >
-            {submitting ? 'Saving...' : (treatment?.id ? 'Update' : 'Save')} Treatment
-          </Button>
-          <Button
-            type="button"
-            onClick={onCancel}
-            tone="neutral"
-            className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium"
-          >
-            Cancel
-          </Button>
-        </div>
+        {actions}
       </div>
 
       <form id="treatment-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -647,6 +652,9 @@ export default function VarroaTreatmentForm({
             placeholder="Optional notes about the treatment"
           />
         </div>
+
+        {/* Repeated at the foot so a phone user can save without scrolling back up. */}
+        <div className="md:col-span-2">{actions}</div>
       </form>
     </div>
   )

@@ -153,3 +153,7 @@ hook rather than a divergent copy.
 ## 7. Database Connections (MCP Server)
 
 None. Client-side state only.
+
+## 8. Related
+
+- [record-forms-bottom-save.md](./record-forms-bottom-save.md) — the same four forms now repeat Save and Cancel at the foot; the bottom Cancel is the same guarded Cancel.

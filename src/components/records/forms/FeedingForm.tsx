@@ -121,31 +121,36 @@ export default function FeedingForm({
     .filter(h => !h.archived_at)
     .filter(h => !formApiaryId || h.apiary_id === formApiaryId)
 
+  // Shown in the header and again at the foot of the form, so the two can never drift apart.
+  const actions = (
+    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+      <Button
+        type="submit"
+        form="feeding-form"
+        disabled={submitting}
+        tone="success"
+        className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium disabled:opacity-50"
+      >
+        {submitting ? 'Saving...' : (feeding?.id ? 'Update' : 'Save')} Feeding
+      </Button>
+      <Button
+        type="button"
+        onClick={onCancel}
+        tone="neutral"
+        className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium"
+      >
+        Cancel
+      </Button>
+    </div>
+  )
+
   return (
     <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <h3 className="text-xl font-semibold">
           {feeding?.id ? 'Edit Feeding' : 'Record New Feeding'}
         </h3>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <Button
-            type="submit"
-            form="feeding-form"
-            disabled={submitting}
-            tone="success"
-            className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium disabled:opacity-50"
-          >
-            {submitting ? 'Saving...' : (feeding?.id ? 'Update' : 'Save')} Feeding
-          </Button>
-          <Button
-            type="button"
-            onClick={onCancel}
-            tone="neutral"
-            className="px-6 py-3 sm:py-2 min-h-[48px] touch-manipulation font-medium"
-          >
-            Cancel
-          </Button>
-        </div>
+        {actions}
       </div>
 
       <form id="feeding-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -280,6 +285,9 @@ export default function FeedingForm({
             placeholder="Optional notes about the feeding"
           />
         </div>
+
+        {/* Repeated at the foot so a phone user can save without scrolling back up. */}
+        <div className="md:col-span-2">{actions}</div>
       </form>
     </div>
   )

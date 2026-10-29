@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Plan &mdash; Save Button at the Bottom of Record Forms</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  pre { background: #1f2620; color: #e8f0ea; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: .88em; }
+  pre code { background: none; color: inherit; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
+  th, td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
+  th { background: #eef3ef; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  ul.todo li { margin: .35rem 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+  .ascii { background: #f6f9f7; border: 1px solid #d8e3da; border-radius: 6px; padding: 1rem; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85em; white-space: pre; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>Save Button at the Bottom of Record Forms</h1>
+
+<p><strong>Status:</strong> plan, awaiting approval &nbsp;&middot;&nbsp; <strong>Date:</strong> 29 October 2026</p>
+
+<blockquote>
+<p><strong>Your instruction:</strong> on the record screens (e.g. feeding, Varroa check) the Save button is only at the top, so on a phone the user has to scroll back up after filling everything in. Add a Save button at the bottom as well.</p>
+</blockquote>
+
+<h2>1. What I found</h2>
+
+<p>Each record form draws its own buttons; there is no shared shell. Four forms have the problem:</p>
+
+<table>
+  <tr><th>Record</th><th>File</th><th>Save today</th></tr>
+  <tr><td>Feeding</td><td class="file">src/components/records/forms/FeedingForm.tsx</td><td>Top only</td></tr>
+  <tr><td>Varroa treatment</td><td class="file">src/components/records/forms/VarroaTreatmentForm.tsx</td><td>Top only</td></tr>
+  <tr><td>Varroa check</td><td class="file">src/components/records/forms/VarroaCheckForm.tsx</td><td>Top only</td></tr>
+  <tr><td>Harvest</td><td class="file">src/components/records/forms/HarvestForm.tsx</td><td>Top only</td></tr>
+  <tr><td>Inspection</td><td class="file">InspectionForm.tsx</td><td>Already at the bottom (step navigation) &mdash; no change</td></tr>
+  <tr><td>Archive hive</td><td class="file">records/page.tsx</td><td>Already at the bottom &mdash; no change</td></tr>
+</table>
+
+<p>In the four forms the Save and Cancel buttons sit in a header row <em>above</em> the <code>&lt;form&gt;</code> and reach it through <code>form="feeding-form"</code> etc. Saving runs through the form&rsquo;s own <code>handleSubmit</code> and <code>useSubmitLock</code>, so a second button that submits the same form gets the same checks and the same double-tap lock for free.</p>
+
+<p>The hive form (<span class="file">HiveFormSection.tsx</span>) already has Save at the top <em>and</em> the bottom &mdash; the same pattern used here.</p>
+
+<h2>2. The change (same in all four forms)</h2>
+
+<p>Name the existing button group once and render it in both places, so the two can never drift apart:</p>
+
+<pre><code>const actions = (
+  &lt;div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto"&gt;
+    &lt;Button type="submit" form="feeding-form" ...&gt;Save Feeding&lt;/Button&gt;
+    &lt;Button type="button" onClick={onCancel} ...&gt;Cancel&lt;/Button&gt;
+  &lt;/div&gt;
+)
+
+// header row:            {actions}           (unchanged position)
+// last child of &lt;form&gt;:  &lt;div className="md:col-span-2"&gt;{actions}&lt;/div&gt;</code></pre>
+
+<div class="ascii">Phone
+┌──────────────────────┐
+│ Add feeding          │
+│ [ Save feeding ]     │  &lt;- existing
+│ [ Cancel ]           │
+│ Apiary  ...          │
+│ Hive    ...          │
+│ ...                  │
+│ Notes   ...          │
+│ [ Save feeding ]     │  &lt;- new, same button
+│ [ Cancel ]           │
+└──────────────────────┘
+  bottom nav bar (page already pads for it)</div>
+
+<ul>
+  <li><strong>In the page flow, not a floating bar.</strong> A fixed bar would collide with Mel&rsquo;s button, toasts and banners near the bottom edge. The dashboard layout already pads the page bottom for the nav bar and Mel, so the last button scrolls clear of both.</li>
+  <li>Same label, tone, 48px height, <code>disabled</code> while saving, and the same Cancel (with its unsaved-changes guard) as the top buttons.</li>
+  <li><code>md:col-span-2</code> because the forms are a two-column grid on wider screens.</li>
+</ul>
+
+<h2>3. To-do</h2>
+
+<ul class="todo">
+  <li>&#9745; FeedingForm: extract <code>actions</code>, render at the bottom of the form</li>
+  <li>&#9745; VarroaTreatmentForm: same</li>
+  <li>&#9745; VarroaCheckForm: same (after the photo section)</li>
+  <li>&#9745; HarvestForm: same</li>
+  <li>&#9745; Save buttons green (<code>tone="success"</code>) in all four forms &mdash; approved by you</li>
+  <li>&#9745; Type check + ESLint on the four files</li>
+  <li>&#9745; Docs: new <span class="file">docs/features/record-forms-bottom-save.md</span>; cross-reference from <span class="file">record-form-dirty-state-plan.md</span></li>
+  <li>&#9745; <code>qa-engineer</code> audit</li>
+  <li>&#9744; You test on a phone: each of the four forms, save from the bottom button, and check a double tap saves once</li>
+  <li>&#9745; Review section</li>
+</ul>
+
+<h2>4. Colours</h2>
+<p>You approved making the Save buttons green. Varroa treatment was red and Harvest and Varroa check were amber; all four are now <code>tone="success"</code>. Other buttons in these forms (the IPM tips icon, the remove-photo button) are unchanged.</p>
+
+<h2>5. Review</h2>
+
+<h3>Changes</h3>
+<ul>
+  <li>Four forms: the header&rsquo;s Save + Cancel group became a local <code>actions</code> element, rendered in the header (same place as before) and as the last child of the <code>&lt;form&gt;</code> in a <code>md:col-span-2</code> wrapper. Save tone set to <code>success</code>.</li>
+  <li><span class="file">docs/features/record-forms-bottom-save.md</span> (new) and a &ldquo;Related&rdquo; line in <span class="file">record-form-dirty-state-plan.md</span>.</li>
+</ul>
+
+<h3>QA audit (qa-engineer)</h3>
+<ul>
+  <li><strong>No Critical, High or Medium findings.</strong> <code>npx tsc --noEmit</code>: no errors. ESLint on the four files: clean.</li>
+  <li>Both Save buttons submit the same form, so they share <code>handleSubmit</code> (including the treatment hive/date checks), the browser&rsquo;s <code>required</code>-field checks and the <code>useSubmitLock</code> ref lock: a tap on each in quick succession saves once.</li>
+  <li>The bottom Cancel is <code>type="button"</code>, so it never submits; it is the same guarded Cancel as the top (Varroa check also clears the chosen photo).</li>
+  <li>Varroa check returns <code>null</code> early before its render; <code>actions</code> is defined after that and holds no hooks, so hook order is unaffected.</li>
+  <li>No test renders these four forms, so duplicate button names break no lookups.</li>
+  <li>&#9898; Low, left as is: screen readers announce two buttons with the same name (&ldquo;Save feeding&rdquo;). This is the normal pattern for repeated actions and matches the hive form.</li>
+</ul>
+
+</body>
+</html>
