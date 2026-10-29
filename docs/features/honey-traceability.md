@@ -316,7 +316,7 @@ The URL uses the `trace_code` (not the batch_code) to ensure global uniqueness.
 
 ### Consumer View
 
-The trace page uses a trust-focused design for consumer verification. It has its own minimal layout without HiveCraic branding - consumers scanning a QR code don't need to know about the app, they just want to verify their honey.
+The trace page uses a trust-focused design for consumer verification. It has its own minimal layout without HiveCraic branding - consumers scanning a QR code don't need to know about the app, they just want to verify their honey. The layout also sets `manifest: null`, so their phone browser does not offer to install the app.
 
 **Header:**
 - Shield icon + "Honey Traceability" text (centered, no navigation links)
@@ -434,6 +434,9 @@ When editing an existing public batch, a QR code preview is shown at the top of 
 - [Printable Labels](./print-labels.md) — opt-in thermal printing for balkani (bulk container) labels via Brother QL-820NWB.
 
 ## Changelog
+
+### October 29, 2026
+- Public trace and jar pages no longer link the web-app manifest, so buyers scanning a jar QR code are not offered to install the app
 
 ### October 23, 2026 (batch 34)
 - Editing a batch no longer overwrites its total weight; the tally runs only when a source is ticked or unticked

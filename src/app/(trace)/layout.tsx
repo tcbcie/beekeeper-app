@@ -1,3 +1,10 @@
+import type { Metadata } from 'next'
+
+// Jar buyers are not app users: without the manifest link their phone browser does not offer to install the app.
+export const metadata: Metadata = {
+  manifest: null,
+}
+
 export default function TraceLayout({
   children,
 }: {

@@ -271,6 +271,7 @@ The column carries a `CHECK` listing all three values so the other two can be sw
 - **`/j/` is `force-dynamic`.** A label's batch pointer is meant to change; a cached page could serve a stale pointer, which is precisely the failure this feature exists to prevent.
 - **`?lot=` is bounded to 20 characters** (`batch_code` is `varchar(20)`), so nothing longer can match a real lot and an unbounded value cannot be reflected onto a page whose job is to look authoritative.
 - Only **public** batches (`is_public = true`) ever surface. Non-existent, non-public and unmatched lots are indistinguishable.
+- **No app install offer.** `src/app/(trace)/layout.tsx` sets `manifest: null`, so `/j` and `/trace` carry no `<link rel="manifest">` and the buyer's phone browser never offers to install HiveCraic. The root layout still links the manifest everywhere else, so beekeepers can install from the dashboard.
 
 ## Files
 
@@ -303,6 +304,10 @@ The column carries a `CHECK` listing all three values so the other two can be sw
 - [qr-tags.md](../feature/qr-tags.md) — the same permanent-code indirection, for hives
 
 ## Changelog
+
+### 29 October 2026
+
+- Jar buyers scanning the QR code are no longer offered to install the app: the public `(trace)` layout drops the web-app manifest link
 
 ### 27 August 2026 (later)
 

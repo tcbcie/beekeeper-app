@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Plan &mdash; No App Install Prompt on Jar QR Pages</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  pre { background: #1f2620; color: #e8f0ea; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: .88em; }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  ul.todo li { margin: .35rem 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+  .ascii { background: #f6f9f7; border: 1px solid #d8e3da; border-radius: 6px; padding: 1rem; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85em; white-space: pre; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<h1>No App Install Prompt on Jar QR Pages</h1>
+
+<p><strong>Status:</strong> plan, awaiting approval &nbsp;&middot;&nbsp; <strong>Date:</strong> 29 October 2026</p>
+
+<blockquote>
+<p><strong>Your instruction:</strong> a customer who scans the QR code on a jar is prompted on their phone to install the app, which we do not want.</p>
+</blockquote>
+
+<h2>1. Root cause</h2>
+
+<p>Our own amber &ldquo;Install HiveCraic&rdquo; banner is <em>not</em> the culprit &mdash; since batch 47 it only shows under <code>/dashboard</code> (<span class="file">src/components/InstallPrompt.tsx:108</span>).</p>
+
+<p>The prompt the customer sees is the <strong>browser&rsquo;s own</strong> install offer (Chrome&rsquo;s &ldquo;Install app&rdquo; / Samsung Internet&rsquo;s home-screen icon). A browser offers this on any page that links a web-app manifest. The root layout links <code>/manifest.json</code> on <strong>every</strong> page, including the public jar pages:</p>
+
+<pre><code>// src/app/layout.tsx:49  (root layout &rarr; applies to every route)
+manifest: "/manifest.json",</code></pre>
+
+<div class="ascii">Scan jar QR  &rarr;  /j/{code}  (public, (trace) group)
+                    &darr;
+          root layout adds &lt;link rel="manifest"&gt;
+                    &darr;
+          phone browser: "this site is an installable app"
+                    &darr;
+          customer sees "Install HiveCraic"   &larr; unwanted</div>
+
+<p>Chrome no longer needs a service worker for this, so the manifest link alone is enough to trigger it.</p>
+
+<h2>2. Fix (one line of real change)</h2>
+
+<p>Tell Next.js not to emit the manifest link for the public traceability route group. Next merges metadata per segment, and a child setting <code>manifest: null</code> removes the parent&rsquo;s link (checked in <span class="file">node_modules/next/dist/lib/metadata/resolve-metadata.js</span>: <code>target[key] = source[key] || null</code>). Both public scan pages (<code>/j/{code}</code> and <code>/trace/{batchCode}</code>) sit under <span class="file">src/app/(trace)/layout.tsx</span>, and neither page sets <code>manifest</code>, so the layout&rsquo;s value holds.</p>
+
+<pre><code>// src/app/(trace)/layout.tsx
+import type { Metadata } from 'next'
+
+// Jar buyers are not app users: no manifest means the phone browser does not offer to install the app.
+export const metadata: Metadata = {
+  manifest: null,
+}</code></pre>
+
+<p>What stays the same: the dashboard, login and every other page keep the manifest, so beekeepers can still install the app exactly as before. The payment link and the page content are untouched.</p>
+
+<h2>3. To-do</h2>
+
+<ul class="todo">
+  <li>&#9745; Add <code>manifest: null</code> metadata to <span class="file">src/app/(trace)/layout.tsx</span></li>
+  <li>&#9745; Update <span class="file">docs/features/jar-label-qr-codes.md</span> and <span class="file">docs/features/honey-traceability.md</span> with a short note</li>
+  <li>&#9745; Run the <code>qa-engineer</code> audit on the change</li>
+  <li>&#9744; You test: open a jar QR link on an Android phone in a fresh/incognito tab &mdash; no install offer; View Source has no <code>rel="manifest"</code>. Then check <code>/dashboard</code> still offers install.</li>
+  <li>&#9745; Review section below</li>
+</ul>
+
+<h2>4. Review</h2>
+
+<h3>Changes</h3>
+<ul>
+  <li><span class="file">src/app/(trace)/layout.tsx</span> &mdash; added a <code>metadata</code> export with <code>manifest: null</code> and a one-line comment. No other code touched.</li>
+  <li><span class="file">docs/features/jar-label-qr-codes.md</span> &mdash; note under &ldquo;Privacy and security&rdquo; and a 29 October 2026 changelog entry.</li>
+  <li><span class="file">docs/features/honey-traceability.md</span> &mdash; note under &ldquo;Consumer View&rdquo; and a changelog entry.</li>
+</ul>
+
+<h3>QA audit (qa-engineer)</h3>
+<ul>
+  <li><strong>No Critical, High or Medium findings.</strong></li>
+  <li>Type check: <code>manifest?: null | string | URL</code> in Next&rsquo;s <code>Metadata</code> type, so <code>null</code> is the supported way to remove it. <code>npx tsc --noEmit</code>: no errors. ESLint on the file: clean.</li>
+  <li>Inheritance: neither <code>/j/[code]</code> (static <code>metadata</code>) nor <code>/trace/[batchCode]</code> (<code>generateMetadata</code>) sets <code>manifest</code>, so the layout&rsquo;s <code>null</code> holds for both.</li>
+  <li>Navigation: the only links on these pages are back to <code>/j/&hellip;</code> (lot finder) and the external payment link, so a buyer never lands on a page that still carries the manifest.</li>
+  <li>&#9898; Low, left as is: the service worker still registers on these pages (<span class="file">ServiceWorkerRegistration.tsx</span>), and the iOS <code>apple-mobile-web-app-capable</code> meta still renders. Neither triggers an install offer on its own &mdash; iOS never prompts, and Chrome needs the manifest &mdash; so changing them would widen the change for no gain.</li>
+</ul>
+
+</body>
+</html>
