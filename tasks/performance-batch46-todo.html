@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Batch 46: Performance</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; font-size: 17px; color: #1a1a1a; background: #faf8f5; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .task { padding: 0.35rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    .decide { background: #fff7ed; border-left: 4px solid #ea580c; padding: 0.6rem 0.9rem; margin: 0.8rem 0; }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #e7d9b8; padding: 0.4rem; text-align: left; }
+    th { background: #fef3c7; }
+  </style>
+</head>
+<body>
+
+<h1>Batch 46: Performance</h1>
+<p><strong>Status:</strong> Implemented 29/10/2026, waiting for your test. This is the performance batch you added on 25/10/2026. Three agents looked at what each page downloads, the database and data requests, and the screens, offline cache and scales. They used read-only timings on the live database. Each item below is a small change. The ones with the biggest gain for the least risk come first in each section.</p>
+
+<h2>A. The database</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>Mel's knowledge search scans everything:</strong> each search reads all 5,609 knowledge-base rows. It takes 0.5 to 1 second on average and up to 3.8 seconds. The same search using its index takes under 1 millisecond. The cause is a setting on the database function that stops it using the index. One migration rewrites the function so it uses the index, and I'll confirm the plan afterwards.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Record lists check every row one by one:</strong> the read rules on inspections, feedings, harvests, varroa checks and varroa treatments call an access check for each row. For the largest account's 560 inspections that costs 14.6 ms where it could take 0.3 ms. This affects the records page, the hives list, hive detail and reports. Each rule gets a quick "it's your own hive" path first, which is the check's own first step, then the full check for team hives. Who can see what doesn't change.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Small tidy-ups the checker flags:</strong> one missing index (queens by distribution), and two invitation rules that re-read the signed-in user on every row.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Housekeeping:</strong>
+  <ul>
+    <li><strong>The background web-request log:</strong> the database's log of its own outgoing web requests (the reminder jobs' calls) holds 24 rows but takes 20 MB. Clearing it is the database's single biggest use of time: 4.8 hours so far. It gets compacted once.</li>
+    <li><strong>The scheduled-job history:</strong> 41 MB so far. A daily job will drop entries older than 7 days.</li>
+  </ul>
+  It shares the small server that pages use.</div>
+<div class="decide"><strong>Decision 1: database changes.</strong> The second and fourth items change security rules and run housekeeping on the live database. <strong>Done</strong> (you approved). Every account sees exactly the same rows as before, checked for all five tables, then again under real sign-in for the largest account and a team member.</div>
+
+<h2>B. Requests from the app</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>The account check:</strong> every open tab checks every 30 seconds whether your account is still active, even when the app is in the background. That's about 250,000 requests so far, the most of anything in the app, and it keeps phones' radios awake. It will skip the check while the app is in the background and check once when you come back.</div>
+<div class="decide"><strong>Decision 2: how often to check while the app is open.</strong> <strong>Done: every 5 minutes</strong> (you approved), plus a check each time you come back to the app. A disabled account is locked out within 5 minutes. The server routes that need an active account still check it on every call.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Dashboard team figures:</strong> up to 10 requests, 5 of them one after another, load the "Teams &amp; Collaboration" figures, but that panel starts closed. They now load when you open it, using the shared team list.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Apiaries page:</strong> it makes 5 requests one after another, the last one fetching every inspection ever recorded just to find the latest date per apiary. It goes down to 3 requests, fetching only the latest inspection per hive.</div>
+
+<h2>C. Scales</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>The inspection form:</strong> to fill in one weight, it runs the full scale summary: 8 Wolf calls one after another, or 7 BEEP calls. It will ask for the latest reading only, which is 1 call.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Wolf summary:</strong> the latest values come from the 48-hour readings it already fetches, so it makes 7 calls instead of 8, with the same result. I'm leaving out merging the 7-day and 30-day calls, because Wolf doesn't document how a daily request treats the first and last day.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Wolf battery tile:</strong> it never shows. The panel will ask for the battery level once when it opens.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Unused scale code:</strong> two Wolf display components that nothing uses get deleted. One of them would have checked every 5 minutes even in the background.</div>
+
+<h2>D. What pages download</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>QR code logo:</strong> every QR code embeds a 613 KB logo. A 128 px copy of about 8 KB replaces it. QR pages, printing and the QR tags page get lighter.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Records page:</strong> all five record forms (about 4,400 lines, the inspection form alone 2,400) load before you open one. They now load when opened, as do the QR code pop-up on inspection cards and the long form sections on the Hives and Queens lists.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Reports:</strong> all nine reports load; now only the one you open does.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Apiaries list:</strong> the Irish grid conversion library (about 35 KB) now loads only when a grid reference is worked out.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Opening the installed app:</strong> it opens at the home page, which loads, checks your sign-in, and then moves to the dashboard. It will open straight at the dashboard.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Public trace page:</strong> the page jar customers scan shows the apiary photo full size, up to 10 MB. It now gets a phone-sized copy.</div>
+
+<h2>E. Long lists and the offline cache</h2>
+<div class="task"><input type="checkbox" checked disabled> <strong>The records page shows all records at once:</strong> up to 735 for the largest account, and every one is redrawn on each key press in search. It will show 50 at a time with a large "Show more" button. Search stops redrawing on every key press, and a record you jump to from a link is always shown.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>A weak signal:</strong> when the signal is poor but not gone, the app can wait tens of seconds for a page before showing the saved one. After 4 seconds it now shows the saved page, and updates it when the network answers.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Old app files pile up:</strong> each update adds code files to your phone's cache and none are removed until the next version number change. Only the newest 400 are kept.</div>
+<div class="task"><input type="checkbox" checked disabled> <strong>Photos re-download after an hour:</strong> they're now kept for 7 days. I chose 7 days, not the 30 in the plan, because a deleted photo is removed for good after 7 days and copies shouldn't outlive it by much.</div>
+
+<div class="note"><strong>Left out on purpose:</strong>
+  <ul>
+    <li><strong>Hives list history:</strong> loading only the latest records on the hives list needs a new database function. The faster rules above make the current way cheap.</li>
+    <li><strong>The profile read:</strong> it's read 3 to 4 times per page, but the reads run side by side, so the gain is small.</li>
+    <li><strong>Merging BEEP's 7 calls:</strong> they run side by side, so merging would mainly spare BEEP, and the long window might thin the data.</li>
+    <li><strong>Sign-in on a weak signal:</strong> it touches sign-in behaviour.</li>
+    <li><strong>For the UI review batch:</strong> the design font (DM Sans) is never loaded, so the app shows Arial.</li>
+  </ul>
+</div>
+
+<h2>Finishing</h2>
+<div class="task"><input type="checkbox" checked disabled> Type-check, lint and the whole test suite; a short test for the records "Show more" list (not written: see the review); the qa-engineer audit; <code>get_advisors</code> after the migrations; and resetting the database statistics, so the next check starts clean.</div>
+<div class="task"><input type="checkbox" checked disabled> Docs: <code>docs/features/performance-batch46-plan.md</code>, the scale and PWA docs, and memory.</div>
+<div class="task"><input type="checkbox" disabled> <strong>You:</strong>
+  <ol>
+    <li>Ask Mel a beekeeping question; the answer should come noticeably faster.</li>
+    <li>Records page: 50 records, then "Show more"; search feels instant; opening a form still works.</li>
+    <li>Open the installed app; it lands on the dashboard straight away.</li>
+    <li>A Wolf hive: the battery tile shows; an inspection prefills the weight quickly.</li>
+    <li>Next time you're at an apiary with a poor signal: pages you've opened before appear within a few seconds.</li>
+  </ol>
+</div>
+
+<h2>Review</h2>
+<table style="border-collapse: collapse; width: 100%;">
+  <tr><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Area</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">Before</th><th style="border:1px solid #e7d9b8;padding:0.4rem;background:#fef3c7;text-align:left">After</th></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Mel's knowledge search</td><td style="border:1px solid #e7d9b8;padding:0.4rem">483–925 ms, up to 3.8 s (read every row)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">About 4 ms (uses its index); same results</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Record reads (largest account)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">14.6 ms</td><td style="border:1px solid #e7d9b8;padding:0.4rem">2.8 ms; same rows for every account</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Background web-request log</td><td style="border:1px solid #e7d9b8;padding:0.4rem">21 MB, the database's biggest time user</td><td style="border:1px solid #e7d9b8;padding:0.4rem">72 kB</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Scheduled-job history</td><td style="border:1px solid #e7d9b8;padding:0.4rem">42 MB, 31,634 rows</td><td style="border:1px solid #e7d9b8;padding:0.4rem">680 rows; cleaned daily</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Account check</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Every 30 s, also in the background (~250,000 calls)</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Every 5 min while on screen, plus on return</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Dashboard team figures</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Up to 10 requests on every load</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Only when the panel is opened</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Apiaries page</td><td style="border:1px solid #e7d9b8;padding:0.4rem">5 requests in a row, every inspection ever</td><td style="border:1px solid #e7d9b8;padding:0.4rem">3 requests, latest inspection per hive</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Inspection form weight</td><td style="border:1px solid #e7d9b8;padding:0.4rem">8 Wolf / 7 BEEP calls</td><td style="border:1px solid #e7d9b8;padding:0.4rem">1 call</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Wolf summary</td><td style="border:1px solid #e7d9b8;padding:0.4rem">8 calls</td><td style="border:1px solid #e7d9b8;padding:0.4rem">7 calls</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Wolf battery tile</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Never shown</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Shown once the scale reports it</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">QR code logo</td><td style="border:1px solid #e7d9b8;padding:0.4rem">613 KB</td><td style="border:1px solid #e7d9b8;padding:0.4rem">7.7 KB</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Records page</td><td style="border:1px solid #e7d9b8;padding:0.4rem">All forms loaded; all records drawn; redrawn per key press</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Forms on demand; 50 + Show more; smooth search</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Reports, Hives, Queens</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Everything loaded up front</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Report, form or modal loads when opened</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Installed app opening</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Home page, then a redirect</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Straight to the dashboard</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Weak signal</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Could wait tens of seconds</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Saved page after 4 s</td></tr>
+  <tr><td style="border:1px solid #e7d9b8;padding:0.4rem">Checks</td><td style="border:1px solid #e7d9b8;padding:0.4rem">-</td><td style="border:1px solid #e7d9b8;padding:0.4rem">Type-check clean; <code>eslint .</code> 0 (outside the new design skill folder); 869 tests pass; security advisors unchanged (14/72)</td></tr>
+</table>
+<ul>
+  <li><strong>Database:</strong> three migrations (Mel's search, the read rules with the invitation rules and the index, the daily history clean-up) plus a one-off compaction of the web-request log. The query statistics were reset, so the next check starts clean.</li>
+  <li><strong>Tests:</strong> two existing tests were updated. The app's start page is now expected to be <code>/dashboard</code> with the id kept as <code>/</code>, and the hive form test waits for the form to load. I didn't write the planned "Show more" test: the records page has no test setup and the logic is three lines, so your check covers it.</li>
+  <li><strong>QA audit:</strong> no Critical or High issues. One Medium was fixed: pages and app code share one cache, so a burst of app-file saves could keep putting off the page clean-up. Each kind is now counted on its own.</li>
+  <li><strong>Changed from the plan:</strong> photos are cached for 7 days, not 30 or a year, to match the 7-day grace period before a deleted photo is removed.</li>
+  <li><strong>For the UI review:</strong> the design font, DM Sans, is never loaded.</li>
+</ul>
+</body>
+</html>

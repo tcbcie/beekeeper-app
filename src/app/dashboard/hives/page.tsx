@@ -1,6 +1,7 @@
 'use client'
 import { getCurrentDate } from '@/lib/date-utils'
 import { useEffect, useState, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Plus, X, Scale, Archive, CheckSquare, Copy, FolderInput, Search, Syringe, Droplet } from 'lucide-react'
@@ -10,11 +11,9 @@ import TextInput from '@/components/ui/TextInput'
 import FilterDisclosure from '@/components/ui/FilterDisclosure'
 import { useToast } from '@/components/ui/Toast'
 import { Hive } from '@/types/hive'
-import HiveFormSection from '@/components/hive/HiveFormSection'
 import HiveListCard from '@/components/hive/HiveListCard'
-import MoveHivesModal from '@/components/hive/MoveHivesModal'
-import BulkTreatmentModal, { type BulkTreatmentValues } from '@/components/hive/BulkTreatmentModal'
-import BulkFeedingModal, { type BulkFeedingValues } from '@/components/hive/BulkFeedingModal'
+import type { BulkTreatmentValues } from '@/components/hive/BulkTreatmentModal'
+import type { BulkFeedingValues } from '@/components/hive/BulkFeedingModal'
 import { createTreatmentReminders, type TreatmentReminderInput } from '@/lib/treatment-reminder'
 import type { TreatmentProduct, DropdownValue } from '@/types/records'
 import Button from '@/components/ui/Button'
@@ -24,6 +23,12 @@ import { usePersistentState } from '@/hooks/usePersistentState'
 import { useHivesList } from '@/hooks/useHivesList'
 import { isQueenClipped } from '@/lib/queen-clipped'
 import { useListPositionMemory } from '@/hooks/useListPositionMemory'
+
+// The form and the bulk-action modals only show when opened, so they load then
+const HiveFormSection = dynamic(() => import('@/components/hive/HiveFormSection'), { loading: () => <LoadingSpinner text="Loading form..." />, ssr: false })
+const MoveHivesModal = dynamic(() => import('@/components/hive/MoveHivesModal'), { ssr: false })
+const BulkTreatmentModal = dynamic(() => import('@/components/hive/BulkTreatmentModal'), { ssr: false })
+const BulkFeedingModal = dynamic(() => import('@/components/hive/BulkFeedingModal'), { ssr: false })
 
 export default function HivesPage() {
 

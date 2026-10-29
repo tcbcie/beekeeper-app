@@ -2,6 +2,7 @@
 import { getCurrentDate } from '@/lib/date-utils'
 import { downloadCsv, toCsv } from '@/lib/csv'
 import { useEffect, useState, useRef, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -14,12 +15,14 @@ import { useToast } from '@/components/ui/Toast'
 import { Queen, calculateQueenAge, isProductionQueen, queenStatusBadgeClass } from '@/types/queen'
 import QueenRoleBadge from '@/components/queens/QueenRoleBadge'
 import Button from '@/components/ui/Button'
-import PrintLabelsModal from '@/components/labels/PrintLabelsModal'
 import { queenToLabelDatum } from '@/components/labels/queenMapping'
 import { useLabelPrinting } from '@/hooks/useLabelPrinting'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useQueensList } from '@/hooks/useQueensList'
-import QueenFormSection from '@/components/queens/QueenFormSection'
+
+// The form and the label-printing modal only show when opened, so they load then
+const QueenFormSection = dynamic(() => import('@/components/queens/QueenFormSection'), { loading: () => <LoadingSpinner text="Loading form..." />, ssr: false })
+const PrintLabelsModal = dynamic(() => import('@/components/labels/PrintLabelsModal'), { ssr: false })
 
 // Module-level so the identity is stable across renders and the limit lives
 // in one place. Selection persistence key kept alongside for the same reason.

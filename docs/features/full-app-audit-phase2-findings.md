@@ -7,7 +7,7 @@
 
 1. ~~**C9b, reports and Mel:** C9b-08/09, 15 to 19, 21 to 27.~~ Done in batch 44 (29/10/2026).
 2. ~~**C2, API routes:** C2-05 to C2-17, C2-30.~~ Done in batch 45 (29/10/2026).
-3. **Performance (owner added 25/10/2026):** optimise the performance of the whole app.
+3. ~~**Performance (owner added 25/10/2026):** optimise the performance of the whole app.~~ Done in batch 46 (29/10/2026): see `docs/features/performance-batch46-plan.md`.
 4. **UI review (owner added 25/10/2026):** review the UI with the `design-taste-frontend` skill, keeping the 50+ rules (16px fields, 48px targets, 14px minimum text).
 
 ## Chunk 3: dashboard home, hives, scales (36 findings: 4 High, 16 Medium, 16 Low)

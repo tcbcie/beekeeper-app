@@ -114,7 +114,11 @@ const nextConfig: NextConfig = {
   // break when bundled — keep it external to the server build.
   serverExternalPackages: ['@react-pdf/renderer'],
   images: {
-    remotePatterns: buildStorageRemotePatterns()
+    remotePatterns: buildStorageRemotePatterns(),
+    // Uploaded photos never change (each has a unique name), so keep optimised copies for 7 days
+    // instead of re-fetching them every hour. Not longer: a deleted photo is removed for good after
+    // a 7-day grace period (cron/storage-cleanup), and copies shouldn't outlive it by much.
+    minimumCacheTTL: 60 * 60 * 24 * 7,
   },
   env: {
     NEXT_PUBLIC_APP_VERSION: packageJson.version,

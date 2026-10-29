@@ -8,7 +8,9 @@ import { getLevelLabel } from '@/types/records'
 import IconButton from '@/components/ui/IconButton'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import ModalShell from '@/components/ui/ModalShell'
-import HiveQRCode from '@/components/hive/HiveQRCode'
+import dynamic from 'next/dynamic'
+// The QR code library only loads when the QR pop-up is opened
+const HiveQRCode = dynamic(() => import('@/components/hive/HiveQRCode'), { ssr: false })
 
 interface InspectionCardProps {
   inspection: Inspection

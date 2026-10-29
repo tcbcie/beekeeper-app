@@ -35,10 +35,12 @@ describe('PWA Manifest Validation', () => {
       expect(typeof manifest.start_url).toBe('string')
     })
 
-    it('should have start_url that does not require authentication', () => {
-      // start_url should be "/" or a public page, not "/dashboard" which requires auth
-      const startUrl = manifest.start_url as string
-      expect(startUrl).toBe('/')
+    it('should open the installed app straight at the dashboard, keeping its identity', () => {
+      // Opening at "/" loaded a page whose only job was to redirect to /dashboard (batch 46).
+      // The dashboard layout sends signed-out users to the login page, and /dashboard is in the
+      // service worker's offline list. The id stays "/" so installed apps aren't seen as new ones.
+      expect(manifest.start_url).toBe('/dashboard')
+      expect(manifest.id).toBe('/')
     })
 
     it('should have display mode set to standalone or fullscreen', () => {

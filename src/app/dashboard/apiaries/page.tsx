@@ -36,7 +36,6 @@ import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { Apiary, ApiaryFormData } from '@/types/apiary'
 import ApiaryCard from '@/components/apiaries/ApiaryCard'
 import { fetchElevation } from '@/lib/elevation'
-import { toIrishGridRef } from '@/lib/irish-grid'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 
 /**
@@ -248,11 +247,13 @@ export default function ApiariesPage() {
     }))
   }
 
-  // Look up Irish Grid reference for given coordinates and update form
-  const lookupGridReference = (lat: string, lng: string) => {
+  // Look up Irish Grid reference for given coordinates and update form. The grid library
+  // (proj4, about 35 KB) loads only when a reference is worked out.
+  const lookupGridReference = async (lat: string, lng: string) => {
     const latNum = parseFloat(lat)
     const lngNum = parseFloat(lng)
     if (isNaN(latNum) || isNaN(lngNum)) return
+    const { toIrishGridRef } = await import('@/lib/irish-grid')
     const ref = toIrishGridRef(latNum, lngNum)
     setFormData(prev => ({ ...prev, grid_reference: ref || '' }))
   }
@@ -282,6 +283,7 @@ export default function ApiariesPage() {
 
   // Backfill grid references for existing apiaries missing them (runs once on load)
   const backfillGridReferences = async (apiariesMissing: Apiary[], currentUserId: string) => {
+    const { toIrishGridRef } = await import('@/lib/irish-grid')
     for (const a of apiariesMissing) {
       const ref = toIrishGridRef(Number(a.latitude), Number(a.longitude))
       if (ref) {
@@ -312,84 +314,70 @@ export default function ApiariesPage() {
     if (!isCurrent()) return
     setIsTeamMember(hasTeams)
 
-    // Fetch own + shared apiaries
+    // Fetch own + shared apiaries, and the shared apiaries' team names in the same round trip
     let query = supabase.from('apiaries').select('*')
     if (sharedApiaryIds.length > 0) {
       query = query.or(`user_id.eq.${currentUserId},id.in.(${sharedApiaryIds.join(',')})`)
     } else {
       query = query.eq('user_id', currentUserId)
     }
-    const { data, error: apiariesError } = await query.order('name')
+    const [{ data, error: apiariesError }, { data: teamApiaryData }] = await Promise.all([
+      query.order('name'),
+      sharedApiaryIds.length > 0
+        ? supabase.from('team_apiaries').select('apiary_id, teams(name)').in('apiary_id', sharedApiaryIds)
+        : Promise.resolve({ data: null }),
+    ])
     if (apiariesError) return loadFailed(apiariesError)
     if (!isCurrent()) return
 
     if (data) {
       // Look up team names for shared apiaries
       const teamNameMap: Record<string, string> = {}
-      if (sharedApiaryIds.length > 0) {
-        const { data: teamApiaryData } = await supabase
-          .from('team_apiaries')
-          .select('apiary_id, teams(name)')
-          .in('apiary_id', sharedApiaryIds)
-
-        if (teamApiaryData) {
-          teamApiaryData.forEach((ta) => {
-            const typedData = ta as { apiary_id: string; teams: { name: string } | { name: string }[] | null }
-            if (typedData.teams) {
-              const teamName = Array.isArray(typedData.teams)
-                ? typedData.teams[0]?.name || ''
-                : typedData.teams.name
-              if (teamName) {
-                teamNameMap[typedData.apiary_id] = teamName
-              }
+      if (teamApiaryData) {
+        teamApiaryData.forEach((ta) => {
+          const typedData = ta as { apiary_id: string; teams: { name: string } | { name: string }[] | null }
+          if (typedData.teams) {
+            const teamName = Array.isArray(typedData.teams)
+              ? typedData.teams[0]?.name || ''
+              : typedData.teams.name
+            if (teamName) {
+              teamNameMap[typedData.apiary_id] = teamName
             }
-          })
-        }
+          }
+        })
       }
 
-      // Enrich with hive counts and last inspection dates (active hives only)
+      // Enrich with hive counts and last inspection dates (active hives only). Each active hive
+      // comes with only its latest inspection: fetching every inspection ever recorded, in a
+      // second round trip, just to find the newest date per apiary was the page's slowest step.
       // Chunked and paged: one request is cut at 1,000 rows, and long id lists overflow the URL (C7a-11)
       const apiaryIds = data.map(a => a.id)
-      const { data: activeHives, error: hivesError } = await fetchInChunks<{ id: string; apiary_id: string }>(apiaryIds, (chunk) =>
+      const { data: activeHives, error: hivesError } = await fetchInChunks<{
+        id: string
+        apiary_id: string
+        inspections: { inspection_date: string }[] | null
+      }>(apiaryIds, (chunk) =>
         fetchAllPages((from, to) => supabase
           .from('hives')
-          .select('id, apiary_id')
+          .select('id, apiary_id, inspections(inspection_date)')
           .in('apiary_id', chunk)
           .is('archived_at', null)
+          .order('inspection_date', { referencedTable: 'inspections', ascending: false })
+          .limit(1, { referencedTable: 'inspections' })
           .order('id')
           .range(from, to)))
       if (hivesError) return loadFailed(hivesError)
 
       const hiveCounts: Record<string, number> = {}
-      const activeHiveIds: string[] = []
-      const hiveToApiary: Record<string, string> = {}
+      const lastInspections: Record<string, string> = {}
       ;(activeHives || []).forEach(h => {
         hiveCounts[h.apiary_id] = (hiveCounts[h.apiary_id] || 0) + 1
-        activeHiveIds.push(h.id)
-        hiveToApiary[h.id] = h.apiary_id
+        // Keep the newest date per apiary across its hives
+        const latest = h.inspections?.[0]?.inspection_date
+        if (latest && (!lastInspections[h.apiary_id] || latest > lastInspections[h.apiary_id])) {
+          lastInspections[h.apiary_id] = latest
+        }
       })
-
-      // Only fetch inspections for active hives
-      const lastInspections: Record<string, string> = {}
-      if (activeHiveIds.length > 0) {
-        const { data: inspData, error: inspError } = await fetchInChunks<{ hive_id: string; inspection_date: string }>(activeHiveIds, (chunk) =>
-          fetchAllPages((from, to) => supabase
-            .from('inspections')
-            .select('hive_id, inspection_date')
-            .in('hive_id', chunk)
-            .order('inspection_date', { ascending: false })
-            .order('id')
-            .range(from, to)))
-        if (inspError) return loadFailed(inspError)
-
-        // Chunks merge out of date order, so keep the newest date per apiary explicitly
-        inspData.forEach(i => {
-          const apiaryId = hiveToApiary[i.hive_id]
-          if (apiaryId && (!lastInspections[apiaryId] || i.inspection_date > lastInspections[apiaryId])) {
-            lastInspections[apiaryId] = i.inspection_date
-          }
-        })
-      }
 
       if (!isCurrent()) return
       const enriched = data.map(a => ({
@@ -495,7 +483,10 @@ export default function ApiariesPage() {
       const hasCoordinates = !Number.isNaN(latNum) && !Number.isNaN(lngNum)
 
       if (hasCoordinates) {
-        if (!gridReference) gridReference = toIrishGridRef(latNum, lngNum) || ''
+        if (!gridReference) {
+          const { toIrishGridRef } = await import('@/lib/irish-grid')
+          gridReference = toIrishGridRef(latNum, lngNum) || ''
+        }
         if (!elevation) {
           const elev = await fetchElevation(latNum, lngNum)
           if (elev !== null) elevation = String(Math.round(elev))

@@ -78,12 +78,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Every 5 minutes while the app is on screen, and once whenever it comes back. A 30-second
+    // timer that also ran in the background was the app's biggest source of requests and kept
+    // phones' radios awake. The API routes still check the account on each call.
     checkAccount()
-    const interval = setInterval(checkAccount, 30000)
+    const interval = setInterval(() => {
+      if (!document.hidden) checkAccount()
+    }, 5 * 60 * 1000)
+    const onVisible = () => {
+      if (!document.hidden) checkAccount()
+    }
+    document.addEventListener('visibilitychange', onVisible)
 
     return () => {
       cancelled = true
       clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }, [userId, router, toast])
 

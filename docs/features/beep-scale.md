@@ -327,3 +327,7 @@ Uses `weight_kg_corrected` if available, falls back to `weight_kg`.
 - **Custom dates:** checked before any BEEP call by `customRangeError()`: real `YYYY-MM-DD` dates, start not after end, at most 366 days. A bad range gets a 400.
 - **Time limits:** `beepFetch` uses `AbortSignal.timeout`, so the limit also covers reading the reply.
 - **Browser requests:** scale IDs in request addresses are encoded with `encodeURIComponent`.
+
+## Batch 46 (29/10/2026)
+
+- **`latest=1`:** returns only `{ lastValues }` (1 BEEP call instead of 7). The inspection form uses it to fill in the weight.

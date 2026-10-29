@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
+import { useMemo, useState, useCallback, useEffect, useRef, useDeferredValue, type Dispatch, type SetStateAction } from 'react'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useSelection } from '@/contexts/SelectionContext'
 import type {
@@ -225,7 +225,10 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
 
   const dateRangeStart = useMemo(() => getDateRange(), [getDateRange])
 
-  const search = searchTerm.trim().toLowerCase()
+  // The list filters on a deferred copy of the search box, so typing stays instant even with
+  // hundreds of records (the box itself still updates on every key press).
+  const deferredSearchTerm = useDeferredValue(searchTerm)
+  const search = deferredSearchTerm.trim().toLowerCase()
 
   // Filter all records
   const filteredRecords = useMemo(() => {

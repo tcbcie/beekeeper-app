@@ -1,22 +1,24 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { getCurrentUserId } from '@/lib/auth'
 import { FileText, ClipboardList, Search, LayoutGrid, Apple, Archive, Crown, XCircle } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import {
-  DAFMVarroaReport,
-  VarroaMonitoringReport,
-  HiveInspectionSummary,
-  ApiaryOverview,
-  HarvestReport,
-  ArchivedHivesReport,
-  QueenFailuresReport
-} from '@/components/reports'
-import RearingGroupReport from '@/components/rearing-groups/RearingGroupReport'
-import NIHBSMonthlyReturn from '@/components/rearing-groups/NIHBSMonthlyReturn'
+
+// Only one report shows at a time, so each loads when it is opened (about 2,700 lines in all)
+const reportLoading = () => <LoadingSpinner text="Loading report..." />
+const DAFMVarroaReport = dynamic(() => import('@/components/reports/DAFMVarroaReport'), { loading: reportLoading, ssr: false })
+const VarroaMonitoringReport = dynamic(() => import('@/components/reports/VarroaMonitoringReport'), { loading: reportLoading, ssr: false })
+const HiveInspectionSummary = dynamic(() => import('@/components/reports/HiveInspectionSummary'), { loading: reportLoading, ssr: false })
+const ApiaryOverview = dynamic(() => import('@/components/reports/ApiaryOverview'), { loading: reportLoading, ssr: false })
+const HarvestReport = dynamic(() => import('@/components/reports/HarvestReport'), { loading: reportLoading, ssr: false })
+const ArchivedHivesReport = dynamic(() => import('@/components/reports/ArchivedHivesReport'), { loading: reportLoading, ssr: false })
+const QueenFailuresReport = dynamic(() => import('@/components/reports/QueenFailuresReport'), { loading: reportLoading, ssr: false })
+const RearingGroupReport = dynamic(() => import('@/components/rearing-groups/RearingGroupReport'), { loading: reportLoading, ssr: false })
+const NIHBSMonthlyReturn = dynamic(() => import('@/components/rearing-groups/NIHBSMonthlyReturn'), { loading: reportLoading, ssr: false })
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import Button from '@/components/ui/Button'
 

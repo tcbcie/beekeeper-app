@@ -86,6 +86,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'BEEP not connected' }, { status: 400 })
     }
 
+    // The inspection form only needs the latest weight: one BEEP call, not the 7-call summary
+    if (searchParams.get('latest') === '1') {
+      const lastValues = await beepGetLastValues(beepApiToken, deviceId)
+      return NextResponse.json({ lastValues })
+    }
+
     // A chart asking for a period only reads the history, so skip the summary's vendor calls
     if (period || (customStart && customEnd)) {
       let history = null

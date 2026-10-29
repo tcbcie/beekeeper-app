@@ -160,20 +160,16 @@ export function useTeams(): UseTeamsReturn {
         })
         .map((ta) => ta.apiary_id)
 
-      // Fetch hives from MY shared apiaries
-      const { data: mySharedHives, error: myHivesError } = await supabase
-        .from('hives')
-        .select('id, queen_id, user_id, apiary_id')
-        .in('apiary_id', myApiaryIds)
+      // Hives in MY shared apiaries and in apiaries shared WITH ME, fetched together
+      const [
+        { data: mySharedHives, error: myHivesError },
+        { data: sharedWithMeHives, error: othersHivesError },
+      ] = await Promise.all([
+        supabase.from('hives').select('id, queen_id, user_id, apiary_id').in('apiary_id', myApiaryIds),
+        supabase.from('hives').select('id, queen_id, user_id, apiary_id').in('apiary_id', othersApiaryIds),
+      ])
 
       if (myHivesError) throw myHivesError
-
-      // Fetch hives from apiaries shared WITH ME
-      const { data: sharedWithMeHives, error: othersHivesError } = await supabase
-        .from('hives')
-        .select('id, queen_id, user_id, apiary_id')
-        .in('apiary_id', othersApiaryIds)
-
       if (othersHivesError) throw othersHivesError
 
       // Process hives

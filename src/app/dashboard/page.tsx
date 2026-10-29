@@ -89,6 +89,8 @@ export default function DashboardPage() {
  const [userRole, setUserRole] = useState<UserRole>('User')
  const [showMySharedDetails, setShowMySharedDetails] = useState(false)
  const [showTeamsSection, setShowTeamsSection] = useState(false)
+ // The team figures only show inside the Teams panel, which starts closed: load them on first open.
+ const teamStatsRequestedRef = useRef(false)
  const router = useRouter()
 
  // Custom hooks
@@ -155,10 +157,9 @@ export default function DashboardPage() {
  useEffect(() => {
  if (userId) {
  fetchTeams(userId)
- fetchTeamStats(userId)
  fetchRearingGroups(userId)
  }
- }, [userId, fetchTeams, fetchTeamStats, fetchRearingGroups])
+ }, [userId, fetchTeams, fetchRearingGroups])
 
  // Memoised computed values (must be above early return to satisfy rules-of-hooks)
  // Sort apiaries nearest-first when GPS is available
@@ -434,7 +435,13 @@ export default function DashboardPage() {
  <Panel>
  <button
  type="button"
- onClick={() => setShowTeamsSection(!showTeamsSection)}
+ onClick={() => {
+  if (!showTeamsSection && userId && !teamStatsRequestedRef.current) {
+   teamStatsRequestedRef.current = true
+   fetchTeamStats(userId)
+  }
+  setShowTeamsSection(!showTeamsSection)
+ }}
  className="w-full flex items-center justify-between"
  aria-expanded={showTeamsSection}
  aria-controls="dashboard-teams-collaboration-panel"

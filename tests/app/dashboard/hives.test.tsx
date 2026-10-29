@@ -83,7 +83,8 @@ describe('HivesPage', () => {
       const [addButton] = await screen.findAllByRole('button', { name: /^add hive$/i })
       await userEvent.click(addButton)
 
-      await userEvent.type(screen.getByPlaceholderText('e.g., A-1, B-3'), 'TEST-H1')
+      // The form loads when opened (next/dynamic), so wait for it to appear
+      await userEvent.type(await screen.findByPlaceholderText('e.g., A-1, B-3'), 'TEST-H1')
       const apiarySelect = screen
         .getAllByRole('combobox')
         .find((select) => select.querySelector('option[value=""]')?.textContent === 'Select apiary') as HTMLSelectElement

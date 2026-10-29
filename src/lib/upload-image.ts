@@ -130,7 +130,9 @@ export async function uploadImageFile(
       .from(bucket)
       .upload(filePath, correctedFile, {
         contentType: contentType,
-        cacheControl: '3600',
+        // Each upload has a unique name and never changes: let phones keep it for 7 days rather
+        // than an hour (matching the 7-day grace before a deleted photo is removed for good).
+        cacheControl: '604800',
         upsert: false
       })
 

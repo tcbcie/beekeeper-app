@@ -75,6 +75,9 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
   const [customEndDate, setCustomEndDate] = useState<string>(() => formatDateForInput(new Date()))
 
   const fetchSeqRef = useRef(0)
+  // History readings carry no battery level, so the panel asks the route for it once
+  const [batteryVoltage, setBatteryVoltage] = useState<number | null>(null)
+  const batteryRequestedRef = useRef(false)
 
   const fetchData = useCallback(async () => {
     // Only the latest request may update the chart: quick range switches can answer out of order (C3-12)
@@ -101,6 +104,11 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
       if (period === 'custom') {
         url += `&startDate=${customStartDate}&endDate=${customEndDate}`
       }
+      const askBattery = !batteryRequestedRef.current
+      if (askBattery) {
+        batteryRequestedRef.current = true
+        url += '&battery=1'
+      }
 
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
@@ -112,6 +120,7 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
       }
 
       const data = await response.json()
+      if (askBattery && typeof data.batteryVoltage === 'number') setBatteryVoltage(data.batteryVoltage)
       if (seq !== fetchSeqRef.current) return
       setHistory(data.history || [])
       setLastUpdated(new Date())
@@ -167,9 +176,9 @@ export default function WolfScalePanel({ scaleId, scaleName, hiveId }: WolfScale
       totalRain: sum(rains),
       avgWind: avg(winds),
       latestWindDirection: latest.wind_direction_deg,
-      batteryVoltage: latest.battery_voltage,
+      batteryVoltage,
     }
-  }, [history])
+  }, [history, batteryVoltage])
 
   // Battery level helper
   const getBatteryInfo = (voltage: number) => {

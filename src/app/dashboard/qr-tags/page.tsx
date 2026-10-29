@@ -109,7 +109,8 @@ export default function QrTagsPage() {
  ctx?.drawImage(img, 0, 0)
  setLogoBase64(canvas.toDataURL('image/png'))
  }
- img.src = '/logo_trans.png'
+ // 128 px copy: the logo is drawn at 30-40 px, and the 613 KB original went into every QR code
+ img.src = '/logo-qr.png'
  }, [])
 
  const fetchTags = useCallback(async (uid: string) => {

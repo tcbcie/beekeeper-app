@@ -2,6 +2,7 @@ import Image from 'next/image'
 import { Package } from 'lucide-react'
 import ApiaryAreaMapWrapper from '@/components/maps/ApiaryAreaMapWrapper'
 import type { PublicBatchInfo } from '@/types/traceability'
+import { storagePathFromPublicUrl } from '@/lib/storage-url'
 
 /**
  * Which sections a scan shows. Batch QR codes (/trace) show everything; jar
@@ -179,7 +180,10 @@ export default function TraceCard({
               alt="Apiary"
               fill
               className="object-cover rounded-xl border border-border"
-              unoptimized
+              sizes="(min-width: 640px) 640px, 100vw"
+              // Our own uploads get a phone-sized copy (photos aren't shrunk on upload, up to
+              // 10 MB); anything else is shown as it is, since only our storage is allowed.
+              unoptimized={!storagePathFromPublicUrl(batch.apiary_image_url)}
             />
           </div>
         </div>

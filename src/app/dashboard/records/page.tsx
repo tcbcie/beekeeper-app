@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { uploadImageFile, deleteUploadedImages } from '@/lib/upload-image'
 import { getCurrentUserId, hasActiveSubscription } from '@/lib/auth'
@@ -29,22 +30,30 @@ import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters } from '@/hooks/useRecordFilters'
 import { toLocalDateString, toLocalDateTimeInputValue } from '@/lib/date-utils'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
+import RecordFiltersBar from '@/components/records/RecordFiltersBar'
+import NewRecordDropdown from '@/components/records/NewRecordDropdown'
 import {
-  RecordFiltersBar,
-  NewRecordDropdown,
   InspectionCard,
   VarroaCheckCard,
   TreatmentCard,
   FeedingCard,
   HarvestCard,
   ArchiveCard,
-  InspectionForm,
-  VarroaCheckForm,
-  VarroaTreatmentForm,
-  FeedingForm,
-  HarvestForm
-} from '@/components/records'
+} from '@/components/records/cards'
+
+// The forms (about 4,400 lines, the inspection form alone 2,400) only show after "New record" or
+// Edit, so they load then rather than with the list.
+const formLoading = () => <LoadingSpinner text="Loading form..." />
+
+// How many records the list shows at first, and adds per "Show more"
+const RECORDS_PAGE_SIZE = 50
+const InspectionForm = dynamic(() => import('@/components/records/forms/InspectionForm'), { loading: formLoading, ssr: false })
+const VarroaCheckForm = dynamic(() => import('@/components/records/forms/VarroaCheckForm'), { loading: formLoading, ssr: false })
+const VarroaTreatmentForm = dynamic(() => import('@/components/records/forms/VarroaTreatmentForm'), { loading: formLoading, ssr: false })
+const FeedingForm = dynamic(() => import('@/components/records/forms/FeedingForm'), { loading: formLoading, ssr: false })
+const HarvestForm = dynamic(() => import('@/components/records/forms/HarvestForm'), { loading: formLoading, ssr: false })
 import type {
   RecordType,
   UnifiedRecord,
@@ -357,6 +366,19 @@ export default function RecordsPage() {
     setSearchTerm,
     timePeriodCounts
   } = useRecordFilters({ allRecords, hives })
+
+  // Show the list 50 at a time: drawing every record (735 for the largest account) on each
+  // change was the page's slowest step. A new filter or search starts again at 50, and a record
+  // opened from a link is always within the shown part.
+  const [visibleCount, setVisibleCount] = useState(RECORDS_PAGE_SIZE)
+  useEffect(() => {
+    setVisibleCount(RECORDS_PAGE_SIZE)
+  }, [filters, searchTerm])
+  const highlightedIndex = highlightedRecordKey
+    ? filteredRecords.findIndex(record => `${record.record_type}-${record.id}` === highlightedRecordKey)
+    : -1
+  const shownCount = Math.max(visibleCount, highlightedIndex + 1)
+  const shownRecords = useMemo(() => filteredRecords.slice(0, shownCount), [filteredRecords, shownCount])
 
   const activeFilterCount = [
     filters.ownershipFilter !== 'my',
@@ -1776,7 +1798,7 @@ export default function RecordsPage() {
               }
             />
           ) : (
-            filteredRecords.map(record => {
+            shownRecords.map(record => {
               const recordKey = `${record.record_type}-${record.id}`
               const isHighlighted = highlightedRecordKey === recordKey
               let card: React.ReactNode = null
@@ -1871,6 +1893,20 @@ export default function RecordsPage() {
                 </div>
               )
             })
+          )}
+          {filteredRecords.length > shownCount && (
+            <div className="flex flex-col items-center gap-2 pt-2">
+              <p className="text-sm text-text-secondary">
+                Showing {shownCount} of {filteredRecords.length} records
+              </p>
+              <Button
+                type="button"
+                tone="neutral"
+                onClick={() => setVisibleCount(count => count + RECORDS_PAGE_SIZE)}
+              >
+                Show more
+              </Button>
+            </div>
           )}
         </div>
 

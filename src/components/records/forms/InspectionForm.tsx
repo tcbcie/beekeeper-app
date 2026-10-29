@@ -959,9 +959,10 @@ export default function InspectionForm({
         const token = session?.access_token
         if (!token) return
 
+        // latest=1: only the latest reading (one call to the scale maker, not the full summary)
         const url = useWolf
-          ? `/api/wolf-waagen/data?scaleId=${encodeURIComponent(hive.wolf_scale_id!)}&hiveId=${encodeURIComponent(hiveId)}`
-          : `/api/beep/data?deviceId=${encodeURIComponent(hive.beep_device_id!)}&hiveId=${encodeURIComponent(hiveId)}`
+          ? `/api/wolf-waagen/data?scaleId=${encodeURIComponent(hive.wolf_scale_id!)}&hiveId=${encodeURIComponent(hiveId)}&latest=1`
+          : `/api/beep/data?deviceId=${encodeURIComponent(hive.beep_device_id!)}&hiveId=${encodeURIComponent(hiveId)}&latest=1`
 
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },

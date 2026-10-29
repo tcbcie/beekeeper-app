@@ -90,6 +90,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Wolf Waagen not connected' }, { status: 400 })
     }
 
+    // The inspection form only needs the latest weight: one Wolf call, not the 8-call summary
+    if (searchParams.get('latest') === '1') {
+      let lastValues: WolfParsedReading | null = null
+      try {
+        lastValues = await wolfGetLastValues(wolfApiToken, scaleId)
+      } catch (err) {
+        console.warn('Wolf lastValues fetch failed:', err)
+      }
+      return NextResponse.json({ lastValues })
+    }
+
     // A chart asking for a period only reads the history, so skip the summary's vendor calls
     if (period || (customStart && customEnd)) {
       let history: WolfParsedReading[] = []
@@ -144,7 +155,17 @@ export async function GET(request: NextRequest) {
         history = []
       }
 
-      return NextResponse.json({ history, period })
+      // The panel asks for the battery once, on its first load (history readings carry none)
+      let batteryVoltage: number | null = null
+      if (searchParams.get('battery') === '1') {
+        try {
+          batteryVoltage = await wolfGetBatteryVoltage(wolfApiToken, scaleId)
+        } catch {
+          // Battery endpoint may not be available for all scales
+        }
+      }
+
+      return NextResponse.json({ history, period, batteryVoltage })
     }
 
     // Fetch latest sensor values and historical data for weight changes
@@ -167,14 +188,6 @@ export async function GET(request: NextRequest) {
         }
       }
       return null
-    }
-
-    // Fetch essential data first (lastValues includes 24h data via yield_kg)
-    let lastValues = null
-    try {
-      lastValues = await wolfGetLastValues(wolfApiToken, scaleId)
-    } catch (err) {
-      console.warn('Wolf lastValues fetch failed:', err)
     }
 
     // Fetch current and previous period histories for weight change comparisons
@@ -224,16 +237,22 @@ export async function GET(request: NextRequest) {
       // Battery endpoint may not be available for all scales
     }
 
-    // Merge battery voltage into lastValues if available
-    if (lastValues && batteryVoltage !== null) {
-      lastValues.battery_voltage = batteryVoltage
-    }
-
     // Split the 48 hours at "24 hours ago". The last-24h change used to be lastValues.yield_kg,
     // which is Wolf's change since the previous (hourly) reading, not over 24 hours.
     const readingTime = (r: WolfParsedReading) => Date.parse(r.time) / 1000
     const historyLast24h = history48h.filter(r => readingTime(r) >= oneDayAgo)
     const historyPrev24h = history48h.filter(r => readingTime(r) < oneDayAgo)
+
+    // The latest reading of the last 24 hours (hourly): exactly what wolfGetLastValues fetches,
+    // taken from the series already loaded instead of a separate call.
+    const lastValues: WolfParsedReading | null = historyLast24h.length > 0
+      ? { ...historyLast24h[historyLast24h.length - 1] }
+      : null
+
+    // Merge battery voltage into lastValues if available
+    if (lastValues && batteryVoltage !== null) {
+      lastValues.battery_voltage = batteryVoltage
+    }
 
     // Calculate weight changes (adjusted to exclude maintenance events)
     const weightChange24h = calcWeightChange(historyLast24h)

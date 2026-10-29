@@ -1047,3 +1047,10 @@ WolfScalePanel
   - The route has `maxDuration = 90`.
   - Every Wolf call's time limit (`AbortSignal.timeout`) also covers reading the reply.
 - **Not fixed:** the panel's battery tile reads `battery_voltage` from history, which is never set, so it doesn't show. To look at with the performance batch.
+
+## Batch 46 (29/10/2026): fewer Wolf calls, battery tile
+
+- **`latest=1`:** returns only `{ lastValues }` (1 call). The inspection form uses it to fill in the weight.
+- **Summary:** `lastValues` comes from the 48-hour hourly series it already fetches, so 7 calls instead of 8.
+- **Battery (`battery=1`):** asked for once by `WolfScalePanel` on its first load. The route adds `batteryVoltage`, and the battery tile now shows when the scale reports one.
+- **Unused code:** `WolfSensorDisplay.tsx` and `WolfHistoryChart.tsx` are deleted; nothing imported them.

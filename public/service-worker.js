@@ -53,9 +53,19 @@ function isUserData(url) {
 
 // Size caps (C1-08, C1-09). Pages and lookups kept for offline use, and Mapbox tiles, used to grow
 // without limit; on a full phone the browser can then evict all of the site's storage, offline
-// pages included. Build assets and the offline pages are never trimmed.
+// pages included. The offline pages are never trimmed. Build assets are kept generously (one
+// build is a few hundred files) and only the oldest go once a deploy has piled up many (batch 46).
 const MAX_PAGE_ENTRIES = 100
+const MAX_STATIC_ENTRIES = 400
 const MAX_MAPBOX_ENTRIES = 1500
+
+// On a weak signal that isn't fully offline, a page could wait tens of seconds for the network.
+// After this long the saved copy is shown instead, and the network answer still refreshes it.
+const NAVIGATION_TIMEOUT_MS = 4000
+
+function isStaticAsset(url) {
+  return url.origin === self.location.origin && url.pathname.startsWith('/_next/static/')
+}
 const TRIM_EVERY_PUTS = 25
 const putsSinceTrim = {}
 
@@ -63,9 +73,12 @@ const putsSinceTrim = {}
 // they were written, so the oldest go first. Run every few writes rather than on each one, and
 // best-effort like all caching here.
 function maybeTrimCache(cacheName, max, shouldTrim) {
-  putsSinceTrim[cacheName] = (putsSinceTrim[cacheName] || 0) + 1
-  if (putsSinceTrim[cacheName] < TRIM_EVERY_PUTS) return
-  putsSinceTrim[cacheName] = 0
+  // Counted per cache and per kind of entry: build assets and pages share one cache, and a shared
+  // count would let a burst of asset writes keep resetting it before the pages were ever trimmed.
+  const key = `${cacheName}:${shouldTrim.name}`
+  putsSinceTrim[key] = (putsSinceTrim[key] || 0) + 1
+  if (putsSinceTrim[key] < TRIM_EVERY_PUTS) return
+  putsSinceTrim[key] = 0
   caches.open(cacheName)
     .then((cache) => cache.keys().then((keys) => {
       const candidates = keys.filter((request) => shouldTrim(new URL(request.url)))
@@ -182,7 +195,9 @@ self.addEventListener('fetch', (event) => {
           }
           return fetch(event.request).then((response) => {
             if (response && response.status === 200) {
-              cache.put(event.request, response.clone()).catch(() => { /* best-effort */ })
+              cache.put(event.request, response.clone())
+                .then(() => maybeTrimCache(CACHE_NAME, MAX_STATIC_ENTRIES, isStaticAsset))
+                .catch(() => { /* best-effort */ })
             }
             return response
           })
@@ -213,39 +228,72 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // If online, update cache with fresh content. cache.put can reject for
-        // unsupported schemes/responses — never let that become an unhandled
-        // rejection in the worker.
-        if (response && response.status === 200) {
-          const responseToCache = response.clone()
-          caches.open(CACHE_NAME)
-            .then((cache) => cache.put(event.request, responseToCache))
-            .then(() => maybeTrimCache(CACHE_NAME, MAX_PAGE_ENTRIES, isUserData))
-            .catch(() => { /* caching is best-effort */ })
+  const networkFetch = fetch(event.request)
+    .then((response) => {
+      // If online, update cache with fresh content. cache.put can reject for
+      // unsupported schemes/responses — never let that become an unhandled
+      // rejection in the worker.
+      if (response && response.status === 200) {
+        const responseToCache = response.clone()
+        caches.open(CACHE_NAME)
+          .then((cache) => cache.put(event.request, responseToCache))
+          .then(() => maybeTrimCache(CACHE_NAME, MAX_PAGE_ENTRIES, isUserData))
+          .catch(() => { /* caching is best-effort */ })
+      }
+      return response
+    })
+
+  // If offline, try to serve from cache
+  const fromCache = () => caches.match(event.request).then((cachedResponse) => {
+    if (cachedResponse) {
+      return cachedResponse
+    }
+
+    // If not in cache and offline, show the offline page for navigations.
+    if (event.request.mode === 'navigate') {
+      return caches.match('/offline.html').then((offline) => offline || Response.error())
+    }
+
+    // Never resolve respondWith() with undefined — that throws
+    // "Failed to convert value to 'Response'". Surface a network error.
+    return Response.error()
+  })
+
+  if (event.request.mode !== 'navigate') {
+    event.respondWith(networkFetch.catch(fromCache))
+    return
+  }
+
+  // Pages: the network, unless it takes longer than NAVIGATION_TIMEOUT_MS and a saved copy exists.
+  // With no saved copy the page keeps waiting for the network as before.
+  event.respondWith(new Promise((resolve) => {
+    let settled = false
+    const timer = setTimeout(() => {
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse && !settled) {
+          settled = true
+          resolve(cachedResponse)
         }
-        return response
+      }).catch(() => { /* keep waiting for the network */ })
+    }, NAVIGATION_TIMEOUT_MS)
+    networkFetch
+      .then((response) => {
+        clearTimeout(timer)
+        if (!settled) {
+          settled = true
+          resolve(response)
+        }
       })
       .catch(() => {
-        // If offline, try to serve from cache
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse
-          }
-
-          // If not in cache and offline, show the offline page for navigations.
-          if (event.request.mode === 'navigate') {
-            return caches.match('/offline.html').then((offline) => offline || Response.error())
-          }
-
-          // Never resolve respondWith() with undefined — that throws
-          // "Failed to convert value to 'Response'". Surface a network error.
-          return Response.error()
-        })
+        clearTimeout(timer)
+        if (!settled) {
+          settled = true
+          resolve(fromCache())
+        }
       })
-  )
+  }))
+  // Keep the worker alive until the network answers, so a late answer still refreshes the copy.
+  event.waitUntil(networkFetch.catch(() => { /* already handled above */ }))
 })
 
 // Handle push notifications (for Web Push API)
