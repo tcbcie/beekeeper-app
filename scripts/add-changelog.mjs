@@ -37,13 +37,13 @@ try {
   const envPath = join(ROOT_DIR, '.env.local');
   const envContent = readFileSync(envPath, 'utf8');
 
-  const urlMatch = envContent.match(/NEXT_PUBLIC_SUPABASE_URL=(.+)/);
-  const keyMatch = envContent.match(/SUPABASE_SERVICE_ROLE_KEY=(.+)/);
+  // Read each key the way Next.js does: a whole-line match, and the last line wins. Taking the
+  // first match picked up the dead legacy service_role JWT left above the sb_secret_ key, so every
+  // insert failed, including the ones bump-version makes.
+  const readEnv = (name) => [...envContent.matchAll(new RegExp(`^${name}=(.+)$`, 'gm'))].pop()?.[1].trim();
 
-  if (urlMatch && keyMatch) {
-    supabaseUrl = urlMatch[1].trim();
-    supabaseKey = keyMatch[1].trim();
-  }
+  supabaseUrl = readEnv('NEXT_PUBLIC_SUPABASE_URL');
+  supabaseKey = readEnv('SUPABASE_SERVICE_ROLE_KEY');
 } catch {
   console.error('❌ Error reading .env.local file');
   console.log('   Make sure .env.local exists with NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
