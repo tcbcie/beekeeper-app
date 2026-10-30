@@ -1,0 +1,1592 @@
+{
+ "url": "https://www.hivecraic.com/login",
+ "at": "2026-10-29T10:38:37.663Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 2,
+   "filled": [
+    0.36,
+    0.38
+   ],
+   "motion": {
+    "elements": 2,
+    "css": 2,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 1053,
+     "screens": 1.2,
+     "words": 71,
+     "img": 1,
+     "video": 0,
+     "canvas": 0,
+     "svg": 4,
+     "sections": 0,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Return to Your Apiary Journal",
+     "words": 5,
+     "chars": 29,
+     "lines": 2,
+     "size": 30,
+     "vw": 2.1,
+     "font": "Georgia",
+     "weight": 400,
+     "tracking": 0,
+     "leading": 1.25,
+     "top": 237,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Return to Your Apiary Journal",
+     "words": 5,
+     "lines": 2,
+     "size": 30,
+     "font": "Georgia"
+    },
+    "headings": [
+     {
+      "text": "Return to Your Apiary Journal",
+      "words": 5,
+      "chars": 29,
+      "lines": 2,
+      "size": 30,
+      "vw": 2.1,
+      "font": "Georgia",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "center",
+      "position": "center",
+      "widthRatio": 0.27,
+      "top": 237,
+      "tag": "h1",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 1,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 1,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Segoe UI",
+       "share": 0.9,
+       "mono": false
+      },
+      {
+       "family": "Georgia",
+       "share": 0.09,
+       "mono": false
+      },
+      {
+       "family": "Cascadia Mono",
+       "share": 0.02,
+       "mono": true
+      }
+     ],
+     "familyCount": 3,
+     "sizes": [
+      12,
+      14,
+      16,
+      24,
+      30
+     ],
+     "sizeCount": 5,
+     "notLoaded": [],
+     "body": {
+      "font": "Segoe UI",
+      "size": 16,
+      "leading": 1.5,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 10.3
+     },
+     "measureChars": 48,
+     "max": {
+      "size": 30,
+      "vw": 2.1,
+      "font": "Georgia",
+      "text": "Return to Your Apiary Journal"
+     },
+     "monoShare": 0.02,
+     "monoProseShare": 0.02,
+     "monoFamilies": [
+      "Cascadia Mono"
+     ],
+     "monoSamples": [
+      "v1.12.1"
+     ],
+     "microLabels": 2,
+     "microLabelShare": 0.073,
+     "microSamples": [
+      "Field Journal Access",
+      "Welcome Back"
+     ],
+     "upperShare": 0.07,
+     "centerShare": 0.66,
+     "smallText": 2
+    },
+    "eyebrows": [
+     {
+      "text": "Welcome Back",
+      "above": "Return to Your Apiary Journal",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 209
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#faf8f5",
+     "bodyBgHsl": {
+      "h": 36,
+      "s": 0.33,
+      "l": 0.97
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#faf8f5",
+       "top": 0,
+       "hsl": {
+        "h": 36,
+        "s": 0.33,
+        "l": 0.97
+       }
+      },
+      {
+       "color": "#ffffff",
+       "top": 40,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#374151",
+       "share": 0.48
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.14
+      },
+      {
+       "color": "#1a1a1a",
+       "share": 0.13
+      },
+      {
+       "color": "#15803d",
+       "share": 0.12
+      },
+      {
+       "color": "#555555",
+       "share": 0.07
+      }
+     ],
+     "button": {
+      "bg": "#f6f3eb",
+      "hsl": {
+       "h": 44,
+       "s": 0.38,
+       "l": 0.94
+      },
+      "fg": "#1a1a1a"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 4,
+     "inHero": 4,
+     "radius": 8,
+     "height": 48,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Login",
+      "Sign Up",
+      "Continue with Google",
+      "Install"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 2,
+     "shadowOverlay": 1,
+     "shadowSamples": [
+      "div.field-journal-panel.p-8 → rgba(255, 255, 255, 0.45) 0px 1px 0px 0px inset, rgba(15, 23, 42, 0.06) 0px 8px ",
+      "div.mx-auto.inline-flex → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0"
+     ],
+     "gradients": 3,
+     "scrims": 0,
+     "gradientSamples": [
+      "div.pointer-events-none.absolute → radial-gradient(circle at 18% 12%, rgba(245, 158, 11, 0.08), rgba(0, 0, 0, 0) 42%), radial-gradient(circle at ",
+      "div.pointer-events-none.absolute → linear-gradient(rgba(250, 248, 245, 0.55), rgba(250, 248, 245, 0)), radial-gradient(circle at 20% 0px, rgba(22",
+      "div.fixed.above-bottom-nav → linear-gradient(to right in oklab, rgb(245, 158, 11) 0px, rgb(217, 119, 6) 100%)"
+     ],
+     "gradientText": 0,
+     "hairlines": 1,
+     "hairlineSamples": [
+      "div.w-full.border-t 382px rule"
+     ],
+     "outlinedBoxes": 1,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 3,
+     "boxRadius": 99,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": null,
+    "fontsLoaded": []
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 1053,
+    "margins": {
+     "left": 529,
+     "right": 529
+    },
+    "sections": [
+     {
+      "sel": "div.pointer-events-none.absolute",
+      "tag": "div",
+      "top": 0,
+      "height": 1053,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.pointer-events-none.absolute",
+      "tag": "div",
+      "top": 0,
+      "height": 224,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.relative.z-10",
+      "tag": "div",
+      "top": 0,
+      "height": 1053,
+      "words": 59,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Return to Your Apiary Journal",
+       "size": 30,
+       "tag": "h1"
+      },
+      "left": 529,
+      "right": 529,
+      "textLeft": 529,
+      "textRight": 529,
+      "fullBleed": false,
+      "footer": true,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Return to Your Apiary Journal",
+      "size": 30,
+      "top": 237,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [],
+    "leftBlocks": 0,
+    "bodySize": 16,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0.29,
+    "voidBox": {
+     "x": 0,
+     "y": 120,
+     "w": 480,
+     "h": 780
+    }
+   },
+   "app": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "dark": false,
+    "ground": "#faf8f5",
+    "sidebar": null,
+    "topbar": null,
+    "canvas": {
+     "left": 476,
+     "right": 464
+    },
+    "hero": {
+     "text": "Return to Your Apiary Journal",
+     "words": 5,
+     "chars": 29,
+     "lines": 2,
+     "size": 30,
+     "vw": 2.1,
+     "font": "Georgia",
+     "weight": 400,
+     "tracking": 0,
+     "leading": 1.25,
+     "top": 237,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 1,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": [
+      {
+       "gap": 72,
+       "at": 624,
+       "panel": "Return to Your Apiary Journal"
+      }
+     ]
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 1,
+     "radii": [
+      [
+       16,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 1,
+     "softShadows": 0,
+     "shadowSamples": [
+      "rgba(15, 23, 42, 0.06) 0px 8px 24px 0px"
+     ],
+     "glass": 0
+    },
+    "chips": {
+     "count": 1,
+     "hues": 1,
+     "samples": [
+      {
+       "hue": 0,
+       "size": 48,
+       "radius": "12px"
+      }
+     ]
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.1,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      12,
+      14,
+      16,
+      24,
+      30
+     ]
+    },
+    "title": {
+     "text": "Return to Your Apiary Journal",
+     "size": 30,
+     "top": 237
+    },
+    "colourShare": 0.091
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 2,
+   "filled": [
+    0.57,
+    0.61
+   ],
+   "motion": {
+    "elements": 2,
+    "css": 2,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 1053,
+     "screens": 1,
+     "words": 71,
+     "img": 1,
+     "video": 0,
+     "canvas": 0,
+     "svg": 4,
+     "sections": 0,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Return to Your Apiary Journal",
+     "words": 5,
+     "chars": 29,
+     "lines": 2,
+     "size": 30,
+     "vw": 3.9,
+     "font": "Georgia",
+     "weight": 400,
+     "tracking": 0,
+     "leading": 1.25,
+     "top": 237,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Return to Your Apiary Journal",
+     "words": 5,
+     "lines": 2,
+     "size": 30,
+     "font": "Georgia"
+    },
+    "headings": [
+     {
+      "text": "Return to Your Apiary Journal",
+      "words": 5,
+      "chars": 29,
+      "lines": 2,
+      "size": 30,
+      "vw": 3.9,
+      "font": "Georgia",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "center",
+      "position": "center",
+      "widthRatio": 0.5,
+      "top": 237,
+      "tag": "h1",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 1,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 1,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Segoe UI",
+       "share": 0.9,
+       "mono": false
+      },
+      {
+       "family": "Georgia",
+       "share": 0.09,
+       "mono": false
+      },
+      {
+       "family": "Cascadia Mono",
+       "share": 0.02,
+       "mono": true
+      }
+     ],
+     "familyCount": 3,
+     "sizes": [
+      12,
+      14,
+      16,
+      24,
+      30
+     ],
+     "sizeCount": 5,
+     "notLoaded": [],
+     "body": {
+      "font": "Segoe UI",
+      "size": 16,
+      "leading": 1.5,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 10.3
+     },
+     "measureChars": 48,
+     "max": {
+      "size": 30,
+      "vw": 3.9,
+      "font": "Georgia",
+      "text": "Return to Your Apiary Journal"
+     },
+     "monoShare": 0.02,
+     "monoProseShare": 0.02,
+     "monoFamilies": [
+      "Cascadia Mono"
+     ],
+     "monoSamples": [
+      "v1.12.1"
+     ],
+     "microLabels": 2,
+     "microLabelShare": 0.073,
+     "microSamples": [
+      "Field Journal Access",
+      "Welcome Back"
+     ],
+     "upperShare": 0.07,
+     "centerShare": 0.66,
+     "smallText": 2
+    },
+    "eyebrows": [
+     {
+      "text": "Welcome Back",
+      "above": "Return to Your Apiary Journal",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 209
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#faf8f5",
+     "bodyBgHsl": {
+      "h": 36,
+      "s": 0.33,
+      "l": 0.97
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#faf8f5",
+       "top": 0,
+       "hsl": {
+        "h": 36,
+        "s": 0.33,
+        "l": 0.97
+       }
+      },
+      {
+       "color": "#ffffff",
+       "top": 40,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#374151",
+       "share": 0.48
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.14
+      },
+      {
+       "color": "#1a1a1a",
+       "share": 0.13
+      },
+      {
+       "color": "#15803d",
+       "share": 0.12
+      },
+      {
+       "color": "#555555",
+       "share": 0.07
+      }
+     ],
+     "button": {
+      "bg": "#f6f3eb",
+      "hsl": {
+       "h": 44,
+       "s": 0.38,
+       "l": 0.94
+      },
+      "fg": "#1a1a1a"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 4,
+     "inHero": 4,
+     "radius": 8,
+     "height": 48,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Login",
+      "Sign Up",
+      "Continue with Google",
+      "Install"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 2,
+     "shadowOverlay": 1,
+     "shadowSamples": [
+      "div.field-journal-panel.p-8 → rgba(255, 255, 255, 0.45) 0px 1px 0px 0px inset, rgba(15, 23, 42, 0.06) 0px 8px ",
+      "div.mx-auto.inline-flex → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0"
+     ],
+     "gradients": 3,
+     "scrims": 0,
+     "gradientSamples": [
+      "div.pointer-events-none.absolute → radial-gradient(circle at 18% 12%, rgba(245, 158, 11, 0.08), rgba(0, 0, 0, 0) 42%), radial-gradient(circle at ",
+      "div.pointer-events-none.absolute → linear-gradient(rgba(250, 248, 245, 0.55), rgba(250, 248, 245, 0)), radial-gradient(circle at 20% 0px, rgba(22",
+      "div.fixed.above-bottom-nav → linear-gradient(to right in oklab, rgb(245, 158, 11) 0px, rgb(217, 119, 6) 100%)"
+     ],
+     "gradientText": 0,
+     "hairlines": 1,
+     "hairlineSamples": [
+      "div.w-full.border-t 382px rule"
+     ],
+     "outlinedBoxes": 1,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 3,
+     "boxRadius": 99,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": null,
+    "fontsLoaded": []
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 1053,
+    "margins": {
+     "left": 193,
+     "right": 193
+    },
+    "sections": [
+     {
+      "sel": "div.pointer-events-none.absolute",
+      "tag": "div",
+      "top": 0,
+      "height": 1053,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.pointer-events-none.absolute",
+      "tag": "div",
+      "top": 0,
+      "height": 224,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.relative.z-10",
+      "tag": "div",
+      "top": 0,
+      "height": 1053,
+      "words": 59,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "Return to Your Apiary Journal",
+       "size": 30,
+       "tag": "h1"
+      },
+      "left": 193,
+      "right": 193,
+      "textLeft": 193,
+      "textRight": 193,
+      "fullBleed": false,
+      "footer": true,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Return to Your Apiary Journal",
+      "size": 30,
+      "top": 237,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [],
+    "leftBlocks": 0,
+    "bodySize": 16,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "dark": false,
+    "ground": "#faf8f5",
+    "sidebar": null,
+    "topbar": null,
+    "canvas": {
+     "left": 140,
+     "right": 128
+    },
+    "hero": {
+     "text": "Return to Your Apiary Journal",
+     "words": 5,
+     "chars": 29,
+     "lines": 2,
+     "size": 30,
+     "vw": 3.9,
+     "font": "Georgia",
+     "weight": 400,
+     "tracking": 0,
+     "leading": 1.25,
+     "top": 237,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 1,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": [
+      {
+       "gap": 72,
+       "at": 624,
+       "panel": "Return to Your Apiary Journal"
+      }
+     ]
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 1,
+     "radii": [
+      [
+       16,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 1,
+     "softShadows": 0,
+     "shadowSamples": [
+      "rgba(15, 23, 42, 0.06) 0px 8px 24px 0px"
+     ],
+     "glass": 0
+    },
+    "chips": {
+     "count": 1,
+     "hues": 1,
+     "samples": [
+      {
+       "hue": 0,
+       "size": 48,
+       "radius": "12px"
+      }
+     ]
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.1,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      12,
+      14,
+      16,
+      24,
+      30
+     ]
+    },
+    "title": {
+     "text": "Return to Your Apiary Journal",
+     "size": 30,
+     "top": 237
+    },
+    "colourShare": 0.085
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 2,
+   "filled": [
+    0.93,
+    0.93
+   ],
+   "motion": {
+    "elements": 2,
+    "css": 2,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 1018,
+     "screens": 1.2,
+     "words": 71,
+     "img": 1,
+     "video": 0,
+     "canvas": 0,
+     "svg": 4,
+     "sections": 0,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "Return to Your Apiary Journal",
+     "words": 5,
+     "chars": 29,
+     "lines": 2,
+     "size": 24,
+     "vw": 6.2,
+     "font": "Georgia",
+     "weight": 400,
+     "tracking": 0,
+     "leading": 1.25,
+     "top": 221,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "Return to Your Apiary Journal",
+     "words": 5,
+     "lines": 2,
+     "size": 24,
+     "font": "Georgia"
+    },
+    "headings": [
+     {
+      "text": "HiveCraic",
+      "words": 1,
+      "chars": 9,
+      "lines": 1,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Georgia",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "center",
+      "position": "center",
+      "widthRatio": 0.49,
+      "top": 111,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "Return to Your Apiary Journal",
+      "words": 5,
+      "chars": 29,
+      "lines": 2,
+      "size": 24,
+      "vw": 6.2,
+      "font": "Georgia",
+      "weight": 400,
+      "tracking": 0,
+      "leading": 1.25,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "center",
+      "position": "center",
+      "widthRatio": 0.75,
+      "top": 221,
+      "tag": "h1",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 2,
+     "maxLines": 2,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 2,
+     "medianWords": 1,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "Segoe UI",
+       "share": 0.9,
+       "mono": false
+      },
+      {
+       "family": "Georgia",
+       "share": 0.09,
+       "mono": false
+      },
+      {
+       "family": "Cascadia Mono",
+       "share": 0.02,
+       "mono": true
+      }
+     ],
+     "familyCount": 3,
+     "sizes": [
+      12,
+      14,
+      16,
+      24
+     ],
+     "sizeCount": 4,
+     "notLoaded": [],
+     "body": {
+      "font": "Segoe UI",
+      "size": 14,
+      "leading": 1.43,
+      "weight": 400,
+      "tracking": 0,
+      "contrast": 10.3
+     },
+     "measureChars": 42,
+     "max": {
+      "size": 24,
+      "vw": 6.2,
+      "font": "Georgia",
+      "text": "HiveCraic"
+     },
+     "monoShare": 0.02,
+     "monoProseShare": 0.02,
+     "monoFamilies": [
+      "Cascadia Mono"
+     ],
+     "monoSamples": [
+      "v1.12.1"
+     ],
+     "microLabels": 2,
+     "microLabelShare": 0.073,
+     "microSamples": [
+      "Field Journal Access",
+      "Welcome Back"
+     ],
+     "upperShare": 0.07,
+     "centerShare": 0.66,
+     "smallText": 2
+    },
+    "eyebrows": [
+     {
+      "text": "Field Journal Access",
+      "above": "HiveCraic",
+      "upper": true,
+      "tracked": true,
+      "mono": false,
+      "pill": true,
+      "size": 12,
+      "top": 57
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#faf8f5",
+     "bodyBgHsl": {
+      "h": 36,
+      "s": 0.33,
+      "l": 0.97
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#faf8f5",
+       "top": 0,
+       "hsl": {
+        "h": 36,
+        "s": 0.33,
+        "l": 0.97
+       }
+      },
+      {
+       "color": "#ffffff",
+       "top": 24,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#374151",
+       "share": 0.48
+      },
+      {
+       "color": "#ffffff",
+       "share": 0.14
+      },
+      {
+       "color": "#1a1a1a",
+       "share": 0.13
+      },
+      {
+       "color": "#15803d",
+       "share": 0.12
+      },
+      {
+       "color": "#555555",
+       "share": 0.07
+      }
+     ],
+     "button": {
+      "bg": "#f6f3eb",
+      "hsl": {
+       "h": 44,
+       "s": 0.38,
+       "l": 0.94
+      },
+      "fg": "#1a1a1a"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 4,
+     "inHero": 3,
+     "radius": 8,
+     "height": 48,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "Login",
+      "Sign Up",
+      "Install"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 2,
+     "shadowOverlay": 1,
+     "shadowSamples": [
+      "div.field-journal-panel.p-8 → rgba(255, 255, 255, 0.45) 0px 1px 0px 0px inset, rgba(15, 23, 42, 0.06) 0px 8px ",
+      "div.mx-auto.inline-flex → rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0"
+     ],
+     "gradients": 3,
+     "scrims": 0,
+     "gradientSamples": [
+      "div.pointer-events-none.absolute → radial-gradient(circle at 18% 12%, rgba(245, 158, 11, 0.08), rgba(0, 0, 0, 0) 42%), radial-gradient(circle at ",
+      "div.pointer-events-none.absolute → linear-gradient(rgba(250, 248, 245, 0.55), rgba(250, 248, 245, 0)), radial-gradient(circle at 20% 0px, rgba(22",
+      "div.fixed.above-bottom-nav → linear-gradient(to right in oklab, rgb(245, 158, 11) 0px, rgb(217, 119, 6) 100%)"
+     ],
+     "gradientText": 0,
+     "hairlines": 1,
+     "hairlineSamples": [
+      "div.w-full.border-t 292px rule"
+     ],
+     "outlinedBoxes": 1,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 3,
+     "boxRadius": 99,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [],
+    "nav": null,
+    "fontsLoaded": []
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 1018,
+    "margins": {
+     "left": 49,
+     "right": 49
+    },
+    "sections": [
+     {
+      "sel": "div.pointer-events-none.absolute",
+      "tag": "div",
+      "top": 0,
+      "height": 1018,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.pointer-events-none.absolute",
+      "tag": "div",
+      "top": 0,
+      "height": 224,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.pointer-events-none.absolute",
+      "tag": "div",
+      "top": 96,
+      "height": 256,
+      "words": 0,
+      "media": 0,
+      "middle": 0,
+      "heading": null,
+      "left": null,
+      "right": null,
+      "textLeft": null,
+      "textRight": null,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.relative.z-10",
+      "tag": "div",
+      "top": 0,
+      "height": 1018,
+      "words": 59,
+      "media": 0,
+      "middle": 0,
+      "heading": {
+       "text": "HiveCraic",
+       "size": 24,
+       "tag": "span"
+      },
+      "left": 49,
+      "right": 49,
+      "textLeft": 49,
+      "textRight": 49,
+      "fullBleed": false,
+      "footer": true,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "Return to Your Apiary Journal",
+      "size": 24,
+      "top": 221,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [],
+    "leftBlocks": 0,
+    "bodySize": 14,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "dark": false,
+    "ground": "#faf8f5",
+    "sidebar": null,
+    "topbar": null,
+    "canvas": {
+     "left": 28,
+     "right": 16
+    },
+    "hero": {
+     "text": "Return to Your Apiary Journal",
+     "words": 5,
+     "chars": 29,
+     "lines": 2,
+     "size": 24,
+     "vw": 6.2,
+     "font": "Georgia",
+     "weight": 400,
+     "tracking": 0,
+     "leading": 1.25,
+     "top": 221,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 0,
+    "layout": {
+     "panels": 1,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": [
+      {
+       "gap": 72,
+       "at": 605,
+       "panel": "Return to Your Apiary Journal"
+      }
+     ]
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 1,
+     "radii": [
+      [
+       16,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 1,
+     "softShadows": 0,
+     "shadowSamples": [
+      "rgba(15, 23, 42, 0.06) 0px 8px 24px 0px"
+     ],
+     "glass": 0
+    },
+    "chips": {
+     "count": 1,
+     "hues": 1,
+     "samples": [
+      {
+       "hue": 0,
+       "size": 48,
+       "radius": "12px"
+      }
+     ]
+    },
+    "numbers": {
+     "cells": 0,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": null,
+    "chartHues": 0,
+    "placeholders": [],
+    "type": {
+     "under13": 0.1,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      12,
+      14,
+      16,
+      24
+     ]
+    },
+    "title": {
+     "text": "Return to Your Apiary Journal",
+     "size": 24,
+     "top": 221
+    },
+    "colourShare": 0.101
+   },
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "WARN",
+   "id": "micro-label",
+   "width": 1440,
+   "message": "2 tiny uppercase letter-spaced label(s): \"Field Journal Access\", \"Welcome Back\"",
+   "fix": "Prefer sentence case at body size.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "FAIL",
+   "id": "gradient",
+   "width": 1440,
+   "message": "3 gradient fill(s): div.pointer-events-none.absolute → radial-gradient(circle at 18% 12%, rgba(245, 158, 11, 0.08), rgba(0, 0, 0, 0) 42%), radial-gradient(circle at  | div.pointer-events-none.absolute → linear-gradient(rgba(250, 248, 245, 0.55), rgba(250, 248, 245, 0)), radial-gradient(circle at 20% 0px, rgba(22 | div.fixed.above-bottom-nav → linear-gradient(to right in oklab, rgb(245, 158, 11) 0px, rgb(217, 119, 6) 100%)",
+   "fix": "Use a flat colour or a real image. The only gradient allowed by default is a neutral scrim over a photo for legibility.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "palette-cream",
+   "width": 1440,
+   "message": "Yellow-cream background (page background #faf8f5, section #faf8f5, button #f6f3eb).",
+   "fix": "Use the drawn palette. If you want warmth, take a low-chroma stone or bone, not a yellow cream.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "font-count",
+   "width": 1440,
+   "message": "3 typefaces in use (Segoe UI, Georgia, Cascadia Mono).",
+   "fix": "Two at most.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "hero-void",
+   "width": 1440,
+   "message": "29% of the first screen is one empty block (480×780px at 0,120).",
+   "fix": "Place the void on purpose or fill it: move the picture, the film or one fact into it, grow the headline to meet it, or shrink the screen to its content. A void reads as placed only when something closes it on the far side and it is the screen's one rest."
+  },
+  {
+   "level": "FAIL",
+   "id": "heavy-shadow",
+   "width": 1440,
+   "message": "1 panel shadow(s) heavy enough to read as floating: rgba(15, 23, 42, 0.06) 0px 8px 24px 0px",
+   "fix": "Panels sit on the ground: separate them with a fill one step from the ground or a quiet 1px border. A shadow, if any, is under 8% black with a small blur. Real overlays (menus, dialogs, popovers) may float.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  },
+  {
+   "level": "WARN",
+   "id": "panel-void",
+   "width": 1440,
+   "message": "1 card(s) hold a blank band inside: 72px in \"Return to Your Apiary Journal\".",
+   "fix": "A card stretches to its neighbour only when it has content to fill. Keep a legend or a note directly under its chart (only an action or a total may sit at a stretched card's foot), let a short card keep its own height (align-items: start), and let a filtered block shrink to its rows."
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "C:\\Users\\Rico Zmarzly\\OneDrive\\Bees\\Apps\\beekeeper-app\\.taste-skill\\before\\login\\desktop-fold.jpg",
+   "pages": [
+    "C:\\Users\\Rico Zmarzly\\OneDrive\\Bees\\Apps\\beekeeper-app\\.taste-skill\\before\\login\\desktop-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "C:\\Users\\Rico Zmarzly\\OneDrive\\Bees\\Apps\\beekeeper-app\\.taste-skill\\before\\login\\tablet-fold.jpg",
+   "pages": [
+    "C:\\Users\\Rico Zmarzly\\OneDrive\\Bees\\Apps\\beekeeper-app\\.taste-skill\\before\\login\\tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "C:\\Users\\Rico Zmarzly\\OneDrive\\Bees\\Apps\\beekeeper-app\\.taste-skill\\before\\login\\mobile-fold.jpg",
+   "pages": [
+    "C:\\Users\\Rico Zmarzly\\OneDrive\\Bees\\Apps\\beekeeper-app\\.taste-skill\\before\\login\\mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

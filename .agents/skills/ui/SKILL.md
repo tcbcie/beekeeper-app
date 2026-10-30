@@ -1,3 +1,8 @@
+---
+name: ui
+description: Design and refine the Beekeeper App interface with mobile-first layouts, outdoor readability, accessible touch controls and adaptive light and dark themes. Use for this app's visual and interaction design.
+---
+
 # Beekeeper App Design Skill (Light-First Field Edition)
 
 ## Philosophy: Breaking Standard Web Application Design
