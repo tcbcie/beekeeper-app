@@ -28,7 +28,8 @@ import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { updateManager } from '@/lib/update-manager'
 import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters, VISIT_DEFAULTS } from '@/hooks/useRecordFilters'
-import { toLocalDateString, toLocalDateTimeInputValue } from '@/lib/date-utils'
+import { usePersistentState } from '@/hooks/usePersistentState'
+import { getCurrentDate, toLocalDateString, toLocalDateTimeInputValue } from '@/lib/date-utils'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
@@ -380,8 +381,9 @@ export default function RecordsPage() {
   const shownCount = Math.max(visibleCount, highlightedIndex + 1)
   const shownRecords = useMemo(() => filteredRecords.slice(0, shownCount), [filteredRecords, shownCount])
 
-  // Every opening starts on the user's first own apiary and its first active hive. The hive picked
-  // this way is remembered, so it never pre-fills a new record: only a hive the user chose does.
+  // With nothing remembered today, an opening starts on the user's first own apiary and its first
+  // active hive. The hive picked this way is noted, so it never pre-fills a new record: only a hive
+  // the user chose does.
   const firstActiveHiveId = useCallback(
     (id: string) => hives.find(hive => hive.apiary_id === id && !hive.archived_at)?.id ?? '',
     [hives]
@@ -393,17 +395,42 @@ export default function RecordsPage() {
   const [autoHiveId, setAutoHiveId] = useState('')
   const formHiveId = filters.hiveId === autoHiveId ? '' : filters.hiveId
 
+  // The place being worked on, kept until the end of the day so each new record starts there.
+  // Its hive is blank when only the apiary was chosen. Sign-out clears it with the other filters.
+  const [workPlace, setWorkPlace] = usePersistentState<{ date: string; apiaryId: string; hiveId: string } | null>(
+    'records:work-place',
+    null,
+    (v) => v === null || (typeof v?.date === 'string' && typeof v?.apiaryId === 'string' && typeof v?.hiveId === 'string')
+  )
+  const rememberPlace = useCallback((apiaryId: string, hiveId: string) => {
+    setWorkPlace({ date: getCurrentDate(), apiaryId, hiveId })
+  }, [setWorkPlace])
+
+  // Yesterday's place, or one whose hive or apiary has gone, counts as nothing remembered
+  const rememberedPlace = useMemo(() => {
+    if (workPlace?.date !== getCurrentDate()) return null
+    const hive = hives.find(h => h.id === workPlace.hiveId && !h.archived_at)
+    const apiaryId = hive?.apiary_id ?? workPlace.apiaryId
+    return apiaries.some(a => a.id === apiaryId) ? { apiaryId, hiveId: hive?.id ?? '' } : null
+  }, [workPlace, hives, apiaries])
+
   const chooseHive = useCallback((id: string) => {
+    const hive = hives.find(h => h.id === id)
     setHiveId(id)
     setAutoHiveId('')
-  }, [setHiveId])
+    // A team-mate's hive only shows its records outside My Records
+    if (hive && userId && hive.user_id !== userId && filters.ownershipFilter === 'my') setOwnershipFilter('all')
+    if (hive?.apiary_id) setApiaryId(hive.apiary_id)
+    rememberPlace(hive?.apiary_id ?? filters.apiaryId, id)
+  }, [hives, userId, filters.apiaryId, filters.ownershipFilter, setHiveId, setApiaryId, setOwnershipFilter, rememberPlace])
 
   const chooseApiary = useCallback((id: string) => {
     const hiveId = id ? firstActiveHiveId(id) : ''
     setApiaryId(id)
     setHiveId(hiveId)
     setAutoHiveId(hiveId)
-  }, [firstActiveHiveId, setApiaryId, setHiveId])
+    rememberPlace(id, '')
+  }, [firstActiveHiveId, setApiaryId, setHiveId, rememberPlace])
 
   // The default apiary is the user's own, so team records need the location opened up
   const chooseOwnership = useCallback((value: Parameters<typeof setOwnershipFilter>[0]) => {
@@ -430,7 +457,8 @@ export default function RecordsPage() {
     setApiaryId(defaultLocation.apiaryId)
     setHiveId(defaultLocation.hiveId)
     setAutoHiveId(defaultLocation.hiveId)
-  }, [defaultLocation, setOwnershipFilter, setRecordTypeFilter, setApiaryId, setHiveId, setShowArchivedHives])
+    setWorkPlace(null)
+  }, [defaultLocation, setOwnershipFilter, setRecordTypeFilter, setApiaryId, setHiveId, setShowArchivedHives, setWorkPlace])
 
   const emptyHive = hives.find(hive => hive.id === filters.hiveId)
   const emptyListMessage = emptyHive
@@ -473,19 +501,25 @@ export default function RecordsPage() {
     }
 
     // A link that names a place opens that place, not the defaults
-    if (searchParams.get('hive') || searchParams.get('apiary') || searchParams.get('record')) {
+    if (searchParams.get('hive') || searchParams.get('apiary') || searchParams.get('record') || searchParams.get('create')) {
       hasInitialisedApiaryFilterRef.current = true
       return
     }
 
     if (apiaries.length === 0 || hives.length === 0) return
     hasInitialisedApiaryFilterRef.current = true
-    setApiaryId(defaultLocation.apiaryId)
-    // A form opened by a link is already showing: leave its hive for the user to choose
-    const hiveId = showForm ? '' : defaultLocation.hiveId
+    if (rememberedPlace?.hiveId) {
+      chooseHive(rememberedPlace.hiveId)
+      return
+    }
+    const apiaryId = rememberedPlace?.apiaryId ?? defaultLocation.apiaryId
+    const hiveId = firstActiveHiveId(apiaryId)
+    // A team apiary's records only show outside My Records
+    if (apiaries.find(a => a.id === apiaryId)?.is_shared) setOwnershipFilter('all')
+    setApiaryId(apiaryId)
     setHiveId(hiveId)
     setAutoHiveId(hiveId)
-  }, [apiaries, hives, defaultLocation, showForm, searchParams, setApiaryId, setHiveId])
+  }, [apiaries, hives, defaultLocation, rememberedPlace, chooseHive, firstActiveHiveId, searchParams, setApiaryId, setHiveId, setOwnershipFilter])
 
   // New record handler - defined before useEffect that uses it
   // Unguarded. Used by the URL deep-link effect, which runs on page load when
@@ -496,12 +530,16 @@ export default function RecordsPage() {
     const now = new Date()
     const currentDate = toLocalDateString(now)
     const currentDateTime = toLocalDateTimeInputValue(now)
+    const hiveId = presetHiveId ?? formHiveId
 
     setFormType(type)
     // Show the kind of record being added, and every hive if the current one was picked
     // automatically, so the saved record appears in the list below
     if (type !== 'archive') setRecordTypeFilter(type)
-    if (filters.hiveId && filters.hiveId === autoHiveId) chooseHive('')
+    if (!presetHiveId && filters.hiveId && filters.hiveId === autoHiveId) {
+      setHiveId('')
+      setAutoHiveId('')
+    }
     setEditingInspection(null)
     setInspectionDraft(null)
     setEditingTreatment(null)
@@ -511,7 +549,7 @@ export default function RecordsPage() {
 
     if (type === 'inspection') {
       const nextInspectionDraft = getDefaultInspectionFormData()
-      nextInspectionDraft.hive_id = presetHiveId || ''
+      nextInspectionDraft.hive_id = hiveId
       setInspectionDraft(nextInspectionDraft)
     } else if (type === 'archive') {
       setArchiveData({
@@ -522,7 +560,7 @@ export default function RecordsPage() {
     } else if (type === 'varroa_treatment') {
       setEditingTreatment({
         id: '',
-        hive_id: presetHiveId || '',
+        hive_id: hiveId,
         treatment_date: currentDate,
         treatment_time: new Date().toTimeString().slice(0, 5),
         treatment_type: '',
@@ -536,7 +574,7 @@ export default function RecordsPage() {
     } else if (type === 'varroa_check') {
       setEditingCheck({
         id: '',
-        hive_id: presetHiveId || '',
+        hive_id: hiveId,
         check_date: currentDateTime,
         method: '',
         mites_count: null,
@@ -550,7 +588,7 @@ export default function RecordsPage() {
     } else if (type === 'feeding') {
       setEditingFeeding({
         id: '',
-        hive_id: presetHiveId || '',
+        hive_id: hiveId,
         feed_date: currentDate,
         feed_type: '',
         syrup_inverted: false,
@@ -564,7 +602,7 @@ export default function RecordsPage() {
     } else if (type === 'harvest') {
       setEditingHarvest({
         id: '',
-        hive_id: presetHiveId || '',
+        hive_id: hiveId,
         harvest_date: currentDate,
         honey_weight: null,
         wax_weight: null,
@@ -584,7 +622,7 @@ export default function RecordsPage() {
     setTimeout(() => {
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 100)
-  }, [userId, setRecordTypeFilter, filters.hiveId, autoHiveId, chooseHive])
+  }, [userId, setRecordTypeFilter, filters.hiveId, autoHiveId, formHiveId, setHiveId])
 
   // Guarded. Used by the New Record dropdown, where the user may already have
   // an inspection in progress that opening another record would destroy.
@@ -623,8 +661,11 @@ export default function RecordsPage() {
       }
 
       setHiveId(hiveParam)
+      setAutoHiveId('')
       // The hive's own apiary: one left over from an earlier visit would hide its records
       setApiaryId(targetHive?.apiary_id ?? '')
+      // Opening one old record is only looking; anything else here is working on this hive
+      if (targetHive?.apiary_id && !recordParam) rememberPlace(targetHive.apiary_id, hiveParam)
 
       if (recordParam && mappedType && RECORD_DEEP_LINK_TYPES.has(mappedType)) {
         setShowArchivedHives(true)
@@ -652,17 +693,20 @@ export default function RecordsPage() {
       setApiaryId('')
       setHiveId('')
       router.replace('/dashboard/records')
-    } else if (createParam) {
+    } else if (createParam && !loading) {
       handledLinkRef.current = linkKey
-      // Handle quick action links from dashboard (optionally with apiary pre-selected)
+      // Handle quick action links from dashboard (optionally with apiary pre-selected).
+      // Waits for the hives, as the remembered hive is only used if it is in the link's apiary.
       const apiaryParam = searchParams.get('apiary')
-      if (apiaryParam) {
-        setApiaryId(apiaryParam)
-        setHiveId('')
-      }
+      const apiaryId = apiaryParam ?? rememberedPlace?.apiaryId ?? defaultLocation.apiaryId
+      const hiveId = rememberedPlace?.apiaryId === apiaryId ? rememberedPlace.hiveId : ''
+      setApiaryId(apiaryId)
+      setHiveId(hiveId)
+      setAutoHiveId('')
+      if (apiaryParam) rememberPlace(apiaryParam, hiveId)
       const validTypes: RecordType[] = ['inspection', 'varroa_check', 'varroa_treatment', 'feeding', 'harvest']
       if (validTypes.includes(createParam as RecordType)) {
-        openNewRecord(createParam as RecordType)
+        openNewRecord(createParam as RecordType, hiveId)
       }
       router.replace('/dashboard/records')
     } else if (searchParams.get('apiary')) {
@@ -670,11 +714,13 @@ export default function RecordsPage() {
       handledLinkRef.current = linkKey
       setApiaryId(searchParams.get('apiary')!)
       setHiveId('')
+      setAutoHiveId('')
+      rememberPlace(searchParams.get('apiary')!, '')
       // A visit can hold any kind of record
       setRecordTypeFilter('all')
       router.replace('/dashboard/records')
     }
-  }, [searchParams, hives, router, userId, setHiveId, setOwnershipFilter, openNewRecord, setApiaryId, setRecordTypeFilter, setShowArchivedHives])
+  }, [searchParams, hives, loading, rememberedPlace, defaultLocation, rememberPlace, router, userId, setHiveId, setOwnershipFilter, openNewRecord, setApiaryId, setRecordTypeFilter, setShowArchivedHives])
 
   useEffect(() => {
     if (!highlightedRecordKey || scrolledRecordKeyRef.current === highlightedRecordKey) return
@@ -1013,6 +1059,7 @@ export default function RecordsPage() {
 
       await fetchInspections(userId, filters.ownershipFilter)
       await fetchHives(userId)
+      if (!isEdit) chooseHive(formData.hive_id)
       resetForm()
     } catch (error) {
       // Only tidy up when the row never landed. Past that point - a failing
@@ -1153,6 +1200,7 @@ export default function RecordsPage() {
       }
 
       await fetchVarroaTreatments(userId, filters.ownershipFilter)
+      if (!treatment.id) chooseHive(treatment.hive_id)
       resetForm()
     } catch (error) {
       toast.error('Error saving treatment: ' + ((error as { message?: string } | null)?.message || 'Unknown error'))
@@ -1301,6 +1349,7 @@ export default function RecordsPage() {
       }
 
       await fetchVarroaChecks(userId, filters.ownershipFilter)
+      if (!check.id) chooseHive(check.hive_id)
       resetForm()
     } catch (error) {
       // Only when the row never landed - a saved check owns its photo.
@@ -1393,6 +1442,7 @@ export default function RecordsPage() {
       }
 
       await fetchFeedings(userId, filters.ownershipFilter)
+      if (!feeding.id) chooseHive(feeding.hive_id)
       resetForm()
     } catch (error) {
       toast.error('Error saving feeding: ' + ((error as { message?: string } | null)?.message || 'Unknown error'))
@@ -1482,6 +1532,7 @@ export default function RecordsPage() {
       }
 
       await fetchHarvests(userId, filters.ownershipFilter)
+      if (!harvest.id) chooseHive(harvest.hive_id)
       resetForm()
     } catch (error) {
       toast.error('Error saving harvest: ' + ((error as { message?: string } | null)?.message || 'Unknown error'))

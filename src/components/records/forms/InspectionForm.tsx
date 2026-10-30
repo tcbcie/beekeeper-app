@@ -737,7 +737,7 @@ export default function InspectionForm({
 
     setFormData(initialData)
     setGivenTakenDrafts(createGivenTakenDrafts(initialData))
-    setFormApiaryId(getApiaryIdForHive(initialData.hive_id))
+    setFormApiaryId(initialData.hive_id ? getApiaryIdForHive(initialData.hive_id) : selectedApiaryId)
     setFollowUpExpanded(false)
     setFollowUpDrafts([])
     setStep(FIRST_STEP)

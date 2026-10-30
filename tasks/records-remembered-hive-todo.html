@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Records remembered hive plan</title>
+<style>
+  body { font: 16px/1.55 system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+  code { background: #eceae3; padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  table { border-collapse: collapse; width: 100%; margin: .75rem 0; }
+  th, td { border: 1px solid #c9ced3; padding: .4rem .6rem; text-align: left; vertical-align: top; }
+  ul.todo { list-style: none; padding: 0; }
+  ul.todo li { padding: .3rem 0 .3rem 1.6rem; text-indent: -1.6rem; }
+  .decision { background: #fef3c7; color: #78350f; border-radius: 8px; padding: .75rem 1rem; margin: .75rem 0; }
+</style>
+</head>
+<body>
+<h1>Records: remember the apiary and hive</h1>
+<p>Status: built, remembered until the end of the day as the owner chose. Not yet tested in a browser or committed.</p>
+
+<h2>Why it happens</h2>
+<ul>
+  <li><strong>Hives picked in a form are thrown away.</strong> Every form keeps its own hive. Saving closes the form and never passes that hive back, so the next form has nothing to start from.</li>
+  <li><strong>Every opening of Records goes back to the defaults</strong> (the quick filters decision of earlier today). This also overwrites a hive chosen a moment ago, as soon as the user leaves Records and comes back.</li>
+  <li><strong>The dashboard's New inspection link</strong> and others like it also blank the hive.</li>
+  <li><strong>A small bug:</strong> choosing the same record type while its form is open gives a blank hive even when one is selected.</li>
+</ul>
+
+<h2>The change</h2>
+<p>Records keeps one remembered place: the apiary and hive being worked on. It reuses the existing saved filter storage, so sign-out already clears it.</p>
+
+<table>
+  <tr><th>The place is remembered when the user</th><th>The place is used when</th></tr>
+  <tr>
+    <td>
+      Saves a new record (the hive in that form)<br>
+      Chooses a hive or apiary in the Filters panel<br>
+      Follows a hive link: hive page buttons, QR tag, to-do, seasonal card<br>
+      Follows an apiary link: dashboard, apiary page
+    </td>
+    <td>
+      Opening New Record: the form starts on that apiary and hive<br>
+      Opening Records: it replaces the first apiary and first hive<br>
+      Following a New Record link with no hive: the remembered hive if it is in the link's apiary, or if the link names no apiary
+    </td>
+  </tr>
+</table>
+
+<ul>
+  <li><strong>Your example:</strong> pick the apiary and hive, save the inspection, choose New Record, Varroa check: both are filled in. The same follows for treatment and feeding, and after leaving Records and coming back.</li>
+  <li><strong>The list follows too:</strong> after a save, the list moves to the saved hive, so the new record is always visible.</li>
+  <li><strong>Unchanged:</strong> editing an old record remembers nothing. A hive picked automatically still never pre-fills, so nothing is filed against a hive nobody chose. Links that name a hive still win. Record type still starts on Inspections.</li>
+  <li><strong>Moving to the next hive:</strong> change the hive in the form once; that becomes the remembered one. The hive shows at the top of the form as it does now, but a record could be saved against the previous hive if it is not changed. That is the cost of pre-filling.</li>
+</ul>
+
+<h2>Decision for the owner</h2>
+<div class="decision"><strong>How long is it remembered?</strong> Recommended: until the end of the day, then back to the first apiary and hive. The alternative is until the app is closed, but phones often close an installed app in the background, for instance while gloves are on and the screen is locked, so the hive would be lost mid-visit.</div>
+
+<h2>Left alone</h2>
+<ul>
+  <li>Picking an apiary on the Hives page, or a hive on Tasks or Reports, does not set the remembered place. Records still writes to that shared selection, as you accepted earlier.</li>
+  <li>The bulk treatment and feeding on the Hives list, which use ticked hives.</li>
+</ul>
+
+<h2>To do</h2>
+<ul class="todo">
+  <li>[x] <code>records/page.tsx</code>: the remembered place, with the date; ignore it if the hive is gone or archived</li>
+  <li>[x] <code>records/page.tsx</code>: use it on opening and in the <code>?create=</code> link handling; remember it on hive and apiary links</li>
+  <li>[x] <code>records/page.tsx</code>: <code>openNewRecord</code> starts the form on the remembered hive, which also fixes the blank hive bug</li>
+  <li>[x] <code>records/page.tsx</code>: the five save handlers remember the hive and move the list, new records only</li>
+  <li>[x] Docs: <code>docs/features/records-quick-filters.md</code>, <code>docs/features/filter-persistence.md</code></li>
+  <li>[x] <code>qa-engineer</code> audit; type check and whole-project lint</li>
+  <li>[ ] You test on phone and desktop</li>
+</ul>
+
+<h2>Review</h2>
+<p>Records now remembers the apiary and hive until the end of the day, and every new record starts there. New Record links now wait for the hives to load. The audit found one risk: the Feeding, Treatment and Harvest forms could overwrite a hive picked in the form if the hive list reloaded, which would have filed a record against the wrong hive. They now use the same apply-once guard as Inspection and Varroa check. It also found that a remembered team apiary opened on an empty My Records list, so that now opens on All Records. Type check and whole-project lint pass; nothing has been seen in a browser.</p>
+</body>
+</html>

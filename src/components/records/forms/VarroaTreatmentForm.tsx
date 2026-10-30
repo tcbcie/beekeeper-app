@@ -125,8 +125,15 @@ export default function VarroaTreatmentForm({
     setSelectedHiveHasHoneySupers(honeySupers > 0)
   }, [formData.hive_id, hives])
 
+  // Apply the page's filter once per filter value. Re-applying it whenever the hive list
+  // reloaded put the filter's hive back over the one picked in the form (C4-12).
+  const appliedFilterRef = useRef<string | null>(null)
   useEffect(() => {
     if (isEditing) {
+      return
+    }
+    const filterKey = `${selectedHiveId}|${selectedApiaryId}`
+    if (appliedFilterRef.current === filterKey) {
       return
     }
 
@@ -137,6 +144,7 @@ export default function VarroaTreatmentForm({
         return
       }
 
+      appliedFilterRef.current = filterKey
       const nextApiaryId = selectedHive.apiary_id ?? selectedApiaryId
       setFormApiaryId(prev => prev !== nextApiaryId ? nextApiaryId : prev)
       setFormData(prev => prev.hive_id !== selectedHiveId ? { ...prev, hive_id: selectedHiveId } : prev)
@@ -147,6 +155,7 @@ export default function VarroaTreatmentForm({
       return
     }
 
+    appliedFilterRef.current = filterKey
     setFormApiaryId(prev => prev !== selectedApiaryId ? selectedApiaryId : prev)
     setFormData(prev => {
       if (!prev.hive_id) {

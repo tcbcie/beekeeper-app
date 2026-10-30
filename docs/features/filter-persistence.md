@@ -41,7 +41,7 @@ Provided in `src/app/dashboard/layout.tsx` so every dashboard page can consume i
 | --- | --- | --- |
 | **Hives** | Shared (`SelectionContext`) | `ownership`, `archive`, `scales`, `sort` persisted per-page (replaces the old `sessionStorage`) |
 | **Tasks** | Shared (`SelectionContext`, mapping `'all'` ↔ `''`) | `type`, `category`, `status`, `ownership` persisted per-page |
-| **Records** | Shared (`SelectionContext`) | Other record filters (period, ownership, type, archived) persisted per-page; stale shared hive/apiary cleared once data loads |
+| **Records** | Shared (`SelectionContext`), set on opening to the place remembered today or the default; see `records-quick-filters.md` | Period persisted per-page; ownership, type and archived last for the visit; stale shared hive/apiary cleared once data loads |
 | **Apiaries** | — | `category` persisted per-page |
 | **Queens** | — | `ownership`, `assignment`, `status`, `role`, `apiary`, plus table `sortKey`/`sortDir` persisted per-page (free-text search stays ephemeral) |
 | **Reports** (sub-reports) | Shared (`SelectionContext`) | Date window (`timePeriod`/`startDate`/`endDate`) persisted per-report; the chosen report `section` persisted **and** mirrored to `?section=` |
@@ -126,9 +126,10 @@ Applied to **Hives** and **Apiaries** (cards carry `id="hive-card-<id>"` / `id="
 - [ ] On Hives, pick an apiary + change ownership/sort; navigate away and back —
       selections remain. Fully close and reopen the browser — still remembered.
 - [ ] Pick an apiary on Hives, then open Tasks — the same apiary is pre-selected.
-- [ ] On Records, set hive/period/type filters; navigate away and back — remembered.
-- [ ] Pick an apiary/hive on Hives or Tasks, then open Records — the same
-      apiary/hive is applied (and vice versa).
+- [ ] On Records, set hive and period filters; navigate away and back — remembered.
+      The hive is forgotten the next day; the record type starts on Inspections.
+- [ ] Pick an apiary/hive on Records, then open Tasks — the same apiary/hive is applied.
+      Records itself opens on its own remembered place, not on one picked elsewhere.
 - [ ] On Apiaries and Queens, change the dropdown filters; navigate away and
       back — remembered.
 - [ ] Delete a selected apiary/hive, return to the page — the stale selection is
