@@ -18,7 +18,7 @@ It replaces the earlier apiary cards, the "Today around your apiaries" strip ([d
 | Part | Content | File |
 |---|---|---|
 | Greeting | "Good afternoon, Rico" and "21 hives in 4 apiaries · 1 apiary not visited for 14 days" | `src/app/dashboard/page.tsx` |
-| Can I open my hives today? | Verdict (e.g. "Not today: too cool", "Yes, 12:00–15:00"), explanation, five day tiles, next good window, "Forecast for {apiary}" | `src/components/dashboard/InspectionWeatherCard.tsx`, rule in `src/lib/inspection-weather.ts` |
+| Seasonal top card | One question for the season, its answer from the user's records, and one action. See section 3a | `src/components/dashboard/SeasonalLeadCard.tsx`, rules in `src/lib/seasonal-lead.ts` |
 | To do | Grouped by apiary (nearest first); first five jobs, "Show all N jobs" | `src/components/dashboard/TodoList.tsx`, rules in `src/lib/dashboard-todo.ts` |
 | Quick actions | New inspection / New task (unchanged; drag or tap onto an apiary row) | page |
 | My apiaries | One row each: hives, last visit, scales' change this week, "N jobs" or "All good" | `src/components/dashboard/ApiaryWeatherRow.tsx` (`variant="card"`) |
@@ -26,6 +26,22 @@ It replaces the earlier apiary cards, the "Today around your apiaries" strip ([d
 | Upcoming events, Recent activity, Teams | Unchanged | page |
 
 The weather, 7-day forecast, GDD, blooms and nectar/pollen block now sits on the apiary page (`ApiaryWeatherRow` `variant="conditions"`, loaded on demand), so nothing is lost.
+
+## 3a. Seasonal top card (30 October 2026)
+
+Replaces the "Can I open my hives today?" card, which said "not today" for much of the year. The card asks one question per season (`src/lib/seasons.ts`):
+
+| Season | Band | Question | Answered from | Forecast |
+|---|---|---|---|---|
+| August to October | Getting ready for winter | Are they ready for winter? | Scales this week and last feed; varroa treatment since 1 July per apiary; mouse guards in October | No |
+| November to February | Winter: nothing to do | Do they have enough food? | Hives getting light; other scale hives; hives without a scale and the last feed | No |
+| March to April | First look of the year | Have they come through winter? | Apiaries inspected this year; the next good day | Yes |
+| May to July | Swarm season | Are any about to swarm? | Possible swarms; apiaries by days since their last inspection, due after 7 days | Yes |
+
+- `get_dashboard_overview` adds `lastFeedDate` and `lastTreatmentDate` per apiary (`supabase/migrations/20261030140000_dashboard_seasonal_lead.sql`, applied as `dashboard_seasonal_lead`; grants unchanged).
+- Forecast only in spring and swarm season: autumn and winter make no forecast request (`src/hooks/useInspectionForecast.ts`).
+- Scale alerts shown in the card (getting light in autumn and winter, possible swarm in swarm season) are left out of the To do list, so nothing appears twice. The apiary row's "N jobs" still counts them, so an apiary with a possible swarm never reads "All good"; the To do count can therefore be lower than the pills add up to.
+- Until the scale figures arrive the answer reads "Checking your scales…", so it never claims all is well on missing data.
 
 ## 3. Inspection-weather rule (agreed with the owner)
 

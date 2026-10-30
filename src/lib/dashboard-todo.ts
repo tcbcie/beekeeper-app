@@ -1,6 +1,7 @@
 import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
 import { formatQueenlessShortLabel } from '@/lib/queenless'
 import { isGettingLight, isPossibleSwarm, SWARM_DROP_WINDOW_HOURS } from '@/lib/scale-alerts'
+import { getSeason } from '@/lib/seasons'
 import type { DashboardApiary, DashboardScaleSummary } from '@/types/dashboard'
 
 /**
@@ -13,6 +14,8 @@ export type TodoTone = 'red' | 'amber' | 'blue'
 
 export interface TodoItem {
   key: string
+  /** Also shown in the seasonal top card, so the To do list leaves it out; the apiary's pill counts it */
+  inLead?: boolean
   tone: TodoTone
   title: string
   detail: string
@@ -22,7 +25,7 @@ export interface TodoItem {
 const TONE_ORDER: Record<TodoTone, number> = { red: 0, amber: 1, blue: 2 }
 
 /** "28 August" */
-function formatDayMonth(date: string | null | undefined): string | null {
+export function formatDayMonth(date: string | null | undefined): string | null {
   if (!date) return null
   const parsed = parseLocalDate(date)
   if (Number.isNaN(parsed.getTime())) return null
@@ -124,11 +127,13 @@ export function buildApiaryTodos(apiary: DashboardApiary, scales?: DashboardScal
     })
   }
 
+  const season = getSeason()
   for (const scale of listOf(scales)) {
     const hive = scale.hiveNumber ? `Hive ${scale.hiveNumber}` : 'A hive with a scale'
     if (isPossibleSwarm(scale.largestDrop3h)) {
       items.push({
         key: `${apiary.id}:swarm:${scale.hiveId}`,
+        inLead: season === 'swarm',
         tone: 'red',
         title: `${hive}: possible swarm`,
         detail: `lost ${scale.largestDrop3h.kg.toFixed(1)} kg within ${SWARM_DROP_WINDOW_HOURS} hours, ${describeWhen(scale.largestDrop3h.at)}`,
@@ -138,6 +143,7 @@ export function buildApiaryTodos(apiary: DashboardApiary, scales?: DashboardScal
     if (isGettingLight(scale.change7d)) {
       items.push({
         key: `${apiary.id}:light:${scale.hiveId}`,
+        inLead: season === 'autumn' || season === 'winter',
         tone: 'amber',
         title: `${hive} getting light`,
         detail: `${scale.change7d.toFixed(1)} kg in 7 days, check stores`,

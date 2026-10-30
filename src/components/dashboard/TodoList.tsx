@@ -38,7 +38,11 @@ export default function TodoList({ apiaries, oldQueens, scalesByApiary }: TodoLi
 
   const groups = useMemo<TodoGroup[]>(() => {
     const byApiary = apiaries
-      .map(apiary => ({ key: apiary.id, heading: apiary.name, items: buildApiaryTodos(apiary, scalesByApiary[apiary.id]) }))
+      .map(apiary => ({
+        key: apiary.id,
+        heading: apiary.name,
+        items: buildApiaryTodos(apiary, scalesByApiary[apiary.id]).filter(item => !item.inLead),
+      }))
       .filter(group => group.items.length > 0)
     if (oldQueens > 0) {
       byApiary.push({

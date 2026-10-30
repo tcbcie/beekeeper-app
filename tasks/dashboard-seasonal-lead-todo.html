@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Seasonal Top Card</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  ul.todo { list-style: none; padding-left: 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+</style>
+</head>
+<body>
+<h1>Seasonal Top Card</h1>
+<p><strong>Status:</strong> implemented, not committed &nbsp;&middot;&nbsp; <strong>Date:</strong> 30 October 2026 &nbsp;&middot;&nbsp; Design: <span class="file">tasks/dashboard-seasonal-lead-mockup.html</span></p>
+<h2>To-do</h2>
+<ul class="todo">
+  <li>&#9745; Database: <code>lastFeedDate</code> and <code>lastTreatmentDate</code> per apiary (MCP migration + file)</li>
+  <li>&#9745; <span class="file">seasons.ts</span>, <span class="file">seasonal-lead.ts</span>, <span class="file">SeasonalLeadCard.tsx</span>, <span class="file">useInspectionForecast.ts</span></li>
+  <li>&#9745; Card replaces &ldquo;Can I open my hives today?&rdquo;, whose component is removed</li>
+  <li>&#9745; Alerts shown in the card left out of To do; the apiary pills still count them</li>
+  <li>&#9745; &ldquo;Your hives&rdquo; line removed from the monthly panel</li>
+  <li>&#9745; Type check + ESLint; <code>qa-engineer</code> audit; docs</li>
+  <li>&#9744; You test</li>
+</ul>
+<h2>QA audit (qa-engineer)</h2>
+<ul>
+  <li><strong>No Critical findings.</strong> <code>npx tsc --noEmit</code>: no errors. ESLint: clean. Grants unchanged.</li>
+  <li>&#128992; High, fixed: the stores row could show &ldquo;About 18 kg&rdquo; in green with no measurement behind it. Green now needs a real scale reading; otherwise it says to heft.</li>
+  <li>&#128992; High, fixed: &ldquo;On track for winter&rdquo; and &ldquo;Nothing needs doing&rdquo; could show when scale readings had failed to load. The card now says the readings are not available.</li>
+  <li>&#128993; Medium, fixed: a failed session check would have left the card on &ldquo;Checking your scales&hellip;&rdquo; for good.</li>
+  <li>&#128993; Medium, fixed: a swarm row could read &ldquo;Hive A hive with a scale&rdquo;.</li>
+  <li>&#9898; Low, left as is: the season is read when the page loads, so a dashboard left open across a month boundary keeps the old season until reopened.</li>
+</ul>
+</body>
+</html>

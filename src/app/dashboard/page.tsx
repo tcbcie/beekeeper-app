@@ -18,7 +18,7 @@ import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { DashboardApiary, RecentActivityRecord } from '@/types/dashboard'
 import { formatLocalDate } from '@/lib/date-utils'
 import { buildApiaryTodos, isVisitOverdue, isVisitSeason } from '@/lib/dashboard-todo'
-import InspectionWeatherCard from '@/components/dashboard/InspectionWeatherCard'
+import SeasonalLeadCard from '@/components/dashboard/SeasonalLeadCard'
 import TodoList from '@/components/dashboard/TodoList'
 import SeasonalReminders from '@/components/dashboard/SeasonalReminders'
 import { iconography } from '@/lib/iconography'
@@ -182,9 +182,8 @@ export default function DashboardPage() {
   return withDistance.map(entry => entry.apiary)
  }, [apiaries, devicePosition])
 
- // Every scale summary, loaded once and shared by the To do list (scale alerts), the rows and
- // the seasonal reminders
- const scalesByApiary = useScaleSummaries(apiariesByDistance)
+ // Every scale summary, loaded once and shared by the top card, the To do list and the rows
+ const { scalesByApiary, scalesLoading } = useScaleSummaries(apiariesByDistance)
  const allScales = useMemo(() => Object.values(scalesByApiary).flat(), [scalesByApiary])
 
  // Apiaries with jobs come first, using the To do list's own rules; each group keeps the order
@@ -194,7 +193,7 @@ export default function DashboardPage() {
   return [...apiariesByDistance].sort((a, b) => Number(hasJobs(b)) - Number(hasJobs(a)))
  }, [apiariesByDistance, scalesByApiary])
 
- // "Can I open my hives today?" uses the nearest apiary with coordinates
+ // The top card's forecast, in the seasons that show one, uses the nearest apiary with coordinates
  const forecastApiary = useMemo(
   () => apiariesByDistance.find(a => a.latitude != null && a.longitude != null) ?? null,
   [apiariesByDistance]
@@ -338,13 +337,13 @@ export default function DashboardPage() {
  </AlertPanel>
 )}
 
-{/* Can I open my hives today? */}
-{forecastApiary && (
- <InspectionWeatherCard
-  key={forecastApiary.id}
-  latitude={forecastApiary.latitude!}
-  longitude={forecastApiary.longitude!}
-  apiaryName={forecastApiary.name}
+{/* This season's one question, answered from the user's records */}
+{apiariesByDistance.length > 0 && (
+ <SeasonalLeadCard
+  apiaries={apiariesByDistance}
+  scales={allScales}
+  scalesLoading={scalesLoading}
+  forecastApiary={forecastApiary}
  />
 )}
 
@@ -423,7 +422,7 @@ export default function DashboardPage() {
  )}
 
  {/* This time of year */}
- <SeasonalReminders scales={allScales} />
+ <SeasonalReminders />
 
  {/* Upcoming Events */}
  {userId && <UpcomingEvents userId={userId} />}

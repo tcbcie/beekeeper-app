@@ -47,19 +47,31 @@ async function fetchSummary(scale: DashboardApiaryScale, accessToken: string): P
  * (scale alerts) and the apiary rows (weekly change). Keyed by apiary id. Same requests as the
  * rows made before, just not waiting for each row to scroll into view.
  */
-export function useScaleSummaries(apiaries: DashboardApiary[]): Record<string, DashboardScaleSummary[]> {
+export function useScaleSummaries(apiaries: DashboardApiary[]): {
+  scalesByApiary: Record<string, DashboardScaleSummary[]>
+  /** True until the first answers are in, so nothing is judged on figures that have not arrived */
+  scalesLoading: boolean
+} {
   const scales = useMemo(
     () => apiaries.flatMap(apiary => (Array.isArray(apiary.scales) ? apiary.scales : []).map(scale => ({ apiaryId: apiary.id, scale }))),
     [apiaries]
   )
   const [byKey, setByKey] = useState<Record<string, DashboardScaleSummary>>({})
+  const [scalesLoading, setScalesLoading] = useState(true)
 
   useEffect(() => {
-    if (scales.length === 0) return
+    if (scales.length === 0) {
+      setScalesLoading(false)
+      return
+    }
     let cancelled = false
     ;(async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session || cancelled) return
+      if (cancelled) return
+      if (!session) {
+        setScalesLoading(false)
+        return
+      }
       const entries = await Promise.all(scales.map(async ({ scale }) => {
         const key = keyOf(scale)
         const cached = summaryCache.get(key)
@@ -78,11 +90,15 @@ export function useScaleSummaries(apiaries: DashboardApiary[]): Record<string, D
       const next: Record<string, DashboardScaleSummary> = {}
       for (const [key, data] of entries) if (data) next[key] = data
       setByKey(next)
-    })()
+      setScalesLoading(false)
+    })().catch(() => {
+      // Without this a failed session check would leave the top card "Checking" for good
+      if (!cancelled) setScalesLoading(false)
+    })
     return () => { cancelled = true }
   }, [scales])
 
-  return useMemo(() => {
+  const scalesByApiary = useMemo(() => {
     const byApiary: Record<string, DashboardScaleSummary[]> = {}
     for (const { apiaryId, scale } of scales) {
       const summary = byKey[keyOf(scale)]
@@ -90,4 +106,6 @@ export function useScaleSummaries(apiaries: DashboardApiary[]): Record<string, D
     }
     return byApiary
   }, [scales, byKey])
+
+  return { scalesByApiary, scalesLoading }
 }

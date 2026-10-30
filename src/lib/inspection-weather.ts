@@ -80,6 +80,13 @@ export function judgeDay(date: string, hours: HourForecast[], fromHour: number =
   return { date, maxTemperature, window: null, reason }
 }
 
+/** A good day has at least two good hours in a row; one hour is only a brief chance */
+export const isGoodDay = (day: DayVerdict) => day.window !== null && day.window.end - day.window.start >= 2
+
+export function weekdayName(date: string, style: 'short' | 'long'): string {
+  return new Date(`${date}T12:00:00`).toLocaleDateString('en-IE', { weekday: style })
+}
+
 /** "12:00–15:00" */
 export function formatWindow(window: { start: number; end: number }): string {
   const hh = (h: number) => `${String(h).padStart(2, '0')}:00`

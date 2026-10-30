@@ -4,7 +4,7 @@
 
 ## 1. Overview
 
-The dashboard shows up to five jobs for the current month under the heading "{Month} in Ireland". They complement the seasonal top card ([dashboard-seasonal-lead-mockup.html](../../tasks/dashboard-seasonal-lead-mockup.html), not yet built). The text lives in a table, so it can change without a release.
+The dashboard shows up to five jobs for the current month under the heading "{Month} in Ireland". They complement the seasonal top card ([dashboard-today-screen.md](./dashboard-today-screen.md)). The text lives in a table, so it can change without a release.
 
 ## 2. Database (MCP server)
 
@@ -21,7 +21,7 @@ Reference content, the same for every user. RLS on; `authenticated` has SELECT o
 
 ## 3. Display
 
-`src/components/dashboard/SeasonalReminders.tsx` reads the current month ordered by `position`, keeps a successful answer for the page's lifetime, and shows nothing for the list on a failure. In stores months it still adds the "Your hives" scale line.
+`src/components/dashboard/SeasonalReminders.tsx` reads the current month ordered by `position`, keeps a successful answer for the page's lifetime, and stays away on a failure.
 
 ## 4. Content and sources
 
@@ -37,4 +37,3 @@ Written in our own words, not copied. Where sources differed, the app's agreed r
 
 - Calendar months, not local conditions: timing varies across Ireland and by year.
 - Replaces the hard-coded list in the component, including the wording agreed for October on 29 October 2026.
-- The seasonal mock-up's 7-9 day swarm check should use the same 7 days when it is built.

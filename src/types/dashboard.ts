@@ -114,6 +114,9 @@ export interface DashboardApiary {
   lastInspectionDate: string | null
   /** Latest record of any kind at this apiary; absent in an older payload */
   lastVisitDate?: string | null
+  /** Latest feed and varroa treatment at this apiary; absent in an older payload */
+  lastFeedDate?: string | null
+  lastTreatmentDate?: string | null
   lastQueenrightDate: string | null
   queenIssueHiveCount: number
   queenrightAtRiskHiveCount: number
