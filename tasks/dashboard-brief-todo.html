@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard brief plan</title>
+<style>
+  :root { --ink:#1f2933; --muted:#566370; --line:#d9dee3; --bg:#f7f6f2; --panel:#fff; --green:#14532d; --pale:#e8f3ec; --amber:#fef3c7; --amber-ink:#78350f; --red:#b91c1c; --blue:#1d4ed8; }
+  * { box-sizing:border-box; }
+  body { font:16px/1.55 system-ui,sans-serif; color:var(--ink); background:var(--bg); max-width:860px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { font-size:1.9rem; line-height:1.2; margin:0 0 .25rem; }
+  h2 { font-size:1.35rem; margin:2.25rem 0 .5rem; color:var(--green); }
+  h3 { font-size:1.05rem; margin:1.5rem 0 .25rem; }
+  code { background:#eceae3; padding:1px 4px; border-radius:4px; font-size:.88em; overflow-wrap:anywhere; }
+  table { border-collapse:collapse; width:100%; background:var(--panel); font-size:.95rem; }
+  th,td { border:1px solid var(--line); padding:.5rem .6rem; text-align:left; vertical-align:top; }
+  th { background:#efede6; }
+  .scroll { overflow-x:auto; }
+  .status { color:var(--muted); }
+  .decision { background:var(--amber); color:var(--amber-ink); border-radius:8px; padding:.75rem 1rem; margin:.75rem 0; }
+  ul.todo { list-style:none; padding:0; }
+  ul.todo li { padding:.3rem 0 .3rem 1.6rem; text-indent:-1.6rem; }
+  .mock-wrap { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; }
+  .phone { background:var(--bg); border:2px solid #9aa5ae; border-radius:18px; padding:12px; font-size:14px; }
+  .phone h4 { margin:0 0 8px; font-size:14px; color:var(--muted); font-weight:600; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px; margin-bottom:8px; }
+  .hello { font-size:20px; font-family:Georgia,serif; }
+  .btns { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:8px; }
+  .btn { border:1px solid var(--green); color:var(--green); border-radius:8px; text-align:center; padding:9px 4px; font-weight:600; }
+  .btn.solid { background:var(--green); color:#fff; }
+  .band { background:var(--green); color:#fff; border-radius:8px 8px 0 0; margin:-10px -10px 8px; padding:8px 10px; }
+  .row { display:flex; justify-content:space-between; gap:8px; align-items:center; border-top:1px solid var(--line); padding:6px 0; }
+  .link { color:var(--green); font-weight:600; white-space:nowrap; }
+  .tag { font-weight:600; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; }
+  .note { color:var(--muted); }
+</style>
+</head>
+<body>
+
+<h1>Dashboard brief: implementation plan</h1>
+<p class="status">30 October 2026. Phase 1 built, with the owner's answers: keep a shorter seasonal card, narrow the queen check, correct the about page. Not yet tested in a browser or committed. Based on <em>HiveCraic Dashboard Research and Concept</em>, the screenshot inside it, and a review of the current code.</p>
+
+<h2>My view of the brief</h2>
+<p>The brief's central point is right: the dashboard should say what to do next and why, and never present a missing record as a problem. The current screen breaks that rule in a few specific places, and those fixes give the most value for the least work.</p>
+<p>I would not rebuild the page. Much of what the brief asks for already exists, and some of it would undo what you decided this week. The plan keeps the seasonal card, fixes trust and layout first, then builds visit planning on the checklist you already have.</p>
+
+<h2>What I take, change and leave out</h2>
+<div class="scroll"><table>
+  <tr><th>Brief says</th><th>Verdict</th><th>Why</th></tr>
+  <tr><td>Separate facts from inferences</td><td><strong>Take, phase 1</strong></td><td>The most important point. Details below.</td></tr>
+  <tr><td>Make counts reconcile</td><td><strong>Take, phase 1</strong></td><td>A real defect: "8 jobs" against pills adding to 9. See bug 1.</td></tr>
+  <tr><td>Each insight gets its own action</td><td><strong>Take, phase 1</strong></td><td>"Record a feed" does sit under varroa and mouse guards.</td></tr>
+  <tr><td>Recording actions at the top</td><td><strong>Take, phase 1</strong></td><td>They are currently below the To do list.</td></tr>
+  <tr><td>Group recent activity into visits</td><td><strong>Take, phase 1</strong></td><td>Can be done on the page from records already loaded.</td></tr>
+  <tr><td>Show guidance source and date</td><td><strong>Take, small</strong></td><td>One line under the monthly list. Sources are already in the docs.</td></tr>
+  <tr><td>Replace the seasonal panel with a brief</td><td><strong>Change</strong></td><td>You chose this card yesterday. Keep its question and answer, and make it shorter. Decision 1.</td></tr>
+  <tr><td>Five categories of item</td><td><strong>Change</strong></td><td>Too many to remember. Four short labels are enough, and they also stop colour being the only signal.</td></tr>
+  <tr><td>"Why?" control on every item</td><td><strong>Change</strong></td><td>The detail line can already say why and when, without another tap. An extra control is harder at the hive.</td></tr>
+  <tr><td>New "Plan your next visit" card</td><td><strong>Change, phase 2</strong></td><td>A Visit Checklist already exists on the Tasks page. Link to it and bring tasks onto the apiary page.</td></tr>
+  <tr><td>Event-driven follow-ups</td><td><strong>Mostly exists</strong></td><td>Treatment removal, high varroa and inspection follow-ups already create tasks. Only queen events are missing (phase 3).</td></tr>
+  <tr><td>"Last synced", pending sync states</td><td><strong>Leave out</strong></td><td>The app has no offline saving to report on. Offline recording would be its own large project.</td></tr>
+  <tr><td>Snooze, dismiss with reason, assign</td><td><strong>Leave out for now</strong></td><td>Needs new tables, and tasks have no assignee. Revisit only if people complain about items they cannot clear.</td></tr>
+  <tr><td>Experience levels, persona layouts, sort and filter controls</td><td><strong>Leave out</strong></td><td>More settings for an audience that wants a clear screen.</td></tr>
+  <tr><td>Widget builder, health score, AI summary</td><td><strong>Leave out</strong></td><td>The brief also defers these, and I agree.</td></tr>
+</table></div>
+
+<h2>Bugs the review found</h2>
+<p>These are worth fixing whatever you decide about the rest.</p>
+<div class="scroll"><table>
+  <tr><th>#</th><th>Problem</th><th>Cause</th><th>Fix</th></tr>
+  <tr><td>1</td><td>"8 jobs" against pills adding to 9</td><td>This appears to be two rules cancelling out. Pills count scale alerts that To do hides (<code>inLead</code>). To do counts the old queens item, which has no pill.</td><td>Delete <code>inLead</code>, so To do lists every job. Old queens becomes an uncounted note, as it is advice for next season and not a job.</td></tr>
+  <tr><td>2</td><td>Recent activity says "No Queen"</td><td>Any inspection without <code>queen_seen</code> gets the badge, even when the field was left blank (<code>page.tsx</code>, <code>RecentActivitySection</code>).</td><td>"Queen not seen" only when recorded as false; no badge when blank.</td></tr>
+  <tr><td>3</td><td>Queen check jobs appear in winter</td><td>The rule has no season check, so "Inspect" appears under "Winter: nothing to do".</td><td>Apply <code>isVisitSeason</code>, as the Visit job does.</td></tr>
+  <tr><td>4</td><td>Queen check lists hives never opened</td><td>"No queen or eggs recorded yet" and "not seen since 23 August" do not require a recent inspection. This cuts against your rule that a hive left closed is deliberate.</td><td>See decision 2.</td></tr>
+  <tr><td>5</td><td>Apiary page "New Inspection" probably opens nothing</td><td>It links to <code>?apiary=</code> with no <code>create</code>, and the records page ignores that (<code>apiaries/[id]/page.tsx:210</code>). Found by reading the code, not yet seen in a browser.</td><td>Link with <code>create=inspection</code>. Make <code>?apiary=</code> alone filter the records list, which the grouped activity also needs.</td></tr>
+  <tr><td>6</td><td>Mouse guards appear twice</td><td>In the seasonal card and in the October list.</td><td>Remove from the card, which should only report your records.</td></tr>
+  <tr><td>7</td><td>About page says "Works offline on any device"</td><td>Pages can load offline, but records cannot be saved (<code>about/page.tsx:64</code>).</td><td>Reword to match what happens. Public copy, so see decision 3.</td></tr>
+</table></div>
+
+<h2>Proposed screen</h2>
+<div class="mock-wrap">
+  <div class="phone">
+    <h4>Phase 1, October example</h4>
+    <div class="card">
+      <div class="hello">Good afternoon, Rico</div>
+      <div class="note">21 hives in 4 apiaries</div>
+      <div class="btns"><div class="btn solid">New inspection</div><div class="btn">New task</div></div>
+    </div>
+    <div class="card">
+      <div class="band">Getting ready for winter<br><strong>Are they ready for winter?</strong></div>
+      <strong>Stores first: 2 hives are getting lighter</strong>
+      <div class="row"><div>Stores<br><span class="note">34-DA -2.9 kg, 26-DA -2.0 kg this week. Last fed 25 October</span></div><span class="link">Record feed</span></div>
+      <div class="row"><div>Varroa treatment<br><span class="note">None recorded since 1 July at Home</span></div><span class="link">Record</span></div>
+    </div>
+    <div class="card">
+      <strong>To do · 9 jobs</strong>
+      <p style="margin:.5rem 0 .25rem" class="note">Home <span class="link" style="float:right">Plan visit</span></p>
+      <div class="row"><div><span class="dot" style="background:var(--red)"></span><strong>Hive 27-HMN+ marked queenless</strong><br><span class="note"><span class="tag">Recorded</span> · reason: removed</span></div><span class="link">Open</span></div>
+      <div class="row"><div><span class="dot" style="background:#d97706"></span><strong>Hive 34-DA getting lighter</strong><br><span class="note"><span class="tag">Scale</span> · -2.9 kg in 7 days, check stores</span></div><span class="link">Open</span></div>
+      <div class="row"><div><span class="dot" style="background:var(--blue)"></span><strong>Change inner lid</strong><br><span class="note"><span class="tag">Task</span> · due today</span></div><span class="link">Tasks</span></div>
+    </div>
+    <div class="card note">Then: My apiaries, October in Ireland (with its source), recent visits.</div>
+  </div>
+  <div class="phone">
+    <h4>Recent activity, grouped</h4>
+    <div class="card">
+      <strong>Recent visits</strong>
+      <div class="row"><div>25 October · AP01 - Colm<br><span class="note">3 feeds, 1 inspection</span></div><span class="link">View</span></div>
+      <div class="row"><div>23 October · AP02 - Tom<br><span class="note">1 inspection</span></div><span class="link">View</span></div>
+    </div>
+    <h4>Monthly list, with its source</h4>
+    <div class="card">
+      <strong>October in Ireland</strong>
+      <div class="note">Heft each hive to judge its stores, about 18 kg as a rough guide…</div>
+      <div class="note" style="margin-top:6px">General guidance from Tribes and beekeeping association calendars. Reviewed October 2026.</div>
+    </div>
+    <p class="note">Hive numbers and names are taken from the brief's screenshot, and job lines are examples.</p>
+  </div>
+</div>
+
+<h2>Wording rules</h2>
+<div class="scroll"><table>
+  <tr><th>Label</th><th>Means</th><th>Today</th><th>Proposed</th></tr>
+  <tr><td>Recorded</td><td>You entered it</td><td>Hive 27-HMN+ is queenless</td><td>Hive 27-HMN+ marked queenless · Recorded · reason: removed</td></tr>
+  <tr><td>Scale</td><td>A device measured it</td><td>Hive 34-DA getting light</td><td>Hive 34-DA getting lighter · Scale · -2.9 kg in 7 days, check stores</td></tr>
+  <tr><td>Task</td><td>You or a record form scheduled it</td><td>task due</td><td>Task · due today</td></tr>
+  <tr><td>Suggested</td><td>The app is inferring</td><td>Hive 76-DA: check the queen</td><td>Hive 76-DA: review the queen · Suggested · none seen at the 12 October inspection (date illustrative)</td></tr>
+  <tr><td>(card)</td><td>Missing record</td><td>Varroa treatment is next · To do</td><td>No varroa treatment recorded since 1 July · Review</td></tr>
+  <tr><td>(card)</td><td>Scale only</td><td>Under 2 kg lost this week · Fine</td><td>Under 2 kg lost this week · Steady</td></tr>
+</table></div>
+<p>Red stays only for "marked queenless", a possible swarm and an overdue Visit.</p>
+
+<h2>Phase 1: trust and layout (no new tables)</h2>
+<ul class="todo">
+  <li>[x] Bugs 1 to 7. The "No Queen" badge (bug 2) went with the grouping of recent activity</li>
+  <li>[x] <code>dashboard-todo.ts</code>: add a <code>kind</code> label to each job and apply the wording above; put a date on every line that has one</li>
+  <li>[x] <code>TodoList.tsx</code>: show the label beside the detail; old queens as a note below the list</li>
+  <li>[x] <code>seasonal-lead.ts</code> and <code>SeasonalLeadCard.tsx</code>: give each row its own link and remove the full-width button in autumn and winter (decision 1)</li>
+  <li>[x] <code>page.tsx</code>: move New inspection and New task under the greeting; keep drag and tap-to-choose, and on touch scroll to My apiaries, otherwise "Tap an apiary below" points off screen</li>
+  <li>[x] <code>RecentActivitySection</code>: group records by day and apiary, and link to the records list filtered to that apiary. This needed <code>get_recent_activity</code> to return more records, so that counts are right</li>
+  <li>[x] <code>SeasonalReminders.tsx</code>: add the source line. <code>monthly_apiary_tasks</code> and the card: word 18 kg as a rough guide</li>
+  <li>[x] Queen check rule (decision 2): changed <code>get_dashboard_overview</code> through the MCP server, with a migration file and advisors check</li>
+  <li>[x] Update <code>docs/features/dashboard-today-screen.md</code></li>
+  <li>[x] <code>qa-engineer</code> audit</li>
+  <li>[ ] You test on phone and desktop</li>
+</ul>
+
+<h2>Phase 2: visit planning</h2>
+<ul class="todo">
+  <li>[ ] Apiary page: add a "Jobs here" section at the top, using <code>buildApiaryTodos</code> and the apiary's open tasks from <code>tasks_events</code>. Today's page shows no tasks at all (<code>activeTaskCount</code> is hard-coded to 0)</li>
+  <li>[ ] Apiary page: add a "Visit checklist" button that opens the existing checklist with this apiary chosen</li>
+  <li>[ ] Dashboard To do: add a "Plan visit" link on each apiary heading, going to the apiary page</li>
+  <li>[ ] Apiary rows on that page: show each hive's last inspection and any active treatment</li>
+  <li>[ ] Mark a task done from the dashboard or apiary page, reusing the Tasks page's toggle and its treatment link handling</li>
+  <li>[ ] Spring and swarm season: name the next good day on the heading of the apiary with most jobs, as "may suit a visit", with the forecast's update time</li>
+</ul>
+
+<h2>Phase 3: only if phases 1 and 2 earn it</h2>
+<ul class="todo">
+  <li>[ ] Offer a follow-up when a hive is marked queenless. You confirm it; nothing is created silently</li>
+  <li>[ ] Show each scale's last reading and flag a stale one. I have not yet checked whether the summary routes return this</li>
+  <li>[ ] Test with three to five club members, using the brief's questions: "What matters most today?", "Why is this showing?", "Which apiary next?"</li>
+  <li>[ ] Consider dismissing suggestions, if those tests show people want it</li>
+</ul>
+<p>Weather warnings stage 2 stays separate and is not part of this plan.</p>
+
+<h2>Risks</h2>
+<ul>
+  <li><strong>Depends on uncommitted work:</strong> the wind warning edits to <code>page.tsx</code> are not committed. They should be committed first so the two changes stay separate.</li>
+  <li><strong>Reverses a recent choice:</strong> removing <code>inLead</code> means a hive getting lighter appears in both the card and To do. I chose that hiding, and you did not ask for it. Correct counts matter more than avoiding one repeat.</li>
+  <li><strong>Evidence in the brief:</strong> its competitor review comes from product pages, as it says itself, and its review of HiveCraic comes from one screenshot. I checked the HiveCraic points against the code, but not the competitor claims.</li>
+  <li><strong>Not browser-tested:</strong> all findings come from reading code and the database, so bug 5 in particular needs confirming.</li>
+</ul>
+
+<h2>Decisions for the owner</h2>
+<div class="decision"><strong>1. Seasonal card.</strong> I recommend keeping it, with shorter rows and one link per row. The alternative is the brief's plain list of items, which loses the seasonal question you liked.</div>
+<div class="decision"><strong>2. Queen check rule.</strong> I recommend listing a hive only when it was actually inspected in the last 21 days and neither queen nor eggs were seen, or when it is recorded as broodless. Hives left closed then drop off the list. The cost: a hive nobody opens for months never gets this prompt, though in season the apiary-level Visit job still applies.</div>
+<div class="decision"><strong>3. About page wording.</strong> I recommend "Install it on your phone; you need a connection to save records". Offline saving could be planned separately if you would rather make the claim true.</div>
+
+<h2>Review</h2>
+<p>Phase 1 is built. The database change is live, and the live function matches the migration file. The audit found no critical or high issues. Type and lint checks pass for the changed files. Nothing has been seen in a browser.</p>
+<p>Differences from the plan: the varroa row shows a "Record treatment" link in place of the "Review" pill. Spring and swarm season keep their full-width button, as each has one clear next step.</p>
+<p>Known limit: recent visits matches an apiary by name, so two apiaries with the same name would group together and link to the first. Fixing it means replacing <code>get_recent_activity</code>, which seemed too much for this edge case.</p>
+</body>
+</html>

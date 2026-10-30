@@ -10,15 +10,16 @@ import { Skeleton, SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
 import Panel from '@/components/ui/Panel'
 import Button from '@/components/ui/Button'
 import Link from 'next/link'
-import { Shield, Users, Crown, UserCheck, Search, Syringe, Bug, Wheat, Droplet, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, Plus, Egg, GripVertical } from 'lucide-react'
+import { Shield, Users, Crown, UserCheck, Search, MessageCircle, Clock, CheckCircle, Reply, AlertTriangle, Plus, Egg, GripVertical } from 'lucide-react'
 import { useDashboardStats, useTeams, useTicketStatus } from '@/hooks'
+import { RECENT_ACTIVITY_LIMIT } from '@/hooks/useDashboardStats'
 import { useGeolocation, haversineKm } from '@/hooks/useGeolocation'
 import { useScaleSummaries } from '@/hooks/useScaleSummaries'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { DashboardApiary, RecentActivityRecord } from '@/types/dashboard'
-import { formatLocalDate } from '@/lib/date-utils'
-import { buildApiaryTodos, isVisitOverdue, isVisitSeason } from '@/lib/dashboard-todo'
+import { buildApiaryTodos, formatDayMonth, isVisitOverdue, isVisitSeason } from '@/lib/dashboard-todo'
 import SeasonalLeadCard from '@/components/dashboard/SeasonalLeadCard'
+import WindWarningCard from '@/components/dashboard/WindWarningCard'
 import TodoList from '@/components/dashboard/TodoList'
 import SeasonalReminders from '@/components/dashboard/SeasonalReminders'
 import { iconography } from '@/lib/iconography'
@@ -51,40 +52,42 @@ const ApiaryWeatherRow = dynamic(
   }
 )
 
-function getRecentActivityTypeParam(recordType: RecentActivityRecord['record_type']): string {
-  switch (recordType) {
-    case 'varroa_check':
-      return 'varroa-check'
-    case 'varroa_treatment':
-      return 'varroa-treatment'
-    default:
-      return recordType
-  }
+const VISIBLE_RECENT_VISITS = 5
+
+const RECORD_WORDS: Record<RecentActivityRecord['record_type'], [string, string]> = {
+  inspection: ['inspection', 'inspections'],
+  feeding: ['feed', 'feeds'],
+  varroa_check: ['varroa check', 'varroa checks'],
+  varroa_treatment: ['varroa treatment', 'varroa treatments'],
+  harvest: ['harvest', 'harvests'],
 }
 
-function buildRecentActivityHref(record: RecentActivityRecord): string {
-  const params = new URLSearchParams({
-    type: getRecentActivityTypeParam(record.record_type),
-    record: record.id,
-  })
-
-  if (record.hive_id) {
-    params.set('hive', record.hive_id)
-  }
-
-  return `/dashboard/records?${params.toString()}`
+interface RecentVisit {
+  key: string
+  date: string
+  apiaryName: string
+  summary: string
 }
 
-function formatRecentActivityDate(dateString: string): string {
-  if (dateString.includes('T')) {
-    return new Date(dateString).toLocaleDateString('en-IE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    })
+/** Records grouped by day and apiary, latest first: "3 feeds, 1 inspection" */
+function groupRecentVisits(records: RecentActivityRecord[]): RecentVisit[] {
+  const visits = new Map<string, { date: string; apiaryName: string; counts: Map<RecentActivityRecord['record_type'], number> }>()
+  for (const record of records) {
+    const date = record.date.slice(0, 10)
+    const apiaryName = record.hives?.[0]?.apiaries?.[0]?.name ?? 'Unknown apiary'
+    const key = `${date}|${apiaryName}`
+    const visit = visits.get(key) ?? { date, apiaryName, counts: new Map() }
+    visit.counts.set(record.record_type, (visit.counts.get(record.record_type) ?? 0) + 1)
+    visits.set(key, visit)
   }
-
-  return formatLocalDate(dateString)
+  const grouped = Array.from(visits, ([key, visit]) => ({
+    key,
+    date: visit.date,
+    apiaryName: visit.apiaryName,
+    summary: Array.from(visit.counts, ([type, count]) => `${count} ${RECORD_WORDS[type][count === 1 ? 0 : 1]}`).join(', '),
+  }))
+  // A full page may have cut the oldest visit short, so its counts could be wrong
+  return records.length >= RECENT_ACTIVITY_LIMIT && grouped.length > 1 ? grouped.slice(0, -1) : grouped
 }
 
 const VALID_DROP_ACTIONS = ['inspection', 'feeding', 'varroa_check', 'varroa_treatment', 'harvest', 'task']
@@ -120,6 +123,12 @@ export default function DashboardPage() {
  const [activeAction, setActiveAction] = useState<{ type: string; label: string } | null>(null)
  const activeActionRef = useRef(activeAction)
  activeActionRef.current = activeAction
+
+ // The apiaries are further down the page: bring them into view for the second tap
+ const hasActiveAction = activeAction !== null
+ useEffect(() => {
+   if (hasActiveAction) document.getElementById('my-apiaries')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+ }, [hasActiveAction])
 
  const handleApiaryActionDrop = useCallback((apiaryId: string) => {
    const action = activeActionRef.current
@@ -210,7 +219,7 @@ export default function DashboardPage() {
   if (!isVisitSeason()) return base
   return unvisited > 0
    ? `${base} · ${unvisited} ${unvisited === 1 ? 'apiary' : 'apiaries'} not visited for 14 days`
-   : `${base} · all visited in the last 14 days`
+   : `${base} · every apiary visited in the last 14 days`
  }, [apiariesByDistance])
 
  const isTeamMember = useMemo(() => ownedTeams.length > 0 || memberTeams.length > 0, [ownedTeams, memberTeams])
@@ -319,56 +328,11 @@ export default function DashboardPage() {
 </div>
 </div>
 
-<PendingInvitationsCard />
-
-{dashboardError && (
- <AlertPanel
-  tone="error"
-  icon={<AlertTriangle size={18} />}
-  title="Some dashboard sections could not be loaded"
-  endSlot={(
-   <Button type="button" tone="neutral" size="xs" onClick={() => userId && fetchDashboardData(userId)}>
-    Retry
-   </Button>
-  )}
-  endSlotClassName="self-center"
- >
-  <p className="text-sm">{dashboardError}</p>
- </AlertPanel>
-)}
-
-{/* This season's one question, answered from the user's records */}
-{apiariesByDistance.length > 0 && (
- <SeasonalLeadCard
-  apiaries={apiariesByDistance}
-  scales={allScales}
-  scalesLoading={scalesLoading}
-  forecastApiary={forecastApiary}
- />
-)}
-
-{/* To do: the hives behind every warning, each with a button that starts the job */}
-{(apiariesByDistance.length > 0 || alerts.oldQueens > 0) && (
- <TodoList apiaries={apiariesByDistance} oldQueens={alerts.oldQueens} scalesByApiary={scalesByApiary} />
-)}
-
- {/* Quick Actions — desktop: drag onto apiary card · mobile: tap then tap apiary */}
- {activeAction && (
-   <div
-     role="button"
-     tabIndex={0}
-     onClick={() => setActiveAction(null)}
-     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveAction(null) }}
-     className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-sm font-semibold cursor-pointer"
-   >
-     <span>Tap an apiary below to apply &ldquo;{activeAction.label}&rdquo;</span>
-     <span className="text-sm underline">Cancel</span>
-   </div>
- )}
+{/* Quick Actions — desktop: drag onto apiary card · mobile: tap then tap apiary */}
  <div className="grid grid-cols-2 gap-3">
  {([
- { label: 'New Inspection', href: '/dashboard/records?create=inspection', icon: <Search size={18} />, dragType: 'inspection' },
- { label: 'New Task', href: '/dashboard/tasks?create=true', icon: <Plus size={18} />, dragType: 'task' },
+ { label: 'New inspection', href: '/dashboard/records?create=inspection', icon: <Search size={18} />, dragType: 'inspection' },
+ { label: 'New task', href: '/dashboard/tasks?create=true', icon: <Plus size={18} />, dragType: 'task' },
  ]).map((action) => {
    const isActive = activeAction?.type === action.dragType
    return (
@@ -384,7 +348,8 @@ export default function DashboardPage() {
    onDragEnd={(e) => { e.currentTarget.style.opacity = '' }}
    onClick={(e) => {
      // On touch-only devices (no fine pointer), toggle selection mode instead of navigating
-     if (window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches) {
+     // With no apiary to tap, it simply opens the form
+     if (sortedApiaries.length > 0 && window.matchMedia('(pointer: coarse)').matches && !window.matchMedia('(pointer: fine)').matches) {
        e.preventDefault()
        setActiveAction(isActive ? null : { type: action.dragType, label: action.label })
      }
@@ -403,10 +368,58 @@ export default function DashboardPage() {
  })}
  </div>
 
+<PendingInvitationsCard />
+
+{dashboardError && (
+ <AlertPanel
+  tone="error"
+  icon={<AlertTriangle size={18} />}
+  title="Some dashboard sections could not be loaded"
+  endSlot={(
+   <Button type="button" tone="neutral" size="xs" onClick={() => userId && fetchDashboardData(userId)}>
+    Retry
+   </Button>
+  )}
+  endSlotClassName="self-center"
+ >
+  <p className="text-sm">{dashboardError}</p>
+ </AlertPanel>
+)}
+
+{/* Gusts of 90 km/h or more forecast at an apiary in the next 72 hours */}
+<WindWarningCard apiaries={apiariesByDistance} />
+
+{/* This season's one question, answered from the user's records */}
+{apiariesByDistance.length > 0 && (
+ <SeasonalLeadCard
+  apiaries={apiariesByDistance}
+  scales={allScales}
+  scalesLoading={scalesLoading}
+  forecastApiary={forecastApiary}
+ />
+)}
+
+{/* To do: the hives behind every warning, each with a button that starts the job */}
+{(apiariesByDistance.length > 0 || alerts.oldQueens > 0) && (
+ <TodoList apiaries={apiariesByDistance} oldQueens={alerts.oldQueens} scalesByApiary={scalesByApiary} />
+)}
+
  {/* My apiaries: one row each, apiaries with jobs first, then nearest first */}
  {sortedApiaries.length > 0 && (
-  <div>
+  <div id="my-apiaries" className="scroll-mt-4">
    <h2 className="text-lg font-semibold text-foreground mb-3">My apiaries</h2>
+ {activeAction && (
+   <div
+     role="button"
+     tabIndex={0}
+     onClick={() => setActiveAction(null)}
+     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveAction(null) }}
+     className="mb-3 flex items-center justify-between px-4 py-2.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-sm font-semibold cursor-pointer"
+   >
+     <span>Tap an apiary below to apply &ldquo;{activeAction.label}&rdquo;</span>
+     <span className="text-sm underline">Cancel</span>
+   </div>
+ )}
    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
     {sortedApiaries.map((apiary) => (
      <ApiaryWeatherRow
@@ -430,6 +443,7 @@ export default function DashboardPage() {
  {/* Recent Activity */}
 <RecentActivitySection
  recentActivity={recentActivity}
+ apiaries={apiaries}
  recentActivityError={recentActivityError}
  onRetry={() => userId && fetchDashboardData(userId)}
 />
@@ -595,90 +609,30 @@ export default function DashboardPage() {
 
 interface RecentActivitySectionProps {
  recentActivity: RecentActivityRecord[]
+ apiaries: DashboardApiary[]
  recentActivityError: string | null
  onRetry: () => void
 }
 
-function RecentActivitySection({ recentActivity, recentActivityError, onRetry }: RecentActivitySectionProps) {
+function RecentActivitySection({ recentActivity, apiaries, recentActivityError, onRetry }: RecentActivitySectionProps) {
+ const visits = useMemo(() => groupRecentVisits(recentActivity).slice(0, VISIBLE_RECENT_VISITS), [recentActivity])
  return (
  <Panel>
- <h2 className="text-xl font-semibold text-foreground mb-4">Recent Activity</h2>
+ <h2 className="text-xl font-semibold text-foreground mb-4">Recent visits</h2>
  <div className="space-y-3">
- {recentActivity.map((record) => {
- let icon: React.ReactNode
- let label: string
- let badge: React.ReactNode = null
-
- switch (record.record_type) {
- case 'inspection':
- icon = <Search size={18} className="text-blue-600 dark:text-blue-400" />
- label = `Inspection of ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
- badge = (
- <span className={`px-2 py-1 text-sm font-semibold rounded ${
- record.queen_seen
- ? 'bg-green-200 dark:bg-green-900/40 text-green-900 dark:text-green-200'
- : 'bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200'
- }`}>
- {record.queen_seen ? 'Queen Seen' : 'No Queen'}
- </span>
- )
- break
- case 'varroa_treatment':
- icon = <Syringe size={18} className="text-red-600 dark:text-red-400" />
- label = `Varroa Treatment - ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
- badge = (
- <span className="px-2 py-1 text-sm font-semibold rounded bg-red-200 dark:bg-red-900/40 text-red-900 dark:text-red-200">
- {record.treatment_type}
- </span>
- )
- break
- case 'varroa_check':
- icon = <Bug size={18} className="text-orange-600 dark:text-orange-400" />
- label = `Varroa Check - ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
- badge = record.infestation_rate !== null ? (
- <span className="px-2 py-1 text-sm font-semibold rounded bg-orange-200 dark:bg-orange-900/40 text-orange-900 dark:text-orange-200">
- {record.infestation_rate}% infestation
- </span>
- ) : null
- break
- case 'feeding':
- icon = <Wheat size={18} className="text-amber-600 dark:text-amber-400" />
- label = `Feeding - ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
- badge = (
- <span className="px-2 py-1 text-sm font-semibold rounded bg-amber-200 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200">
- {record.feed_type}
- </span>
- )
- break
- case 'harvest':
- icon = <Droplet size={18} className="text-yellow-600 dark:text-yellow-400" />
- label = `Harvest - ${record.hives?.[0]?.hive_number || 'Unknown Hive'}`
- badge = record.honey_weight !== null ? (
- <span className="px-2 py-1 text-sm font-semibold rounded bg-yellow-200 dark:bg-yellow-900/40 text-yellow-900 dark:text-yellow-200">
- {record.honey_weight} kg
- </span>
- ) : null
- break
- }
-      const recordHref = buildRecentActivityHref(record)
-      const apiaryName = record.hives?.[0]?.apiaries?.[0]?.name
-
-      return (
- <Link key={record.id} href={recordHref} className="flex items-center justify-between p-3 bg-surface dark:bg-surface-elevated rounded border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors">
-  <div className="flex items-center gap-2 flex-1 min-w-0">
-  {icon}
-  <div className="flex-1 min-w-0">
-  <span className="font-medium text-foreground block truncate">{label}</span>
-  <span className="text-sm font-medium text-text-secondary">
- {formatRecentActivityDate(record.date)}
- {apiaryName && <span className="text-text-secondary"> &middot; {apiaryName}</span>}
- </span>
- </div>
- </div>
- {badge && <div className="ml-2 flex-shrink-0">{badge}</div>}
- </Link>
-      )
-     })}
+ {visits.map((visit) => {
+  const apiaryId = apiaries.find(a => a.name === visit.apiaryName)?.id
+  return (
+  <Link
+   key={visit.key}
+   href={apiaryId ? `/dashboard/records?apiary=${apiaryId}` : '/dashboard/records'}
+   className="block min-h-12 p-3 bg-surface dark:bg-surface-elevated rounded border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors"
+  >
+   <span className="font-medium text-foreground block break-words">{formatDayMonth(visit.date) ?? visit.date} · {visit.apiaryName}</span>
+   <span className="text-sm font-medium text-text-secondary">{visit.summary}</span>
+  </Link>
+  )
+ })}
  {recentActivity.length === 0 && !recentActivityError && (
  <p className="text-text-secondary text-center py-4">No recent activity</p>
  )}

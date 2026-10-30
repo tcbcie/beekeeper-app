@@ -61,7 +61,7 @@ const techStack = [
   { name: 'Supabase', description: 'Secure cloud database' },
   { name: 'OpenAI GPT-4', description: 'AI-powered assistance' },
   { name: 'YOLOv8', description: 'Varroa mite detection' },
-  { name: 'PWA', description: 'Works offline on any device' },
+  { name: 'PWA', description: 'Install it on your phone; you need a connection to save records' },
 ]
 
 export default function AboutPage() {
@@ -124,7 +124,7 @@ export default function AboutPage() {
           <PageHeader
             eyebrow="Technology"
             title="Built for Reliability"
-            description="A modern web stack with offline support, strong typing, and AI-assisted workflows where useful."
+            description="A modern web stack with strong typing, and AI-assisted workflows where useful."
             className="[&_h1]:text-2xl [&_h1]:sm:text-3xl"
           />
         </div>

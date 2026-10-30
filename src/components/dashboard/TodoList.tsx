@@ -36,29 +36,16 @@ interface TodoGroup {
 export default function TodoList({ apiaries, oldQueens, scalesByApiary }: TodoListProps) {
   const [showAll, setShowAll] = useState(false)
 
-  const groups = useMemo<TodoGroup[]>(() => {
-    const byApiary = apiaries
+  // The same lists as each apiary row's "N jobs" pill, so the count here is the pills added up
+  const groups = useMemo<TodoGroup[]>(() => (
+    apiaries
       .map(apiary => ({
         key: apiary.id,
         heading: apiary.name,
-        items: buildApiaryTodos(apiary, scalesByApiary[apiary.id]).filter(item => !item.inLead),
+        items: buildApiaryTodos(apiary, scalesByApiary[apiary.id]),
       }))
       .filter(group => group.items.length > 0)
-    if (oldQueens > 0) {
-      byApiary.push({
-        key: 'queens',
-        heading: 'Queens',
-        items: [{
-          key: 'old-queens',
-          tone: 'amber',
-          title: `${oldQueens} ${oldQueens === 1 ? 'queen is' : 'queens are'} over 2 years old`,
-          detail: 'consider requeening next season',
-          action: { label: 'Queens', href: '/dashboard/queens' },
-        }],
-      })
-    }
-    return byApiary
-  }, [apiaries, oldQueens, scalesByApiary])
+  ), [apiaries, scalesByApiary])
 
   const total = groups.reduce((sum, group) => sum + group.items.length, 0)
 
@@ -99,7 +86,7 @@ export default function TodoList({ apiaries, oldQueens, scalesByApiary }: TodoLi
                     <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${DOT[item.tone]}`} aria-hidden="true" />
                     <div className="min-w-0 flex-1">
                       <p className="text-base font-semibold text-foreground break-words">{item.title}</p>
-                      <p className="text-sm text-text-secondary">{item.detail}</p>
+                      <p className="text-sm text-text-secondary"><span className="font-semibold">{item.kind}</span> · {item.detail}</p>
                     </div>
                     <Link
                       href={item.action.href}
@@ -119,6 +106,14 @@ export default function TodoList({ apiaries, oldQueens, scalesByApiary }: TodoLi
             </Button>
           )}
         </div>
+      )}
+
+      {/* Advice for next season, not a job, so it is not counted */}
+      {oldQueens > 0 && (
+        <p className="mt-3 border-t border-border pt-3 text-sm text-text-secondary">
+          {oldQueens} {oldQueens === 1 ? 'queen is' : 'queens are'} over 2 years old, consider requeening next season.{' '}
+          <Link href="/dashboard/queens" className="inline-flex min-h-12 items-center font-semibold text-forest-800 underline dark:text-forest-300">Queens</Link>
+        </p>
       )}
     </Panel>
   )

@@ -88,7 +88,17 @@ export default function SeasonalLeadCard({ apiaries, scales, scalesLoading, fore
                   <p className="text-base font-semibold text-foreground break-words">{row.title}</p>
                   <p className="text-sm text-text-secondary">{row.note}</p>
                 </div>
-                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-semibold ${PILL[row.tone]}`}>{row.pill}</span>
+                {row.action ? (
+                  <Link
+                    href={row.action.href}
+                    aria-label={`${row.action.label}: ${row.title}`}
+                    className="inline-flex min-h-12 shrink-0 items-center rounded-lg border border-forest-700 px-3 text-sm font-semibold text-forest-800 hover:bg-forest-50 dark:border-forest-400 dark:text-forest-300 dark:hover:bg-forest-900/30"
+                  >
+                    {row.action.label}
+                  </Link>
+                ) : (
+                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-sm font-semibold ${PILL[row.tone]}`}>{row.pill}</span>
+                )}
               </li>
             ))}
           </ul>

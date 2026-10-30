@@ -1,7 +1,6 @@
 import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
 import { formatQueenlessShortLabel } from '@/lib/queenless'
 import { isGettingLight, isPossibleSwarm, SWARM_DROP_WINDOW_HOURS } from '@/lib/scale-alerts'
-import { getSeason } from '@/lib/seasons'
 import type { DashboardApiary, DashboardScaleSummary } from '@/types/dashboard'
 
 /**
@@ -12,10 +11,12 @@ import type { DashboardApiary, DashboardScaleSummary } from '@/types/dashboard'
 
 export type TodoTone = 'red' | 'amber' | 'blue'
 
+/** Where a job comes from: the user's own record, a scale, a scheduled task, or the app's inference */
+export type TodoKind = 'Recorded' | 'Scale' | 'Task' | 'Suggested'
+
 export interface TodoItem {
   key: string
-  /** Also shown in the seasonal top card, so the To do list leaves it out; the apiary's pill counts it */
-  inLead?: boolean
+  kind: TodoKind
   tone: TodoTone
   title: string
   detail: string
@@ -85,6 +86,7 @@ export function buildApiaryTodos(apiary: DashboardApiary, scales?: DashboardScal
     const days = daysSinceLastVisit(apiary)
     items.push({
       key: `${apiary.id}:visit`,
+      kind: 'Suggested',
       tone: 'red',
       title: `Visit ${apiary.name}`,
       detail: days === null ? 'no visit recorded yet' : `last visit ${days} days ago`,
@@ -96,23 +98,26 @@ export function buildApiaryTodos(apiary: DashboardApiary, scales?: DashboardScal
     const reason = formatQueenlessShortLabel(hive.reason)
     items.push({
       key: `${apiary.id}:queenless:${hive.id}`,
+      kind: 'Recorded',
       tone: 'red',
-      title: `Hive ${hive.number} is queenless`,
-      detail: reason ? `marked queenless: ${reason.toLowerCase()}` : 'marked queenless',
+      title: `Hive ${hive.number} marked queenless`,
+      detail: reason ? `reason: ${reason.toLowerCase()}` : 'no reason recorded',
       action: { label: 'Open', href: openHiveHref(hive.id) },
     })
   }
 
-  for (const hive of listOf(apiary.queenCheckHives)) {
+  // Off in winter, like the Visit job: nobody should open a hive to look for the queen
+  for (const hive of isVisitSeason() ? listOf(apiary.queenCheckHives) : []) {
     const broodless = formatDayMonth(hive.broodlessSince)
-    const lastQueen = formatDayMonth(hive.lastQueenDate)
+    const lastLook = formatDayMonth(hive.lastDate)
     items.push({
       key: `${apiary.id}:queen:${hive.id}`,
+      kind: 'Suggested',
       tone: 'amber',
-      title: `Hive ${hive.number}: check the queen`,
+      title: `Hive ${hive.number}: review the queen`,
       detail: broodless
-        ? `no brood seen since ${broodless}`
-        : lastQueen ? `no queen or eggs seen since ${lastQueen}` : 'no queen or eggs recorded yet',
+        ? `no brood recorded since ${broodless}`
+        : lastLook ? `no queen or eggs seen at the ${lastLook} inspection` : 'no queen or eggs seen recently',
       action: { label: 'Inspect', href: inspectHiveHref(hive.id) },
     })
   }
@@ -120,6 +125,7 @@ export function buildApiaryTodos(apiary: DashboardApiary, scales?: DashboardScal
   for (const hive of listOf(apiary.highVarroaHives)) {
     items.push({
       key: `${apiary.id}:varroa:${hive.id}`,
+      kind: 'Recorded',
       tone: 'amber',
       title: `Hive ${hive.number}: high varroa`,
       detail: typeof hive.rate === 'number' ? `${hive.rate}% at a check in the last 30 days` : 'over 3% in the last 30 days',
@@ -127,13 +133,12 @@ export function buildApiaryTodos(apiary: DashboardApiary, scales?: DashboardScal
     })
   }
 
-  const season = getSeason()
   for (const scale of listOf(scales)) {
     const hive = scale.hiveNumber ? `Hive ${scale.hiveNumber}` : 'A hive with a scale'
     if (isPossibleSwarm(scale.largestDrop3h)) {
       items.push({
         key: `${apiary.id}:swarm:${scale.hiveId}`,
-        inLead: season === 'swarm',
+        kind: 'Scale',
         tone: 'red',
         title: `${hive}: possible swarm`,
         detail: `lost ${scale.largestDrop3h.kg.toFixed(1)} kg within ${SWARM_DROP_WINDOW_HOURS} hours, ${describeWhen(scale.largestDrop3h.at)}`,
@@ -143,9 +148,9 @@ export function buildApiaryTodos(apiary: DashboardApiary, scales?: DashboardScal
     if (isGettingLight(scale.change7d)) {
       items.push({
         key: `${apiary.id}:light:${scale.hiveId}`,
-        inLead: season === 'autumn' || season === 'winter',
+        kind: 'Scale',
         tone: 'amber',
-        title: `${hive} getting light`,
+        title: `${hive} getting lighter`,
         detail: `${scale.change7d.toFixed(1)} kg in 7 days, check stores`,
         action: { label: 'Open', href: openHiveHref(scale.hiveId) },
       })
@@ -158,9 +163,10 @@ export function buildApiaryTodos(apiary: DashboardApiary, scales?: DashboardScal
     const others = dueCount - 1
     items.push({
       key: `${apiary.id}:tasks`,
+      kind: 'Task',
       tone: 'blue',
       title: dueTasks[0]?.title || `${dueCount} tasks due`,
-      detail: others > 0 ? `task due, and ${others} more` : 'task due',
+      detail: others > 0 ? `due, and ${others} more` : 'due',
       // The count is the Tasks page "Due" view, so the link opens that view for this apiary
       action: { label: 'Tasks', href: `/dashboard/tasks?apiary=${apiary.id}&view=due` },
     })

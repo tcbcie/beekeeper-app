@@ -615,6 +615,11 @@ export default function RecordsPage() {
         openNewRecord(createParam as RecordType)
       }
       router.replace('/dashboard/records')
+    } else if (searchParams.get('apiary')) {
+      // The dashboard's recent visits: the records list for one apiary
+      handledLinkRef.current = linkKey
+      setApiaryId(searchParams.get('apiary')!)
+      router.replace('/dashboard/records')
     }
   }, [searchParams, hives, router, userId, setHiveId, setOwnershipFilter, openNewRecord, setApiaryId, setRecordTypeFilter, setShowArchivedHives])
 

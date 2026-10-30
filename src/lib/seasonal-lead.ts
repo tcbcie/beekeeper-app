@@ -23,6 +23,8 @@ export interface LeadRow {
   note: string
   pill: string
   tone: 'amber' | 'green'
+  /** The step for this row alone; shown instead of the pill */
+  action?: { label: string; href: string }
 }
 
 export interface SeasonalLead {
@@ -94,43 +96,32 @@ function autumnLead(input: SeasonalLeadInput, now: Date): SeasonalLead {
     scalesLoading
       ? { key: 'stores', title: 'Stores', note: storesNote, pill: 'Checking', tone: 'amber' }
       : light.length > 0
-        ? { key: 'stores', title: 'Stores', note: storesNote, pill: 'Check', tone: 'amber' }
+        ? { key: 'stores', title: 'Stores', note: storesNote, pill: 'Check', tone: 'amber', action: { label: 'Record feed', href: NEW_FEED } }
         : withFigures.length > 0
           ? { key: 'stores', title: 'Stores', note: storesNote, pill: 'Steady', tone: 'green' }
-          : { key: 'stores', title: 'Stores', note: `${storesNote}. Aim for about 18 kg`, pill: 'Heft', tone: 'amber' },
+          : { key: 'stores', title: 'Stores', note: `${storesNote}. About 18 kg is a rough guide`, pill: 'Heft', tone: 'amber' },
     untreated.length > 0
-      ? { key: 'varroa', title: 'Varroa treatment', note: `None recorded since 1 July at ${untreated.map(a => a.name).join(', ')}`, pill: 'To do', tone: 'amber' }
+      ? { key: 'varroa', title: 'Varroa treatment', note: `None recorded since 1 July at ${untreated.map(a => a.name).join(', ')}`, pill: 'To do', tone: 'amber', action: { label: 'Record treatment', href: NEW_TREATMENT } }
       : { key: 'varroa', title: 'Varroa treatment', note: lastTreated ? `Last recorded ${lastTreated}` : 'None recorded', pill: 'Done', tone: 'green' },
   ]
-  if (now.getMonth() + 1 === 10) {
-    rows.push({ key: 'mice', title: 'Mouse guards', note: 'Fit before the first frosts', pill: 'Reminder', tone: 'amber' })
-  }
-
   let answer: string
-  let action: SeasonalLead['action']
   if (scalesLoading) {
     answer = 'Checking your scales…'
-    action = null
   } else if (light.length > 0) {
     answer = light.length === 1
       ? `Stores first: ${hiveName(light[0])} is getting lighter`
       : `Stores first: ${light.length} hives are getting lighter`
-    action = { label: 'Record a feed', href: NEW_FEED }
   } else if (untreated.length > 0) {
-    answer = 'Varroa treatment is next'
-    action = { label: 'Record a treatment', href: NEW_TREATMENT }
+    answer = 'No varroa treatment recorded since 1 July'
   } else if (scaleReadingsMissing(input, withFigures)) {
     answer = 'Scale readings are not available right now'
-    action = null
   } else if (withFigures.length === 0) {
     answer = 'Heft your hives to check their stores'
-    action = { label: 'Record a feed', href: NEW_FEED }
   } else {
     answer = 'On track for winter'
-    action = null
   }
 
-  return { season: 'autumn', band: 'Getting ready for winter', question: 'Are they ready for winter?', answer, rows, showForecast: false, action }
+  return { season: 'autumn', band: 'Getting ready for winter', question: 'Are they ready for winter?', answer, rows, showForecast: false, action: null }
 }
 
 function winterLead(input: SeasonalLeadInput): SeasonalLead {
@@ -142,12 +133,13 @@ function winterLead(input: SeasonalLeadInput): SeasonalLead {
   const rows: LeadRow[] = light.map(s => ({
     key: `light:${s.hiveId}`,
     title: hiveName(s),
-    note: `${signedKg(s.change7d)} in 7 days, heft and add fondant`,
+    note: `${signedKg(s.change7d)} in 7 days, heft to check stores`,
     pill: 'Check',
     tone: 'amber',
+    action: { label: 'Record feed', href: `/dashboard/records?hive=${s.hiveId}&type=feeding` },
   }))
   if (steady.length > 0) {
-    rows.push({ key: 'steady', title: steady.map(hiveName).join(', '), note: 'Under 2 kg lost this week', pill: 'Fine', tone: 'green' })
+    rows.push({ key: 'steady', title: steady.map(hiveName).join(', '), note: 'Under 2 kg lost this week', pill: 'Steady', tone: 'green' })
   }
   const hiveTotal = apiaries.reduce((sum, a) => sum + a.hiveCount, 0)
   const scaleHives = new Set(apiaries.flatMap(a => (Array.isArray(a.scales) ? a.scales : []).map(s => s.hiveId))).size
@@ -177,7 +169,7 @@ function winterLead(input: SeasonalLeadInput): SeasonalLead {
     answer,
     rows,
     showForecast: false,
-    action: !scalesLoading && light.length > 0 ? { label: 'Record a feed', href: NEW_FEED } : null,
+    action: null,
   }
 }
 

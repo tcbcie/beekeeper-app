@@ -137,7 +137,7 @@ export interface DashboardApiary {
   /** No inspection in 14 days; never-inspected first, then the longest wait */
   overdueHives?: DashboardAttentionHive[]
   queenlessHives?: DashboardAttentionHive[]
-  /** No queen or eggs for 21 days, or broodless for 21 days; queenless hives left out */
+  /** Opened in the last 21 days with no queen or eggs seen in that time, or broodless for 21 days; queenless hives left out */
   queenCheckHives?: DashboardAttentionHive[]
   /** A varroa check over 3% in the last 30 days, highest first */
   highVarroaHives?: DashboardAttentionHive[]

@@ -18,12 +18,14 @@ It replaces the earlier apiary cards, the "Today around your apiaries" strip ([d
 | Part | Content | File |
 |---|---|---|
 | Greeting | "Good afternoon, Rico" and "21 hives in 4 apiaries · 1 apiary not visited for 14 days" | `src/app/dashboard/page.tsx` |
+| Quick actions | New inspection / New task. On touch, tapping scrolls to My apiaries to choose one; with no apiary it opens the form | page |
+| Strong wind warning | Only when gusts of 90 km/h or more are forecast at an apiary in the next 72 hours. See [dashboard-wind-warning.md](./dashboard-wind-warning.md) | `src/components/dashboard/WindWarningCard.tsx` |
 | Seasonal top card | One question for the season, its answer from the user's records, and one action. See section 3a | `src/components/dashboard/SeasonalLeadCard.tsx`, rules in `src/lib/seasonal-lead.ts` |
 | To do | Grouped by apiary (nearest first); first five jobs, "Show all N jobs" | `src/components/dashboard/TodoList.tsx`, rules in `src/lib/dashboard-todo.ts` |
-| Quick actions | New inspection / New task (unchanged; drag or tap onto an apiary row) | page |
 | My apiaries | One row each: hives, last visit, scales' change this week, "N jobs" or "All good" | `src/components/dashboard/ApiaryWeatherRow.tsx` (`variant="card"`) |
 | {Month} in Ireland | Seasonal reminders, one set per month | `src/components/dashboard/SeasonalReminders.tsx` |
-| Upcoming events, Recent activity, Teams | Unchanged | page |
+| Upcoming events, Teams | Unchanged | page |
+| Recent visits | Records grouped by day and apiary ("25 October · AP01 - Colm: 3 feeds, 1 inspection"), latest five; links to the records list for that apiary | page, `get_recent_activity` |
 
 The weather, 7-day forecast, GDD, blooms and nectar/pollen block now sits on the apiary page (`ApiaryWeatherRow` `variant="conditions"`, loaded on demand), so nothing is lost.
 
@@ -40,7 +42,8 @@ Replaces the "Can I open my hives today?" card, which said "not today" for much 
 
 - `get_dashboard_overview` adds `lastFeedDate` and `lastTreatmentDate` per apiary (`supabase/migrations/20261030140000_dashboard_seasonal_lead.sql`, applied as `dashboard_seasonal_lead`; grants unchanged).
 - Forecast only in spring and swarm season: autumn and winter make no forecast request (`src/hooks/useInspectionForecast.ts`).
-- Scale alerts shown in the card (getting light in autumn and winter, possible swarm in swarm season) are left out of the To do list, so nothing appears twice. The apiary row's "N jobs" still counts them, so an apiary with a possible swarm never reads "All good"; the To do count can therefore be lower than the pills add up to.
+- Each row can carry its own link instead of a pill ("Record feed", "Record treatment"). Autumn and winter have no full-width button, because one action cannot answer every row; spring and swarm season keep theirs. Mouse guards left the card, as the monthly list already covers them.
+- Scale alerts appear in both the card and the To do list, so the To do count always equals the apiary pills added up. Queens over 2 years old are an uncounted note below the list, as they are advice for next season.
 - Until the scale figures arrive the answer reads "Checking your scales…", so it never claims all is well on missing data.
 
 ## 3. Inspection-weather rule (agreed with the owner)
@@ -61,10 +64,11 @@ Data: one Open-Meteo hourly forecast (temperature, precipitation probability, pr
 |---|---|---|
 | March to October: apiary with no record of any kind for more than 14 days ("Visit Home · last visit 20 days ago"). Off from November to February, when beekeepers rightly stay away; the greeting then makes no claim about visits | red | Inspect (new inspection with the apiary chosen) |
 | Hive marked queenless (one line per hive, with reason) | red | Open hive |
-| Hive with no queen or eggs for 21 days, or broodless 21 days (one line per hive) | amber | Inspect that hive |
+| March to October: hive opened in the last 21 days with no queen or eggs seen in that time, or broodless 21 days (one line per hive). A hive left closed is deliberate and is not listed | amber | Inspect that hive |
 | Hive with a varroa check over 3% in 30 days (one line per hive, with the rate) | amber | Open hive |
 | Tasks due today or earlier, rearing-batch milestones left out (first title, "and N more") | blue | Tasks (Tasks page, "Due" view, that apiary) |
-| Queens over 2 years old (account-wide) | amber | Queens |
+
+Every job shows where it comes from, before its detail (30 October 2026): **Recorded** (the user entered it), **Scale** (a device measured it), **Task** (scheduled) or **Suggested** (the app is inferring). A missing record is never worded as a problem.
 
 ### Why per apiary, not per hive (owner's decision, 30 October 2026)
 

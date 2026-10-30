@@ -41,6 +41,7 @@ export default function SeasonalReminders() {
       <ul className="mt-2 space-y-1.5 list-disc pl-5 text-base text-foreground">
         {tasks.map(text => <li key={text}>{text}</li>)}
       </ul>
+      <p className="mt-3 text-sm text-text-secondary">General guidance from Tribes and beekeeping association calendars. Reviewed October 2026.</p>
     </Panel>
   )
 }

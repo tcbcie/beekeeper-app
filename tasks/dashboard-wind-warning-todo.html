@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<title>Dashboard severe weather warning: plan</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  .banner { border: 2px solid #b45309; background: #fef3c7; color: #451a03; border-radius: 12px; padding: 1rem; }
+  .banner.red { border-color: #b91c1c; background: #fee2e2; color: #450a0a; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ccc; padding: .5rem; text-align: left; vertical-align: top; }
+</style>
+</head>
+<body>
+<h1>Dashboard severe weather warning</h1>
+<p>Status: stage 1 built, approved by the owner with 90 km/h. Not yet tested in the browser or committed. Stage 2 not started.</p>
+
+<h2>Why</h2>
+<p>High winds have blown lids off and tumbled hives. A warning at the top of the dashboard gives time to strap
+and weigh hives down. The app has no warning today: no weather request asks for gusts, and only spring and swarm
+season fetch a forecast at all, so the windiest months have none.</p>
+
+<h2>What was found</h2>
+<table>
+  <tr><th></th><th>Stage 1: gust forecast (Open-Meteo)</th><th>Stage 2: official warnings (Met Éireann)</th></tr>
+  <tr><td>Covers</td><td>Wind only</td><td>Wind, rain, snow and ice, low temperature and more</td></tr>
+  <tr><td>Where</td><td>Each apiary's own coordinates, Northern Ireland included</td><td>Republic of Ireland, by county</td></tr>
+  <tr><td>Standing</td><td>A forecast, not an official warning</td><td>The official warning</td></tr>
+  <tr><td>Checked</td><td>Live request for two locations works with hourly gusts in km/h</td><td><code>warning_IRELAND.json</code> is live, currently empty; shape confirmed from Met Éireann's example file</td></tr>
+  <tr><td>Blocker</td><td>None; the host is already allowed by the CSP</td><td>Apiaries have no county column, and Met Éireann's region codes have no published list that I could find</td></tr>
+  <tr><td>Conditions</td><td>Existing Open-Meteo use</td><td>Headline, times and area shown unaltered, expired warnings removed, Met Éireann credited</td></tr>
+</table>
+
+<h2>Stage 1 mock-up</h2>
+<div class="banner">
+  <strong>Strong winds forecast</strong>
+  <p style="margin:.25rem 0">Home apiary: gusts up to 95 km/h, Saturday night<br>Hill apiary: gusts up to 92 km/h, Sunday morning</p>
+  <p style="margin:.25rem 0">Strap the hives and weigh down the lids before then.</p>
+  <a href="https://www.met.ie/warnings">Met Éireann warnings</a>
+</div>
+<p>The names and figures above are examples.</p>
+
+<h2>Rules for stage 1</h2>
+<ul>
+  <li>Looks at the next 72 hours, all year, for every apiary with coordinates and hives.</li>
+  <li>Amber from 90 km/h gusts, red from 110 km/h: Met Éireann's yellow and orange gust levels as reported in the Irish press. I could not confirm them on Met Éireann's own site.</li>
+  <li>Worded as a forecast, never "Status Orange", which belongs to Met Éireann.</li>
+  <li>Sits above the seasonal card. It cannot be dismissed, and it goes away once the wind has passed.</li>
+  <li>If the forecast fails, nothing shows, so no banner does not guarantee calm weather.</li>
+</ul>
+
+<h2>To do: stage 1</h2>
+<ul>
+  <li>[x] <code>src/lib/wind-warning.ts</code>: thresholds; pick each apiary's strongest gust</li>
+  <li>[x] <code>src/hooks/useWindWarnings.ts</code>: one Open-Meteo request for all apiaries, 30-minute cache, failures not cached</li>
+  <li>[x] <code>src/components/dashboard/WindWarningCard.tsx</code>: uses <code>AlertPanel</code> with the <code>tone</code> prop</li>
+  <li>[x] <code>src/app/dashboard/page.tsx</code>: render above <code>SeasonalLeadCard</code></li>
+  <li>[x] <code>docs/features/dashboard-wind-warning.md</code> and the today-screen doc</li>
+  <li>[x] <code>qa-engineer</code> audit</li>
+  <li>[ ] Owner tests on phone and desktop</li>
+</ul>
+
+<h2>To do: stage 2, if wanted</h2>
+<ul>
+  <li>[ ] Find a reliable county for each apiary from its coordinates, and store it</li>
+  <li>[ ] Same-origin route <code>/api/weather-warnings</code>, cached for a few minutes, following the <code>gdd-archive</code> pattern</li>
+  <li>[ ] Show the warnings that name an apiary's county, unaltered, above the forecast, with the credit</li>
+</ul>
+
+<h2>Review</h2>
+<p>Stage 1 adds a banner driven by one Open-Meteo gust request, with no database change. The audit found no critical
+or high issues. It fixed a title size that Tailwind would probably have overridden, and removed a screen reader
+wrapper that would not have announced anything. The banner only appears on a forecast of 90 km/h or more, so it has
+not been seen on a real page.</p>
+</body>
+</html>

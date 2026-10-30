@@ -21,6 +21,9 @@ interface UseDashboardStatsReturn {
   fetchDashboardData: (userId: string) => Promise<void>
 }
 
+/** Enough records to group the latest visits; a visit can hold a record for every hive */
+export const RECENT_ACTIVITY_LIMIT = 50
+
 export function useDashboardStats(): UseDashboardStatsReturn {
   const [stats, setStats] = useState<DashboardStats>({
     apiaries: 0,
@@ -65,7 +68,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
     // parallel with the overview instead of starting only after it resolves;
     // we still await the overview first to unblock the page as early as possible.
     const overviewRequest = supabase.rpc('get_dashboard_overview', { p_user_id: userId }).then(res => res)
-    const activityRequest = supabase.rpc('get_recent_activity', { p_user_id: userId, p_limit: 5 }).then(res => res)
+    const activityRequest = supabase.rpc('get_recent_activity', { p_user_id: userId, p_limit: RECENT_ACTIVITY_LIMIT }).then(res => res)
 
     try {
       try {
