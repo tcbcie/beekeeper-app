@@ -28,6 +28,9 @@ const eslintConfig = [
       "supabase/**",
       // Local scratch output (git-ignored)
       ".codex-temp/**",
+      // Third-party skills, installed copies that are not ours to change
+      ".agents/**",
+      ".claude/**",
     ],
   },
 ];
