@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mock-up &mdash; Seasonal Lead Card</title>
+<style>
+  :root { --ground: #faf8f5; --ink: #1a1a1a; --soft: #374151; --line: #e5e5e5; --forest: #166534; --forest-2: #15803d; --mint: #dcfce7; --mint-ink: #14532d; --amber: #fef3c7; --amber-ink: #78350f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 16px 48px; background: #e9e6df; color: var(--ink); font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; line-height: 1.4; }
+  .intro { max-width: 60rem; margin: 0 auto 24px; }
+  .intro h1 { margin: 0 0 6px; font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 32px; }
+  .intro p { margin: 6px 0; }
+  .phones { display: flex; flex-wrap: wrap; justify-content: center; gap: 28px; align-items: flex-start; }
+  .col { width: 390px; max-width: 100%; }
+  .col > h2 { margin: 0 0 10px; font-size: 18px; text-align: center; }
+  .phone { border: 10px solid #1f2620; border-radius: 34px; background: var(--ground); overflow: hidden; }
+  .screen { padding: 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+  .hello { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 30px; font-weight: 400; line-height: 1.15; }
+  .sub { margin: 4px 0 0; color: var(--soft); font-size: 16px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; }
+  .lead { overflow: hidden; }
+  .band { background: var(--forest); color: #fff; padding: 14px 16px; }
+  .band small { display: block; color: var(--mint); font-size: 14px; }
+  .band strong { display: block; margin-top: 2px; font-size: 22px; font-weight: 600; line-height: 1.25; }
+  .lead-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+  .answer { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.3; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .row b { display: block; font-size: 16px; font-weight: 600; }
+  .row span.note { display: block; font-size: 14px; color: var(--soft); }
+  .pill { flex-shrink: 0; padding: 2px 10px; border-radius: 999px; font-size: 14px; font-weight: 600; }
+  .a { background: var(--amber); color: var(--amber-ink); }
+  .g { background: var(--mint); color: var(--mint-ink); }
+  .primary { min-height: 48px; border: 0; border-radius: 10px; background: var(--forest); color: #fff; font: inherit; font-size: 16px; font-weight: 600; }
+  .days { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; text-align: center; }
+  .day { border-radius: 10px; padding: 6px 2px; font-size: 14px; background: #f0ebe2; color: var(--soft); }
+  .day b { display: block; }
+  .day.good { background: var(--mint); color: var(--mint-ink); }
+  .day.brief { background: var(--amber); color: var(--amber-ink); }
+  .box { padding: 14px 16px; }
+  .box h3 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+  .box h3 span { font-weight: 400; color: var(--soft); }
+  .job { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+  .dot { width: 10px; height: 10px; flex-shrink: 0; border-radius: 50%; }
+  .red { background: #dc2626; } .orange { background: #d97706; } .blue { background: #2563eb; }
+  .job div { flex: 1; min-width: 0; }
+  .job b { display: block; font-size: 16px; font-weight: 600; }
+  .job span.note { display: block; font-size: 14px; color: var(--soft); }
+  .job button { min-height: 48px; flex-shrink: 0; padding: 0 12px; border: 1px solid var(--forest-2); border-radius: 10px; background: #fff; color: var(--forest); font: inherit; font-size: 14px; font-weight: 600; }
+  .quick { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .quick button { min-height: 48px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font: inherit; font-size: 16px; font-weight: 600; color: var(--ink); }
+  .apiaries h3 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+  .apiary { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 14px; margin-top: 8px; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+  .apiary div { flex: 1; min-width: 0; }
+  .apiary b { display: block; font-size: 16px; font-weight: 600; }
+  .apiary span.note { display: block; font-size: 14px; color: var(--soft); }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>The top card changes with the season</h1>
+  <p><strong>Suggestion 1, mock-up only. Nothing is built.</strong> The same screen at four points in the year. Only the green top card changes its question; To do and My apiaries stay below it. Weather appears only in the seasons when it decides what you do.</p>
+  <p><strong>Real:</strong> your apiaries, hive numbers, queen jobs, last visits and the scale figures for 34-DA, 29-DA and AP02. <strong>Made up to show the idea:</strong> the 26-DA figure, the varroa and feed dates, the forecast days and every figure in the three screens other than October.</p>
+</div>
+
+<div class="phones">
+
+  <div class="col">
+    <h2>August to October (today)</h2>
+    <div class="phone"><div class="screen">
+      <div><p class="hello">Good afternoon, Rico</p><p class="sub">21 hives in 4 apiaries</p></div>
+      <section class="card lead">
+        <div class="band"><small>Getting ready for winter</small><strong>Are they ready for winter?</strong></div>
+        <div class="lead-body">
+          <p class="answer">Stores first: two hives are getting lighter</p>
+          <div>
+            <div class="row"><div><b>Stores</b><span class="note">Scales this week: 34-DA -2.7 kg, 26-DA -1.7 kg, 29-DA +1.3 kg</span></div><span class="pill a">Check</span></div>
+            <div class="row"><div><b>Varroa treatment</b><span class="note">Last recorded 14 August</span></div><span class="pill g">Done</span></div>
+            <div class="row"><div><b>Mouse guards</b><span class="note">Fit before the first frosts</span></div><span class="pill a">Reminder</span></div>
+          </div>
+          <button class="primary" type="button">Record a feed</button>
+        </div>
+      </section>
+      <section class="card box">
+        <h3>To do <span>· 8 jobs</span></h3>
+        <div class="job"><span class="dot red"></span><div><b>Hive 49-HMN+ is queenless</b><span class="note">marked queenless: removed</span></div><button type="button">Open</button></div>
+        <div class="job"><span class="dot red"></span><div><b>Hive 27-HMN+ is queenless</b><span class="note">marked queenless: removed</span></div><button type="button">Open</button></div>
+        <div class="job"><span class="dot orange"></span><div><b>Hive 76-DA: check the queen</b><span class="note">no queen or eggs seen since 23 August</span></div><button type="button">Inspect</button></div>
+        <div class="quick" style="margin-top: 8px"><button type="button">Show all 8 jobs</button></div>
+      </section>
+      <div class="quick"><button type="button">New inspection</button><button type="button">New task</button></div>
+      <section class="apiaries"><h3>My apiaries</h3>
+        <div class="apiary"><div><b>AP03 - Stephen</b><span class="note">10 hives · last visit 11 days ago</span></div><span class="pill a">3 jobs</span></div>
+        <div class="apiary"><div><b>Home</b><span class="note">2 hives · last visit 14 days ago</span></div><span class="pill a">2 jobs</span></div>
+        <div class="apiary"><div><b>AP02 - Tom</b><span class="note">4 hives · last visit 7 days ago · scales -2.2 kg this week</span></div><span class="pill a">2 jobs</span></div>
+        <div class="apiary"><div><b>AP01 - Colm</b><span class="note">5 hives · last visit 5 days ago · scales +1.3 kg this week</span></div><span class="pill a">1 job</span></div>
+      </section>
+    </div></div>
+  </div>
+
+  <div class="col">
+    <h2>November to February</h2>
+    <div class="phone"><div class="screen">
+      <div><p class="hello">Good morning, Rico</p><p class="sub">21 hives in 4 apiaries</p></div>
+      <section class="card lead">
+        <div class="band"><small>Winter: nothing to do</small><strong>Do they have enough food?</strong></div>
+        <div class="lead-body">
+          <p class="answer">One hive needs a look</p>
+          <div>
+            <div class="row"><div><b>34-DA</b><span class="note">-2.1 kg in 7 days, heft and add fondant</span></div><span class="pill a">Check</span></div>
+            <div class="row"><div><b>26-DA, 29-DA</b><span class="note">Under 1 kg lost this week</span></div><span class="pill g">Fine</span></div>
+            <div class="row"><div><b>18 hives without a scale</b><span class="note">Last fed 12 September, heft on your next visit</span></div><span class="pill a">Heft</span></div>
+          </div>
+          <button class="primary" type="button">Record a feed</button>
+        </div>
+      </section>
+      <section class="card box">
+        <h3>To do <span>· 1 job</span></h3>
+        <div class="job"><span class="dot blue"></span><div><b>Oxalic acid treatment</b><span class="note">task due today</span></div><button type="button">Tasks</button></div>
+      </section>
+      <div class="quick"><button type="button">New inspection</button><button type="button">New task</button></div>
+      <section class="apiaries"><h3>My apiaries</h3>
+        <div class="apiary"><div><b>AP02 - Tom</b><span class="note">4 hives · last visit 21 days ago · scales -1.4 kg this week</span></div><span class="pill a">1 job</span></div>
+        <div class="apiary"><div><b>AP01 - Colm</b><span class="note">5 hives · last visit 30 days ago · scales -0.4 kg this week</span></div><span class="pill g">All good</span></div>
+        <div class="apiary"><div><b>AP03 - Stephen</b><span class="note">10 hives · last visit 26 days ago</span></div><span class="pill g">All good</span></div>
+        <div class="apiary"><div><b>Home</b><span class="note">2 hives · last visit 26 days ago</span></div><span class="pill g">All good</span></div>
+      </section>
+    </div></div>
+  </div>
+
+  <div class="col">
+    <h2>March to April</h2>
+    <div class="phone"><div class="screen">
+      <div><p class="hello">Good morning, Rico</p><p class="sub">21 hives in 4 apiaries</p></div>
+      <section class="card lead">
+        <div class="band"><small>First look of the year</small><strong>Have they come through winter?</strong></div>
+        <div class="lead-body">
+          <p class="answer">Friday looks warm enough to start</p>
+          <div class="days">
+            <div class="day"><b>Today</b>11°<br>cool</div>
+            <div class="day"><b>Tue</b>12°<br>rain</div>
+            <div class="day"><b>Wed</b>13°<br>cool</div>
+            <div class="day brief"><b>Thu</b>15°<br>13–14</div>
+            <div class="day good"><b>Fri</b>16°<br>12–15</div>
+          </div>
+          <div>
+            <div class="row"><div><b>AP01 - Colm</b><span class="note">First look done 2 April</span></div><span class="pill g">Done</span></div>
+            <div class="row"><div><b>AP02, AP03, Home</b><span class="note">No inspection yet this year</span></div><span class="pill a">To do</span></div>
+          </div>
+          <button class="primary" type="button">Start an inspection</button>
+        </div>
+      </section>
+      <section class="card box">
+        <h3>To do <span>· 2 jobs</span></h3>
+        <div class="job"><span class="dot orange"></span><div><b>Hive 12-MN+ getting light</b><span class="note">last fed 3 March, feed before the flow</span></div><button type="button">Open</button></div>
+        <div class="job"><span class="dot blue"></span><div><b>Order frames and foundation</b><span class="note">task due today</span></div><button type="button">Tasks</button></div>
+      </section>
+      <div class="quick"><button type="button">New inspection</button><button type="button">New task</button></div>
+      <section class="apiaries"><h3>My apiaries</h3>
+        <div class="apiary"><div><b>AP03 - Stephen</b><span class="note">10 hives · last visit 32 days ago</span></div><span class="pill a">1 job</span></div>
+        <div class="apiary"><div><b>Home</b><span class="note">2 hives · last visit 40 days ago</span></div><span class="pill g">All good</span></div>
+        <div class="apiary"><div><b>AP02 - Tom</b><span class="note">4 hives · last visit 28 days ago · scales +0.6 kg this week</span></div><span class="pill g">All good</span></div>
+        <div class="apiary"><div><b>AP01 - Colm</b><span class="note">5 hives · last visit 8 days ago · scales +0.9 kg this week</span></div><span class="pill g">All good</span></div>
+      </section>
+    </div></div>
+  </div>
+
+  <div class="col">
+    <h2>May to July</h2>
+    <div class="phone"><div class="screen">
+      <div><p class="hello">Good morning, Rico</p><p class="sub">21 hives in 4 apiaries</p></div>
+      <section class="card lead">
+        <div class="band"><small>Swarm season</small><strong>Are any about to swarm?</strong></div>
+        <div class="lead-body">
+          <p class="answer">26-DA may have swarmed, AP03 is due its check</p>
+          <div>
+            <div class="row"><div><b>Hive 26-DA</b><span class="note">Lost 2.1 kg within 3 hours, Tuesday afternoon</span></div><span class="pill a">Look</span></div>
+            <div class="row"><div><b>AP03 - Stephen</b><span class="note">Last visit 9 days ago, due now</span></div><span class="pill a">Due</span></div>
+            <div class="row"><div><b>AP02 - Tom</b><span class="note">Last visit 6 days ago, due Sunday</span></div><span class="pill g">Soon</span></div>
+          </div>
+          <div class="days">
+            <div class="day good"><b>Today</b>17°<br>11–16</div>
+            <div class="day"><b>Tue</b>14°<br>rain</div>
+            <div class="day good"><b>Wed</b>18°<br>10–17</div>
+            <div class="day good"><b>Thu</b>19°<br>10–15</div>
+            <div class="day brief"><b>Fri</b>16°<br>14–15</div>
+          </div>
+          <button class="primary" type="button">Inspect 26-DA today</button>
+        </div>
+      </section>
+      <section class="card box">
+        <h3>To do <span>· 2 jobs</span></h3>
+        <div class="job"><span class="dot orange"></span><div><b>Add a super at AP01</b><span class="note">task due today</span></div><button type="button">Tasks</button></div>
+        <div class="job"><span class="dot blue"></span><div><b>Mark the new queen in 18-HMN+</b><span class="note">task due tomorrow</span></div><button type="button">Tasks</button></div>
+      </section>
+      <div class="quick"><button type="button">New inspection</button><button type="button">New task</button></div>
+      <section class="apiaries"><h3>My apiaries</h3>
+        <div class="apiary"><div><b>AP02 - Tom</b><span class="note">4 hives · last visit 6 days ago · scales +3.1 kg this week</span></div><span class="pill a">1 job</span></div>
+        <div class="apiary"><div><b>AP03 - Stephen</b><span class="note">10 hives · last visit 9 days ago</span></div><span class="pill a">1 job</span></div>
+        <div class="apiary"><div><b>AP01 - Colm</b><span class="note">5 hives · last visit 3 days ago · scales +4.2 kg this week</span></div><span class="pill a">1 job</span></div>
+        <div class="apiary"><div><b>Home</b><span class="note">2 hives · last visit 4 days ago</span></div><span class="pill g">All good</span></div>
+      </section>
+    </div></div>
+  </div>
+
+</div>
+</body>
+</html>

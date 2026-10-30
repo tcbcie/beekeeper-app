@@ -1,70 +1,13 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Panel from '@/components/ui/Panel'
+import { supabase } from '@/lib/supabase'
 import type { DashboardScaleSummary } from '@/types/dashboard'
 
-// Two or three timely reminders for Irish beekeepers, one set per month. October's wording was
-// agreed with the owner (29 October 2026); the others follow the same style and await their check.
-const REMINDERS: readonly (readonly string[])[] = [
-  /* January */ [
-    'Heft hives or check scales; add fondant to any that feel light.',
-    'Treat with oxalic acid if it was not done in December.',
-    'Clear dead bees from entrances and check roofs after storms.',
-  ],
-  /* February */ [
-    'Stores go fastest now as brood rearing starts: heft and feed fondant if light.',
-    'On a mild day, clean or swap floors without opening the brood nest.',
-    'Order frames, foundation and spare boxes for the season.',
-  ],
-  /* March */ [
-    'First quick look on a warm, calm day: is the queen laying, are there stores?',
-    'Feed if light; willow and gorse pollen should be coming in.',
-    'Check the varroa drop to plan spring treatment.',
-  ],
-  /* April */ [
-    'First full inspection at 15°C or more: queen, brood pattern, disease.',
-    'Add a super when bees cover most frames.',
-    'Get swarm-control kit ready: spare floor, box, roof and frames.',
-  ],
-  /* May */ [
-    'Inspect every 7 to 9 days for queen cells: swarm season.',
-    'Add supers ahead of need on the spring flow.',
-    'Have your swarm-control method ready, such as an artificial swarm.',
-  ],
-  /* June */ [
-    'Keep up 7 to 9 day checks while colonies still want to swarm.',
-    'Watch stores in the June gap between spring and summer flows.',
-    'A good month to raise queens or make up nucs.',
-  ],
-  /* July */ [
-    'Supers on for the main flow: bramble, clover and lime.',
-    'Take off spring honey before it sets in the comb.',
-    'Watch for wasps; narrow the entrances of weaker colonies.',
-  ],
-  /* August */ [
-    'Harvest and extract; take the supers off.',
-    'Start varroa treatment straight after the harvest.',
-    'Narrow entrances against wasps and robbing.',
-  ],
-  /* September */ [
-    'Feed heavy syrup to bring stores to about 18 kg.',
-    'Finish varroa treatment before the winter bees are raised.',
-    'Unite weak colonies or those with a failing queen.',
-  ],
-  /* October */ [
-    'Heft or check scales: a colony needs about 18 kg of stores for winter.',
-    'Fit mouse guards before the first frosts.',
-    'Plan oxalic acid for the broodless spell in December.',
-  ],
-  /* November */ [
-    'Leave colonies undisturbed; check them from the outside.',
-    'Strap hives and weigh down roofs against winter storms.',
-    'Check mouse guards are still in place.',
-  ],
-  /* December */ [
-    'Treat with oxalic acid in the broodless spell, usually mid to late December.',
-    'Heft hives; add fondant to any that feel light.',
-    'Clean and repair spare equipment.',
-  ],
-]
+// One month's list per page load: it rarely changes. A failure or an empty answer is not kept, so
+// the next visit tries again.
+const tasksCache = new Map<number, string[]>()
 
 // Months (1–12) whose reminders are about stores, so the user's scales answer them:
 // September to February, and June (the June gap). Agreed with the owner, 29 October 2026.
@@ -75,14 +18,36 @@ interface SeasonalRemindersProps {
   scales: DashboardScaleSummary[]
 }
 
-/** This month's reminders, e.g. "October in Ireland", with the user's scales in stores months. */
+/**
+ * This month's jobs, e.g. "October in Ireland" (monthly_apiary_tasks: at most 5 a month), with the
+ * user's scales in stores months.
+ */
 export default function SeasonalReminders({ scales }: SeasonalRemindersProps) {
   const now = new Date()
   const month = now.toLocaleDateString('en-IE', { month: 'long' })
-  const reminders = REMINDERS[now.getMonth()]
+  const monthNumber = now.getMonth() + 1
+  const [tasks, setTasks] = useState<string[]>(() => tasksCache.get(monthNumber) ?? [])
+
+  useEffect(() => {
+    if (tasksCache.has(monthNumber)) return
+    let cancelled = false
+    supabase
+      .from('monthly_apiary_tasks')
+      .select('task')
+      .eq('month', monthNumber)
+      .order('position')
+      .then(({ data, error }) => {
+        // Supplementary: on a failure the panel shows only what else it has
+        if (error || !data) return
+        const loaded = data.map(row => row.task as string)
+        if (loaded.length > 0) tasksCache.set(monthNumber, loaded)
+        if (!cancelled) setTasks(loaded)
+      })
+    return () => { cancelled = true }
+  }, [monthNumber])
 
   // "34-DA -2.7 kg, 26-DA -2.1 kg, 29-DA +1.3 kg": lightest-going first
-  const scaleLine = STORES_MONTHS.includes(now.getMonth() + 1)
+  const scaleLine = STORES_MONTHS.includes(monthNumber)
     ? scales
         .filter((s): s is DashboardScaleSummary & { change7d: number } => typeof s.change7d === 'number')
         .sort((a, b) => a.change7d - b.change7d)
@@ -90,12 +55,16 @@ export default function SeasonalReminders({ scales }: SeasonalRemindersProps) {
         .join(', ')
     : ''
 
+  if (tasks.length === 0 && !scaleLine) return null
+
   return (
     <Panel padding="md">
       <h2 className="text-lg font-semibold text-foreground">{month} in Ireland</h2>
-      <ul className="mt-2 space-y-1.5 list-disc pl-5 text-base text-foreground">
-        {reminders.map(text => <li key={text}>{text}</li>)}
-      </ul>
+      {tasks.length > 0 && (
+        <ul className="mt-2 space-y-1.5 list-disc pl-5 text-base text-foreground">
+          {tasks.map(text => <li key={text}>{text}</li>)}
+        </ul>
+      )}
       {scaleLine && (
         <div className="mt-3 border-t border-border pt-2">
           <h3 className="text-base font-semibold text-foreground">Your hives</h3>

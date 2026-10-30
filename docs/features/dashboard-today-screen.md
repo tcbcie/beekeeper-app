@@ -58,9 +58,9 @@ A beekeeper who visits an apiary and leaves a hive closed does so on purpose, so
 
 `supabase/migrations/20261029150000_dashboard_today_screen.sql`, applied as `dashboard_today_screen`. `get_dashboard_overview` additionally returns `firstName` and, per apiary, `overdueHives`, `queenlessHives`, `queenCheckHives`, `highVarroaHives` and `dueTasks` (the hives behind the existing counts). Additive; grants unchanged (authenticated, service_role).
 
-## 6. Seasonal reminders
+## 6. Monthly tasks
 
-Fixed text, one set per month, heading "{Month} in Ireland". October's wording was agreed with the owner; the other months follow the same style and should be checked by the owner.
+At most five jobs for the month, heading "{Month} in Ireland", read from the `monthly_apiary_tasks` table. See [monthly-apiary-tasks.md](./monthly-apiary-tasks.md).
 
 ## 7. Edge cases
 

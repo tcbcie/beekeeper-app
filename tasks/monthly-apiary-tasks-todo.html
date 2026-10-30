@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Monthly Apiary Tasks</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+</style>
+</head>
+<body>
+<h1>Monthly Apiary Tasks</h1>
+<p><strong>Status:</strong> implemented, not committed &nbsp;&middot;&nbsp; <strong>Date:</strong> 30 October 2026</p>
+<blockquote><p><strong>Your instruction:</strong> a separate database table holding the tasks for every month, shown as its own information to complement the season, researched and populated by me, with no more than about 5 items a month.</p></blockquote>
+<h2>To-do</h2>
+<ul class="todo">
+  <li>&#9745; Research Irish and UK association calendars</li>
+  <li>&#9745; Table <code>monthly_apiary_tasks</code>: read-only for users, at most 5 a month enforced by the database (MCP migration + file)</li>
+  <li>&#9745; 60 tasks, 5 per month</li>
+  <li>&#9745; <span class="file">SeasonalReminders.tsx</span> reads the table</li>
+  <li>&#9745; Mock-up: winter line now &ldquo;nothing to do&rdquo;</li>
+  <li>&#9745; Type check + ESLint; <code>qa-engineer</code> audit; docs</li>
+  <li>&#9744; You test</li>
+  <li>&#9744; Your decision: build the seasonal top card</li>
+</ul>
+<h2>Review</h2>
+<p>See <span class="file">docs/features/monthly-apiary-tasks.md</span> for the table, the sources and the choices made where they disagreed.</p>
+<h3>QA audit (qa-engineer)</h3>
+<ul>
+  <li><strong>No Critical, High or Medium findings.</strong> <code>npx tsc --noEmit</code>: no errors. ESLint: clean. Security advisors: nothing new. Grants: <code>authenticated</code> SELECT only.</li>
+  <li>Hardening applied: an empty answer is not cached, so one bad read cannot blank the list until the page reloads.</li>
+  <li>&#9898; Low, left as is: the component keeps the name <code>SeasonalReminders</code>, to keep the change small.</li>
+</ul>
+</body>
+</html>
