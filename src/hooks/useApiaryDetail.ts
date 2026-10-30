@@ -12,6 +12,10 @@ interface ApiaryHive {
   is_queenless: boolean
   queenless_reason: string | null
   archived_at: string | null
+  /** Latest inspection, absent when none was found; not proof that none exists */
+  last_inspection_date?: string
+  /** A treatment with a removal planned and no removal recorded */
+  active_treatment?: { type: string; removal_date: string }
   queens?: {
     id: string
     queen_number: string
@@ -120,12 +124,14 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
       const records: ApiaryRecentRecord[] = []
 
       if (hiveIds.length > 0) {
-        const [inspRes, treatRes, checkRes, feedRes, harvestRes] = await Promise.all([
+        const [inspRes, treatRes, checkRes, feedRes, harvestRes, hiveInspRes, activeTreatRes] = await Promise.all([
           supabase.from('inspections').select('id, inspection_date, hive_id, hives(hive_number)').in('hive_id', hiveIds).order('inspection_date', { ascending: false }).limit(5),
           supabase.from('varroa_treatments').select('id, treatment_date, hive_id, hives(hive_number)').in('hive_id', hiveIds).order('treatment_date', { ascending: false }).limit(3),
           supabase.from('varroa_checks').select('id, check_date, hive_id, hives(hive_number)').in('hive_id', hiveIds).order('check_date', { ascending: false }).limit(3),
           supabase.from('feedings').select('id, feed_date, hive_id, hives(hive_number)').in('hive_id', hiveIds).order('feed_date', { ascending: false }).limit(3),
           supabase.from('harvests').select('id, harvest_date, hive_id, hives(hive_number)').in('hive_id', hiveIds).order('harvest_date', { ascending: false }).limit(3),
+          supabase.from('inspections').select('hive_id, inspection_date').in('hive_id', hiveIds).order('inspection_date', { ascending: false }).limit(500),
+          supabase.from('varroa_treatments').select('hive_id, treatment_type, planned_removal_date').in('hive_id', hiveIds).is('removed_date', null).not('planned_removal_date', 'is', null).order('treatment_date', { ascending: false }),
         ])
 
         if (!isCurrent()) return
@@ -135,10 +141,27 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
         if (checkRes.error) console.error('Failed to fetch varroa checks:', checkRes.error)
         if (feedRes.error) console.error('Failed to fetch feedings:', feedRes.error)
         if (harvestRes.error) console.error('Failed to fetch harvests:', harvestRes.error)
+        if (hiveInspRes.error) console.error('Failed to fetch hive inspections:', hiveInspRes.error)
+        if (activeTreatRes.error) console.error('Failed to fetch active treatments:', activeTreatRes.error)
         // Say so, rather than let "No inspections yet" or an empty Recent Activity pass as fact
-        if (inspRes.error || treatRes.error || checkRes.error || feedRes.error || harvestRes.error) {
+        if (inspRes.error || treatRes.error || checkRes.error || feedRes.error || harvestRes.error || hiveInspRes.error || activeTreatRes.error) {
           toast.warning("Some recent records couldn't be loaded.")
         }
+
+        // Each list is newest first, so the first row seen for a hive is its latest
+        const lastInspection = new Map<string, string>()
+        for (const row of (hiveInspRes.data || []) as { hive_id: string; inspection_date: string }[]) {
+          if (!lastInspection.has(row.hive_id)) lastInspection.set(row.hive_id, row.inspection_date)
+        }
+        const activeTreatment = new Map<string, { type: string; removal_date: string }>()
+        for (const row of (activeTreatRes.data || []) as { hive_id: string; treatment_type: string; planned_removal_date: string }[]) {
+          if (!activeTreatment.has(row.hive_id)) activeTreatment.set(row.hive_id, { type: row.treatment_type, removal_date: row.planned_removal_date })
+        }
+        setHives(hivesArr.map(hive => ({
+          ...hive,
+          last_inspection_date: lastInspection.get(hive.id),
+          active_treatment: activeTreatment.get(hive.id),
+        })))
 
         // record.hive_id → hives is a to-one embed, so it arrives as one object.
         type RecordRow = { id: string; hive_id: string; hives: { hive_number: string } | { hive_number: string }[] | null }

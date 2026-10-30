@@ -9,10 +9,10 @@ import type { DayVerdict, HourForecast } from '@/lib/inspection-weather'
 const CACHE_TTL_MS = 30 * 60 * 1000
 const forecastCache = new Map<string, { hours: HourForecast[]; at: number }>()
 
-async function fetchHourlyForecast(latitude: number, longitude: number): Promise<HourForecast[]> {
+async function fetchHourlyForecast(latitude: number, longitude: number): Promise<{ hours: HourForecast[]; at: number }> {
   const key = `${latitude},${longitude}`
   const cached = forecastCache.get(key)
-  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.hours
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 15_000)
@@ -39,8 +39,9 @@ async function fetchHourlyForecast(latitude: number, longitude: number): Promise
       // as good weather: drop it, along with any hour that did not parse
       .filter(hour => Number.isFinite(hour.temperature) && Number.isFinite(hour.hour) &&
         Number.isFinite(hour.rainChance) && Number.isFinite(hour.rain) && Number.isFinite(hour.wind))
-    forecastCache.set(key, { hours, at: Date.now() })
-    return hours
+    const forecast = { hours, at: Date.now() }
+    forecastCache.set(key, forecast)
+    return forecast
   } finally {
     clearTimeout(timer)
   }
@@ -50,6 +51,8 @@ export interface InspectionForecast {
   /** The next five days, today first; null until loaded */
   days: DayVerdict[] | null
   failed: boolean
+  /** When the forecast was fetched, in milliseconds; null until loaded */
+  checkedAt: number | null
 }
 
 /**
@@ -59,13 +62,15 @@ export interface InspectionForecast {
 export function useInspectionForecast(latitude: number | null, longitude: number | null, enabled: boolean): InspectionForecast {
   const [days, setDays] = useState<DayVerdict[] | null>(null)
   const [failed, setFailed] = useState(false)
+  const [checkedAt, setCheckedAt] = useState<number | null>(null)
 
   useEffect(() => {
     if (!enabled || latitude === null || longitude === null) return
     let cancelled = false
     fetchHourlyForecast(latitude, longitude)
-      .then(hours => {
+      .then(({ hours, at }) => {
         if (cancelled) return
+        setCheckedAt(at)
         const today = getCurrentDate()
         const dates = Array.from(new Set(hours.map(h => h.date))).filter(d => d >= today).slice(0, 5)
         const nowHour = new Date().getHours()
@@ -77,5 +82,5 @@ export function useInspectionForecast(latitude: number | null, longitude: number
   }, [latitude, longitude, enabled])
 
   // No apiary with coordinates means no forecast is coming, the same as a failure
-  return { days, failed: failed || (enabled && (latitude === null || longitude === null)) }
+  return { days, failed: failed || (enabled && (latitude === null || longitude === null)), checkedAt }
 }

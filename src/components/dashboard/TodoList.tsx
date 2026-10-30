@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { CheckCircle } from 'lucide-react'
 import Panel from '@/components/ui/Panel'
@@ -24,6 +25,33 @@ const DOT: Record<TodoTone, string> = {
   red: 'bg-red-600 dark:bg-red-400',
   amber: 'bg-amber-500 dark:bg-amber-400',
   blue: 'bg-blue-600 dark:bg-blue-400',
+}
+
+/** A job's start button: names the job for screen readers */
+export function TodoActionLink({ label, href, title }: { label: string; href: string; title: string }) {
+  return (
+    <Link
+      href={href}
+      aria-label={`${label}: ${title}`}
+      className="inline-flex min-h-12 shrink-0 items-center rounded-lg border border-forest-700 px-3 text-sm font-semibold text-forest-800 hover:bg-forest-50 dark:border-forest-400 dark:text-forest-300 dark:hover:bg-forest-900/30"
+    >
+      {label}
+    </Link>
+  )
+}
+
+/** One job: colour dot, title, where it comes from and why, and its button */
+export function TodoRow({ item, action }: { item: Pick<TodoItem, 'kind' | 'tone' | 'title' | 'detail'>; action: ReactNode }) {
+  return (
+    <li className="flex items-center gap-3 py-2.5">
+      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${DOT[item.tone]}`} aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        <p className="text-base font-semibold text-foreground break-words">{item.title}</p>
+        <p className="text-sm text-text-secondary"><span className="font-semibold">{item.kind}</span> · {item.detail}</p>
+      </div>
+      {action}
+    </li>
+  )
 }
 
 interface TodoGroup {
@@ -79,23 +107,23 @@ export default function TodoList({ apiaries, oldQueens, scalesByApiary }: TodoLi
         <div className="mt-1">
           {shown.map(group => (
             <section key={group.key} aria-label={group.heading}>
-              <h3 className="mt-3 text-sm font-semibold text-text-secondary">{group.heading}</h3>
+              <div className="mt-3 flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-text-secondary">{group.heading}</h3>
+                <Link
+                  href={`/dashboard/apiaries/${group.key}`}
+                  aria-label={`Plan visit: ${group.heading}`}
+                  className="inline-flex min-h-12 shrink-0 items-center text-sm font-semibold text-forest-800 underline dark:text-forest-300"
+                >
+                  Plan visit
+                </Link>
+              </div>
               <ul className="divide-y divide-border">
                 {group.items.map(item => (
-                  <li key={item.key} className="flex items-center gap-3 py-2.5">
-                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${DOT[item.tone]}`} aria-hidden="true" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-base font-semibold text-foreground break-words">{item.title}</p>
-                      <p className="text-sm text-text-secondary"><span className="font-semibold">{item.kind}</span> · {item.detail}</p>
-                    </div>
-                    <Link
-                      href={item.action.href}
-                      aria-label={`${item.action.label}: ${item.title}`}
-                      className="inline-flex min-h-12 shrink-0 items-center rounded-lg border border-forest-700 px-3 text-sm font-semibold text-forest-800 hover:bg-forest-50 dark:border-forest-400 dark:text-forest-300 dark:hover:bg-forest-900/30"
-                    >
-                      {item.action.label}
-                    </Link>
-                  </li>
+                  <TodoRow
+                    key={item.key}
+                    item={item}
+                    action={<TodoActionLink label={item.action.label} href={item.action.href} title={item.title} />}
+                  />
                 ))}
               </ul>
             </section>

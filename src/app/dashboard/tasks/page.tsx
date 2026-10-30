@@ -384,6 +384,11 @@ export default function TasksEventsPage() {
         setFormData(prev => ({ ...prev, apiary_id: apiaryId, start_date: toLocalDateString(new Date()) }))
         setShowForm(true)
       }
+      // The apiary page's "Visit checklist" button opens it for that apiary
+      if (searchParams.get('checklist') === 'true') {
+        setChecklistApiaryId(apiaryId)
+        setShowChecklist(true)
+      }
     }
   }, [searchParams, setFilterApiary, setView, setFilterHive])
 

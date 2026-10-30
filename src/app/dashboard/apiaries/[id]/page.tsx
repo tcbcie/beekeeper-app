@@ -13,6 +13,8 @@ import { useApiaryDetail } from '@/hooks'
 import { useYardMapEnabled } from '@/hooks/useYardMapEnabled'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import { formatQueenlessLabel } from '@/lib/queenless'
+import { formatDayMonth } from '@/lib/dashboard-todo'
+import ApiaryJobs from '@/components/dashboard/ApiaryJobs'
 import type { DashboardApiary } from '@/types/dashboard'
 
 // Weather, forecast and forage (moved here from the dashboard, 29 October 2026); loads on demand
@@ -126,6 +128,9 @@ export default function ApiaryDetailPage() {
           </div>
         )}
       </div>
+
+      {/* What needs doing here */}
+      <ApiaryJobs apiaryId={apiaryId} latitude={apiary.latitude ?? null} longitude={apiary.longitude ?? null} />
 
       {/* Info Card */}
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
@@ -246,12 +251,26 @@ export default function ApiaryDetailPage() {
                 href={`/dashboard/hives/${hive.id}`}
                 className="flex items-center justify-between p-3 bg-surface-elevated dark:bg-surface-elevated rounded-lg border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <span className="font-medium text-foreground">{hive.hive_number}</span>
-                  {hive.queens?.[0] && (
-                    <span className="text-sm text-text-secondary">
-                      Queen: {hive.queens[0].queen_number}
-                    </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium text-foreground">{hive.hive_number}</span>
+                    {hive.queens?.[0] && (
+                      <span className="text-sm text-text-secondary">
+                        Queen: {hive.queens[0].queen_number}
+                      </span>
+                    )}
+                  </div>
+                  {!hive.archived_at && (
+                    <>
+                      {hive.last_inspection_date && (
+                        <p className="text-sm text-text-secondary">Last inspection {formatDayMonth(hive.last_inspection_date)}</p>
+                      )}
+                      {hive.active_treatment && (
+                        <p className="text-sm text-text-secondary">
+                          Treatment on: {hive.active_treatment.type}, removal due {formatDayMonth(hive.active_treatment.removal_date)}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
                 <div className="flex items-center gap-2">

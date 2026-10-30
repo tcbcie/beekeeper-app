@@ -1,6 +1,6 @@
 # Plan: Dashboard Brief (facts, suggestions and visit planning)
 
-**Date:** 30 October 2026 · **Status:** Phase 1 built, not yet tested in a browser or committed. Phases 2 and 3 not started
+**Date:** 30 October 2026 · **Status:** Phase 1 committed (`502ffde6`). Phase 2 built, not yet tested in a browser or committed; see [apiary-visit-plan.md](./apiary-visit-plan.md). Phase 3 not started
 
 The full plan, with mock-ups, wording rules and to-do lists, is in [`tasks/dashboard-brief-todo.html`](../../tasks/dashboard-brief-todo.html).
 

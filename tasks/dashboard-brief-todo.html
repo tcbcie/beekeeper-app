@@ -148,12 +148,14 @@
 
 <h2>Phase 2: visit planning</h2>
 <ul class="todo">
-  <li>[ ] Apiary page: add a "Jobs here" section at the top, using <code>buildApiaryTodos</code> and the apiary's open tasks from <code>tasks_events</code>. Today's page shows no tasks at all (<code>activeTaskCount</code> is hard-coded to 0)</li>
-  <li>[ ] Apiary page: add a "Visit checklist" button that opens the existing checklist with this apiary chosen</li>
-  <li>[ ] Dashboard To do: add a "Plan visit" link on each apiary heading, going to the apiary page</li>
-  <li>[ ] Apiary rows on that page: show each hive's last inspection and any active treatment</li>
-  <li>[ ] Mark a task done from the dashboard or apiary page, reusing the Tasks page's toggle and its treatment link handling</li>
-  <li>[ ] Spring and swarm season: name the next good day on the heading of the apiary with most jobs, as "may suit a visit", with the forecast's update time</li>
+  <li>[x] Apiary page: add a "Jobs here" section at the top, using <code>buildApiaryTodos</code> and the apiary's open tasks from <code>tasks_events</code></li>
+  <li>[x] Apiary page: add a "Visit checklist" button that opens the existing checklist with this apiary chosen</li>
+  <li>[x] Dashboard To do: add a "Plan visit" link on each apiary heading, going to the apiary page</li>
+  <li>[x] Apiary rows on that page: show each hive's last inspection and any active treatment</li>
+  <li>[x] Mark a task done from the apiary page. Changed: the Tasks page's toggle has no treatment handling, so a removal task has Open instead of Done and closes when the removal is recorded. Not on the dashboard, which shows one summary line per apiary for tasks</li>
+  <li>[x] Spring and swarm season: name the next good day, as "may suit a visit", with the forecast's update time. Changed: on the apiary page, using that apiary's own forecast</li>
+  <li>[x] <code>qa-engineer</code> audit: no critical or high issues</li>
+  <li>[ ] You test on phone and desktop</li>
 </ul>
 
 <h2>Phase 3: only if phases 1 and 2 earn it</h2>
