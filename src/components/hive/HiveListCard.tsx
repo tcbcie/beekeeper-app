@@ -70,6 +70,27 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  // `??`, not `||`: 0 full boxes is a real choice (e.g. a half-box-only hive). The legacy
  // `brood_boxes` total applies only to old configs that have no `brood_boxes_full` at all.
  const fullBroodBoxes = hive.configuration?.brood_boxes_full ?? hive.configuration?.brood_boxes ?? 0
+ const halfBroodBoxes = hive.configuration?.brood_boxes_half ?? 0
+
+ // Frame orientation (warm/cold lines), drawn on the bottom brood box: the last full box,
+ // or the last half box when the hive has no full boxes.
+ const frameOrientationMarker = hive.configuration?.frame_orientation ? (
+ <div className="absolute bottom-1 left-1/2 -translate-x-1/2 pointer-events-none">
+ {hive.configuration.frame_orientation === 'warm' ? (
+ <div className="flex flex-col gap-0.5">
+ <div className="w-16 h-0.5 bg-amber-700 opacity-60"></div>
+ <div className="w-16 h-0.5 bg-amber-700 opacity-60"></div>
+ <div className="w-16 h-0.5 bg-amber-700 opacity-60"></div>
+ </div>
+ ) : (
+ <div className="flex gap-0.5">
+ <div className="w-0.5 h-4 bg-amber-700 opacity-60"></div>
+ <div className="w-0.5 h-4 bg-amber-700 opacity-60"></div>
+ <div className="w-0.5 h-4 bg-amber-700 opacity-60"></div>
+ </div>
+ )}
+ </div>
+ ) : null
 
  return (
  <div
@@ -464,9 +485,10 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  )}
 
  {/* Half-Size Brood Boxes */}
- {Array.from({ length: hive.configuration.brood_boxes_half || 0 }).map((_, i) => (
- <div key={`brood-half-${i}`} className="w-full h-8 bg-amber-300 border-2 border-amber-600 rounded flex items-center justify-center text-sm font-semibold">
- 🐝 Brood Half {i + 1}
+ {Array.from({ length: halfBroodBoxes }).map((_, i) => (
+ <div key={`brood-half-${i}`} className="w-full h-8 bg-amber-300 border-2 border-amber-600 rounded flex items-center justify-center text-sm font-semibold relative">
+ <span className="relative z-10">🐝 Brood Half {i + 1}</span>
+ {fullBroodBoxes === 0 && i === halfBroodBoxes - 1 && frameOrientationMarker}
  </div>
  ))}
 
@@ -474,24 +496,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {Array.from({ length: fullBroodBoxes }).map((_, i) => (
  <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-sm font-semibold relative">
  <span className="relative z-10">🐝 Brood Full {i + 1}</span>
- {/* Frame orientation visualization */}
- {i === fullBroodBoxes - 1 && hive.configuration?.frame_orientation && (
- <div className="absolute bottom-1 left-1/2 -translate-x-1/2 pointer-events-none">
- {hive.configuration?.frame_orientation === 'warm' ? (
- <div className="flex flex-col gap-0.5">
- <div className="w-16 h-0.5 bg-amber-700 opacity-60"></div>
- <div className="w-16 h-0.5 bg-amber-700 opacity-60"></div>
- <div className="w-16 h-0.5 bg-amber-700 opacity-60"></div>
- </div>
- ) : (
- <div className="flex gap-0.5">
- <div className="w-0.5 h-4 bg-amber-700 opacity-60"></div>
- <div className="w-0.5 h-4 bg-amber-700 opacity-60"></div>
- <div className="w-0.5 h-4 bg-amber-700 opacity-60"></div>
- </div>
- )}
- </div>
- )}
+ {i === fullBroodBoxes - 1 && frameOrientationMarker}
  </div>
  ))}
 

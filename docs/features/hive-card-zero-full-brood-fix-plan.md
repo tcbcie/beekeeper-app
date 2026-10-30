@@ -22,7 +22,12 @@ only to old configs that have no `brood_boxes_full` at all.
 
 No data change: the stored configs were correct, and only the drawing misread them.
 
-## Note
+## Follow-up: frame-orientation marker on half-box-only hives
 
-A hive with only half-size boxes shows no frame-orientation marker. The marker is drawn on the last
-full box, and before this fix it was showing on the phantom one.
+After the fix above, a hive with only half-size boxes lost its frame-orientation (warm/cold) marker. The
+marker was only ever drawn on the last full box, and before the fix it was sitting on the phantom one.
+The marker JSX is now a single `frameOrientationMarker` constant drawn on the **bottom brood box**: the
+last full box, or the last half box when `fullBroodBoxes === 0`. The half box gained `relative`
+positioning, and a `relative z-10` label so the text stays above the lines. `halfBroodBoxes` uses `??`,
+like `fullBroodBoxes`. Hives with full boxes render exactly as before. At the time this affected 2 active
+hives.

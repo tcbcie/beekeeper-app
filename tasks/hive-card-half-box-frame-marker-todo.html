@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <title>Half-Box Frame Marker: Plan</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+    h1 { color: #b45309; }
+    h2 { color: #92400e; border-bottom: 1px solid #fbbf24; padding-bottom: 0.3rem; }
+    .task { padding: 0.4rem 0; }
+    .task input[type="checkbox"] { margin-right: 0.5rem; transform: scale(1.2); }
+    code { background: #fef3c7; padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.9em; }
+    .note { background: #fffbeb; border-left: 3px solid #f59e0b; padding: 0.8rem; margin: 1rem 0; }
+    .stack { width: 220px; display: inline-flex; flex-direction: column; gap: 3px; margin-right: 2rem; vertical-align: top; }
+    .box { position: relative; border: 2px solid; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
+    .half { height: 30px; background: #fcd34d; border-color: #d97706; }
+    .floor { height: 20px; background: #b45309; border-color: #78350f; }
+    .lines { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; }
+    .lines i { display: block; width: 2px; height: 14px; background: rgba(180,83,9,.6); }
+  </style>
+</head>
+<body>
+
+<h1>Frame-Direction Marker on Half-Box-Only Hives</h1>
+
+<h2>Problem</h2>
+<p>The Hives list card draws the frame direction (warm or cold lines) only on the <strong>bottom full-size brood box</strong>.
+Since the phantom-box fix (<code>e6cba3c</code>), a hive with only half-size brood boxes has no full box to draw it on, so
+its frame direction is not shown at all. Before that fix, the marker sat on the phantom full box.</p>
+<p><strong>Impact (live DB):</strong> 3 active hives have only half boxes, and 2 of those have a frame direction set.</p>
+
+<h2>Before and after (half-box-only hive, cold frames)</h2>
+<div class="stack">
+  <div class="box half">🐝 Brood Half 1</div>
+  <div class="box floor"></div>
+  <div style="font-size:12px;text-align:center">Now: no marker</div>
+</div>
+<div class="stack">
+  <div class="box half"><span style="position:relative;z-index:1">🐝 Brood Half 1</span><span class="lines"><i></i><i></i><i></i></span></div>
+  <div class="box floor"></div>
+  <div style="font-size:12px;text-align:center">Proposed: marker on the bottom half box</div>
+</div>
+
+<h2>Rule</h2>
+<p>The marker goes on the <strong>bottom brood box</strong>. That is the last full box if there is one, otherwise the last
+half box. Hives with any full boxes look exactly as they do today.</p>
+
+<h2>Plan (one file: <code>src/components/hive/HiveListCard.tsx</code>)</h2>
+<div class="task"><input type="checkbox" checked disabled> Add <code>halfBroodBoxes = brood_boxes_half ?? 0</code> next to <code>fullBroodBoxes</code>, and use it in the half-box loop (replacing <code>|| 0</code>; behaviour is the same).</div>
+<div class="task"><input type="checkbox" checked disabled> Move the existing warm/cold marker JSX into a single <code>frameOrientationMarker</code> constant (null when no direction is set), so it isn't duplicated.</div>
+<div class="task"><input type="checkbox" checked disabled> Full-box loop: render <code>frameOrientationMarker</code> on the last full box. The output is unchanged.</div>
+<div class="task"><input type="checkbox" checked disabled> Half-box loop: when <code>fullBroodBoxes === 0</code>, render it on the last half box. That box gets <code>relative</code>, and its label gets the same <code>relative z-10</code> wrapper the full box uses, so the text stays above the lines.</div>
+<div class="task"><input type="checkbox" checked disabled> Lint, type-check and run the QA audit.</div>
+<div class="task"><input type="checkbox" checked disabled> Update <code>docs/features/hive-card-zero-full-brood-fix-plan.md</code>.</div>
+<div class="task"><input type="checkbox" disabled> You check a half-box-only hive with a frame direction, and a normal hive, on the Hives page.</div>
+
+<div class="note"><strong>Out of scope:</strong> the 3D apiary view and the hive form. Only the list card draws this marker.</div>
+
+<h2>Review</h2>
+<ul>
+  <li><code>HiveListCard.tsx</code>: the marker JSX moved into one <code>frameOrientationMarker</code> constant (no duplication). It is drawn on the last full box, or on the last half box when there are no full boxes. Added <code>halfBroodBoxes = brood_boxes_half ?? 0</code>.</li>
+  <li>Hives with full boxes give identical output. The two placements are mutually exclusive, so the marker is drawn at most once.</li>
+  <li>ESLint is clean and there are no type errors in <code>src/</code>. QA found no Critical, High or Medium issues.</li>
+  <li>Doc updated: <code>docs/features/hive-card-zero-full-brood-fix-plan.md</code>.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>Hives page: a hive with only half boxes and a frame direction set should show the warm or cold lines on its bottom half box, with the label still readable.</li>
+  <li>A normal hive with full boxes should show the lines on its bottom full box, as before.</li>
+</ol>
+
+</body>
+</html>
