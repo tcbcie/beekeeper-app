@@ -4,7 +4,7 @@
 
 ## Overview
 
-Records opens on one hive's inspections, with buttons to switch record type: Inspections, Feeding, Varroa check, Varroa treatment, Harvest (`src/components/records/RecordFiltersBar.tsx`). The drop-downs stay in the Filters panel for everything else, such as All Hives, All Types and Hive Archived. When one of those is chosen, no button is lit.
+Records opens on one hive's inspections, with buttons to switch record type: Inspections, Feeding, Varroa check, Varroa treatment, Harvest (`src/components/records/RecordFiltersBar.tsx`). They use the same icons and colours as the hive page's quick actions, smaller, with a ring marking the selected one. The drop-downs stay in the Filters panel for everything else, such as All Hives, All Types and Hive Archived. When one of those is chosen, no button is lit.
 
 ## Defaults (owner's decisions, 30 October 2026)
 

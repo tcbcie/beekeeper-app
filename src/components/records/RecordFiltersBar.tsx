@@ -1,18 +1,20 @@
 'use client'
 
-import { Search } from 'lucide-react'
+import { Bug, Calendar, Droplet, Search, Syringe, Wheat } from 'lucide-react'
 
+import type { LucideIcon } from 'lucide-react'
 import type { Hive, Apiary, OwnershipFilter, RecordType, TimePeriod } from '@/types/records'
 import Button from '@/components/ui/Button'
 import TextInput from '@/components/ui/TextInput'
 import FilterDisclosure from '@/components/ui/FilterDisclosure'
 
-const QUICK_RECORD_TYPES: { value: RecordType; label: string }[] = [
-  { value: 'inspection', label: 'Inspections' },
-  { value: 'feeding', label: 'Feeding' },
-  { value: 'varroa_check', label: 'Varroa check' },
-  { value: 'varroa_treatment', label: 'Varroa treatment' },
-  { value: 'harvest', label: 'Harvest' },
+// Same icons and colours as the quick actions on the hive page, so each record type looks the same
+const QUICK_RECORD_TYPES: { value: RecordType; label: string; icon: LucideIcon; colour: string }[] = [
+  { value: 'inspection', label: 'Inspections', icon: Calendar, colour: 'bg-blue-600 hover:bg-blue-700' },
+  { value: 'feeding', label: 'Feeding', icon: Wheat, colour: 'bg-orange-700 hover:bg-orange-800' },
+  { value: 'varroa_check', label: 'Varroa check', icon: Bug, colour: 'bg-purple-600 hover:bg-purple-700' },
+  { value: 'varroa_treatment', label: 'Varroa treatment', icon: Syringe, colour: 'bg-red-600 hover:bg-red-700' },
+  { value: 'harvest', label: 'Harvest', icon: Droplet, colour: 'bg-yellow-700 hover:bg-yellow-800' },
 ]
 
 interface RecordFiltersBarProps {
@@ -108,17 +110,18 @@ export default function RecordFiltersBar({
 
       {/* Quick record type. All types and archived hives stay in the drop-down below. */}
       <div className="flex flex-wrap gap-2" role="group" aria-label="Record type">
-        {QUICK_RECORD_TYPES.map(({ value, label }) => (
+        {QUICK_RECORD_TYPES.map(({ value, label, icon: Icon, colour }) => (
           <Button
             key={value}
+            unstyled
             onClick={() => onRecordTypeChange(value)}
             aria-pressed={recordTypeFilter === value}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              recordTypeFilter === value
-                ? 'bg-forest-800 text-white border border-forest-800'
-                : 'bg-surface border border-border text-foreground hover:bg-surface-secondary'
+            className={`inline-flex min-h-12 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground ${colour} ${
+              // A ring, not colour alone, marks the selected button
+              recordTypeFilter === value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : ''
             }`}
           >
+            <Icon size={18} aria-hidden="true" />
             {label}
           </Button>
         ))}
