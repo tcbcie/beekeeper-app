@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { CheckCircle } from 'lucide-react'
 import Panel from '@/components/ui/Panel'
 import Button from '@/components/ui/Button'
-import { buildApiaryTodos } from '@/lib/dashboard-todo'
+import { buildApiaryTodos, isVisitSeason } from '@/lib/dashboard-todo'
 import type { TodoItem, TodoTone } from '@/lib/dashboard-todo'
 import type { DashboardApiary, DashboardScaleSummary } from '@/types/dashboard'
 
@@ -80,7 +80,9 @@ export default function TodoList({ apiaries, oldQueens, scalesByApiary }: TodoLi
       {total === 0 ? (
         <p className="mt-2 flex items-center gap-2 text-base text-green-800 dark:text-green-300">
           <CheckCircle size={18} aria-hidden="true" />
-          Nothing urgent: every hive checked in the last 14 days and no tasks due.
+          {isVisitSeason()
+            ? 'Nothing urgent: every apiary visited in the last 14 days and no tasks due.'
+            : 'Nothing urgent: no tasks due.'}
         </p>
       ) : (
         <div className="mt-1">

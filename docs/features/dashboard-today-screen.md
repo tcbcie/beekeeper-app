@@ -17,11 +17,11 @@ It replaces the earlier apiary cards, the "Today around your apiaries" strip ([d
 
 | Part | Content | File |
 |---|---|---|
-| Greeting | "Good afternoon, Rico" and "21 hives in 4 apiaries · 10 overdue for a check" | `src/app/dashboard/page.tsx` |
+| Greeting | "Good afternoon, Rico" and "21 hives in 4 apiaries · 1 apiary not visited for 14 days" | `src/app/dashboard/page.tsx` |
 | Can I open my hives today? | Verdict (e.g. "Not today: too cool", "Yes, 12:00–15:00"), explanation, five day tiles, next good window, "Forecast for {apiary}" | `src/components/dashboard/InspectionWeatherCard.tsx`, rule in `src/lib/inspection-weather.ts` |
 | To do | Grouped by apiary (nearest first); first five jobs, "Show all N jobs" | `src/components/dashboard/TodoList.tsx`, rules in `src/lib/dashboard-todo.ts` |
 | Quick actions | New inspection / New task (unchanged; drag or tap onto an apiary row) | page |
-| My apiaries | One row each: hives, oldest check, scales' change this week, "N jobs" or "All good" | `src/components/dashboard/ApiaryWeatherRow.tsx` (`variant="card"`) |
+| My apiaries | One row each: hives, last visit, scales' change this week, "N jobs" or "All good" | `src/components/dashboard/ApiaryWeatherRow.tsx` (`variant="card"`) |
 | {Month} in Ireland | Seasonal reminders, one set per month | `src/components/dashboard/SeasonalReminders.tsx` |
 | Upcoming events, Recent activity, Teams | Unchanged | page |
 
@@ -43,12 +43,16 @@ Data: one Open-Meteo hourly forecast (temperature, precipitation probability, pr
 
 | Job | Colour | Button |
 |---|---|---|
-| Hives not inspected for 14+ days (one line per apiary: "Inspect hives 49-HMN+, 12-MN+, 17-HMN+ +6 more", oldest date) | red | Inspect (one hive: new inspection for that hive; several: new inspection with the apiary chosen) |
+| March to October: apiary with no record of any kind for more than 14 days ("Visit Home · last visit 20 days ago"). Off from November to February, when beekeepers rightly stay away; the greeting then makes no claim about visits | red | Inspect (new inspection with the apiary chosen) |
 | Hive marked queenless (one line per hive, with reason) | red | Open hive |
 | Hive with no queen or eggs for 21 days, or broodless 21 days (one line per hive) | amber | Inspect that hive |
 | Hive with a varroa check over 3% in 30 days (one line per hive, with the rate) | amber | Open hive |
 | Tasks due today or earlier, rearing-batch milestones left out (first title, "and N more") | blue | Tasks (Tasks page, "Due" view, that apiary) |
 | Queens over 2 years old (account-wide) | amber | Queens |
+
+### Why per apiary, not per hive (owner's decision, 30 October 2026)
+
+A beekeeper who visits an apiary and leaves a hive closed does so on purpose, so hives skipped on a visit are never listed or counted. "Oldest check" was removed because one such hive set the figure for the whole apiary. The dashboard now reports the **last visit**: the latest record of any kind at the apiary (inspection, feeding, varroa treatment or check, harvest), from `lastVisitDate` (`supabase/migrations/20261030090000_dashboard_last_visit.sql`, applied as `dashboard_last_visit`). `overdueHives`, `oldestInspectionDate`, `uninspectedHiveCount` and `overdueInspectionHiveCount` are still returned but no longer shown.
 
 ## 5. Database (MCP server)
 
@@ -62,9 +66,8 @@ Fixed text, one set per month, heading "{Month} in Ireland". October's wording w
 
 - **No apiary with coordinates:** no forecast card.
 - **Forecast fails:** "The forecast is not available right now." (retried on the next visit).
-- **No jobs:** "Nothing urgent: every hive checked in the last 14 days and no tasks due."
+- **No jobs:** "Nothing urgent: every apiary visited in the last 14 days and no tasks due."
 - **Older cached payload without the hive lists:** read as empty lists; nothing crashes.
-- **A hive both overdue and queenless** appears in both jobs: both need doing.
 
 ## 8. Phase 2: scale alerts (implemented 29 October 2026)
 

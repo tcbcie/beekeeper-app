@@ -17,7 +17,7 @@ import { useScaleSummaries } from '@/hooks/useScaleSummaries'
 import { useRearingGroups } from '@/hooks/useRearingGroups'
 import type { DashboardApiary, RecentActivityRecord } from '@/types/dashboard'
 import { formatLocalDate } from '@/lib/date-utils'
-import { buildApiaryTodos } from '@/lib/dashboard-todo'
+import { buildApiaryTodos, isVisitOverdue, isVisitSeason } from '@/lib/dashboard-todo'
 import InspectionWeatherCard from '@/components/dashboard/InspectionWeatherCard'
 import TodoList from '@/components/dashboard/TodoList'
 import SeasonalReminders from '@/components/dashboard/SeasonalReminders'
@@ -203,11 +203,15 @@ export default function DashboardPage() {
  // The line under the greeting: the totals that matter, in one sentence
  const summary = useMemo(() => {
   const hives = apiariesByDistance.reduce((sum, a) => sum + a.hiveCount, 0)
-  const overdue = apiariesByDistance.reduce((sum, a) => sum + (a.overdueInspectionHiveCount ?? 0), 0)
+  const unvisited = apiariesByDistance.filter(isVisitOverdue).length
   if (hives === 0) return null
   const apiaryCount = apiariesByDistance.length
   const base = `${hives} ${hives === 1 ? 'hive' : 'hives'} in ${apiaryCount} ${apiaryCount === 1 ? 'apiary' : 'apiaries'}`
-  return overdue > 0 ? `${base} · ${overdue} overdue for a check` : `${base} · all checked in the last 14 days`
+  // No claim about visits in winter, when none are expected
+  if (!isVisitSeason()) return base
+  return unvisited > 0
+   ? `${base} · ${unvisited} ${unvisited === 1 ? 'apiary' : 'apiaries'} not visited for 14 days`
+   : `${base} · all visited in the last 14 days`
  }, [apiariesByDistance])
 
  const isTeamMember = useMemo(() => ownedTeams.length > 0 || memberTeams.length > 0, [ownedTeams, memberTeams])

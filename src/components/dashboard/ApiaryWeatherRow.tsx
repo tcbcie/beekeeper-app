@@ -6,12 +6,11 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { MapPin, ChevronDown, ChevronRight, Thermometer, Flower2, Check } from 'lucide-react'
 
-import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
 import { calculateForagingHours, fetchCurrentYearGDD, getBloomingPlants, getNectarConditions, getPollenConditions, haversineDistance, isBloomStale } from '@/lib/gdd'
 import type { BloomingPlant, NectarCondition, PollenCondition, VegetationEntry } from '@/lib/gdd'
 import { supabase } from '@/lib/supabase'
 import type { DashboardApiary, DashboardScaleSummary } from '@/types/dashboard'
-import { buildApiaryTodos } from '@/lib/dashboard-todo'
+import { buildApiaryTodos, daysSinceLastVisit } from '@/lib/dashboard-todo'
 import VegetationInfoModal from '@/components/shared/VegetationInfoModal'
 
 interface DailyForecast {
@@ -99,15 +98,6 @@ function weatherLabel(code: number): string {
 
 function isCacheFresh(fetchedAt: number, ttlMs: number): boolean {
   return Date.now() - fetchedAt < ttlMs
-}
-
-function getDaysSinceDate(dateString: string | null): number | null {
-  if (!dateString) return null
-
-  const parsedDate = parseLocalDate(dateString)
-  if (Number.isNaN(parsedDate.getTime())) return null
-
-  return Math.max(differenceInCalendarDays(parsedDate, new Date()), 0)
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -490,18 +480,16 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
   }, [weather])
 
 
-  // The least recently inspected hive: a recent visit to one hive must not hide a neglected one.
-  // Falls back to the latest inspection for a payload from before the field existed.
-  const daysSinceOldestCheck = getDaysSinceDate(apiary.oldestInspectionDate ?? apiary.lastInspectionDate)
-  const neverInspected = (apiary.uninspectedHiveCount ?? 0) > 0
+  // The last visit (latest record of any kind): hives left closed on a visit are left on purpose
+  const daysSinceVisit = daysSinceLastVisit(apiary)
   // Same rules as the To do list, so the pill and the list always agree
   const jobCount = buildApiaryTodos(apiary, scaleSummaries).length
   const weekChange = scaleSummaries && scaleSummaries.length > 0 ? avg(scaleSummaries.map(scale => scale.change7d)) : null
   const rowDetails = [
     pluralise(apiary.hiveCount, 'hive', 'hives'),
-    neverInspected
-      ? 'a hive never inspected'
-      : daysSinceOldestCheck !== null ? `oldest check ${pluralise(daysSinceOldestCheck, 'day', 'days')}` : null,
+    daysSinceVisit === null
+      ? 'no visits recorded yet'
+      : daysSinceVisit === 0 ? 'last visit today' : `last visit ${pluralise(daysSinceVisit, 'day', 'days')} ago`,
     weekChange !== null ? `scales ${weekChange > 0 ? '+' : ''}${weekChange.toFixed(1)} kg this week` : null,
   ].filter(Boolean).join(' · ')
 

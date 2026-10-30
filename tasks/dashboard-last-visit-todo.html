@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Dashboard: Last Visit Instead of Oldest Check</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+</style>
+</head>
+<body>
+<h1>Dashboard: Last Visit Instead of Oldest Check</h1>
+<p><strong>Status:</strong> implemented, awaiting your test &nbsp;&middot;&nbsp; <strong>Date:</strong> 30 October 2026</p>
+<blockquote><p><strong>Your instruction:</strong> &ldquo;oldest check&rdquo; is misleading. If you were at the apiary and did not inspect a hive, you did that on purpose, so there is no reason to highlight how many hives were not inspected. Show the date of the last visit or inspection. You also chose to apply this per apiary to the To do list and the greeting.</p></blockquote>
+<h2>To-do</h2>
+<ul class="todo">
+  <li>&#9745; Apiary row: &ldquo;last visit N days ago&rdquo;</li>
+  <li>&#9745; To do: &ldquo;Visit {apiary}&rdquo; only after more than 14 days with no record; skipped hives never listed</li>
+  <li>&#9745; Greeting: apiaries not visited, not hives overdue</li>
+  <li>&#9745; Last visit counts every record type (audit finding)</li>
+  <li>&#9745; Type check + ESLint; <code>qa-engineer</code> audit; docs</li>
+  <li>&#9744; You test</li>
+</ul>
+<h2>Review</h2>
+<ul>
+  <li><span class="file">src/lib/dashboard-todo.ts</span>: <code>daysSinceLastVisit</code>, <code>isVisitOverdue</code> and the single &ldquo;Visit&rdquo; job replace the per-hive job.</li>
+  <li><span class="file">ApiaryWeatherRow.tsx</span>, <span class="file">dashboard/page.tsx</span>, <span class="file">TodoList.tsx</span>: row text, greeting and the &ldquo;nothing urgent&rdquo; message.</li>
+  <li><span class="file">supabase/migrations/20261030090000_dashboard_last_visit.sql</span> (applied through the MCP server): adds <code>lastVisitDate</code>; every existing field kept, so the live app is unaffected until this deploys.</li>
+</ul>
+<h3>QA audit (qa-engineer)</h3>
+<ul>
+  <li><strong>No Critical findings.</strong> <code>npx tsc --noEmit</code>: no errors. ESLint: clean.</li>
+  <li>&#128992; High, fixed: &ldquo;last visit&rdquo; counted inspections only, so feeding or treating 3 days ago still produced &ldquo;Visit Home: last visit 20 days ago&rdquo;, which is common in autumn and winter. It now counts every record type.</li>
+  <li>&#128993; Medium, fixed (found checking the live result): <code>varroa_checks.check_date</code> is a timestamp, which turned the combined date into <code>2026-10-25 00:00:00+00</code> and could put a check made just after midnight on the previous day. It is now converted to the Irish date.</li>
+  <li><strong>Your decision:</strong> the &ldquo;Visit&rdquo; job is off from November to February. The greeting and the &ldquo;nothing urgent&rdquo; message then say nothing about visits, so they make no false claim; the apiary rows still show the last visit.</li>
+</ul>
+</body>
+</html>

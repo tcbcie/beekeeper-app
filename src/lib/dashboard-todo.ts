@@ -1,7 +1,7 @@
-import { parseLocalDate } from '@/lib/date-utils'
+import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
 import { formatQueenlessShortLabel } from '@/lib/queenless'
 import { isGettingLight, isPossibleSwarm, SWARM_DROP_WINDOW_HOURS } from '@/lib/scale-alerts'
-import type { DashboardApiary, DashboardAttentionHive, DashboardScaleSummary } from '@/types/dashboard'
+import type { DashboardApiary, DashboardScaleSummary } from '@/types/dashboard'
 
 /**
  * The dashboard's To do list, built from the hive lists get_dashboard_overview returns per apiary.
@@ -34,9 +34,28 @@ function listOf<T>(value: T[] | undefined | null): T[] {
   return Array.isArray(value) ? value : []
 }
 
-function hiveList(hives: DashboardAttentionHive[], shown: number): string {
-  const names = hives.slice(0, shown).map(h => h.number).join(', ')
-  return hives.length > shown ? `${names} +${hives.length - shown} more` : names
+/** An apiary is due a visit after more than 14 days with no record of any kind */
+export const VISIT_DUE_AFTER_DAYS = 14
+
+/** Days since the apiary's latest record of any kind (a feed or treatment is a visit too), or null */
+export function daysSinceLastVisit(apiary: DashboardApiary): number | null {
+  const date = apiary.lastVisitDate ?? apiary.lastInspectionDate
+  if (!date) return null
+  const last = parseLocalDate(date)
+  if (Number.isNaN(last.getTime())) return null
+  return Math.max(differenceInCalendarDays(last, new Date()), 0)
+}
+
+/** March to October: from November to February beekeepers rightly stay away for weeks (owner, 30 October 2026) */
+export function isVisitSeason(now: Date = new Date()): boolean {
+  const month = now.getMonth() + 1
+  return month >= 3 && month <= 10
+}
+
+export function isVisitOverdue(apiary: DashboardApiary): boolean {
+  if (apiary.hiveCount <= 0 || !isVisitSeason()) return false
+  const days = daysSinceLastVisit(apiary)
+  return days === null || days > VISIT_DUE_AFTER_DAYS
 }
 
 /** "Tuesday afternoon" */
@@ -57,25 +76,15 @@ const openHiveHref = (hiveId: string) => `/dashboard/hives/${hiveId}`
 export function buildApiaryTodos(apiary: DashboardApiary, scales?: DashboardScaleSummary[]): TodoItem[] {
   const items: TodoItem[] = []
 
-  const overdue = listOf(apiary.overdueHives)
-  if (overdue.length === 1) {
-    const [hive] = overdue
-    const since = formatDayMonth(hive.lastDate)
+  // The apiary, not each hive: a beekeeper who visits and leaves a hive closed does so on purpose,
+  // so only an apiary with no record at all for more than 14 days is a job (owner, 29 October 2026)
+  if (isVisitOverdue(apiary)) {
+    const days = daysSinceLastVisit(apiary)
     items.push({
-      key: `${apiary.id}:overdue`,
+      key: `${apiary.id}:visit`,
       tone: 'red',
-      title: `Inspect hive ${hive.number}`,
-      detail: since ? `not opened since ${since}` : 'never inspected',
-      action: { label: 'Inspect', href: inspectHiveHref(hive.id) },
-    })
-  } else if (overdue.length > 1) {
-    // Never-inspected hives come first in the list, so the first entry is the longest wait
-    const oldest = formatDayMonth(overdue[0].lastDate)
-    items.push({
-      key: `${apiary.id}:overdue`,
-      tone: 'red',
-      title: `Inspect hives ${hiveList(overdue, 3)}`,
-      detail: oldest ? `not opened for 14 days or more, the longest since ${oldest}` : 'not opened for 14 days or more, one never inspected',
+      title: `Visit ${apiary.name}`,
+      detail: days === null ? 'no visit recorded yet' : `last visit ${days} days ago`,
       action: { label: 'Inspect', href: `/dashboard/records?create=inspection&apiary=${apiary.id}` },
     })
   }
