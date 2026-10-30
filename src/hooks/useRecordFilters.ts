@@ -17,6 +17,14 @@ interface UseRecordFiltersOptions {
   hives: Hive[]
 }
 
+type VisitFilters = Pick<FilterState, 'ownershipFilter' | 'recordTypeFilter' | 'showArchivedHives'>
+
+export const VISIT_DEFAULTS: VisitFilters = {
+  ownershipFilter: 'my',
+  recordTypeFilter: 'inspection',
+  showArchivedHives: false,
+}
+
 interface TimePeriodCounts {
   all: number
   threeMonths: number
@@ -93,9 +101,9 @@ interface UseRecordFiltersReturn {
 export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFiltersReturn {
   const { allRecords, hives } = options
 
-  // Apiary & hive come from the app-wide shared selection (so a choice made on
-  // Hives/Tasks/Reports carries into Records and vice versa). The remaining
-  // filters persist per-page (localStorage), surviving navigation and restart.
+  // Apiary & hive come from the app-wide shared selection. The time period persists per-page
+  // (localStorage). Ownership, record type and archived hives last for the visit: every opening
+  // starts on the defaults (owner's decision, 30 October 2026).
   const { selectedApiaryId, setSelectedApiaryId, selectedHiveId, setSelectedHiveId } = useSelection()
 
   // Free text is deliberately NOT persisted, unlike every filter below it: a
@@ -112,18 +120,20 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
       customStartDate: '',
       customEndDate: '',
       ownershipFilter: 'my',
-      recordTypeFilter: 'all'
+      recordTypeFilter: 'inspection'
     },
     // Reject corrupt stored values rather than feeding them back into the UI.
     (v) => !!v && typeof v === 'object' && typeof v.showArchivedHives === 'boolean' && typeof v.timePeriod === 'string'
   )
 
-  // Effective filter set: location from the shared store, the rest persisted.
-  // (The stored object's own apiaryId/hiveId are vestigial and overridden here.)
+  const [visit, setVisit] = useState<VisitFilters>(VISIT_DEFAULTS)
+
+  // Effective filter set: location from the shared store, the visit's choices, the rest persisted.
+  // (The stored object's own copies of those are vestigial and overridden here.)
   // Memoised so its identity is stable for the downstream filtering memos.
   const filters: FilterState = useMemo(
-    () => ({ ...stored, apiaryId: selectedApiaryId, hiveId: selectedHiveId }),
-    [stored, selectedApiaryId, selectedHiveId]
+    () => ({ ...stored, ...visit, apiaryId: selectedApiaryId, hiveId: selectedHiveId }),
+    [stored, visit, selectedApiaryId, selectedHiveId]
   )
 
   // Clear a shared hive/apiary selection that no longer exists for this account
@@ -144,8 +154,8 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
   }, [setSelectedApiaryId])
 
   const setShowArchivedHives = useCallback((show: boolean) => {
-    setStored(prev => ({ ...prev, showArchivedHives: show }))
-  }, [setStored])
+    setVisit(prev => ({ ...prev, showArchivedHives: show }))
+  }, [])
 
   const setTimePeriod = useCallback((period: TimePeriod) => {
     setStored(prev => ({ ...prev, timePeriod: period }))
@@ -160,12 +170,12 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
   }, [setStored])
 
   const setOwnershipFilter = useCallback((filter: OwnershipFilter) => {
-    setStored(prev => ({ ...prev, ownershipFilter: filter }))
-  }, [setStored])
+    setVisit(prev => ({ ...prev, ownershipFilter: filter }))
+  }, [])
 
   const setRecordTypeFilter = useCallback((filter: RecordType | 'all') => {
-    setStored(prev => ({ ...prev, recordTypeFilter: filter }))
-  }, [setStored])
+    setVisit(prev => ({ ...prev, recordTypeFilter: filter }))
+  }, [])
 
   // Bulk setter kept for the hook's return contract. Routes apiary/hive to the
   // shared store and the rest to the persisted store; reads current values via
@@ -180,12 +190,14 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
     const next = typeof update === 'function' ? (update as (p: FilterState) => FilterState)(prev) : update
     if (next.apiaryId !== sharedRef.current.apiaryId) setSelectedApiaryId(next.apiaryId)
     if (next.hiveId !== sharedRef.current.hiveId) setSelectedHiveId(next.hiveId)
+    setVisit({ ownershipFilter: next.ownershipFilter, recordTypeFilter: next.recordTypeFilter, showArchivedHives: next.showArchivedHives })
     setStored(next)
   }, [setStored, setSelectedApiaryId, setSelectedHiveId])
 
   const resetFilters = useCallback(() => {
     setSelectedApiaryId('')
     setSelectedHiveId('')
+    setVisit(VISIT_DEFAULTS)
     setStored({
       hiveId: '',
       apiaryId: '',
@@ -194,7 +206,7 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
       customStartDate: '',
       customEndDate: '',
       ownershipFilter: 'my',
-      recordTypeFilter: 'all'
+      recordTypeFilter: 'inspection'
     })
   }, [setStored, setSelectedApiaryId, setSelectedHiveId])
 
@@ -258,8 +270,9 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
         }
       }
 
-      // Filter by apiary
-      if (filters.apiaryId) {
+      // Filter by apiary. A search looks across every apiary and hive: Records opens on one hive,
+      // and a known record must still be findable from there.
+      if (!search && filters.apiaryId) {
         const hive = hiveMap.get(record.hive_id)
         if (!hive || hive.apiary_id !== filters.apiaryId) {
           return false
@@ -267,7 +280,7 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
       }
 
       // Filter by hive
-      if (filters.hiveId && record.hive_id !== filters.hiveId) {
+      if (!search && filters.hiveId && record.hive_id !== filters.hiveId) {
         return false
       }
 
@@ -310,11 +323,11 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
         const recordHive = hiveMap.get(record.hive_id)
         if (recordHive?.archived_at) return false
       }
-      if (filters.apiaryId && record.hive_id) {
+      if (!search && filters.apiaryId && record.hive_id) {
         const recordHive = hiveMap.get(record.hive_id)
         if (recordHive?.apiary_id !== filters.apiaryId) return false
       }
-      if (filters.hiveId && record.hive_id !== filters.hiveId) return false
+      if (!search && filters.hiveId && record.hive_id !== filters.hiveId) return false
       return true
     })
 

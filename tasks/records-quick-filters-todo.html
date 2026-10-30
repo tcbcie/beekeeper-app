@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Records quick filters plan</title>
+<style>
+  body { font: 16px/1.55 system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+  code { background: #eceae3; padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  ul.todo { list-style: none; padding: 0; }
+  ul.todo li { padding: .3rem 0 .3rem 1.6rem; text-indent: -1.6rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: .5rem 0 1rem; }
+  .chip { border: 1px solid #c9ced3; border-radius: 8px; padding: 8px 12px; font-size: 14px; font-weight: 500; }
+  .on { background: #14532d; border-color: #14532d; color: #fff; }
+  .decision { background: #fef3c7; color: #78350f; border-radius: 8px; padding: .75rem 1rem; margin: .75rem 0; }
+</style>
+</head>
+<body>
+<h1>Records quick filters</h1>
+<p>Status: built, with the owner's answers: defaults on every opening, and no pre-fill from an automatically selected hive. Not yet tested in a browser or committed.</p>
+
+<h2>Proposal</h2>
+<p>Buttons always visible above the Filters panel, in the order asked for:</p>
+<div class="chips">
+  <span class="chip on">Inspections</span><span class="chip">Feeding</span><span class="chip">Varroa check</span><span class="chip">Varroa treatment</span><span class="chip">Harvest</span>
+</div>
+<ul>
+  <li><strong>Defaults:</strong> My Records, Inspections, the first apiary, the first hive in that apiary. "First" means first in each drop-down, leaving out archived hives. For My Records, shared apiaries are skipped.</li>
+  <li><strong>Drop-downs stay</strong> in the Filters panel for everything else, such as All Hives, All Types and Hive Archived. If one of those is chosen, no button is lit.</li>
+  <li><strong>Changing apiary</strong> selects that apiary's first hive. Today it selects All Hives.</li>
+  <li><strong>Clear filters</strong> returns to the defaults, and the Filters badge counts differences from them. Otherwise it would always read at least 3.</li>
+  <li><strong>Links still win:</strong> dashboard links, hive page links and record links open what they point to, not the defaults.</li>
+  <li><strong>Time period</strong> is unchanged.</li>
+</ul>
+
+<h2>Effects of defaulting to one hive</h2>
+<ul>
+  <li><strong>Search:</strong> today search only looks inside the current filters, so it would only look in one hive. While there is search text, the apiary and hive filters would be ignored, so a known record can still be found.</li>
+  <li><strong>New records:</strong> forms pre-fill the hive from the filter. A hive selected automatically could mean a record saved against the wrong hive. See decision 2.</li>
+  <li><strong>Empty lists:</strong> if the first hive has no inspections, the page opens with none shown. The message would name the hive and offer All Hives.</li>
+</ul>
+
+<h2>Decisions for the owner</h2>
+<div class="decision"><strong>1. When do the defaults apply?</strong> Recommended: every time Records is opened, as asked, unless a link says otherwise. The cost: the apiary and hive selection is shared with Hives, Tasks and Reports, so opening Records would also change what those pages show. The alternative is to apply them only when nothing has been chosen, and remember choices, but then the defaults would rarely be seen after first use.</div>
+<div class="decision"><strong>2. Should New Record pre-fill the automatically selected hive?</strong> Recommended: no. Pre-fill it only when you picked the hive yourself, on the buttons, drop-downs or a link.</div>
+
+<h2>To do</h2>
+<ul class="todo">
+  <li>[x] <code>useRecordFilters.ts</code>: defaults, reset, search ignoring apiary and hive</li>
+  <li>[x] <code>records/page.tsx</code>: apply the defaults once hives and apiaries load, after links; badge count; Clear filters</li>
+  <li>[x] <code>RecordFiltersBar.tsx</code>: the five buttons; first hive on apiary change</li>
+  <li>[x] Empty list message, with a "Show all hives" button</li>
+  <li>[x] New Record pre-fill, per decision 2</li>
+  <li>[x] Docs in <code>docs/features/records-quick-filters.md</code>; <code>qa-engineer</code> audit</li>
+  <li>[ ] You test on phone and desktop</li>
+</ul>
+
+<h2>Review</h2>
+<p>Beyond the plan, needed because the list no longer shows everything by default: opening a new record switches the list to that record type, and to all hives if the hive was automatic, so the saved record appears. Links reset any apiary or hive left from an earlier visit. Recent visits and hive links show all record types. Team and All Records clear the apiary and hive. Type and lint checks pass for the changed files; nothing has been seen in a browser.</p>
+</body>
+</html>

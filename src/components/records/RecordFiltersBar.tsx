@@ -7,6 +7,14 @@ import Button from '@/components/ui/Button'
 import TextInput from '@/components/ui/TextInput'
 import FilterDisclosure from '@/components/ui/FilterDisclosure'
 
+const QUICK_RECORD_TYPES: { value: RecordType; label: string }[] = [
+  { value: 'inspection', label: 'Inspections' },
+  { value: 'feeding', label: 'Feeding' },
+  { value: 'varroa_check', label: 'Varroa check' },
+  { value: 'varroa_treatment', label: 'Varroa treatment' },
+  { value: 'harvest', label: 'Harvest' },
+]
+
 interface RecordFiltersBarProps {
   // Free-text search. Ephemeral, unlike the filters below.
   searchTerm: string
@@ -96,6 +104,24 @@ export default function RecordFiltersBar({
           className="rounded-lg"
           style={{ paddingLeft: '2.25rem' }}
         />
+      </div>
+
+      {/* Quick record type. All types and archived hives stay in the drop-down below. */}
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Record type">
+        {QUICK_RECORD_TYPES.map(({ value, label }) => (
+          <Button
+            key={value}
+            onClick={() => onRecordTypeChange(value)}
+            aria-pressed={recordTypeFilter === value}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              recordTypeFilter === value
+                ? 'bg-forest-800 text-white border border-forest-800'
+                : 'bg-surface border border-border text-foreground hover:bg-surface-secondary'
+            }`}
+          >
+            {label}
+          </Button>
+        ))}
       </div>
 
       {/* Time Period Filter */}
@@ -201,10 +227,7 @@ export default function RecordFiltersBar({
           <select
             aria-label="Filter by apiary"
             value={apiaryId}
-            onChange={(e) => {
-              onApiaryChange(e.target.value)
-              onHiveChange('') // Clear hive filter when apiary changes
-            }}
+            onChange={(e) => onApiaryChange(e.target.value)}
             className="min-h-12 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-blue-400 dark:hover:border-blue-500 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all"
           >
             <option value="">All Apiaries</option>

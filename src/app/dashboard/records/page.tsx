@@ -27,7 +27,7 @@ import { useNavigationGuard } from '@/hooks/useNavigationGuard'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { updateManager } from '@/lib/update-manager'
 import { useRecordsData } from '@/hooks/useRecordsData'
-import { useRecordFilters } from '@/hooks/useRecordFilters'
+import { useRecordFilters, VISIT_DEFAULTS } from '@/hooks/useRecordFilters'
 import { toLocalDateString, toLocalDateTimeInputValue } from '@/lib/date-utils'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
@@ -380,21 +380,62 @@ export default function RecordsPage() {
   const shownCount = Math.max(visibleCount, highlightedIndex + 1)
   const shownRecords = useMemo(() => filteredRecords.slice(0, shownCount), [filteredRecords, shownCount])
 
+  // Every opening starts on the user's first own apiary and its first active hive. The hive picked
+  // this way is remembered, so it never pre-fills a new record: only a hive the user chose does.
+  const firstActiveHiveId = useCallback(
+    (id: string) => hives.find(hive => hive.apiary_id === id && !hive.archived_at)?.id ?? '',
+    [hives]
+  )
+  const defaultLocation = useMemo(() => {
+    const apiary = apiaries.find(a => !a.is_shared && firstActiveHiveId(a.id))
+    return { apiaryId: apiary?.id ?? '', hiveId: apiary ? firstActiveHiveId(apiary.id) : '' }
+  }, [apiaries, firstActiveHiveId])
+  const [autoHiveId, setAutoHiveId] = useState('')
+  const formHiveId = filters.hiveId === autoHiveId ? '' : filters.hiveId
+
+  const chooseHive = useCallback((id: string) => {
+    setHiveId(id)
+    setAutoHiveId('')
+  }, [setHiveId])
+
+  const chooseApiary = useCallback((id: string) => {
+    const hiveId = id ? firstActiveHiveId(id) : ''
+    setApiaryId(id)
+    setHiveId(hiveId)
+    setAutoHiveId(hiveId)
+  }, [firstActiveHiveId, setApiaryId, setHiveId])
+
+  // The default apiary is the user's own, so team records need the location opened up
+  const chooseOwnership = useCallback((value: Parameters<typeof setOwnershipFilter>[0]) => {
+    setOwnershipFilter(value)
+    if (value !== 'my') {
+      setApiaryId('')
+      setHiveId('')
+      setAutoHiveId('')
+    }
+  }, [setOwnershipFilter, setApiaryId, setHiveId])
+
   const activeFilterCount = [
-    filters.ownershipFilter !== 'my',
-    filters.recordTypeFilter !== 'all',
-    filters.apiaryId !== '',
-    filters.hiveId !== '',
+    filters.ownershipFilter !== VISIT_DEFAULTS.ownershipFilter,
+    filters.recordTypeFilter !== VISIT_DEFAULTS.recordTypeFilter,
+    filters.apiaryId !== defaultLocation.apiaryId,
+    filters.hiveId !== defaultLocation.hiveId,
     filters.showArchivedHives,
   ].filter(Boolean).length
 
   const clearCollapsedFilters = useCallback(() => {
-    setOwnershipFilter('my')
-    setRecordTypeFilter('all')
-    setApiaryId('')
-    setHiveId('')
-    setShowArchivedHives(false)
-  }, [setOwnershipFilter, setRecordTypeFilter, setApiaryId, setHiveId, setShowArchivedHives])
+    setOwnershipFilter(VISIT_DEFAULTS.ownershipFilter)
+    setRecordTypeFilter(VISIT_DEFAULTS.recordTypeFilter)
+    setShowArchivedHives(VISIT_DEFAULTS.showArchivedHives)
+    setApiaryId(defaultLocation.apiaryId)
+    setHiveId(defaultLocation.hiveId)
+    setAutoHiveId(defaultLocation.hiveId)
+  }, [defaultLocation, setOwnershipFilter, setRecordTypeFilter, setApiaryId, setHiveId, setShowArchivedHives])
+
+  const emptyHive = hives.find(hive => hive.id === filters.hiveId)
+  const emptyListMessage = emptyHive
+    ? `No matching records for hive ${emptyHive.hive_number}. Choose another hive, or All Hives under Filters.`
+    : 'No records match your current filters. Try adjusting your filters or add a new record.'
 
   // Initialize user and fetch data
   useEffect(() => {
@@ -431,26 +472,20 @@ export default function RecordsPage() {
       return
     }
 
-    if (searchParams.get('hive')) {
+    // A link that names a place opens that place, not the defaults
+    if (searchParams.get('hive') || searchParams.get('apiary') || searchParams.get('record')) {
       hasInitialisedApiaryFilterRef.current = true
       return
     }
 
-    if (filters.apiaryId || filters.hiveId) {
-      hasInitialisedApiaryFilterRef.current = true
-      return
-    }
-
-    if (apiaries.length === 1) {
-      setApiaryId(apiaries[0].id)
-      hasInitialisedApiaryFilterRef.current = true
-      return
-    }
-
-    if (apiaries.length > 1) {
-      hasInitialisedApiaryFilterRef.current = true
-    }
-  }, [apiaries, filters.apiaryId, filters.hiveId, searchParams, setApiaryId])
+    if (apiaries.length === 0 || hives.length === 0) return
+    hasInitialisedApiaryFilterRef.current = true
+    setApiaryId(defaultLocation.apiaryId)
+    // A form opened by a link is already showing: leave its hive for the user to choose
+    const hiveId = showForm ? '' : defaultLocation.hiveId
+    setHiveId(hiveId)
+    setAutoHiveId(hiveId)
+  }, [apiaries, hives, defaultLocation, showForm, searchParams, setApiaryId, setHiveId])
 
   // New record handler - defined before useEffect that uses it
   // Unguarded. Used by the URL deep-link effect, which runs on page load when
@@ -463,6 +498,10 @@ export default function RecordsPage() {
     const currentDateTime = toLocalDateTimeInputValue(now)
 
     setFormType(type)
+    // Show the kind of record being added, and every hive if the current one was picked
+    // automatically, so the saved record appears in the list below
+    if (type !== 'archive') setRecordTypeFilter(type)
+    if (filters.hiveId && filters.hiveId === autoHiveId) chooseHive('')
     setEditingInspection(null)
     setInspectionDraft(null)
     setEditingTreatment(null)
@@ -545,7 +584,7 @@ export default function RecordsPage() {
     setTimeout(() => {
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 100)
-  }, [userId])
+  }, [userId, setRecordTypeFilter, filters.hiveId, autoHiveId, chooseHive])
 
   // Guarded. Used by the New Record dropdown, where the user may already have
   // an inspection in progress that opening another record would destroy.
@@ -584,6 +623,8 @@ export default function RecordsPage() {
       }
 
       setHiveId(hiveParam)
+      // The hive's own apiary: one left over from an earlier visit would hide its records
+      setApiaryId(targetHive?.apiary_id ?? '')
 
       if (recordParam && mappedType && RECORD_DEEP_LINK_TYPES.has(mappedType)) {
         setShowArchivedHives(true)
@@ -595,6 +636,9 @@ export default function RecordsPage() {
         if (validCreateTypes.has(mappedType)) {
           openNewRecord(mappedType, hiveParam)
         }
+      } else {
+        // A link to a hive's records with no type means all of them
+        setRecordTypeFilter('all')
       }
 
       router.replace('/dashboard/records')
@@ -604,6 +648,9 @@ export default function RecordsPage() {
       setRecordTypeFilter(mappedType)
       setHighlightedRecordKey(`${mappedType}-${recordParam}`)
       scrolledRecordKeyRef.current = null
+      // Nothing left over from an earlier visit may hide the record being opened
+      setApiaryId('')
+      setHiveId('')
       router.replace('/dashboard/records')
     } else if (createParam) {
       handledLinkRef.current = linkKey
@@ -611,6 +658,7 @@ export default function RecordsPage() {
       const apiaryParam = searchParams.get('apiary')
       if (apiaryParam) {
         setApiaryId(apiaryParam)
+        setHiveId('')
       }
       const validTypes: RecordType[] = ['inspection', 'varroa_check', 'varroa_treatment', 'feeding', 'harvest']
       if (validTypes.includes(createParam as RecordType)) {
@@ -621,6 +669,9 @@ export default function RecordsPage() {
       // The dashboard's recent visits: the records list for one apiary
       handledLinkRef.current = linkKey
       setApiaryId(searchParams.get('apiary')!)
+      setHiveId('')
+      // A visit can hold any kind of record
+      setRecordTypeFilter('all')
       router.replace('/dashboard/records')
     }
   }, [searchParams, hives, router, userId, setHiveId, setOwnershipFilter, openNewRecord, setApiaryId, setRecordTypeFilter, setShowArchivedHives])
@@ -1617,13 +1668,13 @@ export default function RecordsPage() {
           customStartDate={filters.customStartDate}
           customEndDate={filters.customEndDate}
           timePeriodCounts={timePeriodCounts}
-          onHiveChange={setHiveId}
-          onApiaryChange={setApiaryId}
+          onHiveChange={chooseHive}
+          onApiaryChange={chooseApiary}
           onShowArchivedChange={setShowArchivedHives}
           onTimePeriodChange={setTimePeriod}
           onCustomStartDateChange={setCustomStartDate}
           onCustomEndDateChange={setCustomEndDate}
-          onOwnershipChange={setOwnershipFilter}
+          onOwnershipChange={chooseOwnership}
           onRecordTypeChange={setRecordTypeFilter}
         />
 
@@ -1657,7 +1708,7 @@ export default function RecordsPage() {
                 previousRightSizedFramesByHive={previousRightSizedFramesByHive}
                 previousSuperFullnessByHive={previousSuperFullnessByHive}
                 selectedApiaryId={filters.apiaryId}
-                selectedHiveId={filters.hiveId}
+                selectedHiveId={formHiveId}
                 isEditing={Boolean(editingInspection?.id)}
                 userHasActiveSubscription={userHasActiveSubscription}
                 onSubmit={handleInspectionSubmit}
@@ -1674,7 +1725,7 @@ export default function RecordsPage() {
                 hives={hives}
                 apiaries={apiaries}
                 selectedApiaryId={filters.apiaryId}
-                selectedHiveId={filters.hiveId}
+                selectedHiveId={formHiveId}
                 treatmentProducts={treatmentProducts}
                 applicationMethods={applicationMethods}
                 isUkNiResident={isUkNiResident}
@@ -1692,7 +1743,7 @@ export default function RecordsPage() {
                 hives={hives}
                 apiaries={apiaries}
                 selectedApiaryId={filters.apiaryId}
-                selectedHiveId={filters.hiveId}
+                selectedHiveId={formHiveId}
                 checkMethodOptions={checkMethodOptions}
                 existingChecks={varroaChecks}
                 userHasActiveSubscription={userHasActiveSubscription}
@@ -1709,7 +1760,7 @@ export default function RecordsPage() {
                 hives={hives}
                 apiaries={apiaries}
                 selectedApiaryId={filters.apiaryId}
-                selectedHiveId={filters.hiveId}
+                selectedHiveId={formHiveId}
                 feedTypeOptions={feedTypeOptions}
                 onSubmit={handleFeedingSubmit}
                 onCancel={handleGuardedCancel}
@@ -1723,7 +1774,7 @@ export default function RecordsPage() {
                 hives={hives}
                 apiaries={apiaries}
                 selectedApiaryId={filters.apiaryId}
-                selectedHiveId={filters.hiveId}
+                selectedHiveId={formHiveId}
                 floralSourceOptions={floralSourceOptions}
                 onSubmit={handleHarvestSubmit}
                 onCancel={handleGuardedCancel}
@@ -1802,8 +1853,10 @@ export default function RecordsPage() {
               description={
                 searchTerm.trim()
                   ? `Nothing matches "${searchTerm.trim()}" in the records loaded. Try a shorter term, or widen the time period to load older records.`
-                  : 'No records match your current filters. Try adjusting your filters or add a new record.'
+                  : emptyListMessage
               }
+              actionLabel={emptyHive && !searchTerm.trim() ? 'Show all hives' : undefined}
+              actionOnClick={emptyHive && !searchTerm.trim() ? () => chooseHive('') : undefined}
             />
           ) : (
             shownRecords.map(record => {
