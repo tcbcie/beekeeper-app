@@ -17,6 +17,15 @@ function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string
   }
 }
 
+// The form stores "L" and older records "liters", so one hive's litres add up as one amount
+function normaliseUnit(unit: string | null): string {
+  const text = unit?.trim() ?? ''
+  return /^(l|lit(er|re)s?)$/i.test(text) ? 'L' : text
+}
+
+// Some older records have no unit: say so, rather than let Mel present a bare number
+const describeUnit = (unit: string) => (unit ? ` ${unit}` : ' (unit not recorded)')
+
 // Get feeding history for a hive
 export const getFeedingHistory: Tool = {
   name: 'getFeedingHistory',
@@ -50,7 +59,7 @@ export const getFeedingHistory: Tool = {
       feedings: data.map(f => ({
         date: formatDate(f.feed_date),
         type: `${f.feed_type || 'Unknown'}${f.syrup_inverted ? ' (inverted)' : ''}`,
-        amount: f.quantity != null ? `${f.quantity} ${f.unit}` : 'Not recorded',
+        amount: f.quantity != null ? `${f.quantity}${describeUnit(normaliseUnit(f.unit))}` : 'Not recorded',
         notes: f.notes?.substring(0, 50) || 'None'
       }))
     }
@@ -59,12 +68,6 @@ export const getFeedingHistory: Tool = {
 
 // The most rows Supabase returns at once; reaching it means the period's figures may be incomplete
 const MAX_FEEDING_ROWS = 1000
-
-// The form stores "L" and older records "liters", so one hive's litres add up as one amount
-function normaliseUnit(unit: string | null): string {
-  const text = unit?.trim() ?? ''
-  return /^(l|lit(er|re)s?)$/i.test(text) ? 'L' : text
-}
 
 const roundAmount = (value: number) => Math.round(value * 100) / 100
 
@@ -80,7 +83,7 @@ function describeAmounts(totals: Map<string, number>): string[] {
     const split = key.lastIndexOf('|')
     const feed = key.slice(0, split)
     const unit = key.slice(split + 1)
-    return `${roundAmount(total)}${unit ? ` ${unit}` : ''} of ${feed}`
+    return `${roundAmount(total)}${describeUnit(unit)} of ${feed}`
   })
 }
 

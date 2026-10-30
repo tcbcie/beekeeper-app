@@ -516,7 +516,9 @@ export default function RecordsPage() {
         feed_type: '',
         syrup_inverted: false,
         quantity: null,
-        unit: '',
+        // The unit select has no blank option, so it shows "L"; start with L so that is
+        // what gets saved.
+        unit: 'L',
         notes: '',
         user_id: userId || ''
       })
@@ -1311,7 +1313,8 @@ export default function RecordsPage() {
         // Only syrup can be inverted; a tick left over from a syrup choice is dropped.
         syrup_inverted: isSyrupFeed(feedType) && feeding.syrup_inverted,
         quantity: feeding.quantity,
-        unit: feeding.unit,
+        // An older record with a blank unit shows "L" in the form, so that is what its save means
+        unit: feeding.unit || 'L',
         notes: feeding.notes || ''
       }
 
