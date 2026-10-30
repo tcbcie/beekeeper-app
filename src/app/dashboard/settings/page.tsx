@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic'
 import React, { useEffect, useState } from 'react'
 import { getCurrentUserId, isAdmin, isPowerUserOrAdmin, hasActiveSubscription } from '@/lib/auth'
-import { Shield, Users, User, MessageCircle, Bug, List, Building2, BookOpen, BookText, Ruler, Lightbulb, Newspaper, MapPin } from 'lucide-react'
+import { Shield, Users, User, MessageCircle, Bug, List, Building2, BookOpen, BookText, Ruler, Lightbulb, Newspaper, MapPin, CalendarDays } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ProfileExport from '@/components/settings/ProfileExport'
 import { useRouter } from 'next/navigation'
@@ -57,6 +57,10 @@ const DropdownManagement = dynamic(() => import('@/components/settings/DropdownM
   loading: () => <LoadingSpinner text="Loading dropdowns..." />,
   ssr: false,
 })
+const MonthlyTasksManagement = dynamic(() => import('@/components/settings/MonthlyTasksManagement'), {
+  loading: () => <LoadingSpinner text="Loading monthly tasks..." />,
+  ssr: false,
+})
 const RegistrationCodeManagement = dynamic(() => import('@/components/settings/RegistrationCodeManagement'), {
   loading: () => <LoadingSpinner text="Loading registration codes..." />,
   ssr: false,
@@ -71,7 +75,7 @@ export default function SettingsPage() {
   const [userHasActiveSubscription, setUserHasActiveSubscription] = useState(false)
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
-  const [activeSection, setActiveSection] = useState<'profile' | 'theme' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'registration' | 'knowledge' | 'news' | 'terminology' | 'frame_standards' | 'tool_suggestions' | 'conservation_areas'>('profile')
+  const [activeSection, setActiveSection] = useState<'profile' | 'theme' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'monthly_tasks' | 'registration' | 'knowledge' | 'news' | 'terminology' | 'frame_standards' | 'tool_suggestions' | 'conservation_areas'>('profile')
 
 
   useEffect(() => {
@@ -137,6 +141,7 @@ export default function SettingsPage() {
     { id: 'treatments' as const, label: 'Varroa Treatments', icon: Bug, adminOnly: true, powerUserAllowed: false },
     { id: 'associations' as const, label: 'Beekeeping Associations', icon: Building2, adminOnly: true, powerUserAllowed: false },
     { id: 'dropdowns' as const, label: 'Dropdown Values', icon: List, adminOnly: true, powerUserAllowed: false },
+    { id: 'monthly_tasks' as const, label: 'Monthly Tasks', icon: CalendarDays, adminOnly: true, powerUserAllowed: false },
     { id: 'knowledge' as const, label: 'AI Knowledge Base', icon: BookOpen, adminOnly: true, powerUserAllowed: false },
     { id: 'news' as const, label: 'News Articles', icon: Newspaper, adminOnly: true, powerUserAllowed: false },
     { id: 'tool_suggestions' as const, label: 'AI Tool Suggestions', icon: Lightbulb, adminOnly: true, powerUserAllowed: false },
@@ -216,6 +221,9 @@ export default function SettingsPage() {
       {activeSection === 'dropdowns' && (
         <DropdownManagement />
       )}
+
+      {/* Monthly Tasks Section */}
+      {activeSection === 'monthly_tasks' && userIsAdmin && <MonthlyTasksManagement />}
 
       {/* AI Knowledge Base Section */}
       {activeSection === 'knowledge' && (

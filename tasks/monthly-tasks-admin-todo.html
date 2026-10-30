@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en-IE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monthly tasks editor plan</title>
+<style>
+  body { font: 16px/1.55 system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+  code { background: #eceae3; padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
+  ul.todo { list-style: none; padding: 0; }
+  ul.todo li { padding: .3rem 0 .3rem 1.6rem; text-indent: -1.6rem; }
+</style>
+</head>
+<body>
+<h1>Monthly tasks editor</h1>
+<p>Status: built, approved by the owner. Not yet tested in a browser or committed.</p>
+
+<h2>Today</h2>
+<p>The dashboard's "{Month} in Ireland" panel reads <code>monthly_apiary_tasks</code>. The app can only read that table, so the text can only be changed in the Supabase dashboard.</p>
+
+<h2>Proposal</h2>
+<ul>
+  <li><strong>Where:</strong> a new "Monthly tasks" section on the Settings page, next to dropdown management.</li>
+  <li><strong>Who:</strong> admins only, enforced in the database with the same <code>is_current_user_admin()</code> check that dropdown values use. Everyone else keeps read-only access.</li>
+  <li><strong>What:</strong> choose a month, then edit an item's text, add one, delete one, or move it up or down.</li>
+  <li><strong>Limit:</strong> at most 5 items a month, enforced in the database as well as on the page.</li>
+  <li><strong>Review date:</strong> the panel's "Reviewed October 2026" is fixed text and would go out of date after an edit. It will come from the last time that month's list was changed.</li>
+  <li><strong>Timing:</strong> a change shows the next time a user loads the app, as the panel keeps the month's list until then.</li>
+</ul>
+
+<h2>To do</h2>
+<ul class="todo">
+  <li>[x] Database: add <code>updated_at</code>, admin insert, update and delete policies with matching grants, through the MCP server with a migration file; run advisors. The limit of 5 already existed; added a 300-character limit and a deferrable month and position constraint for reordering</li>
+  <li>[x] <code>src/components/settings/MonthlyTasksManagement.tsx</code>: month picker and list, using <code>useSubmitLock</code> and checking for blocked writes</li>
+  <li>[x] Settings page: add the section, admin only</li>
+  <li>[x] <code>SeasonalReminders.tsx</code>: show the review date from <code>updated_at</code></li>
+  <li>[x] Update <code>docs/features/monthly-apiary-tasks.md</code>; <code>qa-engineer</code> audit</li>
+  <li>[ ] You test on phone and desktop</li>
+</ul>
+
+<h2>Review</h2>
+<p>Checked against the live database with rollback: a non-admin can read but updates and deletes change no rows, and an insert is refused. A one-statement swap of two positions works. Admin writes have not been tried from the page.</p>
+</body>
+</html>

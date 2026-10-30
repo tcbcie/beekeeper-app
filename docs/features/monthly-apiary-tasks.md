@@ -15,13 +15,22 @@ The dashboard shows up to five jobs for the current month under the heading "{Mo
 | `id` | uuid primary key |
 | `month` | 1 to 12 |
 | `position` | 1 to 5, unique within the month, which is what limits a month to five items |
-| `task` | The text shown, not blank |
+| `task` | The text shown, not blank, 300 characters at most |
+| `updated_at` | Set by a trigger on every change; the panel's review date is the month's latest |
 
-Reference content, the same for every user. RLS on; `authenticated` has SELECT only, `anon` has nothing. To change the wording, edit the row in the Supabase dashboard (or a migration); no client can write to it.
+Reference content, the same for every user. RLS on; every signed-in user can read, only admins (`is_current_user_admin()`) can write, and `anon` has nothing. Edit rules added by `supabase/migrations/20261030190000_monthly_apiary_tasks_admin_edit.sql` (applied as `monthly_apiary_tasks_admin_edit`).
+
+The month and position constraint is deferrable, so that one statement can swap two items when reordering.
 
 ## 3. Display
 
-`src/components/dashboard/SeasonalReminders.tsx` reads the current month ordered by `position`, keeps a successful answer for the page's lifetime, and stays away on a failure.
+`src/components/dashboard/SeasonalReminders.tsx` reads the current month ordered by `position`, keeps a successful answer for the page's lifetime, and stays away on a failure. Below the list it names the sources and "Reviewed {Month Year}", from the month's latest `updated_at`.
+
+## 3a. Editing (admins)
+
+Settings, "Monthly Tasks" (`src/components/settings/MonthlyTasksManagement.tsx`): choose a month, then edit, add, delete or move items up and down. A month holds up to five; a new item takes the first free position. The month picker locks while text is unsaved.
+
+A change appears the next time a user loads the app, as each open session keeps its list. The admin's own session is refreshed straight away. Any edit moves that month's review date, even a small one, and the source line is fixed text in the component.
 
 ## 4. Content and sources
 
