@@ -278,6 +278,22 @@ export default function RecordsPage() {
     return latestValues
   }, [inspections])
 
+  // Most recent stores reading per hive, shown for reference on a new inspection. Skips inspections
+  // that left it unrecorded, so one quick visit doesn't hide the last real reading.
+  const previousStoresByHive = useMemo<Record<string, { level: number; date: string }>>(() => {
+    const latestReadings: Record<string, { level: number; date: string }> = {}
+
+    for (const inspection of inspections) {
+      if (!inspection.hive_id || inspection.stores_level === null || inspection.hive_id in latestReadings) {
+        continue
+      }
+
+      latestReadings[inspection.hive_id] = { level: inspection.stores_level, date: inspection.inspection_date }
+    }
+
+    return latestReadings
+  }, [inspections])
+
   const inspectionFormData = useMemo<InspectionFormData | null>(() => {
     if (inspectionDraft) {
       return inspectionDraft
@@ -312,6 +328,7 @@ export default function RecordsPage() {
       frames_drawn: editingInspection.frames_drawn ?? defaults.frames_drawn,
       honey_supers: editingInspection.honey_supers ?? defaults.honey_supers,
       honey_super_fullness: editingInspection.honey_super_fullness ?? defaults.honey_super_fullness,
+      stores_level: editingInspection.stores_level ?? defaults.stores_level,
       drone_frames: editingInspection.drone_frames ?? defaults.drone_frames,
       store_frames: editingInspection.store_frames ?? defaults.store_frames,
       recapping: editingInspection.recapping ?? defaults.recapping,
@@ -1758,6 +1775,7 @@ export default function RecordsPage() {
                 apiaries={apiaries}
                 previousRightSizedFramesByHive={previousRightSizedFramesByHive}
                 previousSuperFullnessByHive={previousSuperFullnessByHive}
+                previousStoresByHive={previousStoresByHive}
                 selectedApiaryId={filters.apiaryId}
                 selectedHiveId={formHiveId}
                 isEditing={Boolean(editingInspection?.id)}

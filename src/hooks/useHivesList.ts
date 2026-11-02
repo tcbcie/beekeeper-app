@@ -192,9 +192,9 @@ export function useHivesList() {
  .order('created_at', { ascending: false, nullsFirst: false })),
  // All inspections for these hives. Do NOT add .eq('user_id', currentUserId):
  // team-mate inspections on shared hives must count in the card aggregates.
- historyForHives<{ hive_id: string; inspection_date: string; queen_seen: boolean | null; eggs_present: boolean | null; honey_super_fullness: unknown }>(
+ historyForHives<{ hive_id: string; inspection_date: string; queen_seen: boolean | null; eggs_present: boolean | null; honey_super_fullness: unknown; stores_level: number | null }>(
  'inspections',
- 'hive_id, inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength, queen_seen, eggs_present, honey_super_fullness',
+ 'hive_id, inspection_date, brood_frames, right_sized_frames, brood_pattern_rating, temperament_rating, population_strength, queen_seen, eggs_present, honey_super_fullness, stores_level',
  'inspection_date'
  ),
  // Last record of each type. No user_id filter (RLS scopes it, and team-mates' records
@@ -355,6 +355,9 @@ export function useHivesList() {
  : null
  const previousSuperFullnessDate = fullnessInspections[1]?.inspection_date ?? null
 
+ // Last *recorded* stores level, for the same reason: an inspection that skips it keeps the dial.
+ const storesInspection = inspections.find(i => i.stores_level !== null)
+
  // Determine team info for shared hives
  const isShared = hive.user_id !== currentUserId
  const teamData = hive.apiary_id ? teamDataMap.get(hive.apiary_id) : undefined
@@ -383,6 +386,8 @@ export function useHivesList() {
  last_super_fullness: latestSuperFullness,
  previous_super_fullness: previousSuperFullness,
  previous_super_fullness_date: previousSuperFullnessDate,
+ last_stores_level: storesInspection?.stores_level ?? null,
+ last_stores_date: storesInspection?.inspection_date ?? null,
  }
  })
 

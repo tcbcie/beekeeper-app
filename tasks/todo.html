@@ -2,7 +2,8 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
-<title>Plan &mdash; Storage Cleanup for Replaced and Deleted Photos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan &mdash; Winter Stores Level</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -14,148 +15,258 @@
   table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
   th, td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
   th { background: #eef3ef; }
-  .bad { color: #a32020; font-weight: 600; }
-  .good { color: #2f7a4d; font-weight: 600; }
   blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
   ul.todo { list-style: none; padding-left: 0; }
   ul.todo li { margin: .35rem 0; }
   .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
-  .ascii { background: #f6f9f7; border: 1px solid #d8e3da; border-radius: 6px; padding: 1rem; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85em; white-space: pre; overflow-x: auto; }
+  .mocks { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; }
+  .mock { border: 1px solid #d8e3da; border-radius: 10px; padding: .9rem 1rem; background: #fff; flex: 1 1 15rem; }
+  .mock h4 { margin: 0 0 .5rem; font-size: .95rem; }
+  .dialrow { display: flex; align-items: center; gap: .7rem; }
+  .dialrow strong { display: block; }
+  .muted { color: #5a665e; font-size: .9em; }
+  .bar { display: flex; height: .7rem; border-radius: 4px; overflow: hidden; margin: .5rem 0 .2rem; }
+  .bar i { display: block; }
+  .thumbtrack { position: relative; height: 1.5rem; }
+  .thumb { position: absolute; top: .1rem; width: 1.3rem; height: 1.3rem; border-radius: 50%; background: #b45309; margin-left: -.65rem; border: 2px solid #fff; box-shadow: 0 0 0 1px #8a8a8a; }
+  .pct { font-size: 1.15rem; font-weight: 700; padding: .1rem .7rem; border-radius: 999px; background: #fef3c7; color: #92400e; }
+  .scale { display: flex; justify-content: space-between; font-size: .85em; color: #5a665e; }
 </style>
 </head>
 <body>
 
-<h1>Storage Cleanup for Replaced and Deleted Photos</h1>
+<h1>Winter Stores Level</h1>
 
-<p><strong>Status:</strong> implemented, needs CRON_SECRET in Vercel &nbsp;&middot;&nbsp; <strong>Date:</strong> 4 September 2026</p>
+<p><strong>Status:</strong> built, waiting on your browser test &nbsp;&middot;&nbsp; <strong>Date:</strong> 2 November 2026</p>
 
 <blockquote>
-<p><strong>Your instruction:</strong> &ldquo;now fix the storage cleanup for replaced and deleted photos&rdquo; &mdash; the follow-up I deliberately left out of the multi-photo work.</p>
+<p><strong>Your request:</strong> record store levels in the inspection with a 0&ndash;100 gauge (0&ndash;40 red, 40&ndash;80 amber, 80&ndash;100 green), and show a red, amber or green dial on the hive card, so you can see whether stores are sufficient for winter.</p>
 </blockquote>
 
-<h2>1. Why the obvious fix is the wrong one</h2>
+<h2>1. What it will look like</h2>
 
-<p>The obvious fix is to delete the object next to each <code>.delete()</code> and each replacement, the way <span class="file">DiagnosisImagesTab.tsx:111-143</span> does. <strong>That cannot work here</strong>, and the reason is in the schema:</p>
+<div class="mocks">
+  <div class="mock">
+    <h4>Inspection form (step 2, Queen and colony)</h4>
+    <div class="dialrow" style="justify-content:space-between">
+      <strong>Stores level</strong>
+      <span class="pct">65% &middot; Top up</span>
+    </div>
+    <div class="thumbtrack"><span class="thumb" style="left:65%"></span></div>
+    <div class="bar"><i style="width:40%;background:#dc2626"></i><i style="width:40%;background:#d97706"></i><i style="width:20%;background:#16a34a"></i></div>
+    <div class="scale"><span>0</span><span>40</span><span>80</span><span>100</span></div>
+    <p class="muted">Last reading: 45% on 12/10/2026 &nbsp;&middot;&nbsp; Clear</p>
+    <p class="muted">Before anything is set, the section shows &ldquo;Not recorded&rdquo; and a Record stores button.</p>
+  </div>
 
-<pre><code>inspections.hive_id    -&gt; hives     ON DELETE CASCADE
-varroa_checks.hive_id  -&gt; hives     ON DELETE CASCADE
-inspections.user_id    -&gt; profiles  ON DELETE CASCADE</code></pre>
+  <div class="mock">
+    <h4>Hive card dial, three readings</h4>
+    <div class="dialrow">
+      <svg width="72" height="44" viewBox="0 0 100 60" role="img" aria-label="Stores 25 percent, low">
+        <path d="M10 50 A40 40 0 0 1 37.64 11.96" fill="none" stroke="#dc2626" stroke-width="10"/>
+        <path d="M37.64 11.96 A40 40 0 0 1 82.36 26.49" fill="none" stroke="#d97706" stroke-width="10"/>
+        <path d="M82.36 26.49 A40 40 0 0 1 90 50" fill="none" stroke="#16a34a" stroke-width="10"/>
+        <line x1="50" y1="50" x2="28.79" y2="28.79" stroke="#1f2620" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="50" cy="50" r="5" fill="#1f2620"/>
+      </svg>
+      <span><strong>25% &middot; Low</strong><span class="muted">Stores, 12 Oct</span></span>
+    </div>
+    <div class="dialrow">
+      <svg width="72" height="44" viewBox="0 0 100 60" role="img" aria-label="Stores 65 percent, top up">
+        <path d="M10 50 A40 40 0 0 1 37.64 11.96" fill="none" stroke="#dc2626" stroke-width="10"/>
+        <path d="M37.64 11.96 A40 40 0 0 1 82.36 26.49" fill="none" stroke="#d97706" stroke-width="10"/>
+        <path d="M82.36 26.49 A40 40 0 0 1 90 50" fill="none" stroke="#16a34a" stroke-width="10"/>
+        <line x1="50" y1="50" x2="63.62" y2="23.27" stroke="#1f2620" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="50" cy="50" r="5" fill="#1f2620"/>
+      </svg>
+      <span><strong>65% &middot; Top up</strong><span class="muted">Stores, 12 Oct</span></span>
+    </div>
+    <div class="dialrow">
+      <svg width="72" height="44" viewBox="0 0 100 60" role="img" aria-label="Stores 90 percent, enough">
+        <path d="M10 50 A40 40 0 0 1 37.64 11.96" fill="none" stroke="#dc2626" stroke-width="10"/>
+        <path d="M37.64 11.96 A40 40 0 0 1 82.36 26.49" fill="none" stroke="#d97706" stroke-width="10"/>
+        <path d="M82.36 26.49 A40 40 0 0 1 90 50" fill="none" stroke="#16a34a" stroke-width="10"/>
+        <line x1="50" y1="50" x2="78.53" y2="40.73" stroke="#1f2620" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="50" cy="50" r="5" fill="#1f2620"/>
+      </svg>
+      <span><strong>90% &middot; Enough</strong><span class="muted">Stores, 12 Oct</span></span>
+    </div>
+    <div class="dialrow">
+      <svg width="72" height="44" viewBox="0 0 100 60" role="img" aria-label="Stores not checked">
+        <path d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="#c4cbc6" stroke-width="10"/>
+      </svg>
+      <span><strong>Not checked</strong><span class="muted">No reading since 1 August</span></span>
+    </div>
+  </div>
+</div>
 
-<p>Deleting <em>one hive</em> (<span class="file">hives/page.tsx:137-141</span>) removes every inspection and varroa check beneath it <strong>entirely inside the database</strong>. No client code sees those rows, so no client-side handler can ever clean up after them. This is the single biggest leak in the app and it is invisible to the approach above.</p>
+<h2>2. What I found</h2>
 
-<p>Worse, <code>hard_delete_user</code> (<span class="file">UserManagement.tsx:674</span>) purges every record a user owns. <strong>After it runs the user no longer exists</strong>, so nothing running as that user could ever tidy up. Any design that depends on the owner being present is structurally incapable of handling it.</p>
+<p>None of the existing stores data can drive the dial, so this needs a new column.</p>
 
-<p>So the capture has to happen where the deletion actually happens: <strong>in the database</strong>.</p>
-
-<h2>2. Design &mdash; capture in Postgres, delete from a scheduled job</h2>
-
-<div class="ascii">  row deleted / photo replaced          queue row                     nightly
-  (client, cascade, or RPC)     --&gt;   storage_cleanup_queue   --&gt;   /api/cron/storage-cleanup
-         AFTER trigger                 (url, queued_at)              service role, batch remove
-                                                                      |
-                                              still referenced? ------+--&gt; skip &amp; drop from queue
-                                              older than grace? ------+--&gt; remove object</div>
-
-<h3>S1 &mdash; One URL &rarr; (bucket, path) helper</h3>
-<p>Today that derivation is a bare <code>split()</code> duplicated in two places (<span class="file">upload-image.ts:66</span>, <span class="file">DiagnosisImagesTab.tsx:117</span>). Add <code>storagePathFromPublicUrl()</code> to <span class="file">src/lib/storage-url.ts</span>, splitting on the <code>/storage/v1/object/public/</code> constant rather than the bucket name, stripping query and hash, decoding percent-encoding, and &mdash; the important part &mdash; <strong>returning null when the host is not the current project</strong>. Legacy rows carry an old Supabase hostname; those objects live in a different project and must never be passed to a delete call here.</p>
-
-<h3>S2 &mdash; The queue table and triggers</h3>
-<pre><code>CREATE TABLE public.storage_cleanup_queue (
-  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  image_url    text NOT NULL UNIQUE,   -- UNIQUE makes re-queuing idempotent
-  source_table text NOT NULL,
-  queued_at    timestamptz NOT NULL DEFAULT now(),
-  attempts     int NOT NULL DEFAULT 0,
-  last_error   text
-);</code></pre>
-<p>One generic trigger function, told by <code>TG_ARGV</code> which column(s) to watch and whether each is <code>text</code> or <code>text[]</code>:</p>
-<ul>
-  <li><strong>AFTER DELETE</strong> &mdash; queue every URL on the old row.</li>
-  <li><strong>AFTER UPDATE</strong> &mdash; queue every URL present in OLD but absent in NEW. That is exactly the &ldquo;replaced or removed&rdquo; case, and for <code>inspections.image_urls</code> it is a plain array difference.</li>
-</ul>
-<p>Applied to all six image-bearing tables: <code>inspections</code>, <code>varroa_checks</code>, <code>apiaries</code>, <code>wild_colonies</code> (two columns), <code>wild_colony_inspections</code>, <code>diagnosis_images</code>. Because it fires in the database it catches client deletes, FK cascades, <code>hard_delete_user</code> and any future RPC alike &mdash; without any of them knowing it exists.</p>
-<p>RLS on, no policies: this is machinery, not user data, and only the service role touches it.</p>
-
-<h3>S3 &mdash; The sweeper</h3>
-<p><span class="file">src/app/api/cron/storage-cleanup/route.ts</span>, service role, authorised by <code>CRON_SECRET</code>, registered as a nightly job in <span class="file">vercel.json</span> (which currently declares no crons). It takes a batch, derives bucket and path with the S1 helper, removes them per bucket in one call, deletes the queue rows that succeeded, and records <code>attempts</code>/<code>last_error</code> on the ones that did not, so a persistent failure is visible rather than silent.</p>
-
-<h3 class="bad">S4 &mdash; The two safety rails that matter</h3>
-<ol>
-  <li><strong>Never delete a URL a row still references.</strong> Before removing anything the sweeper re-checks the six tables via one SQL function. A photo can legitimately come back &mdash; an update queues a URL and a later edit restores it &mdash; and deleting a live photo is far worse than leaving an orphan. This is the single most important line in the design.</li>
-  <li><strong>A grace period.</strong> Only act on rows queued more than <em>N</em> days ago, so a mistaken delete is recoverable for that window. Orphaned photos cost pennies; a destroyed one is gone.</li>
-</ol>
-
-<h3>S5 &mdash; Simplify the one existing implementation</h3>
-<p><span class="file">DiagnosisImagesTab.tsx:111-143</span> deletes the storage object <em>first</em> and the row second, and swallows the storage error. If the row delete then fails, the row survives pointing at a deleted object &mdash; a permanently broken image, which is worse than an orphan. With the trigger in place that code becomes &ldquo;delete the row&rdquo; and the queue handles the rest.</p>
-
-<h2>3. What this deliberately does not cover</h2>
-<p>Uploads that <strong>never reached a row</strong> are invisible to a database trigger. The inspection form already cleans those up (<span class="file">records/page.tsx:781, 847, 913</span>), but the apiary, varroa-check, wild-colony and diagnosis upload flows have no equivalent &mdash; a failed save after a successful upload still orphans there. That is a separate, smaller fix in four flows; I will flag it, not fold it in.</p>
-
-<h2>4. One thing I noticed and am not treating as a bug</h2>
-<p>The comment at <span class="file">records/page.tsx:829</span> says <code>image_urls[1]</code> and <span class="file">useRecordsData.ts:216</span> uses <code>imageUrls[0]</code>. Both are correct &mdash; Postgres arrays are 1-indexed, JavaScript arrays are 0-indexed, and they refer to the same first photo. No change needed.</p>
-
-<h2>5. Decisions I need from you</h2>
-<p>Three, asked alongside this plan. My recommendations: <strong>all six tables</strong> (the trigger is one function either way), a <strong>7-day grace period</strong>, and <strong>yes</strong> to tightening the storage policy &mdash; today any signed-in user can delete <em>any</em> object in <code>inspection-images</code>, including other beekeepers' photos, and once cleanup is server-side the app no longer needs that permission.</p>
-
-<h2>6. Todo</h2>
-<ul class="todo">
-  <li>&#9745; 1. <span class="file">storage-url.ts</span> &mdash; <code>storagePathFromPublicUrl()</code>, host-checked; replace the two duplicated splits</li>
-  <li>&#9745; 2. MCP migration &mdash; <code>storage_cleanup_queue</code> table, RLS on, no policies</li>
-  <li>&#9745; 3. MCP migration &mdash; generic trigger function + triggers on the six tables</li>
-  <li>&#9745; 4. MCP migration &mdash; <code>is_storage_url_referenced()</code> guard function</li>
-  <li>&#9745; 5. Backfill: queue objects already orphaned by past deletes (audit bucket against rows, report before acting)</li>
-  <li>&#9745; 6. <span class="file">api/cron/storage-cleanup/route.ts</span> + <code>CRON_SECRET</code> auth</li>
-  <li>&#9745; 7. <span class="file">vercel.json</span> &mdash; nightly cron entry</li>
-  <li>&#9745; 8. <span class="file">DiagnosisImagesTab.tsx</span> &mdash; drop the manual storage delete, fix the ordering</li>
-  <li>&#9745; 9. Verify with rolled-back probes: delete, replace, array diff, cascade, and the still-referenced guard</li>
-  <li>&#9745; 10. <code>get_advisors</code> after the DDL</li>
-  <li>&#9745; 11. <span class="file">docs/features/storage-cleanup-plan.md</span></li>
-  <li>&#9745; 12. Run the <code>qa-engineer</code> audit</li>
-  <li>&#9745; 13. Review section here</li>
-  <li>&#9744; 14. Hand to you to test</li>
-</ul>
-
-<h2>7. Database connections (MCP server)</h2>
-<p>All schema work through the Supabase MCP server; no SQL files. Already verified through it: the FK delete rules quoted in section 1, and that <code>pg_cron</code>, <code>pg_net</code> and Vault are installed &mdash; none of which this design needs, since the sweep runs on Vercel where the service-role key already lives rather than putting that key in the database.</p>
-
-<h2>8. Review</h2>
-
-<h3>What changed</h3>
-<p>Five MCP migrations, one new API route, four changed files. Photos that are replaced, removed, or whose record is deleted now leave Storage too.</p>
 <table>
-  <tr><th>Piece</th><th>What it does</th></tr>
-  <tr><td><code>storage_cleanup_queue</code></td><td>Orphaned URLs awaiting deletion. RLS on, no policies &mdash; service role only.</td></tr>
-  <tr><td><code>queue_orphaned_storage_objects()</code> &times; 12 triggers</td><td>One generic function over six tables. UPDATE triggers carry <code>WHEN (OLD.col IS DISTINCT FROM NEW.col)</code> so the common edit costs a column comparison, not a jsonb conversion.</td></tr>
-  <tr><td><code>is_storage_url_referenced()</code> / <code>filter_unreferenced_storage_urls()</code></td><td>The safety rail. The queue is a suggestion; the live tables are the authority.</td></tr>
-  <tr><td><span class="file">api/cron/storage-cleanup/route.ts</span></td><td>Nightly at 03:00, service role, bucket allowlist, 7-day grace, batched removes.</td></tr>
-  <tr><td><span class="file">storage-url.ts</span></td><td><code>storagePathFromPublicUrl()</code> &mdash; host-checked, replacing two duplicated <code>split()</code> calls.</td></tr>
+  <tr><th>Existing column</th><th>What it really is</th><th>Why it can&rsquo;t be used</th></tr>
+  <tr><td><code>honey_stores</code></td><td>Old text values (Good, Medium, Low) on 100 of 1,898 inspections</td><td>No form writes it any more, and the newest value dates from 15/11/2025.</td></tr>
+  <tr><td><code>store_frames</code></td><td>A count of frames given or taken in that visit</td><td>It records a movement, not a level, and defaults to 0.</td></tr>
+  <tr><td><code>honey_super_fullness</code></td><td>0&ndash;100% for each super</td><td>It measures supers, which are usually off for winter.</td></tr>
+  <tr><td><code>weight</code></td><td>Gross hive weight, on 86 inspections</td><td>Too sparse, and it includes the hive and bees.</td></tr>
 </table>
 
-<h3 class="good">Verified against the live database</h3>
-<p>All on throwaway probe tables, dropped afterwards. Array diff on replace, full set on delete, scalar replace, and &mdash; the one that matters &mdash; <strong>a row removed by an FK cascade queued its photo</strong>, which is the case no client-side fix could ever reach. An edit touching no photo queues nothing. A photo removed then restored is correctly reported as still referenced and skipped.</p>
+<p>Honey Super Fullness already solved most of this: a 0&ndash;100 slider, <code>NULL</code> for &ldquo;not recorded&rdquo;, and a card showing the last inspection that actually recorded a value. I&rsquo;ll follow that pattern. The hive list already loads each hive&rsquo;s inspection history, so the dial adds no extra requests.</p>
 
-<h3 class="bad">The audit: 24 orphans, 94 MB</h3>
-<p>About <strong>17% of your 541 MB</strong> of image storage was already waste from past deletes. Those objects were <em>queued, not deleted</em>, so they pass through the same guard and the same 7-day grace as everything else.</p>
+<h2>3. Decisions I&rsquo;ve built into the plan</h2>
 
-<h3 class="bad">The storage hole you approved closing</h3>
-<p>Both buckets allowed <em>any</em> authenticated user to delete or update <em>any</em> object &mdash; one beekeeper could have deleted another's photos. Replaced with a single owner-scoped policy (<code>owner = auth.uid()</code>), which is exactly what the client's own partial-upload undo needs and nothing more.</p>
+<table>
+  <tr><th>Topic</th><th>Decision</th><th>Why</th></tr>
+  <tr>
+    <td>Bands</td>
+    <td>0&ndash;39 red, 40&ndash;79 amber, 80&ndash;100 green, in steps of 5</td>
+    <td>Your ranges overlap at 40 and 80, so each boundary takes the better colour. Defined once, in one helper.</td>
+  </tr>
+  <tr>
+    <td>Colour plus words</td>
+    <td>The % and a word (Low, Top up, Enough) always sit beside the colour</td>
+    <td>The colours alone are hard to read in sunlight, for colour-blind users and with reduced eyesight.</td>
+  </tr>
+  <tr>
+    <td>No reading</td>
+    <td>Grey &ldquo;Not checked&rdquo;, never red</td>
+    <td>A grey dial means &ldquo;go and check&rdquo;. Red would claim the hive is short of food when nobody knows. It also follows the existing rule in <span class="file">seasonal-lead.ts:95</span>.</td>
+  </tr>
+  <tr>
+    <td>New inspection</td>
+    <td>Starts as &ldquo;Not recorded&rdquo;. It shows the last reading for reference, and Record stores starts the slider there (or at 50 if there is none)</td>
+    <td>Stores change between visits, so silently copying the last value would make an old guess look like a new reading. Inspections that skip the section leave the dial unchanged.</td>
+  </tr>
+  <tr>
+    <td>Which inspection counts</td>
+    <td>The newest one that recorded stores, with its date shown</td>
+    <td>Same as Super Fullness. An inspection that skips the section must not blank the dial.</td>
+  </tr>
+  <tr>
+    <td>Dial placement</td>
+    <td>Its own row in the card&rsquo;s details, not in the status pills at the top</td>
+    <td>The pill cluster already wraps on narrow phones, and the dial needs room for its text.</td>
+  </tr>
+  <tr>
+    <td>Archived hives</td>
+    <td>No dial</td>
+    <td>Same as the Queenless pill.</td>
+  </tr>
+</table>
 
-<h3>QA audit &mdash; four findings, fixed</h3>
-<ol>
-  <li><strong class="bad">High: the sweeper could be aimed at any bucket.</strong> Queued URLs come from user-editable columns, so a crafted value could name a bucket the guard does not protect &mdash; and the sweeper bypasses RLS. Now an explicit allowlist.</li>
-  <li><strong class="bad">High: 200 sequential round-trips per run.</strong> One batched SQL call now answers the whole batch, and a failure there aborts the run rather than silently skipping.</li>
-  <li><strong>Medium:</strong> a permanently failing object was retried nightly forever; now capped, with <code>last_error</code> kept for inspection.</li>
-  <li><strong>Low:</strong> constant-time secret comparison, de-duplication of two URLs resolving to one object, and a set instead of a linear scan.</li>
-</ol>
+<h2>4. Decisions I need from you</h2>
 
-<h3>Verification</h3>
-<p><code>tsc</code> clean in <span class="file">src/</span>; <code>eslint</code> clean; records tests 32 passed; <code>get_advisors</code> reports nothing new beyond an INFO note that the queue table has RLS with no policies, which is the intended deny-all. Both new functions are executable by <code>service_role</code> only.</p>
+<table>
+  <tr><th>Question</th><th>My recommendation</th><th>Alternative</th></tr>
+  <tr>
+    <td><strong>A. What does 100% mean?</strong> This matters most, because everyone needs to read the gauge the same way.</td>
+    <td><strong>100% = enough to get through winter</strong>, with a hint under the slider: &ldquo;100% is about 18 kg&rdquo;. That is the rough guide the app already uses. Green would then start at about 14 kg and amber at about 7 kg. Please confirm those figures suit your hives.</td>
+    <td>100% = every available frame full. That depends on hive size, so 80% wouldn&rsquo;t mean the same thing on every hive and &ldquo;sufficient&rdquo; would be lost.</td>
+  </tr>
+  <tr>
+    <td><strong>B. When does the dial show?</strong> Hives are rarely opened from November to February, so October&rsquo;s reading has to last, but it shouldn&rsquo;t still be on the card next summer.</td>
+    <td><strong>1 August to 30 April</strong>, using readings taken since 1 August. Hidden from May to July. The form section stays available all year.</td>
+    <td>Always show the last reading and its date. Simpler, but a green dial from last winter would sit on the card all summer.</td>
+  </tr>
+  <tr>
+    <td><strong>C. Are the words right?</strong></td>
+    <td><strong>Low, Top up, Enough.</strong> Each one says what to do.</td>
+    <td>Low, Medium, Good, which match the old <code>honey_stores</code> values.</td>
+  </tr>
+</table>
 
-<h3 class="bad">Over to you &mdash; one thing blocks this in production</h3>
-<p><strong><code>CRON_SECRET</code> must be set in the Vercel project.</strong> Vercel sends it as a bearer token to scheduled routes; without it the route returns 500 and the sweep never runs. Nothing is deleted until you set it &mdash; the safe failure direction. Once set, the 24 backfilled orphans are removed on the first run after their 7 days elapse (11 September).</p>
+<h2>5. The change</h2>
 
-<h3>Scope note</h3>
-<p>Uploads that <em>never reached a row</em> stay uncovered outside the inspection form &mdash; a database trigger cannot see them. The apiary, varroa-check and wild-colony upload flows still orphan on a failed save after a successful upload. Separate, smaller fix; flagged not folded in.</p>
+<h3>Database</h3>
+<pre><code>alter table public.inspections
+  add column stores_level smallint
+  check (stores_level between 0 and 100);</code></pre>
+<p>It is nullable, so existing inspections stay untouched and read as &ldquo;not recorded&rdquo;. <code>inspections</code> has table-level grants and no database function lists its columns, so nothing else on the database side needs changing.</p>
+
+<h3>Task list</h3>
+<ul class="todo">
+  <li>&#9745; <strong>Migration:</strong> add the column through the Supabase MCP, then run the advisors.</li>
+  <li>&#9745; <strong>Helper:</strong> new <span class="file">src/lib/stores-level.ts</span> with the band, the word, and the season rule, plus a small unit test for the 39/40 and 79/80 boundaries and the season dates.</li>
+  <li>&#9745; <strong>Types:</strong> add <code>stores_level</code> to <code>Inspection</code>, <code>InspectionFormData</code> and the defaults (<span class="file">src/types/records.ts</span>), and to <code>Hive</code> (<span class="file">src/types/hive.ts</span>).</li>
+  <li>&#9745; <strong>Form:</strong> add the Stores level section to step 2 of <span class="file">InspectionForm.tsx</span>, above Honey Super Fullness: 48px slider, colour bands, Record stores and Clear. Shown for every hive, supers or not.</li>
+  <li>&#9745; <strong>Saving and editing:</strong> add the field to the edit mapping (<span class="file">records/page.tsx:314</span>), otherwise editing an inspection would wipe its reading. Add the last reading per hive next to <span class="file">records/page.tsx:264</span>.</li>
+  <li>&#9745; <strong>Review step:</strong> add stores to the summary (<span class="file">InspectionForm.tsx:406</span>) and to the step description (<span class="file">InspectionStepper.tsx:46</span>).</li>
+  <li>&#9745; <strong>Dial:</strong> new <span class="file">src/components/hive/StoresDial.tsx</span>, display only, with light and dark colours and a spoken label for screen readers.</li>
+  <li>&#9745; <strong>Hive list data:</strong> add the column to the history query in <span class="file">useHivesList.ts</span> and derive the latest reading and date next to the fullness logic (<span class="file">useHivesList.ts:349</span>).</li>
+  <li>&#9745; <strong>Hive card:</strong> render the dial in <span class="file">HiveListCard.tsx</span>, hidden for archived hives and out of season.</li>
+  <li>&#9745; <strong>Inspection history:</strong> show the reading in <span class="file">InspectionCard.tsx</span> and in the hive detail history (<span class="file">hives/[id]/page.tsx:390</span>).</li>
+  <li>&#9745; <strong>Mel:</strong> add the reading to <code>getLastInspection</code> and to <code>getHivesNeedingFeeding</code> (<span class="file">src/lib/ai/tools/</span>), so &ldquo;which hives need feeding?&rdquo; uses it ahead of the old <code>honey_stores</code> value.</li>
+  <li>&#9745; <strong>Docs:</strong> add <span class="file">docs/features/winter-stores-level.md</span> and update the plan.</li>
+  <li>&#9745; <strong>QA:</strong> run the <code>qa-engineer</code> audit and apply its fixes.</li>
+  <li>&#9744; <strong>Your test:</strong> the checklist is in the review below; waiting on you.</li>
+  <li>&#9745; <strong>Review:</strong> add the review section to this file.</li>
+</ul>
+
+<h3>Known limit</h3>
+<p>If one hive has two inspections with stores on the same date, the list picks between them by ID, not by time. Super Fullness behaves the same way and it should be rare, so I&rsquo;m leaving it as it is.</p>
+
+<h2>6. Suggestions for later (not in this build)</h2>
+
+<table>
+  <tr><th>Idea</th><th>Why it&rsquo;s useful</th></tr>
+  <tr><td><strong>&ldquo;3 of 12 hives low&rdquo;</strong> on the apiary page and the dashboard&rsquo;s getting-ready-for-winter card</td><td>The best next step, because it answers &ldquo;which hives do I feed?&rdquo; without opening every card. The dashboard currently just says to heft your hives.</td></tr>
+  <tr><td><strong>Record feed shortcut</strong> on a red or amber dial, and a &ldquo;Fed since&rdquo; note</td><td>Feeding after a reading makes the dial out of date until the next check. The note makes that visible.</td></tr>
+  <tr><td><strong>Scale hives</strong> showing the weight trend beside the dial</td><td>A real reading through winter, without opening the hive. Needs care, because the list would make one extra request per scale.</td></tr>
+  <tr><td><strong>Quick heft record</strong></td><td>Log a stores reading without going through an inspection, which suits winter visits.</td></tr>
+  <tr><td><strong>Overwintering nucs</strong></td><td>Nuc inspections use a separate table, so they aren&rsquo;t covered here.</td></tr>
+  <tr><td><strong>Autumn reminder</strong> for hives still red or not checked</td><td>Uses the existing push notifications, while there is still time to feed.</td></tr>
+  <tr><td><strong>Trend note and CSV</strong>: &ldquo;was 45%&rdquo; on the card, and a column in the inspection summary export</td><td>Small additions, and Super Fullness already has the trend note to copy. The full data export picks up the new column automatically.</td></tr>
+</table>
+
+<h2>7. Review</h2>
+
+<p>You approved all three recommendations: 100% means enough for winter (about 18 kg), the dial shows from 1 August to 30 April, and the words are Low, Top up and Enough.</p>
+
+<h3>What changed</h3>
+<ul>
+  <li><strong>Database:</strong> <code>inspections.stores_level</code> is live on the production database. It is nullable, so no existing inspection changed. The security advisors flagged nothing related to it.</li>
+  <li><strong>Form:</strong> a Stores Level section in step 2, plus the review step and the step description.</li>
+  <li><strong>Hive card:</strong> the new dial, fed from the history the list already loads, so it adds no requests.</li>
+  <li><strong>History:</strong> the reading shows on the inspection record card and in the hive detail history.</li>
+  <li><strong>Mel:</strong> both tools now use the reading.</li>
+</ul>
+
+<h3>Additions beyond the plan</h3>
+<ul>
+  <li><strong>Mel&rsquo;s look-back:</strong> the feeding tool only looks back 14 days by default, which would have missed October&rsquo;s reading by December. It now uses each hive&rsquo;s latest reading since 1 August.</li>
+  <li><strong>Mel&rsquo;s answer:</strong> Low and Top up both count as needing feed. A hive with a reading no longer gets flagged by the older signs. This matters because one of those signs is &ldquo;one super or fewer&rdquo;, which is true of most hives in winter.</li>
+</ul>
+
+<h3>QA audit</h3>
+<p>No Critical or High findings.</p>
+<table>
+  <tr><th>Severity</th><th>Finding</th><th>Outcome</th></tr>
+  <tr><td>Medium</td><td>On a new inspection, a reading stayed on the form if you then changed the hive or apiary, so it could be saved against the wrong hive.</td><td>Fixed: changing either now clears it. Editing an existing inspection keeps it.</td></tr>
+  <tr><td>Low</td><td>Screen readers announced the slider&rsquo;s number but not its meaning.</td><td>Fixed: they now hear, for example, &ldquo;65 percent, Top up&rdquo;.</td></tr>
+  <tr><td>Low</td><td>The slider thumb can sit slightly off the colour bands near each end, because browsers inset the thumb.</td><td>Left as it is: the % and word above the slider give the exact value.</td></tr>
+</table>
+
+<h3>Checks</h3>
+<ul>
+  <li>Type check: passed.</li>
+  <li>Lint on the changed files: passed.</li>
+  <li>New unit tests and the typography test: 15 of 15 passed.</li>
+  <li>Not run, per your rule: the build. Nothing has been checked in a browser yet.</li>
+  <li>Not committed.</li>
+</ul>
+
+<h3>Your browser checklist</h3>
+<ul class="todo">
+  <li>&#9744; Hive list: hives show grey &ldquo;Stores not checked&rdquo;, and archived hives show no dial.</li>
+  <li>&#9744; New inspection, step 2: Record stores starts at 50, the colour changes at 40 and 80, and Clear returns to &ldquo;Not recorded&rdquo;.</li>
+  <li>&#9744; Save it: the review step, the record card, the hive detail history and the hive card dial all show the reading.</li>
+  <li>&#9744; Inspect the same hive again without recording stores: the dial stays, and the form shows the last reading.</li>
+  <li>&#9744; Edit the first inspection: the reading is still there, and a recorded 0% stays 0%.</li>
+  <li>&#9744; Pick a different hive after recording: the reading clears.</li>
+  <li>&#9744; Phone width and dark mode: the slider, dial and text are all easy to read.</li>
+  <li>&#9744; Ask Mel &ldquo;which hives need feeding?&rdquo;.</li>
+</ul>
 
 </body>
 </html>

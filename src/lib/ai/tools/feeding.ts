@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { Tool } from './index'
 import { getSupabase, getAccessibleHiveIds, getAccessibleApiaryIds, getOwnApiaryIds, findHiveByName, formatDate, logToolError, todayInDublin, addDaysISO, boundedInt } from './utils'
+import { storesBand, storesSeasonStart, storesWord } from '@/lib/stores-level'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -177,7 +178,7 @@ export const getRecentFeedings: Tool = {
 // Get hives needing feeding
 export const getHivesNeedingFeeding: Tool = {
   name: 'getHivesNeedingFeeding',
-  description: 'Get hives with low honey stores from recent inspections',
+  description: 'Get hives with low stores: their latest stores level reading if they have one (Low or Top up), otherwise signs from recent inspections',
   parameters: z.object({
     daysBack: boundedInt(365).optional().describe('Look back period for inspections (default 14)')
   }),
@@ -191,17 +192,32 @@ export const getHivesNeedingFeeding: Tool = {
     }
 
     const daysBack = args.daysBack || 14
-    const cutoffDate = addDaysISO(todayInDublin(), -daysBack)
+    const today = todayInDublin()
+    const cutoffDate = addDaysISO(today, -daysBack)
+    // Hives are rarely opened in winter, so a stores reading stays valid for the whole season
+    const seasonStart = storesSeasonStart(today)
+    const readingsSince = seasonStart && seasonStart < cutoffDate ? seasonStart : cutoffDate
 
-    const { data, error } = await supabase
-      .from('inspections')
-      .select('inspection_date, honey_supers, honey_stores, notes, hives(hive_number, apiaries(name))')
-      .in('hive_id', hiveIds)
-      .gte('inspection_date', cutoffDate)
-      .order('inspection_date', { ascending: false })
+    const [inspectionsResult, readingsResult] = await Promise.all([
+      supabase
+        .from('inspections')
+        .select('hive_id, inspection_date, honey_supers, honey_stores, notes, hives(hive_number, apiaries(name))')
+        .in('hive_id', hiveIds)
+        .gte('inspection_date', cutoffDate)
+        .order('inspection_date', { ascending: false }),
+      supabase
+        .from('inspections')
+        .select('hive_id, inspection_date, stores_level, hives(hive_number, apiaries(name))')
+        .in('hive_id', hiveIds)
+        .not('stores_level', 'is', null)
+        .gte('inspection_date', readingsSince)
+        .order('inspection_date', { ascending: false }),
+    ])
+    const { data, error } = inspectionsResult
 
     if (error) return `Error fetching inspections: ${logToolError(error)}`
-    if (!data?.length) return `No inspections found in the last ${daysBack} days.`
+    if (readingsResult.error) return `Error fetching stores readings: ${logToolError(readingsResult.error)}`
+    if (!data?.length && !readingsResult.data?.length) return `No inspections found in the last ${daysBack} days.`
 
     // Whole words only: a plain "low" would also match "flow", "slow" and "below", and "light" "flight".
     const lowStoresPattern = /\b(low|empty|light|starving|minimal)\b|needs feeding/
@@ -209,14 +225,37 @@ export const getHivesNeedingFeeding: Tool = {
       hive: string
       apiary: string
       date: string
-      honeySupers: number | null
-      honeyStores: string | null
-      notes: string
+      storesLevel?: number
+      storesStatus?: string
+      honeySupers?: number | null
+      honeyStores?: string | null
+      notes?: string
     }> = []
+
+    // A recorded level is the real answer for that hive, so the older signs below don't apply to it
+    const hivesWithReading = new Set<string>()
+
+    for (const reading of readingsResult.data ?? []) {
+      if (hivesWithReading.has(reading.hive_id)) continue
+      hivesWithReading.add(reading.hive_id)
+
+      if (storesBand(reading.stores_level) !== 'enough') {
+        const info = getHiveInfo(reading.hives)
+        needsFeeding.push({
+          hive: info.hive_number,
+          apiary: info.apiary_name,
+          date: formatDate(reading.inspection_date),
+          storesLevel: reading.stores_level,
+          storesStatus: storesWord(reading.stores_level)
+        })
+      }
+    }
 
     const seenHives = new Set<string>()
 
-    for (const inspection of data) {
+    for (const inspection of data ?? []) {
+      if (hivesWithReading.has(inspection.hive_id)) continue
+
       const info = getHiveInfo(inspection.hives)
 
       // Rows are newest first: only each hive's latest inspection counts, so an old "low stores"

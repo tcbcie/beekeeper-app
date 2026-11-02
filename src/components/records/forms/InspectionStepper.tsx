@@ -43,7 +43,7 @@ export const INSPECTION_STEPS: InspectionStep[] = [
     title: 'Queen and colony',
     shortTitle: 'Queen',
     contents:
-      'Queen sighting, eggs, brood frames, colony strength, queen cells and super fullness.',
+      'Queen sighting, eggs, brood frames, colony strength, queen cells, stores level and super fullness.',
   },
   {
     id: 3,

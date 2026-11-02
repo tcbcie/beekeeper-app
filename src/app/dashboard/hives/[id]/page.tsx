@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase'
 import { formatQueenlessLabel } from '@/lib/queenless'
 import { getTreatmentRemovalState, formatRemovalLabel } from '@/lib/treatment-removal'
 import { formatLocalDate } from '@/lib/date-utils'
+import { storesWord } from '@/lib/stores-level'
 import type { Hive, HiveInspection, HiveVarroaCheck, HiveVarroaTreatment, HiveFeeding, HiveHarvest, InspectionAverages, HiveTask } from '@/types/hive'
 import { queenStatusBadgeClass } from '@/types/queen'
 import Button from '@/components/ui/Button'
@@ -402,6 +403,9 @@ export default function HiveDetailPage() {
                 )}
                 {inspection.weight !== null && (
                   <div className="text-text-tertiary">Weight: <span className="font-medium text-text-primary">{inspection.weight} kg</span></div>
+                )}
+                {inspection.stores_level != null && (
+                  <div className="text-text-tertiary">Stores: <span className="font-medium text-text-primary">{inspection.stores_level}% &middot; {storesWord(inspection.stores_level)}</span></div>
                 )}
               </div>
               {inspection.notes && (

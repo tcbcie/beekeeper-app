@@ -16,6 +16,8 @@ import SelectField from '@/components/ui/SelectField'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import InspectionStepper, { INSPECTION_STEPS } from './InspectionStepper'
 import { DISCARD_INSPECTION_PROMPT } from '@/lib/inspection-discard'
+import { STORES_BAND_TEXT_CLASSES, storesBand, storesWord } from '@/lib/stores-level'
+import type { StoresBand } from '@/lib/stores-level'
 
 interface InspectionFormProps {
   initialData: InspectionFormData | null
@@ -23,6 +25,7 @@ interface InspectionFormProps {
   apiaries: Apiary[]
   previousRightSizedFramesByHive?: Record<string, number | null>
   previousSuperFullnessByHive?: Record<string, number[] | null>
+  previousStoresByHive?: Record<string, { level: number; date: string }>
   selectedApiaryId?: string
   selectedHiveId?: string
   isEditing?: boolean
@@ -33,6 +36,12 @@ interface InspectionFormProps {
   fetchingWeather?: boolean
   /** Reports whether the form holds unsaved work, so the parent can guard its own exit paths. */
   onDirtyChange?: (dirty: boolean) => void
+}
+
+const storesSliderClasses: Record<StoresBand, string> = {
+  low: 'accent-red-600',
+  top_up: 'accent-amber-600',
+  enough: 'accent-green-600',
 }
 
 const numberSelectorSelectedClasses = {
@@ -166,6 +175,7 @@ export default function InspectionForm({
   apiaries,
   previousRightSizedFramesByHive = {},
   previousSuperFullnessByHive = {},
+  previousStoresByHive = {},
   selectedApiaryId = '',
   selectedHiveId = '',
   isEditing = false,
@@ -358,6 +368,8 @@ export default function InspectionForm({
     })
   }, [validateStep, step])
 
+  const lastStoresReading = isEditing ? null : previousStoresByHive[formData.hive_id] ?? null
+
   // ---- Review summary ----------------------------------------------------
   // Only values the beekeeper actually recorded are listed. A routine
   // inspection touches a handful of fields, and showing fifty empty rows would
@@ -410,6 +422,9 @@ export default function InspectionForm({
       count('Right-sized frames', formData.right_sized_frames),
       rating('Population strength', formData.population_strength),
       cells.length > 0 ? { label: 'Queen cells', value: cells.join(', ') } : null,
+      formData.stores_level !== null
+        ? { label: 'Stores level', value: `${formData.stores_level}%, ${storesWord(formData.stores_level)}` }
+        : null,
       recordedFullness.length > 0
         ? { label: 'Super fullness', value: recordedFullness.map(value => `${value}%`).join(', ') }
         : null,
@@ -1000,7 +1015,10 @@ export default function InspectionForm({
   }, [])
 
   const handleHiveSelect = (hiveId: string) => {
-    setFormData(prev => ({ ...prev, hive_id: hiveId }))
+    // A stores reading belongs to the hive it was taken on, so a new inspection doesn't carry it to another
+    setFormData(prev => prev.hive_id === hiveId || isEditing
+      ? { ...prev, hive_id: hiveId }
+      : { ...prev, hive_id: hiveId, stores_level: null })
     setFormApiaryId(prev => hiveId ? getApiaryIdForHive(hiveId) : prev)
   }
 
@@ -1403,7 +1421,9 @@ export default function InspectionForm({
               value={formApiaryId}
               onChange={(e) => {
                 setFormApiaryId(e.target.value)
-                setFormData(prev => ({ ...prev, hive_id: '' }))
+                setFormData(prev => isEditing
+                  ? { ...prev, hive_id: '' }
+                  : { ...prev, hive_id: '', stores_level: null })
               }}
             >
               <option value="">All Apiaries</option>
@@ -1850,6 +1870,82 @@ export default function InspectionForm({
             </div>
           )}
         </div>
+        )}
+
+        {/* Stores Level Section. Starts unrecorded: stores change between visits, so the last
+            reading is shown for reference and only becomes this inspection's value on a tap. */}
+        {step === 2 && (
+          <div className="md:col-span-2 rounded-lg border border-border p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h4 className="text-sm font-semibold text-foreground">Stores Level</h4>
+                <p className="mt-1 text-sm text-text-tertiary">100% means enough to get through winter, about 18 kg.</p>
+              </div>
+              {formData.stores_level !== null && (
+                <span className={`shrink-0 text-lg font-bold tabular-nums ${STORES_BAND_TEXT_CLASSES[storesBand(formData.stores_level)]}`}>
+                  {formData.stores_level}% &middot; {storesWord(formData.stores_level)}
+                </span>
+              )}
+            </div>
+
+            {formData.stores_level === null ? (
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-medium text-text-secondary">Not recorded</p>
+                <Button
+                  unstyled
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, stores_level: lastStoresReading?.level ?? 50 }))}
+                  className="min-h-[48px] w-full px-3 sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+                >
+                  Record stores
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-3">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={formData.stores_level}
+                  onChange={(e) => {
+                    const level = Number(e.target.value)
+                    setFormData(prev => ({ ...prev, stores_level: level }))
+                  }}
+                  aria-label="Stores level percentage"
+                  aria-valuetext={`${formData.stores_level} percent, ${storesWord(formData.stores_level)}`}
+                  className={`h-12 w-full cursor-pointer touch-manipulation ${storesSliderClasses[storesBand(formData.stores_level)]}`}
+                />
+                <div className="flex h-2 overflow-hidden rounded-full" aria-hidden="true">
+                  <div className="w-2/5 bg-red-600" />
+                  <div className="w-2/5 bg-amber-600" />
+                  <div className="w-1/5 bg-green-600" />
+                </div>
+                <div className="mt-1 flex text-sm text-text-tertiary" aria-hidden="true">
+                  <span className="w-2/5">0</span>
+                  <span className="w-2/5">40</span>
+                  <span className="flex w-1/5 justify-between"><span>80</span><span>100</span></span>
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <Button
+                    unstyled
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, stores_level: null }))}
+                    aria-label="Clear stores level"
+                    className="min-h-[48px] w-full px-3 sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+                  >
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {lastStoresReading && (
+              <p className="mt-2 text-sm text-text-tertiary">
+                Last reading: {lastStoresReading.level}% on {formatVisitDate(lastStoresReading.date)}
+              </p>
+            )}
+          </div>
         )}
 
         {/* Honey Super Fullness Section - Collapsible (only when the hive has supers) */}

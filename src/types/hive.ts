@@ -112,6 +112,10 @@ export interface Hive {
   previous_super_fullness?: number[] | null
   /** Date of that previous fullness reading (all supers share the one prior inspection). */
   previous_super_fullness_date?: string | null
+  /** Stores level (0-100) from the most recent inspection that recorded it. */
+  last_stores_level?: number | null
+  /** Date of that stores reading. */
+  last_stores_date?: string | null
   colonies?: Colony
   archive_reason_value?: {
     value?: string
@@ -154,6 +158,7 @@ export interface HiveInspection {
   eggs_present: boolean
   notes: string | null
   weight: number | null
+  stores_level?: number | null
 }
 
 export interface HiveVarroaCheck {

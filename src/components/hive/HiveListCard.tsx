@@ -10,6 +10,9 @@ import { formatQueenlessLabel } from '@/lib/queenless'
 import { formatRemovalLabel } from '@/lib/treatment-removal'
 import { isQueenClipped } from '@/lib/queen-clipped'
 import SuperFullnessGauge from '@/components/hive/SuperFullnessGauge'
+import StoresDial from '@/components/hive/StoresDial'
+import { getCurrentDate } from '@/lib/date-utils'
+import { storesSeasonStart } from '@/lib/stores-level'
 
 interface HiveListCardProps {
  hive: Hive
@@ -66,6 +69,9 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  const anySuperFullnessChanged = Array.from({ length: hive.configuration?.honey_supers || 0 }).some(
  (_, i) => superFullnessChangedAt(hive.last_super_fullness, hive.previous_super_fullness, i)
  )
+
+ // Null out of season and on archived hives, which show no stores dial at all.
+ const storesSince = hive.archived_at ? null : storesSeasonStart(getCurrentDate())
 
  // `??`, not `||`: 0 full boxes is a real choice (e.g. a half-box-only hive). The legacy
  // `brood_boxes` total applies only to old configs that have no `brood_boxes_full` at all.
@@ -403,6 +409,12 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  <span className="text-text-tertiary"> &bull; {new Date(hive.last_record.date).toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
  </span>
  </div>
+ )}
+ {storesSince && (
+ <StoresDial
+ level={hive.last_stores_date && hive.last_stores_date >= storesSince ? hive.last_stores_level ?? null : null}
+ date={hive.last_stores_date}
+ />
  )}
  {hive.notes && (
  <div className="mt-3 p-2 bg-surface dark:bg-surface-elevated rounded text-text-primary text-sm border border-border">

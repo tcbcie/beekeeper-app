@@ -7,6 +7,7 @@ import type { Inspection, Hive, Apiary } from '@/types/records'
 import { getLevelLabel } from '@/types/records'
 import IconButton from '@/components/ui/IconButton'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
+import { STORES_BAND_TEXT_CLASSES, storesBand, storesWord } from '@/lib/stores-level'
 import ModalShell from '@/components/ui/ModalShell'
 import dynamic from 'next/dynamic'
 // The QR code library only loads when the QR pop-up is opened
@@ -328,6 +329,16 @@ export default function InspectionCard({
                 <span className="font-bold text-amber-700 dark:text-amber-400">{value}%</span>
               </span>
             ))}
+          </div>
+        )}
+
+        {/* Stores Level */}
+        {inspection.stores_level !== null && (
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+            <span className="text-sm font-semibold text-text-tertiary self-center">Stores:</span>
+            <span className={`font-bold ${STORES_BAND_TEXT_CLASSES[storesBand(inspection.stores_level)]}`}>
+              {inspection.stores_level}% &middot; {storesWord(inspection.stores_level)}
+            </span>
           </div>
         )}
 

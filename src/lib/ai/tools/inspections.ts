@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { Tool } from './index'
 import { getSupabase, getAccessibleApiaryIds, getAccessibleHiveIds, findHiveByName, formatDate, daysSince, logToolError, todayInDublin, addDaysISO, boundedInt } from './utils'
+import { storesWord } from '@/lib/stores-level'
 
 // Helper to extract names from Supabase joins
 function getApiaryName(apiaries: unknown): string {
@@ -110,6 +111,7 @@ export const getLastInspection: Tool = {
       broodFrames: data.brood_frames,
       honeySupers: data.honey_supers,
       population: data.population_strength,
+      storesLevel: data.stores_level === null ? 'Not recorded' : `${data.stores_level}%, ${storesWord(data.stores_level)}`,
       diseaseIssues: data.disease_issues || 'None',
       notes: data.notes || 'None'
     }
