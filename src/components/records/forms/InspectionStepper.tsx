@@ -190,7 +190,8 @@ export default function InspectionStepper({
         })}
       </ol>
 
-      {optionalNote && <p className="mt-2 text-sm text-text-secondary">{optionalNote}</p>}
+      {/* Each optional step already says so in its heading, so a phone can spare this line. */}
+      {optionalNote && <p className="mt-2 hidden text-sm text-text-secondary md:block">{optionalNote}</p>}
     </div>
   )
 }

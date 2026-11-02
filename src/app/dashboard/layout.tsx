@@ -124,7 +124,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <ImpersonationBanner />
       <OfflineIndicator />
       <UpdateNotification />
@@ -133,8 +133,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
       />
-      {/* Room at the foot for Mel's floating button, so it never covers the last row */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-4 sm:pt-6 pb-[calc(var(--bottom-nav-inset)+4.5rem)] md:pb-24">
+      {/* From md, room at the foot for Mel's floating button, so it never covers the last row.
+          On a phone Mel sits in the top bar. */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-3 sm:pt-6 pb-[calc(var(--bottom-nav-inset)+1rem)] md:pb-24">
         <div className="flex gap-4 md:gap-6">
           <Sidebar />
           <main className="flex-1 w-full min-w-0">

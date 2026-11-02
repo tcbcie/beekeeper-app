@@ -312,13 +312,15 @@ export default function QueenDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         {/* Carry the id back so the list scrolls to this queen rather than jumping to the top. */}
-        <IconButton
-          onClick={() => router.push(`/dashboard/queens?id=${queen.id}`)}
-          className="hover:bg-surface-secondary"
-          aria-label="Back to queens"
-        >
-          <ArrowLeft size={20} className="text-text-secondary" />
-        </IconButton>
+        <div className="hidden md:block">
+          <IconButton
+            onClick={() => router.push(`/dashboard/queens?id=${queen.id}`)}
+            className="hover:bg-surface-secondary"
+            aria-label="Back to queens"
+          >
+            <ArrowLeft size={20} className="text-text-secondary" />
+          </IconButton>
+        </div>
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-2xl font-bold text-foreground">{queen.queen_number}</h1>

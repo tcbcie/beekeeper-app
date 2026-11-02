@@ -278,7 +278,7 @@ export default function ConservationAreaManager() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface dark:bg-surface-elevated rounded-lg shadow-xl max-w-lg w-full p-6 border border-border max-h-[90vh] overflow-y-auto">
+          <div className="bg-surface dark:bg-surface-elevated rounded-lg shadow-xl max-w-lg w-full p-6 border border-border max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">
                 {editingArea ? 'Edit Conservation Area' : 'Add Land Conservation Area'}

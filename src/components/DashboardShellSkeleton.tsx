@@ -11,13 +11,13 @@ import { Skeleton } from '@/components/ui/Skeleton'
  */
 export default function DashboardShellSkeleton() {
   return (
-    <div className="min-h-screen bg-background" aria-hidden="true">
+    <div className="min-h-dvh bg-background" aria-hidden="true">
       {/* Navbar placeholder — matches Navbar.tsx wrapper + height */}
-      <div className="bg-surface/80 dark:bg-surface/80 border-b border-border sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
-          <div className="flex justify-between items-center gap-4">
+      <div className="bg-surface/80 dark:bg-surface/80 border-b border-border sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
+        <div className="max-w-7xl mx-auto px-2 py-1 md:px-4 md:py-4">
+          <div className="flex min-h-[48px] justify-between items-center gap-4">
             <div className="flex items-center gap-2">
-              <Skeleton className="w-7 h-7 sm:w-8 sm:h-8 !rounded-md" />
+              <Skeleton className="w-7 h-7 md:w-8 md:h-8 !rounded-md" />
               <Skeleton className="h-6 w-28" />
             </div>
             <Skeleton className="h-8 w-8 !rounded-full" />
@@ -30,7 +30,7 @@ export default function DashboardShellSkeleton() {
         <div className="flex gap-4 md:gap-6">
           {/* Sidebar column (desktop only, hidden on mobile like the real one) */}
           <div className="hidden md:block w-56 shrink-0">
-            <Skeleton className="h-[60vh] w-full !rounded-lg" />
+            <Skeleton className="h-[60dvh] w-full !rounded-lg" />
           </div>
           <main className="flex-1 w-full min-w-0 space-y-4">
             <Skeleton className="h-9 w-48" />

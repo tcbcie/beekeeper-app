@@ -7,7 +7,7 @@ import { isValidEircode, formatEircode } from '@/lib/eircode'
 import { deleteUploadedImages } from '@/lib/upload-image'
 import { fetchAllPages, fetchInChunks } from '@/lib/supabase-chunk'
 import { Plus, X, MapPin, Loader2, Map, UserPlus, Camera, MapPinOff } from 'lucide-react'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { SkeletonScreen } from '@/components/ui/Skeleton'
 import EmptyState from '@/components/ui/EmptyState'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
 import ModalShell from '@/components/ui/ModalShell'
@@ -777,12 +777,12 @@ export default function ApiariesPage() {
     elementIdPrefix: 'apiary-card-',
   })
 
-  if (loading) return <LoadingSpinner text="Loading apiaries..." />
+  if (loading) return <SkeletonScreen label="Loading apiaries..." />
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-foreground">Apiaries</h1>
+        <h1 className="sr-only md:not-sr-only text-3xl font-bold text-foreground">Apiaries</h1>
         <Button
           // "Cancel" discards the form like the form's own Cancel button. Only hiding it left the
           // edited apiary selected, so the next "Add Apiary" reopened it in edit mode.

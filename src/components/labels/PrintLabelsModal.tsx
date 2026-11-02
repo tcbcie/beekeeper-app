@@ -130,7 +130,7 @@ export default function PrintLabelsModal({
         </div>
       )}
 
-      <div className="max-h-[60vh] overflow-y-auto bg-surface-secondary dark:bg-surface-elevated rounded-lg p-4">
+      <div className="max-h-[60dvh] overflow-y-auto bg-surface-secondary dark:bg-surface-elevated rounded-lg p-4">
         <LabelSheet data={data} preset={preset} />
       </div>
     </ModalShell>

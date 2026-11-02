@@ -6,6 +6,7 @@ import { ChevronUp } from 'lucide-react'
 import { baseNavItems, filterByFeatures } from '@/lib/navigation'
 import { useCrmEnabled } from '@/hooks/useCrmEnabled'
 import { useVerticalSwipe } from '@/hooks/useVerticalSwipe'
+import { useTabScrollMemory } from '@/hooks/useTabScrollMemory'
 import { useLogbookEnabled } from '@/hooks/useLogbookEnabled'
 import Button from '@/components/ui/Button'
 
@@ -16,6 +17,7 @@ interface BottomNavBarProps {
 }
 
 const bottomNavItems = baseNavItems.filter(item => item.bottomNav)
+const TAB_HREFS = bottomNavItems.map(item => item.href)
 
 /**
  * Every destination and the More button is an equal share of the viewport, so
@@ -51,6 +53,7 @@ export default function BottomNavBar({ onMoreClick, isMoreOpen = false }: Bottom
   // so this changes nothing now; it stops a gated item added later from
   // rendering here regardless of its flag. The fluid row absorbs a smaller set.
   const navItems = filterByFeatures(bottomNavItems, { crm: crmEnabled, logbook: logbookEnabled })
+  const onTabClick = useTabScrollMemory(pathname, TAB_HREFS)
 
   const isActiveHref = (href: string) =>
     href === '/dashboard'
@@ -78,7 +81,7 @@ export default function BottomNavBar({ onMoreClick, isMoreOpen = false }: Bottom
   return (
     <nav
       aria-label="Quick navigation"
-      className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-lg md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] backdrop-blur-lg md:hidden"
       {...swipeHandlers}
       // Insurance, not the mechanism. Browsers withhold the synthetic click
       // once a touch has travelled past their slop threshold, and 45px is far
@@ -101,6 +104,8 @@ export default function BottomNavBar({ onMoreClick, isMoreOpen = false }: Bottom
             <Link
               key={item.href}
               href={item.href}
+              scroll={false}
+              onClick={event => onTabClick(item.href, event)}
               aria-current={isActive ? 'page' : undefined}
               className={`${slotClasses} ${
                 isActive

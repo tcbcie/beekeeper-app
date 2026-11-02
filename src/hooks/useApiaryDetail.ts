@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { openScreenCache } from '@/lib/screen-cache'
 import { useToast } from '@/components/ui/Toast'
 import type { Apiary } from '@/types/apiary'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
@@ -46,8 +47,18 @@ interface UseApiaryDetailReturn {
   loading: boolean
   /** The load failed for a reason other than "no such apiary" (e.g. offline). */
   loadError: boolean
+  /** When the latest load failed and older data is showing: when that data was saved. */
+  staleSince: number | null
   isOwner: boolean
   fetchApiaryData: (currentUserId: string) => Promise<void>
+}
+
+interface ApiarySnapshot {
+  apiary: Apiary
+  isOwner: boolean
+  hives: ApiaryHive[]
+  recentRecords: ApiaryRecentRecord[]
+  stats: ApiaryStats
 }
 
 export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
@@ -72,12 +83,29 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
   const [loading, setLoading] = useState(true)
   const [isOwner, setIsOwner] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [staleSince, setStaleSince] = useState<number | null>(null)
+
+  const showSnapshot = useCallback((snapshot: ApiarySnapshot) => {
+    setApiary(snapshot.apiary)
+    setIsOwner(snapshot.isOwner)
+    setHives(snapshot.hives)
+    setRecentRecords(snapshot.recentRecords)
+    setStats(snapshot.stats)
+  }, [])
 
   const fetchApiaryData = useCallback(async (currentUserId: string) => {
     const seq = ++fetchSeqRef.current
     const isCurrent = () => seq === fetchSeqRef.current
+    // The last copy of this apiary shows at once, on any signal, while the fresh one loads.
+    const cache = openScreenCache<ApiarySnapshot>(currentUserId, `apiary:${apiaryId}`)
+    let freshArrived = false
     setLoading(true)
     setLoadError(false)
+    cache.read().then((entry) => {
+      if (!entry || freshArrived || !isCurrent()) return
+      showSnapshot(entry.data)
+      setLoading(false)
+    })
     try {
       // Fetch apiary details
       const { data: apiaryData, error: apiaryError } = await supabase
@@ -88,10 +116,11 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
 
       if (apiaryError) throw apiaryError
       if (!isCurrent()) return
-      setApiary({
+      const freshApiary = {
         ...apiaryData,
         image_url: normaliseStoragePublicUrl(apiaryData.image_url)
-      })
+      }
+      setApiary(freshApiary)
       setIsOwner(apiaryData.user_id === currentUserId)
 
       // Fetch hives in this apiary
@@ -112,6 +141,7 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
         const queen = firstOf(h.queens)
         return { ...h, queens: queen ? [queen] : [] }
       })
+      let finalHives = hivesArr
       setHives(hivesArr)
 
       // Calculate stats
@@ -157,11 +187,12 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
         for (const row of (activeTreatRes.data || []) as { hive_id: string; treatment_type: string; planned_removal_date: string }[]) {
           if (!activeTreatment.has(row.hive_id)) activeTreatment.set(row.hive_id, { type: row.treatment_type, removal_date: row.planned_removal_date })
         }
-        setHives(hivesArr.map(hive => ({
+        finalHives = hivesArr.map(hive => ({
           ...hive,
           last_inspection_date: lastInspection.get(hive.id),
           active_treatment: activeTreatment.get(hive.id),
-        })))
+        }))
+        setHives(finalHives)
 
         // record.hive_id → hives is a to-one embed, so it arrives as one object.
         type RecordRow = { id: string; hive_id: string; hives: { hive_number: string } | { hive_number: string }[] | null }
@@ -193,26 +224,49 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
         }
       }
 
-      setRecentRecords(records.slice(0, 5))
-      setStats({
+      const finalStats: ApiaryStats = {
         totalHives: hivesArr.length,
         activeHives: active,
         archivedHives: archived,
         lastInspectionDate: lastInspDate,
+      }
+      freshArrived = true
+      setStaleSince(null)
+      setRecentRecords(records.slice(0, 5))
+      setStats(finalStats)
+      cache.save({
+        apiary: freshApiary,
+        isOwner: apiaryData.user_id === currentUserId,
+        hives: finalHives,
+        recentRecords: records.slice(0, 5),
+        stats: finalStats,
       })
     } catch (error) {
       if (!isCurrent()) return
       console.error('Error fetching apiary data:', error)
+      freshArrived = true
       // PGRST116 = no row visible: the apiary doesn't exist or isn't shared, so "not found" is
       // right. Anything else (offline, timeout) is a load failure, not a missing apiary (C7a-12).
       if ((error as { code?: string } | null)?.code !== 'PGRST116') {
-        setLoadError(true)
-        toast.error('Failed to load apiary details')
+        // A failed load keeps the last copy, and says so.
+        const entry = await cache.read()
+        if (!isCurrent()) return
+        if (entry) {
+          showSnapshot(entry.data)
+          setStaleSince(entry.savedAt)
+        } else {
+          setLoadError(true)
+          toast.error('Failed to load apiary details')
+        }
+      } else {
+        // Deleted, or no longer shared: no copy of it may stay on screen or on the device.
+        cache.forget()
+        setApiary(null)
       }
     } finally {
       if (isCurrent()) setLoading(false)
     }
-  }, [apiaryId, toast])
+  }, [apiaryId, showSnapshot, toast])
 
   return {
     apiary,
@@ -221,6 +275,7 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
     stats,
     loading,
     loadError,
+    staleSince,
     isOwner,
     fetchApiaryData,
   }

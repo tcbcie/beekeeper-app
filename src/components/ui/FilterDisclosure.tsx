@@ -16,6 +16,11 @@ interface FilterDisclosureProps {
   storageKey: string
   /** Offered only while something is active. */
   onClear?: () => void
+  /**
+   * For a phone toolbar that is a grid: the button takes its own cell beside other controls, and
+   * the opened panel takes a full row at the end. The grid must have a `col-span-full` row free.
+   */
+  inlineOnPhone?: boolean
   children: ReactNode
 }
 
@@ -37,6 +42,7 @@ export default function FilterDisclosure({
   activeCount,
   storageKey,
   onClear,
+  inlineOnPhone = false,
   children,
 }: FilterDisclosureProps) {
   const [open, setOpen] = usePersistentState<boolean>(
@@ -46,8 +52,19 @@ export default function FilterDisclosure({
   )
   const contentId = useId()
 
+  const clearButton = (
+    <Button
+      unstyled
+      onClick={onClear}
+      className="min-h-[48px] rounded-lg px-3 py-2 text-sm font-medium text-text-secondary underline underline-offset-2 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
+    >
+      Clear filters
+    </Button>
+  )
+  const canClear = activeCount > 0 && Boolean(onClear)
+
   return (
-    <div className="w-full">
+    <div className={inlineOnPhone ? 'contents sm:block sm:w-full' : 'w-full'}>
       <div className="flex items-center gap-2">
         <Button
           unstyled
@@ -75,19 +92,14 @@ export default function FilterDisclosure({
           />
         </Button>
 
-        {activeCount > 0 && onClear && (
-          <Button
-            unstyled
-            onClick={onClear}
-            className="min-h-[48px] rounded-lg px-3 py-2 text-sm font-medium text-text-secondary underline underline-offset-2 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600"
-          >
-            Clear filters
-          </Button>
+        {canClear && (
+          <span className={inlineOnPhone ? 'hidden sm:inline' : ''}>{clearButton}</span>
         )}
       </div>
 
       {open && (
-        <div id={contentId} className="mt-3">
+        <div id={contentId} className={inlineOnPhone ? 'order-last col-span-full sm:mt-3' : 'mt-3'}>
+          {canClear && inlineOnPhone && <div className="sm:hidden">{clearButton}</div>}
           {children}
         </div>
       )}

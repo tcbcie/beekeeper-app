@@ -12,6 +12,7 @@ import { useSelection } from '@/contexts/SelectionContext'
 import { Hive, ActiveTreatment } from '@/types/hive'
 import { getTreatmentRemovalState } from '@/lib/treatment-removal'
 import { toLocalDateString } from '@/lib/date-utils'
+import { openScreenCache } from '@/lib/screen-cache'
 
 export interface HiveListApiary {
  id: string
@@ -41,6 +42,8 @@ export function useHivesList() {
  const [userId, setUserId] = useState<string | null>(null)
  const [isTeamMember, setIsTeamMember] = useState(false)
  const [filtersLoaded, setFiltersLoaded] = useState(false)
+ // When the latest load failed and the list is older data: when that data was saved.
+ const [staleSince, setStaleSince] = useState<number | null>(null)
  const router = useRouter()
  const toast = useToast()
 
@@ -63,6 +66,15 @@ export function useHivesList() {
  const currentUserId = userIdParam || userId
  if (!currentUserId) return
  const seq = ++fetchSeqRef.current
+
+ // The last list shows at once, on any signal, while the fresh one loads behind it.
+ const cache = openScreenCache<Hive[]>(currentUserId, `hives:${ownershipFilter}:${archiveFilter}`)
+ let freshArrived = false
+ cache.read().then((entry) => {
+ if (!entry || freshArrived || seq !== fetchSeqRef.current) return
+ setHives(entry.data)
+ setLoading(false)
+ })
 
  // One memoised round trip for team membership + shared apiary access
  const { sharedApiaryIds, isTeamMember: hasTeams } = await getTeamAccess(currentUserId)
@@ -99,6 +111,8 @@ export function useHivesList() {
  .neq('user_id', currentUserId)
  } else {
  // No shared apiaries, return empty result
+ freshArrived = true
+ setStaleSince(null)
  setHives([])
  setLoading(false)
  return
@@ -118,8 +132,17 @@ export function useHivesList() {
 
  if (error) {
  console.error('Error fetching hives:', error)
+ // A failed load keeps the last list, and says so, rather than showing no hives.
+ freshArrived = true
+ const entry = await cache.read()
+ if (seq !== fetchSeqRef.current) return
+ if (entry) {
+ setHives(entry.data)
+ setStaleSince(entry.savedAt)
+ } else {
  toast.error(`Error loading hives: ${error.message}`)
  setHives([])
+ }
  } else if (data && data.length > 0) {
  // Use joined data from query - apiaries and queens are already included
  const hiveIds = data.map(h => h.id)
@@ -391,9 +414,15 @@ export function useHivesList() {
  }
  })
 
+ freshArrived = true
+ setStaleSince(null)
  setHives(enrichedHives as Hive[])
+ cache.save(enrichedHives as Hive[])
  } else {
+ freshArrived = true
+ setStaleSince(null)
  setHives([])
+ cache.save([])
  }
  setLoading(false)
  // IMPORTANT: ownershipFilter and archiveFilter MUST be in deps so fetchHives
@@ -404,6 +433,12 @@ export function useHivesList() {
  const fetchApiaries = useCallback(async (userIdParam?: string) => {
  const currentUserId = userIdParam || userId
  if (!currentUserId) return
+
+ const cache = openScreenCache<HiveListApiary[]>(currentUserId, 'hives:apiaries')
+ let freshArrived = false
+ cache.read().then((entry) => {
+ if (entry && !freshArrived) setApiaries(entry.data)
+ })
 
  // Fetch user's own apiaries
  const { data: ownApiaries, error: ownError } = await supabase
@@ -444,7 +479,9 @@ export function useHivesList() {
  ...sharedApiaries
  ]
 
+ freshArrived = true
  setApiaries(allApiaries as HiveListApiary[])
+ cache.save(allApiaries as HiveListApiary[])
  }, [userId])
 
  const fetchQueens = useCallback(async (userIdParam?: string) => {
@@ -554,6 +591,7 @@ export function useHivesList() {
  apiaries,
  queens,
  loading,
+ staleSince,
  userId,
  isTeamMember,
  filterApiaryId,

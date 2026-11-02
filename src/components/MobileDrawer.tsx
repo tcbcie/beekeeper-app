@@ -124,7 +124,7 @@ export default function MobileDrawer({ isOpen, onClose }: MobileDrawerProps) {
         aria-labelledby="mobile-drawer-title"
         inert={!isOpen}
         tabIndex={-1}
-        className={`fixed left-0 right-0 bottom-[var(--bottom-nav-inset)] z-[70] flex max-h-[75vh] flex-col overflow-hidden rounded-t-2xl border-t border-border bg-surface/95 backdrop-blur-xl transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed left-0 right-0 bottom-[var(--bottom-nav-inset)] z-[70] flex max-h-[75dvh] flex-col overflow-hidden rounded-t-2xl border-t border-border bg-surface/95 backdrop-blur-xl transform transition-transform duration-300 ease-in-out md:hidden ${
           isOpen
             ? 'translate-y-0'
             : 'translate-y-[calc(100%_+_var(--bottom-nav-inset)_+_1rem)]'

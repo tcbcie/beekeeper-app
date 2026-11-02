@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { ChevronDown, ChevronUp, Camera, X, Mic, Square, Loader2, Plus, Trash2, ZoomIn } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronUp, Camera, X, Mic, Square, Loader2, Plus, Trash2, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import type { Hive, Apiary, InspectionFormData, FollowUpTaskDraft, FollowUpTaskPriority, BroodBoxFrames, BroodBoxType } from '@/types/records'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
@@ -16,6 +16,8 @@ import SelectField from '@/components/ui/SelectField'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import InspectionStepper, { INSPECTION_STEPS } from './InspectionStepper'
 import { DISCARD_INSPECTION_PROMPT } from '@/lib/inspection-discard'
+import { clearInspectionDraft, describeDraftSavedAt, inspectionDraftOwner, loadInspectionDraft, saveInspectionDraft } from '@/lib/inspection-draft'
+import type { InspectionDraft, InspectionDraftContent } from '@/lib/local-db'
 import { STORES_BAND_TEXT_CLASSES, storesBand, storesWord } from '@/lib/stores-level'
 import type { StoresBand } from '@/lib/stores-level'
 
@@ -36,7 +38,11 @@ interface InspectionFormProps {
   fetchingWeather?: boolean
   /** Reports whether the form holds unsaved work, so the parent can guard its own exit paths. */
   onDirtyChange?: (dirty: boolean) => void
+  /** Keeps a new inspection on this device as it is filled in. Read once, when the form opens. */
+  draftUserId?: string | null
 }
+
+const DRAFT_SAVE_DELAY_MS = 800
 
 const storesSliderClasses: Record<StoresBand, string> = {
   low: 'accent-red-600',
@@ -184,7 +190,8 @@ export default function InspectionForm({
   onCancel,
   onImageClick,
   fetchingWeather = false,
-  onDirtyChange
+  onDirtyChange,
+  draftUserId
 }: InspectionFormProps) {
   const buildInitialFormData = () => initialData || getDefaultInspectionFormData()
 
@@ -1015,6 +1022,101 @@ export default function InspectionForm({
     return () => { scaleFetchAbortRef.current?.abort() }
   }, [])
 
+  // ---- Unfinished work kept on this device ------------------------------
+  // The owner is fixed when the form opens: see inspectionDraftOwner.
+  const [draftOwner] = useState(() => inspectionDraftOwner(draftUserId))
+  const [pendingDraft, setPendingDraft] = useState<InspectionDraft | null>(null)
+  const [draftChecked, setDraftChecked] = useState(false)
+  const latestDraftRef = useRef<InspectionDraftContent | null>(null)
+
+  useEffect(() => {
+    if (!draftOwner || isEditing) return
+    let cancelled = false
+    setDraftChecked(false)
+    loadInspectionDraft(draftOwner).then(draft => {
+      if (cancelled) return
+      setPendingDraft(draft)
+      setDraftChecked(true)
+    })
+    return () => { cancelled = true }
+  }, [draftOwner, isEditing])
+
+  const writeLatestDraft = useCallback(() => {
+    if (draftOwner && latestDraftRef.current) {
+      void saveInspectionDraft(draftOwner, latestDraftRef.current)
+    }
+  }, [draftOwner])
+
+  // Waits for the check above, and for any waiting draft to be dealt with, so this form can
+  // never overwrite an earlier inspection the beekeeper has not seen yet. Stops during a save:
+  // a write landing after the page clears the draft would offer a saved inspection back.
+  const canKeepDraft = Boolean(draftOwner) && !isEditing && draftChecked && !pendingDraft && isDirty && !submitting
+
+  useEffect(() => {
+    latestDraftRef.current = canKeepDraft
+      ? { formData, givenTakenDrafts, followUpDrafts, formApiaryId, step, photos: stagedPhotos.map(photo => photo.file) }
+      : null
+    if (!canKeepDraft) return
+    const timer = setTimeout(writeLatestDraft, DRAFT_SAVE_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [canKeepDraft, formData, givenTakenDrafts, followUpDrafts, formApiaryId, step, stagedPhotos, writeLatestDraft])
+
+  // The phone may kill the app any time after it leaves the screen, so don't wait for the timer.
+  useEffect(() => {
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden') writeLatestDraft()
+    }
+    document.addEventListener('visibilitychange', onHidden)
+    window.addEventListener('pagehide', writeLatestDraft)
+    return () => {
+      document.removeEventListener('visibilitychange', onHidden)
+      window.removeEventListener('pagehide', writeLatestDraft)
+    }
+  }, [writeLatestDraft])
+
+  const resumeDraft = (draft: InspectionDraft) => {
+    const hiveId = draft.formData.hive_id
+    // Mark each fill-in as already done for this hive, or they would run on the new hive id and
+    // overwrite what the beekeeper entered with the filter's hive and last visit's readings.
+    appliedFilterRef.current = `${selectedHiveId}|${selectedApiaryId}`
+    lastRightSizedPrefillKeyRef.current = hiveId
+      ? `${hiveId}:${getPreviousRightSizedFrames(hiveId) ?? 'null'}`
+      : null
+    const configuredSupers = hiveId ? getConfiguredSuperCount(hiveId) : 0
+    const carriedFullness = hiveId ? getPreviousSuperFullness(hiveId) : null
+    const previousFullness = carriedFullness && configuredSupers > 0
+      ? carriedFullness.slice(0, configuredSupers)
+      : null
+    lastSuperFullnessPrefillKeyRef.current = hiveId
+      ? `${hiveId}:${configuredSupers}:${previousFullness ? previousFullness.join(',') : 'null'}`
+      : null
+    lastScalePrefillHiveIdRef.current = hiveId || null
+    scaleFetchAbortRef.current?.abort()
+    setWeightFromScale(null)
+
+    isDirtyRef.current = true
+    setFormData(draft.formData)
+    setGivenTakenDrafts({ ...createGivenTakenDrafts(draft.formData), ...draft.givenTakenDrafts })
+    setFollowUpDrafts(draft.followUpDrafts)
+    setFormApiaryId(draft.formApiaryId)
+    setDronesExpanded(
+      (draft.formData.drones_present !== LEVEL_NOT_RECORDED && draft.formData.drones_present !== null) ||
+      draft.formData.drone_brood_present !== null
+    )
+    setPropolisExpanded(draft.formData.propolis_level !== LEVEL_NOT_RECORDED && draft.formData.propolis_level !== null)
+    setSuperFullnessExpanded((draft.formData.honey_super_fullness?.length ?? 0) > 0)
+    setFollowUpExpanded(draft.followUpDrafts.length > 0)
+    resetStagedPhotos()
+    addStagedPhotos(draft.photos, MAX_INSPECTION_PHOTOS, draft.formData.image_urls.length)
+    goToStep(draft.step)
+    setPendingDraft(null)
+  }
+
+  const startAgain = () => {
+    if (draftOwner) void clearInspectionDraft(draftOwner)
+    setPendingDraft(null)
+  }
+
   const handleHiveSelect = (hiveId: string) => {
     // A stores reading belongs to the hive it was taken on, so a new inspection doesn't carry it to another
     setFormData(prev => prev.hive_id === hiveId || isEditing
@@ -1083,6 +1185,8 @@ export default function InspectionForm({
       return
     }
 
+    // The latest edits go down first, in case the phone dies during the save.
+    writeLatestDraft()
     const submitData = normaliseGivenTakenValues(formData, givenTakenDrafts)
     setFormData(submitData)
     setGivenTakenDrafts(createGivenTakenDrafts(submitData))
@@ -1138,6 +1242,8 @@ export default function InspectionForm({
     if (isDirty) {
       const discard = await confirmDialog(DISCARD_INSPECTION_PROMPT)
       if (!discard) return
+      // The copy kept on this phone goes too, or it would be offered back after being discarded.
+      if (draftOwner && !isEditing) await clearInspectionDraft(draftOwner)
     }
     resetStagedPhotos()
     resetVoiceRecorder()
@@ -1358,6 +1464,8 @@ export default function InspectionForm({
               <input
                 id={`${labelId('cells', title)}-count`}
                 type="number"
+                inputMode="numeric"
+                enterKeyHint="next"
                 value={count}
                 onChange={(e) => onCountChange(parseInt(e.target.value) || 0)}
                 className="h-[48px] w-20 px-3 py-2 border rounded text-center"
@@ -1407,6 +1515,28 @@ export default function InspectionForm({
     </div>
   ), [])
 
+  // The choice comes first, with no fields showing, so nothing can be typed into a new
+  // inspection while an earlier one is waiting.
+  if (pendingDraft && !isEditing) {
+    const draftHive = hives.find(hive => hive.id === pendingDraft.formData.hive_id)
+    const photoCount = pendingDraft.photos.length
+    return (
+      <div role="status" className="space-y-4">
+        <div>
+          <p className="font-semibold text-foreground">You have an unfinished inspection</p>
+          <p className="text-text-secondary">
+            {draftHive ? `Hive ${draftHive.hive_number}, on` : 'On'} this phone since {describeDraftSavedAt(pendingDraft.savedAt)}
+            {photoCount > 0 && `, with ${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}`}.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button tone="success" fullWidth onClick={() => resumeDraft(pendingDraft)}>Carry on</Button>
+          <Button tone="neutral" fullWidth onClick={startAgain}>Start again</Button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       <div ref={stepHeadingRef}>
@@ -1419,7 +1549,9 @@ export default function InspectionForm({
       />
       </div>
 
-      <form id="inspection-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* A plain block on a phone: a sticky item can't leave its own grid row, so in a grid the
+          pinned step controls below would scroll away with the page. */}
+      <form id="inspection-form" onSubmit={handleSubmit} className="space-y-6 md:space-y-0 md:grid md:grid-cols-2 md:gap-6">
         {/* Inspection Details Section */}
         {step === 1 && (
         <div className="md:col-span-2 p-4 rounded-lg border border-border">
@@ -1483,6 +1615,8 @@ export default function InspectionForm({
                 label="Weight (kg)"
                 id="inspection-weight"
                 type="number"
+                inputMode="decimal"
+                enterKeyHint="next"
                 step="0.1"
                 placeholder="Optional"
                 value={formData.weight ?? ''}
@@ -2472,17 +2606,20 @@ export default function InspectionForm({
 
         {/* Step navigation. Save is on every step and the review step is optional.
             Save is type="button" so that Enter in a field still only advances.
-            All controls are 48px. */}
-        <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 pt-2 border-t border-border">
-          <div className="grid grid-cols-2 gap-3 sm:flex">
+            All controls are at least 48px, and 56px where a gloved thumb reaches for them on a phone,
+            where this bar stays pinned at the foot of the screen, above the keyboard. */}
+        <div className="sticky bottom-[var(--keyboard-inset,0px)] z-10 -mx-3 grid grid-cols-[56px_1fr_1fr] gap-2 border-t border-border bg-background px-3 py-2 sm:static sm:mx-0 sm:flex sm:gap-3 sm:bg-transparent sm:px-0 sm:pb-0 md:col-span-2">
+          <div className="contents sm:flex sm:gap-3">
             <Button
             unstyled
               type="button"
               onClick={goToPreviousStep}
               disabled={step === 1}
+              aria-label="Previous"
               className={`px-3 sm:px-6 py-3 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation font-medium w-full sm:w-auto ${step === LAST_STEP ? 'col-span-2' : ''}`}
             >
-              Previous
+              <ChevronLeft size={24} className="sm:hidden" aria-hidden="true" />
+              <span className="hidden sm:inline">Previous</span>
             </Button>
 
             {step < LAST_STEP && (
@@ -2490,7 +2627,7 @@ export default function InspectionForm({
               unstyled
                 type="button"
                 onClick={goToNextStep}
-                className="px-3 sm:px-6 py-3 min-h-[48px] bg-forest-800 text-white rounded-lg hover:bg-forest-900 active:bg-forest-900 transition-all touch-manipulation font-medium w-full sm:w-auto"
+                className="px-2 sm:px-6 py-3 min-h-[56px] sm:min-h-[48px] bg-forest-800 text-white rounded-lg hover:bg-forest-900 active:bg-forest-900 transition-all touch-manipulation font-medium w-full sm:w-auto"
               >
                 Next
               </Button>
@@ -2502,7 +2639,7 @@ export default function InspectionForm({
             tone="success"
             onClick={saveInspection}
             disabled={submitting || fetchingWeather || voiceNoteBusy || (step === LAST_STEP && outstandingErrors.length > 0)}
-            className="px-6 py-3 min-h-[48px] touch-manipulation font-medium w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`${step === LAST_STEP ? "col-span-2" : ""} px-2 sm:px-6 py-3 min-h-[56px] sm:min-h-[48px] touch-manipulation font-medium w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {isVoiceRecording
               ? 'Stop the voice note to save'
@@ -2515,7 +2652,7 @@ export default function InspectionForm({
           unstyled
             type="button"
             onClick={handleCancel}
-            className="px-6 py-3 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated touch-manipulation font-medium w-full sm:w-auto sm:ml-auto"
+            className="hidden sm:block px-6 py-3 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated touch-manipulation font-medium w-full sm:w-auto sm:ml-auto"
           >
             Cancel
           </Button>

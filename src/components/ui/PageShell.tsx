@@ -15,7 +15,7 @@ export default function PageShell({
 }: PageShellProps) {
   return (
     <div
-      className={`relative isolate overflow-hidden bg-background ${centered ? 'min-h-screen flex items-center justify-center' : ''} ${className}`.trim()}
+      className={`relative isolate overflow-hidden bg-background ${centered ? 'min-h-dvh flex items-center justify-center' : ''} ${className}`.trim()}
     >
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 field-journal-texture opacity-70" />
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-56 field-journal-glow" />

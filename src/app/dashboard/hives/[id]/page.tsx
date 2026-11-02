@@ -3,11 +3,15 @@ import dynamic from 'next/dynamic'
 import { useEffect, useState, useCallback } from 'react'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore, Scale, QrCode, X, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore, Scale, QrCode, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { SkeletonScreen } from '@/components/ui/Skeleton'
 import HiveConfigurationHistory from '@/components/HiveConfigurationHistory'
 import { RecordSection } from '@/components/hive/RecordSection'
+import ModalShell from '@/components/ui/ModalShell'
+import StickyActionBar from '@/components/ui/StickyActionBar'
+import CachedDataNotice from '@/components/ui/CachedDataNotice'
 import ScaleSensorDisplay from '@/components/hive/ScaleSensorDisplay'
 import ScaleSelectionModal from '@/components/hive/ScaleSelectionModal'
 import WolfScaleSelectionModal from '@/components/hive/WolfScaleSelectionModal'
@@ -57,6 +61,7 @@ export default function HiveDetailPage() {
     tasks,
     averages,
     loading,
+    staleSince,
     isOwner,
     fetchHiveData,
     handleCompleteTask,
@@ -184,7 +189,7 @@ export default function HiveDetailPage() {
 
   // Spinner on the first load only: a refresh updates the page in place (C3-09)
   if (loading && !hive) {
-    return <LoadingSpinner />
+    return <SkeletonScreen label="Loading hive..." />
   }
 
   if (!hive) {
@@ -198,35 +203,38 @@ export default function HiveDetailPage() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <Button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-text-tertiary hover:text-foreground"
-          >
-            <ArrowLeft size={20} />
-            Back to Hives
-          </Button>
-          <div className="flex items-center gap-2">
+    <div className={`md:p-6 max-w-7xl mx-auto ${hive.archived_at ? '' : 'pb-sticky-action'}`}>
+      {/* Header. On a phone the title comes first, and the back control is in the top bar. */}
+      <div className="mb-3 flex flex-col-reverse gap-2 md:mb-6 md:block">
+        <div className="flex items-center justify-between md:mb-4">
+          <div className="hidden md:block">
+            <Button
+              onClick={() => router.back()}
+              className="flex items-center gap-2 text-text-tertiary hover:text-foreground"
+            >
+              <ArrowLeft size={20} />
+              Back to Hives
+            </Button>
+          </div>
+          <div className="flex w-full items-center gap-2 md:w-auto">
             <Button
               onClick={() => setShowQrModal(true)}
-              className="px-4 py-2 bg-surface-secondary text-foreground rounded-lg hover:bg-surface-elevated border border-border font-medium flex items-center gap-2"
+              className="px-4 py-2 bg-surface-secondary text-foreground rounded-lg hover:bg-surface-elevated border border-border font-medium flex flex-1 items-center justify-center gap-2 md:flex-none"
             >
               <QrCode size={18} />
               QR Code
             </Button>
             <Link
               href={`/dashboard/records?hive=${hiveId}`}
-              className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium flex items-center gap-2"
+              className="px-4 py-2 min-h-[48px] bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 font-medium flex flex-1 items-center justify-center gap-2 md:flex-none"
             >
               <Calendar size={18} />
               View Records
             </Link>
           </div>
         </div>
-        <h1 className="text-3xl font-bold text-foreground">Hive {hive.hive_number}</h1>
+        <div>
+        <h1 className="text-3xl font-bold text-foreground break-words">Hive {hive.hive_number}</h1>
         <div className="flex flex-wrap items-center gap-2 mt-1">
           {hive.apiaries && (
             <p className="text-text-tertiary">Apiary: {hive.apiaries.name}</p>
@@ -244,7 +252,15 @@ export default function HiveDetailPage() {
             </span>
           )}
         </div>
+        </div>
       </div>
+
+      <CachedDataNotice
+        savedAt={staleSince}
+        onRetry={() => {
+          void getCurrentUserId().then((id) => { if (id) fetchHiveData(id) })
+        }}
+      />
 
       {/* Quick Actions - kept at the top so a new action is one tap away */}
       <QuickActionsGrid hiveId={hiveId} isOwner={isOwner} isArchived={!!hive.archived_at} onUnarchive={handleUnarchive} />
@@ -263,8 +279,8 @@ export default function HiveDetailPage() {
 
       {/* Hive Scale Card - Show if hive has any scale OR owner can connect one */}
       {(hive.beep_device_id || hive.wolf_scale_id || ((beepConnected || wolfConnected) && isOwner)) && (
-        <div className={`bg-surface dark:bg-surface rounded-lg shadow-lg mb-6 border border-border ${
-          hive.beep_device_id || hive.wolf_scale_id ? 'p-6' : 'p-4'
+        <div className={`bg-surface dark:bg-surface rounded-lg shadow-lg mb-4 md:mb-6 border border-border ${
+          hive.beep_device_id || hive.wolf_scale_id ? 'p-4 md:p-6' : 'p-4'
         }`}>
           <div className={`flex items-center justify-between ${hive.beep_device_id || hive.wolf_scale_id ? 'mb-4' : ''}`}>
             <h2 className={`font-semibold text-foreground flex items-center gap-2 ${
@@ -361,12 +377,12 @@ export default function HiveDetailPage() {
       )}
 
       {/* Configuration History - Separate Card */}
-      <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-4 mb-4 md:p-6 md:mb-6 border border-border">
         <HiveConfigurationHistory hiveId={hiveId} />
       </div>
 
       {/* Records Sections */}
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <RecordSection<HiveInspection>
           title="Inspections"
           icon={Calendar}
@@ -553,29 +569,31 @@ export default function HiveDetailPage() {
 
       {/* QR Code Modal */}
       {showQrModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowQrModal(false)}>
-          <div className="bg-surface rounded-lg shadow-xl p-6 max-w-sm w-full border border-border" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-foreground">Hive QR Code</h2>
-              <Button onClick={() => setShowQrModal(false)} className="text-text-tertiary hover:text-foreground">
-                <X size={20} />
-              </Button>
+        <ModalShell title="Hive QR Code" onClose={() => setShowQrModal(false)} closeOnBackdrop maxWidthClassName="max-w-sm" bodyClassName="p-6">
+          <p className="text-sm text-text-tertiary mb-4">Print this QR code and attach it to your hive. Scan it with your phone camera to quickly create inspections, treatments, and other records.</p>
+          {assignedTagCode ? (
+            <HiveQRCode tagCode={assignedTagCode} hiveNumber={hive.hive_number} />
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-text-tertiary mb-4">No QR tag assigned to this hive yet.</p>
+              <Link
+                href="/dashboard/qr-tags"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm"
+              >
+                Manage QR Tags
+              </Link>
             </div>
-            <p className="text-sm text-text-tertiary mb-4">Print this QR code and attach it to your hive. Scan it with your phone camera to quickly create inspections, treatments, and other records.</p>
-            {assignedTagCode ? (
-              <HiveQRCode tagCode={assignedTagCode} hiveNumber={hive.hive_number} />
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-text-tertiary mb-4">No QR tag assigned to this hive yet.</p>
-                <Link
-                  href="/dashboard/qr-tags"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm"
-                >
-                  Manage QR Tags
-                </Link>
-              </div>
-            )}
-          </div>
+          )}
+        </ModalShell>
+      )}
+
+      {!hive.archived_at && (
+        <div className="md:hidden">
+          <StickyActionBar>
+            <Link href={`/dashboard/records?hive=${hiveId}&type=inspection`} className="fj-btn fj-btn-success min-h-[56px] w-full text-base">
+              New Inspection
+            </Link>
+          </StickyActionBar>
         </div>
       )}
     </div>
@@ -597,7 +615,7 @@ interface HiveInfoCardProps {
 
 function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTask, expanded, onToggle }: HiveInfoCardProps) {
   return (
-    <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-6 mb-6 border border-border">
+    <div className="bg-surface dark:bg-surface rounded-lg shadow-lg p-4 mb-4 md:p-6 md:mb-6 border border-border">
       <button
         type="button"
         onClick={onToggle}
@@ -950,47 +968,48 @@ interface QuickActionsGridProps {
 
 function QuickActionsGrid({ hiveId, isOwner, isArchived, onUnarchive }: QuickActionsGridProps) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-6">
+        // On a phone New Inspection is pinned at the foot of the screen, so the rest fit two short rows.
+    <div className="grid grid-cols-3 lg:grid-cols-7 gap-2 md:gap-4 mb-4 md:mb-6">
       <Link
         href={`/dashboard/records?hive=${hiveId}&type=inspection`}
-        className="bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700 text-center"
+        className="hidden md:block bg-blue-600 text-white p-2 md:p-4 rounded-lg hover:bg-blue-700 text-center"
       >
-        <Calendar className="mx-auto mb-2" size={24} />
+        <Calendar className="mx-auto mb-1 md:mb-2" size={24} />
         <div className="font-medium text-sm">New Inspection</div>
       </Link>
       <Link
         href={`/dashboard/records?hive=${hiveId}&type=varroa-check`}
-        className="bg-purple-600 text-white p-4 rounded-lg hover:bg-purple-700 text-center"
+        className="bg-purple-600 text-white p-2 md:p-4 rounded-lg hover:bg-purple-700 text-center"
       >
-        <Bug className="mx-auto mb-2" size={24} />
+        <Bug className="mx-auto mb-1 md:mb-2" size={24} />
         <div className="font-medium text-sm">Varroa Check</div>
       </Link>
       <Link
         href={`/dashboard/records?hive=${hiveId}&type=varroa-treatment`}
-        className="bg-red-600 text-white p-4 rounded-lg hover:bg-red-700 text-center"
+        className="bg-red-600 text-white p-2 md:p-4 rounded-lg hover:bg-red-700 text-center"
       >
-        <Syringe className="mx-auto mb-2" size={24} />
+        <Syringe className="mx-auto mb-1 md:mb-2" size={24} />
         <div className="font-medium text-sm">Treatment</div>
       </Link>
       <Link
         href={`/dashboard/records?hive=${hiveId}&type=feeding`}
-        className="bg-orange-700 text-white p-4 rounded-lg hover:bg-orange-800 text-center"
+        className="bg-orange-700 text-white p-2 md:p-4 rounded-lg hover:bg-orange-800 text-center"
       >
-        <Wheat className="mx-auto mb-2" size={24} />
+        <Wheat className="mx-auto mb-1 md:mb-2" size={24} />
         <div className="font-medium text-sm">Feeding</div>
       </Link>
       <Link
         href={`/dashboard/records?hive=${hiveId}&type=harvest`}
-        className="bg-yellow-700 text-white p-4 rounded-lg hover:bg-yellow-800 text-center"
+        className="bg-yellow-700 text-white p-2 md:p-4 rounded-lg hover:bg-yellow-800 text-center"
       >
-        <Droplet className="mx-auto mb-2" size={24} />
+        <Droplet className="mx-auto mb-1 md:mb-2" size={24} />
         <div className="font-medium text-sm">Harvest</div>
       </Link>
       <Link
         href={`/dashboard/tasks?create=true&hive=${hiveId}`}
-        className="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 text-center"
+        className="bg-green-600 text-white p-2 md:p-4 rounded-lg hover:bg-green-700 text-center"
       >
-        <Plus className="mx-auto mb-2" size={24} />
+        <Plus className="mx-auto mb-1 md:mb-2" size={24} />
         <div className="font-medium text-sm">Create Task</div>
       </Link>
       {isOwner && (
@@ -998,17 +1017,17 @@ function QuickActionsGrid({ hiveId, isOwner, isArchived, onUnarchive }: QuickAct
           {isArchived ? (
             <Button
               onClick={onUnarchive}
-              className="bg-emerald-600 text-white p-4 rounded-lg hover:bg-emerald-700 text-center border-2 border-emerald-400"
+              className="bg-emerald-600 text-white p-2 md:p-4 rounded-lg hover:bg-emerald-700 text-center border-2 border-emerald-400"
             >
-              <ArchiveRestore className="mx-auto mb-2" size={24} />
+              <ArchiveRestore className="mx-auto mb-1 md:mb-2" size={24} />
               <div className="font-medium text-sm">Unarchive Hive</div>
             </Button>
           ) : (
             <Link
               href={`/dashboard/records?hive=${hiveId}&type=archive`}
-              className="bg-surface-secondary text-foreground p-4 rounded-lg hover:bg-surface-elevated text-center border-2 border-border"
+              className="bg-surface-secondary text-foreground p-2 md:p-4 rounded-lg hover:bg-surface-elevated text-center border-2 border-border"
             >
-              <Archive className="mx-auto mb-2" size={24} />
+              <Archive className="mx-auto mb-1 md:mb-2" size={24} />
               <div className="font-medium text-sm">Archive Hive</div>
             </Link>
           )}

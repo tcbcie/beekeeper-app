@@ -20,10 +20,16 @@ import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { useReportFormActive } from '@/contexts/BottomSurfaceContext'
 import { buildDiscardRecordPrompt } from '@/lib/inspection-discard'
+import { clearInspectionDraft } from '@/lib/inspection-draft'
+import { withTimeout } from '@/lib/with-timeout'
+import UnfinishedInspectionNotice from '@/components/records/UnfinishedInspectionNotice'
+import CachedDataNotice from '@/components/ui/CachedDataNotice'
 import { buildDeleteRecordPrompt } from '@/lib/record-delete-prompts'
 import { syncTreatmentReminder } from '@/lib/treatment-reminder'
 import { isSyrupFeed } from '@/lib/feeding'
 import { useNavigationGuard } from '@/hooks/useNavigationGuard'
+import { useCloseWatcher } from '@/hooks/useCloseWatcher'
+import { useIsPhone } from '@/hooks/useIsPhone'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { updateManager } from '@/lib/update-manager'
 import { useRecordsData } from '@/hooks/useRecordsData'
@@ -88,6 +94,17 @@ interface OpenMeteoResponse {
 const WEATHER_REQUEST_TIMEOUT_MS = 8000
 const RECORD_DEEP_LINK_TYPES = new Set<RecordType>(['inspection', 'varroa_check', 'varroa_treatment', 'feeding', 'harvest'])
 
+const PHOTO_UPLOAD_TIMEOUT_MS = 60_000
+const WEATHER_TIMEOUT_MS = 5_000
+const INSPECTION_SAVE_TIMEOUT_MS = 20_000
+const TIMED_OUT = 'timed-out'
+const INSPECTION_NO_SIGNAL_MESSAGE =
+  'The inspection could not be sent, so it is still here on this phone. Check the signal, look in Records in case it arrived, then try again.'
+
+function isConnectionFailure(message: string): boolean {
+  return /abort|timeout|timed out|failed to fetch|load failed|network/i.test(message)
+}
+
 function mapTypeParamToRecordType(typeParam: string | null): RecordType | null {
   if (!typeParam) return null
   if (typeParam === 'varroa-check') return 'varroa_check'
@@ -150,16 +167,6 @@ export default function RecordsPage() {
   }, [formDirty])
 
   /** Returns true when it is safe to throw away whatever is in the form. */
-  const confirmDiscardOpenForm = useCallback(async () => {
-    if (!formDirtyRef.current) return true
-    return confirmDialog(buildDiscardRecordPrompt(RECORD_LABELS[formType]))
-  }, [confirmDialog, formType])
-
-  // The last of Phase 1's six exit paths. An in-app link now asks before it
-  // navigates away from a part-finished inspection, using the same wording as
-  // every other discard prompt.
-  useNavigationGuard(formDirty, confirmDiscardOpenForm)
-
   const searchParams = useSearchParams()
   const formRef = useRef<HTMLDivElement>(null)
   const hasInitialisedApiaryFilterRef = useRef(false)
@@ -173,6 +180,21 @@ export default function RecordsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingInspection, setEditingInspection] = useState<Inspection | null>(null)
   const [inspectionDraft, setInspectionDraft] = useState<InspectionFormData | null>(null)
+
+  const confirmDiscardOpenForm = useCallback(async () => {
+    if (!formDirtyRef.current) return true
+    const discard = await confirmDialog(buildDiscardRecordPrompt(RECORD_LABELS[formType]))
+    // The copy kept on this phone goes too, or it would be offered back after being discarded.
+    if (discard && formType === 'inspection' && !editingInspection && userId) {
+      await clearInspectionDraft(userId)
+    }
+    return discard
+  }, [confirmDialog, formType, editingInspection, userId])
+
+  // The last of Phase 1's six exit paths. An in-app link now asks before it
+  // navigates away from a part-finished inspection, using the same wording as
+  // every other discard prompt.
+  useNavigationGuard(formDirty, confirmDiscardOpenForm)
   const [editingTreatment, setEditingTreatment] = useState<VarroaTreatment | null>(null)
   const [editingCheck, setEditingCheck] = useState<VarroaCheck | null>(null)
   const [editingFeeding, setEditingFeeding] = useState<Feeding | null>(null)
@@ -206,6 +228,7 @@ export default function RecordsPage() {
     archiveReasons,
     applicationMethods,
     loading,
+    staleSince,
     isTeamMember,
     isUkNiResident,
     sharedHiveIds,
@@ -923,6 +946,12 @@ export default function RecordsPage() {
   ) => {
     if (!userId) return
 
+    // Fail at once with no signal, rather than after a long wait on the first photo.
+    if (navigator.onLine === false) {
+      toast.error(INSPECTION_NO_SIGNAL_MESSAGE)
+      return
+    }
+
     // Declared outside the try so the failure paths below can undo it. Anything
     // uploaded during an attempt that does not end in a saved row is rubbish: no
     // record points at it, and nothing in this app ever collects it. Cleaning up
@@ -939,7 +968,17 @@ export default function RecordsPage() {
       // roof gets one upload's worth of bandwidth at a time, and a mid-way failure
       // should abort before burning the rest of the user's data allowance.
       for (const file of imageFiles) {
-        const uploadedUrl = await uploadImage(file, 'inspections')
+        const upload = uploadImage(file, 'inspections')
+        const uploadedUrl = await withTimeout(upload, PHOTO_UPLOAD_TIMEOUT_MS, TIMED_OUT)
+        if (uploadedUrl === TIMED_OUT) {
+          // It may still arrive after giving up, and nothing would ever point at it.
+          void upload.then(lateUrl => {
+            if (lateUrl) void deleteUploadedImages([lateUrl])
+          })
+          await deleteUploadedImages(uploadedUrls)
+          toast.error(INSPECTION_NO_SIGNAL_MESSAGE)
+          return
+        }
         if (!uploadedUrl) {
           // Upload failed - error already shown via toast in uploadImage.
           await deleteUploadedImages(uploadedUrls)
@@ -958,7 +997,12 @@ export default function RecordsPage() {
         try {
           const selectedHive = hives.find(h => h.id === formData.hive_id)
           if (selectedHive?.apiary_id) {
-            weatherData = await fetchWeatherForApiary(selectedHive.apiary_id)
+            // Weather is a bonus, so a poor signal or a failed lookup must not hold up the save.
+            weatherData = await withTimeout(
+              fetchWeatherForApiary(selectedHive.apiary_id).catch(() => null),
+              WEATHER_TIMEOUT_MS,
+              null
+            )
           }
         } finally {
           setFetchingWeather(false)
@@ -1012,6 +1056,7 @@ export default function RecordsPage() {
           .eq('id', editingInspection.id)
           .eq('user_id', userId)
           .select('id')
+          .abortSignal(AbortSignal.timeout(INSPECTION_SAVE_TIMEOUT_MS))
 
         if (error) throw error
         if (!updatedRows || updatedRows.length !== 1) {
@@ -1038,9 +1083,11 @@ export default function RecordsPage() {
         const { error } = await supabase
           .from('inspections')
           .insert([{ ...submitData, user_id: userId }])
+          .abortSignal(AbortSignal.timeout(INSPECTION_SAVE_TIMEOUT_MS))
 
         if (error) throw error
         recordSaved = true
+        await clearInspectionDraft(userId)
 
         await adjustHiveHoneySupers(formData.hive_id, formData.honey_supers)
       }
@@ -1082,10 +1129,19 @@ export default function RecordsPage() {
       // Only tidy up when the row never landed. Past that point - a failing
       // refetch, a honey-super adjustment - the saved inspection references these
       // photos, and deleting them would break a record that exists.
-      if (!recordSaved) {
-        await deleteUploadedImages(uploadedUrls)
+      if (recordSaved) {
+        // Leaving the form open with an error invited a second save of the same inspection.
+        toast.warning('Inspection saved, but the list could not be refreshed. It will appear when you next open Records with signal.')
+        resetForm()
+        return
       }
-      toast.error((error as { message?: string } | null)?.message || 'Error saving inspection')
+      await deleteUploadedImages(uploadedUrls)
+      const message = (error as { message?: string } | null)?.message
+      toast.error(
+        !message || isConnectionFailure(message)
+          ? INSPECTION_NO_SIGNAL_MESSAGE
+          : message
+      )
     }
   }
 
@@ -1679,6 +1735,10 @@ export default function RecordsPage() {
 
   const handleImageClick = (url: string) => handleGalleryClick([url], 0)
 
+  // A form fills the phone's screen, so Android's Back should close it, through the same guard.
+  const isPhone = useIsPhone()
+  useCloseWatcher(showForm && isPhone, handleGuardedCancel)
+
   if (loading) {
     // Top-aligned skeleton matching the loaded layout (header + filter bar +
     // record rows) so content lands where the placeholder was -- no layout jump.
@@ -1699,19 +1759,20 @@ export default function RecordsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="min-h-dvh bg-background">
+      <div className="max-w-4xl mx-auto md:px-4 md:py-6">
         {/* Header */}
-        <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="flex items-center justify-between gap-4 mb-3 md:mb-6">
           <div className="flex items-center gap-3 min-w-0">
-            <IconButton
-              onClick={() => router.push('/dashboard')}
-              className="flex-shrink-0"
-              aria-label="Back to dashboard"
-            >
-              <Home size={24} />
-            </IconButton>
-            <h1 className="text-2xl font-bold text-foreground truncate">Records</h1>
+            <div className="hidden flex-shrink-0 md:block">
+              <IconButton
+                onClick={() => router.push('/dashboard')}
+                aria-label="Back to dashboard"
+              >
+                <Home size={24} />
+              </IconButton>
+            </div>
+            <h1 className="sr-only md:not-sr-only text-2xl font-bold text-foreground truncate">Records</h1>
           </div>
           <div className="flex-shrink-0">
             <NewRecordDropdown onSelectType={handleNewRecord} />
@@ -1746,10 +1807,15 @@ export default function RecordsPage() {
           onRecordTypeChange={setRecordTypeFilter}
         />
 
+        {!showForm && <UnfinishedInspectionNotice userId={userId} />}
+        <CachedDataNotice savedAt={staleSince} onRetry={() => { if (userId) fetchAllData(userId, filters.ownershipFilter) }} />
+
         {/* Form Section */}
         {showForm && (
-          <div ref={formRef} className="field-journal-panel mb-6 p-4">
-            <div className="flex items-center justify-between mb-4">
+          // Its own screen on a phone, covering the list and bottom bar, so there is only the job
+          // in hand. The close button keeps the same discard guard.
+          <div ref={formRef} className="field-journal-panel record-form-screen mb-6 p-4">
+            <div className="flex items-center justify-between mb-2 md:mb-4">
               <h2 className="text-lg font-semibold text-foreground">
                 {formType === 'inspection' && (editingInspection ? 'Edit Inspection' : 'New Inspection')}
                 {formType === 'varroa_treatment' && (editingTreatment?.id ? 'Edit Treatment' : 'New Treatment')}
@@ -1785,6 +1851,7 @@ export default function RecordsPage() {
                 onImageClick={handleGalleryClick}
                 fetchingWeather={fetchingWeather}
                 onDirtyChange={handleFormDirtyChange}
+                draftUserId={userId}
               />
             )}
 
@@ -2046,7 +2113,7 @@ export default function RecordsPage() {
             title="IPM Tips for Varroa Control"
             onClose={() => setShowIpmTips(false)}
             maxWidthClassName="max-w-lg"
-            shellClassName="max-h-[80vh] flex flex-col"
+            shellClassName="max-h-[80dvh] flex flex-col"
             bodyClassName="flex-1 overflow-y-auto p-6"
           >
             <div className="space-y-4 text-sm text-text-secondary">

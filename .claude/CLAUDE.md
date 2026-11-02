@@ -158,7 +158,7 @@ const { data, error } = await supabase
 ## Known Limitations
 
 ### Browser Support
-- **Web Push** - Desktop/Android only (not iOS Safari)
+- **Web Push** - Desktop and Android; on iOS 16.4+ only once installed to the Home Screen
 
 ### Connectivity
 - App requires internet connection for data operations
@@ -168,7 +168,7 @@ const { data, error } = await supabase
 
 When assisting with this project:
 
-1. **Follow mobile-first approach** - Design for mobile, enhance for desktop
+1. **Follow mobile-first approach** - Design for mobile, enhance for desktop; use the `mobile-screen` skill for phone screens
 2. **Maintain type safety** - Use TypeScript properly, avoid `any`
 3. **Consider RLS policies** - All queries must respect Row Level Security
 4. **Test thoroughly** - Check linting and TypeScript errors

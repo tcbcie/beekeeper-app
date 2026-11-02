@@ -793,7 +793,7 @@ export default function MapLocationPicker({
       </div>
 
       {/* Map container */}
-      <div className={`relative rounded-lg overflow-hidden border border-border ${isFullscreen ? 'h-[calc(100vh-120px)]' : ''}`}>
+      <div className={`relative rounded-lg overflow-hidden border border-border ${isFullscreen ? 'h-[calc(100dvh-120px)]' : ''}`}>
         <div ref={mapContainer} className={`w-full ${isFullscreen ? 'h-full' : 'h-[300px] md:h-[400px]'}`} />
 
         {/* Flight radius dropdown */}

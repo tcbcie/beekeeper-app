@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { openScreenCache } from '@/lib/screen-cache'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 import { useToast } from '@/components/ui/Toast'
@@ -25,10 +26,23 @@ interface UseHiveDetailReturn {
   tasks: HiveTask[]
   averages: InspectionAverages | null
   loading: boolean
+  staleSince: number | null
   isOwner: boolean
   fetchHiveData: (currentUserId: string) => Promise<void>
   handleCompleteTask: (taskId: string) => Promise<void>
   handleUnarchive: () => Promise<void>
+}
+
+interface HiveSnapshot {
+  hive: Hive
+  isOwner: boolean
+  inspections: HiveInspection[]
+  varroaChecks: HiveVarroaCheck[]
+  varroaTreatments: HiveVarroaTreatment[]
+  feedings: HiveFeeding[]
+  harvests: HiveHarvest[]
+  tasks: HiveTask[]
+  averages: InspectionAverages | null
 }
 
 export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
@@ -45,11 +59,33 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
   const [loading, setLoading] = useState(true)
   const [isOwner, setIsOwner] = useState(false)
   const fetchSeqRef = useRef(0)
+  // When the latest load failed and the hive shown is older data: when that data was saved.
+  const [staleSince, setStaleSince] = useState<number | null>(null)
+
+  const showSnapshot = useCallback((snapshot: HiveSnapshot) => {
+    setHive(snapshot.hive)
+    setIsOwner(snapshot.isOwner)
+    setInspections(snapshot.inspections)
+    setVarroaChecks(snapshot.varroaChecks)
+    setVarroaTreatments(snapshot.varroaTreatments)
+    setFeedings(snapshot.feedings)
+    setHarvests(snapshot.harvests)
+    setTasks(snapshot.tasks)
+    setAverages(snapshot.averages)
+  }, [])
 
   const fetchHiveData = useCallback(async (currentUserId: string) => {
     // Refreshes keep the page on screen, so only the latest load may update it (C3-08)
     const seq = ++fetchSeqRef.current
+    // The last copy of this hive shows at once, on any signal, while the fresh one loads.
+    const cache = openScreenCache<HiveSnapshot>(currentUserId, `hive:${hiveId}`)
+    let freshArrived = false
     setLoading(true)
+    cache.read().then((entry) => {
+      if (!entry || freshArrived || seq !== fetchSeqRef.current) return
+      showSnapshot(entry.data)
+      setLoading(false)
+    })
     try {
       // The hive and its records need only the hive id, so they load together: one round trip
       // instead of two. The team lookup below needs the hive's apiary, so it follows.
@@ -139,6 +175,8 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
       }
 
       if (seq !== fetchSeqRef.current) return
+      freshArrived = true
+      setStaleSince(null)
       setHive(hiveData)
       setIsOwner(hiveData.user_id === currentUserId)
 
@@ -161,6 +199,7 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
       }
 
       // Calculate inspection averages in a single pass
+      let computedAverages: InspectionAverages | null = null
       if (inspectionsData && inspectionsData.length > 0) {
         const sums = { brood: 0, rightSized: 0, pattern: 0, temper: 0, pop: 0 }
         const counts = { brood: 0, rightSized: 0, pattern: 0, temper: 0, pop: 0 }
@@ -177,49 +216,100 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
         }
 
         const avg = (sum: number, count: number) => count > 0 ? sum / count : null
-        setAverages({
+        computedAverages = {
           brood_frames: avg(sums.brood, counts.brood),
           right_sized_frames: avg(sums.rightSized, counts.rightSized),
           brood_pattern: avg(sums.pattern, counts.pattern),
           temperament: avg(sums.temper, counts.temper),
           population: avg(sums.pop, counts.pop),
           inspection_count: inspectionsWithData.size,
-        })
-      } else {
-        setAverages(null)
+        }
       }
+      setAverages(computedAverages)
+      cache.save({
+        hive: hiveData,
+        isOwner: hiveData.user_id === currentUserId,
+        inspections: inspectionsData || [],
+        varroaChecks: varroaChecksData || [],
+        varroaTreatments: varroaTreatmentsData || [],
+        feedings: feedingsData || [],
+        harvests: harvestsData || [],
+        tasks: tasksData || [],
+        averages: computedAverages,
+      })
     } catch (error) {
       if (seq !== fetchSeqRef.current) return
       console.error('Error fetching hive data:', error)
-      toast.error('Failed to load hive data')
+      freshArrived = true
+      // PGRST116 = no row visible: deleted, or no longer shared. Not a failed load, so the saved
+      // copy goes too, rather than showing a hive this person may no longer see.
+      if ((error as { code?: string } | null)?.code === 'PGRST116') {
+        cache.forget()
+        setHive(null)
+        return
+      }
+      // A failed load keeps the last copy, and says so.
+      const entry = await cache.read()
+      if (seq !== fetchSeqRef.current) return
+      if (entry) {
+        showSnapshot(entry.data)
+        setStaleSince(entry.savedAt)
+      } else {
+        toast.error('Failed to load hive data')
+      }
     } finally {
       if (seq === fetchSeqRef.current) setLoading(false)
     }
-  }, [hiveId, toast])
+  }, [hiveId, showSnapshot, toast])
 
   const completingTaskIds = useRef(new Set<string>())
 
   const handleCompleteTask = useCallback(async (taskId: string) => {
     if (completingTaskIds.current.has(taskId)) return
     completingTaskIds.current.add(taskId)
+    // It goes at once, and comes back if the save fails.
+    let removed: HiveTask | undefined
+    setTasks(prevTasks => {
+      removed = prevTasks.find(t => t.id === taskId) ?? removed
+      return prevTasks.filter(t => t.id !== taskId)
+    })
+    const restore = () => {
+      const task = removed
+      if (task) setTasks(prevTasks => prevTasks.some(t => t.id === taskId) ? prevTasks : [...prevTasks, task])
+    }
     try {
-      const { error } = await supabase
+      // .select: RLS blocks a write by returning no rows and no error.
+      const { data, error } = await supabase
         .from('tasks_events')
         .update({
           completed: true,
           completed_at: new Date().toISOString()
         })
         .eq('id', taskId)
+        .select('id')
 
-      if (error) {
+      if (error || !data?.length) {
         console.error('Error completing task:', error)
-        toast.error('Failed to complete task: ' + error.message)
+        restore()
+        toast.error('The task could not be marked complete. Please try again.')
       } else {
-        setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId))
+        toast.undoable('Task marked complete', async () => {
+          const { data: undone, error: undoError } = await supabase
+            .from('tasks_events')
+            .update({ completed: false, completed_at: null })
+            .eq('id', taskId)
+            .select('id')
+          if (undoError || !undone?.length) {
+            toast.error('The task could not be reopened. Please try again.')
+            return
+          }
+          restore()
+        })
       }
     } catch (error) {
       console.error('Error completing task:', error)
-      toast.error('Failed to complete task')
+      restore()
+      toast.error('The task could not be marked complete. Please try again.')
     } finally {
       completingTaskIds.current.delete(taskId)
     }
@@ -273,6 +363,7 @@ export function useHiveDetail(hiveId: string): UseHiveDetailReturn {
     tasks,
     averages,
     loading,
+    staleSince,
     isOwner,
     fetchHiveData,
     handleCompleteTask,

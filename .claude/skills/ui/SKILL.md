@@ -8,12 +8,14 @@ This skill guides the visual and interaction design for a beekeeper application 
 
 ## Technology Stack
 
-- **Framework**: Next.js 14+ with App Router
-- **Styling**: Tailwind CSS 3+ (custom configuration)
-- **UI Components**: Custom-built with Radix UI primitives
-- **Typography**: Variable fonts (Inter, Geist, or custom)
-- **Icons**: Lucide React (custom styled)
-- **Theme**: System preference detection with manual override
+- **Framework**: Next.js 15 with App Router
+- **Styling**: Tailwind CSS 4, tokens in `src/app/globals.css`, no `tailwind.config`
+- **UI Components**: Custom primitives in `src/components/ui`, no Radix
+- **Typography**: Each device's own system font, nothing downloaded (owner decision, batch 47)
+- **Icons**: Lucide React
+- **Theme**: Light, dark or time-based auto, set in the app
+
+**The code samples below are older design ideas, not the current system.** Where they disagree with `src/components/ui` or `globals.css`, the code wins. For any phone screen, follow the `mobile-screen` skill first.
 
 ## 📱 Mobile-First Design Priority
 
@@ -24,7 +26,7 @@ This skill guides the visual and interaction design for a beekeeper application 
 1. **Design for thumbs** - All primary actions within thumb reach (bottom 2/3 of screen)
 2. **One-handed operation** - Critical functions accessible with one hand
 3. **Large touch targets** - Minimum 48x48px (3rem) for all interactive elements
-4. **Swipe gestures** - Natural phone interactions (swipe to delete, pull to refresh)
+4. **Gestures are shortcuts only** - Every swipe needs a visible button that does the same job
 5. **Bottom-heavy UI** - Important actions at bottom, not top
 6. **Minimal typing** - Use pickers, toggles, and selections over text input
 7. **Offline-capable** - Work in fields without consistent connectivity

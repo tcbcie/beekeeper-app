@@ -2,11 +2,13 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { openScreenCache } from '@/lib/screen-cache'
+import CachedDataNotice from '@/components/ui/CachedDataNotice'
 import { getCurrentUserId } from '@/lib/auth'
 import { getTeamAccess } from '@/lib/team-access'
 import { Calendar, Plus, X, CheckCircle2, Circle, Edit2, Trash2, ClipboardList, Printer, Search, ChevronDown } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { SkeletonScreen } from '@/components/ui/Skeleton'
 import ModalShell from '@/components/ui/ModalShell'
 import FormActionRow from '@/components/ui/FormActionRow'
 import FieldLabel from '@/components/ui/FieldLabel'
@@ -102,6 +104,8 @@ export default function TasksEventsPage() {
   const toast = useToast()
   const [userId, setUserId] = useState<string>('')
   const [tasks, setTasks] = useState<TaskEvent[]>([])
+  // When the latest load failed and the list is older data: when that data was saved.
+  const [staleSince, setStaleSince] = useState<number | null>(null)
   const [hives, setHives] = useState<Hive[]>([])
   const [apiaries, setApiaries] = useState<Apiary[]>([])
   const [batches, setBatches] = useState<Batch[]>([])
@@ -199,6 +203,15 @@ export default function TasksEventsPage() {
   const fetchTasks = useCallback(async () => {
     if (!userId) return
 
+    // The last list shows at once, on any signal, while the fresh one loads behind it.
+    const cache = openScreenCache<TaskEvent[]>(userId, 'tasks')
+    let freshArrived = false
+    cache.read().then((entry) => {
+      if (!entry || freshArrived) return
+      setTasks(entry.data)
+      setLoading(false)
+    })
+
     const oneYearAgo = new Date()
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
     const cutoff = toLocalDateString(oneYearAgo)
@@ -222,6 +235,15 @@ export default function TasksEventsPage() {
 
     if (error) {
       console.error('Error fetching tasks:', error)
+      // A failed load keeps the last list, and says so.
+      freshArrived = true
+      const entry = await cache.read()
+      if (entry) {
+        setTasks(entry.data)
+        setStaleSince(entry.savedAt)
+      } else {
+        toast.error('Tasks could not be loaded. Check your signal and try again.')
+      }
       setLoading(false)
       return
     }
@@ -252,13 +274,24 @@ export default function TasksEventsPage() {
       }
     })
 
+    freshArrived = true
+    setStaleSince(null)
     setTasks(tasksWithCreatorNames)
+    cache.save(tasksWithCreatorNames)
     setLoading(false)
-  }, [userId])
+  }, [userId, toast])
 
   // Fetch hives, apiaries, batches for associations (both own and shared)
   const fetchAssociations = useCallback(async () => {
     if (!userId) return
+
+    const cache = openScreenCache<{ hives: Hive[]; apiaries: Apiary[]; batches: Batch[] }>(userId, 'tasks:associations')
+    const saved = await cache.read()
+    if (saved) {
+      setHives(saved.data.hives)
+      setApiaries(saved.data.apiaries)
+      setBatches(saved.data.batches)
+    }
 
     // Fetch own hives and apiaries
     const [ownHivesRes, ownApiariesRes, batchesRes] = await Promise.all([
@@ -269,7 +302,7 @@ export default function TasksEventsPage() {
 
     if (ownHivesRes.error || ownApiariesRes.error || batchesRes.error) {
       console.error('Error fetching associations:', ownHivesRes.error || ownApiariesRes.error || batchesRes.error)
-      toast.error('Error loading hives or apiaries. Please refresh.')
+      if (!saved) toast.error('Error loading hives or apiaries. Please refresh.')
       return
     }
 
@@ -315,9 +348,12 @@ export default function TasksEventsPage() {
     // Combine own and shared resources, deduplicating by id
     const ownHiveIds = new Set(ownHives.map(h => h.id))
     const ownApiaryIds = new Set(ownApiaries.map(a => a.id))
-    setHives([...ownHives, ...sharedHives.filter(h => !ownHiveIds.has(h.id))])
-    setApiaries([...ownApiaries, ...sharedApiaries.filter(a => !ownApiaryIds.has(a.id))])
+    const freshHives = [...ownHives, ...sharedHives.filter(h => !ownHiveIds.has(h.id))]
+    const freshApiaries = [...ownApiaries, ...sharedApiaries.filter(a => !ownApiaryIds.has(a.id))]
+    setHives(freshHives)
+    setApiaries(freshApiaries)
     if (batchesRes.data) setBatches(batchesRes.data)
+    cache.save({ hives: freshHives, apiaries: freshApiaries, batches: batchesRes.data ?? [] })
   }, [userId, toast])
 
   useEffect(() => {
@@ -563,18 +599,34 @@ export default function TasksEventsPage() {
     if (togglingIds.has(task.id)) return
     setTogglingIds(prev => new Set(prev).add(task.id))
 
-    try {
-      const { error } = await supabase
+    // The tick shows at once, and goes back if the save fails.
+    const setCompleted = async (completed: boolean) => {
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed } : t))
+      // .select: RLS blocks a write by returning no rows and no error.
+      const { data, error } = await supabase
         .from('tasks_events')
         .update({
-          completed: !task.completed,
-          completed_at: !task.completed ? new Date().toISOString() : null
+          completed,
+          completed_at: completed ? new Date().toISOString() : null
         })
         .eq('id', task.id)
+        .select('id')
+      if (error || !data?.length) {
+        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !completed } : t))
+        toast.error('The task could not be updated. Please try again.')
+        return false
+      }
+      return true
+    }
 
-      if (error) {
-        toast.error('Error updating task: ' + error.message)
-      } else {
+    try {
+      const completing = !task.completed
+      if (await setCompleted(completing)) {
+        if (completing) {
+          toast.undoable('Task marked complete', async () => {
+            if (await setCompleted(false)) await fetchTasks()
+          })
+        }
         await fetchTasks()
       }
     } finally {
@@ -916,19 +968,13 @@ export default function TasksEventsPage() {
     return apiary?.name || 'Unknown apiary'
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
+  if (loading) return <SkeletonScreen label="Loading tasks..." />
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6">
+    <div className="max-w-6xl mx-auto sm:p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <h1 className="text-responsive-3xl font-bold text-foreground">Tasks & Events</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 sm:mb-6">
+        <h1 className="sr-only md:not-sr-only text-responsive-3xl font-bold text-foreground">Tasks & Events</h1>
         <div className="flex flex-wrap items-center gap-2">
           <Button
             onClick={openChecklist}
@@ -949,11 +995,13 @@ export default function TasksEventsPage() {
         </div>
       </div>
 
+      <CachedDataNotice savedAt={staleSince} onRetry={fetchTasks} />
+
       {/* Search, date presets, then everything else one control away.
           The filter panel used to sit open above the list: on a phone that is
           five stacked 48px selects with labels, roughly 500px, so no task was
           visible until the beekeeper had already scrolled. */}
-      <div className="space-y-4 mb-6">
+      <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
         <div className="relative w-full sm:max-w-sm">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
           <TextInput
@@ -1302,7 +1350,7 @@ export default function TasksEventsPage() {
           title={editingTask ? 'Edit Task/Event' : 'Create Task/Event'}
           titleClassName="text-xl"
           maxWidthClassName="max-w-2xl"
-          shellClassName="max-h-[90vh] overflow-y-auto"
+          shellClassName="max-h-[90dvh] overflow-y-auto"
           headerClassName="sticky top-0 bg-surface-elevated dark:bg-surface-elevated z-10"
           bodyClassName="p-0"
           onClose={resetForm}
@@ -1577,7 +1625,7 @@ export default function TasksEventsPage() {
         <div className="checklist-print-overlay fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 print:static print:block print:bg-background print:p-0">
           <Card
             padding="none"
-            className="max-w-4xl w-full max-h-[90vh] overflow-y-auto print:max-w-none print:max-h-none print:overflow-visible print:shadow-none print:border-none"
+            className="max-w-4xl w-full max-h-[90dvh] overflow-y-auto print:max-w-none print:max-h-none print:overflow-visible print:shadow-none print:border-none"
           >
             {/* Header */}
             <div className="sticky top-0 bg-surface-elevated dark:bg-surface-elevated border-b border-border px-6 py-4 flex items-center justify-between print:static print:bg-background print:border-b-2 print:border-black">

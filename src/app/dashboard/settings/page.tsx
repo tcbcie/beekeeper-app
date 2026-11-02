@@ -113,7 +113,7 @@ export default function SettingsPage() {
   // Access denied screen for non-admin users
   if (accessDenied) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-surface dark:bg-background">
+      <div className="min-h-dvh flex items-center justify-center bg-surface dark:bg-background">
         <Card padding="lg" className="max-w-md w-full text-center">
           <div className="flex justify-center mb-4">
             <Shield size={64} className="text-red-500" />

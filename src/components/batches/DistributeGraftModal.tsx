@@ -384,8 +384,8 @@ export default function DistributeGraftModal({
         : cellNumber != null ? `Distribute Cell #${cellNumber}` : 'Distribute Queen')}
       onClose={onClose}
       closeDisabled={saving}
-      shellClassName="max-h-[90vh] overflow-hidden"
-      bodyClassName="p-4 overflow-y-auto max-h-[70vh] space-y-4"
+      shellClassName="max-h-[90dvh] overflow-hidden"
+      bodyClassName="p-4 overflow-y-auto max-h-[70dvh] space-y-4"
     >
           {/* Distribution Type Badge */}
           <div>

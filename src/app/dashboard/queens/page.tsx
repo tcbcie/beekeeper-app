@@ -496,7 +496,7 @@ export default function QueensPage() {
  return (
  <div className="space-y-6">
  <div className="flex justify-between items-center">
- <h1 className="text-3xl font-bold text-foreground">Queens</h1>
+ <h1 className="sr-only md:not-sr-only text-3xl font-bold text-foreground">Queens</h1>
  <div className="flex gap-2">
  <Button
  onClick={handleCompare}

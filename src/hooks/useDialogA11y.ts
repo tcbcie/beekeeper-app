@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, type RefObject } from 'react'
+import { useCloseWatcher } from './useCloseWatcher'
 
 /**
  * Keyboard and focus behaviour shared by modal surfaces.
@@ -100,6 +101,10 @@ export function useDialogA11y({ isOpen, onClose, containerRef }: UseDialogA11yOp
     return () => cancelAnimationFrame(frame)
   }, [isOpen, containerRef])
 
+  useCloseWatcher(isOpen, () => {
+    if (dialogStack[dialogStack.length - 1] === stackTokenRef.current) onClose()
+  })
+
   // Escape to close, and keep Tab inside the surface.
   useEffect(() => {
     if (!isOpen) return
@@ -109,6 +114,8 @@ export function useDialogA11y({ isOpen, onClose, containerRef }: UseDialogA11yOp
       if (dialogStack[dialogStack.length - 1] !== stackTokenRef.current) return
 
       if (event.key === 'Escape') {
+        // preventDefault stops the browser also sending Escape to the CloseWatcher, closing it twice.
+        event.preventDefault()
         event.stopPropagation()
         onClose()
         return

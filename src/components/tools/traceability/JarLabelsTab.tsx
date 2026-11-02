@@ -795,7 +795,7 @@ export default function JarLabelsTab({
 
       {qrLabel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="max-h-[85vh] w-full max-w-sm overflow-y-auto rounded-2xl bg-surface-elevated p-6 shadow-xl">
+          <div className="max-h-[85dvh] w-full max-w-sm overflow-y-auto rounded-2xl bg-surface-elevated p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold">{qrLabel.name}</h3>
               <Button onClick={() => setQrLabel(null)} className="p-1" unstyled aria-label="Close">

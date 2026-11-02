@@ -13,7 +13,7 @@
   /* Each device's own fonts (Segoe UI on Windows, Helvetica on Apple, Roboto on Android): very
      readable, familiar and free to load, so nothing is downloaded. The names used to say DM Sans
      and DM Serif, which were never loaded (owner decision, batch 47). */
-  --font-ui-sans: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-ui-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-ui-serif: Georgia, "Times New Roman", Times, serif;
   --font-ui-mono: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 
@@ -226,6 +226,42 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-ui-sans);
+  /* viewport-fit=cover lets the app reach the screen edges, so in landscape the content
+     has to clear the notch itself. These are 0 everywhere else. */
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Touch behaviour for the whole app. In a base layer, so a component's own active: colour wins. */
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    /* Stops a sideways swipe triggering browser back. Vertical overscroll stays, because
+       Android's pull to refresh is the only refresh gesture the app has. */
+    overscroll-behavior-x: none;
+  }
+
+  /* No double-tap zoom delay on controls. Pinch zoom stays available. */
+  a, button, input, select, textarea, label, summary, [role="button"] {
+    touch-action: manipulation;
+  }
+
+  /* Instant press feedback on every control, including those with only hover: styles. */
+  @media (pointer: coarse) {
+    a:active,
+    button:not(:disabled):active,
+    summary:active,
+    [role="button"]:not([aria-disabled="true"]):active {
+      opacity: 0.7;
+    }
+
+    /* A long press on a control should not select its label. */
+    button, summary, nav, [role="button"] {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+  }
 }
 
 /* Mobile-first touch optimization */
@@ -605,12 +641,16 @@ textarea::placeholder {
     color: #ffffff;
   }
 
-  :where(.fj-btn-blue):hover {
-    background: #1d4ed8;
+  @media (hover: hover) {
+    :where(.fj-btn-blue):hover {
+      background: #1d4ed8;
+    }
   }
 
-  .dark :where(.fj-btn-blue):hover {
-    background: #2563eb;
+  @media (hover: hover) {
+    .dark :where(.fj-btn-blue):hover {
+      background: #2563eb;
+    }
   }
 
   :where(.fj-btn-purple) {
@@ -618,12 +658,16 @@ textarea::placeholder {
     color: #ffffff;
   }
 
-  :where(.fj-btn-purple):hover {
-    background: #7e22ce;
+  @media (hover: hover) {
+    :where(.fj-btn-purple):hover {
+      background: #7e22ce;
+    }
   }
 
-  .dark :where(.fj-btn-purple):hover {
-    background: #9333ea;
+  @media (hover: hover) {
+    .dark :where(.fj-btn-purple):hover {
+      background: #9333ea;
+    }
   }
 
   /* forest-800. White on forest-600 measured 3.30:1 and failed WCAG AA;
@@ -633,12 +677,16 @@ textarea::placeholder {
     color: #ffffff;
   }
 
-  :where(.fj-btn-success):hover {
-    background: #14532d;
+  @media (hover: hover) {
+    :where(.fj-btn-success):hover {
+      background: #14532d;
+    }
   }
 
-  .dark :where(.fj-btn-success):hover {
-    background: #166534;
+  @media (hover: hover) {
+    .dark :where(.fj-btn-success):hover {
+      background: #166534;
+    }
   }
 
   /* amber-800. White on amber-600 measured 3.19:1 and failed WCAG AA;
@@ -648,12 +696,16 @@ textarea::placeholder {
     color: #ffffff;
   }
 
-  :where(.fj-btn-amber):hover {
-    background: #78350f;
+  @media (hover: hover) {
+    :where(.fj-btn-amber):hover {
+      background: #78350f;
+    }
   }
 
-  .dark :where(.fj-btn-amber):hover {
-    background: #92400e;
+  @media (hover: hover) {
+    .dark :where(.fj-btn-amber):hover {
+      background: #92400e;
+    }
   }
 
   :where(.fj-btn-danger) {
@@ -661,12 +713,16 @@ textarea::placeholder {
     color: #ffffff;
   }
 
-  :where(.fj-btn-danger):hover {
-    background: #b91c1c;
+  @media (hover: hover) {
+    :where(.fj-btn-danger):hover {
+      background: #b91c1c;
+    }
   }
 
-  .dark :where(.fj-btn-danger):hover {
-    background: #dc2626;
+  @media (hover: hover) {
+    .dark :where(.fj-btn-danger):hover {
+      background: #dc2626;
+    }
   }
 
   .fj-icon-btn {
@@ -685,9 +741,11 @@ textarea::placeholder {
       color 0.2s ease;
   }
 
-  .fj-icon-btn:hover {
-    background: var(--surface-elevated);
-    color: var(--foreground);
+  @media (hover: hover) {
+    .fj-icon-btn:hover {
+      background: var(--surface-elevated);
+      color: var(--foreground);
+    }
   }
 
   .fj-icon-btn:active {
@@ -705,56 +763,72 @@ textarea::placeholder {
     color: #2563eb;
   }
 
-  .fj-icon-btn-blue:hover {
-    background: rgba(219, 234, 254, 0.9);
-    color: #1d4ed8;
+  @media (hover: hover) {
+    .fj-icon-btn-blue:hover {
+      background: rgba(219, 234, 254, 0.9);
+      color: #1d4ed8;
+    }
   }
 
-  .dark .fj-icon-btn-blue:hover {
-    background: rgba(30, 58, 138, 0.22);
-    color: #93c5fd;
+  @media (hover: hover) {
+    .dark .fj-icon-btn-blue:hover {
+      background: rgba(30, 58, 138, 0.22);
+      color: #93c5fd;
+    }
   }
 
   .fj-icon-btn-green {
     color: #16a34a;
   }
 
-  .fj-icon-btn-green:hover {
-    background: rgba(220, 252, 231, 0.9);
-    color: #15803d;
+  @media (hover: hover) {
+    .fj-icon-btn-green:hover {
+      background: rgba(220, 252, 231, 0.9);
+      color: #15803d;
+    }
   }
 
-  .dark .fj-icon-btn-green:hover {
-    background: rgba(20, 83, 45, 0.22);
-    color: #86efac;
+  @media (hover: hover) {
+    .dark .fj-icon-btn-green:hover {
+      background: rgba(20, 83, 45, 0.22);
+      color: #86efac;
+    }
   }
 
   .fj-icon-btn-amber {
     color: #d97706;
   }
 
-  .fj-icon-btn-amber:hover {
-    background: rgba(254, 243, 199, 0.95);
-    color: #b45309;
+  @media (hover: hover) {
+    .fj-icon-btn-amber:hover {
+      background: rgba(254, 243, 199, 0.95);
+      color: #b45309;
+    }
   }
 
-  .dark .fj-icon-btn-amber:hover {
-    background: rgba(146, 64, 14, 0.24);
-    color: #fcd34d;
+  @media (hover: hover) {
+    .dark .fj-icon-btn-amber:hover {
+      background: rgba(146, 64, 14, 0.24);
+      color: #fcd34d;
+    }
   }
 
   .fj-icon-btn-danger {
     color: #dc2626;
   }
 
-  .fj-icon-btn-danger:hover {
-    background: rgba(254, 226, 226, 0.9);
-    color: #b91c1c;
+  @media (hover: hover) {
+    .fj-icon-btn-danger:hover {
+      background: rgba(254, 226, 226, 0.9);
+      color: #b91c1c;
+    }
   }
 
-  .dark .fj-icon-btn-danger:hover {
-    background: rgba(127, 29, 29, 0.25);
-    color: #fca5a5;
+  @media (hover: hover) {
+    .dark .fj-icon-btn-danger:hover {
+      background: rgba(127, 29, 29, 0.25);
+      color: #fca5a5;
+    }
   }
 
   .fj-chip {
@@ -791,16 +865,20 @@ textarea::placeholder {
     border-color: var(--border-color);
   }
 
-  .fj-chip-neutral:hover {
-    background: color-mix(in oklab, var(--forest-50) 80%, var(--surface));
-    border-color: var(--forest-500);
-    color: var(--forest-700);
+  @media (hover: hover) {
+    .fj-chip-neutral:hover {
+      background: color-mix(in oklab, var(--forest-50) 80%, var(--surface));
+      border-color: var(--forest-500);
+      color: var(--forest-700);
+    }
   }
 
-  .dark .fj-chip-neutral:hover {
-    background: rgba(20, 83, 45, 0.2);
-    border-color: var(--forest-400);
-    color: var(--forest-300);
+  @media (hover: hover) {
+    .dark .fj-chip-neutral:hover {
+      background: rgba(20, 83, 45, 0.2);
+      border-color: var(--forest-400);
+      color: var(--forest-300);
+    }
   }
 
   .fj-chip-amber {
@@ -809,9 +887,11 @@ textarea::placeholder {
     border-color: rgba(217, 119, 6, 0.35);
   }
 
-  .fj-chip-amber:hover {
-    background: rgba(251, 191, 36, 0.28);
-    border-color: rgba(180, 83, 9, 0.45);
+  @media (hover: hover) {
+    .fj-chip-amber:hover {
+      background: rgba(251, 191, 36, 0.28);
+      border-color: rgba(180, 83, 9, 0.45);
+    }
   }
 
   .dark .fj-chip-amber {
@@ -820,9 +900,11 @@ textarea::placeholder {
     border-color: rgba(217, 119, 6, 0.45);
   }
 
-  .dark .fj-chip-amber:hover {
-    background: rgba(146, 64, 14, 0.35);
-    border-color: rgba(245, 158, 11, 0.55);
+  @media (hover: hover) {
+    .dark .fj-chip-amber:hover {
+      background: rgba(146, 64, 14, 0.35);
+      border-color: rgba(245, 158, 11, 0.55);
+    }
   }
 
   .fj-badge {
@@ -927,9 +1009,11 @@ textarea::placeholder {
     transition: color 0.2s ease, text-decoration-color 0.2s ease;
   }
 
-  .fj-link:hover {
-    text-decoration: underline;
-    text-underline-offset: 2px;
+  @media (hover: hover) {
+    .fj-link:hover {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
   }
 
   .fj-link-info {
@@ -956,8 +1040,10 @@ textarea::placeholder {
     color: var(--text-primary);
   }
 
-  :where(.fj-btn-neutral):hover {
-    background: color-mix(in oklab, var(--surface-elevated) 95%, var(--border-color));
+  @media (hover: hover) {
+    :where(.fj-btn-neutral):hover {
+      background: color-mix(in oklab, var(--surface-elevated) 95%, var(--border-color));
+    }
   }
 
   .fj-panel-blue {
@@ -1164,9 +1250,11 @@ textarea::placeholder {
     background: var(--surface-elevated);
   }
 
-  .fj-choice-option:hover {
-    border-color: color-mix(in oklab, var(--accent-primary) 30%, var(--border-color));
-    background: color-mix(in oklab, var(--surface-elevated) 85%, var(--surface));
+  @media (hover: hover) {
+    .fj-choice-option:hover {
+      border-color: color-mix(in oklab, var(--accent-primary) 30%, var(--border-color));
+      background: color-mix(in oklab, var(--surface-elevated) 85%, var(--surface));
+    }
   }
 
   .fj-choice-option-active {
@@ -1424,6 +1512,50 @@ textarea::placeholder {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* A phone screen's pinned main action, and a dialog as a bottom sheet. After the utility layers,
+   because .field-journal-panel sets its own radius. Motion is covered by the reduced-motion rule. */
+@media (max-width: 767.98px) {
+  .modal-sheet {
+    border-radius: 1rem 1rem 0 0;
+    animation: sheet-rise 0.22s ease-out;
+  }
+
+  .sticky-action-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 25;
+    /* Stays behind the keyboard while searching: only a form's Save needs to ride above it. */
+    bottom: var(--bottom-nav-inset);
+  }
+
+  .pb-sticky-action {
+    padding-bottom: 4.5rem;
+  }
+
+  /* A record form as its own screen. Above Mel and the bottom bar, below dialogs and toasts. */
+  .record-form-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--background);
+    padding: calc(env(safe-area-inset-top, 0px) + 0.5rem) 0.75rem max(env(safe-area-inset-bottom, 0px), var(--keyboard-inset, 0px));
+    animation: sheet-rise 0.22s ease-out;
+  }
+}
+
+@keyframes sheet-rise {
+  from {
+    transform: translateY(2rem);
+    opacity: 0;
   }
 }
 

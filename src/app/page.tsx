@@ -24,7 +24,7 @@ export default function Home() {
   }, [checkUser])
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-dvh flex items-center justify-center">
       <div className="text-xl">Loading...</div>
     </div>
   )

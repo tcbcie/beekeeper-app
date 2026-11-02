@@ -2,11 +2,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { clearAllInspectionDrafts } from '@/lib/inspection-draft'
 import { fetchUserExportData, USER_EXPORT_TABLES } from '@/lib/database-export'
 import { downloadCsv, escapeCsvField, toCsv } from '@/lib/csv'
 import { getCurrentUserId, PROFILE_COLUMNS } from '@/lib/auth'
 import { verifyCurrentPassword } from '@/lib/verify-password'
-import { Edit2, Save, Download, Trash2, Scale, Users, Crown, ChevronRight } from 'lucide-react'
+import { Edit2, Save, Download, Trash2, Scale, Users, Crown, ChevronRight, LogOut } from 'lucide-react'
+import { useLogout } from '@/hooks/useLogout'
 import Link from 'next/link'
 import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
 import RenewSubscriptionModal from '@/components/RenewSubscriptionModal'
@@ -74,6 +76,7 @@ export default function ProfilePage() {
  const router = useRouter()
  const searchParams = useSearchParams()
  const toast = useToast()
+ const handleLogout = useLogout(userId)
  const [, setPaymentStatus] = useState<string | null>(null)
 
  // Profile editing state
@@ -531,6 +534,7 @@ export default function ProfilePage() {
  }
 
  // Sign out the user - use local scope
+ await clearAllInspectionDrafts()
  await supabase.auth.signOut({ scope: 'local' })
 
  // Show success message with reactivation info
@@ -596,7 +600,7 @@ export default function ProfilePage() {
 
  if (loading) {
  return (
- <div className="flex items-center justify-center min-h-screen">
+ <div className="flex items-center justify-center min-h-dvh">
  <LoadingSpinner size="lg" />
  </div>
  )
@@ -1218,6 +1222,14 @@ export default function ProfilePage() {
               </Button>
             </div>
           </CollapsibleSection>
+
+          {/* A phone's top bar has no room for this, so it lives here. Desktop keeps it in the bar. */}
+          <div className="mt-4 md:hidden">
+            <Button onClick={handleLogout} tone="neutral" fullWidth>
+              <LogOut size={18} />
+              Log out
+            </Button>
+          </div>
         </div>
       </div>
  {/* Change Password Modal */}
@@ -1326,7 +1338,7 @@ export default function ProfilePage() {
  setShowDeleteAccountModal(false)
  setDeleteConfirmText('')
  }}
- shellClassName="max-h-[85vh] flex flex-col"
+ shellClassName="max-h-[85dvh] flex flex-col"
  bodyClassName="flex-1 overflow-y-auto p-4 space-y-3"
  footer={(
  <FormActionRow bordered padding="sm" className="flex-shrink-0">

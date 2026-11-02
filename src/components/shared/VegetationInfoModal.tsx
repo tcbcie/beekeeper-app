@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { X, Flower2, Droplets, CircleDot, Loader2 } from 'lucide-react'
-import IconButton from '@/components/ui/IconButton'
+import { Flower2, Droplets, CircleDot, Loader2 } from 'lucide-react'
+import ModalShell from '@/components/ui/ModalShell'
 
 interface VegetationInfo {
   scientific_name: string
@@ -87,23 +87,18 @@ export default function VegetationInfoModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-
-      <div className="relative bg-surface dark:bg-surface rounded-xl shadow-xl max-w-lg w-full max-h-[85vh] overflow-hidden border border-border flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <Flower2 className="w-5 h-5 text-green-600 dark:text-green-400" />
-            <h3 className="text-lg font-semibold text-foreground">{vegetationName}</h3>
-          </div>
-          <IconButton onClick={onClose} size="xs" className="hover:bg-muted/20 text-muted">
-            <X className="w-5 h-5" />
-          </IconButton>
-        </div>
-
-        {/* Content */}
-        <div className="overflow-y-auto flex-1 p-4 space-y-4">
+    <ModalShell
+      title={
+        <span className="flex items-center gap-2">
+          <Flower2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+          {vegetationName}
+        </span>
+      }
+      onClose={onClose}
+      closeOnBackdrop
+      maxWidthClassName="max-w-lg"
+      bodyClassName="p-4 space-y-4"
+    >
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <Loader2 className="w-8 h-8 animate-spin text-muted" />
@@ -181,8 +176,6 @@ export default function VegetationInfoModal({
               )}
             </>
           )}
-        </div>
-      </div>
-    </div>
+        </ModalShell>
   )
 }

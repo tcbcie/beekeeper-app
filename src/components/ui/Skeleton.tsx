@@ -35,6 +35,22 @@ export function SkeletonCard({ className = '' }: SkeletonProps) {
   )
 }
 
+/** A whole list screen while it loads: title, search and rows, in the place the real ones will appear */
+export function SkeletonScreen({ label = 'Loading...', rows = 6 }: { label?: string; rows?: number }) {
+  return (
+    <div role="status" className="space-y-4">
+      <span className="sr-only">{label}</span>
+      <Skeleton className="h-8 w-40" />
+      <Skeleton className="h-12 w-full !rounded-lg" />
+      <div className="divide-y divide-border rounded-lg border border-border bg-surface">
+        {Array.from({ length: rows }, (_, index) => (
+          <SkeletonRow key={index} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /** Table/list row placeholder */
 export function SkeletonRow({ className = '' }: SkeletonProps) {
   return (

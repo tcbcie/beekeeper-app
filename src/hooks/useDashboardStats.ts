@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 
 import { supabase } from '@/lib/supabase'
+import { openScreenCache } from '@/lib/screen-cache'
 import type {
   DashboardStats,
   DashboardApiary,
@@ -18,11 +19,21 @@ interface UseDashboardStatsReturn {
   loading: boolean
   error: string | null
   recentActivityError: string | null
+  /** When the latest load failed and older data is showing: when that data was saved. */
+  staleSince: number | null
   fetchDashboardData: (userId: string) => Promise<void>
 }
 
 /** Enough records to group the latest visits; a visit can hold a record for every hive */
 export const RECENT_ACTIVITY_LIMIT = 50
+
+interface DashboardSnapshot {
+  stats: DashboardStats
+  alerts: AttentionAlerts
+  apiaries: DashboardApiary[]
+  firstName: string | null
+  recentActivity: RecentActivityRecord[]
+}
 
 export function useDashboardStats(): UseDashboardStatsReturn {
   const [stats, setStats] = useState<DashboardStats>({
@@ -44,6 +55,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [recentActivityError, setRecentActivityError] = useState<string | null>(null)
+  const [staleSince, setStaleSince] = useState<number | null>(null)
   const mountedRef = useRef(true)
   const requestIdRef = useRef(0)
 
@@ -62,6 +74,24 @@ export function useDashboardStats(): UseDashboardStatsReturn {
     setError(null)
     setRecentActivityError(null)
     setLoading(true)
+
+    const showSnapshot = (snapshot: DashboardSnapshot) => {
+      setStats(snapshot.stats)
+      setAlerts(snapshot.alerts)
+      setApiaries(snapshot.apiaries)
+      setFirstName(snapshot.firstName)
+      setRecentActivity(snapshot.recentActivity)
+    }
+
+    // The last overview shows at once, on any signal, while the fresh one loads behind it.
+    const cache = openScreenCache<DashboardSnapshot>(userId, 'dashboard')
+    let freshArrived = false
+    cache.read().then((entry) => {
+      if (!entry || freshArrived || !isCurrentRequest()) return
+      showSnapshot(entry.data)
+      setLoading(false)
+    })
+    let freshOverview: Omit<DashboardSnapshot, 'recentActivity'> | null = null
 
     // Supabase query builders are lazy -- the request only fires when awaited /
     // then()'d. Trigger both RPCs now (via .then) so recent activity loads in
@@ -88,10 +118,17 @@ export function useDashboardStats(): UseDashboardStatsReturn {
           firstName?: unknown
         }
 
+        freshArrived = true
+        setStaleSince(null)
         if (result.stats) setStats(result.stats)
         if (result.alerts) setAlerts(result.alerts)
-        setApiaries(Array.isArray(result.apiaries) ? result.apiaries : [])
-        setFirstName(typeof result.firstName === 'string' && result.firstName.trim() ? result.firstName.trim() : null)
+        const freshApiaries = Array.isArray(result.apiaries) ? result.apiaries : []
+        const freshFirstName = typeof result.firstName === 'string' && result.firstName.trim() ? result.firstName.trim() : null
+        setApiaries(freshApiaries)
+        setFirstName(freshFirstName)
+        if (result.stats && result.alerts) {
+          freshOverview = { stats: result.stats, alerts: result.alerts, apiaries: freshApiaries, firstName: freshFirstName }
+        }
 
         // Overview + alerts are ready — unblock the page render immediately
         if (isCurrentRequest()) {
@@ -99,6 +136,15 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         }
       } catch (err) {
         console.error('Error fetching dashboard overview data:', err)
+        // A failed load keeps the last overview, and says so, rather than showing zeros.
+        freshArrived = true
+        const entry = await cache.read()
+        if (entry && isCurrentRequest()) {
+          showSnapshot(entry.data)
+          setStaleSince(entry.savedAt)
+          setLoading(false)
+          return
+        }
         if (isCurrentRequest()) {
           setStats({ apiaries: 0, hives: 0, recentInspections: 0, queens: 0, activeTasks: 0 })
           setAlerts({ overdueInspections: 0, oldQueens: 0, highVarroa: 0, todayTasks: 0 })
@@ -148,6 +194,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
         })) as RecentActivityRecord[]
 
         setRecentActivity(mapped)
+        if (freshOverview) cache.save({ ...freshOverview, recentActivity: mapped })
       } catch (err) {
         console.error('Error fetching recent activity:', err)
         if (isCurrentRequest()) {
@@ -170,6 +217,7 @@ export function useDashboardStats(): UseDashboardStatsReturn {
     loading,
     error,
     recentActivityError,
+    staleSince,
     fetchDashboardData,
   }
 }

@@ -9,6 +9,7 @@ interface Toast {
   message: string
   type: ToastType
   duration?: number
+  undo?: () => void
 }
 
 interface ToastContextType {
@@ -17,6 +18,8 @@ interface ToastContextType {
   error: (message: string, duration?: number) => void
   warning: (message: string, duration?: number) => void
   info: (message: string, duration?: number) => void
+  /** Confirms something already done, with a way to reverse it. Stays long enough to reach it. */
+  undoable: (message: string, onUndo: () => void) => void
 }
 
 const ToastContext = createContext<ToastContextType | null>(null)
@@ -74,6 +77,18 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
     >
       <Icon size={20} className={`flex-shrink-0 mt-0.5 ${style.iconColor}`} />
       <p className="flex-1 text-sm text-foreground">{toast.message}</p>
+      {toast.undo && (
+        <button
+          type="button"
+          onClick={() => {
+            toast.undo?.()
+            onClose()
+          }}
+          className="-my-3 min-h-[48px] flex-shrink-0 rounded px-3 text-sm font-semibold text-forest-800 underline underline-offset-2 dark:text-forest-300"
+        >
+          Undo
+        </button>
+      )}
       <button
         onClick={onClose}
         className="flex-shrink-0 p-1 rounded hover:bg-black/10 dark:hover:bg-black/10 transition-colors"
@@ -94,9 +109,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
-  const showToast = useCallback((message: string, type: ToastType = 'info', duration = 4000) => {
+  const showToast = useCallback((message: string, type: ToastType = 'info', duration = 4000, undo?: () => void) => {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-    const newToast: Toast = { id, message, type, duration }
+    const newToast: Toast = { id, message, type, duration, undo }
 
     // Bounded, so a burst cannot grow past the region reserved for it and
     // start covering the controls underneath. Oldest are dropped first.
@@ -123,7 +138,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     showToast(message, 'info', duration)
   }, [showToast])
 
-  const contextValue = useMemo(() => ({ showToast, success, error, warning, info }), [showToast, success, error, warning, info])
+  const undoable = useCallback((message: string, onUndo: () => void) => {
+    showToast(message, 'success', 8000, onUndo)
+  }, [showToast])
+
+  const contextValue = useMemo(() => ({ showToast, success, error, warning, info, undoable }), [showToast, success, error, warning, info, undoable])
 
   return (
     <ToastContext.Provider value={contextValue}>

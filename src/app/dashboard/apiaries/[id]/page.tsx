@@ -6,7 +6,10 @@ import { useRouter, useParams } from 'next/navigation'
 import { ArrowLeft, MapPin, Map, Plus, Clock, Search } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { SkeletonScreen } from '@/components/ui/Skeleton'
+import StickyActionBar from '@/components/ui/StickyActionBar'
+import CachedDataNotice from '@/components/ui/CachedDataNotice'
+import { useIsPhone } from '@/hooks/useIsPhone'
 import Button from '@/components/ui/Button'
 import IconButton from '@/components/ui/IconButton'
 import { useApiaryDetail } from '@/hooks'
@@ -23,6 +26,7 @@ const ApiaryConditions = dynamic(() => import('@/components/dashboard/ApiaryWeat
 export default function ApiaryDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const isPhone = useIsPhone()
   const apiaryId = params.id as string
   const {
     apiary,
@@ -31,6 +35,7 @@ export default function ApiaryDetailPage() {
     stats,
     loading,
     loadError,
+    staleSince,
     fetchApiaryData,
   } = useApiaryDetail(apiaryId)
   const { yardMapEnabled } = useYardMapEnabled()
@@ -62,7 +67,7 @@ export default function ApiaryDetailPage() {
     load()
   }, [load])
 
-  if (loading) return <LoadingSpinner text="Loading apiary..." />
+  if (loading && !apiary) return <SkeletonScreen label="Loading apiary..." />
 
   // A failed load (e.g. offline) is not a missing apiary: offer a retry instead of "not found"
   if (!apiary && loadError) {
@@ -97,17 +102,77 @@ export default function ApiaryDetailPage() {
     : null
   const normalisedImageUrl = normaliseStoragePublicUrl(apiary.image_url)
 
+  const hivesList = (
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 md:p-6 border border-border">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Hives ({stats.totalHives})</h2>
+        {hives.length > 0 ? (
+          <div className="space-y-2">
+            {hives.map((hive) => (
+              <Link
+                key={hive.id}
+                href={`/dashboard/hives/${hive.id}`}
+                className="flex items-center justify-between p-3 bg-surface-elevated dark:bg-surface-elevated rounded-lg border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors"
+              >
+                <div className="min-w-0">
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium text-foreground">{hive.hive_number}</span>
+                    {hive.queens?.[0] && (
+                      <span className="text-sm text-text-secondary">
+                        Queen: {hive.queens[0].queen_number}
+                      </span>
+                    )}
+                  </div>
+                  {!hive.archived_at && (
+                    <>
+                      {hive.last_inspection_date && (
+                        <p className="text-sm text-text-secondary">Last inspection {formatDayMonth(hive.last_inspection_date)}</p>
+                      )}
+                      {hive.active_treatment && (
+                        <p className="text-sm text-text-secondary">
+                          Treatment on: {hive.active_treatment.type}, removal due {formatDayMonth(hive.active_treatment.removal_date)}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 text-sm font-medium rounded ${
+                    hive.archived_at
+                      ? 'bg-surface dark:bg-surface text-text-tertiary border border-border'
+                      : hive.status === 'active'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700'
+                      : 'bg-surface-secondary text-text-primary border border-border'
+                  }`}>
+                    {hive.archived_at ? 'Archived' : hive.status}
+                  </span>
+                  {hive.is_queenless && !hive.archived_at && (
+                    <span className="px-2 py-0.5 text-sm font-medium rounded bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700">
+                      {formatQueenlessLabel(hive.queenless_reason)}
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="text-text-secondary text-center py-4">No hives in this apiary</p>
+        )}
+      </div>
+  )
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-4 md:space-y-6 pb-sticky-action md:pb-0">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <IconButton
-          onClick={() => router.push('/dashboard/apiaries')}
-          className="hover:bg-surface-secondary"
-          aria-label="Back to apiaries"
-        >
-          <ArrowLeft size={20} className="text-text-secondary" />
-        </IconButton>
+        <div className="hidden md:block">
+          <IconButton
+            onClick={() => router.push('/dashboard/apiaries')}
+            className="hover:bg-surface-secondary"
+            aria-label="Back to apiaries"
+          >
+            <ArrowLeft size={20} className="text-text-secondary" />
+          </IconButton>
+        </div>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground">{apiary.name}</h1>
           <p className="text-sm text-text-secondary">
@@ -129,11 +194,16 @@ export default function ApiaryDetailPage() {
         )}
       </div>
 
+      <CachedDataNotice savedAt={staleSince} onRetry={load} />
+
+      {/* A phone puts the hives right under the title: they were two screens down. */}
+      {isPhone && hivesList}
+
       {/* What needs doing here */}
       <ApiaryJobs apiaryId={apiaryId} latitude={apiary.latitude ?? null} longitude={apiary.longitude ?? null} />
 
       {/* Info Card */}
-      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
+      <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 md:p-6 border border-border">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Location Details */}
           <div>
@@ -202,6 +272,14 @@ export default function ApiaryDetailPage() {
         )}
       </div>
 
+      <div className="md:hidden">
+        <StickyActionBar>
+          <Link href={`/dashboard/records?create=inspection&apiary=${apiaryId}`} className="fj-btn fj-btn-success min-h-[56px] w-full text-base">
+            New Inspection
+          </Link>
+        </StickyActionBar>
+      </div>
+
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-2">
         <Link
@@ -213,7 +291,7 @@ export default function ApiaryDetailPage() {
         </Link>
         <Link
           href={`/dashboard/records?create=inspection&apiary=${apiaryId}`}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface dark:bg-surface border border-border rounded-full hover:border-forest-500 dark:hover:border-forest-400 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
+          className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-surface dark:bg-surface border border-border rounded-full hover:border-forest-500 dark:hover:border-forest-400 text-text-secondary hover:text-forest-700 dark:hover:text-forest-300 transition-colors"
         >
           <Search size={14} />
           New Inspection
@@ -240,62 +318,7 @@ export default function ApiaryDetailPage() {
 
       {conditionsApiary && <ApiaryConditions apiary={conditionsApiary} variant="conditions" />}
 
-      {/* Hives List */}
-      <div className="bg-surface dark:bg-surface rounded-lg shadow p-6 border border-border">
-        <h2 className="text-lg font-semibold text-foreground mb-4">Hives ({stats.totalHives})</h2>
-        {hives.length > 0 ? (
-          <div className="space-y-2">
-            {hives.map((hive) => (
-              <Link
-                key={hive.id}
-                href={`/dashboard/hives/${hive.id}`}
-                className="flex items-center justify-between p-3 bg-surface-elevated dark:bg-surface-elevated rounded-lg border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium text-foreground">{hive.hive_number}</span>
-                    {hive.queens?.[0] && (
-                      <span className="text-sm text-text-secondary">
-                        Queen: {hive.queens[0].queen_number}
-                      </span>
-                    )}
-                  </div>
-                  {!hive.archived_at && (
-                    <>
-                      {hive.last_inspection_date && (
-                        <p className="text-sm text-text-secondary">Last inspection {formatDayMonth(hive.last_inspection_date)}</p>
-                      )}
-                      {hive.active_treatment && (
-                        <p className="text-sm text-text-secondary">
-                          Treatment on: {hive.active_treatment.type}, removal due {formatDayMonth(hive.active_treatment.removal_date)}
-                        </p>
-                      )}
-                    </>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-0.5 text-sm font-medium rounded ${
-                    hive.archived_at
-                      ? 'bg-surface dark:bg-surface text-text-tertiary border border-border'
-                      : hive.status === 'active'
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700'
-                      : 'bg-surface-secondary text-text-primary border border-border'
-                  }`}>
-                    {hive.archived_at ? 'Archived' : hive.status}
-                  </span>
-                  {hive.is_queenless && !hive.archived_at && (
-                    <span className="px-2 py-0.5 text-sm font-medium rounded bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700">
-                      {formatQueenlessLabel(hive.queenless_reason)}
-                    </span>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <p className="text-text-secondary text-center py-4">No hives in this apiary</p>
-        )}
-      </div>
+      {!isPhone && hivesList}
 
       {/* Recent Activity */}
       {recentRecords.length > 0 && (

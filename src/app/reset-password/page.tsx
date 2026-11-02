@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { clearLocalUserData } from '@/lib/sign-out-cleanup'
+import { clearAllInspectionDrafts } from '@/lib/inspection-draft'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -66,6 +67,7 @@ export default function ResetPassword() {
       setTimeout(async () => {
         // Outside the dashboard there is no AuthProvider to catch SIGNED_OUT, so clean up here.
         clearLocalUserData()
+        await clearAllInspectionDrafts()
         await supabase.auth.signOut({ scope: 'local' })
         router.push('/login')
       }, 2000)
@@ -78,7 +80,7 @@ export default function ResetPassword() {
 
   if (!validToken && !error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="min-h-dvh flex items-center justify-center bg-background p-4">
         <div className="max-w-md w-full bg-surface dark:bg-surface rounded-lg shadow-lg p-8">
           <div className="text-center">
             <p className="text-text-secondary">Verifying reset link...</p>
@@ -89,7 +91,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-dvh flex items-center justify-center bg-background p-4">
       <div className="max-w-md w-full bg-surface dark:bg-surface rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-forest-600 dark:text-amber-600 mb-2 flex items-center justify-center gap-2">

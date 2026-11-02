@@ -1,6 +1,6 @@
 'use client'
-import { LogOut, AlertCircle } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { ArrowLeft, LogOut, AlertCircle } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
@@ -8,13 +8,20 @@ import Image from 'next/image'
 import Link from 'next/link'
 import type { SubscriptionStatusResponse } from '@/types/subscription'
 import Button from '@/components/ui/Button'
+import IconButton from '@/components/ui/IconButton'
+import { getScreenInfo } from '@/lib/screen-title'
+import { useBackNavigation } from '@/hooks/useBackNavigation'
+import { useLogout } from '@/hooks/useLogout'
 import { resolveSubscriptionStatus } from '@/hooks/useHasActiveSubscription'
 interface NavbarProps {
   currentUser: User | null
 }
 
 export default function Navbar({ currentUser }: NavbarProps) {
-  const router = useRouter()
+  const pathname = usePathname()
+  const screen = getScreenInfo(pathname)
+  const goBack = useBackNavigation(screen.parentHref)
+  const handleLogout = useLogout(currentUser?.id)
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatusResponse | null>(null)
   const [hasProfileName, setHasProfileName] = useState<boolean>(true)
 
@@ -48,43 +55,6 @@ export default function Navbar({ currentUser }: NavbarProps) {
     checkProfileCompleteness()
   }, [currentUser?.id])
 
-  const handleLogout = async () => {
-    try {
-      // Sign out from Supabase - use local scope to avoid 403 errors
-      // 'local' scope only removes the session from this device/browser
-      await supabase.auth.signOut({ scope: 'local' })
-
-      // Clear any remaining auth data from storage
-      if (typeof window !== 'undefined') {
-        // Remove all Supabase auth keys from localStorage
-        const keysToRemove: string[] = []
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i)
-          if (key && key.startsWith('sb-')) {
-            keysToRemove.push(key)
-          }
-        }
-        keysToRemove.forEach(key => localStorage.removeItem(key))
-
-        // Also clear sessionStorage
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const key = sessionStorage.key(i)
-          if (key && key.startsWith('sb-')) {
-            keysToRemove.push(key)
-          }
-        }
-        keysToRemove.forEach(key => sessionStorage.removeItem(key))
-      }
-
-      // Redirect to login
-      router.push('/login')
-    } catch (error) {
-      console.error('Logout failed:', error)
-      // Force redirect to login even if logout fails
-      router.push('/login')
-    }
-  }
-
   const subscriptionMessage = !subscriptionStatus ? ''
     : subscriptionStatus.status === 'no_subscription'
       ? 'Support the app and the Irish beekeeping community by getting a valid subscription via the profile section.'
@@ -95,18 +65,32 @@ export default function Navbar({ currentUser }: NavbarProps) {
           : 'Your subscription has expired. Renew now to continue using the app.'
 
   return (
-    <nav className="bg-surface border-b border-border sticky top-0 z-30">
-      <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4">
-        <div className="flex justify-between items-center gap-4">
-          <div className="flex items-center gap-3">
-            {/* The app name, not the page's heading: each page has its own h1 */}
-            <p className="text-xl sm:text-2xl font-bold text-forest-800 dark:text-forest-400 whitespace-nowrap flex items-center gap-2">
-              <Image src="/logo.png" alt="" width={32} height={32} className="w-7 h-7 sm:w-8 sm:h-8" />
+    <nav className="bg-surface border-b border-border sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
+      {/* Room on the right for Mel, which sits in this bar on a phone (ChatButton) */}
+      <div className="max-w-7xl mx-auto pl-2 pr-14 py-1 md:px-4 md:py-4">
+        <div className="flex justify-between items-center gap-2 md:gap-4">
+          {/* On a phone the bar names the screen and offers Back, like a native app. Neither is
+              the page's heading: each page has its own h1. */}
+          <div className="flex min-h-[48px] min-w-0 items-center gap-1 md:hidden">
+            {screen.parentHref ? (
+              <IconButton onClick={goBack} aria-label="Back" className="flex-shrink-0">
+                <ArrowLeft size={24} />
+              </IconButton>
+            ) : pathname === '/dashboard' ? (
+              <Image src="/logo.png" alt="" width={32} height={32} className="ml-1 w-7 h-7 flex-shrink-0" />
+            ) : null}
+            <p className={`truncate text-xl font-bold ${screen.parentHref ? 'text-foreground' : 'pl-2 text-forest-800 dark:text-forest-400'}`}>
+              {pathname === '/dashboard' ? 'HiveCraic' : screen.title}
+            </p>
+          </div>
+          <div className="hidden md:flex items-center gap-3">
+            <p className="text-2xl font-bold text-forest-800 dark:text-forest-400 whitespace-nowrap flex items-center gap-2">
+              <Image src="/logo.png" alt="" width={32} height={32} className="w-8 h-8" />
               HiveCraic
             </p>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="hidden sm:flex items-center gap-2">
+          <div className="flex flex-shrink-0 items-center gap-2 md:gap-4">
+            <div className="hidden md:flex items-center gap-2">
               <span className="text-sm text-text-secondary truncate max-w-[150px] lg:max-w-none">
                 {currentUser?.email}
               </span>
@@ -168,17 +152,20 @@ export default function Navbar({ currentUser }: NavbarProps) {
                 </div>
               </div>
             )}
-            {/* Logging out is routine, so a plain button: red is kept for what is dangerous */}
-            <Button
-              onClick={handleLogout}
-              tone="neutral"
-              size="sm"
-              className="min-h-[48px] px-3 touch-manipulation sm:px-4"
-              aria-label="Log out"
-            >
-              <LogOut size={16} />
-              <span className="hidden sm:inline">Log out</span>
-            </Button>
+            {/* Logging out is routine, so a plain button: red is kept for what is dangerous.
+                A phone has little room for chrome, so there it lives on the Profile screen. */}
+            <div className="hidden md:block">
+              <Button
+                onClick={handleLogout}
+                tone="neutral"
+                size="sm"
+                className="min-h-[48px] px-4 touch-manipulation"
+                aria-label="Log out"
+              >
+                <LogOut size={16} />
+                <span>Log out</span>
+              </Button>
+            </div>
           </div>
         </div>
       </div>

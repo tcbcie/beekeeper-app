@@ -1,10 +1,10 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { X, Scale, Check, AlertCircle, Unlink } from 'lucide-react'
+import { Scale, Check, AlertCircle, Unlink } from 'lucide-react'
 import type { BeepDevice } from '@/lib/beep-api'
 import Button from '@/components/ui/Button'
-import IconButton from '@/components/ui/IconButton'
+import ModalShell from '@/components/ui/ModalShell'
 
 interface EnrichedDevice extends BeepDevice {
   assigned_to: {
@@ -90,34 +90,25 @@ export default function ScaleSelectionModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div className="relative bg-surface dark:bg-surface rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden border border-border">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <Scale size={20} className="text-amber-600" />
-            <h2 className="text-lg font-semibold text-foreground">
-              Select Scale for Hive {hiveNumber}
-            </h2>
-          </div>
-          <IconButton
-            onClick={onClose}
-            size="xs"
-            className="text-text-tertiary hover:text-foreground"
-          >
-            <X size={20} />
-          </IconButton>
+    <ModalShell
+      title={
+        <span className="flex items-center gap-2">
+          <Scale size={20} className="text-amber-600" />
+          Select Scale for Hive {hiveNumber}
+        </span>
+      }
+      onClose={onClose}
+      closeOnBackdrop
+      maxWidthClassName="max-w-lg"
+      bodyClassName="p-4"
+      footer={
+        <div className="p-4 border-t border-border bg-surface-secondary/50">
+          <p className="text-sm text-text-tertiary text-center">
+            Devices are managed in your BEEP account at app.beep.nl
+          </p>
         </div>
-
-        {/* Content */}
-        <div className="p-4 overflow-y-auto max-h-[60vh]">
+      }
+    >
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
@@ -211,15 +202,6 @@ export default function ScaleSelectionModal({
               })}
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-border bg-surface-secondary/50">
-          <p className="text-sm text-text-tertiary text-center">
-            Devices are managed in your BEEP account at app.beep.nl
-          </p>
-        </div>
-      </div>
-    </div>
+        </ModalShell>
   )
 }

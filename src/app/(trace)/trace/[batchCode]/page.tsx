@@ -48,7 +48,7 @@ export default async function TracePage({ params, searchParams }: PageProps) {
 
   if (!batchInfo) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center px-4">
+      <div className="min-h-[60dvh] flex items-center justify-center px-4">
         <div className="text-center max-w-md">
           <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-surface-secondary flex items-center justify-center">
             <SearchX className="w-10 h-10 text-text-tertiary" />

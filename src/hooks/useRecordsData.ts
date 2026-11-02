@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { openScreenCache } from '@/lib/screen-cache'
 import { supabase } from '@/lib/supabase'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import { getTeamAccess } from '@/lib/team-access'
@@ -48,6 +49,8 @@ interface UseRecordsDataReturn {
 
   // State
   loading: boolean
+  /** When the latest load failed and older data is showing: when that data was saved. */
+  staleSince: number | null
   isTeamMember: boolean
   isUkNiResident: boolean
   sharedHiveIds: string[]
@@ -108,6 +111,27 @@ async function getAccessibleHiveIds(userId: string): Promise<{
   return { ownHiveIds, teamHiveIds, allTeamHiveIds }
 }
 
+interface RecordsSnapshot {
+  inspections: Inspection[]
+  varroaTreatments: VarroaTreatment[]
+  varroaChecks: VarroaCheck[]
+  feedings: Feeding[]
+  harvests: Harvest[]
+  archiveRecords: ArchiveRecord[]
+  hives: Hive[]
+  apiaries: Apiary[]
+  // The forms need these too, or they can't be filled in without a signal.
+  checkMethodOptions: string[]
+  feedTypeOptions: string[]
+  floralSourceOptions: string[]
+  treatmentProducts: TreatmentProduct[]
+  archiveReasons: Array<{ id: string; value: string }>
+  applicationMethods: DropdownValue[]
+  isTeamMember: boolean
+  isUkNiResident: boolean
+  sharedHiveIds: string[]
+}
+
 const RECORDS_LOAD_FAILED = "Couldn't load your records. Check your connection and try again."
 
 export function useRecordsData(): UseRecordsDataReturn {
@@ -132,6 +156,7 @@ export function useRecordsData(): UseRecordsDataReturn {
 
   // UI state
   const [loading, setLoading] = useState(true)
+  const [staleSince, setStaleSince] = useState<number | null>(null)
   const [isTeamMember, setIsTeamMember] = useState(false)
   const [isUkNiResident, setIsUkNiResident] = useState(false)
   const [sharedHiveIds, setSharedHiveIds] = useState<string[]>([])
@@ -141,6 +166,9 @@ export function useRecordsData(): UseRecordsDataReturn {
   const inFlightFetchKeyRef = useRef('')
   const pendingFetchRef = useRef<{ userId: string; ownershipFilter: OwnershipFilter } | null>(null)
   const optionsLoadedRef = useRef(false)
+  const cacheRef = useRef<ReturnType<typeof openScreenCache<RecordsSnapshot>> | null>(null)
+  // Set while a saved copy is being shown, so showing it doesn't count as new data to save.
+  const showingSavedCopyRef = useRef(false)
 
   // Only update sharedHiveIds if the array actually changed
   const updateSharedHiveIds = useCallback((newIds: string[]) => {
@@ -687,12 +715,66 @@ export function useRecordsData(): UseRecordsDataReturn {
     ])
   }, [fetchCheckMethods, fetchFeedTypes, fetchFloralSources, fetchTreatmentProducts, fetchArchiveReasons, fetchApplicationMethods])
 
+  // The lists on screen stay as they are. With a saved copy, the notice says how old they are.
+  const reportLoadFailure = useCallback(async () => {
+    const entry = await cacheRef.current?.read()
+    if (entry) setStaleSince(entry.savedAt)
+    else toast.warning(RECORDS_LOAD_FAILED)
+  }, [toast])
+
+  // The last copy shows at once, on any signal. Only into empty lists, so it can never replace
+  // anything fresher that has already arrived.
+  const showSavedCopy = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
+    cacheRef.current = openScreenCache<RecordsSnapshot>(userId, `records:${ownershipFilter}`)
+    const saved = (await cacheRef.current.read())?.data
+    if (!saved) return
+    showingSavedCopyRef.current = true
+    const orSaved = <T,>(next: T[]) => (current: T[]) => current.length > 0 ? current : next
+    setInspections(orSaved(saved.inspections))
+    setVarroaTreatments(orSaved(saved.varroaTreatments))
+    setVarroaChecks(orSaved(saved.varroaChecks))
+    setFeedings(orSaved(saved.feedings))
+    setHarvests(orSaved(saved.harvests))
+    setArchiveRecords(orSaved(saved.archiveRecords))
+    setHives(orSaved(saved.hives))
+    setApiaries(orSaved(saved.apiaries))
+    setCheckMethodOptions(orSaved(saved.checkMethodOptions))
+    setFeedTypeOptions(orSaved(saved.feedTypeOptions))
+    setFloralSourceOptions(orSaved(saved.floralSourceOptions))
+    setTreatmentProducts(orSaved(saved.treatmentProducts))
+    setArchiveReasons(orSaved(saved.archiveReasons))
+    setApplicationMethods(orSaved(saved.applicationMethods))
+    setIsTeamMember(saved.isTeamMember)
+    setIsUkNiResident(saved.isUkNiResident)
+    updateSharedHiveIds(saved.sharedHiveIds)
+    setLoading(false)
+  }, [updateSharedHiveIds])
+
+  // Saved whenever the lists change, because each of them loads and refreshes separately.
+  useEffect(() => {
+    if (showingSavedCopyRef.current) {
+      showingSavedCopyRef.current = false
+      return
+    }
+    if (loading) return
+    cacheRef.current?.save({
+      inspections, varroaTreatments, varroaChecks, feedings, harvests, archiveRecords, hives, apiaries,
+      checkMethodOptions, feedTypeOptions, floralSourceOptions, treatmentProducts, archiveReasons, applicationMethods,
+      isTeamMember, isUkNiResident, sharedHiveIds,
+    })
+  }, [
+    loading,
+    inspections, varroaTreatments, varroaChecks, feedings, harvests, archiveRecords, hives, apiaries,
+    checkMethodOptions, feedTypeOptions, floralSourceOptions, treatmentProducts, archiveReasons, applicationMethods,
+    isTeamMember, isUkNiResident, sharedHiveIds,
+  ])
+
   const loadAllData = useCallback(async (userId: string, ownershipFilter: OwnershipFilter) => {
     try {
       // Fetch accessible hive IDs once and pass to all record fetchers
       const hiveIds = await getAccessibleHiveIds(userId)
       if (!hiveIds) {
-        toast.warning(RECORDS_LOAD_FAILED)
+        await reportLoadFailure()
         return
       }
 
@@ -718,12 +800,13 @@ export function useRecordsData(): UseRecordsDataReturn {
         fetchApiaries(userId),
         fetchAllOptions()
       ])
+      setStaleSince(null)
     } catch (error) {
       console.error('Failed to fetch records data:', error)
-      toast.warning(RECORDS_LOAD_FAILED)
+      await reportLoadFailure()
     }
   }, [
-    toast,
+    reportLoadFailure,
     fetchInspections,
     fetchVarroaTreatments,
     fetchVarroaChecks,
@@ -752,6 +835,7 @@ export function useRecordsData(): UseRecordsDataReturn {
     let request: { userId: string; ownershipFilter: OwnershipFilter } | null = { userId, ownershipFilter }
     while (request) {
       inFlightFetchKeyRef.current = `${request.userId}|${request.ownershipFilter}`
+      await showSavedCopy(request.userId, request.ownershipFilter)
       await loadAllData(request.userId, request.ownershipFilter)
       request = pendingFetchRef.current
       pendingFetchRef.current = null
@@ -759,7 +843,7 @@ export function useRecordsData(): UseRecordsDataReturn {
     inFlightFetchKeyRef.current = ''
     fetchInProgressRef.current = false
     setLoading(false)
-  }, [loadAllData])
+  }, [loadAllData, showSavedCopy])
 
   return {
     // Data
@@ -782,6 +866,7 @@ export function useRecordsData(): UseRecordsDataReturn {
 
     // State
     loading,
+    staleSince,
     isTeamMember,
     isUkNiResident,
     sharedHiveIds,

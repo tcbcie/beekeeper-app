@@ -481,7 +481,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  onClose={() => setChartPeriod(null)}
  closeOnBackdrop
  maxWidthClassName="max-w-3xl"
- shellClassName="max-h-[90vh] overflow-y-auto"
+ shellClassName="max-h-[90dvh] overflow-y-auto"
  bodyClassName="p-4"
  >
  {isBeep && hive.beep_device_id ? (

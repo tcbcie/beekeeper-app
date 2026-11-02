@@ -11,7 +11,7 @@ export default function TraceLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white dark:from-slate-900 dark:to-slate-950 flex flex-col">
+    <div className="min-h-dvh bg-gradient-to-b from-amber-50 to-white dark:from-slate-900 dark:to-slate-950 flex flex-col">
       {/* Trust-focused header */}
       <header className="bg-surface/80 backdrop-blur-md border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-center">

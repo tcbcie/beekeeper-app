@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Plus, X, Scale, Archive, CheckSquare, Copy, FolderInput, Search, Syringe, Droplet } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { SkeletonScreen } from '@/components/ui/Skeleton'
 import EmptyState from '@/components/ui/EmptyState'
 import TextInput from '@/components/ui/TextInput'
 import FilterDisclosure from '@/components/ui/FilterDisclosure'
@@ -16,10 +17,16 @@ import type { BulkTreatmentValues } from '@/components/hive/BulkTreatmentModal'
 import type { BulkFeedingValues } from '@/components/hive/BulkFeedingModal'
 import { createTreatmentReminders, type TreatmentReminderInput } from '@/lib/treatment-reminder'
 import type { TreatmentProduct, DropdownValue } from '@/types/records'
+import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { buildDeleteHivePrompt, buildUnarchiveHivePrompt } from '@/lib/record-delete-prompts'
 import { usePersistentState } from '@/hooks/usePersistentState'
+import { useIsPhone } from '@/hooks/useIsPhone'
+import CachedDataNotice from '@/components/ui/CachedDataNotice'
+import HiveListRow from '@/components/hive/HiveListRow'
+import SegmentedControl from '@/components/ui/SegmentedControl'
+import StickyActionBar from '@/components/ui/StickyActionBar'
 import { useHivesList } from '@/hooks/useHivesList'
 import { isQueenClipped } from '@/lib/queen-clipped'
 import { useListPositionMemory } from '@/hooks/useListPositionMemory'
@@ -29,6 +36,13 @@ const HiveFormSection = dynamic(() => import('@/components/hive/HiveFormSection'
 const MoveHivesModal = dynamic(() => import('@/components/hive/MoveHivesModal'), { ssr: false })
 const BulkTreatmentModal = dynamic(() => import('@/components/hive/BulkTreatmentModal'), { ssr: false })
 const BulkFeedingModal = dynamic(() => import('@/components/hive/BulkFeedingModal'), { ssr: false })
+
+type HivePhoneView = 'list' | 'cards'
+
+const HIVE_VIEW_OPTIONS: ReadonlyArray<{ value: HivePhoneView; label: string }> = [
+ { value: 'list', label: 'List' },
+ { value: 'cards', label: 'Cards' },
+]
 
 export default function HivesPage() {
 
@@ -69,7 +83,7 @@ export default function HivesPage() {
 
  // Data layer: fetching + ownership/archive filters (see useHivesList)
  const {
- hives, apiaries, queens, loading, userId, isTeamMember,
+ hives, apiaries, queens, loading, staleSince, userId, isTeamMember,
  filterApiaryId, setFilterApiaryId,
  ownershipFilter, setOwnershipFilter,
  archiveFilter, setArchiveFilter,
@@ -81,6 +95,8 @@ export default function HivesPage() {
  // answer is an absence. This filter states it directly.
  const [clippedFilter, setClippedFilter] = usePersistentState<string>('hives:clipped', 'all', (v) => v === 'all' || v === 'clipped' || v === 'unclipped')
  const [sortOption, setSortOption] = usePersistentState<string>('hives:sort', 'default')
+ const isPhone = useIsPhone()
+ const [phoneView, setPhoneView] = usePersistentState<HivePhoneView>('hives:phoneView', 'list', (v) => v === 'list' || v === 'cards')
  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
 
  // An apiary deep link (e.g. "View hives" on an apiary) selects that apiary, then the parameter
@@ -592,7 +608,7 @@ export default function HivesPage() {
  // line does not gain a permanent "0 Treatments On" for most of the year.
  const treatmentsOnCount = filteredHives.filter(h => !h.archived_at && h.active_treatment).length
 
- if (loading) return <LoadingSpinner text="Loading hives..." />
+ if (loading) return <SkeletonScreen label="Loading hives..." />
 
  // Reserve space at the bottom so the fixed bulk-action bar never covers the
  // last hive cards (taller reserve on mobile where the bar may wrap to 2 rows).
@@ -600,13 +616,16 @@ export default function HivesPage() {
  // which is itself visible until md, so dropping to a smaller reserve at
  // sm would let the bar cover the last row between 640px and 768px.
  const bulkBarVisible = selectionMode && selectedOwnedHives.length > 0
+ const retryLoad = () => { if (userId) fetchHives(userId) }
+ const showNewInspectionBar = isPhone && !selectionMode && !showForm && filteredHives.length > 0
 
  return (
-<div className={`space-y-6 ${bulkBarVisible ? 'pb-40 md:pb-24' : ''}`}>
+<div className={`space-y-3 md:space-y-6 ${bulkBarVisible ? 'pb-40 md:pb-24' : showNewInspectionBar ? 'pb-sticky-action' : ''}`}>
  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
- <h1 className="text-responsive-3xl font-bold text-foreground">Hives</h1>
- <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-end gap-3 w-full md:w-auto min-w-0">
- <div className="relative w-full sm:w-64">
+ <h1 className="sr-only md:not-sr-only text-responsive-3xl font-bold text-foreground">Hives</h1>
+ {/* A compact grid on a phone, so the hives start near the top of the screen */}
+ <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2 sm:flex sm:flex-row sm:flex-wrap sm:justify-end sm:gap-3 w-full md:w-auto min-w-0">
+ <div className="relative col-span-full w-full sm:w-64">
  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
  <TextInput
  value={search}
@@ -620,7 +639,8 @@ export default function HivesPage() {
  <select
  value={filterApiaryId}
  onChange={(e) => setFilterApiaryId(e.target.value)}
- className="px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500/20 transition-all"
+ aria-label="Filter by apiary"
+ className="min-w-0 px-4 py-2 min-h-[48px] border border-border rounded-lg bg-surface dark:bg-surface-elevated text-foreground hover:border-forest-500 focus:border-forest-500 focus:ring-2 focus:ring-forest-500/20 transition-all"
  >
  <option value="">All Apiaries</option>
  {apiaries.map((apiary) => (
@@ -637,8 +657,17 @@ export default function HivesPage() {
  activeCount={activeFilterCount}
  storageKey="hives:filtersOpen"
  onClear={clearCollapsedFilters}
+ inlineOnPhone
  >
  <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
+ {isPhone && (
+ <SegmentedControl
+ label="Show hives as"
+ options={HIVE_VIEW_OPTIONS}
+ value={phoneView}
+ onChange={setPhoneView}
+ />
+ )}
  {isTeamMember && (
  <select
  value={ownershipFilter}
@@ -696,11 +725,18 @@ export default function HivesPage() {
  <option value="last_inspected">Sort: Last Inspected</option>
  <option value="status">Sort: Status</option>
  </select>
+ {/* Choosing several hives is occasional on a phone, so it starts from here */}
+ {isPhone && !selectionMode && (
+ <Button tone="neutral" onClick={() => setSelectionMode(true)}>
+ <CheckSquare size={18} />
+ Select several hives
+ </Button>
+ )}
  </div>
  </FilterDisclosure>
  <Button
  onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
- className={`px-4 py-3 sm:py-2 min-h-[48px] rounded-lg font-medium flex items-center justify-center gap-2 touch-manipulation w-full sm:w-auto border ${
+ className={`hidden sm:flex px-4 py-2 min-h-[48px] rounded-lg font-medium items-center justify-center gap-2 touch-manipulation sm:w-auto border ${
  selectionMode
  ? 'bg-forest-600 dark:bg-forest-500 text-white border-forest-600 dark:border-forest-500 hover:bg-forest-700 dark:hover:bg-forest-600'
  : 'bg-surface dark:bg-surface-elevated text-foreground border-border hover:border-forest-500'
@@ -711,13 +747,21 @@ export default function HivesPage() {
  </Button>
  <Button
  onClick={() => (showForm ? closeForm() : setShowForm(true))}
- className="px-4 py-3 sm:py-2 min-h-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 active:bg-forest-800 dark:active:bg-forest-700 font-medium flex items-center justify-center gap-2 touch-manipulation w-full sm:w-auto"
+ aria-label={showForm ? 'Cancel' : 'Add Hive'}
+ className="px-0 sm:px-4 py-2 min-h-[48px] min-w-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 active:bg-forest-800 dark:active:bg-forest-700 font-medium flex items-center justify-center gap-2 touch-manipulation sm:w-auto"
  >
  {showForm ? <X size={18} /> : <Plus size={18} />}
- {showForm ? 'Cancel' : 'Add Hive'}
+ <span className="hidden sm:inline">{showForm ? 'Cancel' : 'Add Hive'}</span>
  </Button>
+ {selectionMode && (
+ <Button tone="success" onClick={exitSelection} className="col-span-full sm:hidden">
+ Done selecting
+ </Button>
+ )}
  </div>
  </div>
+
+ <CachedDataNotice savedAt={staleSince} onRetry={retryLoad} />
 
  {showForm && (
  <div ref={formRef}>
@@ -740,6 +784,29 @@ export default function HivesPage() {
  </p>
  )}
 
+ {isPhone && phoneView === 'list' ? (
+ filteredHives.length > 0 && (
+ <div className="-mx-3 divide-y divide-border border-y border-border sm:mx-0">
+ {filteredHives.map((hive) => (
+ <HiveListRow
+ key={hive.id}
+ hive={hive}
+ userId={userId}
+ onEdit={handleEdit}
+ onDelete={handleDelete}
+ onUnarchive={handleUnarchive}
+ openMenuId={openMenuId}
+ setOpenMenuId={setOpenMenuId}
+ selectionMode={selectionMode}
+ selected={selectedIds.includes(hive.id)}
+ onToggleSelect={toggleSelect}
+ highlighted={highlightedId === hive.id}
+ onOpen={rememberHivePosition}
+ />
+ ))}
+ </div>
+ )
+ ) : (
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
  {filteredHives.map((hive) => (
  <HiveListCard
@@ -759,6 +826,17 @@ export default function HivesPage() {
  />
  ))}
  </div>
+ )}
+
+ {showNewInspectionBar && (
+ <div className="md:hidden">
+ <StickyActionBar>
+ <Link href="/dashboard/records?create=inspection" className="fj-btn fj-btn-success min-h-[56px] w-full text-base">
+ New inspection
+ </Link>
+ </StickyActionBar>
+ </div>
+ )}
 
  {filteredHives.length === 0 && (
  <EmptyState

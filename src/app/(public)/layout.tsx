@@ -9,7 +9,7 @@ export default function PublicLayout({
   children: React.ReactNode
 }) {
   return (
-    <PageShell className="min-h-screen" innerClassName="min-h-screen flex flex-col">
+    <PageShell className="min-h-dvh" innerClassName="min-h-dvh flex flex-col">
       <header className="sticky top-0 z-50 px-4 pt-3 sm:px-6">
         <div className="mx-auto max-w-6xl">
           <Panel padding="sm" className="bg-background/70">

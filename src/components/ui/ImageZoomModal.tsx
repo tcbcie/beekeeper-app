@@ -246,7 +246,7 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
            <img
             src={normalisedImageUrl}
             alt={hasMultiple ? `Enlarged view, photo ${safeIndex + 1} of ${gallery.length}` : 'Enlarged view'}
-            className="max-w-[90vw] max-h-[90vh] object-contain select-none"
+            className="max-w-[90vw] max-h-[90dvh] object-contain select-none"
             draggable={false}
             onDoubleClick={toggleZoom}
           />

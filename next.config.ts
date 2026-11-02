@@ -122,6 +122,8 @@ const nextConfig: NextConfig = {
   },
   env: {
     NEXT_PUBLIC_APP_VERSION: packageJson.version,
+    // Marks data saved on the device, so a new deploy ignores what an older one stored.
+    NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA ?? packageJson.version,
   },
   async headers() {
     // Hosts allowed to iframe /embed/* pages.

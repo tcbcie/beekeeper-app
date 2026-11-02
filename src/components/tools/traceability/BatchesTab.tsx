@@ -1463,7 +1463,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
       {/* QR Code Modal */}
       {qrBatch && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface-elevated rounded-2xl p-6 max-w-sm w-full shadow-xl max-h-[85vh] overflow-y-auto">
+          <div className="bg-surface-elevated rounded-2xl p-6 max-w-sm w-full shadow-xl max-h-[85dvh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">QR Code</h3>
               <Button
@@ -1534,7 +1534,7 @@ export default function BatchesTab({ userId, containers, showBatchForm, setShowB
       {/* Feedback Modal */}
       {feedbackBatch && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface-elevated rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[80vh] flex flex-col">
+          <div className="bg-surface-elevated rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[80dvh] flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold">Customer Feedback</h3>

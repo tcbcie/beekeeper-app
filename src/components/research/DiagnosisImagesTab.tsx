@@ -484,7 +484,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  onClick={() => setSelectedImage(null)}
  >
  <div
- className="bg-surface rounded-lg shadow-xl flex flex-col max-w-4xl w-full max-h-[90vh] m-4"
+ className="bg-surface rounded-lg shadow-xl flex flex-col max-w-4xl w-full max-h-[90dvh] m-4"
  onClick={(e) => e.stopPropagation()}
  >
  {/* Modal Header with Close Button */}
@@ -538,7 +538,7 @@ export default function DiagnosisImagesTab({ userId }: DiagnosisImagesTabProps) 
  </div>
 
  {/* Content Area */}
- <div className="p-4 space-y-3 overflow-y-auto flex-shrink-0 max-h-[40vh]">
+ <div className="p-4 space-y-3 overflow-y-auto flex-shrink-0 max-h-[40dvh]">
  <p className="text-foreground">{selectedImage.description}</p>
 
  {/* Comments Section */}

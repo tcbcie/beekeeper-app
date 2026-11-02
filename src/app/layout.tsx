@@ -7,6 +7,8 @@ import { ConfirmProvider } from "@/components/ui/ConfirmDialog";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import { BottomSurfaceProvider } from '@/contexts/BottomSurfaceContext'
 import InstallPrompt from "@/components/InstallPrompt";
+import KeyboardInset from "@/components/KeyboardInset";
+import { IOS_SPLASH_IMAGES } from "@/lib/ios-splash";
 import "./globals.css";
 
 const themeBootstrapScript = `
@@ -37,6 +39,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#faf8f5" }, // Warm cream for light mode
     { media: "(prefers-color-scheme: dark)", color: "#0a0f1a" },  // Deep blue-black for dark mode
@@ -49,12 +52,14 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
+    // Not black-translucent: its status bar text is always white, unreadable on the cream theme.
     statusBarStyle: "default",
     title: "HiveCraic",
+    startupImage: IOS_SPLASH_IMAGES,
   },
   icons: {
     icon: "/icon-192x192.png",
-    apple: "/icon-192x192.png",
+    apple: "/apple-touch-icon.png",
   },
   other: {
     "mobile-web-app-capable": "yes",
@@ -87,6 +92,7 @@ export default function RootLayout({
           </ThemeProvider>
           <ServiceWorkerRegistration />
           <InstallPrompt />
+          <KeyboardInset />
         </BottomSurfaceProvider>
         <Analytics />
         <SpeedInsights />

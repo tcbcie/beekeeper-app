@@ -1,6 +1,6 @@
 'use client'
 
-import { Bug, Calendar, Droplet, Search, Syringe, Wheat } from 'lucide-react'
+import { Bug, Calendar, Droplet, Search, Syringe, Wheat, X } from 'lucide-react'
 
 import type { LucideIcon } from 'lucide-react'
 import type { Hive, Apiary, OwnershipFilter, RecordType, TimePeriod } from '@/types/records'
@@ -16,6 +16,14 @@ const QUICK_RECORD_TYPES: { value: RecordType; label: string; icon: LucideIcon; 
   { value: 'varroa_treatment', label: 'Varroa treatment', icon: Syringe, colour: 'bg-red-600 hover:bg-red-700' },
   { value: 'harvest', label: 'Harvest', icon: Droplet, colour: 'bg-yellow-700 hover:bg-yellow-800' },
 ]
+
+const PERIOD_LABELS: Record<TimePeriod, string> = {
+  all: 'All Time',
+  '3months': '3 Months',
+  '6months': '6 Months',
+  '1year': '1 Year',
+  custom: 'Custom',
+}
 
 interface RecordFiltersBarProps {
   // Free-text search. Ephemeral, unlike the filters below.
@@ -127,8 +135,16 @@ export default function RecordFiltersBar({
         ))}
       </div>
 
-      {/* Time Period Filter */}
-      <div className="flex flex-wrap gap-2">
+      {/* Time Period Filter. On a phone these five buttons took two rows above every record, so
+          they become one drop-down inside Filters, and any choice but All Time stays on show here. */}
+      {timePeriod !== 'all' && (
+        <Button tone="neutral" size="sm" onClick={() => onTimePeriodChange('all')} className="sm:hidden">
+          {PERIOD_LABELS[timePeriod]}
+          <X size={16} aria-hidden="true" />
+          <span className="sr-only">Show all time</span>
+        </Button>
+      )}
+      <div className="hidden flex-wrap gap-2 sm:flex">
         <Button
           onClick={() => onTimePeriodChange('all')}
           aria-pressed={timePeriod === 'all'}
@@ -196,6 +212,18 @@ export default function RecordFiltersBar({
       >
         {/* Main Filters Row */}
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full">
+          <select
+            aria-label="Filter by time period"
+            value={timePeriod}
+            onChange={(e) => onTimePeriodChange(e.target.value as typeof timePeriod)}
+            className="min-h-12 px-4 py-2 border border-border rounded-lg bg-surface text-foreground sm:hidden"
+          >
+            <option value="all">All Time {timePeriodCounts && `(${timePeriodCounts.all})`}</option>
+            <option value="3months">3 Months {timePeriodCounts && `(${timePeriodCounts.threeMonths})`}</option>
+            <option value="6months">6 Months {timePeriodCounts && `(${timePeriodCounts.sixMonths})`}</option>
+            <option value="1year">1 Year {timePeriodCounts && `(${timePeriodCounts.oneYear})`}</option>
+            <option value="custom">Custom {timePeriodCounts && `(${timePeriodCounts.custom})`}</option>
+          </select>
           {/* Ownership Filter - Only show for team members */}
           {isTeamMember && (
             <select

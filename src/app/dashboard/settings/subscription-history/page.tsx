@@ -135,7 +135,7 @@ export default function SubscriptionHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface dark:bg-background py-8 px-4">
+    <div className="min-h-dvh bg-surface dark:bg-background py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">

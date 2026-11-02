@@ -115,7 +115,7 @@ export default function TagScanPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
+      <div className="flex justify-center items-center min-h-[60dvh]">
         <LoadingSpinner />
       </div>
     )

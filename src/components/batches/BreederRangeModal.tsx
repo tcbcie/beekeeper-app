@@ -120,7 +120,7 @@ export default function BreederRangeModal({
       title="Assign cells to breeder queens"
       onClose={onClose}
       maxWidthClassName="max-w-lg"
-      shellClassName="max-h-[90vh] overflow-y-auto"
+      shellClassName="max-h-[90dvh] overflow-y-auto"
       bodyClassName="p-5 space-y-3"
       footer={
         <div className="p-5 border-t border-border flex justify-end gap-2">

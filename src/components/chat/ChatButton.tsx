@@ -20,8 +20,9 @@ export default function ChatButton() {
       {/* Floating Action Button */}
       <IconButton
         onClick={() => setIsOpen(!isOpen)}
-        className={`fixed above-bottom-nav md:bottom-6 right-6 z-40 rounded-full
-                    ${isFormActive && !isOpen ? 'w-12 h-12 opacity-80' : 'w-14 h-14'}
+        // On a phone it sits in the top bar, where it can't cover list rows or the pinned action.
+        className={`fixed top-[calc(env(safe-area-inset-top,0px)+0.25rem)] right-2 md:top-auto md:bottom-6 md:right-6 z-40 rounded-full
+                    w-12 h-12 ${isFormActive && !isOpen ? 'md:opacity-80' : 'md:w-14 md:h-14'}
                     shadow-lg hover:shadow-xl transition-all duration-200
                     flex items-center justify-center
                     ${isOpen
@@ -31,7 +32,7 @@ export default function ChatButton() {
         aria-label={isOpen ? 'Close Mel' : 'Open Mel'}
       >
         {isOpen ? (
-          <X className="w-6 h-6 text-white" />
+          <X className="w-6 h-6 text-foreground" />
         ) : (
           <MessageCircle className="w-6 h-6 text-white" />
         )}

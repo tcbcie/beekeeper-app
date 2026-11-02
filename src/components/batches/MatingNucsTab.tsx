@@ -1860,8 +1860,8 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  title={`History for Nuc ${historyNucNumber}`}
  onClose={() => setHistoryNucNumber(null)}
  maxWidthClassName="max-w-2xl"
- shellClassName="max-h-[80vh] overflow-hidden"
- bodyClassName="p-4 overflow-y-auto max-h-[60vh]"
+ shellClassName="max-h-[80dvh] overflow-hidden"
+ bodyClassName="p-4 overflow-y-auto max-h-[60dvh]"
  >
  {historyData.length === 0 ? (
  <p className="text-text-secondary text-center py-4">No history found.</p>

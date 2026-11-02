@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plan — Mobile Native Feel</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 62rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
+  h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
+  h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  h3 { margin-top: 1.5rem; color: #3d4a41; }
+  code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
+  th, td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
+  th { background: #eef3ef; }
+  blockquote { border-left: 4px solid #d4a017; background: #fdf8ec; margin: 1rem 0; padding: .7rem 1rem; }
+  ul.todo { list-style: none; padding-left: 0; }
+  ul.todo li { margin: .4rem 0; padding-left: 1.9rem; text-indent: -1.9rem; }
+  .status { display: inline-block; background: #fdf8ec; border: 1px solid #d4a017; border-radius: 4px; padding: .15rem .5rem; font-size: .85em; }
+  .rec { background: #eef7f1; border-left: 4px solid #2f7a4d; padding: .7rem 1rem; margin: 1rem 0; }
+
+  .phones { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; margin: 1.5rem 0; }
+  .phone-wrap { width: 234px; }
+  .phone-wrap h4 { margin: 0 0 .5rem; text-align: center; }
+  .phone { height: 506px; width: 234px; box-sizing: border-box; border: 3px solid #1f2620; border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; background: #faf8f5; font-size: 11px; line-height: 1.25; }
+  .b { display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 6px; box-sizing: border-box; flex: none; }
+  .chrome { background: #e4e4e0; color: #444; }
+  .waste { background: #f6d9d3; color: #7c2318; border-bottom: 1px solid #fff; }
+  .bar { background: #fff; border-bottom: 1px solid #d8e3da; font-weight: 600; justify-content: flex-start; }
+  .tool { background: #eef3ef; border-bottom: 1px solid #fff; color: #3d4a41; }
+  .list { flex: 1; min-height: 0; overflow: hidden; background: #fff; }
+  .row { display: flex; justify-content: space-between; align-items: center; height: 44px; padding: 0 10px; border-bottom: 1px solid #e6ece7; box-sizing: border-box; }
+  .card { margin: 6px; height: 74px; border: 1px solid #cdd8cf; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #2f7a4d; margin-right: 6px; }
+  .dot.a { background: #c77700; }
+  .act { background: #1b6b3a; color: #fff; font-weight: 600; border-radius: 8px; margin: 4px 8px; }
+</style>
+</head>
+<body>
+
+<h1>Mobile Native Feel — Review and Plan</h1>
+
+<p>
+  <span class="status">Status: approved 02/11/2026 for the whole plan. No app store route for now. Phases 0 and A built, not yet committed or tested on a phone.</span><br>
+  <strong>Date:</strong> 02/11/2026 &nbsp;·&nbsp;
+  <strong>Full review:</strong> <code>docs/features/mobile-native-feel-review-plan.md</code>
+</p>
+
+<blockquote>
+  <strong>Your brief:</strong> the app feels squeezed onto a phone rather than optimised for it, and sits far behind Revolut or The Economist. Review it, highlight the framework's constraints, and propose a plan with best practices, frameworks and skills.
+</blockquote>
+
+<div class="rec">
+  <strong>Verdict.</strong> You are right about the feel, but the PWA framework is not the main cause. The earlier programme made the app safe and readable. It did not change how the app is structured or how it behaves. Most of the gap can be closed without leaving the PWA, and it needs no rewrite.
+</div>
+
+<p><strong>Limits of this review:</strong> layout figures were measured on production in your account, using your device emulation at 400x620. Nothing was tested on a real phone, so safe areas, the keyboard and touch are read from the code only. Screenshots failed, so apart from your screenshot I reviewed measurements, not the look of each screen.</p>
+
+<h2>Measured on production</h2>
+<table>
+  <tr><th>Screen</th><th>Measured at 400x620</th><th>What it means</th></tr>
+  <tr><td><strong>Hives</strong></td><td>Controls end at 432px. Each hive card is about 614px tall.</td><td><strong>One hive does not fit on screen.</strong></td></tr>
+  <tr><td><strong>Hive detail</strong></td><td>15,364px tall, first section at 742px, content 313px wide of 385px.</td><td>About 25 screens of scrolling.</td></tr>
+  <tr><td><strong>Apiary detail</strong></td><td>First hive at 1,296px.</td><td>Over two screens before the first hive.</td></tr>
+  <tr><td><strong>Records</strong></td><td>First record at about 906px, 19 controls above it (filters open on your account).</td><td>Filters fill the first screen and a half.</td></tr>
+  <tr><td><strong>Inspection</strong></td><td>Form starts 1,189px down and is 295px wide. Next at 1,715px, Save at 1,777px.</td><td>Next and Save start below the fold on step 1.</td></tr>
+</table>
+<p>The 73px top bar and 62px bottom bar leave 485px for content on this screen. Your screenshot also shows the chat button covering the "1 job" badge on an apiary row. The earlier move to 48px controls and larger text was right, but it grew these layouts, so they need redesigning around those sizes.</p>
+
+<h2>Why it feels like a website</h2>
+<table>
+  <tr><th>Cause</th><th>What the code shows</th></tr>
+  <tr><td><strong>Every tab starts again</strong></td><td>No kept state or client cache. Returning to a page refetches from empty behind a spinner.</td></tr>
+  <tr><td><strong>Nothing responds or moves</strong></td><td>Buttons have no pressed state. 1,017 <code>hover:</code> against 73 <code>active:</code>. No screen transitions. Spinners on 34 of 38 pages.</td></tr>
+  <tr><td><strong>Desktop sections stacked up</strong></td><td>Controls fill the first screen before any content. The inspection form sits inside the Records page. Hive detail loses 36px of width on each side.</td></tr>
+  <tr><td><strong>Web overlays and navigation</strong></td><td>44 centred dialogs against 2 bottom-anchored. No sticky Save. The logo and Log out bar on every screen, with no shared title or back control.</td></tr>
+  <tr><td><strong>Ignores the device, online only</strong></td><td>No <code>viewport-fit</code>, <code>dvh</code>, overscroll or keyboard handling. Launch colours clash. No splash screens. No drafts or offline saving.</td></tr>
+</table>
+
+<blockquote>
+  <strong>The most serious finding:</strong> an inspection saved with no signal exists only in the phone's memory. If the app closes, it is lost. In a field app this harms trust more than any missing animation, so it comes early in the plan.
+</blockquote>
+
+<h2>Hives screen: today and proposed</h2>
+<p>Illustrative blocks on a 390x844 phone at 60% scale, using the measured heights. These are not screenshots or final designs. Hive names are placeholders, and the rows only suggest a direction: which details each row keeps from today's card is a design decision for Phase D.</p>
+<div class="phones">
+  <div class="phone-wrap">
+    <h4>Today (measured)</h4>
+    <div class="phone">
+      <div class="b chrome" style="height:44px">Logo · wordmark · Log out (73px)</div>
+      <div class="b waste" style="height:215px">Title and five stacked controls<br>end at 432px</div>
+      <div class="list">
+        <div class="card" style="height:368px;margin-bottom:0">One hive card, 614px tall<br>Runs off the screen</div>
+      </div>
+      <div class="b chrome" style="height:37px">Home · Hives · Records · Tasks · More</div>
+    </div>
+  </div>
+  <div class="phone-wrap">
+    <h4>Proposed</h4>
+    <div class="phone">
+      <div class="b bar" style="height:32px">Hives</div>
+      <div class="b tool" style="height:32px">Search hives &nbsp;·&nbsp; Filters (2)</div>
+      <div class="list">
+        <div class="row"><span><span class="dot"></span>Hive A1</span><span>Queen right</span></div>
+        <div class="row"><span><span class="dot a"></span>Hive A2</span><span>Needs food</span></div>
+        <div class="row"><span><span class="dot"></span>Hive A3</span><span>Queen right</span></div>
+        <div class="row"><span><span class="dot"></span>Hive B1</span><span>Queen right</span></div>
+        <div class="row"><span><span class="dot a"></span>Hive B2</span><span>Check varroa</span></div>
+        <div class="row"><span><span class="dot"></span>Hive B3</span><span>Queen right</span></div>
+      </div>
+      <div class="b act" style="height:36px">New inspection</div>
+      <div class="b chrome" style="height:37px">Home · Hives · Records · Tasks · More</div>
+    </div>
+  </div>
+</div>
+
+<h2>Framework constraints</h2>
+<table>
+  <tr><th>A PWA cannot do</th><th>How much it matters</th><th>Response</th></tr>
+  <tr><td>Haptics on iOS</td><td>Moderate</td><td>Strong visual press states; vibration on Android</td></tr>
+  <tr><td>Background Sync on iOS</td><td>High for offline saving</td><td>Send on open and on reconnect; show what is waiting</td></tr>
+  <tr><td>Guaranteed storage on iOS</td><td>Moderate</td><td>Local data is a buffer, never the only long-term copy</td></tr>
+  <tr><td>Install prompt on iOS, or store presence</td><td>Moderate for older users</td><td>Guided install screen; decide on stores later</td></tr>
+  <tr><td>NFC or Bluetooth on iOS</td><td>Low today</td><td>Avoid depending on them</td></tr>
+</table>
+<p>Web push <strong>does</strong> work on iOS for installed apps since 16.4, so <code>CLAUDE.md</code> is out of date. Screen transitions, safe areas, IndexedDB and badging are all available and unused.</p>
+<p>Revolut is native. The Economist appears to be React Native plus native code, though that evidence is weak. A web app won't match either on haptics or gestures, but response, continuity, clear states and focused screens are all achievable.</p>
+
+<h2>Recommended route</h2>
+<table>
+  <tr><th>Option</th><th>Verdict</th></tr>
+  <tr><td><strong>Hardened PWA</strong></td><td><strong>Do this first.</strong> All of it carries into Capacitor if you later want the stores.</td></tr>
+  <tr><td>Android TWA</td><td>Optional later, a few days' work for a Play listing. Check billing rules first.</td></tr>
+  <tr><td>Capacitor, bundled</td><td>Decide after the PWA work. Adds native haptics and both stores, at the cost of 1 to 3 months and a static build.</td></tr>
+  <tr><td>Capacitor pointing at the live site</td><td>Avoid. High risk of App Store rejection.</td></tr>
+  <tr><td>Expo or Flutter rewrite</td><td>Not now. 6 to 12+ months and a second UI to maintain.</td></tr>
+</table>
+<blockquote><strong>Store blocker:</strong> you sell through Stripe. Apple's rules point subscriptions to in-app purchase, with limited exceptions. Settle this before committing to any store route.</blockquote>
+
+<h2>Best practice: the mobile design contract</h2>
+<ul>
+  <li>One title bar, one job and one primary action per field screen.</li>
+  <li>Primary action pinned in thumb reach, 56 to 64px (to be tested in gloves).</li>
+  <li>Forms and tall overlays become bottom sheets or full screens, never centred dialogs.</li>
+  <li>Rows or compact cards, no cards in cards, no sideways tables on field screens.</li>
+  <li>Visible press feedback within 100ms. Motion of 150 to 250ms that explains position.</li>
+  <li>Returning to a screen never shows a spinner if data is cached.</li>
+  <li>Always clear whether work is saved, waiting to send, or failed.</li>
+  <li><strong>Unchanged:</strong> type floors, pinch zoom, AAA contrast, and gestures as shortcuts only. We copy the behaviour of these apps, not their small dense type.</li>
+</ul>
+
+<h2>Frameworks and skills</h2>
+<table>
+  <tr><th>Add</th><th>For</th></tr>
+  <tr><td>TanStack Query with persist</td><td>Instant return to screens and offline reads</td></tr>
+  <tr><td>Base UI Drawer</td><td>Bottom sheets with drag (Vaul is unmaintained)</td></tr>
+  <tr><td>Native View Transitions</td><td>Screen motion, after a Next and React upgrade</td></tr>
+  <tr><td>Dexie</td><td>Drafts and offline queue</td></tr>
+  <tr><td>Playwright device profiles</td><td>Layout checks at phone size, which the current tests cannot see</td></tr>
+</table>
+<p><strong>Leave out:</strong> Ionic, Konsta and Framework7 (a second design system), Serwist (the current service worker is fine), and virtualised lists until a real account needs them. Add Motion only where CSS falls short.</p>
+<p><strong>Claude skills:</strong> correct the out-of-date <code>ui</code> skill and add a <code>mobile-screen</code> skill holding the contract, so new features stop bringing desktop patterns back.</p>
+<p><strong>People and equipment:</strong> one real iPhone and one real Android phone; the six to eight beekeeper sessions already prepared; and optionally a few days of an interaction designer's time, which is where outside skill would help most.</p>
+
+<h2>Plan</h2>
+<p>Each phase ships alone. Scope is the shell plus Hives, Hive detail, Inspection, Records and Tasks. Admin, CRM, research, reports and desktop stay as they are. About 3 to 5 months part-time; this is a rough estimate.</p>
+
+<h3>Phase 0 — Baseline (days)</h3>
+<ul class="todo">
+  <li>☐ Capture the five field screens on a real iPhone and Android phone, for before and after comparison. These checks were not possible in emulation: safe areas, keyboard and touch.</li>
+  <li>☑ Agree the design contract.</li>
+  <li>☑ Correct the <code>ui</code> skill and the iOS push line in <code>CLAUDE.md</code>; add the <code>mobile-screen</code> skill.</li>
+</ul>
+
+<h3>Phase A — Feel (1 to 2 weeks)</h3>
+<ul class="todo">
+  <li>☑ Press feedback on every control through one global touch rule. Tap highlight, double-tap delay and label selection removed.</li>
+  <li>☑ Safe areas with <code>viewport-fit=cover</code>, <code>dvh</code> in place of <code>vh</code>, and no sideways overscroll. Vertical overscroll stays until Phase E, as Android's pull to refresh is the only refresh gesture.</li>
+  <li>☑ Manifest colours, a 180px Apple icon and iOS launch images.</li>
+  <li>☐ Manifest screenshots. These need your real-phone captures from Phase 0.</li>
+  <li>☑ System font stack. <strong>Changed from the plan:</strong> your batch 47 decision on device fonts stands, so nothing is downloaded.</li>
+  <li>☑ Skeletons on Hives, Hive detail, Apiaries, Apiary detail and Tasks, plus instant feedback on every dashboard navigation. Records already had one.</li>
+  <li>☑ Number keyboards and Next keys on the inspection form's number fields (<code>inputMode</code>, <code>enterKeyHint</code>).</li>
+  <li>☐ Sticky hover colours on <code>.fj-btn</code> after a tap: moved to Phase D with the button work.</li>
+</ul>
+
+<h3>Phase B — Don't lose work (1 to 2 weeks)</h3>
+<ul class="todo">
+  <li>☑ Autosaved inspection drafts in IndexedDB, including photos, keyed by user. New inspections only; editing a saved one keeps no draft.</li>
+  <li>☑ Cross-user risk answered: the owner is fixed when the form opens, and no drafts are kept during impersonation. Cleared on deliberate log-out (with a warning), password reset and account deletion. <strong>Changed from the plan:</strong> not on every sign-out, as an expired session in a field must not lose work.</li>
+  <li>☑ Save timeouts and plain-language errors. A slow weather lookup no longer holds up a save.</li>
+  <li>☑ Correct the offline banner wording.</li>
+  <li>☐ Real-phone check: start an inspection with a photo, kill the app, reopen, Carry on. Also check autosave stays smooth with several large photos.</li>
+</ul>
+
+<h3>Phase C — Navigation (2 to 3 weeks)</h3>
+<ul class="todo">
+  <li>☑ Shared phone title bar with screen title and consistent Back, about 57px tall instead of 73px. Log out moved to Profile on phones; desktop keeps its bar.</li>
+  <li>☑ Back arrows removed on phones from Hive, Apiary, Queen and Records. Duplicate h1 titles hidden visually on the main lists. Other screens' own back links remain beside the new one, to tidy with their screens.</li>
+  <li>☑ Scroll position kept per bottom-bar tab. Re-tapping a tab returns to the top. It returns to the tab's main list, not a detail screen left open there.</li>
+  <li>☑ Android Back closes dialogs using the shared dialog hook. <strong>Changed from the plan:</strong> uses Chrome's <code>CloseWatcher</code>, not history entries, which could trap users. The 18 hand-rolled dialogs follow in Phase D. Browsers without it keep their normal Back; the iPhone has no Back button.</li>
+  <li>☐ Real-phone check: Back after a QR scan, tab scroll memory, Android Back on a dialog.</li>
+</ul>
+
+<h3>Phase D — Mobile primitives and field screens (4 to 6 weeks)</h3>
+<ul class="todo">
+  <li>☑ <code>ModalShell</code> is a bottom sheet on phones (25 dialogs in one change), scrolling inside itself and above the keyboard. <strong>Changed from the plan:</strong> uses the existing swipe hook, not Base UI Drawer, so it closes on a swipe-down rather than following the finger.</li>
+  <li>☑ New <code>StickyActionBar</code> and <code>SegmentedControl</code>. <strong>Changed from the plan:</strong> no custom picker, as phones' own pickers are familiar and more accessible; no shared <code>ListRow</code> until a second screen needs one.</li>
+  <li>☑ Record forms: their own full screen on phones. Inspection keeps Previous, Next and Save pinned, above the keyboard. Android Back closes the form through the discard guard.</li>
+  <li>☑ Hives: compact rows by default, with a remembered List / Cards switch so the full card and hive-stack diagram stay available. Edit, Archive and Delete move to a sheet.</li>
+  <li>☑ Hive detail: wider, title first, New Inspection pinned, other actions in two short rows, latest three of each record type with "Show all".</li>
+  <li>☑ Apiary detail: hives directly under the title, New Inspection pinned.</li>
+  <li>☑ Mel moved to the top bar on phones, so it no longer covers content.</li>
+  <li>☑ Records and Tasks: tighter layout, Records time periods moved into Filters on phones. Record cards are unchanged, as they are already compact. The two Tasks tables stay, as they are in the printable checklist.</li>
+  <li>☑ Scale pickers, vegetation popup and hive QR moved onto the shared sheet. The Visit Checklist stays hand-rolled because of its print layout.</li>
+  <li>☑ Ratchet tests for hand-rolled dialogs and tables on field screens, and for <code>vh</code> units everywhere.</li>
+  <li>☑ Button hover colours no longer stick after a tap.</li>
+  <li>☐ Other screens' hand-rolled dialogs (teams, traceability, admin) remain centred. Not field screens.</li>
+  <li>☐ Real-phone check: pinned Save and sheets with the keyboard open, the List / Cards switch, swipe to close.</li>
+</ul>
+
+<h3>Phase E — Instant data (3 to 4 weeks)</h3>
+<ul class="todo">
+  <li>☑ Instant return to Dashboard, Hives, Hive, Apiary, Records and Tasks, from a small per-user cache in memory and on the device, cleared on sign-out. <strong>Changed from the plan:</strong> no TanStack Query, which would have meant rewriting careful loading code across six screens for the same result. Each screen still refreshes on every visit.</li>
+  <li>☑ A failed refresh keeps the last data and says how old it is, with Try again, and retries when the signal returns. Only shown on failure, not as a permanent "updated" time.</li>
+  <li>☑ Records' dropdown options are saved too, so forms can be filled in without a signal.</li>
+  <li>☑ Completing a task is instant, goes back if the save fails, and offers Undo. <strong>Changed from the plan:</strong> Delete and Archive keep their confirmation rather than Undo, as they are permanent or run a cascade, and delaying them could lose the action if the app closes. Saving an inspection instantly belongs to Phase G.</li>
+  <li>☐ Real-phone check: move between tabs, kill the app and reopen with no signal, then regain signal.</li>
+</ul>
+
+<h3>Phase F — Motion (1 to 2 weeks)</h3>
+<ul class="todo">
+  <li>☐ Upgrade Next and React as an isolated change.</li>
+  <li>☐ View Transitions between list and detail. This comes after Phase E, otherwise the animation only leads to a loading screen.</li>
+</ul>
+
+<h3>Phase G — Offline outbox (3 to 4 weeks)</h3>
+<ul class="todo">
+  <li>☐ Queue inspections with client-generated ids, and an idempotent insert.</li>
+  <li>☐ Clear "saved on phone, waiting to send" state, with retry and a visible failure path.</li>
+  <li>☐ Upload photos and fetch weather after sync.</li>
+</ul>
+
+<h3>Phase H — Validate</h3>
+<ul class="todo">
+  <li>☐ Run the moderated sessions in gloves, outdoors. <strong>These are yours to run.</strong></li>
+  <li>☐ Write the dashboard plan from what they show. It stays gated until then.</li>
+</ul>
+
+<h3>Phase I — Stores decision</h3>
+<ul class="todo">
+  <li>☐ Settle the payments question, then decide on TWA, Capacitor or neither.</li>
+</ul>
+
+<h2>Decisions needed from you</h2>
+<table>
+  <tr><th>Decision</th><th>My recommendation</th></tr>
+  <tr><td>Harden the PWA rather than rewrite?</td><td>Yes.</td></tr>
+  <tr><td>Do you need App Store presence in the next year?</td><td>Treat as no for now. A yes brings Phase I forward, but does not change Phases A to D.</td></tr>
+  <tr><td>Reopen inspection drafts and offline saving, both deferred earlier?</td><td>Yes. Drafts now, the outbox in Phase G.</td></tr>
+  <tr><td>Make inspection full screen, and use compact rows on Hives?</td><td>Yes. Both were deferred earlier and are central to this work.</td></tr>
+  <tr><td>Keep the bottom bar's four tabs plus More, and the dashboard gate?</td><td>Yes to both.</td></tr>
+  <tr><td>Approve Phases 0 and A as the first batch?</td><td>Yes. They are low risk and quick to see on a phone.</td></tr>
+</table>
+
+<h2>Review</h2>
+<p><em>To be completed after implementation.</em></p>
+
+</body>
+</html>
