@@ -2548,7 +2548,7 @@ export default function InspectionForm({
         {/* Review. Optional, and deliberately a preview of unsaved work: nothing
             has been written until Save is pressed. */}
         {step === LAST_STEP && (
-        <div className="md:col-span-2 space-y-4">
+        <div className="md:col-span-2 space-y-3 sm:space-y-4">
           <p className="text-sm text-text-secondary">
             Check the details below, then save. Nothing has been recorded yet.
           </p>
@@ -2573,8 +2573,8 @@ export default function InspectionForm({
           )}
 
           {reviewGroups.map(group => (
-            <div key={group.step} className="rounded-lg border border-border p-4">
-              <div className="mb-3 flex items-baseline justify-between gap-3">
+            <div key={group.step} className="rounded-lg border border-border px-3 pb-3 pt-1 sm:p-4">
+              <div className="mb-1 flex items-center justify-between gap-3 sm:mb-3">
                 <h4 className="text-sm font-semibold text-foreground">{group.title}</h4>
                 <Button
                   unstyled
@@ -2585,11 +2585,12 @@ export default function InspectionForm({
                   Edit
                 </Button>
               </div>
-              <dl className="space-y-2">
+              <dl className="space-y-1.5 sm:space-y-2">
                 {group.items.map(item => (
-                  <div key={item.label} className="flex flex-col gap-0.5 sm:flex-row sm:gap-3">
-                    <dt className="text-sm text-text-secondary sm:w-44 sm:flex-shrink-0">{item.label}</dt>
-                    <dd className="text-sm text-foreground break-words">{item.value}</dd>
+                  // Label and value share a row. On a phone only long text, such as notes, takes the full width.
+                  <div key={item.label} className={`flex ${item.value.length > 28 ? 'flex-col gap-0.5 sm:flex-row sm:gap-3' : 'gap-3'}`}>
+                    <dt className="w-36 flex-shrink-0 text-sm text-text-secondary sm:w-44">{item.label}</dt>
+                    <dd className="min-w-0 text-sm text-foreground break-words">{item.value}</dd>
                   </div>
                 ))}
               </dl>
