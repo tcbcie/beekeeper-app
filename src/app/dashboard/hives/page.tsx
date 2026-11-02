@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Plus, X, Scale, Archive, CheckSquare, Copy, FolderInput, Search, Syringe, Droplet } from 'lucide-react'
+import { Plus, X, Scale, Archive, CheckSquare, Copy, FolderInput, Search, Syringe, Droplet, PackageX } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { SkeletonScreen } from '@/components/ui/Skeleton'
 import EmptyState from '@/components/ui/EmptyState'
@@ -15,7 +15,9 @@ import { Hive } from '@/types/hive'
 import HiveListCard from '@/components/hive/HiveListCard'
 import type { BulkTreatmentValues } from '@/components/hive/BulkTreatmentModal'
 import type { BulkFeedingValues } from '@/components/hive/BulkFeedingModal'
-import { createTreatmentReminders, type TreatmentReminderInput } from '@/lib/treatment-reminder'
+import type { RemovableTreatment } from '@/components/hive/BulkTreatmentRemovalModal'
+import { completeTreatmentReminders, createTreatmentReminders, type TreatmentReminderInput } from '@/lib/treatment-reminder'
+import { fetchInChunks } from '@/lib/supabase-chunk'
 import type { TreatmentProduct, DropdownValue } from '@/types/records'
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
@@ -36,6 +38,7 @@ const HiveFormSection = dynamic(() => import('@/components/hive/HiveFormSection'
 const MoveHivesModal = dynamic(() => import('@/components/hive/MoveHivesModal'), { ssr: false })
 const BulkTreatmentModal = dynamic(() => import('@/components/hive/BulkTreatmentModal'), { ssr: false })
 const BulkFeedingModal = dynamic(() => import('@/components/hive/BulkFeedingModal'), { ssr: false })
+const BulkTreatmentRemovalModal = dynamic(() => import('@/components/hive/BulkTreatmentRemovalModal'), { ssr: false })
 
 type HivePhoneView = 'list' | 'cards'
 
@@ -65,6 +68,8 @@ export default function HivesPage() {
  // rather than on every visit to this page — most sessions never bulk-record.
  const [showBulkTreatment, setShowBulkTreatment] = useState(false)
  const [showBulkFeeding, setShowBulkFeeding] = useState(false)
+ // The treatments still on the selected hives. Set while the removal sheet is open.
+ const [removableTreatments, setRemovableTreatments] = useState<RemovableTreatment[] | null>(null)
  const [bulkSaving, setBulkSaving] = useState(false)
  const [treatmentProducts, setTreatmentProducts] = useState<TreatmentProduct[]>([])
  const [applicationMethods, setApplicationMethods] = useState<DropdownValue[]>([])
@@ -218,15 +223,15 @@ export default function HivesPage() {
 
  // Clear row/order so old positions can't collide with the destination's
  // unique (apiary, row, order) rule; the user re-places hives afterwards.
- const { error } = await supabase
+ const { error } = await fetchInChunks<unknown>(ids, chunk => supabase
  .from('hives')
  .update({ apiary_id: apiaryId, row_in_apiary: null, order_in_apiary: null })
- .in('id', ids)
- .eq('user_id', userId)
+ .in('id', chunk)
+ .eq('user_id', userId))
 
  if (error) {
  console.error('Bulk move error:', error)
- toast.error('Failed to move hives: ' + error.message)
+ toast.error('Failed to move hives: ' + ((error as { message?: string }).message ?? 'please try again.'))
  return
  }
 
@@ -496,6 +501,78 @@ export default function HivesPage() {
  }
  }
 
+ // Read fresh rather than from the list, which keeps only the newest treatment on each hive
+ const openBulkRemoval = async () => {
+ if (!userId || bulkInFlightRef.current) return
+ bulkInFlightRef.current = true
+ try {
+ const { data, error } = await fetchInChunks<RemovableTreatment>(selectedOwnedHives.map(h => h.id), chunk => supabase
+ .from('varroa_treatments')
+ .select('id, hive_id, treatment_type, treatment_date, user_id')
+ .in('hive_id', chunk)
+ .not('planned_removal_date', 'is', null)
+ .is('removed_date', null))
+ if (error) {
+ console.error('Bulk removal lookup error:', error)
+ toast.error('Could not load the treatments. Please try again.')
+ return
+ }
+ if (data.length === 0) {
+ toast.info('No treatments are on the selected hives.')
+ fetchHives(userId)
+ return
+ }
+ setRemovableTreatments(data)
+ } finally {
+ bulkInFlightRef.current = false
+ }
+ }
+
+ const handleBulkRemoval = async (removedDate: string, treatmentIds: string[]) => {
+ if (!userId || bulkInFlightRef.current || treatmentIds.length === 0) return
+ bulkInFlightRef.current = true
+ setBulkSaving(true)
+ try {
+ // RLS-blocked rows return no error, so the rows returned are what actually changed.
+ // removed_date is checked so a repeat after a dropped signal only touches what is left.
+ const { data, error } = await fetchInChunks<{ id: string }>(treatmentIds, chunk => supabase
+ .from('varroa_treatments')
+ .update({ removed_date: removedDate })
+ .in('id', chunk)
+ .eq('user_id', userId)
+ .is('removed_date', null)
+ .select('id'))
+ const updatedIds = data.map(row => row.id)
+
+ if (updatedIds.length > 0) {
+ // Best-effort, as on the single-treatment path: the removals are already saved.
+ const reminders = await completeTreatmentReminders(updatedIds, userId)
+ if (!reminders.ok) {
+ console.error('Bulk reminder completion failed:', reminders.error)
+ toast.warning('Removals saved, but some reminders could not be closed. Open Tasks to complete them.')
+ }
+ }
+
+ setRemovableTreatments(null)
+ fetchHives(userId)
+
+ if (error) {
+ console.error('Bulk removal error:', error)
+ toast.error(`Recorded ${updatedIds.length} of ${treatmentIds.length} removals. Please select the hives and try again.`)
+ return
+ }
+ if (updatedIds.length === 0) {
+ toast.warning('No removals were recorded. These treatments may already have been changed.')
+ return
+ }
+ toast.success(`Recorded ${updatedIds.length} removal${updatedIds.length === 1 ? '' : 's'}.`)
+ exitSelection()
+ } finally {
+ bulkInFlightRef.current = false
+ setBulkSaving(false)
+ }
+ }
+
  // Check if any hives have scales configured
  const hasAnyScales = hives.some(h => h.beep_device_id || h.wolf_scale_id)
  const hiveSearch = search.trim().toLowerCase()
@@ -611,16 +688,20 @@ export default function HivesPage() {
  if (loading) return <SkeletonScreen label="Loading hives..." />
 
  // Reserve space at the bottom so the fixed bulk-action bar never covers the
- // last hive cards (taller reserve on mobile where the bar may wrap to 2 rows).
+ // last hive cards (taller reserve on mobile where the bar may wrap to 3 rows).
  // The md breakpoint matters: the bar now clears the bottom navigation,
  // which is itself visible until md, so dropping to a smaller reserve at
  // sm would let the bar cover the last row between 640px and 768px.
  const bulkBarVisible = selectionMode && selectedOwnedHives.length > 0
+ // Only the beekeeper's own hives can be selected, the same rule as each hive's checkbox
+ const selectableHives = filteredHives.filter(h => h.user_id === userId)
+ const selectableWithTreatment = selectableHives.filter(h => !h.archived_at && h.active_treatment)
+ const allSelected = selectableHives.length > 0 && selectedOwnedHives.length === selectableHives.length
  const retryLoad = () => { if (userId) fetchHives(userId) }
  const showNewInspectionBar = isPhone && !selectionMode && !showForm && filteredHives.length > 0
 
  return (
-<div className={`space-y-3 md:space-y-6 ${bulkBarVisible ? 'pb-40 md:pb-24' : showNewInspectionBar ? 'pb-sticky-action' : ''}`}>
+<div className={`space-y-3 md:space-y-6 ${bulkBarVisible ? 'pb-56 md:pb-24' : showNewInspectionBar ? 'pb-sticky-action' : ''}`}>
  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
  <h1 className="sr-only md:not-sr-only text-responsive-3xl font-bold text-foreground">Hives</h1>
  {/* A compact grid on a phone, so the hives start near the top of the screen */}
@@ -786,6 +867,22 @@ export default function HivesPage() {
  />
  )}
 
+ {selectionMode && selectableHives.length > 0 && (
+ <div className="flex flex-wrap gap-2" role="group" aria-label="Quick selection">
+ <Button
+ tone="neutral"
+ onClick={() => setSelectedIds(allSelected ? [] : selectableHives.map(h => h.id))}
+ >
+ {allSelected ? 'Clear selection' : `Select all (${selectableHives.length})`}
+ </Button>
+ {selectableWithTreatment.length > 0 && (
+ <Button tone="neutral" onClick={() => setSelectedIds(selectableWithTreatment.map(h => h.id))}>
+ Treatment on ({selectableWithTreatment.length})
+ </Button>
+ )}
+ </div>
+ )}
+
  {isPhone && phoneView === 'list' ? (
  filteredHives.length > 0 && (
  <div className="-mx-3 divide-y divide-border border-y border-border sm:mx-0">
@@ -875,6 +972,15 @@ export default function HivesPage() {
  <Syringe size={18} className="flex-shrink-0" />
  <span>Treat<span className="hidden sm:inline">ment</span></span>
  </Button>
+ {selectedOwnedHives.some(h => h.active_treatment) && (
+ <Button
+ onClick={() => void openBulkRemoval()}
+ className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] rounded-lg font-medium flex items-center justify-center gap-2 whitespace-nowrap"
+ >
+ <PackageX size={18} className="flex-shrink-0" />
+ Remove treatment
+ </Button>
+ )}
  <Button
  onClick={() => void openBulkModal('feeding')}
  className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] rounded-lg font-medium flex items-center justify-center gap-2 whitespace-nowrap"
@@ -926,6 +1032,16 @@ export default function HivesPage() {
  saving={bulkSaving}
  onClose={() => setShowBulkFeeding(false)}
  onApply={handleBulkFeeding}
+ />
+ )}
+ {removableTreatments && userId && (
+ <BulkTreatmentRemovalModal
+ treatments={removableTreatments}
+ userId={userId}
+ hivesWithNothingOn={selectedOwnedHives.length - new Set(removableTreatments.map(t => t.hive_id)).size}
+ saving={bulkSaving}
+ onClose={() => setRemovableTreatments(null)}
+ onApply={handleBulkRemoval}
  />
  )}
  </div>

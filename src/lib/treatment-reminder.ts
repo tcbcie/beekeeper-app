@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { fetchInChunks } from '@/lib/supabase-chunk'
 
 /**
  * Keeps a treatment's "take the strips out" reminder in step with the treatment.
@@ -148,6 +149,24 @@ function newReminderRow(userId: string, treatmentId: string) {
     reminder_enabled: true,
     reminder_sent: false,
   }
+}
+
+/**
+ * Closes the reminders of treatments just marked removed, so nobody is emailed to take out strips
+ * that are already out. Treatments with no reminder simply match nothing.
+ */
+export async function completeTreatmentReminders(
+  treatmentIds: string[],
+  userId: string
+): Promise<{ ok: boolean; error?: unknown }> {
+  const completedAt = new Date().toISOString()
+  const { error } = await fetchInChunks<unknown>(treatmentIds, chunk => supabase
+    .from('tasks_events')
+    .update({ completed: true, completed_at: completedAt })
+    .in('treatment_id', chunk)
+    .eq('user_id', userId)
+    .eq('completed', false))
+  return error ? { ok: false, error } : { ok: true }
 }
 
 /**

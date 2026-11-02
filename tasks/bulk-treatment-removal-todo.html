@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Bulk treatment removal</title>
+</head>
+<body>
+<h1>Bulk treatment removal and Select all</h1>
+<p>Full plan: <code>docs/features/bulk-treatment-removal-plan.md</code>.</p>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ Add <code>completeTreatmentReminders</code> to <code>src/lib/treatment-reminder.ts</code></li>
+  <li>☑ New <code>BulkTreatmentRemovalModal</code>: summary, Removed on, Record removal for N</li>
+  <li>☑ Hives: Select all and Treatment on row in selection mode</li>
+  <li>☑ Hives: Remove treatment button in the bulk bar, and its handler</li>
+  <li>☑ Hives: chunk the bulk Move, now Select all makes long lists likely</li>
+  <li>☑ Update <code>docs/features/hive-bulk-actions.md</code></li>
+  <li>☑ Type check, lint, related tests and the QA audit</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned, with no database change. The treatments are read fresh when the sheet opens, because the list keeps only the newest treatment on each hive.</p>
+<p>QA audit fixes:</p>
+<ul>
+  <li>The longer action bar could cover the last hive on a phone, so the space kept below the list is larger.</li>
+  <li>If nothing could be changed, the message said "Recorded 0 removals" as a success. It is now a warning.</li>
+  <li>An emptied date wrongly said that treatments were applied after it. That line now needs a date.</li>
+</ul>
+<p>Not yet run against real data or seen on a real phone.</p>
+</body>
+</html>

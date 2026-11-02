@@ -54,6 +54,12 @@ For each selected hive, insert a **new** hive that copies the template-worthy fi
 - A confirmation dialog (`useConfirm`) states how many clones will be created before proceeding.
 - Refetch hives, clear selection, toast success.
 
+### Select all and treatment removal (added 02/11/2026)
+- In selection mode, **Select all (N)** picks every owned hive in the current list, and **Treatment on (N)** picks only those with a treatment on.
+- **Remove treatment** in the action bar opens a sheet with one **Removed on** date, which also closes each treatment's reminder.
+- Treatments applied after that date, or recorded by a team-mate, stay on, and the sheet says how many. Long lists are sent in chunks, for Move as well.
+- Plan: `bulk-treatment-removal-plan.md`.
+
 ## Files to change
 
 1. **`src/app/dashboard/hives/page.tsx`**
