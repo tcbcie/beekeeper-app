@@ -7,6 +7,10 @@ const OFFLINE_URLS = [
   '/',
   '/login',
   '/dashboard',
+  // So these can open with no signal, even if not visited since the last update.
+  '/dashboard/hives',
+  '/dashboard/records',
+  '/dashboard/tasks',
   '/offline.html',
   '/icon-192x192.png',
   '/icon-512x512.png',

@@ -1,5 +1,6 @@
 import Dexie, { type Table } from 'dexie'
 import type { FollowUpTaskDraft, InspectionFormData } from '@/types/records'
+import type { QueuedInspection } from './inspection-outbox'
 
 export interface InspectionDraftContent {
   formData: InspectionFormData
@@ -25,11 +26,13 @@ export interface ScreenCacheRow {
 class LocalDb extends Dexie {
   inspectionDrafts!: Table<InspectionDraft, string>
   screenCache!: Table<ScreenCacheRow, string>
+  inspectionOutbox!: Table<QueuedInspection, string>
 
   constructor() {
     super('hivecraic-local')
     this.version(1).stores({ inspectionDrafts: 'userId' })
     this.version(2).stores({ inspectionDrafts: 'userId', screenCache: 'key' })
+    this.version(3).stores({ inspectionDrafts: 'userId', screenCache: 'key', inspectionOutbox: 'id, userId' })
   }
 }
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { clearLocalUserData } from '@/lib/sign-out-cleanup'
 import { clearAllInspectionDrafts } from '@/lib/inspection-draft'
+import { clearInspectionOutbox } from '@/lib/inspection-outbox'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -68,6 +69,7 @@ export default function ResetPassword() {
         // Outside the dashboard there is no AuthProvider to catch SIGNED_OUT, so clean up here.
         clearLocalUserData()
         await clearAllInspectionDrafts()
+        await clearInspectionOutbox()
         await supabase.auth.signOut({ scope: 'local' })
         router.push('/login')
       }, 2000)

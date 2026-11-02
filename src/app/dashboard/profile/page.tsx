@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { clearAllInspectionDrafts } from '@/lib/inspection-draft'
+import { clearInspectionOutbox } from '@/lib/inspection-outbox'
 import { fetchUserExportData, USER_EXPORT_TABLES } from '@/lib/database-export'
 import { downloadCsv, escapeCsvField, toCsv } from '@/lib/csv'
 import { getCurrentUserId, PROFILE_COLUMNS } from '@/lib/auth'
@@ -535,6 +536,7 @@ export default function ProfilePage() {
 
  // Sign out the user - use local scope
  await clearAllInspectionDrafts()
+ await clearInspectionOutbox()
  await supabase.auth.signOut({ scope: 'local' })
 
  // Show success message with reactivation info

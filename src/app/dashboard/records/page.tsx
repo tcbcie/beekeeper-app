@@ -20,7 +20,19 @@ import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { useReportFormActive } from '@/contexts/BottomSurfaceContext'
 import { buildDiscardRecordPrompt } from '@/lib/inspection-discard'
-import { clearInspectionDraft } from '@/lib/inspection-draft'
+import { clearInspectionDraft, inspectionDraftOwner } from '@/lib/inspection-draft'
+import { fetchWeatherForApiary } from '@/lib/apiary-weather'
+import {
+  OUTBOX_CHANGED_EVENT,
+  discardQueuedInspection,
+  isConnectionFailure,
+  listQueuedInspections,
+  queueInspection,
+  sendQueuedInspection,
+  type QueuedInspection,
+  type SendResult,
+} from '@/lib/inspection-outbox'
+import InspectionOutbox from '@/components/records/InspectionOutbox'
 import { withTimeout } from '@/lib/with-timeout'
 import UnfinishedInspectionNotice from '@/components/records/UnfinishedInspectionNotice'
 import CachedDataNotice from '@/components/ui/CachedDataNotice'
@@ -75,35 +87,14 @@ import type {
 } from '@/types/records'
 import { getDefaultArchiveFormData, getDefaultInspectionFormData } from '@/types/records'
 
-interface NominatimResult {
-  lat: string
-  lon: string
-}
-
-interface OpenMeteoCurrent {
-  temperature_2m: number
-  relative_humidity_2m: number
-  weather_code: number
-  wind_speed_10m: number
-}
-
-interface OpenMeteoResponse {
-  current?: OpenMeteoCurrent | null
-}
-
-const WEATHER_REQUEST_TIMEOUT_MS = 8000
 const RECORD_DEEP_LINK_TYPES = new Set<RecordType>(['inspection', 'varroa_check', 'varroa_treatment', 'feeding', 'harvest'])
 
 const PHOTO_UPLOAD_TIMEOUT_MS = 60_000
-const WEATHER_TIMEOUT_MS = 5_000
+const SAVE_WAIT_MS = 8_000
 const INSPECTION_SAVE_TIMEOUT_MS = 20_000
 const TIMED_OUT = 'timed-out'
 const INSPECTION_NO_SIGNAL_MESSAGE =
   'The inspection could not be sent, so it is still here on this phone. Check the signal, look in Records in case it arrived, then try again.'
-
-function isConnectionFailure(message: string): boolean {
-  return /abort|timeout|timed out|failed to fetch|load failed|network/i.test(message)
-}
 
 function mapTypeParamToRecordType(typeParam: string | null): RecordType | null {
   if (!typeParam) return null
@@ -208,7 +199,6 @@ export default function RecordsPage() {
   const [modalImages, setModalImages] = useState<string[]>([])
   const [modalStartIndex, setModalStartIndex] = useState(0)
   const [showIpmTips, setShowIpmTips] = useState(false)
-  const [fetchingWeather, setFetchingWeather] = useState(false)
   const [highlightedRecordKey, setHighlightedRecordKey] = useState<string | null>(null)
 
   // Use the data hook
@@ -778,133 +768,6 @@ export default function RecordsPage() {
 
 
   // Weather fetching
-  const fetchJsonWithTimeout = async <T,>(
-    url: string,
-    init: RequestInit = {},
-    timeoutMs: number = WEATHER_REQUEST_TIMEOUT_MS
-  ): Promise<T> => {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-
-    try {
-      const response = await fetch(url, { ...init, signal: controller.signal })
-      if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`)
-      }
-
-      return await response.json() as T
-    } finally {
-      clearTimeout(timeoutId)
-    }
-  }
-
-  const fetchWeatherData = async (eircode: string, isUkNi: boolean = false) => {
-    try {
-      const cleanedCode = eircode.trim().replace(/\s+/g, '').toUpperCase()
-      const headers = { 'User-Agent': 'HiveCraic/1.0' }
-      const country = isUkNi ? 'United Kingdom' : 'Ireland'
-      const fallbackLat = isUkNi ? '54.5973' : '53.3498'
-      const fallbackLon = isUkNi ? '-5.9301' : '-6.2603'
-
-      const geocodeData = await fetchJsonWithTimeout<NominatimResult[]>(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode)},${country}&format=json&limit=1`,
-        { headers }
-      )
-
-      if (!Array.isArray(geocodeData) || geocodeData.length === 0) {
-        const altData = await fetchJsonWithTimeout<NominatimResult[]>(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode + ' ' + country)}&format=json&limit=1`,
-          { headers }
-        )
-
-        if (!Array.isArray(altData) || altData.length === 0) {
-          return await getWeatherFromCoordinates(fallbackLat, fallbackLon)
-        }
-        return await getWeatherFromCoordinates(altData[0].lat, altData[0].lon)
-      }
-
-      return await getWeatherFromCoordinates(geocodeData[0].lat, geocodeData[0].lon)
-    } catch {
-      const fallbackLat = isUkNi ? '54.5973' : '53.3498'
-      const fallbackLon = isUkNi ? '-5.9301' : '-6.2603'
-      return await getWeatherFromCoordinates(fallbackLat, fallbackLon)
-    }
-  }
-
-  const getWeatherFromCoordinates = async (lat: string, lon: string) => {
-    try {
-      const weatherData = await fetchJsonWithTimeout<OpenMeteoResponse>(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Europe/Dublin`
-      )
-      const current = weatherData?.current
-      if (
-        !current ||
-        typeof current.temperature_2m !== 'number' ||
-        typeof current.relative_humidity_2m !== 'number' ||
-        typeof current.weather_code !== 'number' ||
-        typeof current.wind_speed_10m !== 'number'
-      ) {
-        return null
-      }
-
-      const weatherCodeMap: { [key: number]: string } = {
-        0: 'Clear', 1: 'Mainly Clear', 2: 'Partly Cloudy', 3: 'Overcast',
-        45: 'Fog', 48: 'Depositing Rime Fog', 51: 'Light Drizzle', 53: 'Moderate Drizzle',
-        55: 'Dense Drizzle', 61: 'Slight Rain', 63: 'Moderate Rain', 65: 'Heavy Rain',
-        71: 'Slight Snow', 73: 'Moderate Snow', 75: 'Heavy Snow', 80: 'Slight Rain Showers',
-        81: 'Moderate Rain Showers', 82: 'Violent Rain Showers', 95: 'Thunderstorm', 96: 'Thunderstorm with Hail'
-      }
-
-      return {
-        temp: Math.round(current.temperature_2m),
-        condition: weatherCodeMap[current.weather_code] ?? 'Unknown',
-        humidity: current.relative_humidity_2m,
-        wind_speed: Math.round(current.wind_speed_10m)
-      }
-    } catch {
-      return null
-    }
-  }
-
-  /**
-   * Weather for an apiary, preferring its stored coordinates.
-   *
-   * The Eircode path only exists to approximate a position, and Eircode geocoding does not resolve
-   * every postcode (see docs/features/irish-grid-reference.md) — falling back to a city centre when
-   * it fails. Where the apiary already has coordinates they are exact, need no lookup, and work for
-   * apiaries with no postcode at all. The Eircode remains the fallback for older records.
-   */
-  const fetchWeatherForApiary = async (apiaryId: string) => {
-    const { data: apiaryData, error } = await supabase
-      .from('apiaries')
-      .select('latitude, longitude, eircode, is_uk_ni')
-      .eq('id', apiaryId)
-      .single()
-
-    if (error) {
-      console.error('Failed to fetch apiary weather metadata:', error)
-      return null
-    }
-    if (!apiaryData) return null
-
-    // Guard explicitly against null/'' — Number(null) is 0, which would silently request
-    // weather for the Atlantic at 0°,0°.
-    const rawLat = apiaryData.latitude
-    const rawLon = apiaryData.longitude
-    const lat = rawLat == null || rawLat === '' ? NaN : Number(rawLat)
-    const lon = rawLon == null || rawLon === '' ? NaN : Number(rawLon)
-
-    if (Number.isFinite(lat) && Number.isFinite(lon)) {
-      return await getWeatherFromCoordinates(String(lat), String(lon))
-    }
-
-    if (apiaryData.eircode) {
-      return await fetchWeatherData(apiaryData.eircode, apiaryData.is_uk_ni || false)
-    }
-
-    return null
-  }
-
   const handleFetchWeatherForHive = async (hiveId: string) => {
     const selectedHive = hives.find(h => h.id === hiveId)
     if (!selectedHive?.apiary_id) return null
@@ -939,6 +802,108 @@ export default function RecordsPage() {
   }, [userId, toast])
 
   // Inspection handlers
+  const buildFollowUpRows = (formData: InspectionFormData, followUpTasks: FollowUpTaskDraft[]) => {
+    const selectedHive = hives.find(h => h.id === formData.hive_id)
+    const apiaryId = selectedHive?.apiary_id ?? null
+    const isTeamTask = !!selectedHive && sharedHiveIds.includes(selectedHive.id)
+
+    return followUpTasks.map(draft => ({
+      user_id: userId,
+      title: draft.title,
+      description: draft.description || null,
+      event_type: 'task' as const,
+      category: 'inspection' as const,
+      priority: draft.priority,
+      start_date: draft.due_date,
+      all_day: true,
+      hive_id: formData.hive_id,
+      apiary_id: apiaryId,
+      equipment_needed: draft.equipment_needed || null,
+      notes: `Auto-created from inspection on ${formData.inspection_date}.`,
+      is_team_task: isTeamTask,
+      completed: false,
+    }))
+  }
+
+  /**
+   * A new inspection goes into the outbox first and is sent from there, so this one path covers a
+   * good signal, a poor one and none at all. Its draft goes only once the outbox has it safely.
+   */
+  const saveNewInspection = async (
+    formData: InspectionFormData,
+    submitData: Record<string, unknown>,
+    imageFiles: File[],
+    followUpTasks: FollowUpTaskDraft[]
+  ) => {
+    if (!userId) return
+    const selectedHive = hives.find(h => h.id === formData.hive_id)
+    const entry: QueuedInspection = {
+      id: crypto.randomUUID(),
+      userId,
+      queuedAt: Date.now(),
+      hiveId: formData.hive_id,
+      hiveLabel: selectedHive?.hive_number ?? '',
+      apiaryId: selectedHive?.apiary_id ?? null,
+      row: submitData,
+      photos: imageFiles,
+      uploadedUrls: [],
+      superDelta: formData.honey_supers,
+      tasks: buildFollowUpRows(formData, followUpTasks).map(row => ({ ...row, id: crypto.randomUUID() })),
+      rowSaved: false,
+      failedReason: null,
+    }
+
+    // An admin acting as someone else keeps nothing on the device, as with drafts.
+    const kept = inspectionDraftOwner(userId) ? await queueInspection(entry) : false
+    if (kept) await clearInspectionDraft(userId)
+
+    const send = sendQueuedInspection(entry, kept)
+    // Once it is safe on the phone, a slow signal needn't hold the beekeeper up: it carries on
+    // sending behind the scenes, and the outbox list shows how it goes.
+    const result = kept ? await withTimeout<SendResult | typeof TIMED_OUT>(send, SAVE_WAIT_MS, TIMED_OUT) : await send
+
+    if (result === TIMED_OUT || result.status === 'waiting') {
+      if (!kept) {
+        // The form stays open, and a retry starts afresh, so its uploaded photos would be left behind.
+        await discardQueuedInspection(entry)
+        toast.error(INSPECTION_NO_SIGNAL_MESSAGE)
+        return
+      }
+      toast.info('Saved on this phone. It will send by itself when there is signal.')
+      // Still going, so its answer arrives after this form has closed.
+      if (result === TIMED_OUT) {
+        void send.then((late) => {
+          if (late.status === 'sent') {
+            toast.success('Inspection sent')
+            late.warnings.forEach(warning => toast.warning(warning))
+          } else if (late.status === 'rejected') {
+            toast.error('An inspection could not be sent. See the list at the top of Records.')
+          }
+        })
+      }
+      chooseHive(formData.hive_id)
+      resetForm()
+      return
+    }
+
+    if (result.status === 'rejected') {
+      // Refused while the form is still open, so it can be corrected. The form keeps its own draft.
+      await discardQueuedInspection(entry)
+      toast.error(result.reason)
+      return
+    }
+
+    result.warnings.forEach(warning => toast.warning(warning))
+    try {
+      await fetchInspections(userId, filters.ownershipFilter)
+      await fetchHives(userId)
+    } catch {
+      toast.warning('Inspection saved, but the list could not be refreshed. It will appear when you next open Records with signal.')
+    }
+    chooseHive(formData.hive_id)
+    resetForm()
+  }
+
   const handleInspectionSubmit = async (
     formData: InspectionFormData,
     imageFiles: File[],
@@ -946,7 +911,43 @@ export default function RecordsPage() {
   ) => {
     if (!userId) return
 
-    // Fail at once with no signal, rather than after a long wait on the first photo.
+    // The hive's current super count is the authority for how many readings may be stored.
+    // Trimming here is the last line of defence: without it a stale carry-forward can persist
+    // readings for supers that no longer exist, which the next inspection then carries forward
+    // again, and the next — the value never self-corrects. When editing, keep the originally
+    // recorded length so readings taken before supers were removed are never destroyed.
+    const configuredSuperCount = Math.max(0, Math.trunc(
+      hives.find(h => h.id === formData.hive_id)?.configuration?.honey_supers ?? 0
+    ))
+    const recordedSuperCount = Array.isArray(editingInspection?.honey_super_fullness)
+      ? editingInspection.honey_super_fullness.length
+      : 0
+    const maxSuperReadings = Math.max(configuredSuperCount, recordedSuperCount)
+
+    // Only persist valid 0-100 integers; NULL stays NULL ("not recorded"). An array trimmed
+    // to nothing means there is nothing to record, so it collapses back to NULL.
+    const trimmedSuperFullness = Array.isArray(formData.honey_super_fullness)
+      ? formData.honey_super_fullness.slice(0, maxSuperReadings).map(v =>
+          Number.isFinite(v) ? Math.min(100, Math.max(0, Math.trunc(v))) : 0
+        )
+      : null
+    const sanitisedSuperFullness = trimmedSuperFullness && trimmedSuperFullness.length > 0
+      ? trimmedSuperFullness
+      : null
+
+    const baseData = {
+      ...formData,
+      drones_present: formData.drones_present === -1 ? null : formData.drones_present,
+      propolis_level: formData.propolis_level === -1 ? null : formData.propolis_level,
+      honey_super_fullness: sanitisedSuperFullness,
+    }
+
+    if (!editingInspection?.id) {
+      await saveNewInspection(formData, baseData, imageFiles, followUpTasks)
+      return
+    }
+
+    // Changing a saved inspection needs the server's answer, so it is not queued.
     if (navigator.onLine === false) {
       toast.error(INSPECTION_NO_SIGNAL_MESSAGE)
       return
@@ -986,134 +987,44 @@ export default function RecordsPage() {
         }
         uploadedUrls.push(uploadedUrl)
       }
-      const imageUrls = [...formData.image_urls, ...uploadedUrls]
 
-      // Weather is captured once, when the inspection is first recorded. An edit keeps the
-      // stored weather rather than overwriting it with today's (or with nothing on failure).
-      const isEdit = Boolean(editingInspection?.id)
-      let weatherData = null
-      if (!isEdit) {
-        setFetchingWeather(true)
-        try {
-          const selectedHive = hives.find(h => h.id === formData.hive_id)
-          if (selectedHive?.apiary_id) {
-            // Weather is a bonus, so a poor signal or a failed lookup must not hold up the save.
-            weatherData = await withTimeout(
-              fetchWeatherForApiary(selectedHive.apiary_id).catch(() => null),
-              WEATHER_TIMEOUT_MS,
-              null
-            )
-          }
-        } finally {
-          setFetchingWeather(false)
-        }
+      // image_urls is the only writable photo column. inspections.image_url is a
+      // GENERATED mirror of image_urls[1] and Postgres rejects any write to it.
+      // An edit keeps the stored weather rather than overwriting it with today's.
+      const submitData = { ...baseData, image_urls: [...formData.image_urls, ...uploadedUrls] }
+
+      const { data: updatedRows, error } = await supabase
+        .from('inspections')
+        .update(submitData)
+        .eq('id', editingInspection.id)
+        .eq('user_id', userId)
+        .select('id')
+        .abortSignal(AbortSignal.timeout(INSPECTION_SAVE_TIMEOUT_MS))
+
+      if (error) throw error
+      if (!updatedRows || updatedRows.length !== 1) {
+        await deleteUploadedImages(uploadedUrls)
+        toast.error('Inspection could not be updated. It may have been changed elsewhere — please refresh.')
+        return
       }
+      recordSaved = true
 
-      // The hive's current super count is the authority for how many readings may be stored.
-      // Trimming here is the last line of defence: without it a stale carry-forward can persist
-      // readings for supers that no longer exist, which the next inspection then carries forward
-      // again, and the next — the value never self-corrects. When editing, keep the originally
-      // recorded length so readings taken before supers were removed are never destroyed.
-      const configuredSuperCount = Math.max(0, Math.trunc(
-        hives.find(h => h.id === formData.hive_id)?.configuration?.honey_supers ?? 0
-      ))
-      const recordedSuperCount = Array.isArray(editingInspection?.honey_super_fullness)
-        ? editingInspection.honey_super_fullness.length
+      const oldHiveId = editingInspection.hive_id
+      const oldHoneySupers = Number.isInteger(editingInspection.honey_supers)
+        ? editingInspection.honey_supers
         : 0
-      const maxSuperReadings = Math.max(configuredSuperCount, recordedSuperCount)
 
-      // Only persist valid 0-100 integers; NULL stays NULL ("not recorded"). An array trimmed
-      // to nothing means there is nothing to record, so it collapses back to NULL.
-      const trimmedSuperFullness = Array.isArray(formData.honey_super_fullness)
-        ? formData.honey_super_fullness.slice(0, maxSuperReadings).map(v =>
-            Number.isFinite(v) ? Math.min(100, Math.max(0, Math.trunc(v))) : 0
-          )
-        : null
-      const sanitisedSuperFullness = trimmedSuperFullness && trimmedSuperFullness.length > 0
-        ? trimmedSuperFullness
-        : null
-
-      const submitData = {
-        ...formData,
-        drones_present: formData.drones_present === -1 ? null : formData.drones_present,
-        propolis_level: formData.propolis_level === -1 ? null : formData.propolis_level,
-        honey_super_fullness: sanitisedSuperFullness,
-        // image_urls is the only writable photo column. inspections.image_url is a
-        // GENERATED mirror of image_urls[1] and Postgres rejects any write to it.
-        image_urls: imageUrls,
-        ...(isEdit ? {} : {
-          weather_temp: weatherData?.temp ?? null,
-          weather_condition: weatherData?.condition ?? null,
-          weather_humidity: weatherData?.humidity ?? null,
-          weather_wind_speed: weatherData?.wind_speed ?? null
-        })
-      }
-
-      if (editingInspection?.id) {
-        const { data: updatedRows, error } = await supabase
-          .from('inspections')
-          .update(submitData)
-          .eq('id', editingInspection.id)
-          .eq('user_id', userId)
-          .select('id')
-          .abortSignal(AbortSignal.timeout(INSPECTION_SAVE_TIMEOUT_MS))
-
-        if (error) throw error
-        if (!updatedRows || updatedRows.length !== 1) {
-          await deleteUploadedImages(uploadedUrls)
-          toast.error('Inspection could not be updated. It may have been changed elsewhere — please refresh.')
-          return
-        }
-        recordSaved = true
-
-        const oldHiveId = editingInspection.hive_id
-        const oldHoneySupers = Number.isInteger(editingInspection.honey_supers)
-          ? editingInspection.honey_supers
-          : 0
-
-        if (oldHiveId === formData.hive_id) {
-          await adjustHiveHoneySupers(formData.hive_id, formData.honey_supers - oldHoneySupers)
-        } else {
-          // Apply on the new hive first; if the second call fails we end up with
-          // an inflated count (visible to the user) rather than a missing one (silent).
-          await adjustHiveHoneySupers(formData.hive_id, formData.honey_supers)
-          await adjustHiveHoneySupers(oldHiveId, -oldHoneySupers)
-        }
+      if (oldHiveId === formData.hive_id) {
+        await adjustHiveHoneySupers(formData.hive_id, formData.honey_supers - oldHoneySupers)
       } else {
-        const { error } = await supabase
-          .from('inspections')
-          .insert([{ ...submitData, user_id: userId }])
-          .abortSignal(AbortSignal.timeout(INSPECTION_SAVE_TIMEOUT_MS))
-
-        if (error) throw error
-        recordSaved = true
-        await clearInspectionDraft(userId)
-
+        // Apply on the new hive first; if the second call fails we end up with
+        // an inflated count (visible to the user) rather than a missing one (silent).
         await adjustHiveHoneySupers(formData.hive_id, formData.honey_supers)
+        await adjustHiveHoneySupers(oldHiveId, -oldHoneySupers)
       }
 
       if (followUpTasks.length > 0) {
-        const selectedHive = hives.find(h => h.id === formData.hive_id)
-        const apiaryId = selectedHive?.apiary_id ?? null
-        const isTeamTask = !!selectedHive && sharedHiveIds.includes(selectedHive.id)
-
-        const taskRows = followUpTasks.map(draft => ({
-          user_id: userId,
-          title: draft.title,
-          description: draft.description || null,
-          event_type: 'task' as const,
-          category: 'inspection' as const,
-          priority: draft.priority,
-          start_date: draft.due_date,
-          all_day: true,
-          hive_id: formData.hive_id,
-          apiary_id: apiaryId,
-          equipment_needed: draft.equipment_needed || null,
-          notes: `Auto-created from inspection on ${formData.inspection_date}.`,
-          is_team_task: isTeamTask,
-          completed: false,
-        }))
-
+        const taskRows = buildFollowUpRows(formData, followUpTasks)
         const { error: tasksError } = await supabase.from('tasks_events').insert(taskRows)
         if (tasksError) {
           console.error('Follow-up task insert failed:', tasksError)
@@ -1123,7 +1034,6 @@ export default function RecordsPage() {
 
       await fetchInspections(userId, filters.ownershipFilter)
       await fetchHives(userId)
-      if (!isEdit) chooseHive(formData.hive_id)
       resetForm()
     } catch (error) {
       // Only tidy up when the row never landed. Past that point - a failing
@@ -1735,6 +1645,24 @@ export default function RecordsPage() {
 
   const handleImageClick = (url: string) => handleGalleryClick([url], 0)
 
+  // A waiting inspection may arrive at any time, so show it when it does. Skipped while a form is
+  // open: its own save refreshes the lists, and a reload shouldn't shift things under the beekeeper.
+  const showFormRef = useRef(showForm)
+  showFormRef.current = showForm
+  const outboxCountRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!userId) return
+    const onOutboxChanged = async () => {
+      const count = (await listQueuedInspections(userId)).length
+      const arrived = outboxCountRef.current !== null && count < outboxCountRef.current
+      outboxCountRef.current = count
+      if (arrived && !showFormRef.current) fetchAllData(userId, filters.ownershipFilter)
+    }
+    void onOutboxChanged()
+    window.addEventListener(OUTBOX_CHANGED_EVENT, onOutboxChanged)
+    return () => window.removeEventListener(OUTBOX_CHANGED_EVENT, onOutboxChanged)
+  }, [userId, fetchAllData, filters.ownershipFilter])
+
   // A form fills the phone's screen, so Android's Back should close it, through the same guard.
   const isPhone = useIsPhone()
   useCloseWatcher(showForm && isPhone, handleGuardedCancel)
@@ -1808,6 +1736,7 @@ export default function RecordsPage() {
         />
 
         {!showForm && <UnfinishedInspectionNotice userId={userId} />}
+        {!showForm && <InspectionOutbox userId={userId} />}
         <CachedDataNotice savedAt={staleSince} onRetry={() => { if (userId) fetchAllData(userId, filters.ownershipFilter) }} />
 
         {/* Form Section */}
@@ -1849,7 +1778,6 @@ export default function RecordsPage() {
                 onSubmit={handleInspectionSubmit}
                 onCancel={resetForm}
                 onImageClick={handleGalleryClick}
-                fetchingWeather={fetchingWeather}
                 onDirtyChange={handleFormDirtyChange}
                 draftUserId={userId}
               />

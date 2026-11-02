@@ -20,6 +20,7 @@ import { updateManager } from '@/lib/update-manager'
 import { registerServiceWorker } from '@/lib/notifications'
 import { useToast } from '@/components/ui/Toast'
 import { useScreenTransition } from '@/hooks/useScreenTransition'
+import { InspectionOutboxRunner } from '@/components/records/InspectionOutbox'
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, userId, loading: authLoading } = useAuth()
@@ -150,6 +151,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       <ChatButton />
+      <InspectionOutboxRunner userId={userId} />
       <BottomNavBar
         // Toggles, because the button reports aria-expanded and names itself
         // "Close menu" while open. A handler that only ever opened would make

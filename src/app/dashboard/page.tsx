@@ -8,6 +8,7 @@ import AlertPanel from '@/components/ui/AlertPanel'
 import PendingInvitationsCard from '@/components/dashboard/PendingInvitationsCard'
 import { Skeleton, SkeletonCard, SkeletonRow } from '@/components/ui/Skeleton'
 import UnfinishedInspectionNotice from '@/components/records/UnfinishedInspectionNotice'
+import InspectionOutbox from '@/components/records/InspectionOutbox'
 import CachedDataNotice from '@/components/ui/CachedDataNotice'
 import Panel from '@/components/ui/Panel'
 import Button from '@/components/ui/Button'
@@ -271,6 +272,7 @@ export default function DashboardPage() {
  return (
  <div className="space-y-6">
  <UnfinishedInspectionNotice userId={userId} />
+ <InspectionOutbox userId={userId} />
  <CachedDataNotice savedAt={staleSince} onRetry={() => { if (userId) fetchDashboardData(userId) }} />
  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
  <div className="flex flex-col gap-2">

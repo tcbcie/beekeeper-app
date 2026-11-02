@@ -237,9 +237,14 @@
 
 <h3>Phase G — Offline outbox (3 to 4 weeks)</h3>
 <ul class="todo">
-  <li>☐ Queue inspections with client-generated ids, and an idempotent insert.</li>
-  <li>☐ Clear "saved on phone, waiting to send" state, with retry and a visible failure path.</li>
-  <li>☐ Upload photos and fetch weather after sync.</li>
+  <li>☑ New inspections go into an on-device outbox first, with an id chosen on the phone, so a repeated send counts as arrived. No database change was needed.</li>
+  <li>☑ Progress is recorded step by step (photos, row, super count, tasks), so a retry resumes rather than repeats.</li>
+  <li>☑ Clear states: "Saved on this phone, not sent yet" on Dashboard and Records, with Send now. A refusal from the server stays listed with its reason, Try again and Discard. Anything uncertain stays queued.</li>
+  <li>☑ Saving no longer waits on a poor signal: after 8 seconds the form closes and sending carries on.</li>
+  <li>☑ Photos upload at send time. Weather is recorded only if sent within two hours, since later it would be the wrong weather.</li>
+  <li>☑ Sends when the app opens, returns to the screen or regains signal. iOS has no background sending, so the app must be opened.</li>
+  <li>☑ Log-out warns about unsent inspections. Only new inspections queue; editing a saved one and other record types still need signal.</li>
+  <li>☐ Real-phone check, before relying on it: see <code>docs/features/inspection-outbox.md</code>.</li>
 </ul>
 
 <h3>Phase H — Validate</h3>
@@ -265,7 +270,10 @@
 </table>
 
 <h2>Review</h2>
-<p><em>To be completed after implementation.</em></p>
+<p><strong>Built, 02/11/2026:</strong> Phases 0 to G. Phases 0 to F are pushed (<code>b9391c7e</code>, <code>0493dcf3</code>). Phase G is not yet committed.</p>
+<p><strong>Verified by:</strong> type-check, lint on changed files, and the existing test suites for styles, components, app, hooks, PWA and lib. <strong>Not verified:</strong> no build, no run on a real phone, and the new outbox has no automated tests of its own, so its checklist in <code>docs/features/inspection-outbox.md</code> is the only end-to-end check.</p>
+<p><strong>Changed from the plan:</strong> device fonts kept; no TanStack Query, Base UI Drawer or custom picker; no Next.js upgrade or View Transitions; Delete and Archive keep their confirmation.</p>
+<p><strong>Left to you:</strong> real-phone checks, manifest screenshots, and the moderated beekeeper sessions (Phase H), which also unlock the dashboard work. Phase I (app stores) stays parked, as you decided.</p>
 
 </body>
 </html>

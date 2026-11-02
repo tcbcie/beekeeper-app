@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { clearInspectionDraft, loadInspectionDraft } from '@/lib/inspection-draft'
+import { discardAllQueuedInspections, listQueuedInspections } from '@/lib/inspection-outbox'
 
 /** The deliberate log-out, from the desktop bar and from Profile on a phone. */
 export function useLogout(userId: string | null | undefined) {
@@ -13,16 +14,20 @@ export function useLogout(userId: string | null | undefined) {
 
   return useCallback(async () => {
     // Only here, not on every sign-out: an expired session must not cost anyone their work.
-    if (userId && await loadInspectionDraft(userId)) {
+    const [draft, waiting] = userId
+      ? await Promise.all([loadInspectionDraft(userId), listQueuedInspections(userId)])
+      : [null, []]
+    if (userId && (draft || waiting.length > 0)) {
       const logOutAnyway = await confirmDialog({
-        title: 'Log out and lose your unfinished inspection?',
-        message: 'It is only on this phone, and logging out removes it. To keep it, stay logged in and save it first.',
+        title: 'Log out and lose inspections on this phone?',
+        message: 'You have an unfinished inspection, or one not sent yet. It is only on this phone, and logging out removes it. To keep it, stay logged in until it has sent.',
         confirmLabel: 'Log out',
         cancelLabel: 'Stay logged in',
         variant: 'warning',
       })
       if (!logOutAnyway) return
       await clearInspectionDraft(userId)
+      await discardAllQueuedInspections(userId)
     }
 
     try {

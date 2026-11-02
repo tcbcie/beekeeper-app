@@ -54,7 +54,7 @@ export default function OfflineIndicator() {
           <WifiOff size={20} />
           <div>
             <p className="font-medium">You&apos;re Offline</p>
-            <p className="text-sm opacity-90">Nothing can be saved until you reconnect. Unfinished inspections stay on this phone.</p>
+            <p className="text-sm opacity-90">New inspections stay on this phone and send when you reconnect. Other changes need a signal.</p>
           </div>
         </>
       )}
