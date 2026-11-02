@@ -18,7 +18,7 @@ export default function SegmentedControl<T extends string>({ label, options, val
           role="radio"
           aria-checked={option.value === value}
           onClick={() => onChange(option.value)}
-          className={`min-h-[40px] min-w-0 flex-1 truncate rounded-md px-3 text-sm font-semibold ${
+          className={`min-h-[48px] min-w-0 flex-1 truncate rounded-md px-3 text-sm font-semibold ${
             option.value === value
               ? 'bg-forest-800 text-white'
               : 'text-text-primary'

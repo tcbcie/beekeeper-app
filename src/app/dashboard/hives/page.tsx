@@ -660,14 +660,6 @@ export default function HivesPage() {
  inlineOnPhone
  >
  <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
- {isPhone && (
- <SegmentedControl
- label="Show hives as"
- options={HIVE_VIEW_OPTIONS}
- value={phoneView}
- onChange={setPhoneView}
- />
- )}
  {isTeamMember && (
  <select
  value={ownershipFilter}
@@ -782,6 +774,16 @@ export default function HivesPage() {
  {activeCount} Active | {archivedCount} Archived | {needInspectionCount} Need Inspection (14+ days)
  {treatmentsOnCount > 0 && ` | ${treatmentsOnCount} Treatment${treatmentsOnCount > 1 ? 's' : ''} On`}
  </p>
+ )}
+
+ {/* On show, not inside Filters: it changes how the list looks, and it is the only way to the cards. */}
+ {isPhone && filteredHives.length > 0 && (
+ <SegmentedControl
+ label="Show hives as"
+ options={HIVE_VIEW_OPTIONS}
+ value={phoneView}
+ onChange={setPhoneView}
+ />
  )}
 
  {isPhone && phoneView === 'list' ? (
