@@ -212,11 +212,50 @@ describe('review step', () => {
     expect(screen.getByText('Step 1 of 5')).toBeInTheDocument()
   })
 
-  it('shows Save only on the review step', () => {
+  it('shows Save on the review step', () => {
     renderForm()
-    expect(screen.queryByRole('button', { name: /Save Inspection/ })).not.toBeInTheDocument()
     goToReview()
     expect(screen.getByRole('button', { name: /Save Inspection/ })).toBeInTheDocument()
+  })
+})
+
+describe('saving before the review step', () => {
+  const save = () => fireEvent.click(screen.getByRole('button', { name: /Save Inspection/ }))
+
+  it('saves from step one, without visiting the other steps', async () => {
+    const { onSubmit } = renderForm()
+    completeStepOne()
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+  })
+
+  it('saves values entered on an earlier step from a later one', async () => {
+    const { onSubmit } = renderForm()
+    fireEvent.change(screen.getByLabelText('Weight (kg)'), { target: { value: '18.5' } })
+    completeStepOne()
+    next()
+    next()
+    save()
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1))
+    const [formData] = onSubmit.mock.calls[0] as unknown as [Record<string, unknown>]
+    expect(formData.weight).toBe(18.5)
+  })
+
+  it('refuses without a hive, and says why', async () => {
+    const { onSubmit } = renderForm()
+    save()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Choose the hive this inspection is for.'
+    )
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
+
+  it('still only advances when Enter submits the form', () => {
+    const { onSubmit } = renderForm()
+    completeStepOne()
+    fireEvent.submit(document.getElementById('inspection-form') as HTMLFormElement)
+    expect(screen.getByText('Step 2 of 5')).toBeInTheDocument()
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 })
 

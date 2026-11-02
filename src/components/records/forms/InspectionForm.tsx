@@ -269,6 +269,7 @@ export default function InspectionForm({
     reset: resetVoiceRecorder
   } = useVoiceRecorder()
   const [voiceProcessing, setVoiceProcessing] = useState(false)
+  const voiceNoteBusy = isVoiceRecording || voiceProcessing
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const voiceAbortRef = useRef<AbortController | null>(null)
@@ -336,8 +337,8 @@ export default function InspectionForm({
   // nothing further is compulsory and every remaining step can be reached
   // directly. Gating them behind Next withheld nothing and simply made a
   // beekeeper who wanted one observation walk through two screens of ratings.
-  // The review step is the backstop: it still refuses to save while anything
-  // is outstanding, and names the step that owes it.
+  // Saving is the backstop: it still refuses while anything is outstanding, and
+  // names the step that owes it.
   const canJumpAhead = useMemo(() => validateStep(FIRST_STEP).length === 0, [validateStep])
 
   const goToNextStep = useCallback(() => {
@@ -1057,27 +1058,17 @@ export default function InspectionForm({
     setGivenTakenValue(field, parseSignedInteger(givenTakenDrafts[field]) + delta)
   }, [givenTakenDrafts, setGivenTakenValue])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (submitting || fetchingWeather) {
+  // Reached from the Save button on any step, so a beekeeper recording one thing
+  // doesn't have to walk through the rest. Every step's values live in formData
+  // whichever step is open.
+  const saveInspection = async () => {
+    // A voice note still in progress hasn't reached notes yet, and would be lost.
+    if (submitting || fetchingWeather || voiceNoteBusy) {
       return
     }
 
-    // Pressing Enter in a text field submits a form implicitly. Before this
-    // flow was stepped that was a useful shortcut. Now it would save straight
-    // from step one, skipping every remaining step and the review the flow
-    // exists to provide - a beekeeper typing a weight and pressing Enter would
-    // silently file a nearly empty inspection. Enter therefore advances,
-    // which is what the key means in a stepped flow, and only the review step
-    // can actually submit.
-    if (step !== LAST_STEP) {
-      goToNextStep()
-      return
-    }
-
-    // The button is disabled while anything is outstanding, but a form can be
-    // submitted by other means; an incomplete inspection must never be written.
+    // Save stays tappable before the hive is chosen, so it can say what is
+    // missing; an incomplete inspection must never be written.
     const outstanding = outstandingErrors
     if (outstanding.length > 0) {
       // goToStep, not setStep: this is the one path that can move the user to
@@ -1106,6 +1097,25 @@ export default function InspectionForm({
         .filter(draft => draft.title !== '')
       await onSubmit(submitData, stagedPhotos.map(photo => photo.file), tasks)
     })
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (submitting || fetchingWeather) {
+      return
+    }
+
+    // Pressing Enter in a text field submits a form implicitly. A beekeeper
+    // typing a weight and pressing Enter must not silently file a nearly empty
+    // inspection, so Enter advances, which is what the key means in a stepped
+    // flow. Saving early takes a tap on the Save button.
+    if (step !== LAST_STEP) {
+      goToNextStep()
+      return
+    }
+
+    await saveInspection()
   }
 
   const addFollowUpTask = useCallback(() => {
@@ -2401,8 +2411,8 @@ export default function InspectionForm({
           </div>
         )}
 
-        {/* Review. Deliberately a preview of unsaved work: nothing has been
-            written until Save is pressed on this step. */}
+        {/* Review. Optional, and deliberately a preview of unsaved work: nothing
+            has been written until Save is pressed. */}
         {step === LAST_STEP && (
         <div className="md:col-span-2 space-y-4">
           <p className="text-sm text-text-secondary">
@@ -2460,39 +2470,46 @@ export default function InspectionForm({
         </div>
         )}
 
-        {/* Step navigation. Save is deliberately reachable only from the review
-            step, so the flow always ends with the user seeing what is about to
-            be written. All controls are 48px. */}
+        {/* Step navigation. Save is on every step and the review step is optional.
+            Save is type="button" so that Enter in a field still only advances.
+            All controls are 48px. */}
         <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 pt-2 border-t border-border">
-          <Button
-          unstyled
-            type="button"
-            onClick={goToPreviousStep}
-            disabled={step === 1}
-            className="px-6 py-3 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation font-medium w-full sm:w-auto"
-          >
-            Previous
-          </Button>
-
-          {step < LAST_STEP ? (
+          <div className="grid grid-cols-2 gap-3 sm:flex">
             <Button
             unstyled
               type="button"
-              onClick={goToNextStep}
-              className="px-6 py-3 min-h-[48px] bg-forest-800 text-white rounded-lg hover:bg-forest-900 active:bg-forest-900 transition-all touch-manipulation font-medium w-full sm:w-auto"
+              onClick={goToPreviousStep}
+              disabled={step === 1}
+              className={`px-3 sm:px-6 py-3 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation font-medium w-full sm:w-auto ${step === LAST_STEP ? 'col-span-2' : ''}`}
             >
-              Next
+              Previous
             </Button>
-          ) : (
-            <Button
-            unstyled
-              type="submit"
-              disabled={submitting || fetchingWeather || outstandingErrors.length > 0}
-              className="px-6 py-3 min-h-[48px] bg-forest-800 text-white rounded-lg hover:bg-forest-900 active:bg-forest-900 disabled:bg-surface-secondary disabled:cursor-not-allowed transition-all touch-manipulation font-medium w-full sm:w-auto"
-            >
-              {submitting ? 'Saving...' : fetchingWeather ? 'Fetching Weather...' : isEditing ? 'Update' : 'Save'} Inspection
-            </Button>
-          )}
+
+            {step < LAST_STEP && (
+              <Button
+              unstyled
+                type="button"
+                onClick={goToNextStep}
+                className="px-3 sm:px-6 py-3 min-h-[48px] bg-forest-800 text-white rounded-lg hover:bg-forest-900 active:bg-forest-900 transition-all touch-manipulation font-medium w-full sm:w-auto"
+              >
+                Next
+              </Button>
+            )}
+          </div>
+
+          <Button
+            type="button"
+            tone="success"
+            onClick={saveInspection}
+            disabled={submitting || fetchingWeather || voiceNoteBusy || (step === LAST_STEP && outstandingErrors.length > 0)}
+            className="px-6 py-3 min-h-[48px] touch-manipulation font-medium w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isVoiceRecording
+              ? 'Stop the voice note to save'
+              : voiceProcessing
+                ? 'Finishing voice note...'
+                : <>{submitting ? 'Saving...' : fetchingWeather ? 'Fetching Weather...' : isEditing ? 'Update' : 'Save'} Inspection</>}
+          </Button>
 
           <Button
           unstyled

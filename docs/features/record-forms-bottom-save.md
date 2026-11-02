@@ -16,7 +16,7 @@ All four Save buttons are now green (`tone="success"`), per the batch-47 rule th
 | Varroa treatment | `src/components/records/forms/VarroaTreatmentForm.tsx` | Bottom Save + Cancel; Save red → green |
 | Varroa check | `src/components/records/forms/VarroaCheckForm.tsx` | Bottom Save + Cancel (after the photo section); Save amber → green |
 | Harvest | `src/components/records/forms/HarvestForm.tsx` | Bottom Save + Cancel; Save amber → green |
-| Inspection | `InspectionForm.tsx` | None. Save is already at the bottom (review step). |
+| Inspection | `InspectionForm.tsx` | None. Save is already at the bottom, on every step since 2 November 2026 (see [inspection-save-any-step.md](./inspection-save-any-step.md)). |
 | Archive hive | `src/app/dashboard/records/page.tsx` | None. Archive is already at the bottom. |
 
 ## 3. Technical Design

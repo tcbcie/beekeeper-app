@@ -3,15 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Winter Stores Level</title>
+<title>Plan &mdash; Save Inspection from Any Step</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
   h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
-  h3 { margin-top: 1.5rem; color: #3d4a41; }
   code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
-  pre { background: #1f2620; color: #e8f0ea; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: .88em; }
-  pre code { background: none; color: inherit; padding: 0; }
   table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
   th, td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
   th { background: #eef3ef; }
@@ -20,252 +17,117 @@
   ul.todo li { margin: .35rem 0; }
   .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
   .mocks { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; }
-  .mock { border: 1px solid #d8e3da; border-radius: 10px; padding: .9rem 1rem; background: #fff; flex: 1 1 15rem; }
-  .mock h4 { margin: 0 0 .5rem; font-size: .95rem; }
-  .dialrow { display: flex; align-items: center; gap: .7rem; }
-  .dialrow strong { display: block; }
-  .muted { color: #5a665e; font-size: .9em; }
-  .bar { display: flex; height: .7rem; border-radius: 4px; overflow: hidden; margin: .5rem 0 .2rem; }
-  .bar i { display: block; }
-  .thumbtrack { position: relative; height: 1.5rem; }
-  .thumb { position: absolute; top: .1rem; width: 1.3rem; height: 1.3rem; border-radius: 50%; background: #b45309; margin-left: -.65rem; border: 2px solid #fff; box-shadow: 0 0 0 1px #8a8a8a; }
-  .pct { font-size: 1.15rem; font-weight: 700; padding: .1rem .7rem; border-radius: 999px; background: #fef3c7; color: #92400e; }
-  .scale { display: flex; justify-content: space-between; font-size: .85em; color: #5a665e; }
+  .mock { border: 1px solid #d8e3da; border-radius: 10px; padding: .9rem 1rem; flex: 1 1 15rem; max-width: 22rem; }
+  .mock h3 { margin: 0 0 .6rem; font-size: .95rem; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: .5rem; }
+  .btn { display: block; text-align: center; padding: .6rem; border-radius: 8px; font-weight: 600; border: 1px solid #c4cbc6; margin-bottom: .5rem; }
+  .row .btn { margin-bottom: 0; }
+  .next { background: #1f4d33; color: #fff; border-color: #1f4d33; }
+  .save { background: #15803d; color: #fff; border-color: #15803d; }
 </style>
 </head>
 <body>
 
-<h1>Winter Stores Level</h1>
+<h1>Save Inspection from Any Step</h1>
 
 <p><strong>Status:</strong> built, waiting on your browser test &nbsp;&middot;&nbsp; <strong>Date:</strong> 2 November 2026</p>
 
 <blockquote>
-<p><strong>Your request:</strong> record store levels in the inspection with a 0&ndash;100 gauge (0&ndash;40 red, 40&ndash;80 amber, 80&ndash;100 green), and show a red, amber or green dial on the hive card, so you can see whether stores are sufficient for winter.</p>
+<p><strong>Your request:</strong> an inspection can only be saved on the last section, so recording something on an earlier screen means clicking Next, Next, Next.</p>
 </blockquote>
 
-<h2>1. What it will look like</h2>
+<h2>1. What I found</h2>
+
+<ul>
+  <li>You&rsquo;re right: Save only appears on step 5 (<span class="file">InspectionForm.tsx:2477</span>). This was deliberate, so that every save ended with a review.</li>
+  <li>The only required fields are hive, date and time, all on step 1, so nothing on steps 2 to 5 needs to hold a save back.</li>
+  <li>There is already a shortcut: once step 1 is valid, tapping <strong>5 Review</strong> in the row at the top jumps there. That still takes an extra tap and an extra screen, and nothing on screen suggests it.</li>
+  <li>Saving already reads every step&rsquo;s values, whichever step is open, so the save itself doesn&rsquo;t need to change.</li>
+</ul>
+
+<h2>2. The change</h2>
+
+<p>Save Inspection appears on every step, next to Next. Review stays as an optional last step for anyone who wants to check before saving.</p>
 
 <div class="mocks">
   <div class="mock">
-    <h4>Inspection form (step 2, Queen and colony)</h4>
-    <div class="dialrow" style="justify-content:space-between">
-      <strong>Stores level</strong>
-      <span class="pct">65% &middot; Top up</span>
-    </div>
-    <div class="thumbtrack"><span class="thumb" style="left:65%"></span></div>
-    <div class="bar"><i style="width:40%;background:#dc2626"></i><i style="width:40%;background:#d97706"></i><i style="width:20%;background:#16a34a"></i></div>
-    <div class="scale"><span>0</span><span>40</span><span>80</span><span>100</span></div>
-    <p class="muted">Last reading: 45% on 12/10/2026 &nbsp;&middot;&nbsp; Clear</p>
-    <p class="muted">Before anything is set, the section shows &ldquo;Not recorded&rdquo; and a Record stores button.</p>
+    <h3>Now, steps 1 to 4 (phone)</h3>
+    <span class="btn">Previous</span>
+    <span class="btn next">Next</span>
+    <span class="btn">Cancel</span>
   </div>
-
   <div class="mock">
-    <h4>Hive card dial, three readings</h4>
-    <div class="dialrow">
-      <svg width="72" height="44" viewBox="0 0 100 60" role="img" aria-label="Stores 25 percent, low">
-        <path d="M10 50 A40 40 0 0 1 37.64 11.96" fill="none" stroke="#dc2626" stroke-width="10"/>
-        <path d="M37.64 11.96 A40 40 0 0 1 82.36 26.49" fill="none" stroke="#d97706" stroke-width="10"/>
-        <path d="M82.36 26.49 A40 40 0 0 1 90 50" fill="none" stroke="#16a34a" stroke-width="10"/>
-        <line x1="50" y1="50" x2="28.79" y2="28.79" stroke="#1f2620" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="50" cy="50" r="5" fill="#1f2620"/>
-      </svg>
-      <span><strong>25% &middot; Low</strong><span class="muted">Stores, 12 Oct</span></span>
-    </div>
-    <div class="dialrow">
-      <svg width="72" height="44" viewBox="0 0 100 60" role="img" aria-label="Stores 65 percent, top up">
-        <path d="M10 50 A40 40 0 0 1 37.64 11.96" fill="none" stroke="#dc2626" stroke-width="10"/>
-        <path d="M37.64 11.96 A40 40 0 0 1 82.36 26.49" fill="none" stroke="#d97706" stroke-width="10"/>
-        <path d="M82.36 26.49 A40 40 0 0 1 90 50" fill="none" stroke="#16a34a" stroke-width="10"/>
-        <line x1="50" y1="50" x2="63.62" y2="23.27" stroke="#1f2620" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="50" cy="50" r="5" fill="#1f2620"/>
-      </svg>
-      <span><strong>65% &middot; Top up</strong><span class="muted">Stores, 12 Oct</span></span>
-    </div>
-    <div class="dialrow">
-      <svg width="72" height="44" viewBox="0 0 100 60" role="img" aria-label="Stores 90 percent, enough">
-        <path d="M10 50 A40 40 0 0 1 37.64 11.96" fill="none" stroke="#dc2626" stroke-width="10"/>
-        <path d="M37.64 11.96 A40 40 0 0 1 82.36 26.49" fill="none" stroke="#d97706" stroke-width="10"/>
-        <path d="M82.36 26.49 A40 40 0 0 1 90 50" fill="none" stroke="#16a34a" stroke-width="10"/>
-        <line x1="50" y1="50" x2="78.53" y2="40.73" stroke="#1f2620" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="50" cy="50" r="5" fill="#1f2620"/>
-      </svg>
-      <span><strong>90% &middot; Enough</strong><span class="muted">Stores, 12 Oct</span></span>
-    </div>
-    <div class="dialrow">
-      <svg width="72" height="44" viewBox="0 0 100 60" role="img" aria-label="Stores not checked">
-        <path d="M10 50 A40 40 0 0 1 90 50" fill="none" stroke="#c4cbc6" stroke-width="10"/>
-      </svg>
-      <span><strong>Not checked</strong><span class="muted">No reading since 1 August</span></span>
-    </div>
+    <h3>Proposed, steps 1 to 4 (phone)</h3>
+    <div class="row"><span class="btn">Previous</span><span class="btn next">Next</span></div>
+    <span class="btn save">Save Inspection</span>
+    <span class="btn">Cancel</span>
   </div>
 </div>
 
-<h2>2. What I found</h2>
-
-<p>None of the existing stores data can drive the dial, so this needs a new column.</p>
-
-<table>
-  <tr><th>Existing column</th><th>What it really is</th><th>Why it can&rsquo;t be used</th></tr>
-  <tr><td><code>honey_stores</code></td><td>Old text values (Good, Medium, Low) on 100 of 1,898 inspections</td><td>No form writes it any more, and the newest value dates from 15/11/2025.</td></tr>
-  <tr><td><code>store_frames</code></td><td>A count of frames given or taken in that visit</td><td>It records a movement, not a level, and defaults to 0.</td></tr>
-  <tr><td><code>honey_super_fullness</code></td><td>0&ndash;100% for each super</td><td>It measures supers, which are usually off for winter.</td></tr>
-  <tr><td><code>weight</code></td><td>Gross hive weight, on 86 inspections</td><td>Too sparse, and it includes the hive and bees.</td></tr>
-</table>
-
-<p>Honey Super Fullness already solved most of this: a 0&ndash;100 slider, <code>NULL</code> for &ldquo;not recorded&rdquo;, and a card showing the last inspection that actually recorded a value. I&rsquo;ll follow that pattern. The hive list already loads each hive&rsquo;s inspection history, so the dial adds no extra requests.</p>
-
-<h2>3. Decisions I&rsquo;ve built into the plan</h2>
-
 <table>
   <tr><th>Topic</th><th>Decision</th><th>Why</th></tr>
-  <tr>
-    <td>Bands</td>
-    <td>0&ndash;39 red, 40&ndash;79 amber, 80&ndash;100 green, in steps of 5</td>
-    <td>Your ranges overlap at 40 and 80, so each boundary takes the better colour. Defined once, in one helper.</td>
-  </tr>
-  <tr>
-    <td>Colour plus words</td>
-    <td>The % and a word (Low, Top up, Enough) always sit beside the colour</td>
-    <td>The colours alone are hard to read in sunlight, for colour-blind users and with reduced eyesight.</td>
-  </tr>
-  <tr>
-    <td>No reading</td>
-    <td>Grey &ldquo;Not checked&rdquo;, never red</td>
-    <td>A grey dial means &ldquo;go and check&rdquo;. Red would claim the hive is short of food when nobody knows. It also follows the existing rule in <span class="file">seasonal-lead.ts:95</span>.</td>
-  </tr>
-  <tr>
-    <td>New inspection</td>
-    <td>Starts as &ldquo;Not recorded&rdquo;. It shows the last reading for reference, and Record stores starts the slider there (or at 50 if there is none)</td>
-    <td>Stores change between visits, so silently copying the last value would make an old guess look like a new reading. Inspections that skip the section leave the dial unchanged.</td>
-  </tr>
-  <tr>
-    <td>Which inspection counts</td>
-    <td>The newest one that recorded stores, with its date shown</td>
-    <td>Same as Super Fullness. An inspection that skips the section must not blank the dial.</td>
-  </tr>
-  <tr>
-    <td>Dial placement</td>
-    <td>Its own row in the card&rsquo;s details, not in the status pills at the top</td>
-    <td>The pill cluster already wraps on narrow phones, and the dial needs room for its text.</td>
-  </tr>
-  <tr>
-    <td>Archived hives</td>
-    <td>No dial</td>
-    <td>Same as the Queenless pill.</td>
-  </tr>
+  <tr><td>Colour</td><td>Save is green, on every step including Review</td><td>The app&rsquo;s rule is that saves are green. It also stops Save and Next looking like the same button.</td></tr>
+  <tr><td>Phone layout</td><td>Previous and Next share a row, with Save below at full width</td><td>Keeps the button stack no taller than today, and it&rsquo;s harder to hit Save when reaching for Next.</td></tr>
+  <tr><td>Position</td><td>At the bottom of each step, not fixed to the screen</td><td>A fixed bar collides with Mel&rsquo;s button and the mobile navigation, as noted in <span class="file">record-forms-bottom-save.md</span>.</td></tr>
+  <tr><td>Missing hive, date or time</td><td>Save stays tappable, jumps to step 1, names the missing field and moves to it</td><td>A greyed-out button gives no reason. The form already has this handling, and an incomplete inspection still can&rsquo;t be saved.</td></tr>
+  <tr><td>Enter key</td><td>Still moves to the next step, and only saves on Review</td><td>Pressing Enter after typing a weight must not file an inspection by accident.</td></tr>
+  <tr><td>Double taps</td><td>Same protection as today</td><td>All Save buttons go through the existing lock, so it saves once.</td></tr>
+  <tr><td>Editing an inspection</td><td>Works the same way, with the label Update Inspection</td><td>Correcting one field shouldn&rsquo;t mean walking through every step either.</td></tr>
 </table>
 
-<h2>4. Decisions I need from you</h2>
+<h2>3. Two effects to be aware of</h2>
 
-<table>
-  <tr><th>Question</th><th>My recommendation</th><th>Alternative</th></tr>
-  <tr>
-    <td><strong>A. What does 100% mean?</strong> This matters most, because everyone needs to read the gauge the same way.</td>
-    <td><strong>100% = enough to get through winter</strong>, with a hint under the slider: &ldquo;100% is about 18 kg&rdquo;. That is the rough guide the app already uses. Green would then start at about 14 kg and amber at about 7 kg. Please confirm those figures suit your hives.</td>
-    <td>100% = every available frame full. That depends on hive size, so 80% wouldn&rsquo;t mean the same thing on every hive and &ldquo;sufficient&rdquo; would be lost.</td>
-  </tr>
-  <tr>
-    <td><strong>B. When does the dial show?</strong> Hives are rarely opened from November to February, so October&rsquo;s reading has to last, but it shouldn&rsquo;t still be on the card next summer.</td>
-    <td><strong>1 August to 30 April</strong>, using readings taken since 1 August. Hidden from May to July. The form section stays available all year.</td>
-    <td>Always show the last reading and its date. Simpler, but a green dial from last winter would sit on the card all summer.</td>
-  </tr>
-  <tr>
-    <td><strong>C. Are the words right?</strong></td>
-    <td><strong>Low, Top up, Enough.</strong> Each one says what to do.</td>
-    <td>Low, Medium, Good, which match the old <code>honey_stores</code> values.</td>
-  </tr>
-</table>
+<ul>
+  <li><strong>Values filled in for you get saved without being seen.</strong> A new inspection pre-fills Super Fullness and right-sized frames from the last visit, and weight from a connected scale. Saving from step 1 stores them on this inspection without you opening the step that shows them. This already happens if you jump to Review, but Review at least lists them. I think that&rsquo;s acceptable, because they are the hive&rsquo;s last known values.</li>
+  <li><strong>A near-empty inspection is one tap away.</strong> If the hive is preselected, date and time fill in automatically, so step 1 is ready to save at once. It only saves on a deliberate tap, and the form already treats visit details alone as a valid inspection.</li>
+</ul>
 
-<h2>5. The change</h2>
-
-<h3>Database</h3>
-<pre><code>alter table public.inspections
-  add column stores_level smallint
-  check (stores_level between 0 and 100);</code></pre>
-<p>It is nullable, so existing inspections stay untouched and read as &ldquo;not recorded&rdquo;. <code>inspections</code> has table-level grants and no database function lists its columns, so nothing else on the database side needs changing.</p>
-
-<h3>Task list</h3>
+<h2>4. Tasks</h2>
 <ul class="todo">
-  <li>&#9745; <strong>Migration:</strong> add the column through the Supabase MCP, then run the advisors.</li>
-  <li>&#9745; <strong>Helper:</strong> new <span class="file">src/lib/stores-level.ts</span> with the band, the word, and the season rule, plus a small unit test for the 39/40 and 79/80 boundaries and the season dates.</li>
-  <li>&#9745; <strong>Types:</strong> add <code>stores_level</code> to <code>Inspection</code>, <code>InspectionFormData</code> and the defaults (<span class="file">src/types/records.ts</span>), and to <code>Hive</code> (<span class="file">src/types/hive.ts</span>).</li>
-  <li>&#9745; <strong>Form:</strong> add the Stores level section to step 2 of <span class="file">InspectionForm.tsx</span>, above Honey Super Fullness: 48px slider, colour bands, Record stores and Clear. Shown for every hive, supers or not.</li>
-  <li>&#9745; <strong>Saving and editing:</strong> add the field to the edit mapping (<span class="file">records/page.tsx:314</span>), otherwise editing an inspection would wipe its reading. Add the last reading per hive next to <span class="file">records/page.tsx:264</span>.</li>
-  <li>&#9745; <strong>Review step:</strong> add stores to the summary (<span class="file">InspectionForm.tsx:406</span>) and to the step description (<span class="file">InspectionStepper.tsx:46</span>).</li>
-  <li>&#9745; <strong>Dial:</strong> new <span class="file">src/components/hive/StoresDial.tsx</span>, display only, with light and dark colours and a spoken label for screen readers.</li>
-  <li>&#9745; <strong>Hive list data:</strong> add the column to the history query in <span class="file">useHivesList.ts</span> and derive the latest reading and date next to the fullness logic (<span class="file">useHivesList.ts:349</span>).</li>
-  <li>&#9745; <strong>Hive card:</strong> render the dial in <span class="file">HiveListCard.tsx</span>, hidden for archived hives and out of season.</li>
-  <li>&#9745; <strong>Inspection history:</strong> show the reading in <span class="file">InspectionCard.tsx</span> and in the hive detail history (<span class="file">hives/[id]/page.tsx:390</span>).</li>
-  <li>&#9745; <strong>Mel:</strong> add the reading to <code>getLastInspection</code> and to <code>getHivesNeedingFeeding</code> (<span class="file">src/lib/ai/tools/</span>), so &ldquo;which hives need feeding?&rdquo; uses it ahead of the old <code>honey_stores</code> value.</li>
-  <li>&#9745; <strong>Docs:</strong> add <span class="file">docs/features/winter-stores-level.md</span> and update the plan.</li>
+  <li>&#9745; <strong>Form:</strong> move the save logic in <span class="file">InspectionForm.tsx</span> into its own function, called by the Save button on every step. Enter keeps its current behaviour.</li>
+  <li>&#9745; <strong>Buttons:</strong> new layout and green Save, on phone and desktop.</li>
+  <li>&#9745; <strong>Wording:</strong> update the code comments and the Review step text, which currently describe Save as being on Review only.</li>
+  <li>&#9745; <strong>Tests:</strong> update the &ldquo;shows Save only on the review step&rdquo; test, and add saving from an earlier step and saving with no hive.</li>
+  <li>&#9745; <strong>Docs:</strong> add <span class="file">docs/features/inspection-save-any-step.md</span>.</li>
   <li>&#9745; <strong>QA:</strong> run the <code>qa-engineer</code> audit and apply its fixes.</li>
   <li>&#9744; <strong>Your test:</strong> the checklist is in the review below; waiting on you.</li>
   <li>&#9745; <strong>Review:</strong> add the review section to this file.</li>
 </ul>
 
-<h3>Known limit</h3>
-<p>If one hive has two inspections with stores on the same date, the list picks between them by ID, not by time. Super Fullness behaves the same way and it should be rare, so I&rsquo;m leaving it as it is.</p>
-
-<h2>6. Suggestions for later (not in this build)</h2>
-
-<table>
-  <tr><th>Idea</th><th>Why it&rsquo;s useful</th></tr>
-  <tr><td><strong>&ldquo;3 of 12 hives low&rdquo;</strong> on the apiary page and the dashboard&rsquo;s getting-ready-for-winter card</td><td>The best next step, because it answers &ldquo;which hives do I feed?&rdquo; without opening every card. The dashboard currently just says to heft your hives.</td></tr>
-  <tr><td><strong>Record feed shortcut</strong> on a red or amber dial, and a &ldquo;Fed since&rdquo; note</td><td>Feeding after a reading makes the dial out of date until the next check. The note makes that visible.</td></tr>
-  <tr><td><strong>Scale hives</strong> showing the weight trend beside the dial</td><td>A real reading through winter, without opening the hive. Needs care, because the list would make one extra request per scale.</td></tr>
-  <tr><td><strong>Quick heft record</strong></td><td>Log a stores reading without going through an inspection, which suits winter visits.</td></tr>
-  <tr><td><strong>Overwintering nucs</strong></td><td>Nuc inspections use a separate table, so they aren&rsquo;t covered here.</td></tr>
-  <tr><td><strong>Autumn reminder</strong> for hives still red or not checked</td><td>Uses the existing push notifications, while there is still time to feed.</td></tr>
-  <tr><td><strong>Trend note and CSV</strong>: &ldquo;was 45%&rdquo; on the card, and a column in the inspection summary export</td><td>Small additions, and Super Fullness already has the trend note to copy. The full data export picks up the new column automatically.</td></tr>
-</table>
-
-<h2>7. Review</h2>
-
-<p>You approved all three recommendations: 100% means enough for winter (about 18 kg), the dial shows from 1 August to 30 April, and the words are Low, Top up and Enough.</p>
+<h2>5. Review</h2>
 
 <h3>What changed</h3>
-<ul>
-  <li><strong>Database:</strong> <code>inspections.stores_level</code> is live on the production database. It is nullable, so no existing inspection changed. The security advisors flagged nothing related to it.</li>
-  <li><strong>Form:</strong> a Stores Level section in step 2, plus the review step and the step description.</li>
-  <li><strong>Hive card:</strong> the new dial, fed from the history the list already loads, so it adds no requests.</li>
-  <li><strong>History:</strong> the reading shows on the inspection record card and in the hive detail history.</li>
-  <li><strong>Mel:</strong> both tools now use the reading.</li>
-</ul>
+<p>Only <span class="file">InspectionForm.tsx</span> changed in the app: Save is on every step, in the new layout and in green. The save logic is now its own function, and the Enter key behaves as before. The tests and docs were updated to match.</p>
 
-<h3>Additions beyond the plan</h3>
-<ul>
-  <li><strong>Mel&rsquo;s look-back:</strong> the feeding tool only looks back 14 days by default, which would have missed October&rsquo;s reading by December. It now uses each hive&rsquo;s latest reading since 1 August.</li>
-  <li><strong>Mel&rsquo;s answer:</strong> Low and Top up both count as needing feed. A hive with a reading no longer gets flagged by the older signs. This matters because one of those signs is &ldquo;one super or fewer&rdquo;, which is true of most hives in winter.</li>
-</ul>
+<h3>Addition beyond the plan</h3>
+<p><strong>Voice notes:</strong> Save is now disabled while a voice note is recording or being transcribed. Save now sits on the same step as the microphone, so without this a tap could easily lose the note.</p>
 
 <h3>QA audit</h3>
 <p>No Critical or High findings.</p>
 <table>
   <tr><th>Severity</th><th>Finding</th><th>Outcome</th></tr>
-  <tr><td>Medium</td><td>On a new inspection, a reading stayed on the form if you then changed the hive or apiary, so it could be saved against the wrong hive.</td><td>Fixed: changing either now clears it. Editing an existing inspection keeps it.</td></tr>
-  <tr><td>Low</td><td>Screen readers announced the slider&rsquo;s number but not its meaning.</td><td>Fixed: they now hear, for example, &ldquo;65 percent, Top up&rdquo;.</td></tr>
-  <tr><td>Low</td><td>The slider thumb can sit slightly off the colour bands near each end, because browsers inset the thumb.</td><td>Left as it is: the % and word above the slider give the exact value.</td></tr>
+  <tr><td>Medium</td><td>While recording, the disabled Save read &ldquo;Finishing voice note...&rdquo;, which hid that the beekeeper needed to stop it.</td><td>Fixed: it now reads &ldquo;Stop the voice note to save&rdquo;.</td></tr>
+  <tr><td>Low</td><td>Saving immediately after picking a hive can run before the pre-filled values arrive, leaving them out of that inspection.</td><td>Left as it is and documented: nothing already recorded is lost, and the window is short.</td></tr>
 </table>
 
 <h3>Checks</h3>
 <ul>
-  <li>Type check: passed.</li>
-  <li>Lint on the changed files: passed.</li>
-  <li>New unit tests and the typography test: 15 of 15 passed.</li>
+  <li>Type check and lint on the form: passed, including after the label fix.</li>
+  <li>Inspection flow, unsaved-changes and typography tests: 48 of 48 passed, including four new ones. The flow tests were re-run after the label fix: 27 of 27 passed.</li>
   <li>Not run, per your rule: the build. Nothing has been checked in a browser yet.</li>
   <li>Not committed.</li>
 </ul>
 
 <h3>Your browser checklist</h3>
 <ul class="todo">
-  <li>&#9744; Hive list: hives show grey &ldquo;Stores not checked&rdquo;, and archived hives show no dial.</li>
-  <li>&#9744; New inspection, step 2: Record stores starts at 50, the colour changes at 40 and 80, and Clear returns to &ldquo;Not recorded&rdquo;.</li>
-  <li>&#9744; Save it: the review step, the record card, the hive detail history and the hive card dial all show the reading.</li>
-  <li>&#9744; Inspect the same hive again without recording stores: the dial stays, and the form shows the last reading.</li>
-  <li>&#9744; Edit the first inspection: the reading is still there, and a recorded 0% stays 0%.</li>
-  <li>&#9744; Pick a different hive after recording: the reading clears.</li>
-  <li>&#9744; Phone width and dark mode: the slider, dial and text are all easy to read.</li>
-  <li>&#9744; Ask Mel &ldquo;which hives need feeding?&rdquo;.</li>
+  <li>&#9744; Phone at its narrowest: Previous and Next fit side by side, with Save below in green.</li>
+  <li>&#9744; Pick a hive on step 1 and tap Save: it saves, and the record appears.</li>
+  <li>&#9744; Fill in something on step 2, tap Save there: the value is on the saved record.</li>
+  <li>&#9744; New inspection with no hive, tap Save: the form asks for the hive and saves nothing.</li>
+  <li>&#9744; Type a weight and press Enter: it moves to step 2 and doesn&rsquo;t save.</li>
+  <li>&#9744; Edit an inspection: the button reads Update Inspection, and works from any step.</li>
+  <li>&#9744; Start a voice note on step 4: Save asks you to stop it first, and the note is in the saved record.</li>
+  <li>&#9744; Dark mode: Save is green and easy to read.</li>
 </ul>
 
 </body>
