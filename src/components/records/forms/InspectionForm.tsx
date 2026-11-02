@@ -1370,9 +1370,20 @@ export default function InspectionForm({
   // count so the picker can extend beyond the historical 1-10 range.
   const renderNumberSelector = useCallback((value: number | null, onChange: (val: number | null) => void, label: string, color: NumberSelectorTheme = 'purple', max: number = 10) => (
     <div className="mb-4" role="group" aria-labelledby={labelId('count', label)}>
-      <p id={labelId('count', label)} className="block text-sm font-medium text-text-secondary mb-3">
-        {label} {value !== null ? `(${value})` : ''}
-      </p>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p id={labelId('count', label)} className="text-sm font-medium text-text-secondary">
+          {label} {value !== null ? `(${value})` : ''}
+        </p>
+        <Button
+          unstyled
+          type="button"
+          onClick={() => onChange(null)}
+          aria-label={`Clear ${label}`}
+          className="min-h-[48px] flex-shrink-0 px-4 rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+        >
+          Clear
+        </Button>
+      </div>
       <div className="flex flex-wrap gap-2">
         {Array.from({ length: Math.max(1, max) }, (_, i) => i + 1).map((num) => (
           <Button
@@ -1389,18 +1400,6 @@ export default function InspectionForm({
             {num}
           </Button>
         ))}
-        <Button
-          unstyled
-          type="button"
-          onClick={() => onChange(null)}
-          className={`min-h-[48px] min-w-[48px] sm:min-h-[52px] px-4 rounded-lg font-medium text-sm transition-all touch-manipulation ${
-            value === null
-              ? 'bg-surface-secondary text-foreground shadow-lg ring-2 ring-border'
-              : 'bg-surface-elevated text-foreground hover:bg-surface-secondary active:bg-surface-secondary border border-border'
-          }`}
-        >
-          Clear
-        </Button>
       </div>
     </div>
   ), [])
