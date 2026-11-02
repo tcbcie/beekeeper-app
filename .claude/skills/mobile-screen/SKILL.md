@@ -27,7 +27,7 @@ Background: `docs/features/mobile-native-feel-review-plan.md`.
 
 - Rows or compact cards. No cards inside cards.
 - No sideways-scrolling table on a field screen.
-- Filters sit behind one control showing how many are active.
+- Filters sit behind one control showing how many are active. The exception is a filter people switch constantly while working: the record type buttons on Records stay on show, because a beekeeper moves between inspections, varroa checks and treatments at each apiary.
 
 ## Feedback and state
 

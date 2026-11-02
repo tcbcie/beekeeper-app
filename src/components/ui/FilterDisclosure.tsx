@@ -21,6 +21,8 @@ interface FilterDisclosureProps {
    * the opened panel takes a full row at the end, and it starts closed on each visit.
    */
   inlineOnPhone?: boolean
+  /** With inlineOnPhone, for a narrow cell: the button fills it and drops its icons to fit. */
+  fillCellOnPhone?: boolean
   children: ReactNode
 }
 
@@ -43,6 +45,7 @@ export default function FilterDisclosure({
   storageKey,
   onClear,
   inlineOnPhone = false,
+  fillCellOnPhone = false,
   children,
 }: FilterDisclosureProps) {
   const [open, setOpen] = usePersistentState<boolean>(
@@ -80,9 +83,11 @@ export default function FilterDisclosure({
           onClick={() => setOpen((prev) => !prev)}
           aria-expanded={open}
           aria-controls={open ? contentId : undefined}
-          className="inline-flex min-h-[48px] items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 dark:bg-surface-elevated"
+          className={`inline-flex min-h-[48px] items-center rounded-lg border border-border bg-surface py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest-600 dark:bg-surface-elevated ${
+            fillCellOnPhone ? 'w-full justify-center gap-1 px-1 sm:w-auto sm:gap-2 sm:px-4' : 'gap-2 px-4'
+          }`}
         >
-          <SlidersHorizontal size={16} aria-hidden="true" />
+          <SlidersHorizontal size={16} aria-hidden="true" className={fillCellOnPhone ? 'hidden sm:block' : ''} />
           <span>Filters</span>
           {activeCount > 0 && (
             // Counted in the accessible name too: a badge that only renders a
@@ -97,7 +102,9 @@ export default function FilterDisclosure({
           <ChevronDown
             size={18}
             aria-hidden="true"
-            className={`text-text-secondary transition-transform ${open ? 'rotate-180' : ''}`}
+            className={`text-text-secondary transition-transform ${open ? 'rotate-180' : ''} ${
+              fillCellOnPhone && activeCount > 0 ? 'hidden sm:block' : ''
+            }`}
           />
         </Button>
 

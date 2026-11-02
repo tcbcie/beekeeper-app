@@ -105,18 +105,6 @@ export default function RecordFiltersBar({
     .filter(hive => !apiaryId || hive.apiary_id === apiaryId)
     .filter(hive => showArchivedHives || !hive.archived_at)
 
-  const recordTypeOptions = (
-    <>
-      <option value="all">All Types</option>
-      <option value="inspection">Hive Inspection</option>
-      <option value="varroa_treatment">Varroa Treatment</option>
-      <option value="varroa_check">Varroa Check</option>
-      <option value="feeding">Feeding</option>
-      <option value="harvest">Harvest</option>
-      <option value="archive">Hive Archived</option>
-    </>
-  )
-
   return (
     <div className="space-y-2 sm:space-y-4">
       {/* Search sits above the filters: it is the fastest way to a known
@@ -136,21 +124,24 @@ export default function RecordFiltersBar({
       {newRecordControl && <div className="flex-shrink-0 md:hidden">{newRecordControl}</div>}
       </div>
 
-      {/* Quick record type. All types and archived hives stay in the drop-down below. On a phone
-          these took three rows above every record, so the drop-down beside Filters does the job. */}
-      <div className="hidden flex-wrap gap-2 sm:flex" role="group" aria-label="Record type">
+      {/* On a phone the record type buttons and Filters share one grid of two rows of three. */}
+      <div className="grid grid-cols-3 gap-2 sm:block sm:space-y-4">
+      {/* Quick record type: how a beekeeper moves between inspections, checks and treatments at an
+          apiary, so these stay on show on a phone. Tap the chosen one again for all types. Archived
+          hives stay in the drop-down below. */}
+      <div className="contents sm:flex sm:flex-wrap sm:gap-2" role="group" aria-label="Record type">
         {QUICK_RECORD_TYPES.map(({ value, label, icon: Icon, colour }) => (
           <Button
             key={value}
             unstyled
-            onClick={() => onRecordTypeChange(value)}
+            onClick={() => onRecordTypeChange(recordTypeFilter === value ? 'all' : value)}
             aria-pressed={recordTypeFilter === value}
-            className={`inline-flex min-h-12 items-center gap-1.5 rounded-lg px-3 text-sm font-semibold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground ${colour} ${
+            className={`inline-flex min-h-12 items-center justify-center gap-1.5 rounded-lg px-1 text-center text-sm font-semibold leading-tight text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground sm:px-3 ${colour} ${
               // A ring, not colour alone, marks the selected button
               recordTypeFilter === value ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : ''
             }`}
           >
-            <Icon size={18} aria-hidden="true" />
+            <Icon size={18} aria-hidden="true" className="hidden sm:block" />
             {label}
           </Button>
         ))}
@@ -159,7 +150,7 @@ export default function RecordFiltersBar({
       {/* Time Period Filter. On a phone these five buttons took two rows above every record, so
           they become one drop-down inside Filters, and any choice but All Time stays on show here. */}
       {timePeriod !== 'all' && (
-        <Button tone="neutral" size="sm" onClick={() => onTimePeriodChange('all')} className="sm:hidden">
+        <Button tone="neutral" size="sm" onClick={() => onTimePeriodChange('all')} className="order-last col-span-full justify-self-start sm:hidden">
           {PERIOD_LABELS[timePeriod]}
           <X size={16} aria-hidden="true" />
           <span className="sr-only">Show all time</span>
@@ -223,23 +214,15 @@ export default function RecordFiltersBar({
         </Button>
       </div>
 
-      {/* Secondary filters. The time-period presets above stay visible because
-          they carry counts and are how records are usually scoped; everything
-          else is one control away. */}
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:block">
-      <select
-        aria-label="Filter by record type"
-        value={recordTypeFilter}
-        onChange={(e) => onRecordTypeChange(e.target.value as RecordType | 'all')}
-        className="min-h-12 min-w-0 px-4 py-2 border border-border rounded-lg bg-surface text-foreground sm:hidden"
-      >
-        {recordTypeOptions}
-      </select>
+      {/* Secondary filters. From sm the time-period presets above stay visible
+          because they carry counts and are how records are usually scoped;
+          everything else is one control away. */}
       <FilterDisclosure
         activeCount={activeFilterCount}
         storageKey="records:filtersOpen"
         onClear={onClearFilters}
         inlineOnPhone
+        fillCellOnPhone
       >
         {/* Main Filters Row */}
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full">
@@ -274,9 +257,15 @@ export default function RecordFiltersBar({
             aria-label="Filter by record type"
             value={recordTypeFilter}
             onChange={(e) => onRecordTypeChange(e.target.value as RecordType | 'all')}
-            className="hidden sm:block min-h-12 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-forest-400 dark:hover:border-forest-500 focus:border-forest-500 dark:focus:border-forest-400 focus:ring-2 focus:ring-forest-200 dark:focus:ring-forest-800 transition-all"
+            className="min-h-12 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-forest-400 dark:hover:border-forest-500 focus:border-forest-500 dark:focus:border-forest-400 focus:ring-2 focus:ring-forest-200 dark:focus:ring-forest-800 transition-all"
           >
-            {recordTypeOptions}
+            <option value="all">All Types</option>
+            <option value="inspection">Hive Inspection</option>
+            <option value="varroa_treatment">Varroa Treatment</option>
+            <option value="varroa_check">Varroa Check</option>
+            <option value="feeding">Feeding</option>
+            <option value="harvest">Harvest</option>
+            <option value="archive">Hive Archived</option>
           </select>
   
           {/* Apiary Filter */}
