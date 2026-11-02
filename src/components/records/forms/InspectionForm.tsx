@@ -1331,14 +1331,14 @@ export default function InspectionForm({
   // Render star rating component
   const renderStarRating = useCallback((value: number, onChange: (val: number) => void, label: string) => (
     <div role="group" aria-labelledby={labelId('rating', label)}>
-      <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <p id={labelId('rating', label)} className="text-sm font-medium text-text-secondary sm:pr-2">{label}</p>
         <Button
           unstyled
           type="button"
           onClick={() => onChange(0)}
           aria-label={`Clear ${label} rating`}
-          className="min-h-[48px] w-full px-3 sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+          className="min-h-[48px] flex-shrink-0 px-4 rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
         >
           Clear
         </Button>
@@ -1354,11 +1354,12 @@ export default function InspectionForm({
             aria-pressed={value === star}
             className={`min-h-[48px] min-w-[48px] rounded-lg text-lg sm:text-xl flex items-center justify-center transition-all touch-manipulation ${
               value >= star
-                ? 'bg-yellow-400 text-white'
-                : 'bg-surface-elevated border border-border hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
+                ? 'bg-forest-800 text-white'
+                : 'bg-surface-elevated text-foreground border border-border hover:bg-surface-secondary'
             }`}
           >
-            {'\u2605'}
+            {/* A filled star only when chosen. Black stars on every button read as all selected. */}
+            {value >= star ? '\u2605' : '\u2606'}
           </Button>
         ))}
       </div>
@@ -1805,13 +1806,13 @@ export default function InspectionForm({
           {dronesExpanded && (
             <div className="p-4 pt-0 space-y-4">
               <div>
-                <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-2 flex items-center justify-between gap-2">
                   <p id="drone-level" className="text-sm font-medium text-text-secondary">Drone Population Level</p>
                   <Button
                     unstyled
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, drones_present: LEVEL_NOT_RECORDED }))}
-                    className="min-h-[48px] w-full px-3 sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+                    className="min-h-[48px] flex-shrink-0 px-4 rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
                   >
                     Clear
                   </Button>
@@ -1868,13 +1869,13 @@ export default function InspectionForm({
           {propolisExpanded && (
             <div className="p-4 pt-0 space-y-4">
               <div>
-                <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-2 flex items-center justify-between gap-2">
                   <p id="propolis-level" className="text-sm font-medium text-text-secondary">Propolis Level</p>
                   <Button
                     unstyled
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, propolis_level: LEVEL_NOT_RECORDED }))}
-                    className="min-h-[48px] w-full px-3 sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+                    className="min-h-[48px] flex-shrink-0 px-4 rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
                   >
                     Clear
                   </Button>
@@ -2033,13 +2034,13 @@ export default function InspectionForm({
             </div>
 
             {formData.stores_level === null ? (
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-3 flex items-center justify-between gap-2">
                 <p className="text-sm font-medium text-text-secondary">Not recorded</p>
                 <Button
                   unstyled
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, stores_level: lastStoresReading?.level ?? 50 }))}
-                  className="min-h-[48px] w-full px-3 sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+                  className="min-h-[48px] flex-shrink-0 px-4 rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
                 >
                   Record stores
                 </Button>
@@ -2076,7 +2077,7 @@ export default function InspectionForm({
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, stores_level: null }))}
                     aria-label="Clear stores level"
-                    className="min-h-[48px] w-full px-3 sm:w-auto rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
+                    className="min-h-[48px] flex-shrink-0 px-4 rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
                   >
                     Clear
                   </Button>

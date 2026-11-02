@@ -1690,7 +1690,7 @@ export default function RecordsPage() {
     <div className="min-h-dvh bg-background">
       <div className="max-w-4xl mx-auto md:px-4 md:py-6">
         {/* Header */}
-        <div className="flex items-center justify-between gap-4 mb-3 md:mb-6">
+        <div className="flex items-center justify-between gap-4 md:mb-6">
           <div className="flex items-center gap-3 min-w-0">
             <div className="hidden flex-shrink-0 md:block">
               <IconButton
@@ -1702,13 +1702,14 @@ export default function RecordsPage() {
             </div>
             <h1 className="sr-only md:not-sr-only text-2xl font-bold text-foreground truncate">Records</h1>
           </div>
-          <div className="flex-shrink-0">
+          <div className="hidden flex-shrink-0 md:block">
             <NewRecordDropdown onSelectType={handleNewRecord} />
           </div>
         </div>
 
         {/* Filters */}
         <RecordFiltersBar
+          newRecordControl={<NewRecordDropdown onSelectType={handleNewRecord} />}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           activeFilterCount={activeFilterCount}

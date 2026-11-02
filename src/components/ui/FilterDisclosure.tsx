@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, type ReactNode } from 'react'
+import { useId, useLayoutEffect, type ReactNode } from 'react'
 import { ChevronDown, SlidersHorizontal } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { usePersistentState } from '@/hooks/usePersistentState'
@@ -18,7 +18,7 @@ interface FilterDisclosureProps {
   onClear?: () => void
   /**
    * For a phone toolbar that is a grid: the button takes its own cell beside other controls, and
-   * the opened panel takes a full row at the end. The grid must have a `col-span-full` row free.
+   * the opened panel takes a full row at the end, and it starts closed on each visit.
    */
   inlineOnPhone?: boolean
   children: ReactNode
@@ -51,6 +51,15 @@ export default function FilterDisclosure({
     (v) => typeof v === 'boolean',
   )
   const contentId = useId()
+
+  // On a phone an open panel fills the screen, so it starts closed on every visit. The count on
+  // the button still says whether a filter is doing anything.
+  // Before paint, or the panel would flash open first.
+  useLayoutEffect(() => {
+    if (inlineOnPhone && window.matchMedia?.('(max-width: 639.98px)').matches) setOpen(false)
+    // Once, when the screen opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const clearButton = (
     <Button

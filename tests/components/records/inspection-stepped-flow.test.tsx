@@ -305,14 +305,14 @@ describe('previously-fixed mobile layouts survive the step grouping', () => {
     for (let i = 1; i < target; i += 1) next()
   }
 
-  it('keeps rating rows wrapping below sm and horizontal from sm', () => {
+  it('keeps a rating label and its Clear on one row at every size', () => {
     renderForm()
     goToStep(3)
     // Query through the group rather than by class: the row is the labelled
     // group's first child, and this stays readable if the classes move.
     const row = screen.getByRole('group', { name: 'Temperament' }).firstElementChild
-    expect(row).toHaveClass('flex-col')
-    expect(row).toHaveClass('sm:flex-row')
+    expect(row).toHaveClass('flex')
+    expect(row).not.toHaveClass('flex-col')
   })
 
   it('keeps the Clear control at a 48px target on every screen size', () => {

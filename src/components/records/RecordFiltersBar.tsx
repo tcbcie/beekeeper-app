@@ -2,6 +2,7 @@
 
 import { Bug, Calendar, Droplet, Search, Syringe, Wheat, X } from 'lucide-react'
 
+import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import type { Hive, Apiary, OwnershipFilter, RecordType, TimePeriod } from '@/types/records'
 import Button from '@/components/ui/Button'
@@ -33,6 +34,9 @@ interface RecordFiltersBarProps {
   /** How many of the collapsed filters differ from their default. */
   activeFilterCount: number
   onClearFilters: () => void
+
+  /** The New Record control, which shares the search row on a phone. */
+  newRecordControl?: ReactNode
 
   // Filter values
   ownershipFilter: OwnershipFilter
@@ -70,6 +74,7 @@ interface RecordFiltersBarProps {
 }
 
 export default function RecordFiltersBar({
+  newRecordControl,
   searchTerm,
   onSearchChange,
   activeFilterCount,
@@ -100,11 +105,24 @@ export default function RecordFiltersBar({
     .filter(hive => !apiaryId || hive.apiary_id === apiaryId)
     .filter(hive => showArchivedHives || !hive.archived_at)
 
+  const recordTypeOptions = (
+    <>
+      <option value="all">All Types</option>
+      <option value="inspection">Hive Inspection</option>
+      <option value="varroa_treatment">Varroa Treatment</option>
+      <option value="varroa_check">Varroa Check</option>
+      <option value="feeding">Feeding</option>
+      <option value="harvest">Harvest</option>
+      <option value="archive">Hive Archived</option>
+    </>
+  )
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-2 sm:space-y-4">
       {/* Search sits above the filters: it is the fastest way to a known
           record, and unlike the filters it is not remembered between visits. */}
-      <div className="relative w-full sm:max-w-sm">
+      <div className="flex gap-2">
+      <div className="relative min-w-0 flex-1 sm:max-w-sm">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
         <TextInput
           value={searchTerm}
@@ -115,9 +133,12 @@ export default function RecordFiltersBar({
           style={{ paddingLeft: '2.25rem' }}
         />
       </div>
+      {newRecordControl && <div className="flex-shrink-0 md:hidden">{newRecordControl}</div>}
+      </div>
 
-      {/* Quick record type. All types and archived hives stay in the drop-down below. */}
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Record type">
+      {/* Quick record type. All types and archived hives stay in the drop-down below. On a phone
+          these took three rows above every record, so the drop-down beside Filters does the job. */}
+      <div className="hidden flex-wrap gap-2 sm:flex" role="group" aria-label="Record type">
         {QUICK_RECORD_TYPES.map(({ value, label, icon: Icon, colour }) => (
           <Button
             key={value}
@@ -205,10 +226,20 @@ export default function RecordFiltersBar({
       {/* Secondary filters. The time-period presets above stay visible because
           they carry counts and are how records are usually scoped; everything
           else is one control away. */}
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:block">
+      <select
+        aria-label="Filter by record type"
+        value={recordTypeFilter}
+        onChange={(e) => onRecordTypeChange(e.target.value as RecordType | 'all')}
+        className="min-h-12 min-w-0 px-4 py-2 border border-border rounded-lg bg-surface text-foreground sm:hidden"
+      >
+        {recordTypeOptions}
+      </select>
       <FilterDisclosure
         activeCount={activeFilterCount}
         storageKey="records:filtersOpen"
         onClear={onClearFilters}
+        inlineOnPhone
       >
         {/* Main Filters Row */}
         <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full">
@@ -243,15 +274,9 @@ export default function RecordFiltersBar({
             aria-label="Filter by record type"
             value={recordTypeFilter}
             onChange={(e) => onRecordTypeChange(e.target.value as RecordType | 'all')}
-            className="min-h-12 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-forest-400 dark:hover:border-forest-500 focus:border-forest-500 dark:focus:border-forest-400 focus:ring-2 focus:ring-forest-200 dark:focus:ring-forest-800 transition-all"
+            className="hidden sm:block min-h-12 px-4 py-2 border border-border rounded-lg bg-surface dark:bg-surface text-foreground hover:border-forest-400 dark:hover:border-forest-500 focus:border-forest-500 dark:focus:border-forest-400 focus:ring-2 focus:ring-forest-200 dark:focus:ring-forest-800 transition-all"
           >
-            <option value="all">All Types</option>
-            <option value="inspection">Hive Inspection</option>
-            <option value="varroa_treatment">Varroa Treatment</option>
-            <option value="varroa_check">Varroa Check</option>
-            <option value="feeding">Feeding</option>
-            <option value="harvest">Harvest</option>
-            <option value="archive">Hive Archived</option>
+            {recordTypeOptions}
           </select>
   
           {/* Apiary Filter */}
@@ -296,6 +321,7 @@ export default function RecordFiltersBar({
           </label>
         </div>
       </FilterDisclosure>
+      </div>
 
       {/* Custom Date Range */}
       {timePeriod === 'custom' && (
