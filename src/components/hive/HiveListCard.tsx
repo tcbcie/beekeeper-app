@@ -14,6 +14,9 @@ import StoresDial from '@/components/hive/StoresDial'
 import { getCurrentDate } from '@/lib/date-utils'
 import { storesSeasonStart } from '@/lib/stores-level'
 
+// Feeders are blue, apart from the amber and yellow boxes, and matching the apiary 3D view
+const FEEDER_COLOURS = 'bg-blue-300 border-2 border-blue-700'
+
 interface HiveListCardProps {
  hive: Hive
  userId: string | null
@@ -77,6 +80,10 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  // `brood_boxes` total applies only to old configs that have no `brood_boxes_full` at all.
  const fullBroodBoxes = hive.configuration?.brood_boxes_full ?? hive.configuration?.brood_boxes ?? 0
  const halfBroodBoxes = hive.configuration?.brood_boxes_half ?? 0
+ const feederType = hive.configuration?.feeder_type
+
+ // A frame feeder replaces a frame, so it shows as an upright bar in the top brood box
+ const frameFeederBar = <div aria-hidden="true" className={`absolute left-1 inset-y-0.5 w-2.5 rounded-sm ${FEEDER_COLOURS}`} />
 
  // Frame orientation (warm/cold lines), drawn on the bottom brood box: the last full box,
  // or the last half box when the hive has no full boxes.
@@ -464,6 +471,9 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
 
  {/* Visual Hive Stack */}
  <div className={`flex flex-col items-center gap-1 mb-3 ${hive.configuration.hive_size === 'nuc' ? 'w-1/2 mx-auto' : 'w-full'}`}>
+ {/* Each feeder is drawn in blue where it sits. Its type is in words below the stack. */}
+ {feederType === 'top' && <div aria-hidden="true" className={`w-full h-5 rounded ${FEEDER_COLOURS}`} />}
+
  {/* Honey Supers — Super 1 is the bottom super (just above the queen
      excluder, closest to the brood); higher numbers stack above it, so
      render top-down from the highest number. Fullness index = number − 1. */}
@@ -499,6 +509,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {/* Half-Size Brood Boxes */}
  {Array.from({ length: halfBroodBoxes }).map((_, i) => (
  <div key={`brood-half-${i}`} className="w-full h-8 bg-amber-300 border-2 border-amber-600 rounded flex items-center justify-center text-sm font-semibold relative">
+ {feederType === 'frame' && i === 0 && frameFeederBar}
  <span className="relative z-10">🐝 Brood Half {i + 1}</span>
  {fullBroodBoxes === 0 && i === halfBroodBoxes - 1 && frameOrientationMarker}
  </div>
@@ -507,6 +518,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  {/* Full-Size Brood Boxes */}
  {Array.from({ length: fullBroodBoxes }).map((_, i) => (
  <div key={`brood-full-${i}`} className="w-full h-10 bg-amber-200 border-2 border-amber-500 rounded flex items-center justify-center text-sm font-semibold relative">
+ {feederType === 'frame' && halfBroodBoxes === 0 && i === 0 && frameFeederBar}
  <span className="relative z-10">🐝 Brood Full {i + 1}</span>
  {i === fullBroodBoxes - 1 && frameOrientationMarker}
  </div>
@@ -517,6 +529,13 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  <div className={`w-full h-6 ${hive.configuration.varroa_mesh_floor === 'open' ? 'bg-surface-secondary' : 'bg-amber-700'} border-2 border-amber-900 rounded flex items-center justify-center text-xs font-semibold`}>
  {hive.configuration.varroa_mesh_floor === 'open' ? '▒▒▒' : '███'}
  </div>
+ {(feederType === 'entrance' || feederType === 'boardman') && (
+ <div aria-hidden="true" className={`absolute right-3 top-1 h-4 w-10 rounded-sm ${FEEDER_COLOURS}`} />
+ )}
+ {/* A Boardman's jar stands on the block, so it rises up the front of the bottom box */}
+ {feederType === 'boardman' && (
+ <div aria-hidden="true" className={`absolute right-5 -top-3 h-4 w-6 rounded-t ${FEEDER_COLOURS}`} />
+ )}
  {/* Hive stand feet */}
  <div className="flex justify-between px-2 mt-0.5">
  <div className="w-3 h-2 bg-amber-900 rounded-sm"></div>
@@ -538,7 +557,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  <div className="grid grid-cols-2 gap-2 text-sm text-text-primary">
  {hive.configuration.feeder_type && (
  <div className="flex items-center gap-1">
- <span>🍯</span>
+ <span aria-hidden="true" className={`h-4 w-4 flex-shrink-0 rounded-sm ${FEEDER_COLOURS}`} />
  <span className="capitalize">{hive.configuration.feeder_type} feeder</span>
  </div>
  )}
