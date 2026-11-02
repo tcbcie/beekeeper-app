@@ -38,6 +38,7 @@ Background: `docs/features/mobile-native-feel-review-plan.md`.
 ## Motion and gestures
 
 - 150 to 250ms, only to explain where something came from. Respect reduced motion.
+- Never animate `transform` on a screen's container: it knocks `position: fixed` bars and sheets out of place. `useScreenTransition` animates `left` for this reason.
 - Gestures are shortcuts. Every one has a visible alternative (WCAG 2.5.1).
 
 ## Device handling

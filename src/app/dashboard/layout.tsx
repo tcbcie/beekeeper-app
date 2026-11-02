@@ -19,11 +19,13 @@ import DashboardShellSkeleton from '@/components/DashboardShellSkeleton'
 import { updateManager } from '@/lib/update-manager'
 import { registerServiceWorker } from '@/lib/notifications'
 import { useToast } from '@/components/ui/Toast'
+import { useScreenTransition } from '@/hooks/useScreenTransition'
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, userId, loading: authLoading } = useAuth()
   const toast = useToast()
   const pathname = usePathname()
+  const screenRef = useScreenTransition<HTMLElement>(pathname)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
   const hasShownDisabledAlert = useRef(false)
@@ -124,7 +126,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-dvh bg-background">
+    // clip, not hidden: it stops a sliding screen widening the page without breaking sticky bars.
+    <div className="min-h-dvh overflow-x-clip bg-background">
       <ImpersonationBanner />
       <OfflineIndicator />
       <UpdateNotification />
@@ -138,7 +141,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 pt-3 sm:pt-6 pb-[calc(var(--bottom-nav-inset)+1rem)] md:pb-24">
         <div className="flex gap-4 md:gap-6">
           <Sidebar />
-          <main className="flex-1 w-full min-w-0">
+          <main ref={screenRef} className="flex-1 w-full min-w-0">
             {/* Reset by route: the layout stays mounted, so one page's error used to stay on
                 screen for every page after it (C1-11). A reset key, not a React key, so nested
                 layouts (CRM, logbook, apiary map) aren't remounted on every navigation. */}

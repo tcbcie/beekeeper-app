@@ -230,8 +230,9 @@
 
 <h3>Phase F — Motion (1 to 2 weeks)</h3>
 <ul class="todo">
-  <li>☐ Upgrade Next and React as an isolated change.</li>
-  <li>☐ View Transitions between list and detail. This comes after Phase E, otherwise the animation only leads to a loading screen.</li>
+  <li>☑ Direction on phones: a new screen slides in from the right, Back from the left, tabs fade. 180ms, and off with reduced motion. <strong>Changed from the plan:</strong> no View Transitions, so no Next and React upgrade, which would have reached production unbuilt. No "morph" from a row into its detail screen.</li>
+  <li>☐ Upgrade Next and React: worth doing separately, with a build test, for its own sake rather than for this.</li>
+  <li>☐ Real-phone check: smooth on an older phone, and pinned bars stay still during the slide.</li>
 </ul>
 
 <h3>Phase G — Offline outbox (3 to 4 weeks)</h3>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, type MouseEvent } from 'react'
+import { markTabNavigation } from './useScreenTransition'
 
 const RESTORE_WAIT_MS = 3000
 
@@ -27,6 +28,7 @@ export function useTabScrollMemory(pathname: string, tabHrefs: string[]) {
     }
     if (tabHrefs.includes(pathname)) tabPositions.set(pathname, window.scrollY)
     arrivingAt.current = href
+    markTabNavigation()
   }, [pathname, tabHrefs])
 
   useEffect(() => {
