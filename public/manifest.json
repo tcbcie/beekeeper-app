@@ -38,7 +38,36 @@
   "categories": ["productivity", "utilities"],
   "scope": "/",
   "prefer_related_applications": false,
-  "screenshots": [],
+  "screenshots": [
+    {
+      "src": "/screenshots/hives.jpg",
+      "sizes": "1080x2097",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Every hive at a glance, with what needs a visit"
+    },
+    {
+      "src": "/screenshots/hive.jpg",
+      "sizes": "1080x2097",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Record a check, treatment, feed or harvest from the hive"
+    },
+    {
+      "src": "/screenshots/inspection-health.jpg",
+      "sizes": "1080x2097",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Inspections in simple steps, with large buttons for gloved hands"
+    },
+    {
+      "src": "/screenshots/inspection-stores.jpg",
+      "sizes": "1080x2097",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Track winter stores on every hive"
+    }
+  ],
   "shortcuts": [
     {
       "name": "Hives",

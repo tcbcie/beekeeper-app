@@ -72,3 +72,6 @@ _ul
 
 # Personal contact data, kept out of the public repository (SUP-07)
 external_references/Emails_Beekeeping_Associations.csv
+
+# Raw phone screenshots: they show real names. Only the edited copies are published.
+public/screenshots/Screenshot_*

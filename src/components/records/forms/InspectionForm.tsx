@@ -2616,7 +2616,7 @@ export default function InspectionForm({
               onClick={goToPreviousStep}
               disabled={step === 1}
               aria-label="Previous"
-              className={`px-3 sm:px-6 py-3 min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation font-medium w-full sm:w-auto ${step === LAST_STEP ? 'col-span-2' : ''}`}
+              className="flex items-center justify-center px-0 sm:px-6 py-3 min-h-[56px] sm:min-h-[48px] bg-surface-secondary text-text-primary rounded-lg hover:bg-surface-elevated border border-border active:bg-surface-elevated disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation font-medium w-full sm:w-auto"
             >
               <ChevronLeft size={24} className="sm:hidden" aria-hidden="true" />
               <span className="hidden sm:inline">Previous</span>
