@@ -1,6 +1,7 @@
 'use client'
 import { useId, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ExternalLink, MoreVertical, ArchiveRestore, Archive, Trash2, Scale, Clock, QrCode, Syringe } from 'lucide-react'
 import type { Hive } from '@/types/hive'
@@ -32,6 +33,11 @@ interface HiveListCardProps {
  highlighted?: boolean
  /** Called just before navigating to the hive, so the list can remember this position. */
  onOpen?: (id: string) => void
+ /** The hive's model, already described (see src/lib/hive-model.ts). */
+ model?: { name: string; description: string } | null
+ /** The hive's own photo, else its model's. */
+ photoUrl?: string | null
+ onEnlargePhoto?: (url: string) => void
 }
 
 // Single source of truth for "did this super's fullness change vs the previous reading?".
@@ -50,7 +56,7 @@ function superFullnessChangedAt(
   return rawPrev !== cur
 }
 
-export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchive, openMenuId, setOpenMenuId, selectionMode = false, selected = false, onToggleSelect, highlighted = false, onOpen }: HiveListCardProps) {
+export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchive, openMenuId, setOpenMenuId, selectionMode = false, selected = false, onToggleSelect, highlighted = false, onOpen, model = null, photoUrl = null, onEnlargePhoto }: HiveListCardProps) {
  const router = useRouter()
  // Focus returns here when the overflow menu is closed with Escape.
  const menuTriggerRef = useRef<HTMLButtonElement>(null)
@@ -444,6 +450,29 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </span>
  )}
  </div>
+
+ {(model || photoUrl) && (
+ <div className="mb-3 flex items-center gap-3">
+ {photoUrl && (
+ <button
+ type="button"
+ onClick={() => onEnlargePhoto?.(photoUrl)}
+ className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-border"
+ aria-label={`Enlarge photo of hive ${hive.hive_number}`}
+ >
+ <Image src={photoUrl} alt="" fill className="object-cover" unoptimized />
+ </button>
+ )}
+ {model && (
+ <div className="min-w-0">
+ <div className="text-sm font-semibold text-foreground truncate">{model.name}</div>
+ {model.description && (
+ <div className="text-sm text-text-secondary truncate">{model.description}</div>
+ )}
+ </div>
+ )}
+ </div>
+ )}
 
  {/* Configuration Change Tracking - Only show for shared hives where user is not the owner */}
  {hive.is_shared && hive.user_id !== userId && hive.configuration_changed_at && (

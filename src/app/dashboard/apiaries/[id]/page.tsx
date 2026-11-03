@@ -18,6 +18,7 @@ import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import { formatQueenlessLabel } from '@/lib/queenless'
 import { formatDayMonth } from '@/lib/dashboard-todo'
 import ApiaryJobs from '@/components/dashboard/ApiaryJobs'
+import HiveModelsHere from '@/components/hive/HiveModelsHere'
 import type { DashboardApiary } from '@/types/dashboard'
 
 // Weather, forecast and forage (moved here from the dashboard, 29 October 2026); loads on demand
@@ -201,6 +202,9 @@ export default function ApiaryDetailPage() {
 
       {/* What needs doing here */}
       <ApiaryJobs apiaryId={apiaryId} latitude={apiary.latitude ?? null} longitude={apiary.longitude ?? null} />
+
+      {/* Which kinds of hive are here, so the right gear comes on the visit */}
+      <HiveModelsHere hives={hives} />
 
       {/* Info Card */}
       <div className="bg-surface dark:bg-surface rounded-lg shadow p-4 md:p-6 border border-border">

@@ -427,6 +427,7 @@ function AboutPageContent() {
  <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Features</h3>
  <ul className="list-disc list-inside text-text-secondary space-y-2">
  <li>Complete apiary and hive management</li>
+ <li>Hive models - record each hive&apos;s system, make, material and photo, and see which frames to bring to each apiary</li>
  <li>Apiaries Team Management</li>
  <li>Queen tracking with age calculation and lineage records</li>
  <li>Detailed inspection logging with weather data</li>

@@ -24,6 +24,7 @@ import { storesWord } from '@/lib/stores-level'
 import type { Hive, HiveInspection, HiveVarroaCheck, HiveVarroaTreatment, HiveFeeding, HiveHarvest, InspectionAverages, HiveTask } from '@/types/hive'
 import { queenStatusBadgeClass } from '@/types/queen'
 import Button from '@/components/ui/Button'
+import HiveModelDetail from '@/components/hive/HiveModelDetail'
 
 // Panels load on demand: only the one on screen is downloaded, so heavy libraries
 // (chart.js, QR codes) and large tabs stay out of the first load.
@@ -664,6 +665,7 @@ function HiveInfoCard({ hive, inspections, averages, tasks, hiveId, onCompleteTa
                 <span className="font-medium text-text-primary">{hive.hive_type}</span>
               </div>
             )}
+            <HiveModelDetail hive={hive} />
             {hive.colony_established_date && (
               <div className="flex justify-between">
                 <span className="text-text-tertiary">Colony Established:</span>

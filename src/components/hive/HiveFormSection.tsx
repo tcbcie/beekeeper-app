@@ -9,6 +9,14 @@ import { Hive, HiveFormData } from '@/types/hive'
 import { QUEENLESS_REASONS, mapReasonToQueenStatus } from '@/lib/queenless'
 import { HiveListApiary, HiveListQueen } from '@/hooks/useHivesList'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
+import Link from 'next/link'
+import { useHiveModels } from '@/hooks/useHiveModels'
+import { useImageUpload } from '@/hooks/useImageUpload'
+import { deleteUploadedImages } from '@/lib/upload-image'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
+import { describeHiveModel, modelFramesPerBox } from '@/lib/hive-model'
+import PhotoField from '@/components/hive/PhotoField'
+import ImageZoomModal from '@/components/ui/ImageZoomModal'
 
 interface HiveFormSectionProps {
  userId: string | null
@@ -40,6 +48,7 @@ const emptyFormData = (): HiveFormData => ({
  colony_established_date: getCurrentDate(),
  queen_installed_date: getCurrentDate(),
  hive_type: '',
+ hive_model_id: '',
  configuration: {
  brood_boxes: 1, // Legacy field
  brood_boxes_full: 1,
@@ -77,6 +86,7 @@ const formDataFromHive = (hive: Hive): HiveFormData => ({
  colony_established_date: hive.colony_established_date || '',
  queen_installed_date: hive.queen_installed_date || '',
  hive_type: hive.hive_type || '',
+ hive_model_id: hive.hive_model_id || '',
  configuration: {
  brood_boxes: hive.configuration?.brood_boxes || 1, // Legacy field
  brood_boxes_full: hive.configuration?.brood_boxes_full ?? (hive.configuration?.brood_boxes || 1),
@@ -120,10 +130,55 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  editingHive ? formDataFromHive(editingHive) : emptyFormData()
  )
 
+ // Hive models: the user's own can be picked; a model on someone else's hive is shown only.
+ const { ownModels, modelsById, systemsById } = useHiveModels(userId)
+ const canPickModel = !editingHive || editingHive.user_id === userId
+ const currentModel = formData.hive_model_id ? modelsById.get(formData.hive_model_id) : undefined
+
+ // Optional photo of this hive itself (the model's photo is shown when there is none).
+ const [zoomUrl, setZoomUrl] = useState<string | null>(null)
+ const {
+ imageFile,
+ imagePreview,
+ uploading,
+ handleImageChange,
+ handleRemoveImage,
+ uploadImage,
+ reset: resetImage,
+ setPreviewFromUrl,
+ } = useImageUpload({
+ bucket: 'apiary-images',
+ folder: `${userId || 'unknown'}/hives`,
+ onError: (message) => toast.error(message),
+ })
+
  // Re-populate when switching between add and edit (or editing another hive)
  useEffect(() => {
  setFormData(editingHive ? formDataFromHive(editingHive) : emptyFormData())
- }, [editingHive])
+ resetImage()
+ setPreviewFromUrl(normaliseStoragePublicUrl(editingHive?.image_url))
+ }, [editingHive, resetImage, setPreviewFromUrl])
+
+ // Picking a model on a NEW hive fills in its size and frames per box. An existing hive's
+ // configuration is never changed by this: it has its own history.
+ const handleModelChange = (modelId: string) => {
+ const model = modelId ? modelsById.get(modelId) : undefined
+ if (editingHive || !model) {
+ setFormData({ ...formData, hive_model_id: modelId })
+ return
+ }
+ const system = model.hive_system_id ? systemsById.get(model.hive_system_id) : undefined
+ const frames = modelFramesPerBox(model, system)
+ setFormData({
+ ...formData,
+ hive_model_id: modelId,
+ configuration: {
+ ...formData.configuration,
+ hive_size: model.hive_size,
+ ...(frames ? { frames_per_full_box: frames } : {}),
+ },
+ })
+ }
 
  const resetForm = () => {
  setFormData(emptyFormData())
@@ -164,11 +219,16 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  ? (editingHive?.queen_id || formData.queen_id || null)
  : null
 
+ // A photo uploaded on this save, removed again if the save then fails.
+ let uploadedUrl: string | null = null
+
  try {
  type HiveSubmitData = Omit<
  typeof formData,
- 'apiary_id' | 'queen_id' | 'queenless_reason' | 'colony_established_date' | 'queen_installed_date'
+ 'apiary_id' | 'queen_id' | 'queenless_reason' | 'colony_established_date' | 'queen_installed_date' | 'hive_model_id'
  > & {
+ hive_model_id?: string | null
+ image_url?: string | null
  apiary_id: string | null
  queen_id: string | null
  queenless_reason: string | null
@@ -183,6 +243,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  // Trim so stray whitespace never reaches the DB (labels, history
  // snapshots and duplicate checks all compare on the exact string).
  hive_number: trimmedHiveNumber,
+ hive_model_id: formData.hive_model_id || null,
  apiary_id: formData.apiary_id || null,
  // When queenless, the hive has no current queen — clear the link.
  queen_id: formData.is_queenless ? null : (formData.queen_id || null),
@@ -268,6 +329,23 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  toast.warning(`Row ${dataToSubmit.row_in_apiary}, Position ${dataToSubmit.order_in_apiary} is already used by hive "${existingPosition[0].hive_number}" in this apiary. Each hive must have a unique row and order combination within the apiary.`)
  return
  }
+ }
+
+ // Send the model only when it changed. An unchanged one may be stale (a saved copy of the
+ // list from before the model was deleted), and re-sending it would fail the whole save.
+ if (editingHive && formData.hive_model_id === (editingHive.hive_model_id || '')) {
+ dataToSubmit = { ...dataToSubmit }
+ delete dataToSubmit.hive_model_id
+ }
+
+ // Upload the hive photo last, after every check that can stop the save.
+ if (imageFile) {
+ uploadedUrl = await uploadImage(imageFile)
+ if (!uploadedUrl) return // uploadImage has already said why
+ dataToSubmit = { ...dataToSubmit, image_url: uploadedUrl }
+ } else if (!imagePreview && editingHive?.image_url) {
+ // Removed: the old file is queued for deletion by the database trigger.
+ dataToSubmit = { ...dataToSubmit, image_url: null }
  }
 
  if (editingHive) {
@@ -367,6 +445,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  onSaved()
  resetForm()
  } catch (error) {
+ if (uploadedUrl) await deleteUploadedImages([uploadedUrl])
  // Supabase rejections (e.g. RLS denials) throw PostgrestError objects, which are
  // NOT Error instances. Extract a message defensively so a failed save can never
  // be swallowed silently, leaving the form looking stuck.
@@ -751,6 +830,41 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  <h4 className="text-md font-semibold text-forest-600 dark:text-forest-400 mb-4">Hive Configuration</h4>
 
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div className="md:col-span-2">
+ <label htmlFor="hive-model" className="block text-sm font-medium text-text-secondary mb-1">Hive model</label>
+ {canPickModel ? (
+ <>
+ <select
+ id="hive-model"
+ value={formData.hive_model_id}
+ onChange={(e) => handleModelChange(e.target.value)}
+ className="w-full fj-control"
+ >
+ <option value="">Not set</option>
+ {ownModels.map((model) => (
+ <option key={model.id} value={model.id}>{model.name}</option>
+ ))}
+ {/* Keep a model that can't be listed (e.g. still loading) selectable rather than silently dropped */}
+ {formData.hive_model_id && !ownModels.some(m => m.id === formData.hive_model_id) && (
+ <option value={formData.hive_model_id}>{currentModel?.name ?? 'Current model'}</option>
+ )}
+ </select>
+ {currentModel && (
+ <p className="mt-1 text-sm text-text-tertiary">
+ {describeHiveModel(currentModel, currentModel.hive_system_id ? systemsById.get(currentModel.hive_system_id) : undefined)}
+ </p>
+ )}
+ <Link href="/dashboard/hive-models" className="mt-1 inline-flex min-h-[48px] items-center text-sm font-medium text-forest-700 dark:text-forest-400 underline">
+ {ownModels.length === 0 ? 'Add your hive models' : 'Manage hive models'}
+ </Link>
+ </>
+ ) : (
+ <p id="hive-model" className="text-base text-foreground">
+ {currentModel ? currentModel.name : 'Not set'}
+ <span className="block text-sm text-text-tertiary">Only the hive&apos;s owner can change its model.</span>
+ </p>
+ )}
+ </div>
  <div>
  <label className="block text-sm font-medium text-text-secondary mb-2">
  Full-Size Brood Boxes: {formData.configuration.brood_boxes_full}
@@ -981,6 +1095,18 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  />
  </div>
 
+ <div className="md:col-span-2">
+ <PhotoField
+ label="Hive photo"
+ preview={imagePreview}
+ uploading={uploading}
+ onChange={handleImageChange}
+ onRemove={handleRemoveImage}
+ onEnlarge={setZoomUrl}
+ hint={currentModel?.image_url ? 'Without one, the hive model photo is shown.' : undefined}
+ />
+ </div>
+
  <div className="md:col-span-2 flex flex-col sm:flex-row gap-3">
  <Button
  type="submit"
@@ -998,6 +1124,7 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  </Button>
  </div>
  </form>
+ <ImageZoomModal isOpen={zoomUrl !== null} imageUrl={zoomUrl} onClose={() => setZoomUrl(null)} />
  </div>
  )
 }

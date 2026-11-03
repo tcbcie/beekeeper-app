@@ -13,6 +13,8 @@ interface ApiaryHive {
   is_queenless: boolean
   queenless_reason: string | null
   archived_at: string | null
+  /** The kind of equipment (hive_models); see docs/features/hive-model-plan.md */
+  hive_model_id?: string | null
   /** Latest inspection, absent when none was found; not proof that none exists */
   last_inspection_date?: string
   /** A treatment with a removal planned and no removal recorded */
@@ -126,7 +128,7 @@ export function useApiaryDetail(apiaryId: string): UseApiaryDetailReturn {
       // Fetch hives in this apiary
       const { data: hivesData, error: hivesError } = await supabase
         .from('hives')
-        .select('id, hive_number, status, is_queenless, queenless_reason, archived_at, queens(id, queen_number, marking_color)')
+        .select('id, hive_number, status, is_queenless, queenless_reason, archived_at, hive_model_id, queens(id, queen_number, marking_color)')
         .eq('apiary_id', apiaryId)
         .order('hive_number')
 

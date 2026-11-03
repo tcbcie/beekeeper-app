@@ -1,6 +1,9 @@
 import { z } from 'zod'
 import { Tool } from './index'
 import { harvestWeightKg } from '@/lib/traceability-utils'
+import { firstOf } from '@/lib/embed'
+import { describeHiveModel } from '@/lib/hive-model'
+import type { HiveModelMaterial } from '@/types/hive-model'
 import { getSupabase, getOwnApiaryIds, getAccessibleApiaryIds, findHiveByName, formatDate, logToolError, boundedInt } from './utils'
 
 // Helper to extract apiary name from Supabase join
@@ -67,7 +70,7 @@ export const getApiaryStats: Tool = {
 // Get hive overview
 export const getHiveOverview: Tool = {
   name: 'getHiveOverview',
-  description: 'Get a list of all hives with their apiary, status, and queen info. Includes team apiaries unless the user asks for their own hives only.',
+  description: 'Get a list of all hives with their apiary, status, queen info and hive model (the kind of equipment: system, make, material). Includes team apiaries unless the user asks for their own hives only.',
   parameters: z.object({
     includeArchived: z.boolean().optional().describe('Include archived hives'),
     includeShared: z.boolean().optional().describe('Include shared/team hives (default true)')
@@ -93,6 +96,7 @@ export const getHiveOverview: Tool = {
         queen_marked,
         queen_marking_color,
         archived_at,
+        hive_model_id,
         apiaries(name)
       `)
       .in('apiary_id', apiaryIds)
@@ -107,6 +111,30 @@ export const getHiveOverview: Tool = {
     if (error) return `Error fetching hives: ${logToolError(error)}`
     if (!data?.length) return 'No hives found.'
 
+    // Hive models by id, in one lookup (RLS returns own models and those on shared hives).
+    const modelIds = Array.from(new Set(data.map(h => h.hive_model_id).filter((id): id is string => Boolean(id))))
+    const modelLabels = new Map<string, string>()
+    if (modelIds.length > 0) {
+      const { data: models, error: modelsError } = await supabase
+        .from('hive_models')
+        .select('id, name, manufacturer, material, hive_size, hive_system_id, hive_systems(name)')
+        .in('id', modelIds)
+      if (modelsError) {
+        // The overview still answers without models; the model column then says so.
+        logToolError(modelsError)
+      } else {
+        for (const m of models ?? []) {
+          // hive_models.hive_system_id -> hive_systems is a to-one embed: normalise its shape.
+          const system = firstOf(m.hive_systems as { name: string } | { name: string }[] | null)
+          const detail = describeHiveModel(
+            { manufacturer: m.manufacturer, material: m.material as HiveModelMaterial | null, hive_size: m.hive_size === 'nuc' ? 'nuc' : 'full' },
+            system
+          )
+          modelLabels.set(m.id, detail ? `${m.name} (${detail})` : m.name)
+        }
+      }
+    }
+
     return data.map(h => ({
       hive: h.hive_number,
       apiary: getApiaryName(h.apiaries),
@@ -115,6 +143,7 @@ export const getHiveOverview: Tool = {
       colony: (Array.isArray(h.colony) ? h.colony[0] : h.colony)?.colony_number || 'None',
       queenMarked: h.queen_marked ? 'Yes' : 'No',
       queenColor: h.queen_marking_color || 'None',
+      hiveModel: h.hive_model_id ? (modelLabels.get(h.hive_model_id) ?? 'Set, but could not be read') : 'Not set',
       archived: h.archived_at ? 'Yes' : 'No'
     }))
   }

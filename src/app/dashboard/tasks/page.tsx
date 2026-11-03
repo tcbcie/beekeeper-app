@@ -27,6 +27,7 @@ import { usePersistentState } from '@/hooks/usePersistentState'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { useSelection } from '@/contexts/SelectionContext'
 import FilterDisclosure from '@/components/ui/FilterDisclosure'
+import HiveModelsHere from '@/components/hive/HiveModelsHere'
 import {
   compareTaskUrgency,
   dueLabel,
@@ -93,6 +94,7 @@ interface Batch {
 // outstanding tasks in the current checklist scope.
 interface HiveOverviewSummary {
   status: string
+  hive_model_id: string | null
   last_inspection_date: string | null
   queen_seen: boolean | null
   population_strength: number | null
@@ -852,7 +854,7 @@ export default function TasksEventsPage() {
         const [{ data: hivesData, error: hivesError }, { data: inspectionsData, error: inspectionsError }] = await Promise.all([
           supabase
             .from('hives')
-            .select('id, status')
+            .select('id, status, hive_model_id')
             .in('id', hiveIds),
           supabase
             .from('inspections')
@@ -868,6 +870,7 @@ export default function TasksEventsPage() {
         for (const hive of hivesData || []) {
           latestByHive.set(hive.id, {
             status: hive.status ?? 'active',
+            hive_model_id: hive.hive_model_id ?? null,
             last_inspection_date: null,
             queen_seen: null,
             population_strength: null,
@@ -946,6 +949,9 @@ export default function TasksEventsPage() {
     if (!category) return 'General'
     return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   }
+
+  // The checklist's hives, for the hive models summary (memoised: it feeds that summary's memo)
+  const checklistHiveModels = useMemo(() => Array.from(hiveOverview.values()), [hiveOverview])
 
   // Unique equipment items aggregated across all tasks in the checklist scope.
   const getEquipmentList = () => {
@@ -1679,6 +1685,10 @@ export default function TasksEventsPage() {
                 ) : (
                   <p className="text-text-tertiary italic">No equipment specified for these tasks</p>
                 )}
+                {/* Which kinds of hive the tasks are on, so compatible gear comes too */}
+                <div className="mt-4">
+                  <HiveModelsHere hives={checklistHiveModels} compact title="Hive models for these tasks" />
+                </div>
               </div>
 
               {/* Hive overview + Tasks tables (one pair per apiary) */}

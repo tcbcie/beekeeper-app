@@ -33,6 +33,8 @@ export const DATABASE_EXPORT_TABLES = [
   'key_events',
   'harvests',
   'hive_configuration_history',
+  'hive_models',
+  'hive_systems',
   'hives',
   'inspections',
   'knowledge_base',
@@ -168,6 +170,7 @@ export async function fetchAllRows(
 export const USER_EXPORT_TABLES: ReadonlyArray<{ table: string; label: string }> = [
   { table: 'apiaries', label: 'Apiaries' },
   { table: 'hives', label: 'Hives' },
+  { table: 'hive_models', label: 'Hive Models' },
   { table: 'queens', label: 'Queens' },
   { table: 'inspections', label: 'Inspections' },
   { table: 'varroa_checks', label: 'Varroa Checks' },

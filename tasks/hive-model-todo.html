@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Hive model</title>
+</head>
+<body>
+<h1>Hive model: system, make, material and photo per hive</h1>
+<p>Full plan: <code>docs/features/hive-model-plan.md</code>. Status: <strong>decisions made</strong> (photo on both model and hive; Type label stays; all 5 phases). Built; waiting for you to test.</p>
+
+<h2>Idea in one line</h2>
+<p>Describe each kind of equipment once as a <em>hive model</em> (for example "Abelo poly National" or "Payne's poly nuc", with a photo), then pick the model for each hive. The hive card, hive page and apiary visit then show what is in use and which frames to bring.</p>
+
+<h2>Data model</h2>
+<svg viewBox="0 0 640 300" width="640" role="img" aria-label="Tables: frame_standards, hive_systems, hive_models, hives">
+  <style>text{font:14px sans-serif} .b{fill:#fff8e6;stroke:#8a6d1f} .n{fill:#e8f4ea;stroke:#2f7a3d}</style>
+  <rect class="b" x="10" y="10" width="190" height="70" rx="6"/>
+  <text x="20" y="32" font-weight="bold">frame_standards</text>
+  <text x="20" y="52">existing, admin</text>
+  <text x="20" y="70">label, width_mm, height_mm</text>
+  <rect class="n" x="230" y="10" width="200" height="90" rx="6"/>
+  <text x="240" y="32" font-weight="bold">hive_systems (new)</text>
+  <text x="240" y="52">admin, global</text>
+  <text x="240" y="70">name, brood/super frame</text>
+  <text x="240" y="88">default frames full/nuc</text>
+  <rect class="n" x="230" y="140" width="200" height="110" rx="6"/>
+  <text x="240" y="162" font-weight="bold">hive_models (new)</text>
+  <text x="240" y="182">per user</text>
+  <text x="240" y="200">name, system, full/nuc</text>
+  <text x="240" y="218">make, material, frames</text>
+  <text x="240" y="236">photo, notes</text>
+  <rect class="b" x="470" y="140" width="160" height="70" rx="6"/>
+  <text x="480" y="162" font-weight="bold">hives</text>
+  <text x="480" y="182">existing</text>
+  <text x="480" y="200">+ hive_model_id</text>
+  <line x1="230" y1="45" x2="200" y2="45" stroke="#555" marker-end="url(#a)"/>
+  <line x1="330" y1="140" x2="330" y2="100" stroke="#555" marker-end="url(#a)"/>
+  <line x1="470" y1="175" x2="430" y2="175" stroke="#555" marker-end="url(#a)"/>
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#555"/></marker></defs>
+</svg>
+
+<h2>To do</h2>
+<h3>Phase 1: Database (MCP)</h3>
+<ul>
+  <li>☑ <code>hive_systems</code> table: seeded with 9 systems and linked to <code>frame_standards</code>; anyone signed in can read it, only admins can change it</li>
+  <li>☑ <code>hive_models</code> table: owner can write; read by the owner and by team-mates on shared hives; names unique per user</li>
+  <li>☑ <code>hives.hive_model_id</code> (set null when the model is deleted), plus a guard trigger so a hive can use only its owner's models</li>
+  <li>☑ <code>hives.image_url</code> for an optional photo of the hive itself</li>
+  <li>☑ Storage cleanup triggers and <code>is_storage_url_referenced</code> for the model and hive photos</li>
+  <li>☑ Run <code>get_advisors</code>; save the migration file</li>
+</ul>
+<h3>Phase 2: Managing models</h3>
+<ul>
+  <li>☑ Types, <code>src/lib/hive-model.ts</code> (labels, summary helper), <code>useHiveModels</code></li>
+  <li>☑ My hive models page with <code>HiveModelManager</code>: add, edit and delete models, with a photo (<code>apiary-images/&lt;uid&gt;/hive-models</code>)</li>
+  <li>☑ Link from the Profile tools list; add the new tables to the export lists</li>
+</ul>
+<h3>Phase 3: Hives</h3>
+<ul>
+  <li>☑ Hive form: Hive model picker; on a new hive it fills in size and frames per box</li>
+  <li>☑ Hive form: optional hive photo (<code>apiary-images/&lt;uid&gt;/hives</code>)</li>
+  <li>☑ Hive card: model line plus a photo thumbnail (the hive photo, or the model photo if it has none) that enlarges on tap</li>
+  <li>☑ Hive detail page: Hive model row and the photo</li>
+  <li>☑ Clone copies the model; new bulk action "Set hive model"</li>
+</ul>
+<h3>Phase 4: Visit and Mel</h3>
+<ul>
+  <li>☑ "Hive models here" summary (hives per model, frame sizes needed) on the apiary page and in the visit checklist</li>
+  <li>☑ Mel <code>getHiveOverview</code> returns the model and system</li>
+</ul>
+<h3>Phase 5: Admin, docs, QA</h3>
+<ul>
+  <li>☑ <code>HiveSystemsManager</code> in admin settings</li>
+  <li>☑ Feature doc set to Implemented; About page feature list</li>
+  <li>☑ Type check, lint, related tests and the QA audit; you test the build</li>
+</ul>
+
+<h2>Not in this feature</h2>
+<ul>
+  <li>Inventory or stock counts. These come next, built on models and systems.</li>
+  <li>Models for queen-rearing mating nucs (Apidea, Kieler).</li>
+  <li>Mixed equipment in one hive (use the model notes), and drawing the model in the 3D view.</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned across all five phases. Differences from the plan:</p>
+<ul>
+  <li>The hive form picker sits inside the form rather than in its own component.</li>
+  <li>Admins retire a hive system instead of deleting it.</li>
+  <li>The visit checklist shows the models of the hives that have tasks.</li>
+</ul>
+<h3>What a user sees</h3>
+<ul>
+  <li><strong>Profile, then My hive models:</strong> add a model with name, system, size, make (with suggestions), material, frames per box, photo and notes. Each row shows how many hives use the model.</li>
+  <li><strong>Hive form:</strong> a Hive model picker at the top of Hive configuration. On a new hive, picking a model fills in the size and frames per box. There is also an optional Hive photo. A team-mate sees the model but cannot change it.</li>
+  <li><strong>Hive card:</strong> the model name and its system, make and material, with a photo thumbnail that enlarges on tap. The hive's own photo is shown, or the model's if the hive has none.</li>
+  <li><strong>Hive page:</strong> the model, frame size, frames per box, model notes and the photo, under Hive information.</li>
+  <li><strong>Hives list, selection bar:</strong> a Hive model action sets or clears the model on all the selected hives.</li>
+  <li><strong>Apiary page and visit checklist:</strong> "Hive models here", for example "6 × Abelo poly National", plus the brood frame sizes needed.</li>
+  <li><strong>Settings, then Hive systems (admin):</strong> edit systems, their frame sizes and default frames, or retire a system.</li>
+</ul>
+<h3>Database</h3>
+<p>New tables <code>hive_systems</code> (9 seeded) and <code>hive_models</code>, plus <code>hives.hive_model_id</code> and <code>hives.image_url</code>. The database rules were tested in a rolled-back transaction:</p>
+<ul>
+  <li>a hive uses only its owner's models</li>
+  <li>duplicate names are refused</li>
+  <li>deleting a model clears it from its hives</li>
+  <li>a removed photo is queued for cleanup</li>
+  <li>other users cannot see a model that isn't on a hive they share</li>
+</ul>
+<h3>QA audit fixes</h3>
+<ul>
+  <li>When a load failed offline, the saved copy of the models could be ignored. It is now shown.</li>
+  <li>Editing a hive re-sent an unchanged model id. A stale id (from a model deleted elsewhere) would then fail the whole save. The id is now sent only when it changed.</li>
+  <li>The summary heading id is now unique, and the photo field heading is no longer an empty &lt;label&gt;.</li>
+</ul>
+<h3>Checks</h3>
+<p>Type check clean, whole-project lint clean, 87 related tests pass. The build has not been run and the feature has not yet been seen on a phone.</p>
+</body>
+</html>

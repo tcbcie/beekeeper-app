@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Plus, X, Scale, Archive, CheckSquare, Copy, FolderInput, Search, Syringe, Droplet, PackageX } from 'lucide-react'
+import { Plus, X, Scale, Archive, CheckSquare, Copy, FolderInput, Search, Syringe, Droplet, PackageX, Package } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { SkeletonScreen } from '@/components/ui/Skeleton'
 import EmptyState from '@/components/ui/EmptyState'
@@ -32,6 +32,9 @@ import StickyActionBar from '@/components/ui/StickyActionBar'
 import { useHivesList } from '@/hooks/useHivesList'
 import { isQueenClipped } from '@/lib/queen-clipped'
 import { useListPositionMemory } from '@/hooks/useListPositionMemory'
+import { useHiveModels } from '@/hooks/useHiveModels'
+import { describeHiveModel, hivePhotoUrl } from '@/lib/hive-model'
+import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 
 // The form and the bulk-action modals only show when opened, so they load then
 const HiveFormSection = dynamic(() => import('@/components/hive/HiveFormSection'), { loading: () => <LoadingSpinner text="Loading form..." />, ssr: false })
@@ -39,6 +42,8 @@ const MoveHivesModal = dynamic(() => import('@/components/hive/MoveHivesModal'),
 const BulkTreatmentModal = dynamic(() => import('@/components/hive/BulkTreatmentModal'), { ssr: false })
 const BulkFeedingModal = dynamic(() => import('@/components/hive/BulkFeedingModal'), { ssr: false })
 const BulkTreatmentRemovalModal = dynamic(() => import('@/components/hive/BulkTreatmentRemovalModal'), { ssr: false })
+const SetHiveModelModal = dynamic(() => import('@/components/hive/SetHiveModelModal'), { ssr: false })
+const ImageZoomModal = dynamic(() => import('@/components/ui/ImageZoomModal'), { ssr: false })
 
 type HivePhoneView = 'list' | 'cards'
 
@@ -64,6 +69,8 @@ export default function HivesPage() {
  const [selectionMode, setSelectionMode] = useState(false)
  const [selectedIds, setSelectedIds] = useState<string[]>([])
  const [showMoveModal, setShowMoveModal] = useState(false)
+ const [showModelModal, setShowModelModal] = useState(false)
+ const [zoomUrl, setZoomUrl] = useState<string | null>(null)
  // Bulk record entry. Reference data is fetched the first time a modal is opened
  // rather than on every visit to this page — most sessions never bulk-record.
  const [showBulkTreatment, setShowBulkTreatment] = useState(false)
@@ -94,6 +101,18 @@ export default function HivesPage() {
  archiveFilter, setArchiveFilter,
  fetchHives,
  } = useHivesList()
+
+ // Hive models, resolved by id for each card (see src/lib/hive-model.ts)
+ const { ownModels, modelsById, systemsById } = useHiveModels(userId)
+ const modelInfoFor = (hive: Hive) => {
+ const model = hive.hive_model_id ? modelsById.get(hive.hive_model_id) : undefined
+ if (!model) return null
+ const system = model.hive_system_id ? systemsById.get(model.hive_system_id) : undefined
+ return { name: model.name, description: describeHiveModel(model, system) }
+ }
+ const photoFor = (hive: Hive) => normaliseStoragePublicUrl(
+ hivePhotoUrl(hive, hive.hive_model_id ? modelsById.get(hive.hive_model_id) : undefined)
+ )
  const [scaleFilter, setScaleFilter] = usePersistentState<boolean>('hives:scales', false, (v) => typeof v === 'boolean')
  // The spring task is "which queens still need clipping?", which the card cannot
  // answer by itself: it shows a chip when clipped and nothing when not, so the
@@ -286,6 +305,9 @@ export default function HivesPage() {
  apiary_id: h.apiary_id,
  order_direction: h.order_direction || 'entrances',
  hive_type: h.hive_type,
+ // Same kind of equipment, but not the photo of the original hive. Only the
+ // user's own models can go on their hives, so a team-mate's model is left off.
+ hive_model_id: h.user_id === userId ? (h.hive_model_id ?? null) : null,
  configuration: h.configuration,
  status: 'active',
  is_queenless: false,
@@ -457,6 +479,45 @@ export default function HivesPage() {
  }
 
  setShowBulkTreatment(false)
+ exitSelection()
+ fetchHives(userId)
+ } finally {
+ bulkInFlightRef.current = false
+ setBulkSaving(false)
+ }
+ }
+
+ // Put one hive model on every selected hive (or clear it). Only the user's own hives are
+ // selected, and only their own models are offered, matching the database guard.
+ const handleBulkSetModel = async (modelId: string | null) => {
+ if (!userId || bulkInFlightRef.current) return
+ const ids = selectedOwnedHives.map((h) => h.id)
+ if (ids.length === 0) return
+ bulkInFlightRef.current = true
+ try {
+ setBulkSaving(true)
+ const { data: updated, error } = await fetchInChunks<{ id: string }>(ids, chunk => supabase
+ .from('hives')
+ .update({ hive_model_id: modelId })
+ .in('id', chunk)
+ .eq('user_id', userId)
+ .select('id'))
+
+ if (error) {
+ console.error('Bulk hive model error:', error)
+ toast.error('Failed to set the hive model: ' + ((error as { message?: string }).message ?? 'please try again.'))
+ return
+ }
+ if (updated.length === 0) {
+ toast.error('No hives were changed. Please refresh and try again.')
+ return
+ }
+
+ const n = updated.length
+ toast.success(modelId
+ ? `Hive model set on ${n} hive${n === 1 ? '' : 's'}.`
+ : `Hive model cleared from ${n} hive${n === 1 ? '' : 's'}.`)
+ setShowModelModal(false)
  exitSelection()
  fetchHives(userId)
  } finally {
@@ -912,6 +973,9 @@ export default function HivesPage() {
  key={hive.id}
  hive={hive}
  userId={userId}
+ model={modelInfoFor(hive)}
+ photoUrl={photoFor(hive)}
+ onEnlargePhoto={setZoomUrl}
  onEdit={handleEdit}
  onDelete={handleDelete}
  onUnarchive={handleUnarchive}
@@ -989,6 +1053,13 @@ export default function HivesPage() {
  <span>Feed<span className="hidden sm:inline">ing</span></span>
  </Button>
  <Button
+ onClick={() => setShowModelModal(true)}
+ className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] rounded-lg font-medium flex items-center justify-center gap-2 whitespace-nowrap"
+ >
+ <Package size={18} className="flex-shrink-0" />
+ <span className="sm:hidden">Model</span><span className="hidden sm:inline">Hive model</span>
+ </Button>
+ <Button
  onClick={handleBulkClone}
  className="flex-1 sm:flex-none px-3 sm:px-4 py-3 sm:py-2 min-h-[48px] rounded-lg font-medium flex items-center justify-center gap-2 whitespace-nowrap"
  >
@@ -1005,6 +1076,16 @@ export default function HivesPage() {
  </div>
  )}
 
+ {showModelModal && (
+ <SetHiveModelModal
+ count={selectedOwnedHives.length}
+ models={ownModels}
+ saving={bulkSaving}
+ onClose={() => setShowModelModal(false)}
+ onApply={handleBulkSetModel}
+ />
+ )}
+ <ImageZoomModal isOpen={zoomUrl !== null} imageUrl={zoomUrl} onClose={() => setZoomUrl(null)} />
  {showMoveModal && (
  <MoveHivesModal
  count={selectedOwnedHives.length}

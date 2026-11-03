@@ -45,6 +45,8 @@ export interface HiveFormData {
   colony_established_date: string
   queen_installed_date: string
   hive_type: string
+  /** Chosen hive model ('' = none). See docs/features/hive-model-plan.md. */
+  hive_model_id: string
   configuration: HiveConfiguration
 }
 
@@ -76,6 +78,10 @@ export interface Hive {
   colony_established_date: string | null
   queen_installed_date: string | null
   hive_type: string | null
+  /** The kind of equipment this hive is (hive_models). */
+  hive_model_id?: string | null
+  /** Optional photo of this hive; the model's photo is shown when absent. */
+  image_url?: string | null
   configuration: HiveConfiguration | null
   colony_id?: string | null
   queen_last_seen?: string | null

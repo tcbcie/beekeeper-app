@@ -8,7 +8,7 @@ import { fetchUserExportData, USER_EXPORT_TABLES } from '@/lib/database-export'
 import { downloadCsv, escapeCsvField, toCsv } from '@/lib/csv'
 import { getCurrentUserId, PROFILE_COLUMNS } from '@/lib/auth'
 import { verifyCurrentPassword } from '@/lib/verify-password'
-import { Edit2, Save, Download, Trash2, Scale, Users, Crown, ChevronRight, LogOut } from 'lucide-react'
+import { Edit2, Save, Download, Trash2, Scale, Users, Crown, ChevronRight, LogOut, Package } from 'lucide-react'
 import { useLogout } from '@/hooks/useLogout'
 import Link from 'next/link'
 import SubscriptionStatusCard from '@/components/SubscriptionStatusCard'
@@ -1169,6 +1169,7 @@ export default function ProfilePage() {
           <CollapsibleSection title="Tools &amp; Teams" storageKey="tools">
             <div className="space-y-3">
               {[
+                { href: '/dashboard/hive-models', label: 'My hive models', description: 'Hive systems, makes and photos you pick per hive', icon: Package, colour: 'text-forest-600 dark:text-forest-400' },
                 { href: '/dashboard/scales', label: 'Scales', description: 'BEEP & Wolf Waagen integrations', icon: Scale, colour: 'text-blue-600 dark:text-blue-400' },
                 { href: '/dashboard/apiary-team', label: 'Apiary Team', description: 'Team-based apiary sharing', icon: Users, colour: 'text-green-600 dark:text-green-400' },
                 { href: '/dashboard/rearing-team', label: 'Rearing Team', description: 'Queen rearing groups', icon: Crown, colour: 'text-amber-600 dark:text-amber-400' },

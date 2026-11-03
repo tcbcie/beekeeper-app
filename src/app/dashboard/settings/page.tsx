@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic'
 import React, { useEffect, useState } from 'react'
 import { getCurrentUserId, isAdmin, isPowerUserOrAdmin, hasActiveSubscription } from '@/lib/auth'
-import { Shield, Users, User, MessageCircle, Bug, List, Building2, BookOpen, BookText, Ruler, Lightbulb, Newspaper, MapPin, CalendarDays } from 'lucide-react'
+import { Shield, Users, User, MessageCircle, Bug, List, Building2, BookOpen, BookText, Ruler, Lightbulb, Newspaper, MapPin, CalendarDays, Boxes } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ProfileExport from '@/components/settings/ProfileExport'
 import { useRouter } from 'next/navigation'
@@ -35,6 +35,10 @@ const TerminologyTable = dynamic(() => import('@/components/settings/Terminology
 })
 const FrameStandardsManager = dynamic(() => import('@/components/settings/FrameStandardsManager'), {
   loading: () => <LoadingSpinner text="Loading frame standards..." />,
+  ssr: false,
+})
+const HiveSystemsManager = dynamic(() => import('@/components/settings/HiveSystemsManager'), {
+  loading: () => <LoadingSpinner text="Loading hive systems..." />,
   ssr: false,
 })
 const TicketManagement = dynamic(() => import('@/components/settings/TicketManagement'), {
@@ -75,7 +79,7 @@ export default function SettingsPage() {
   const [userHasActiveSubscription, setUserHasActiveSubscription] = useState(false)
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
-  const [activeSection, setActiveSection] = useState<'profile' | 'theme' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'monthly_tasks' | 'registration' | 'knowledge' | 'news' | 'terminology' | 'frame_standards' | 'tool_suggestions' | 'conservation_areas'>('profile')
+  const [activeSection, setActiveSection] = useState<'profile' | 'theme' | 'users' | 'tickets' | 'treatments' | 'associations' | 'dropdowns' | 'monthly_tasks' | 'registration' | 'knowledge' | 'news' | 'terminology' | 'frame_standards' | 'hive_systems' | 'tool_suggestions' | 'conservation_areas'>('profile')
 
 
   useEffect(() => {
@@ -147,6 +151,7 @@ export default function SettingsPage() {
     { id: 'tool_suggestions' as const, label: 'AI Tool Suggestions', icon: Lightbulb, adminOnly: true, powerUserAllowed: false },
     { id: 'terminology' as const, label: 'Terminology', icon: BookText, adminOnly: false, powerUserAllowed: true },
     { id: 'frame_standards' as const, label: 'Frame Standards', icon: Ruler, adminOnly: true, powerUserAllowed: false },
+    { id: 'hive_systems' as const, label: 'Hive Systems', icon: Boxes, adminOnly: true, powerUserAllowed: false },
     { id: 'conservation_areas' as const, label: 'Conservation Areas', icon: MapPin, adminOnly: true, powerUserAllowed: true },
   ].filter(section => {
     if (!section.adminOnly) return true
@@ -256,6 +261,12 @@ export default function SettingsPage() {
       {activeSection === 'frame_standards' && (
         <Card padding="md">
           <FrameStandardsManager />
+        </Card>
+      )}
+
+      {activeSection === 'hive_systems' && userIsAdmin && (
+        <Card padding="md">
+          <HiveSystemsManager />
         </Card>
       )}
 
