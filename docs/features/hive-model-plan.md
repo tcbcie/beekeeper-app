@@ -147,3 +147,9 @@ All changes are made through the Supabase MCP `apply_migration`, and the migrati
 * **Hive form:** on an existing hive, `hive_model_id` is sent only when it changed. This stops a stale saved copy re-sending a deleted model.
 * **Bulk action:** the button is "Model" on phones and "Hive model" from `sm` up. Only the user's own hives and models are used.
 * **Mel:** `getHiveOverview` returns `hiveModel`, e.g. "Abelo poly National (National · Abelo · Poly)".
+
+## 7. Follow-up (03/11/2026): automatic names, no repeated words
+* **Name builds itself.** The Name field now sits below the details in the model form. Until the user types in it, it fills in from the make, material, system and size, e.g. "Abelo Poly National Nuc" (`buildHiveModelName`).
+  * A cleared name falls back to the built one.
+  * An existing model whose name is still the built one keeps following its details when they change. A typed name is kept.
+* **No repeats under the name.** `describeHiveModel` now leaves out anything the name already says, matching whole words. "Dadant US" with system Dadant US shows no second line, and "Cedar National" by Thorne shows just "Thorne". This applies everywhere the line appears: the hive card, hive page, model list, hive form, apiary summary and Mel.

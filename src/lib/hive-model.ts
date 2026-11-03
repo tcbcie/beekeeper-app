@@ -25,17 +25,41 @@ export function materialLabel(material: HiveModelMaterial | null | undefined): s
   return HIVE_MODEL_MATERIALS.find(m => m.value === material)?.label ?? null
 }
 
-/** One line describing a model, e.g. "National · Abelo · Poly · Nuc". Empty when nothing is known. */
+type ModelFacts = Pick<HiveModel, 'manufacturer' | 'material' | 'hive_size'>
+
+/** Lower case, with punctuation as spaces and padded, so whole words can be matched ("Warré", "Payne's"). */
+function words(text: string): string {
+  return ` ${text.toLowerCase().replace(/[^\p{L}\p{N}']+/gu, ' ').trim()} `
+}
+
+/**
+ * The line shown under a model's name, e.g. "National · Abelo · Poly · Nuc". Anything the name
+ * already says is left out, so "Dadant US" never sits above "Dadant US". Empty when nothing is left.
+ */
 export function describeHiveModel(
-  model: Pick<HiveModel, 'manufacturer' | 'material' | 'hive_size'>,
+  model: ModelFacts & Pick<HiveModel, 'name'>,
   system: Pick<HiveSystem, 'name'> | null | undefined
 ): string {
+  const name = words(model.name)
   return [
     system?.name,
     model.manufacturer?.trim() || null,
     materialLabel(model.material),
     model.hive_size === 'nuc' ? 'Nuc' : null,
-  ].filter(Boolean).join(' · ')
+  ]
+    .filter((part): part is string => Boolean(part))
+    .filter(part => !name.includes(words(part)))
+    .join(' · ')
+}
+
+/** A name built from the model's details, e.g. "Abelo Poly National Nuc". Empty when nothing is set. */
+export function buildHiveModelName(model: ModelFacts, system: Pick<HiveSystem, 'name'> | null | undefined): string {
+  return [
+    model.manufacturer?.trim() || null,
+    materialLabel(model.material),
+    system?.name,
+    model.hive_size === 'nuc' ? 'Nuc' : null,
+  ].filter(Boolean).join(' ')
 }
 
 /** Frames a box of this model holds: the model's own figure, else the system default for its size. */

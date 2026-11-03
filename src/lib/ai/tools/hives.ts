@@ -127,7 +127,7 @@ export const getHiveOverview: Tool = {
           // hive_models.hive_system_id -> hive_systems is a to-one embed: normalise its shape.
           const system = firstOf(m.hive_systems as { name: string } | { name: string }[] | null)
           const detail = describeHiveModel(
-            { manufacturer: m.manufacturer, material: m.material as HiveModelMaterial | null, hive_size: m.hive_size === 'nuc' ? 'nuc' : 'full' },
+            { name: m.name, manufacturer: m.manufacturer, material: m.material as HiveModelMaterial | null, hive_size: m.hive_size === 'nuc' ? 'nuc' : 'full' },
             system
           )
           modelLabels.set(m.id, detail ? `${m.name} (${detail})` : m.name)

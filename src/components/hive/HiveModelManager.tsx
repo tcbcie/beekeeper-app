@@ -14,6 +14,7 @@ import { normaliseStoragePublicUrl } from '@/lib/storage-url'
 import {
   HIVE_MAKE_SUGGESTIONS,
   HIVE_MODEL_MATERIALS,
+  buildHiveModelName,
   describeHiveModel,
   modelFramesPerBox,
 } from '@/lib/hive-model'
@@ -86,6 +87,8 @@ export default function HiveModelManager({ userId }: { userId: string }) {
   const [editing, setEditing] = useState<HiveModel | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
+  // Until the user types a name, it is built from the details they pick.
+  const [nameTouched, setNameTouched] = useState(false)
   const [zoomUrl, setZoomUrl] = useState<string | null>(null)
 
   const {
@@ -129,6 +132,7 @@ export default function HiveModelManager({ userId }: { userId: string }) {
   const openNew = () => {
     setEditing(null)
     setForm(EMPTY_FORM)
+    setNameTouched(false)
     resetImage()
     setFormOpen(true)
   }
@@ -136,6 +140,9 @@ export default function HiveModelManager({ userId }: { userId: string }) {
   const openEdit = (model: HiveModel) => {
     setEditing(model)
     setForm(toForm(model))
+    // A name that is still the built one keeps following the details; a typed one is kept.
+    const system = model.hive_system_id ? systemsById.get(model.hive_system_id) : undefined
+    setNameTouched(model.name !== buildHiveModelName(model, system))
     resetImage()
     setPreviewFromUrl(normaliseStoragePublicUrl(model.image_url))
     setFormOpen(true)
@@ -152,13 +159,19 @@ export default function HiveModelManager({ userId }: { userId: string }) {
   const defaultFrames = selectedSystem
     ? (form.hive_size === 'nuc' ? selectedSystem.default_frames_nuc : selectedSystem.default_frames_full)
     : null
+  const autoName = buildHiveModelName(
+    { manufacturer: form.manufacturer, material: form.material || null, hive_size: form.hive_size },
+    selectedSystem
+  )
+  const shownName = nameTouched ? form.name : autoName
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
     run(async () => {
-      const name = form.name.trim()
+      // A cleared name falls back to the built one.
+      const name = shownName.trim() || autoName.trim()
       if (!name) {
-        toast.error('Please give the hive model a name')
+        toast.error('Please pick a hive system or type a name')
         return
       }
       const frames = parseFrames(form.frames_per_box)
@@ -355,15 +368,6 @@ export default function HiveModelManager({ userId }: { userId: string }) {
           }
         >
           <form id="hive-model-form" onSubmit={handleSave} className="space-y-4">
-            <TextInput
-              label="Name"
-              required
-              value={form.name}
-              maxLength={80}
-              placeholder="e.g. Abelo poly National"
-              enterKeyHint="next"
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
             <SelectField
               label="Hive system"
               value={form.hive_system_id}
@@ -418,6 +422,18 @@ export default function HiveModelManager({ userId }: { userId: string }) {
               placeholder={defaultFrames ? String(defaultFrames) : ''}
               helpText={defaultFrames ? `Leave blank to use ${defaultFrames}, the usual for this system` : undefined}
               onChange={(e) => setForm({ ...form, frames_per_box: e.target.value })}
+            />
+            <TextInput
+              label="Name"
+              value={shownName}
+              maxLength={80}
+              placeholder="e.g. Abelo Poly National"
+              helpText="Filled in from the details above. Change it if you like."
+              enterKeyHint="done"
+              onChange={(e) => {
+                setNameTouched(true)
+                setForm({ ...form, name: e.target.value })
+              }}
             />
             <PhotoField
               label="Photo"
