@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>WP05 accessible colour</title>
+</head>
+<body>
+<h1>WP05 – Apply accessible colour and status tokens</h1>
+<p>Plan: <code>docs/features/mobile-first-implementation-plan.html</code> (WP05 and refinements). Findings: F04, D08, H06, R05, V10, V14, V15, V17, and the colour part of D07. Ratios below were worked out from the actual colour values (WCAG formula); targets are 4.5:1 for text and 3:1 for field edges and icons.</p>
+
+<h2>Changes</h2>
+<ol>
+  <li><strong>Green text everywhere</strong> (F04, D08, V10). <code>src/app/globals.css</code>, next to the existing "darken coloured text in light mode" block, which already does this for green, amber, red and others:
+    <ul>
+      <li>Light: <code>text-forest-600</code> (123 uses, 3.30:1 on white) and <code>text-forest-700</code> (50 uses, 4.45:1 on elevated cream) both show as forest-800: 7.13:1 on white, 6.33:1 on elevated cream.</li>
+      <li>Dark: forest-600 or forest-700 text with <em>no dark colour of its own</em> shows as forest-400 (8.42:1, was 4.45:1). The selector is <code>.dark .text-forest-600:not([class*="dark:text-"])</code>, so the 79 uses that already set a dark colour keep it.</li>
+      <li>One side effect: links that changed shade on hover (<code>hover:text-forest-700</code>, 18 uses) no longer do in light mode. The existing green and amber overrides already behave this way, and most of these also underline on hover.</li>
+    </ul>
+  </li>
+  <li><strong>"View Changes" link inside a sentence</strong> (V17), <code>src/app/dashboard/page.tsx</code>: always underlined. Colour alone was its only marker, at 2.26:1 against the text around it.</li>
+  <li><strong>Full Size badge</strong> (H06, V14), <code>HiveListCard.tsx</code>: it had dark-only colours, giving 1.74:1 in light. It gets light colours (emerald-800 on emerald-100, 6.78:1) and keeps its dark ones.</li>
+  <li><strong>Field edges</strong> (R05). The shared border is 1.26:1 on white, so fields are hard to find. A new <code>--field-border</code> colour is used only for text fields, drop-downs and text areas:
+    <ul>
+      <li>Light: warm grey #857d74, at least 3.59:1 on white, cream and elevated cream.</li>
+      <li>Dark: slate #71809a, at least 3.66:1 on dark surfaces.</li>
+      <li>Used by <code>.fj-control</code>, and by plain <code>input</code>/<code>select</code>/<code>textarea</code> elements that use <code>border-border</code>, when not focused. A focused field keeps its own focus colour.</li>
+      <li>Cards, panels and dividers keep the light shared border.</li>
+    </ul>
+  </li>
+  <li><strong>Voice note button</strong> (V15), <code>InspectionForm.tsx</code>: purple-600 in both themes (5.38:1; dark used purple-500 at 4.12:1). "Transcribing…" changes from purple-400 (2.64:1) to purple-700 (6.98:1), so its words can be read.</li>
+  <li><strong>Mel button</strong> (D07 colour), <code>ChatButton.tsx</code>: forest-800, hover forest-900, like every other green button. It was forest-600 (3.30:1), which the earlier white-on-green fix missed because the white is on the icon. Its label and prominence are WP08.</li>
+</ol>
+
+<h2>Not changed</h2>
+<ul>
+  <li>Status pills, badges and card styles in general: WP08, so this package is colour fixes only.</li>
+  <li>Queen marking and hive configuration colours: meaningful, and kept.</li>
+  <li>Already-corrected white-on-green and white-on-amber fills: left as they are.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ 1. Green text overrides (light and dark)</li>
+  <li>☑ 2. View Changes underline</li>
+  <li>☑ 3. Full Size badge</li>
+  <li>☑ 4. Field border colour</li>
+  <li>☑ 5. Voice note button</li>
+  <li>☑ 6. Mel button</li>
+  <li>☑ Docs (colour notes in the design docs, the WP01 baseline, WP05 progress in both plans)</li>
+  <li>☑ Type check, lint, style and component tests</li>
+  <li>☑ QA audit</li>
+  <li>☑ Review section, and ask you to test the build in both themes</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned in 5 files: <code>globals.css</code>, <code>dashboard/page.tsx</code>, <code>HiveListCard.tsx</code>, <code>InspectionForm.tsx</code> and <code>ChatButton.tsx</code>. 31 lines added, 6 removed.</p>
+<ul>
+  <li>Checks: type check clean, lint clean, 540 style, component and page tests pass. No build run.</li>
+  <li>QA audit: no Critical, High or Medium. Low: light-mode hover no longer changes the green shade on 18 links; checkboxes that use the shared border also get the darker edge, which is harmless and helps them reach 3:1.</li>
+  <li>Docs: <code>contrast-fix.md</code> Round 4 (table of before and after ratios), the WP01 baseline note, WP05 progress in both plans.</li>
+</ul>
+<p>Waiting for your build test in light and dark.</p>
+</body>
+</html>

@@ -27,7 +27,7 @@ export default function ChatButton() {
                     flex items-center justify-center
                     ${isOpen
                       ? 'bg-surface-elevated dark:bg-surface-elevated rotate-0'
-                      : 'bg-forest-600 dark:bg-forest-600 hover:bg-forest-700'
+                      : 'bg-forest-800 hover:bg-forest-900'
                     }`}
         aria-label={isOpen ? 'Close Mel' : 'Open Mel'}
       >

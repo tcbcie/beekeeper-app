@@ -2281,11 +2281,12 @@ export default function InspectionForm({
                 disabled={voiceProcessing}
                 aria-label={isVoiceRecording ? 'Stop voice recording' : 'Record voice note'}
                 className={`inline-flex items-center gap-2 px-4 py-2 min-h-[48px] rounded-lg text-white font-medium transition-all touch-manipulation disabled:cursor-not-allowed ${
+                  // White text needs purple-600 or darker (5.38:1); purple-400/500 were 2.64:1 and 4.12:1.
                   voiceProcessing
-                    ? 'bg-purple-400 dark:bg-purple-500'
+                    ? 'bg-purple-700'
                     : isVoiceRecording
                       ? 'bg-red-600 hover:bg-red-700 animate-pulse'
-                      : 'bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600'
+                      : 'bg-purple-600 hover:bg-purple-700'
                 }`}
               >
                 {voiceProcessing ? (

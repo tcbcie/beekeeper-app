@@ -148,3 +148,7 @@ WP02 changed the code behind these scenarios. Their results above stay as the ba
 |---|---|
 | S25 | Visited steps show their number, shaded, with no tick |
 | S29 | Shift+Tab from the dialog panel wraps to the last control |
+
+### WP05 – 04/11/2026
+
+Colour only; no WP01 scenario changes. Contrast changes are listed in `contrast-fix.md` (Round 4).

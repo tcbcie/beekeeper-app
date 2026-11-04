@@ -40,3 +40,24 @@ Single block of CSS in `globals.css` that overrides coloured text utility classe
 
 ## Future-Proofing
 Any new components using standard Tailwind colour classes automatically get the contrast fix. No per-file changes needed.
+
+## Round 4 – Forest text, field edges and stragglers (WP05, 04/11/2026)
+
+Measured with the WCAG formula from the actual colour values.
+
+| What | Before | After |
+|---|---|---|
+| `text-forest-600` in light (123 uses) | 3.30:1 on white | forest-800, 7.13:1 (6.33:1 on elevated cream) |
+| `text-forest-700` in light (50 uses) | 4.45:1 on elevated cream | forest-800 |
+| forest-600/-700 text in dark with no `dark:text-*` of its own | 4.45:1 on slate-800 | forest-400, 8.42:1 |
+| Field edges (`--field-border`) | 1.26:1 on white, 1.42:1 dark | #857d74, at least 3.59:1 light; #71809a, at least 3.66:1 dark |
+| Full Size badge (light) | 1.74:1 | emerald-800 on emerald-100, 6.78:1 |
+| Voice note button | dark 4.12:1, Transcribing 2.64:1 | purple-600 (5.38:1) both themes, Transcribing purple-700 (6.98:1) |
+| Mel button | forest-600 fill, 3.30:1 | forest-800, 7.13:1 |
+
+How it works:
+- **Forest, light:** two lines added to the `:root:not(.dark)` block. Forest goes to -800 for both -600 and -700, as forest-700 still fails on elevated cream.
+- **Forest, dark:** `.dark .text-forest-600:not([class*="dark:text-"])` (and -700). The attribute test leaves alone any element that sets its own dark text colour.
+- **Field edges:** `--field-border` is used by `.fj-control`, and by plain `input`/`select`/`textarea` elements with `border-border` when not focused. Cards, panels and dividers keep `--border-color`.
+- **Links inside sentences** are underlined, not only coloured. "View Changes" on the dashboard was 2.26:1 against the text around it.
+- **Known side effect:** in light mode, `hover:text-forest-700` no longer changes shade (18 uses). The override is unlayered, as are the other colour overrides here.

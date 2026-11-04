@@ -118,6 +118,8 @@ Correct the source-confirmed forest text-link pairing with an accessible semanti
 
 **Verification refinement - WP05:** These are measured failures, no longer candidates: forest-600 text at 3.1-3.3:1 in light, used 125 times across the app, 59 of them with no dark colour (4.45:1 on the dark surface, V10); the Full Size badge at 1.74:1 in light (V14); field borders at 1.26:1 light and 1.42:1 dark; and the dark voice button at 4.12:1 (V15). Use forest-800 in light (forest-700 fails on elevated cream) and forest-300/400 in dark. Underline links inside sentences, such as View Changes (V17). Give field borders their own token rather than darkening the shared `--border-color`. Include the assistant button, which the earlier white-on-green fix missed.
 
+**Progress - WP05 (04/11/2026):** Code complete, awaiting the owner's build test in both themes. Forest text: light shows forest-800 for -600/-700 (7.13:1); dark text with no dark colour of its own shows forest-400 (8.42:1). Fields get their own edge colour (at least 3.59:1 light, 3.66:1 dark); "View Changes" is underlined; Full Size badge 6.78:1 in light; voice button and Transcribing state pass; Mel button forest-800. Side effect: 18 links no longer change shade on hover in light mode. Details in contrast-fix.md, Round 4.
+
 #### WP06 - Improve narrow-screen and enlarged-text layouts
 
 **P1 reproduced clipping, P2 other layouts | M | Evidence: F07, R01, R04, H04, I07, V16.**

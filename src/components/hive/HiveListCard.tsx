@@ -444,7 +444,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  <span className={`px-2 py-0.5 rounded text-sm font-medium ${
  hive.configuration.hive_size === 'nuc'
  ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800'
- : 'bg-emerald-900/50 text-emerald-300 border border-emerald-800'
+ : 'bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800'
  }`}>
  {hive.configuration.hive_size === 'nuc' ? 'Nuc' : 'Full Size'}
  </span>
