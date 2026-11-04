@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Mobile-first review verification</title>
+</head>
+<body>
+<h1>Verify the mobile-first findings and plan</h1>
+<p>Goal: check each of the 39 findings (F01–F12, R01–R05, D01–D08, H01–H07, I01–I07) and the database findings (DB01–DB05) against the current code and the live database, then check that the plan's 12 work packages rest on findings that hold up.</p>
+<p>Read-only. No app code, data or schema changes. No builds.</p>
+
+<h2>Sources being checked</h2>
+<ul>
+  <li><code>docs/reviews/mobile-first-50-plus-review-2026-11-03.md</code> (F01–F12)</li>
+  <li><code>docs/reviews/mobile-first-rendered-review-2026-11-03.md</code> (R01–R05)</li>
+  <li><code>docs/reviews/mobile-first-dashboard-screenshot-review-2026-11-03.md</code> (D01–D08)</li>
+  <li><code>docs/reviews/mobile-first-hive-screenshot-review-2026-11-03.md</code> (H01–H07)</li>
+  <li><code>docs/reviews/mobile-first-inspection-screenshot-review-2026-11-04.md</code> (I01–I07)</li>
+  <li><code>docs/reviews/mobile-first-database-review-2026-11-04.md</code> (DB01–DB05)</li>
+  <li><code>docs/features/mobile-first-implementation-plan.html</code> and its Markdown source (WP01–WP12)</li>
+</ul>
+
+<h2>How each finding is judged</h2>
+<ul>
+  <li><strong>Confirmed</strong> – the code or database shows it, with file:line evidence.</li>
+  <li><strong>Partly</strong> – real, but the review overstates or mis-describes it.</li>
+  <li><strong>Not confirmed</strong> – the code does not behave as described (or it has since been fixed).</li>
+  <li><strong>Needs a device</strong> – can only be settled on a real phone or with you; the code is checked as far as it can be.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ Run five read-only agents in parallel, each told to read the matching <code>docs/features</code> notes first:
+    <ul>
+      <li>☑ A – drafts, outbox and exits: F01, F02, F05, F06, F12, DB05</li>
+      <li>☑ B – fields, choices, ratings, dialog focus: F03, F07, F08, I03, I04, DB01</li>
+      <li>☑ C – colour, theme and visual consistency: F04, F10, F11, R05, D04, D06, D07, D08, H06, I06</li>
+      <li>☑ D – wording, layout and flow: R01–R04, D01, F09, H04, H05, I01, I02, I05, I07</li>
+      <li>☑ E – dates, jobs and stores: D02, D03, D05, H01, H02, H03, H07, DB02–DB04</li>
+    </ul>
+  </li>
+  <li>☑ Recheck the live database facts myself through the Supabase MCP connection (read-only): DB01 nulls and zeros, DB02 feeding newer than inspection, DB03 due-task query, DB04 stores readings, DB05 <code>adjust_hive_honey_supers</code> and missing <code>updated_at</code></li>
+  <li>☑ Spot-check every Critical or "Not confirmed" verdict myself before accepting it</li>
+  <li>☑ Check the plan: every finding ID mapped, each work package still has a confirmed finding behind it, file lists in "Likely existing modules" exist, dependencies make sense</li>
+  <li>☑ Write the results to <code>docs/reviews/mobile-first-findings-verification-2026-11-04.md</code>: one table row per finding (verdict, evidence, any correction) plus a short list of plan corrections</li>
+  <li>☑ Check in with you on the plan corrections before editing the plan documents</li>
+  <li>☑ Apply the corrections to both plans (Markdown and HTML)</li>
+  <li>☑ Add the review section below</li>
+</ul>
+
+<h2>Review</h2>
+<p>Done. Results in <code>docs/reviews/mobile-first-findings-verification-2026-11-04.md</code>.</p>
+<ul>
+  <li>39 review findings: 27 confirmed, 11 partly right, 1 needs a device, none wrong.</li>
+  <li>DB01–DB05: 4 confirmed, 1 partly. Every live database figure reproduced exactly. One correction: propolis -1 is the database default, not an old format.</li>
+  <li>22 issues the reviews missed, including the purchase form's Low priority looking unselected, the desktop Home button leaving an inspection unguarded, photos deleted on an uncertain save, queen averages counting unrated zeroes, and Next and Save being the same colour.</li>
+  <li>The plan holds up, but needs corrections: <code>RatingButtons.tsx</code> is unused (wrong target), Enter on login already works, several items already exist, and the colour work is app-wide (125 uses).</li>
+  <li>Four owner decisions listed at the end of the report.</li>
+</ul>
+<p>Corrections applied to both plans, with the same content in each:</p>
+<ul>
+  <li>Status now says the findings are verified. A verification note after the database note, and the verification report added to the evidence table.</li>
+  <li>A "Verification refinement" note under each of WP01–WP11. Where it conflicts with the original text, the note wins.</li>
+  <li>Wording fixed where the original was wrong: Enter behaviour (WP03), tick meaning and dependency (WP01/WP04), queen averages "verify" became "fix" (WP04), colour "candidates" became measured failures (WP05), the job-count definition (WP09) and the specific rows and links in WP06.</li>
+  <li>File map: <code>RatingButtons.tsx</code> marked unused. Added <code>RadioChoiceGroup</code>, <code>OfflineIndicator</code>, <code>seasonal-lead</code>, <code>dashboard-todo</code>, <code>ChatButton</code>, the Hives page and <code>useQueenDetail</code>.</li>
+  <li>New "Owner decisions before implementation" section (four questions). Coverage table extended with DB01–DB05 and V01–V22. I04 now maps to WP04 only.</li>
+  <li>Verification report: new issues labelled V01–V22 to match.</li>
+  <li>The Markdown plan's mixed line endings are now all LF.</li>
+</ul>
+</body>
+</html>

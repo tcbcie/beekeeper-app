@@ -1,0 +1,727 @@
+[
+  {
+    "name": "login-320-light",
+    "at": "2026-11-03T22:17:15.778Z",
+    "config": {
+      "route": "/login",
+      "width": 320,
+      "theme": "light"
+    },
+    "url": "https://www.hivecraic.com/login",
+    "title": "HiveCraic",
+    "viewport": {
+      "width": 320,
+      "height": 844
+    },
+    "documentWidth": 320,
+    "documentHeight": 1114,
+    "theme": "light",
+    "rootFontSize": "16px",
+    "text": "Field Journal Access\nHiveCraic\n\nWelcome Back\n\nReturn to Your Apiary Journal\n\nSign in to track hives, inspections, queens, and shared team work in one place.\n\nCrafted with honeyed hearts by tcbc.ie\n\nwith Tribes Beekeepers Association and Tribes QRBG\n\nEmail\nPassword\nForgot Password?\nLogin\nSign Up\n\nDeleted account? Request reactivation\n\nOr continue with\nContinue with Google\nv1.14.0\n-\n2nd November 2026",
+    "controls": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "text": "",
+        "name": null,
+        "id": "login-email",
+        "labels": [
+          "Email"
+        ],
+        "x": 49,
+        "y": 505,
+        "width": 222,
+        "height": 50,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "A",
+        "type": "",
+        "text": "Forgot Password?",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 159.078125,
+        "y": 575,
+        "width": 111.921875,
+        "height": 20,
+        "fontSize": "14px",
+        "color": "rgb(21, 128, 61)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "text": "",
+        "name": null,
+        "id": "login-password",
+        "labels": [
+          "Password"
+        ],
+        "x": 49,
+        "y": 599,
+        "width": 222,
+        "height": 50,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "text": "Login",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 49,
+        "y": 721,
+        "width": 105,
+        "height": 48,
+        "fontSize": "16px",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(22, 101, 52)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "text": "Sign Up",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 166,
+        "y": 721,
+        "width": 105,
+        "height": 48,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "oklab(0.964951 0.000640894 0.0107938)"
+      },
+      {
+        "tag": "A",
+        "type": "",
+        "text": "Request reactivation",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 122.734375,
+        "y": 797,
+        "width": 118.203125,
+        "height": 39,
+        "fontSize": "14px",
+        "color": "rgb(21, 128, 61)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "text": "Continue with Google",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 49,
+        "y": 923,
+        "width": 222,
+        "height": 66,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "oklab(0.964951 0.000640894 0.0107938)"
+      }
+    ]
+  },
+  {
+    "name": "login-390-light",
+    "at": "2026-11-03T22:17:18.106Z",
+    "config": {
+      "route": "/login",
+      "width": 390,
+      "theme": "light"
+    },
+    "url": "https://www.hivecraic.com/login",
+    "title": "HiveCraic",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "documentWidth": 390,
+    "documentHeight": 1026,
+    "theme": "light",
+    "rootFontSize": "16px",
+    "text": "Field Journal Access\nHiveCraic\n\nWelcome Back\n\nReturn to Your Apiary Journal\n\nSign in to track hives, inspections, queens, and shared team work in one place.\n\nCrafted with honeyed hearts by tcbc.ie\n\nwith Tribes Beekeepers Association and Tribes QRBG\n\nEmail\nPassword\nForgot Password?\nLogin\nSign Up\n\nDeleted account? Request reactivation\n\nOr continue with\nContinue with Google\nv1.14.0\n-\n2nd November 2026",
+    "controls": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "text": "",
+        "name": null,
+        "id": "login-email",
+        "labels": [
+          "Email"
+        ],
+        "x": 49,
+        "y": 465,
+        "width": 292,
+        "height": 50,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "A",
+        "type": "",
+        "text": "Forgot Password?",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 229.078125,
+        "y": 535,
+        "width": 111.921875,
+        "height": 20,
+        "fontSize": "14px",
+        "color": "rgb(21, 128, 61)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "text": "",
+        "name": null,
+        "id": "login-password",
+        "labels": [
+          "Password"
+        ],
+        "x": 49,
+        "y": 559,
+        "width": 292,
+        "height": 50,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "text": "Login",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 49,
+        "y": 681,
+        "width": 140,
+        "height": 48,
+        "fontSize": "16px",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(22, 101, 52)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "text": "Sign Up",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 201,
+        "y": 681,
+        "width": 140,
+        "height": 48,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "oklab(0.964951 0.000640894 0.0107938)"
+      },
+      {
+        "tag": "A",
+        "type": "",
+        "text": "Request reactivation",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 185.828125,
+        "y": 757,
+        "width": 129.296875,
+        "height": 19,
+        "fontSize": "14px",
+        "color": "rgb(21, 128, 61)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "text": "Continue with Google",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 49,
+        "y": 863,
+        "width": 292,
+        "height": 48,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "oklab(0.964951 0.000640894 0.0107938)"
+      }
+    ]
+  },
+  {
+    "name": "login-390-dark",
+    "at": "2026-11-03T22:17:20.276Z",
+    "config": {
+      "route": "/login",
+      "width": 390,
+      "theme": "dark"
+    },
+    "url": "https://www.hivecraic.com/login",
+    "title": "HiveCraic",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "documentWidth": 390,
+    "documentHeight": 1026,
+    "theme": "dark",
+    "rootFontSize": "16px",
+    "text": "Field Journal Access\nHiveCraic\n\nWelcome Back\n\nReturn to Your Apiary Journal\n\nSign in to track hives, inspections, queens, and shared team work in one place.\n\nCrafted with honeyed hearts by tcbc.ie\n\nwith Tribes Beekeepers Association and Tribes QRBG\n\nEmail\nPassword\nForgot Password?\nLogin\nSign Up\n\nDeleted account? Request reactivation\n\nOr continue with\nContinue with Google\nv1.14.0\n-\n2nd November 2026",
+    "controls": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "text": "",
+        "name": null,
+        "id": "login-email",
+        "labels": [
+          "Email"
+        ],
+        "x": 49,
+        "y": 465,
+        "width": 292,
+        "height": 50,
+        "fontSize": "16px",
+        "color": "rgb(245, 245, 245)",
+        "background": "rgb(31, 41, 55)"
+      },
+      {
+        "tag": "A",
+        "type": "",
+        "text": "Forgot Password?",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 229.078125,
+        "y": 535,
+        "width": 111.921875,
+        "height": 20,
+        "fontSize": "14px",
+        "color": "rgb(134, 239, 172)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "text": "",
+        "name": null,
+        "id": "login-password",
+        "labels": [
+          "Password"
+        ],
+        "x": 49,
+        "y": 559,
+        "width": 292,
+        "height": 50,
+        "fontSize": "16px",
+        "color": "rgb(245, 245, 245)",
+        "background": "rgb(31, 41, 55)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "text": "Login",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 49,
+        "y": 681,
+        "width": 140,
+        "height": 48,
+        "fontSize": "16px",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(22, 101, 52)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "text": "Sign Up",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 201,
+        "y": 681,
+        "width": 140,
+        "height": 48,
+        "fontSize": "16px",
+        "color": "rgb(245, 245, 245)",
+        "background": "oklab(0.267875 -0.00615515 -0.0292343)"
+      },
+      {
+        "tag": "A",
+        "type": "",
+        "text": "Request reactivation",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 185.828125,
+        "y": 757,
+        "width": 129.296875,
+        "height": 19,
+        "fontSize": "14px",
+        "color": "rgb(134, 239, 172)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "text": "Continue with Google",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 49,
+        "y": 863,
+        "width": 292,
+        "height": 48,
+        "fontSize": "16px",
+        "color": "rgb(245, 245, 245)",
+        "background": "oklab(0.267875 -0.00615515 -0.0292343)"
+      }
+    ]
+  },
+  {
+    "name": "login-390-light-root-text-200",
+    "at": "2026-11-03T22:17:23.059Z",
+    "config": {
+      "route": "/login",
+      "width": 390,
+      "theme": "light",
+      "textScale": 2
+    },
+    "url": "https://www.hivecraic.com/login",
+    "title": "HiveCraic",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "documentWidth": 390,
+    "documentHeight": 2984,
+    "theme": "light",
+    "rootFontSize": "32px",
+    "text": "Field Journal Access\nHiveCraic\n\nWelcome Back\n\nReturn to Your Apiary Journal\n\nSign in to track hives, inspections, queens, and shared team work in one place.\n\nCrafted with honeyed hearts by tcbc.ie\n\nwith Tribes Beekeepers Association and Tribes QRBG\n\nEmail\nPassword\nForgot Password?\nLogin\nSign Up\n\nDeleted account? Request reactivation\n\nOr continue with\nContinue with Google\nv1.14.0\n-\n2nd November 2026",
+    "controls": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "text": "",
+        "name": null,
+        "id": "login-email",
+        "labels": [
+          "Email"
+        ],
+        "x": 97,
+        "y": 1485,
+        "width": 196,
+        "height": 98,
+        "fontSize": "32px",
+        "color": "rgb(26, 26, 26)",
+        "background": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "A",
+        "type": "",
+        "text": "Forgot Password?",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 216.109375,
+        "y": 1623,
+        "width": 131.53125,
+        "height": 80,
+        "fontSize": "28px",
+        "color": "rgb(21, 128, 61)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "text": "",
+        "name": null,
+        "id": "login-password",
+        "labels": [
+          "Password"
+        ],
+        "x": 97,
+        "y": 1711,
+        "width": 196,
+        "height": 98,
+        "fontSize": "32px",
+        "color": "rgb(26, 26, 26)",
+        "background": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "text": "Login",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 97,
+        "y": 1921,
+        "width": 86,
+        "height": 130,
+        "fontSize": "32px",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(22, 101, 52)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "text": "Sign Up",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 207,
+        "y": 1921,
+        "width": 86,
+        "height": 130,
+        "fontSize": "32px",
+        "color": "rgb(26, 26, 26)",
+        "background": "oklab(0.964951 0.000640894 0.0107938)"
+      },
+      {
+        "tag": "A",
+        "type": "",
+        "text": "Request reactivation",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 120.46875,
+        "y": 2188,
+        "width": 149.0625,
+        "height": 77,
+        "fontSize": "28px",
+        "color": "rgb(21, 128, 61)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "text": "Continue with Google",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 97,
+        "y": 2517,
+        "width": 196,
+        "height": 178,
+        "fontSize": "32px",
+        "color": "rgb(26, 26, 26)",
+        "background": "oklab(0.964951 0.000640894 0.0107938)"
+      }
+    ]
+  },
+  {
+    "name": "forgot-320-light",
+    "at": "2026-11-03T22:17:25.481Z",
+    "config": {
+      "route": "/forgot-password",
+      "width": 320,
+      "theme": "light"
+    },
+    "url": "https://www.hivecraic.com/forgot-password",
+    "title": "HiveCraic",
+    "viewport": {
+      "width": 320,
+      "height": 844
+    },
+    "documentWidth": 320,
+    "documentHeight": 844,
+    "theme": "light",
+    "rootFontSize": "16px",
+    "text": "HiveCraic\n\nAccount Recovery\n\nReset Your Password\n\nEnter your email and we’ll send secure reset instructions.\n\nUse the email address linked to your HiveCraic account. The reset link will open `Reset Password`.\n\nEmail Address\nSend Reset Instructions\nBack to Login",
+    "controls": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "text": "",
+        "name": null,
+        "id": "email",
+        "labels": [
+          "Email Address"
+        ],
+        "x": 49,
+        "y": 538,
+        "width": 222,
+        "height": 50,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "text": "Send Reset Instructions",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 49,
+        "y": 608,
+        "width": 222,
+        "height": 48,
+        "fontSize": "16px",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(22, 101, 52)"
+      },
+      {
+        "tag": "A",
+        "type": "",
+        "text": "Back to Login",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 92.890625,
+        "y": 680,
+        "width": 134.203125,
+        "height": 34,
+        "fontSize": "14px",
+        "color": "rgb(55, 65, 81)",
+        "background": "rgb(255, 255, 255)"
+      }
+    ]
+  },
+  {
+    "name": "signup-320-light",
+    "at": "2026-11-03T22:17:27.578Z",
+    "config": {
+      "route": "/login?signup=true",
+      "width": 320,
+      "theme": "light"
+    },
+    "url": "https://www.hivecraic.com/login?signup=true",
+    "title": "HiveCraic",
+    "viewport": {
+      "width": 320,
+      "height": 844
+    },
+    "documentWidth": 320,
+    "documentHeight": 1114,
+    "theme": "light",
+    "rootFontSize": "16px",
+    "text": "Field Journal Access\nHiveCraic\n\nCreate Account\n\nStart Your Season Log\n\nSign in to track hives, inspections, queens, and shared team work in one place.\n\nCrafted with honeyed hearts by tcbc.ie\n\nwith Tribes Beekeepers Association and Tribes QRBG\n\nEmail\nPassword\nLogin\nSign Up\n\nDeleted account? Request reactivation\n\nOr continue with\nContinue with Google\nv1.14.0\n-\n2nd November 2026",
+    "controls": [
+      {
+        "tag": "INPUT",
+        "type": "email",
+        "text": "",
+        "name": null,
+        "id": "login-email",
+        "labels": [
+          "Email"
+        ],
+        "x": 49,
+        "y": 505,
+        "width": 222,
+        "height": 50,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "A",
+        "type": "",
+        "text": "",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 159.078125,
+        "y": 575,
+        "width": 111.921875,
+        "height": 20,
+        "fontSize": "14px",
+        "color": "rgb(21, 128, 61)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "tag": "INPUT",
+        "type": "password",
+        "text": "",
+        "name": null,
+        "id": "login-password",
+        "labels": [
+          "Password"
+        ],
+        "x": 49,
+        "y": 599,
+        "width": 222,
+        "height": 50,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "rgb(255, 255, 255)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "text": "Login",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 49,
+        "y": 721,
+        "width": 105,
+        "height": 48,
+        "fontSize": "16px",
+        "color": "rgb(255, 255, 255)",
+        "background": "rgb(22, 101, 52)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "submit",
+        "text": "Sign Up",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 166,
+        "y": 721,
+        "width": 105,
+        "height": 48,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "oklab(0.964951 0.000640894 0.0107938)"
+      },
+      {
+        "tag": "A",
+        "type": "",
+        "text": "Request reactivation",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 122.734375,
+        "y": 797,
+        "width": 118.203125,
+        "height": 39,
+        "fontSize": "14px",
+        "color": "rgb(21, 128, 61)",
+        "background": "rgba(0, 0, 0, 0)"
+      },
+      {
+        "tag": "BUTTON",
+        "type": "button",
+        "text": "Continue with Google",
+        "name": null,
+        "id": "",
+        "labels": [],
+        "x": 49,
+        "y": 923,
+        "width": 222,
+        "height": 66,
+        "fontSize": "16px",
+        "color": "rgb(26, 26, 26)",
+        "background": "oklab(0.964951 0.000640894 0.0107938)"
+      }
+    ]
+  }
+]

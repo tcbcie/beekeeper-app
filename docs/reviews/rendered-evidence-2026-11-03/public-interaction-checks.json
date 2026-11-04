@@ -1,0 +1,111 @@
+{
+  "at": "2026-11-03T22:20:25.160Z",
+  "version": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/156.0.8078.80",
+    "revision": "@fb096c0011f9d50f0a264a9376420cdea9c421e3",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+    "jsVersion": "15.6.75.27"
+  },
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "mobile": true
+  },
+  "order": [
+    {
+      "tag": "INPUT",
+      "id": "login-email",
+      "text": "",
+      "outline": "rgb(22, 163, 74) solid 2px",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.722741 -0.165537 0.0972287 / 0.3) 0px 0px 0px 2px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+      "y": 465,
+      "height": 50,
+      "scrollY": 0
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "text": "Forgot Password?",
+      "outline": "rgb(22, 163, 74) solid 2px",
+      "boxShadow": "none",
+      "y": 535,
+      "height": 20,
+      "scrollY": 0
+    },
+    {
+      "tag": "INPUT",
+      "id": "login-password",
+      "text": "",
+      "outline": "rgb(22, 163, 74) solid 2px",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.722741 -0.165537 0.0972287 / 0.3) 0px 0px 0px 2px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+      "y": 559,
+      "height": 50,
+      "scrollY": 0
+    },
+    {
+      "tag": "BUTTON",
+      "id": "",
+      "text": "Login",
+      "outline": "rgb(22, 163, 74) solid 2px",
+      "boxShadow": "none",
+      "y": 681,
+      "height": 48,
+      "scrollY": 0
+    },
+    {
+      "tag": "BUTTON",
+      "id": "",
+      "text": "Sign Up",
+      "outline": "rgb(22, 163, 74) solid 2px",
+      "boxShadow": "none",
+      "y": 681,
+      "height": 48,
+      "scrollY": 0
+    },
+    {
+      "tag": "A",
+      "id": "",
+      "text": "Request reactivation",
+      "outline": "rgb(22, 163, 74) solid 2px",
+      "boxShadow": "none",
+      "y": 757,
+      "height": 19,
+      "scrollY": 0
+    },
+    {
+      "tag": "BUTTON",
+      "id": "",
+      "text": "Continue with Google",
+      "outline": "rgb(22, 163, 74) solid 2px",
+      "boxShadow": "none",
+      "y": 681,
+      "height": 48,
+      "scrollY": 182
+    }
+  ],
+  "inputs": [
+    {
+      "id": "login-email",
+      "border": "rgb(229, 229, 229)",
+      "background": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)",
+      "font": "16px",
+      "autocomplete": ""
+    },
+    {
+      "id": "login-password",
+      "border": "rgb(229, 229, 229)",
+      "background": "rgb(255, 255, 255)",
+      "color": "rgb(26, 26, 26)",
+      "font": "16px",
+      "autocomplete": "current-password"
+    }
+  ],
+  "protectedRoute": {
+    "requested": "/dashboard",
+    "actual": "https://www.hivecraic.com/login",
+    "heading": "Return to Your Apiary Journal"
+  },
+  "note": "No credentials entered, forms submitted or app records changed."
+}
