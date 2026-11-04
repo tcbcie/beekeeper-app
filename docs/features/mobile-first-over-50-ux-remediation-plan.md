@@ -515,9 +515,9 @@ Recorded so they are not rediscovered.
 
 ### Deliberately deferred, with reasons
 
-* **Local inspection drafts.** Phase 1 already prevents the loss they were meant to prevent. The feasibility audit found the photograph cannot be stored, and that impersonation switches the live Supabase session *before* the page reloads, leaving a window in which one user's work could be written under another user's key. This needs a designed feature, not a rider on another phase.
+* **Local inspection drafts.** *(Update 04/11/2026: since built, with the owner fixed when the form opens to avoid the impersonation problem below. See `inspection-drafts.md`.)* Phase 1 already prevents the loss they were meant to prevent. The feasibility audit found the photograph cannot be stored, and that impersonation switches the live Supabase session *before* the page reloads, leaving a window in which one user's work could be written under another user's key. This needs a designed feature, not a rider on another phase.
 * **Browser back and forward guarding.** Closing it means manipulating the history stack and risks trapping a user trying to leave, which section 4 of this document warns against. In-app link clicks are guarded; this vector is knowingly open.
-* **A full-screen inspection panel on mobile.** The stepped flow already reduced the form from roughly three screens to one short step at a time, and the click guard closes the protection gap completely. This is now a presentation choice rather than a safety one.
+* **A full-screen inspection panel on mobile.** The stepped flow already reduced the form from roughly three screens to one short step at a time, and the click guard closes the protection gap completely. This is now a presentation choice rather than a safety one. *(Update 04/11/2026: the full-screen phone panel has since been built. The click guard did not close the gap completely: browser and swipe Back stay unguarded by design, and the desktop Home button was unguarded until WP02.)*
 * **Migrating the eleven bespoke modals onto the shared dialog hook.** No acceptance criterion requires it, and it would put a large amount of working UI at risk.
 * **Converting the remaining native confirm() calls.** Five sit on the records page and belong with Phase 4.
 

@@ -54,7 +54,7 @@ export default function OfflineIndicator() {
           <WifiOff size={20} />
           <div>
             <p className="font-medium">You&apos;re Offline</p>
-            <p className="text-sm opacity-90">New inspections stay on this phone and send when you reconnect. Other changes need a signal.</p>
+            <p className="text-sm opacity-90">New inspections stay on this device and send when the app is open and back online. Other changes need a signal.</p>
           </div>
         </>
       )}

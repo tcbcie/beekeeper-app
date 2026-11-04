@@ -28,6 +28,11 @@ since been checked against them.
 
 ### 2a. The offline criterion describes a capability that does not exist
 
+> **Update 04/11/2026:** No longer true for new inspections. They are now kept on the device as a
+> draft and, once saved, in an outbox that sends when the app is open with signal (see
+> `inspection-drafts.md` and `inspection-outbox.md`). Edits and other record types still need a
+> signal and still fail offline. Task 7 should test both.
+
 > "Every participant understands whether an offline action is saved locally,
 > synchronised or failed."
 

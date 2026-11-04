@@ -36,7 +36,7 @@ Replaces the "Can I open my hives today?" card, which said "not today" for much 
 | Season | Band | Question | Answered from | Forecast |
 |---|---|---|---|---|
 | August to October | Getting ready for winter | Are they ready for winter? | Scales this week and last feed; varroa treatment since 1 July per apiary; mouse guards in October | No |
-| November to February | Winter: nothing to do | Do they have enough food? | Hives getting light; other scale hives; hives without a scale and the last feed | No |
+| November to February | Winter: just check food | Do they have enough food? | Hives getting light; other scale hives; hives without a scale and the last feed | No |
 | March to April | First look of the year | Have they come through winter? | Apiaries inspected this year; the next good day | Yes |
 | May to July | Swarm season | Are any about to swarm? | Possible swarms; apiaries by days since their last inspection, due after 7 days | Yes |
 

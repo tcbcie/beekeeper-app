@@ -61,7 +61,7 @@ export default function ForgotPassword() {
               <div className="flex items-start gap-3">
                 <Mail className="mt-0.5 h-5 w-5 text-blue-700 dark:text-blue-300" />
                 <p className="text-sm text-blue-900 dark:text-blue-200">
-                  Use the email address linked to your HiveCraic account. The reset link will open `Reset Password`.
+                  Use the email address linked to your HiveCraic account. The reset link opens the Reset Password page.
                 </p>
               </div>
             </Panel>

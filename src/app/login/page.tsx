@@ -189,7 +189,9 @@ function LoginForm() {
               <PageHeader
                 eyebrow={isSignUp ? 'Create Account' : 'Welcome Back'}
                 title={isSignUp ? 'Start Your Season Log' : 'Return to Your Apiary Journal'}
-                description="Sign in to track hives, inspections, queens, and shared team work in one place."
+                description={isSignUp
+                  ? 'Create an account to track hives, inspections, queens and shared team work in one place.'
+                  : 'Sign in to track hives, inspections, queens and shared team work in one place.'}
                 className="text-center [&>div]:mx-auto [&>div]:max-w-sm [&>div]:w-full [&_h1]:text-2xl [&_h1]:sm:text-3xl"
               />
 
@@ -262,7 +264,7 @@ function LoginForm() {
                   type="submit"
                   onClick={() => setIsSignUp(false)}
                   disabled={loading}
-                  tone="success"
+                  tone={isSignUp ? 'neutral' : 'success'}
                   className="min-h-[48px] disabled:opacity-50"
                 >
                   {loading && !isSignUp ? 'Loading...' : 'Login'}
@@ -271,7 +273,7 @@ function LoginForm() {
                   type="submit"
                   onClick={() => setIsSignUp(true)}
                   disabled={loading}
-                  tone="neutral"
+                  tone={isSignUp ? 'success' : 'neutral'}
                   className="min-h-[48px] disabled:opacity-50"
                 >
                   {loading && isSignUp ? 'Loading...' : 'Sign Up'}

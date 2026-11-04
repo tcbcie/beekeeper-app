@@ -19,8 +19,8 @@ export function useLogout(userId: string | null | undefined) {
       : [null, []]
     if (userId && (draft || waiting.length > 0)) {
       const logOutAnyway = await confirmDialog({
-        title: 'Log out and lose inspections on this phone?',
-        message: 'You have an unfinished inspection, or one not sent yet. It is only on this phone, and logging out removes it. To keep it, stay logged in until it has sent.',
+        title: 'Log out and lose inspections on this device?',
+        message: 'You have an unfinished inspection, or one not sent yet. It is only on this device, and logging out removes it. To keep it, stay logged in until it has sent.',
         confirmLabel: 'Log out',
         cancelLabel: 'Stay logged in',
         variant: 'warning',

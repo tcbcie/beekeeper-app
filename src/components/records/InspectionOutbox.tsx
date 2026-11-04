@@ -34,7 +34,8 @@ export function InspectionOutboxRunner({ userId }: { userId: string | null }) {
       try {
         const { sent, refused, warnings } = await flushQueuedInspections(userId)
         if (sent > 0) toast.success(sent === 1 ? 'Waiting inspection sent' : `${sent} waiting inspections sent`)
-        warnings.forEach(warning => toast.warning(warning))
+        // No time limit: part of an inspection needs checking, so each warning stays until closed.
+        warnings.forEach(warning => toast.warning(warning, 0))
         if (refused > 0) toast.error('An inspection could not be sent. Open Records to see why.')
       } finally {
         flushing = false
@@ -56,7 +57,7 @@ export function InspectionOutboxRunner({ userId }: { userId: string | null }) {
   return null
 }
 
-/** What is on this phone and not yet on the server, and what happened to it. */
+/** What is on this device and not yet on the server, and what happened to it. */
 export default function InspectionOutbox({ userId }: { userId: string | null }) {
   const toast = useToast()
   const confirmDialog = useConfirm()
@@ -79,10 +80,10 @@ export default function InspectionOutbox({ userId }: { userId: string | null }) 
     setSending(true)
     try {
       const result = await retryQueuedInspection(entry)
-      if (result.status === 'waiting') toast.info('Still no signal. It will send by itself when there is.')
+      if (result.status === 'waiting') toast.info('Could not send it just now. It will try again when the app is next open with signal.')
       if (result.status === 'sent') {
         toast.success('Inspection sent')
-        result.warnings.forEach(warning => toast.warning(warning))
+        result.warnings.forEach(warning => toast.warning(warning, 0))
       }
     } finally {
       setSending(false)
@@ -92,7 +93,7 @@ export default function InspectionOutbox({ userId }: { userId: string | null }) 
   const discard = async (entry: QueuedInspection) => {
     const confirmed = await confirmDialog({
       title: 'Discard this inspection?',
-      message: `The inspection of hive ${entry.hiveLabel} is only on this phone. Discarding it cannot be undone.`,
+      message: `The inspection of hive ${entry.hiveLabel} is only on this device. Discarding it cannot be undone.`,
       confirmLabel: 'Discard',
       cancelLabel: 'Keep it',
       variant: 'warning',
@@ -104,7 +105,7 @@ export default function InspectionOutbox({ userId }: { userId: string | null }) 
     <section aria-label="Inspections not yet sent" className="mb-4 rounded-lg border border-border bg-surface-elevated p-3">
       <h2 className="flex items-center gap-2 font-semibold text-foreground">
         <CloudOff size={18} aria-hidden="true" />
-        Saved on this phone, not sent yet
+        Saved on this device, not sent yet
       </h2>
       <ul className="mt-2 divide-y divide-border">
         {entries.map(entry => (
@@ -116,7 +117,7 @@ export default function InspectionOutbox({ userId }: { userId: string | null }) 
             {entry.failedReason ? (
               <p className="text-sm font-medium text-red-800 dark:text-red-300">Could not be sent: {entry.failedReason}</p>
             ) : (
-              <p className="text-sm text-text-secondary">Sends by itself when there is signal</p>
+              <p className="text-sm text-text-secondary">Sends when the app is open and has signal</p>
             )}
             <div className="mt-2 flex gap-2">
               <Button tone="neutral" size="sm" disabled={sending} onClick={() => void retry(entry)}>

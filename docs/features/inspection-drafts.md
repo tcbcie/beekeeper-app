@@ -7,13 +7,13 @@
 
 A new inspection is kept on the device as it is filled in, including photographs. If the app closes, the phone dies or the save fails, the work is still there when the beekeeper comes back.
 
-This keeps work safe. It does not send it. An inspection only reaches HiveCraic when Save succeeds. Sending later without signal is Phase G.
+This keeps unfinished work safe. It does not send it. Once Save is tapped, a new inspection moves to the outbox and is sent from there, with or without signal (see [inspection-outbox.md](./inspection-outbox.md)).
 
 ## 2. Behaviour
 
 * **What is kept:** one draft per user: readings, notes, follow-up tasks, photos and the current step.
 * **When:** 800ms after each change, when the app leaves the screen, when the form closes with a write still waiting (browser Back, another page), and just before a save starts.
-* **When it can't be kept:** one line under the step bar says so. If nothing could be kept: "This phone could not keep a copy of this inspection. Save it before you close the app." If it was kept without its photos: "Your photos are not kept on this phone until you save. Notes and readings are." The line goes once a later copy is kept in full. The Carry on panel adds "Photos were not kept." for a copy kept without them.
+* **When it can't be kept:** one line under the step bar says so. If nothing could be kept: "This device could not keep a copy of this inspection. Save it before you close the app." If it was kept without its photos: "Your photos are not kept on this device until you save. Notes and readings are." The line goes once a later copy is kept in full. The Carry on panel adds "Photos were not kept." for a copy kept without them.
 * **Coming back:** the dashboard and Records show an "Unfinished inspection" notice. Opening a new inspection offers Carry on or Start again before any fields appear, so a new inspection can never overwrite an unseen draft. Start again asks first ("Delete the unfinished inspection?", Keep it / Delete it).
 * **Editing a saved inspection:** keeps no draft.
 
@@ -29,7 +29,7 @@ This keeps work safe. It does not send it. An inspection only reaches HiveCraic 
 
 ## 3. Technical Design
 
-* `src/lib/local-db.ts`: the Dexie database, opened on first use. Phase G's outbox belongs here too.
+* `src/lib/local-db.ts`: the Dexie database, opened on first use. It also holds the outbox.
 * `src/lib/inspection-draft.ts`: all draft reads and writes. Nothing in it throws. If storage is full, the draft is retried without photos, and the number left out is recorded (`photosLeftOut`). `saveInspectionDraft` returns `saved`, `saved-without-photos` or `failed`.
 * `src/components/records/forms/InspectionForm.tsx`: autosave and restore.
 * `src/components/records/UnfinishedInspectionNotice.tsx`: the notice.
@@ -56,7 +56,7 @@ If the row saved but a later step failed, the form closes and says the inspectio
 
 ## 5. Edge Cases & Risks
 
-* **A timed-out save may still have arrived.** The message says to look in Records first. Phase G removes this risk with client-generated ids.
+* **A timed-out save may still have arrived.** New inspections use an id chosen on the device, so a repeat is recognised rather than saved twice (see the outbox). Edits are updates, so repeating one is harmless.
 * **iOS can evict local storage,** so a draft is a safety net and not a long-term copy.
 * **A stored draft that can't be read** is treated as no draft and is replaced by the next one. The app could neither show nor recover it, so keeping it would only stop new drafts being kept.
 * **Large photos:** each autosave writes the photos again. Check that it stays smooth on a real phone with several large photos. If not, store photos separately from the readings.

@@ -884,13 +884,13 @@ export default function RecordsPage() {
         toast.error(INSPECTION_NO_SIGNAL_MESSAGE)
         return
       }
-      toast.info('Saved on this phone. It will send by itself when there is signal.')
+      toast.info('Saved on this device. It will send when the app is open and has signal.')
       // Still going, so its answer arrives after this form has closed.
       if (result === TIMED_OUT) {
         void send.then((late) => {
           if (late.status === 'sent') {
             toast.success('Inspection sent')
-            late.warnings.forEach(warning => toast.warning(warning))
+            late.warnings.forEach(warning => toast.warning(warning, 0))
           } else if (late.status === 'rejected') {
             toast.error('An inspection could not be sent. See the list at the top of Records.')
           }
@@ -908,7 +908,8 @@ export default function RecordsPage() {
       return
     }
 
-    result.warnings.forEach(warning => toast.warning(warning))
+    // No time limit: part of the inspection needs checking, so the warning stays until closed.
+    result.warnings.forEach(warning => toast.warning(warning, 0))
     try {
       await fetchInspections(userId, filters.ownershipFilter)
       await fetchHives(userId)

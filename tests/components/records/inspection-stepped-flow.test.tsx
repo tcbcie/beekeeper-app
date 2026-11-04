@@ -184,7 +184,7 @@ describe('review step', () => {
     renderForm()
     goToReview()
     expect(screen.getByText('Step 5 of 5')).toBeInTheDocument()
-    expect(screen.getByText(/Nothing has been recorded yet/)).toBeInTheDocument()
+    expect(screen.getByText(/The inspection is not saved until you do/)).toBeInTheDocument()
   })
 
   it('summarises what was entered', () => {

@@ -1556,7 +1556,7 @@ export default function InspectionForm({
         <div>
           <p className="font-semibold text-foreground">You have an unfinished inspection</p>
           <p className="text-text-secondary">
-            {draftHive ? `Hive ${draftHive.hive_number}, on` : 'On'} this phone since {describeDraftSavedAt(pendingDraft.savedAt)}
+            {draftHive ? `Hive ${draftHive.hive_number}, on` : 'On'} this device since {describeDraftSavedAt(pendingDraft.savedAt)}
             {photoCount > 0 && `, with ${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}`}.
             {pendingDraft.photosLeftOut ? ' Photos were not kept.' : ''}
           </p>
@@ -1584,8 +1584,8 @@ export default function InspectionForm({
       {draftKeepProblem && (
         <p role="status" className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
           {draftKeepProblem === 'failed'
-            ? 'This phone could not keep a copy of this inspection. Save it before you close the app.'
-            : 'Your photos are not kept on this phone until you save. Notes and readings are.'}
+            ? 'This device could not keep a copy of this inspection. Save it before you close the app.'
+            : 'Your photos are not kept on this device until you save. Notes and readings are.'}
         </p>
       )}
 
@@ -2590,7 +2590,9 @@ export default function InspectionForm({
         {step === LAST_STEP && (
         <div className="md:col-span-2 space-y-3 sm:space-y-4">
           <p className="text-sm text-text-secondary">
-            Check the details below, then save. Nothing has been recorded yet.
+            {isEditing
+              ? 'Check your changes below, then tap Update Inspection. They are not saved until you do.'
+              : 'Check the details below, then save. The inspection is not saved until you do.'}
           </p>
 
           {outstandingErrors.length > 0 && (
@@ -2639,7 +2641,7 @@ export default function InspectionForm({
 
           {reviewGroups.length <= 1 && (
             <p className="text-sm text-text-muted">
-              Only the visit details have been recorded. That is enough to save an inspection.
+              Only the visit details have been filled in. That is enough to save an inspection.
             </p>
           )}
         </div>

@@ -23,8 +23,9 @@ back.
 
 ## Layout
 
-On a phone, Previous and Next share a row, with a full-width Save below and Cancel under that. On
-wider screens they all sit in one row, with Cancel on the right. The buttons stay in the page flow,
+On a phone, Previous (an arrow), Next and Save share one row pinned above the keyboard; on the last
+step Save takes the place of Next, and Cancel is not shown (Close at the top does that job). On
+wider screens they all sit in one row, with Cancel on the right. (Corrected 04/11/2026.) The buttons stay in the page flow,
 because a fixed bar would collide with Mel's button and the mobile navigation (see
 [record-forms-bottom-save.md](./record-forms-bottom-save.md)).
 

@@ -164,7 +164,7 @@ function winterLead(input: SeasonalLeadInput): SeasonalLead {
 
   return {
     season: 'winter',
-    band: 'Winter: nothing to do',
+    band: 'Winter: just check food',
     question: 'Do they have enough food?',
     answer,
     rows,

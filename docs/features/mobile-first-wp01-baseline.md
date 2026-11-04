@@ -130,3 +130,12 @@ WP02 changed the code behind these scenarios. Their results above stay as the ba
 | S10, S11 | A line under the step bar says the phone could not keep a copy, or kept it without photos; Carry on says "Photos were not kept." |
 | S15 | Photos are kept, and the message says the work is still in the form |
 | S17 | Save again with nothing changed reuses the same id: no duplicate. A changed form can still produce one |
+
+### Expected after WP03 – 04/11/2026 (not yet re-run)
+
+| Scenario | Now expected |
+|---|---|
+| S19 | The super count not changed because the hive cannot be seen gives a warning. A hive that can be seen but not changed still reports success (needs a database change) |
+| S20 | The follow-up task warning stays until closed (not after a reload) |
+| S21 | Waiting no longer claims "no signal": "Could not send it just now. It will try again when the app is next open with signal." |
+| S27 | Edit mode review step: "Check your changes below, then tap Update Inspection. They are not saved until you do." |

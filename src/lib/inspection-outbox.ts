@@ -159,12 +159,15 @@ async function applySuperChange(entry: QueuedInspection, warnings: string[]): Pr
     // stored (and so is retried from memory) must not repeat the change either.
     entry.superDelta = 0
     await recordProgress(entry.id, { superDelta: 0 })
-    const { error } = await supabase
+    const { data, error } = await supabase
       .rpc('adjust_hive_honey_supers', { p_hive_id: entry.hiveId, p_delta: delta })
       .abortSignal(AbortSignal.timeout(SAVE_TIMEOUT_MS))
     if (error) {
       console.error('Hive super sync failed:', error)
       warnings.push(`Inspection saved. The super count on hive ${entry.hiveLabel} may not have updated, so please check it.`)
+    } else if (data === null) {
+      // The function returns nothing when it cannot see the hive, so nothing was changed.
+      warnings.push(`Inspection saved. The super count on hive ${entry.hiveLabel} was not updated, so please check it.`)
     }
   } else {
     warnings.push(`Inspection saved. The super count on hive ${entry.hiveLabel} was not updated, as the change was out of range.`)

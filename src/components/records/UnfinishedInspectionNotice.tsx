@@ -24,7 +24,7 @@ export default function UnfinishedInspectionNotice({ userId }: { userId: string 
     <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface-elevated p-4">
       <p className="text-foreground">
         <span className="font-semibold">Unfinished inspection</span>
-        <span className="block text-sm text-text-secondary">On this phone since {describeDraftSavedAt(savedAt)}</span>
+        <span className="block text-sm text-text-secondary">On this device since {describeDraftSavedAt(savedAt)}</span>
       </p>
       <Link href="/dashboard/records?create=inspection" className="fj-btn fj-btn-success">
         Open it

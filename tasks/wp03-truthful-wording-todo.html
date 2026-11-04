@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>WP03 truthful wording</title>
+</head>
+<body>
+<h1>WP03 – Make state and task wording truthful</h1>
+<p>Plan: <code>docs/features/mobile-first-implementation-plan.html</code> (WP03, its refinements and owner decision 1). Findings: F06, F12, D01, I01, R02, V18–V20. Mostly wording; two small behaviour changes (B1, B2). No database change.</p>
+
+<h2>A. Wording</h2>
+<ol>
+  <li><strong>Winter label</strong> (D01, decided): <code>src/lib/seasonal-lead.ts</code> "Winter: nothing to do" becomes "Winter: just check food"; the same in <code>docs/features/dashboard-today-screen.md</code>.</li>
+  <li><strong>Review step</strong> (I01), <code>InspectionForm.tsx</code>:
+    <ul>
+      <li>New: "Check the details below, then save. The inspection is not saved until you do."</li>
+      <li>Edit: "Check your changes below, then tap Update Inspection. They are not saved until you do."</li>
+      <li>"Only the visit details have been recorded." becomes "Only the visit details have been filled in." so "recorded" no longer means two things.</li>
+      <li>Update the one existing test that checks the old sentence (<code>inspection-stepped-flow.test.tsx</code>).</li>
+    </ul>
+  </li>
+  <li><strong>Log in / sign up</strong> (R02), <code>src/app/login/page.tsx</code>: the description follows the mode ("Create an account to track…" when signing up), and the green main button follows the mode (Sign Up is green when creating an account, Login otherwise). Enter already works, so it is untouched.</li>
+  <li><strong>Outbox wording</strong> (F06, V20). Waiting can mean no signal, an expired session, a server problem or another tab sending, and sending only happens while the app is open. So:
+    <ul>
+      <li>List heading "Saved on this phone, not sent yet" becomes "Saved on this device, not sent yet".</li>
+      <li>Each waiting row: "Sends by itself when there is signal" becomes "Sends when the app is open and has signal".</li>
+      <li>Send now, still waiting: "Still no signal. It will send by itself when there is." becomes "Could not send it just now. It will try again when the app is next open with signal."</li>
+      <li>After a save: "Saved on this phone. It will send by itself when there is signal." becomes "Saved on this device. It will send when the app is open and has signal."</li>
+      <li>Offline banner: "New inspections stay on this phone and send when you reconnect." becomes "New inspections stay on this device and send when the app is open and back online."</li>
+    </ul>
+  </li>
+  <li><strong>"Phone" on a desktop</strong>: the other user-facing "this phone" strings become "this device". These are the Carry on panel, the Unfinished inspection notice, the outbox Discard question, the log-out warning (<code>useLogout.ts</code>), and the two draft lines added in WP02.</li>
+  <li><strong>Reset page backticks</strong> (V18), <code>forgot-password/page.tsx</code>: "The reset link will open `Reset Password`." becomes "The reset link opens the Reset Password page."</li>
+</ol>
+
+<h2>B. Small behaviour changes</h2>
+<ol>
+  <li><strong>Warnings after an inspection is sent stay until dismissed</strong> ("follow-up tasks could not be created", "the super count may not have updated"). Today they vanish after 4 seconds. They become toasts with no time limit (<code>toast.warning(message, 0)</code>), so they stay on screen until closed. They do not survive a reload. Four call sites: two in <code>records/page.tsx</code>, two in <code>InspectionOutbox.tsx</code>.</li>
+  <li><strong>Super count not changed, and no warning</strong> (V19). <code>src/lib/inspection-outbox.ts</code>: the RPC returns nothing when it cannot see the hive. That now gives the warning "Inspection saved. The super count on hive X was not updated, so please check it."</li>
+</ol>
+
+<h2>C. Out-of-date documents</h2>
+<ul>
+  <li><code>mobile-first-phase5-validation-pack.md</code> and <code>mobile-first-over-50-ux-remediation-plan.md</code> are historical, so they are not rewritten. A dated "Update 04/11/2026" note is added where they say there is no local save, offline saves fail, drafts were deferred, or the click guard closes the gap completely.</li>
+  <li><code>inspection-drafts.md</code> lines 10 and 59: now refer to the outbox as built, not "Phase G" as future work.</li>
+  <li><code>inspection-save-any-step.md</code>: the phone footer description is corrected (Previous, Next and Save in one row; Cancel hidden on phones).</li>
+</ul>
+
+<h2>Deferred, with reason</h2>
+<ul>
+  <li><strong>Automatic retry while the app stays open</strong> (S14). This is safe for the inspection row and its tasks. It is not yet safe for the super change: if the device's storage cannot record "done" before the call, a retry could add the supers twice. Fix that first, as its own small item, then add the retry. Ask me if you want it next.</li>
+  <li><strong>Edit conflicts between two tabs</strong>: these need a database proposal (a version column), as the plan says.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ A1 Winter label and spec</li>
+  <li>☑ A2 Review step wording, and its test</li>
+  <li>☑ A3 Login/sign-up description and button emphasis</li>
+  <li>☑ A4 Outbox wording</li>
+  <li>☑ A5 "this phone" becomes "this device"</li>
+  <li>☑ A6 Reset page wording</li>
+  <li>☑ B1 Lasting warnings</li>
+  <li>☑ B2 Warning when the super count is not changed</li>
+  <li>☑ C Documents; WP03 progress in both plans; expected results in the WP01 baseline</li>
+  <li>☑ Type check, lint the changed files, run the related tests</li>
+  <li>☑ QA audit</li>
+  <li>☑ Review section, and ask you to test the build</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned in 10 code files and 1 test. No database change.</p>
+<ul>
+  <li>Wording: winter label; review step (new and edit); login description and button emphasis; waiting-inspection messages; "this phone" becomes "this device" in 9 user-facing strings; reset page.</li>
+  <li>Behaviour: post-send warnings use <code>toast.warning(message, 0)</code> and stay until closed; <code>applySuperChange</code> warns when the function returns nothing (hive not visible).</li>
+  <li>Found while doing B2: a team member who can see a hive but not change it gets "success" from the database function although nothing changed. Recorded in <code>inspection-outbox.md</code> for a database proposal.</li>
+  <li>Docs: <code>dashboard-today-screen.md</code>, <code>inspection-drafts.md</code>, <code>inspection-outbox.md</code>, <code>inspection-save-any-step.md</code>, dated notes in the two historical documents, the WP01 baseline and both plans.</li>
+  <li>Checks: type check clean, lint clean, 106 related tests pass (records forms, login, navigation guard, style rules, seasonal). The one test that checked the old review sentence was updated. No build run.</li>
+  <li>QA audit: no Critical or High. Low: warnings that stay could stack if several sent inspections each need checking at once (each has a close button); "tap" also appears on desktop.</li>
+</ul>
+<p>Waiting for your build test.</p>
+</body>
+</html>
