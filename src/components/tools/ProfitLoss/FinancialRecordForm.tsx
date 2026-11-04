@@ -1,11 +1,12 @@
 'use client'
 
 import { getCurrentDate } from '@/lib/date-utils'
-import { useState, useEffect } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { FinancialRecord, DropdownValue } from '@/types/records'
 import Button from '@/components/ui/Button'
+import { RadioChoiceGroup, RadioChoiceOption } from '@/components/ui/RadioChoiceGroup'
 
 interface FinancialRecordFormProps {
   record: FinancialRecord | null
@@ -27,6 +28,8 @@ export default function FinancialRecordForm({
   isUkNi
 }: FinancialRecordFormProps) {
   const toast = useToast()
+  // Ties each label to its field, so tapping a label focuses it and screen readers name it.
+  const fieldId = useId()
   const [recordType, setRecordType] = useState<'income' | 'expense'>(record?.record_type || 'expense')
   const [transactionDate, setTransactionDate] = useState(
     record?.transaction_date || getCurrentDate()
@@ -86,44 +89,35 @@ export default function FinancialRecordForm({
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Type Toggle */}
-        <div>
-          <label className="block text-sm font-medium text-text-secondary mb-2">
+        {/* Type: a radio group, so the choice is announced and named */}
+        <fieldset>
+          <legend className="block text-sm font-medium text-text-secondary mb-2">
             Type *
-          </label>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              onClick={() => setRecordType('income')}
-              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                recordType === 'income'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-surface-secondary text-text-secondary hover:bg-green-100 dark:hover:bg-green-900/20'
-              }`}
-            >
-              Income
-            </Button>
-            <Button
-              type="button"
-              onClick={() => setRecordType('expense')}
-              className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                recordType === 'expense'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-surface-secondary text-text-secondary hover:bg-red-100 dark:hover:bg-red-900/20'
-              }`}
-            >
-              Expense
-            </Button>
-          </div>
-        </div>
+          </legend>
+          <RadioChoiceGroup className="sm:grid-cols-2">
+            {(['income', 'expense'] as const).map(type => (
+              <RadioChoiceOption
+                key={type}
+                name={`${fieldId}-type`}
+                value={type}
+                checked={recordType === type}
+                onChange={() => setRecordType(type)}
+                title={type === 'income' ? 'Income' : 'Expense'}
+                tone="green"
+                className="min-h-[48px] items-center"
+              />
+            ))}
+          </RadioChoiceGroup>
+        </fieldset>
 
         {/* Date and Amount Row */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
+            <label htmlFor={`${fieldId}-date`} className="block text-sm font-medium text-text-secondary mb-1">
               Date *
             </label>
             <input
+              id={`${fieldId}-date`}
               type="date"
               value={transactionDate}
               onChange={(e) => setTransactionDate(e.target.value)}
@@ -132,10 +126,11 @@ export default function FinancialRecordForm({
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
+            <label htmlFor={`${fieldId}-amount`} className="block text-sm font-medium text-text-secondary mb-1">
               Amount ({isUkNi ? 'GBP' : 'EUR'}) *
             </label>
             <input
+              id={`${fieldId}-amount`}
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -150,10 +145,11 @@ export default function FinancialRecordForm({
 
         {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">
+          <label htmlFor={`${fieldId}-category`} className="block text-sm font-medium text-text-secondary mb-1">
             Category *
           </label>
           <select
+            id={`${fieldId}-category`}
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
             required
@@ -170,10 +166,11 @@ export default function FinancialRecordForm({
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">
+          <label htmlFor={`${fieldId}-description`} className="block text-sm font-medium text-text-secondary mb-1">
             Description
           </label>
           <input
+            id={`${fieldId}-description`}
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -184,10 +181,11 @@ export default function FinancialRecordForm({
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">
+          <label htmlFor={`${fieldId}-notes`} className="block text-sm font-medium text-text-secondary mb-1">
             Notes
           </label>
           <textarea
+            id={`${fieldId}-notes`}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Additional details..."

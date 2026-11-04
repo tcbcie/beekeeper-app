@@ -267,6 +267,12 @@ export type OwnershipFilter = 'my' | 'team' | 'all'
 export type TimePeriod = 'all' | '3months' | '6months' | '1year' | 'custom'
 
 // Form data for inspection form
+/** A hive's last recorded super fullness and the date of that visit, shown as a hint on a new inspection. */
+export interface PreviousSuperFullness {
+  values: number[]
+  date: string
+}
+
 export interface InspectionFormData {
   hive_id: string
   inspection_date: string

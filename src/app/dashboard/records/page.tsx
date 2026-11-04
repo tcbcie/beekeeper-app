@@ -83,7 +83,8 @@ import type {
   Harvest,
   InspectionFormData,
   ArchiveFormData,
-  FollowUpTaskDraft
+  FollowUpTaskDraft,
+  PreviousSuperFullness
 } from '@/types/records'
 import { getDefaultArchiveFormData, getDefaultInspectionFormData } from '@/types/records'
 
@@ -277,8 +278,8 @@ export default function RecordsPage() {
 
   // Most recent per-super fullness per hive (inspections are newest-first, so the first
   // occurrence wins), used to pre-fill a new inspection's Super Fullness gauges.
-  const previousSuperFullnessByHive = useMemo<Record<string, number[] | null>>(() => {
-    const latestValues: Record<string, number[] | null> = {}
+  const previousSuperFullnessByHive = useMemo<Record<string, PreviousSuperFullness | null>>(() => {
+    const latestValues: Record<string, PreviousSuperFullness | null> = {}
 
     for (const inspection of inspections) {
       if (!inspection.hive_id || inspection.hive_id in latestValues) {
@@ -287,7 +288,7 @@ export default function RecordsPage() {
 
       latestValues[inspection.hive_id] =
         Array.isArray(inspection.honey_super_fullness) && inspection.honey_super_fullness.length > 0
-          ? inspection.honey_super_fullness
+          ? { values: inspection.honey_super_fullness, date: inspection.inspection_date }
           : null
     }
 

@@ -106,6 +106,8 @@ Adopt shared labels/descriptions/errors in the sampled purchase and financial fo
 
 **Verification refinement - WP04:** Target `renderStarRating` in `InspectionForm.tsx`; `RatingButtons.tsx` is unused (V08). Include the disease ratings, where more stars means worse (V07). Label every field in both secondary forms, not a sample, and make the financial "Type" label name its group. Fix the purchase form's Low priority, which looks the same selected or not (V01). Queen averaging is a calculation defect that skews the queen comparison table (V05). Super fullness has three false-zero paths: other supers set to 0 when one is changed, unrecorded supers shown as 0%, and non-numbers saved as 0 (V06). Whether previous readings carry into a new inspection is an owner decision. For dialog focus, also stop Shift+Tab escaping from the panel itself.
 
+**Progress - WP04 (04/11/2026):** Code complete, awaiting the owner's build test. Purchase and financial forms: every label tied to its field, Priority and Type are green radio groups (fixes Low looking unselected). Dialog focus skips hidden or inert controls and Shift+Tab from the panel no longer escapes. Star ratings show what 1 and 5 mean (owner decision D1). Step bar shows numbers, not ticks (D2). Queen averages skip unrated zeroes. Super fullness no longer carried forward; each super shows Not set or last visit's reading as a hint, and once one is set the others are saved as 0% (D3). Not changed: queen seen/eggs "not checked" (needs design review), stores seed of 50, other two-column rows (WP06).
+
 #### WP05 - Apply accessible colour and status tokens
 
 **P1 measured failures, P2 remaining candidates | S/M | Evidence: F04, D08, H06, R05, V10, V14, V15, V17.**

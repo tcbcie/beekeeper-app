@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>WP04 fields, choices and ratings</title>
+</head>
+<body>
+<h1>WP04 – Make fields, choices and ratings understandable</h1>
+<p>Plan: <code>docs/features/mobile-first-implementation-plan.html</code> (WP04, refinements, owner decision 3). Findings: F03, F08, I03, I04, V01, V05–V08, DB01. No database change and no change to stored values.</p>
+
+<h2>Changes</h2>
+<ol>
+  <li><strong>Secondary forms: labels and choices</strong> (F03, V01).
+    <ul>
+      <li><code>PurchaseItemForm.tsx</code> (9 fields) and <code>FinancialRecordForm.tsx</code> (6 fields): every label is linked to its field (<code>htmlFor</code>/<code>id</code>, ids from <code>useId</code>), so tapping a label focuses the field and screen readers name it.</li>
+      <li>Priority (Low/Medium/High/Urgent) and Type (Income/Expense) become native radio groups in a <code>fieldset</code> with a <code>legend</code>, using the existing <code>RadioChoiceGroup</code>/<code>RadioChoiceOption</code>. Selection shows in green, as elsewhere, and is announced. This also fixes "Low" looking the same selected or not.</li>
+      <li>Priority leaves its half-width column, so it has room: Category takes the full width, with Priority below it. The other two-column rows stay for WP06.</li>
+    </ul>
+  </li>
+  <li><strong>Dialog focus</strong> (F08), <code>src/hooks/useDialogA11y.ts</code>: the focus list skips controls that are not visible or are inert (<code>checkVisibility</code> where the browser has it), and Shift+Tab from the dialog panel itself now wraps to the last control instead of leaving the dialog (S29).</li>
+  <li><strong>Rating meanings</strong> (I03, V07, V08). <code>renderStarRating</code> in <code>InspectionForm.tsx</code> gets an optional scale. Below the stars, a line reads for example "1 = Very nervous · 5 = Very calm". The same words are added to the first and last star's screen-reader name. <code>RatingButtons.tsx</code> is unused and is left alone.
+    <ul>
+      <li>Already established (database comments): Calmness, Swarming tendency, and the six disease ratings (1 = Minimal · 5 = Severe).</li>
+      <li>Needs your answer: the others. See decision D1.</li>
+    </ul>
+  </li>
+  <li><strong>Step ticks</strong> (I04): see decision D2. Either way, the misleading <code>isComplete</code> is renamed <code>isVisited</code>.</li>
+  <li><strong>Queen averages skip unrated zeroes</strong> (V05), <code>src/hooks/useQueenDetail.ts</code>: count a rating only when it is above 0, as hive averages and selection scoring already do. The "averaged across N inspections" count then includes only inspections with at least one real rating. This changes the queen page and the queen comparison numbers for queens with unrated inspections. They become correct.</li>
+  <li><strong>Super fullness</strong> (V06, owner decision 3), <code>InspectionForm.tsx</code> and <code>records/page.tsx</code>:
+    <ul>
+      <li>A new inspection no longer copies last visit's readings. The prefill effect and its key-tracking code are removed, and choosing a hive clears fullness, as it already clears stores.</li>
+      <li>Each super shows "Not set" instead of "0%" until a reading exists, with "Last time 60% (12 Oct)" beneath when there was one. The previous-readings list carries its date for this.</li>
+      <li>Setting one super: see decision D3.</li>
+      <li>The save-time "non-number becomes 0" guard stays as a guard; the form can no longer produce one.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2>Decisions (all accepted as recommended, 04/11/2026)</h2>
+<ol>
+  <li><strong>D1 – words for the other rating scales.</strong> The app already treats higher as better for all of these (selection scoring). Proposed:
+    <ul>
+      <li>Population strength: 1 = Very weak · 5 = Very strong</li>
+      <li>Temperament: 1 = Very defensive · 5 = Very gentle</li>
+      <li>Brood pattern: 1 = Very patchy · 5 = Solid</li>
+      <li>Recapping, VSH, SMR: 1 = Very low · 5 = Very high</li>
+      <li>Varroa (the disease rating): 1 = Minimal · 5 = Severe, as for the other diseases</li>
+    </ul>
+  </li>
+  <li><strong>D2 – step ticks.</strong> A tick means "opened", not "done". Recommended: drop the tick and keep the step number on every step, with visited steps still shaded. Nothing then suggests a step is finished. The alternative is to keep the tick as it is.</li>
+  <li><strong>D3 – when one super is set, what are the others?</strong> The stored value is a list of numbers, with no "not set" option per super. Recommended: once one super is set, the others show 0% straight away, so what will be saved is visible, with the note "Supers you do not set are saved as 0%." The alternative is a database change allowing "not set" per super. That needs a design review and changes to the hive card, map and records readers, so it would not happen in WP04.</li>
+</ol>
+
+<h2>Not changed, and why</h2>
+<ul>
+  <li><strong>Queen seen / Eggs present cannot say "not checked"</strong>: that is a new data state, which the plan says needs a design review first. The WP01 value table records the current meaning.</li>
+  <li><strong>Stores dial seeding 50</strong>: noted by decision 3 as related but not decided. Ask if you want it handled the same way.</li>
+  <li><strong>The other two-column rows in the secondary forms</strong>: WP06.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ 1. Secondary forms: labels, radio groups, Priority row</li>
+  <li>☑ 2. Dialog focus</li>
+  <li>☑ 3. Rating meanings (after D1)</li>
+  <li>☑ 4. Step ticks (after D2)</li>
+  <li>☑ 5. Queen averages</li>
+  <li>☑ 6. Super fullness (after D3)</li>
+  <li>☑ Docs: feature docs for these areas, WP01 value table and baseline, WP04 progress in both plans</li>
+  <li>☑ Type check, lint the changed files, run the related tests (updating any that check the old behaviour)</li>
+  <li>☑ QA audit</li>
+  <li>☑ Review section, and ask you to test the build</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned in 8 code files. No database change and no stored values changed.</p>
+<ul>
+  <li><strong>Secondary forms:</strong> 15 labels tied to their fields with <code>useId</code>; Priority and Type are green <code>RadioChoiceOption</code> groups in a <code>fieldset</code>, each option at least 48px tall. Priority has its own full-width row.</li>
+  <li><strong>Dialog focus:</strong> <code>focusableIn</code> skips inert or invisible controls, including <code>visibility: hidden</code> (added by the QA audit); Shift+Tab from the panel wraps.</li>
+  <li><strong>Ratings:</strong> <code>RATING_SCALES</code> in <code>InspectionForm.tsx</code>; a line under each star scale and the words on the first and last star's spoken name. 16 rating fields covered.</li>
+  <li><strong>Step bar:</strong> numbers on every step; <code>isComplete</code> renamed <code>isVisited</code>.</li>
+  <li><strong>Queen averages:</strong> only values above 0 count; written as a small loop without non-null assertions.</li>
+  <li><strong>Super fullness:</strong> 60-line prefill effect and its key ref removed; choosing a hive clears fullness; Not set / Last time hint / 0% note; Records passes the date with the previous readings (<code>PreviousSuperFullness</code>).</li>
+  <li><strong>Checks:</strong> type check clean, lint clean, 779 tests pass (components, pages, hooks, styles, lib). No test needed changing. No build run.</li>
+  <li><strong>QA audit:</strong> one Medium, fixed. <code>checkVisibility()</code> on its own lets a control hidden with <code>visibility: hidden</code> stay in the Tab loop, so it now also checks the visibility property. No Critical or High. Low: on the first and last star, a screen reader hears the scale words twice (once in the star name, once from the description).</li>
+  <li><strong>Docs:</strong> <code>honey-super-fullness.md</code>, <code>inspection-stepper-legibility-plan.md</code>, <code>purchase-list.md</code>, <code>profit-loss-tracker.md</code>, <code>queen-compare-plan.md</code>, the WP01 baseline (value table, rating words, expected results) and both plans.</li>
+</ul>
+<p>Waiting for your build test.</p>
+</body>
+</html>

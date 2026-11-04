@@ -96,3 +96,12 @@ previous values come from the same prior inspection, so the date is not repeated
   (shown only when at least one super changed and a previous date exists).
 - Scope: the Hive Setup card only (`HiveListCard`, fed by `useHivesList`); the 3D/map views are
   unchanged.
+
+## No carry-forward; last reading as a hint (WP04, 04/11/2026)
+
+Supersedes "Carry-forward and removed supers" and "Pre-fill from last inspection" above, by owner decision.
+
+- A new inspection no longer copies last visit's readings. An untouched form used to save old readings again as new observations. Choosing a hive clears fullness, as it already cleared stores.
+- Each super shows **Not set** until it has a reading in this visit, with "Last time 60% (12 Oct)" underneath when the hive had one. Not in edit mode, where the latest visit may be the one being edited.
+- The stored value is still a list of numbers with no "not set" per super. So once one super is set, the others are set to 0% and show 0% at once. The section says "Once you set one super, any you leave are saved as 0%." (owner decision D3). A "not set" per super would need a database change and a design review.
+- `records/page.tsx` passes `previousSuperFullnessByHive` as `{ values, date }` (`PreviousSuperFullness` in `src/types/records.ts`). The prefill effect and `lastSuperFullnessPrefillKeyRef` are gone.

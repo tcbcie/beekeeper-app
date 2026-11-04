@@ -3,9 +3,10 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { ChevronDown, ChevronLeft, ChevronUp, Camera, X, Mic, Square, Loader2, Plus, Trash2, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
-import type { Hive, Apiary, InspectionFormData, FollowUpTaskDraft, FollowUpTaskPriority, BroodBoxFrames, BroodBoxType } from '@/types/records'
+import type { Hive, Apiary, InspectionFormData, FollowUpTaskDraft, FollowUpTaskPriority, BroodBoxFrames, BroodBoxType, PreviousSuperFullness } from '@/types/records'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
 import { getDefaultInspectionFormData, getDefaultFollowUpTaskDraft, LEVEL_NOT_RECORDED, getLevelLabel } from '@/types/records'
+import { formatLocalDate } from '@/lib/date-utils'
 import { useStagedPhotos } from '@/hooks/useStagedPhotos'
 import { validateImageFile } from '@/lib/upload-image'
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder'
@@ -26,7 +27,7 @@ interface InspectionFormProps {
   hives: Hive[]
   apiaries: Apiary[]
   previousRightSizedFramesByHive?: Record<string, number | null>
-  previousSuperFullnessByHive?: Record<string, number[] | null>
+  previousSuperFullnessByHive?: Record<string, PreviousSuperFullness | null>
   previousStoresByHive?: Record<string, { level: number; date: string }>
   selectedApiaryId?: string
   selectedHiveId?: string
@@ -86,6 +87,22 @@ const YES_NO = (value: boolean) => (value ? 'Yes' : 'No')
 function labelId(prefix: string, label: string): string {
   return `${prefix}-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
 }
+
+/**
+ * What 1 and 5 mean on each star scale, shown under the stars and read out with them. Calmness,
+ * swarming and disease follow the database column comments; the rest were agreed with the owner
+ * (04/11/2026) in the direction selection scoring already uses. 0 still means not recorded.
+ */
+interface RatingScale { low: string; high: string }
+const RATING_SCALES = {
+  population: { low: 'Very weak', high: 'Very strong' },
+  temperament: { low: 'Very defensive', high: 'Very gentle' },
+  broodPattern: { low: 'Very patchy', high: 'Solid' },
+  swarming: { low: 'Very low', high: 'Very high' },
+  calmness: { low: 'Very nervous', high: 'Very calm' },
+  disease: { low: 'Minimal', high: 'Severe' },
+  trait: { low: 'Very low', high: 'Very high' },
+} satisfies Record<string, RatingScale>
 
 const INSPECTION_ADJUSTMENT_MIN = -2147483648
 const INSPECTION_ADJUSTMENT_MAX = 2147483647
@@ -204,7 +221,6 @@ export default function InspectionForm({
   const { submitting, run } = useSubmitLock()
   const previousInitialDataRef = useRef<InspectionFormData | null>(null)
   const lastRightSizedPrefillKeyRef = useRef<string | null>(null)
-  const lastSuperFullnessPrefillKeyRef = useRef<string | null>(null)
 
   // Collapsible section states
   const [queenCellsExpanded, setQueenCellsExpanded] = useState(false)
@@ -669,12 +685,12 @@ export default function InspectionForm({
     return typeof previousValue === 'number' && previousValue > 0 ? previousValue : null
   }, [previousRightSizedFramesByHive])
 
-  // Most recent inspection's per-super fullness for a hive, so a new inspection starts
-  // from where the supers were last left rather than resetting every gauge to 0.
-  const getPreviousSuperFullness = useCallback((hiveId: string): number[] | null => {
+  // Last visit's per-super fullness for a hive, shown beside each super as a hint. It is never
+  // copied in: a reading belongs to the visit it was taken on (owner decision, 04/11/2026).
+  const getPreviousSuperFullness = useCallback((hiveId: string): PreviousSuperFullness | null => {
     if (!hiveId) return null
-    const previousValue = previousSuperFullnessByHive[hiveId]
-    return Array.isArray(previousValue) && previousValue.length > 0 ? previousValue : null
+    const previous = previousSuperFullnessByHive[hiveId]
+    return previous && previous.values.length > 0 ? previous : null
   }, [previousSuperFullnessByHive])
 
   // Honey supers currently on a hive. This is the authority for how many sliders a NEW
@@ -692,6 +708,9 @@ export default function InspectionForm({
     const recorded = formData.honey_super_fullness?.length ?? 0
     return Math.max(configuredSupers, recorded)
   }, [getConfiguredSuperCount, formData.hive_id, formData.honey_super_fullness])
+
+  // Last visit's readings, as a hint beside each super. Not in edit mode: the latest visit may be this one.
+  const previousSuperReadings = !isEditing && formData.hive_id ? getPreviousSuperFullness(formData.hive_id) : null
 
   // Clamp a slider value to a whole 0-100 percentage.
   const clampFullness = (value: number): number => {
@@ -875,67 +894,6 @@ export default function InspectionForm({
     })
   }, [formData.hive_id, getPreviousRightSizedFrames, isEditing])
 
-  // Pre-fill Super Fullness from the hive's most recent inspection when starting a new
-  // inspection (supers don't empty between visits, so 0 is a misleading default). Skipped
-  // in edit mode so historical values are never overwritten.
-  useEffect(() => {
-    if (isEditing) {
-      // Prime the ref with the key this hive would produce, so that if the form ever leaves
-      // edit mode it does not immediately overwrite what is already on screen. Must use the
-      // same key format as the prefill branch below or the guard silently stops matching.
-      const configuredSupers = formData.hive_id ? getConfiguredSuperCount(formData.hive_id) : 0
-      const carriedValue = formData.hive_id ? getPreviousSuperFullness(formData.hive_id) : null
-      const previousValue = carriedValue && configuredSupers > 0
-        ? carriedValue.slice(0, configuredSupers)
-        : null
-      lastSuperFullnessPrefillKeyRef.current = formData.hive_id
-        ? `${formData.hive_id}:${configuredSupers}:${previousValue ? previousValue.join(',') : 'null'}`
-        : null
-      return
-    }
-
-    const currentHiveId = formData.hive_id
-
-    if (!currentHiveId) {
-      if (lastSuperFullnessPrefillKeyRef.current !== null) {
-        lastSuperFullnessPrefillKeyRef.current = null
-        setFormData(prev => prev.honey_super_fullness !== null ? { ...prev, honey_super_fullness: null } : prev)
-      }
-      return
-    }
-
-    // Only carry fullness for supers the hive still has. Without this bound, removing supers
-    // (e.g. 3 -> 0 after extraction) would keep every later inspection offering sliders for
-    // supers that are no longer on the hive, because the carried array's length feeds
-    // honeySuperSliderCount and would outvote the now-smaller configured count.
-    const configuredSupers = getConfiguredSuperCount(currentHiveId)
-    const carriedValue = getPreviousSuperFullness(currentHiveId)
-    const previousValue = carriedValue && configuredSupers > 0
-      ? carriedValue.slice(0, configuredSupers)
-      : null
-    const nextPrefillKey = `${currentHiveId}:${configuredSupers}:${previousValue ? previousValue.join(',') : 'null'}`
-
-    if (lastSuperFullnessPrefillKeyRef.current === nextPrefillKey) {
-      return
-    }
-
-    lastSuperFullnessPrefillKeyRef.current = nextPrefillKey
-
-    // Copy the source array so later slider edits can never mutate the cached
-    // `previousSuperFullnessByHive` (which references the fetched inspection rows).
-    setFormData(prev => {
-      if (prev.hive_id !== currentHiveId) return prev
-      autoFillRef.current = true
-      return { ...prev, honey_super_fullness: previousValue ? [...previousValue] : null }
-    })
-
-    // Reveal the section so the carried-forward values are visible immediately;
-    // otherwise a new inspection looks like it reset to 0 until the user expands it.
-    if (previousValue) {
-      setSuperFullnessExpanded(true)
-    }
-  }, [formData.hive_id, getPreviousSuperFullness, getConfiguredSuperCount, isEditing])
-
   // Auto-fill the Weight (kg) field from a connected scale when starting a new
   // inspection. Skipped in edit mode so historical readings are never overwritten.
   // Skipped if the user (or initial data) already supplied a weight, so we don't
@@ -1104,14 +1062,6 @@ export default function InspectionForm({
     lastRightSizedPrefillKeyRef.current = hiveId
       ? `${hiveId}:${getPreviousRightSizedFrames(hiveId) ?? 'null'}`
       : null
-    const configuredSupers = hiveId ? getConfiguredSuperCount(hiveId) : 0
-    const carriedFullness = hiveId ? getPreviousSuperFullness(hiveId) : null
-    const previousFullness = carriedFullness && configuredSupers > 0
-      ? carriedFullness.slice(0, configuredSupers)
-      : null
-    lastSuperFullnessPrefillKeyRef.current = hiveId
-      ? `${hiveId}:${configuredSupers}:${previousFullness ? previousFullness.join(',') : 'null'}`
-      : null
     lastScalePrefillHiveIdRef.current = hiveId || null
     scaleFetchAbortRef.current?.abort()
     setWeightFromScale(null)
@@ -1149,10 +1099,10 @@ export default function InspectionForm({
   }
 
   const handleHiveSelect = (hiveId: string) => {
-    // A stores reading belongs to the hive it was taken on, so a new inspection doesn't carry it to another
+    // Stores and super readings belong to the hive they were taken on, so a new inspection doesn't carry them to another
     setFormData(prev => prev.hive_id === hiveId || isEditing
       ? { ...prev, hive_id: hiveId }
-      : { ...prev, hive_id: hiveId, stores_level: null })
+      : { ...prev, hive_id: hiveId, stores_level: null, honey_super_fullness: null })
     setFormApiaryId(prev => hiveId ? getApiaryIdForHive(hiveId) : prev)
   }
 
@@ -1360,8 +1310,8 @@ export default function InspectionForm({
   }, [])
 
   // Render star rating component
-  const renderStarRating = useCallback((value: number, onChange: (val: number) => void, label: string) => (
-    <div role="group" aria-labelledby={labelId('rating', label)}>
+  const renderStarRating = useCallback((value: number, onChange: (val: number) => void, label: string, scale?: RatingScale) => (
+    <div role="group" aria-labelledby={labelId('rating', label)} aria-describedby={scale ? labelId('rating-scale', label) : undefined}>
       <div className="mb-2 flex items-center justify-between gap-2">
         <p id={labelId('rating', label)} className="text-sm font-medium text-text-secondary sm:pr-2">{label}</p>
         <Button
@@ -1381,7 +1331,9 @@ export default function InspectionForm({
             key={star}
             type="button"
             onClick={() => onChange(star)}
-            aria-label={`${label}: ${star} star${star === 1 ? '' : 's'}`}
+            aria-label={`${label}: ${star} star${star === 1 ? '' : 's'}${
+              scale && star === 1 ? `, ${scale.low}` : scale && star === 5 ? `, ${scale.high}` : ''
+            }`}
             aria-pressed={value === star}
             className={`min-h-[48px] min-w-[48px] rounded-lg text-lg sm:text-xl flex items-center justify-center transition-all touch-manipulation ${
               value >= star
@@ -1394,6 +1346,11 @@ export default function InspectionForm({
           </Button>
         ))}
       </div>
+      {scale && (
+        <p id={labelId('rating-scale', label)} className="mt-2 text-sm text-text-secondary">
+          1 = {scale.low} · 5 = {scale.high}
+        </p>
+      )}
     </div>
   ), [])
 
@@ -1812,7 +1769,7 @@ export default function InspectionForm({
         <div className="md:col-span-2 p-4 rounded-lg border border-border">
           <h4 className="text-sm font-semibold text-foreground mb-4">Colony Strength</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {renderStarRating(formData.population_strength, (val) => setFormData(prev => ({ ...prev, population_strength: val })), 'Population Strength')}
+            {renderStarRating(formData.population_strength, (val) => setFormData(prev => ({ ...prev, population_strength: val })), 'Population Strength', RATING_SCALES.population)}
           </div>
         </div>
         )}
@@ -1822,10 +1779,10 @@ export default function InspectionForm({
         <div className="md:col-span-2 p-4 rounded-lg border border-border">
           <h4 className="text-sm font-semibold text-foreground mb-4">Behaviour Ratings</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {renderStarRating(formData.temperament_rating, (val) => setFormData(prev => ({ ...prev, temperament_rating: val })), 'Temperament')}
-            {renderStarRating(formData.brood_pattern_rating, (val) => setFormData(prev => ({ ...prev, brood_pattern_rating: val })), 'Brood Pattern')}
-            {renderStarRating(formData.swarming_tendency, (val) => setFormData(prev => ({ ...prev, swarming_tendency: val })), 'Swarming Tendency')}
-            {renderStarRating(formData.calmness, (val) => setFormData(prev => ({ ...prev, calmness: val })), 'Calmness')}
+            {renderStarRating(formData.temperament_rating, (val) => setFormData(prev => ({ ...prev, temperament_rating: val })), 'Temperament', RATING_SCALES.temperament)}
+            {renderStarRating(formData.brood_pattern_rating, (val) => setFormData(prev => ({ ...prev, brood_pattern_rating: val })), 'Brood Pattern', RATING_SCALES.broodPattern)}
+            {renderStarRating(formData.swarming_tendency, (val) => setFormData(prev => ({ ...prev, swarming_tendency: val })), 'Swarming Tendency', RATING_SCALES.swarming)}
+            {renderStarRating(formData.calmness, (val) => setFormData(prev => ({ ...prev, calmness: val })), 'Calmness', RATING_SCALES.calmness)}
           </div>
         </div>
         )}
@@ -2149,18 +2106,33 @@ export default function InspectionForm({
             </Button>
             {superFullnessExpanded && (
               <div className="space-y-4 p-4 pt-0">
+                <p className="text-sm text-text-secondary">Once you set one super, any you leave are saved as 0%.</p>
                 {Array.from({ length: honeySuperSliderCount }).map((_, i) => {
-                  const value = clampFullness(formData.honey_super_fullness?.[i] ?? 0)
+                  const reading = formData.honey_super_fullness?.[i]
+                  const isSet = typeof reading === 'number'
+                  const value = isSet ? clampFullness(reading) : 0
+                  const lastTime = previousSuperReadings?.values[i]
                   return (
                     <div key={`super-fullness-${i}`} className="rounded-xl border border-border bg-surface-secondary/60 p-3">
                       <div className="mb-2 flex items-center justify-between gap-3">
                         <label htmlFor={`super-fullness-${i}`} className="text-sm font-medium text-text-secondary">
                           Super {i + 1}
                         </label>
-                        <span className="min-w-[3.5rem] rounded-full bg-amber-100 px-3 py-1 text-center text-lg font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-                          {value}%
-                        </span>
+                        {isSet ? (
+                          <span className="min-w-[3.5rem] rounded-full bg-amber-100 px-3 py-1 text-center text-lg font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                            {value}%
+                          </span>
+                        ) : (
+                          <span className="rounded-full border border-border px-3 py-1 text-center text-sm font-medium text-text-secondary">
+                            Not set
+                          </span>
+                        )}
                       </div>
+                      {previousSuperReadings && typeof lastTime === 'number' && (
+                        <p className="mb-2 text-sm text-text-secondary">
+                          Last time {lastTime}% ({formatLocalDate(previousSuperReadings.date, 'en-IE', { day: 'numeric', month: 'short' })})
+                        </p>
+                      )}
                       <input
                         id={`super-fullness-${i}`}
                         type="range"
@@ -2170,6 +2142,7 @@ export default function InspectionForm({
                         value={value}
                         onChange={(e) => setSuperFullness(i, clampFullness(Number(e.target.value)))}
                         aria-label={`Super ${i + 1} fullness percentage`}
+                        aria-valuetext={isSet ? `${value}%` : 'Not set'}
                         className="h-12 w-full cursor-pointer accent-amber-600 touch-manipulation"
                       />
                     </div>
@@ -2194,12 +2167,12 @@ export default function InspectionForm({
           </Button>
           {diseaseExpanded && (
             <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {renderStarRating(formData.afb_disease, (val) => setFormData(prev => ({ ...prev, afb_disease: val })), 'AFB')}
-              {renderStarRating(formData.efb_disease, (val) => setFormData(prev => ({ ...prev, efb_disease: val })), 'EFB')}
-              {renderStarRating(formData.chalkbrood_disease, (val) => setFormData(prev => ({ ...prev, chalkbrood_disease: val })), 'Chalkbrood')}
-              {renderStarRating(formData.nosemosis_disease, (val) => setFormData(prev => ({ ...prev, nosemosis_disease: val })), 'Nosemosis')}
-              {renderStarRating(formData.dwv_disease, (val) => setFormData(prev => ({ ...prev, dwv_disease: val })), 'DWV')}
-              {renderStarRating(formData.iapv_cbpv_disease, (val) => setFormData(prev => ({ ...prev, iapv_cbpv_disease: val })), 'IAPV & CBPV')}
+              {renderStarRating(formData.afb_disease, (val) => setFormData(prev => ({ ...prev, afb_disease: val })), 'AFB', RATING_SCALES.disease)}
+              {renderStarRating(formData.efb_disease, (val) => setFormData(prev => ({ ...prev, efb_disease: val })), 'EFB', RATING_SCALES.disease)}
+              {renderStarRating(formData.chalkbrood_disease, (val) => setFormData(prev => ({ ...prev, chalkbrood_disease: val })), 'Chalkbrood', RATING_SCALES.disease)}
+              {renderStarRating(formData.nosemosis_disease, (val) => setFormData(prev => ({ ...prev, nosemosis_disease: val })), 'Nosemosis', RATING_SCALES.disease)}
+              {renderStarRating(formData.dwv_disease, (val) => setFormData(prev => ({ ...prev, dwv_disease: val })), 'DWV', RATING_SCALES.disease)}
+              {renderStarRating(formData.iapv_cbpv_disease, (val) => setFormData(prev => ({ ...prev, iapv_cbpv_disease: val })), 'IAPV & CBPV', RATING_SCALES.disease)}
               <div>
                 {renderStarRating(
                   formData.varroa_disease,
@@ -2207,7 +2180,8 @@ export default function InspectionForm({
                     ? { ...prev, varroa_disease: 0, varroa_seen_on_bees: false, varroa_seen_in_brood: false, varroa_brood_worker: false, varroa_brood_drone: false }
                     : { ...prev, varroa_disease: val }
                   ),
-                  'Varroa'
+                  'Varroa',
+                  RATING_SCALES.disease
                 )}
                 <div className="mt-3 space-y-2" role="group" aria-labelledby="varroa-where-seen-label">
                   <p id="varroa-where-seen-label" className="text-sm font-medium text-text-secondary">Where seen</p>
@@ -2278,9 +2252,9 @@ export default function InspectionForm({
           </Button>
           {hygienicBehaviourExpanded && (
             <div className="p-4 pt-0 grid grid-cols-1 md:grid-cols-3 gap-6">
-              {renderStarRating(formData.recapping, (val) => setFormData(prev => ({ ...prev, recapping: val })), 'Recapping')}
-              {renderStarRating(formData.vsh, (val) => setFormData(prev => ({ ...prev, vsh: val })), 'VSH')}
-              {renderStarRating(formData.smr, (val) => setFormData(prev => ({ ...prev, smr: val })), 'SMR')}
+              {renderStarRating(formData.recapping, (val) => setFormData(prev => ({ ...prev, recapping: val })), 'Recapping', RATING_SCALES.trait)}
+              {renderStarRating(formData.vsh, (val) => setFormData(prev => ({ ...prev, vsh: val })), 'VSH', RATING_SCALES.trait)}
+              {renderStarRating(formData.smr, (val) => setFormData(prev => ({ ...prev, smr: val })), 'SMR', RATING_SCALES.trait)}
             </div>
           )}
         </div>

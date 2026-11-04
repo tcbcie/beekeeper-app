@@ -41,6 +41,19 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(', ')
 
+/**
+ * The controls Tab can actually reach. A hidden or inert one is skipped: counted as the first or
+ * last, it would let Tab slip out of the dialog. checkVisibility is missing on older browsers,
+ * which keeps every candidate, as before.
+ */
+function focusableIn(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    // Both option names: older Chromium knows checkVisibilityCSS, newer browsers visibilityProperty.
+    element => !element.closest('[inert]') &&
+      (element.checkVisibility?.({ visibilityProperty: true, checkVisibilityCSS: true }) ?? true)
+  )
+}
+
 interface UseDialogA11yOptions {
   isOpen: boolean
   onClose: () => void
@@ -92,7 +105,7 @@ export function useDialogA11y({ isOpen, onClose, containerRef }: UseDialogA11yOp
     const frame = requestAnimationFrame(() => {
       const container = containerRef.current
       if (!container) return
-      const first = container.querySelector<HTMLElement>(FOCUSABLE_SELECTOR)
+      const first = focusableIn(container)[0]
       // Falls back to the container itself, which carries tabIndex={-1}, so
       // focus is never left outside an open modal.
       ;(first ?? container).focus()
@@ -126,9 +139,7 @@ export function useDialogA11y({ isOpen, onClose, containerRef }: UseDialogA11yOp
       const container = containerRef.current
       if (!container) return
 
-      const focusable = Array.from(
-        container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
-      )
+      const focusable = focusableIn(container)
 
       if (focusable.length === 0) {
         event.preventDefault()
@@ -142,7 +153,8 @@ export function useDialogA11y({ isOpen, onClose, containerRef }: UseDialogA11yOp
       const activeIsInside = active !== null && container.contains(active)
 
       if (event.shiftKey) {
-        if (active === first || !activeIsInside) {
+        // The panel itself can hold focus (a click on its text), and Shift+Tab from it would leave.
+        if (active === first || active === container || !activeIsInside) {
           event.preventDefault()
           last.focus()
         }

@@ -230,3 +230,6 @@ invalid, and step one's errors sort first.
 
 None. Presentation and navigation only.
 
+## Update 04/11/2026 (WP04): no ticks
+
+A tick read as "done" to sighted users when it only meant "opened". Every step now shows its number; visited steps keep their shaded background and the spoken ", already visited". `isComplete` in `InspectionStepper.tsx` is renamed `isVisited`.

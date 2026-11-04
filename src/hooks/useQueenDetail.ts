@@ -106,14 +106,25 @@ const averageRatings = (rows: InspectionRatingRow[]): TraitAverages => {
   const counts = { docility: 0, population: 0, brood_pattern: 0, calmness: 0, swarm_tendency: 0 }
   // `usedRows` = number of inspections that contributed at least one trait.
   // Reported back as `n` so the UI can say "averaged across N inspections".
+  // An unrated trait is stored as 0, so only values above 0 count, as in averageRated
+  // (selection-scoring.ts): counting the zeroes made queens look less swarmy and less docile.
   let usedRows = 0
   for (const r of rows) {
+    const ratings: Array<[keyof typeof sums, number | null]> = [
+      ['docility', r.temperament_rating],
+      ['population', r.population_strength],
+      ['brood_pattern', r.brood_pattern_rating],
+      ['calmness', r.calmness],
+      ['swarm_tendency', r.swarming_tendency],
+    ]
     let used = false
-    if (r.temperament_rating != null) { sums.docility += r.temperament_rating; counts.docility++; used = true }
-    if (r.population_strength != null) { sums.population += r.population_strength; counts.population++; used = true }
-    if (r.brood_pattern_rating != null) { sums.brood_pattern += r.brood_pattern_rating; counts.brood_pattern++; used = true }
-    if (r.calmness != null) { sums.calmness += r.calmness; counts.calmness++; used = true }
-    if (r.swarming_tendency != null) { sums.swarm_tendency += r.swarming_tendency; counts.swarm_tendency++; used = true }
+    for (const [trait, value] of ratings) {
+      if (value !== null && value > 0) {
+        sums[trait] += value
+        counts[trait]++
+        used = true
+      }
+    }
     if (used) usedRows++
   }
   return {

@@ -103,3 +103,7 @@ The implementation matched the plan with two refinements:
 - No bulk-select header checkbox (kept v1 small).
 - No charts — bars only.
 - No selection UI on the lineage page or detail pages.
+
+## Update 04/11/2026 (WP04): unrated traits no longer count
+
+Trait averages (`averageRatings` in `src/hooks/useQueenDetail.ts`) now count a rating only when it is above 0, as hive averages and selection scoring (`averageRated`) do. An unrated trait is stored as 0, so counting it made queens look less swarmy and less docile than recorded. `n` counts only inspections with at least one real rating.

@@ -76,9 +76,11 @@ This is the current behaviour, recorded so that later changes keep old records r
 | Stores level | NULL | NULL | – | A real reading of 0 | Kept | 0–100 check, NULL = not recorded. **Record stores** seeds the last reading or 50 |
 | Super fullness | NULL, or the last visit's readings (new) | NULL | – | Also produced for unrecorded supers (three paths) | Non-numbers become 0 | JSON array, NULL = not recorded |
 
-Derived summaries: hive averages and selection scoring skip 0; queen averages include it (`useQueenDetail.ts:112-116`).
+Derived summaries: hive averages and selection scoring skip 0; queen averages included it until WP04 (04/11/2026) and now skip it too.
 
-**Decided 04/11/2026:** super fullness will start as not recorded, with the last reading shown as a hint (WP04).
+**Rating words (WP04, 04/11/2026)**, shown under the stars and read with the first and last star: Population 1 Very weak – 5 Very strong; Temperament 1 Very defensive – 5 Very gentle; Brood pattern 1 Very patchy – 5 Solid; Swarming 1 Very low – 5 Very high; Calmness 1 Very nervous – 5 Very calm; diseases and Varroa 1 Minimal – 5 Severe; Recapping, VSH, SMR 1 Very low – 5 Very high. 0 still means not recorded; stored values are unchanged.
+
+**Decided 04/11/2026, built in WP04:** super fullness starts as not recorded, with the last reading shown as a hint; once one super is set, the others are saved as 0% and shown as such.
 
 ## 5. Phone checklist for the owner
 
@@ -139,3 +141,10 @@ WP02 changed the code behind these scenarios. Their results above stay as the ba
 | S20 | The follow-up task warning stays until closed (not after a reload) |
 | S21 | Waiting no longer claims "no signal": "Could not send it just now. It will try again when the app is next open with signal." |
 | S27 | Edit mode review step: "Check your changes below, then tap Update Inspection. They are not saved until you do." |
+
+### Expected after WP04 – 04/11/2026 (not yet re-run)
+
+| Scenario | Now expected |
+|---|---|
+| S25 | Visited steps show their number, shaded, with no tick |
+| S29 | Shift+Tab from the dialog panel wraps to the last control |

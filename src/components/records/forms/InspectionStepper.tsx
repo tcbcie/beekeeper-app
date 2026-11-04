@@ -1,7 +1,5 @@
 'use client'
 
-import { Check } from 'lucide-react'
-
 /**
  * Presentational chrome for the stepped inspection flow.
  *
@@ -138,7 +136,8 @@ export default function InspectionStepper({
       <ol className="flex items-stretch gap-0.5 sm:gap-1" aria-label="Inspection progress">
         {steps.map(step => {
           const isActive = step.id === current
-          const isComplete = visited.has(step.id) && !isActive
+          // Opened before, not necessarily finished: optional steps can be left blank.
+          const isVisited = visited.has(step.id) && !isActive
           const reachable = visited.has(step.id) || canJumpAhead
 
           return (
@@ -152,7 +151,7 @@ export default function InspectionStepper({
                 aria-current={isActive ? 'step' : undefined}
                 aria-label={`Step ${step.id}: ${step.title}${
                   step.optional ? ' (optional)' : ''
-                }${isComplete ? ', already visited' : ''}`}
+                }${isVisited ? ', already visited' : ''}`}
                 // Muting is tied to reachability, not to whether the step has
                 // been opened. The two used to coincide; now that a step ahead
                 // can be tapped, dressing it as greyed-out would tell this
@@ -160,7 +159,7 @@ export default function InspectionStepper({
                 className={`flex h-full min-h-[44px] w-full flex-col items-center justify-center gap-1 rounded-md border px-0.5 py-2 sm:px-1 transition-colors touch-manipulation disabled:cursor-not-allowed ${
                   isActive
                     ? 'border-forest-800 bg-forest-800 text-white'
-                    : isComplete
+                    : isVisited
                       ? 'border-border bg-surface-secondary text-text-primary'
                       : reachable
                         ? 'border-border bg-surface text-text-primary'
@@ -171,7 +170,8 @@ export default function InspectionStepper({
                   aria-hidden="true"
                   className="flex h-5 w-5 items-center justify-center text-sm"
                 >
-                  {isComplete ? <Check size={16} /> : step.id}
+                  {/* A number, never a tick: a tick would say the step is done when it was only opened. */}
+                  {step.id}
                 </span>
                 {/* break-words so a label that outgrows its fifth of the row
                     wraps inside the button instead of painting over the one

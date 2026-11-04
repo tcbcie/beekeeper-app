@@ -20,7 +20,7 @@ Completed: January 17, 2026
 
 ## Features
 
-- Income/Expense toggle with color coding (green/red)
+- Income/Expense choice: a radio group with the shared `RadioChoiceOption`, selected in green (WP04, 04/11/2026; was a green/red toggle), with every label tied to its field
 - Dropdown categories specific to beekeeping
 - Summary cards: Total Income, Total Expenses, Net Profit/Loss
 - Time period filtering
