@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>WP01 behavioural baseline</title>
+</head>
+<body>
+<h1>WP01 – Establish the behavioural baseline</h1>
+<p>Plan: <code>docs/features/mobile-first-implementation-plan.html</code> (WP01 and its two refinements). Evidence: <code>docs/reviews/mobile-first-findings-verification-2026-11-04.md</code>.</p>
+<p>WP01 changes no app code. Its output is a scenario matrix that gates the behaviour fixes in WP02–WP07. Each scenario is recorded as <strong>passes</strong>, <strong>fails</strong>, <strong>code-established</strong> (the code makes the outcome certain, but it was not run) or <strong>untested</strong>.</p>
+
+<h2>How the scenarios are run</h2>
+<ul>
+  <li><strong>From the code</strong> – everything the verification already settled, with file:line evidence. No session needed.</li>
+  <li><strong>In Chrome, on a disposable account</strong> – the browser on a desktop window and at phone widths (320/390 px): create versus edit, dirty exits, Start again, step ticks, keyboard focus, hive context, dashboard two taps. Never on your real account.</li>
+  <li><strong>On your phones</strong> – a short checklist for you: iOS swipe Back, Android double Back, offline save in flight mode, enlarged text, installed app.</li>
+  <li><strong>Not run</strong> – failure injection (lost response after a failed queue write, full storage, a crash between steps). Doing this safely needs a test harness or a database branch. These stay "code-established", as the plan allows.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ Write <code>docs/features/mobile-first-wp01-baseline.md</code>: the scenario matrix with every WP01 scenario (F05, F08, F09, H05, I05, I07, V02–V04, DB05, the unreadable draft, Android double Back), filled in from the code first</li>
+  <li>☑ Add the DB01 value contract to the same doc: for each field (queen seen, eggs, ratings, disease ratings, drones, propolis, drone brood, stores, super fullness) say what "not recorded", "no" and 0 currently mean in the form, on save and in the database</li>
+  <li>☑ Run the Chrome scenarios on the disposable account and record the results, with screenshots kept out of the repo</li>
+  <li>☑ Write the phone checklist for you (in the same doc), to fill in on your devices</li>
+  <li>☑ Record the four owner decisions in both plan documents once you confirm them</li>
+  <li>☑ Update <code>docs/features/mobile-first-implementation-plan.html</code> and its Markdown version: WP01 status and a link to the baseline doc</li>
+  <li>☑ Review section below</li>
+</ul>
+
+<h2>Owner decisions – accepted 04/11/2026</h2>
+<ol>
+  <li><strong>Winter label (WP03).</strong> Change it to <em>"Winter: just check food"</em>. In winter the only rows the card can show are food checks: Heft, and Record feed when a scale hive loses weight. So this label is always true, and "nothing to do" never contradicts the rows below. Update <code>dashboard-today-screen.md</code> to match.</li>
+  <li><strong>"Need inspection" in winter (WP09).</strong> Yes, switch it off from November to February, like the dashboard. Counting every hive as overdue in winter nudges people to open hives in the cold, which is poor practice. Use the same rule as the dashboard (more than 14 days, on local dates), so the two screens agree, and fix the UTC day count at the same time.</li>
+  <li><strong>Super fullness carry-forward (WP04).</strong> No. Each visit should start with "not recorded", with last visit's reading shown beside it as a hint ("Last time 60%, 12 Oct"). Otherwise an untouched form re-saves old readings as new observations. The same principle suggests the stores dial should stop seeding 50. That is noted for WP04/WP09 but not decided here.</li>
+  <li><strong>Remembered hive from Hives (WP07).</strong> No. When started from Hives, pass the apiary being viewed and leave the hive for the beekeeper to choose. The remembered hive still applies when starting from Records. This matches the plan's rule of "never silently choosing a hive".</li>
+</ol>
+
+<h2>Review</h2>
+<p>Code pass and Chrome runs done. Phone checklist is with you. Results are in <code>docs/features/mobile-first-wp01-baseline.md</code>.</p>
+<ul>
+  <li>11 scenarios run in Chrome on the demo account at desktop width. Every one behaved as the code predicted.</li>
+  <li>Confirmed defects: Home leaves an open inspection without asking (new and edit), and the last typing before leaving is lost; Start again deletes the draft with no question; the hive is not shown on later steps; edit mode says "Nothing has been recorded yet."; Next and Save are the same colour; Shift+Tab can escape a dialog.</li>
+  <li>Confirmed working: Close and sidebar links ask before discarding; ticks mean "visited"; on a desktop, New inspection opens directly.</li>
+  <li>Phone widths could not be reached (the window would not narrow, and the site rightly refuses to be framed), so S03, S23 and S30 joined the phone checklist.</li>
+  <li>Not run: failure injection and the two-tab edit, which would need a test harness or saved edits. They stay code-established.</li>
+  <li>Clean-up checked in the database: no new demo records, and the edited inspection is unchanged.</li>
+  <li>No app code changed, so no QA audit applies.</li>
+</ul>
+</body>
+</html>

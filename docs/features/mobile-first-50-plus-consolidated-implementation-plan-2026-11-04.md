@@ -19,7 +19,7 @@ This is the single implementation backlog for the five review documents. It cons
 
 **Database evidence update (04/11/2026):** The [read-only database review](../reviews/mobile-first-database-review-2026-11-04.md) refines the original 39 findings. Live metadata and scoped aggregates establish model/calculation facts, not successful failure recovery or participant outcomes. Implementation remains unapproved.
 
-**Verification update (04/11/2026):** The [verification of findings](../reviews/mobile-first-findings-verification-2026-11-04.md) checked every finding against the current code and the live database. Of the 39 findings, 27 are confirmed, 11 are partly right (overstated, mis-described or partly built already) and one needs a device; none was wrong. Of DB01-DB05, four are confirmed and one is partly right. It found 22 further issues, tracked here as V01-V22. Each package below carries a **Verification refinement**; where it conflicts with the original package text, the refinement wins. Four owner decisions are listed under *Owner decisions before implementation*.
+**Verification update (04/11/2026):** The [verification of findings](../reviews/mobile-first-findings-verification-2026-11-04.md) checked every finding against the current code and the live database. Of the 39 findings, 27 are confirmed, 11 are partly right (overstated, mis-described or partly built already) and one needs a device; none was wrong. Of DB01-DB05, four are confirmed and one is partly right. It found 22 further issues, tracked here as V01-V22. Each package below carries a **Verification refinement**; where it conflicts with the original package text, the refinement wins. The four owner decisions it raised were decided on 04/11/2026; see *Owner decisions*.
 
 **Evidence limits:** public-page rendering and authenticated screenshots exist. Authenticated interactions, current real-device behaviour and field-study outcomes remain unverified. Screenshot concerns are not automatically confirmed accessibility failures. Existing-inspection editing is not equivalent to creating a new offline inspection.
 
@@ -63,6 +63,8 @@ Use a dedicated disposable dataset and accessible authenticated session. Record 
 **Database refinement - WP01:** Add DB05 disposable-fixture scenarios for lost responses, failed local persistence, super-adjustment crash windows, partial task creation and concurrent edits. Record DB01 unknown/zero/negative contracts. The read-only review did not execute these scenarios.
 
 **Verification refinement - WP01:** The navbar Back cannot be reached while the form is open: below 768 px the form is full-screen, and at 768 px and above the navbar Back is hidden. Record the desktop Records Home button as the known unguarded exit (V03). Add scenarios: a failed queue write followed by a lost response, giving a duplicate row and deleted photos (V02); typing lost when the form closes within the 800 ms draft delay (V04); an unreadable draft; and Android double Back with CloseWatcher.
+
+**Progress - WP01 (04/11/2026):** Code pass and Chrome runs complete in the [WP01 baseline](mobile-first-wp01-baseline.md): 32 scenarios and the DB01 value contract. All 11 Chrome scenarios behaved as the code predicted; 7 confirm defects for WP02-WP07. Phone-width scenarios moved to the owner's phone checklist, which is pending.
 
 #### WP02 - Protect unfinished observations
 
@@ -184,12 +186,12 @@ Repeat relevant device and participant tasks against each changed release candid
 
 No schema change or production-data migration is planned. Use existing application models and review evidence first. If ratings, timestamp meaning, task state or save receipt needs database verification, use a direct MCP database connection and scoped read-only queries; never parse saved SQL files. Use disposable test records for mutation scenarios. If correct unknown/negative semantics require a schema change, stop that subtask at a concrete proposal for separate approval rather than quietly expanding scope.
 
-### Owner decisions before implementation
+### Owner decisions (decided 04/11/2026)
 
-1. Change the agreed "Winter: nothing to do" label (WP03)?
-2. Should the Hives "Need inspection" count switch off in winter, like the dashboard (WP09)?
-3. Should previous super fullness readings carry into a new inspection (WP04)?
-4. When starting an inspection from Hives, should a hive remembered from earlier that day still be preselected (WP07)?
+1. **Winter label (WP03):** change "Winter: nothing to do" to "Winter: just check food". In winter the card only shows food checks (Heft, and Record feed when a scale hive loses weight), so the label stays true. Update `dashboard-today-screen.md` to match.
+2. **"Need inspection" in winter (WP09):** switch it off from November to February, like the dashboard, and use the same rule (more than 14 days, local dates). Fix the UTC day count at the same time.
+3. **Super fullness (WP04):** do not carry readings into a new inspection. Each visit starts as "not recorded", with last visit's reading shown beside it as a hint. The same principle suggests the stores dial should stop seeding 50 (to be settled in WP04/WP09).
+4. **Starting from Hives (WP07):** pass the apiary being viewed and leave the hive for the beekeeper to choose. The remembered hive still applies when starting from Records.
 
 ## 4. Edge Cases & Risks
 
