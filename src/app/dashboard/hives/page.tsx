@@ -882,9 +882,11 @@ export default function HivesPage() {
  <Button
  onClick={() => (showForm ? closeForm() : setShowForm(true))}
  aria-label={showForm ? 'Cancel' : 'Add Hive'}
- className="px-0 sm:px-4 py-2 min-h-[48px] min-w-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 active:bg-forest-800 dark:active:bg-forest-700 font-medium flex items-center justify-center gap-2 touch-manipulation sm:w-auto"
+ className="px-3 sm:px-4 py-2 min-h-[48px] min-w-[48px] bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 active:bg-forest-800 dark:active:bg-forest-700 font-medium flex items-center justify-center gap-2 touch-manipulation sm:w-auto"
  >
  {showForm ? <X size={18} /> : <Plus size={18} />}
+ {/* A word on a phone too: a lone + was the only control here without one */}
+ <span className="sm:hidden">{showForm ? 'Cancel' : 'Add'}</span>
  <span className="hidden sm:inline">{showForm ? 'Cancel' : 'Add Hive'}</span>
  </Button>
  {selectionMode && (

@@ -130,6 +130,8 @@ Fix login brand/label wrapping and mobile padding without hiding overflow. Stack
 
 **Verification refinement - WP06:** F07 is estimated to squeeze the category field even at normal text size on 360-390 px phones; if a device check confirms it, raise it to P1. Make the photo picker reachable by keyboard (V16). Check whether "Update Inspection" wraps to two lines at 320 px, and the 72 px space kept under the fixed Hives button at enlarged text. The login clipping came from a root-font stress test; repeat it with browser zoom and phone font settings.
 
+**Progress - WP06 (04/11/2026):** Code complete, awaiting the owner's build test on a phone. Login, reset and reactivate wrap instead of clipping, with 20px panel padding on phones; Forgot Password, Request reactivation and Back to Login have 48px targets; purchase and Profit & Loss rows stack below 640px; Hives shows "Add" on phones and Clear filters without opening Filters; the photo picker is reachable by keyboard. Step bar, footer and the Hives bottom space are unchanged until the phone checklist shows a problem.
+
 #### WP07 - Clarify progression, inspection scope and exits
 
 **P1 action distinction, P2 navigation refinement | M | Evidence: I02, I05, F09, H05, V09, V22. Depends on WP01, WP02 and WP06.**

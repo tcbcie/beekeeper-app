@@ -250,3 +250,8 @@ and Tasks. Routing them through per-page storage would silently break that.
 
 None. `archive_hive_cascade` already exists and is already called; this phase changes
 only where it is reachable from. No schema, RLS policy, RPC or payload is altered.
+
+## Update 04/11/2026 (WP06): Clear filters on phones, and the Add button
+
+- `FilterDisclosure` with `inlineOnPhone`: when filters are active and the panel is closed, "Clear filters" now shows on its own row on phones. Before, it appeared only inside the opened panel. This applies to Hives and the Records filter bar.
+- Hives: the "+" button shows "Add" on phones ("Add Hive" from `sm` up). Its spoken name stays "Add Hive".

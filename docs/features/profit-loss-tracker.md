@@ -152,3 +152,5 @@ Financial records are also included in the Settings backup export.
 ## Currency
 
 All amounts are in EUR with Irish locale formatting (`en-IE`).
+
+Update 04/11/2026 (WP06): Date and Amount stack into one column below 640px.

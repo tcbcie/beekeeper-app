@@ -41,12 +41,12 @@ export default function ForgotPassword() {
   return (
     <PageShell centered className="px-4">
       <div className="mx-auto w-full max-w-md py-6 sm:py-10">
-        <Panel padding="lg">
+        <Panel padding="none" className="p-5 sm:p-8">
           <div className="space-y-6">
             <div className="text-center">
-              <div className="mx-auto mb-4 inline-flex items-center gap-3 rounded-2xl border border-border bg-surface-elevated/70 px-4 py-3">
+              <div className="mx-auto mb-4 inline-flex max-w-full flex-wrap items-center justify-center gap-3 rounded-2xl border border-border bg-surface-elevated/70 px-4 py-3">
                 <Image src="/logo.png" alt="HiveCraic" width={40} height={40} className="h-10 w-10" />
-                <span className="font-serif text-2xl text-forest-700 dark:text-forest-300">HiveCraic</span>
+                <span className="min-w-0 font-serif text-2xl text-forest-700 [overflow-wrap:anywhere] dark:text-forest-300">HiveCraic</span>
               </div>
 
               <PageHeader
@@ -109,7 +109,7 @@ export default function ForgotPassword() {
             <div className="text-center">
               <Link
                 href="/login"
-                className="fj-chip fj-chip-sm fj-chip-neutral"
+                className="fj-chip fj-chip-sm fj-chip-neutral min-h-[48px] px-4"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back to Login

@@ -111,7 +111,7 @@ export default function FinancialRecordForm({
         </fieldset>
 
         {/* Date and Amount Row */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor={`${fieldId}-date`} className="block text-sm font-medium text-text-secondary mb-1">
               Date *

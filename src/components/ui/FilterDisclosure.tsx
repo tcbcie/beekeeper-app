@@ -113,6 +113,11 @@ export default function FilterDisclosure({
         )}
       </div>
 
+      {/* On a phone, Clear sits inside the panel, so with the panel closed it gets its own row:
+          active filters should be clearable without opening them first. */}
+      {canClear && inlineOnPhone && !open && (
+        <div className="order-last col-span-full sm:hidden">{clearButton}</div>
+      )}
       {open && (
         <div id={contentId} className={inlineOnPhone ? 'order-last col-span-full sm:mt-3' : 'mt-3'}>
           {canClear && inlineOnPhone && <div className="sm:hidden">{clearButton}</div>}

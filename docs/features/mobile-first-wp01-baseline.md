@@ -93,7 +93,9 @@ Use the demo account. For each row note the phone, operating system version, bro
 5. **S30/S31** – Set the phone's text size to its largest. Open an inspection: do the step names and the footer buttons fit and stay readable?
 6. **S32** – On step 1, tap the notes field. Is the footer visible above the keyboard, and are the fields still reachable?
 7. **S23** – Hives: choose an apiary in the filter, then tap New inspection. Which apiary and hive does the form start with?
-8. Repeat 1 and 5 in the installed app (Home Screen), if it is installed.
+8. **Hives with large text** – set the phone's text to its largest, open Hives with New inspection showing at the bottom, and scroll to the end. Is the last hive fully visible above the bar?
+9. **Login with large text and zoom** – open the login page with the largest phone text, then with the browser zoomed in. Is anything cut off?
+10. Repeat 1 and 5 in the installed app (Home Screen), if it is installed.
 
 ## Results log
 
@@ -152,3 +154,7 @@ WP02 changed the code behind these scenarios. Their results above stay as the ba
 ### WP05 – 04/11/2026
 
 Colour only; no WP01 scenario changes. Contrast changes are listed in `contrast-fix.md` (Round 4).
+
+### WP06 – 04/11/2026
+
+Layout changes on the access screens, secondary forms, Hives top bar and the photo picker. S30, S31 and the new checklist steps 8 and 9 decide whether the step bar, the footer or the Hives bar need changing. Nothing was changed there without a reproduced problem.

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>WP06 narrow screens</title>
+</head>
+<body>
+<h1>WP06 – Improve narrow-screen and enlarged-text layouts</h1>
+<p>Plan: <code>docs/features/mobile-first-implementation-plan.html</code> (WP06 and refinements). Findings: F07, R01, R04, H04, I07, V16. Layout only; no behaviour or data changes.</p>
+
+<h2>Changes</h2>
+<ol>
+  <li><strong>Access screens wrap instead of clipping</strong> (R01).
+    <ul>
+      <li>Login, reset password and reactivate: the HiveCraic name block can wrap (<code>flex-wrap</code>, no <code>leading-none</code>).</li>
+      <li>On login, the Password label and "Forgot Password?" row can wrap onto two lines.</li>
+      <li>The main panel's padding is 20px on phones, 32px from <code>sm</code> up. It is 32px everywhere today, which leaves about 198px for content at double text size.</li>
+      <li>Overflow is not hidden any more than today, as it only clips the decorative background.</li>
+    </ul>
+  </li>
+  <li><strong>Standalone links get 48px targets</strong> (R04): "Forgot Password?", "Request reactivation" (login) and "Back to Login" (reset page). Same look; taller tap area.</li>
+  <li><strong>Secondary forms stack on phones</strong> (F07): Purchase list Quantity/Unit and Supplier/Price, and Profit &amp; Loss Date/Amount, become one column below 640px and stay two columns from <code>sm</code> up. (Priority already moved to its own row in WP04.)</li>
+  <li><strong>Hives top bar</strong> (H04), <code>hives/page.tsx</code> and <code>FilterDisclosure.tsx</code>:
+    <ul>
+      <li>The "+" button shows a word on phones too: "Add" next to the +, and "Add Hive" from <code>sm</code> up. Its spoken name stays "Add Hive".</li>
+      <li>When filters are active and the panel is closed, "Clear filters" shows on its own row on phones. Today it appears only after opening Filters. This is a shared component, so any other screen using the same phone layout gets it too.</li>
+    </ul>
+  </li>
+  <li><strong>Photo picker reachable by keyboard</strong> (V16), <code>InspectionForm.tsx</code>: the file input becomes visually hidden (<code>sr-only</code>) instead of <code>display: none</code>, so Tab reaches it and the dashed box shows a focus ring.</li>
+</ol>
+
+<h2>Not changed until a phone shows a problem</h2>
+<p>The plan says fixed bars and the step bar change only where a problem is reproduced. These go on the phone checklist instead:</p>
+<ul>
+  <li>Inspection step bar and footer at 320px and with the largest text: does "Update Inspection" wrap, and do labels fit? (I07)</li>
+  <li>The space kept under the fixed New inspection bar on Hives, with large text.</li>
+  <li>The login page with browser zoom and the phone's own text size, not only the root-font stress test.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ 1. Access screens: wrapping and phone padding</li>
+  <li>☑ 2. 48px links</li>
+  <li>☑ 3. Secondary forms stack</li>
+  <li>☑ 4. Hives: Add label, Clear without opening Filters</li>
+  <li>☑ 5. Photo picker keyboard access</li>
+  <li>☑ Docs, the WP01 phone checklist, WP06 progress in both plans</li>
+  <li>☑ Type check, lint, related tests</li>
+  <li>☑ QA audit</li>
+  <li>☑ Review section, and ask you to test the build on a phone</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned in 8 files: login, forgot-password and reactivate pages, the two secondary forms, <code>InspectionForm.tsx</code>, <code>FilterDisclosure.tsx</code> and the Hives page.</p>
+<ul>
+  <li>Checks: type check clean, lint clean, full test suite passes (881 passed, 23 skipped). No build run.</li>
+  <li>QA audit: no Critical, High or Medium. Notes: the photo input is <code>sr-only</code> inside a <code>relative</code> box, so it takes no space and still opens the picker on tap, Enter or Space; visible "Add" sits within the spoken name "Add Hive", as WCAG 2.5.3 asks.</li>
+  <li>Docs: <code>mobile-first-phase4-list-simplification-plan.md</code>, <code>purchase-list.md</code>, <code>profit-loss-tracker.md</code>, the WP01 phone checklist (two new steps) and both plans.</li>
+</ul>
+<p>Waiting for your build test on a phone.</p>
+</body>
+</html>

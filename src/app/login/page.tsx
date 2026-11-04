@@ -170,7 +170,7 @@ function LoginForm() {
       innerClassName="px-0"
     >
       <div className="mx-auto w-full max-w-md py-6 sm:py-10">
-        <Panel className="overflow-hidden" padding="lg">
+        <Panel className="overflow-hidden p-5 sm:p-8" padding="none">
           <div className="space-y-7">
             <div className="flex justify-center">
               <span className="inline-flex items-center rounded-full border border-amber-300/70 bg-amber-100/80 px-3 py-1 text-sm font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
@@ -179,9 +179,9 @@ function LoginForm() {
             </div>
 
             <div className="space-y-4 text-center">
-              <div className="mx-auto inline-flex items-center justify-center gap-3 rounded-2xl border border-border bg-surface-elevated/70 px-4 py-3 shadow-sm">
+              <div className="mx-auto inline-flex max-w-full flex-wrap items-center justify-center gap-3 rounded-2xl border border-border bg-surface-elevated/70 px-4 py-3 shadow-sm">
                 <Image src="/logo.png" alt="HiveCraic" width={40} height={40} priority className="h-10 w-10" />
-                <span className="font-serif text-2xl leading-none text-forest-700 dark:text-forest-300">
+                <span className="min-w-0 font-serif text-2xl leading-tight text-forest-700 [overflow-wrap:anywhere] dark:text-forest-300">
                   HiveCraic
                 </span>
               </div>
@@ -227,11 +227,11 @@ function LoginForm() {
               </div>
 
               <div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-x-3">
                   <label htmlFor="login-password" className="block text-sm font-medium text-text-secondary">Password</label>
                   <Link
                     href="/forgot-password"
-                    className={`text-sm font-medium text-forest-700 hover:text-forest-800 dark:text-forest-300 dark:hover:text-forest-200 ${isSignUp ? 'invisible' : ''}`}
+                    className={`inline-flex min-h-[48px] items-center text-sm font-medium text-forest-700 hover:text-forest-800 dark:text-forest-300 dark:hover:text-forest-200 ${isSignUp ? 'invisible' : ''}`}
                   >
                     Forgot Password?
                   </Link>
@@ -286,7 +286,7 @@ function LoginForm() {
                 Deleted account?{' '}
                 <Link
                   href="/reactivate"
-                  className="font-medium text-forest-700 hover:text-forest-800 dark:text-forest-300 dark:hover:text-forest-200"
+                  className="inline-flex min-h-[48px] items-center font-medium text-forest-700 hover:text-forest-800 dark:text-forest-300 dark:hover:text-forest-200"
                 >
                   Request reactivation
                 </Link>

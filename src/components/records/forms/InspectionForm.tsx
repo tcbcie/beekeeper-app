@@ -2530,7 +2530,7 @@ export default function InspectionForm({
             )}
 
             {photoSlotsRemaining > 0 ? (
-              <label className="flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all p-4">
+              <label className="relative flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 focus-within:ring-2 focus-within:ring-forest-600 focus-within:ring-offset-2 transition-all p-4">
                 <div className="flex flex-col items-center justify-center">
                   <Camera size={24} className="text-text-tertiary mb-1" />
                   <p className="text-sm text-text-tertiary text-center">
@@ -2541,9 +2541,10 @@ export default function InspectionForm({
                   </p>
                   <p className="text-sm text-text-tertiary">PNG, JPG, WEBP up to 10MB each</p>
                 </div>
+                {/* Visually hidden, not display:none, so Tab can reach it; the box shows its focus ring. */}
                 <input
                   type="file"
-                  className="hidden"
+                  className="sr-only"
                   accept="image/*"
                   multiple
                   onChange={handlePhotosSelected}

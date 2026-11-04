@@ -83,3 +83,5 @@ Access via Tools page > Purchases tab
 ## Update 04/11/2026 (WP04): labels and Priority choice
 
 Every label is tied to its field (tapping it focuses the field; screen readers name it). Priority is a radio group (a `fieldset` with a `legend`) with the shared `RadioChoiceOption`, selected in green, on its own full-width row below Category. Selecting Low used to look the same as not selecting it. The colour scheme below still applies to the list, not the form.
+
+Update 04/11/2026 (WP06): Quantity/Unit and Supplier/Price stack into one column below 640px.
