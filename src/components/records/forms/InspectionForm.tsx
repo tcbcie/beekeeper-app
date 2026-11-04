@@ -16,7 +16,7 @@ import SelectField from '@/components/ui/SelectField'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import InspectionStepper, { INSPECTION_STEPS } from './InspectionStepper'
 import { DISCARD_INSPECTION_PROMPT } from '@/lib/inspection-discard'
-import { clearInspectionDraft, describeDraftSavedAt, inspectionDraftOwner, loadInspectionDraft, saveInspectionDraft } from '@/lib/inspection-draft'
+import { clearInspectionDraft, describeDraftSavedAt, inspectionDraftClearCount, inspectionDraftOwner, loadInspectionDraft, saveInspectionDraft, type DraftSaveResult } from '@/lib/inspection-draft'
 import type { InspectionDraft, InspectionDraftContent } from '@/lib/local-db'
 import { STORES_BAND_TEXT_CLASSES, storesBand, storesWord } from '@/lib/stores-level'
 import type { StoresBand } from '@/lib/stores-level'
@@ -1028,6 +1028,10 @@ export default function InspectionForm({
   const [pendingDraft, setPendingDraft] = useState<InspectionDraft | null>(null)
   const [draftChecked, setDraftChecked] = useState(false)
   const latestDraftRef = useRef<InspectionDraftContent | null>(null)
+  const draftClearCountRef = useRef(0)
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Set when this device could not keep all of the inspection, so the form can say so.
+  const [draftKeepProblem, setDraftKeepProblem] = useState<Exclude<DraftSaveResult, 'saved'> | null>(null)
 
   useEffect(() => {
     if (!draftOwner || isEditing) return
@@ -1042,8 +1046,16 @@ export default function InspectionForm({
   }, [draftOwner, isEditing])
 
   const writeLatestDraft = useCallback(() => {
+    if (draftTimerRef.current) {
+      clearTimeout(draftTimerRef.current)
+      draftTimerRef.current = null
+    }
+    // Cleared since the last change (Discard, Start again, saved): writing now would bring it back.
+    if (inspectionDraftClearCount() !== draftClearCountRef.current) return
     if (draftOwner && latestDraftRef.current) {
-      void saveInspectionDraft(draftOwner, latestDraftRef.current)
+      void saveInspectionDraft(draftOwner, latestDraftRef.current).then(result => {
+        setDraftKeepProblem(result === 'saved' ? null : result)
+      })
     }
   }, [draftOwner])
 
@@ -1056,10 +1068,20 @@ export default function InspectionForm({
     latestDraftRef.current = canKeepDraft
       ? { formData, givenTakenDrafts, followUpDrafts, formApiaryId, step, photos: stagedPhotos.map(photo => photo.file) }
       : null
+    draftClearCountRef.current = inspectionDraftClearCount()
+    if (draftTimerRef.current) {
+      clearTimeout(draftTimerRef.current)
+      draftTimerRef.current = null
+    }
     if (!canKeepDraft) return
-    const timer = setTimeout(writeLatestDraft, DRAFT_SAVE_DELAY_MS)
-    return () => clearTimeout(timer)
+    draftTimerRef.current = setTimeout(writeLatestDraft, DRAFT_SAVE_DELAY_MS)
   }, [canKeepDraft, formData, givenTakenDrafts, followUpDrafts, formApiaryId, step, stagedPhotos, writeLatestDraft])
+
+  // Leaving the form (browser Back, another page) must not drop the last few seconds of typing,
+  // so a write still waiting on the timer happens now.
+  useEffect(() => () => {
+    if (draftTimerRef.current) writeLatestDraft()
+  }, [writeLatestDraft])
 
   // The phone may kill the app any time after it leaves the screen, so don't wait for the timer.
   useEffect(() => {
@@ -1112,8 +1134,17 @@ export default function InspectionForm({
     setPendingDraft(null)
   }
 
-  const startAgain = () => {
-    if (draftOwner) void clearInspectionDraft(draftOwner)
+  const startAgain = async (draft: InspectionDraft) => {
+    const photoCount = draft.photos.length
+    const deleteIt = await confirmDialog({
+      title: 'Delete the unfinished inspection?',
+      message: `Its notes and readings${photoCount > 0 ? ` and ${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}` : ''} will be lost. This cannot be undone.`,
+      confirmLabel: 'Delete it',
+      cancelLabel: 'Keep it',
+      variant: 'danger',
+    })
+    if (!deleteIt) return
+    if (draftOwner) await clearInspectionDraft(draftOwner)
     setPendingDraft(null)
   }
 
@@ -1527,11 +1558,12 @@ export default function InspectionForm({
           <p className="text-text-secondary">
             {draftHive ? `Hive ${draftHive.hive_number}, on` : 'On'} this phone since {describeDraftSavedAt(pendingDraft.savedAt)}
             {photoCount > 0 && `, with ${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}`}.
+            {pendingDraft.photosLeftOut ? ' Photos were not kept.' : ''}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button tone="success" fullWidth onClick={() => resumeDraft(pendingDraft)}>Carry on</Button>
-          <Button tone="neutral" fullWidth onClick={startAgain}>Start again</Button>
+          <Button tone="neutral" fullWidth onClick={() => void startAgain(pendingDraft)}>Start again</Button>
         </div>
       </div>
     )
@@ -1548,6 +1580,14 @@ export default function InspectionForm({
         canJumpAhead={canJumpAhead}
       />
       </div>
+
+      {draftKeepProblem && (
+        <p role="status" className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
+          {draftKeepProblem === 'failed'
+            ? 'This phone could not keep a copy of this inspection. Save it before you close the app.'
+            : 'Your photos are not kept on this phone until you save. Notes and readings are.'}
+        </p>
+      )}
 
       {/* A plain block on a phone: a sticky item can't leave its own grid row, so in a grid the
           pinned step controls below would scroll away with the page. */}

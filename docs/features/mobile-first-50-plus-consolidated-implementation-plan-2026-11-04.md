@@ -78,6 +78,8 @@ Return and display draft-write outcomes: complete, photographs omitted, or faile
 
 **Verification refinement - WP02:** Route the desktop Records Home button through the existing discard confirmation (V03). Rewrite the "still here on this phone" message, which is shown when nothing was kept (V02). Write the latest draft when the form closes instead of cancelling the pending save (V04). Do not delete uploaded photos while the server outcome is uncertain (V02). Confirming Start again and returning a write result from `saveInspectionDraft` are each small, self-contained changes.
 
+**Progress - WP02 (04/11/2026):** Code complete, awaiting the owner's build test and a re-run of S01, S02, S09-S11, S15 and S17. Home on Records asks first; Start again asks first; a waiting draft write happens when the form closes; the form says when the phone could not keep a copy or its photos; an unstored, unsent save keeps its photos and reuses its id on Save again; the no-signal message now says the work is in the form. Not changed: unreadable drafts, browser Back (by design), drafts for edits. See `inspection-drafts.md` and `inspection-outbox.md`.
+
 #### WP03 - Make state and task wording truthful
 
 **P1 | S/M | Evidence: F06, F12, D01, I01, R02, V18-V20. Depends on WP02 for persistence-state wording.**

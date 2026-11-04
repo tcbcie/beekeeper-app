@@ -22,18 +22,27 @@ export function inspectionDraftOwner(userId: string | null | undefined): string 
   }
 }
 
-export async function saveInspectionDraft(userId: string, content: InspectionDraftContent): Promise<void> {
+/** How much of the inspection this device managed to keep, so the form can say when it is not all. */
+export type DraftSaveResult = 'saved' | 'saved-without-photos' | 'failed'
+
+export async function saveInspectionDraft(userId: string, content: InspectionDraftContent): Promise<DraftSaveResult> {
   const draft: InspectionDraft = { ...content, userId, savedAt: Date.now() }
   try {
     await getLocalDb().inspectionDrafts.put(draft)
-  } catch {
+    return 'saved'
+  } catch (error) {
     // Most likely full storage, and photographs are by far the largest part. The notes and
     // readings are still worth keeping without them.
-    try {
-      await getLocalDb().inspectionDrafts.put({ ...draft, photos: [] })
-    } catch (error) {
-      console.error('Could not keep the inspection draft:', error)
+    if (draft.photos.length > 0) {
+      try {
+        await getLocalDb().inspectionDrafts.put({ ...draft, photos: [], photosLeftOut: draft.photos.length })
+        return 'saved-without-photos'
+      } catch {
+        // Falls through: nothing could be kept.
+      }
     }
+    console.error('Could not keep the inspection draft:', error)
+    return 'failed'
   }
 }
 
@@ -49,7 +58,16 @@ export async function loadInspectionDraft(userId: string): Promise<InspectionDra
   }
 }
 
+// Counts every clear. A form notes the count when its content changes, and writes nothing if a
+// clear has happened since: a write queued before a Discard or Start again must not bring it back.
+let clearCount = 0
+
+export function inspectionDraftClearCount(): number {
+  return clearCount
+}
+
 export async function clearInspectionDraft(userId: string): Promise<void> {
+  clearCount += 1
   try {
     await getLocalDb().inspectionDrafts.delete(userId)
   } catch (error) {
@@ -59,6 +77,7 @@ export async function clearInspectionDraft(userId: string): Promise<void> {
 
 /** For a password reset or a deleted account, not an expired session: that must not cost anyone their work. */
 export async function clearAllInspectionDrafts(): Promise<void> {
+  clearCount += 1
   try {
     await getLocalDb().inspectionDrafts.clear()
   } catch (error) {

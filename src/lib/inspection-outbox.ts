@@ -155,6 +155,9 @@ async function applySuperChange(entry: QueuedInspection, warnings: string[]): Pr
   // that is one change short, with a warning, is better than one silently counted twice.
   if (navigator.onLine === false) return { status: 'waiting' }
   if (Number.isInteger(delta) && Math.abs(delta) <= SUPER_DELTA_MAX) {
+    // Marked done before the call, in memory as well as on the device: an attempt that was never
+    // stored (and so is retried from memory) must not repeat the change either.
+    entry.superDelta = 0
     await recordProgress(entry.id, { superDelta: 0 })
     const { error } = await supabase
       .rpc('adjust_hive_honey_supers', { p_hive_id: entry.hiveId, p_delta: delta })

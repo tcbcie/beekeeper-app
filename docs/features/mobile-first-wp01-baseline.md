@@ -118,3 +118,15 @@ Chrome on Windows, desktop window 1528 × 698 CSS px, demo account on www.hivecr
 - With no hive chosen, tapping step 3 in the stepper did not move to step 3. Whether a message explained why was not checked; look for one on the phone run.
 
 **Clean-up:** both test drafts discarded. Database check afterwards: no new inspections or tasks on the demo account, and the edited inspection unchanged.
+
+### Expected after WP02 – 04/11/2026 (not yet re-run)
+
+WP02 changed the code behind these scenarios. Their results above stay as the baseline until they are re-run on the new build.
+
+| Scenario | Now expected |
+|---|---|
+| S01, S02 | Home asks "Discard this inspection?" first. Leaving another way writes any waiting change straight away |
+| S09 | Start again asks "Delete the unfinished inspection?" (Keep it / Delete it) |
+| S10, S11 | A line under the step bar says the phone could not keep a copy, or kept it without photos; Carry on says "Photos were not kept." |
+| S15 | Photos are kept, and the message says the work is still in the form |
+| S17 | Save again with nothing changed reuses the same id: no duplicate. A changed form can still produce one |

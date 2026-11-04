@@ -14,6 +14,8 @@ export interface InspectionDraftContent {
 export interface InspectionDraft extends InspectionDraftContent {
   userId: string
   savedAt: number
+  /** Photos that would not fit and were left out of this copy. Absent on older drafts. */
+  photosLeftOut?: number
 }
 
 export interface ScreenCacheRow {

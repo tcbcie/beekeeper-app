@@ -94,7 +94,7 @@ const SAVE_WAIT_MS = 8_000
 const INSPECTION_SAVE_TIMEOUT_MS = 20_000
 const TIMED_OUT = 'timed-out'
 const INSPECTION_NO_SIGNAL_MESSAGE =
-  'The inspection could not be sent, so it is still here on this phone. Check the signal, look in Records in case it arrived, then try again.'
+  'The inspection could not be sent. It is still in the form, so keep this screen open and tap Save again when you have signal.'
 
 function mapTypeParamToRecordType(typeParam: string | null): RecordType | null {
   if (!typeParam) return null
@@ -162,6 +162,9 @@ export default function RecordsPage() {
   const formRef = useRef<HTMLDivElement>(null)
   const hasInitialisedApiaryFilterRef = useRef(false)
   const scrolledRecordKeyRef = useRef<string | null>(null)
+  // A new inspection that could neither be kept on this device nor sent. Save again with nothing
+  // changed reuses it, so a first try that did arrive is recognised instead of saved twice.
+  const unsentInspectionRef = useRef<{ entry: QueuedInspection; fingerprint: string } | null>(null)
 
   // User state
   const [userId, setUserId] = useState<string | null>(null)
@@ -837,7 +840,16 @@ export default function RecordsPage() {
   ) => {
     if (!userId) return
     const selectedHive = hives.find(h => h.id === formData.hive_id)
-    const entry: QueuedInspection = {
+    const fingerprint = JSON.stringify({
+      userId,
+      submitData,
+      photos: imageFiles.map(file => [file.name, file.size, file.lastModified]),
+      followUpTasks,
+      superDelta: formData.honey_supers,
+    })
+    const unsent = unsentInspectionRef.current
+    unsentInspectionRef.current = null
+    const entry: QueuedInspection = unsent && unsent.fingerprint === fingerprint ? unsent.entry : {
       id: crypto.randomUUID(),
       userId,
       queuedAt: Date.now(),
@@ -864,8 +876,11 @@ export default function RecordsPage() {
 
     if (result === TIMED_OUT || result.status === 'waiting') {
       if (!kept) {
-        // The form stays open, and a retry starts afresh, so its uploaded photos would be left behind.
-        await discardQueuedInspection(entry)
+        // Nothing is stored on this device, so the work stays in the open form. The attempt is
+        // remembered, not discarded: the row may have arrived with only its answer lost, so its
+        // photos must stay, and Save again with nothing changed reuses its id rather than adding
+        // a second inspection. A changed form starts afresh, and its earlier photos are left.
+        unsentInspectionRef.current = { entry, fingerprint }
         toast.error(INSPECTION_NO_SIGNAL_MESSAGE)
         return
       }
@@ -1694,7 +1709,9 @@ export default function RecordsPage() {
           <div className="flex items-center gap-3 min-w-0">
             <div className="hidden flex-shrink-0 md:block">
               <IconButton
-                onClick={() => router.push('/dashboard')}
+                onClick={async () => {
+                  if (await confirmDiscardOpenForm()) router.push('/dashboard')
+                }}
                 aria-label="Back to dashboard"
               >
                 <Home size={24} />

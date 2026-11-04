@@ -12,8 +12,9 @@ This keeps work safe. It does not send it. An inspection only reaches HiveCraic 
 ## 2. Behaviour
 
 * **What is kept:** one draft per user: readings, notes, follow-up tasks, photos and the current step.
-* **When:** 800ms after each change, when the app leaves the screen, and just before a save starts.
-* **Coming back:** the dashboard and Records show an "Unfinished inspection" notice. Opening a new inspection offers Carry on or Start again before any fields appear, so a new inspection can never overwrite an unseen draft.
+* **When:** 800ms after each change, when the app leaves the screen, when the form closes with a write still waiting (browser Back, another page), and just before a save starts.
+* **When it can't be kept:** one line under the step bar says so. If nothing could be kept: "This phone could not keep a copy of this inspection. Save it before you close the app." If it was kept without its photos: "Your photos are not kept on this phone until you save. Notes and readings are." The line goes once a later copy is kept in full. The Carry on panel adds "Photos were not kept." for a copy kept without them.
+* **Coming back:** the dashboard and Records show an "Unfinished inspection" notice. Opening a new inspection offers Carry on or Start again before any fields appear, so a new inspection can never overwrite an unseen draft. Start again asks first ("Delete the unfinished inspection?", Keep it / Delete it).
 * **Editing a saved inspection:** keeps no draft.
 
 ### When a draft is removed
@@ -21,7 +22,7 @@ This keeps work safe. It does not send it. An inspection only reaches HiveCraic 
 | Event | Removed? |
 |---|---|
 | Inspection saved | Yes |
-| Discard confirmed, or Start again | Yes |
+| Discard confirmed (Close, Cancel, a link, or the Records Home button), or Start again confirmed | Yes |
 | Deliberate log-out | That user's draft only, after a warning |
 | Password reset, account deletion | Yes |
 | Session expires, or the account check signs the user out | **No.** An expired session in a field must not cost anyone their work |
@@ -29,7 +30,7 @@ This keeps work safe. It does not send it. An inspection only reaches HiveCraic 
 ## 3. Technical Design
 
 * `src/lib/local-db.ts`: the Dexie database, opened on first use. Phase G's outbox belongs here too.
-* `src/lib/inspection-draft.ts`: all draft reads and writes. Nothing in it throws. If storage is full, the draft is retried without photos.
+* `src/lib/inspection-draft.ts`: all draft reads and writes. Nothing in it throws. If storage is full, the draft is retried without photos, and the number left out is recorded (`photosLeftOut`). `saveInspectionDraft` returns `saved`, `saved-without-photos` or `failed`.
 * `src/components/records/forms/InspectionForm.tsx`: autosave and restore.
 * `src/components/records/UnfinishedInspectionNotice.tsx`: the notice.
 * **Database (MCP server):** no changes. Drafts live only in the browser's IndexedDB.
@@ -40,6 +41,7 @@ This keeps work safe. It does not send it. An inspection only reaches HiveCraic 
 * **Restoring must mark each fill-in as done** (`resumeDraft`). Otherwise the filter, right-sized frames, super fullness and scale effects run on the restored hive and overwrite what was entered. A new fill-in effect needs the same treatment.
 * **Autosave stops during a save** (`!submitting`). A write landing after the page clears the draft would offer a saved inspection back, and invite a duplicate.
 * **Autosave waits for a pending draft to be dealt with,** so it cannot overwrite one.
+* **A clear wins over a write queued before it** (`inspectionDraftClearCount`). The form notes the count when its content changes and writes nothing if a clear has happened since. Without this, the write made when the form closes could bring back a draft that was just discarded.
 
 ## 4. Saving on a Poor Signal
 
@@ -56,6 +58,7 @@ If the row saved but a later step failed, the form closes and says the inspectio
 
 * **A timed-out save may still have arrived.** The message says to look in Records first. Phase G removes this risk with client-generated ids.
 * **iOS can evict local storage,** so a draft is a safety net and not a long-term copy.
+* **A stored draft that can't be read** is treated as no draft and is replaced by the next one. The app could neither show nor recover it, so keeping it would only stop new drafts being kept.
 * **Large photos:** each autosave writes the photos again. Check that it stays smooth on a real phone with several large photos. If not, store photos separately from the readings.
 * **Only inspections have drafts.** Other record forms keep their dirty-form guards only.
 * **A stored File on older iOS versions** has not been tested on a device.
@@ -64,7 +67,9 @@ If the row saved but a later step failed, the form closes and says the inspectio
 
 - [ ] Add readings and a photo, kill the app, reopen: the notice appears, and Carry on restores everything including the photo and step.
 - [ ] Restored values are not overwritten by last visit's frames, supers or the scale weight.
-- [ ] Start again removes the draft, and the notice does not come back.
+- [ ] Start again asks first. Keep it leaves the draft; Delete it removes it, and the notice does not come back.
+- [ ] Type a note and immediately use the phone's Back: Carry on brings back the note as typed.
+- [ ] On a desktop, open a new inspection, type, then the Records Home button: it asks before leaving.
 - [ ] Save an inspection: no notice afterwards.
 - [ ] Airplane mode, tap Save: clear message, nothing lost.
 - [ ] Very weak signal: Save gives up within the limits above.

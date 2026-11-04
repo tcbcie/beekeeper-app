@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>WP02 protect unfinished work</title>
+</head>
+<body>
+<h1>WP02 – Protect unfinished observations</h1>
+<p>Plan: <code>docs/features/mobile-first-implementation-plan.html</code> (WP02 and its refinements). Baseline: <code>docs/features/mobile-first-wp01-baseline.md</code> (S01, S02, S09, S10, S11, S15, S17).</p>
+<p>Six small changes in three files, plus one optional field on the stored draft. No database change. No wording changes beyond the one false message (the rest belongs to WP03).</p>
+
+<h2>Changes</h2>
+<ol>
+  <li><strong>Say when the phone could not keep a copy</strong> (S10, S11).
+    <ul>
+      <li><code>src/lib/inspection-draft.ts</code>: <code>saveInspectionDraft</code> returns <code>'saved'</code>, <code>'saved-without-photos'</code> or <code>'failed'</code> instead of nothing. A draft kept without its photos records how many were left out (new optional <code>photosLeftOut</code> on the draft type in <code>src/lib/local-db.ts</code>; old drafts simply lack it, so no Dexie version change).</li>
+      <li><code>InspectionForm.tsx</code>: when the last write was not complete, one line under the stepper says so. "This phone could not keep a copy of this inspection. Save it before you close the app." or "Your photos are not kept on this phone until you save. Notes and readings are." It clears when a later write succeeds.</li>
+      <li>Resume panel: adds "Photos were not kept." when <code>photosLeftOut</code> is set.</li>
+    </ul>
+  </li>
+  <li><strong>Start again asks first</strong> (S09). <code>InspectionForm.tsx</code> <code>startAgain</code> uses the form's existing <code>confirmDialog</code>: "Delete the unfinished inspection? Its notes and readings will be lost" (plus "and N photos" when there are some), with Keep it / Delete it. Keep it leaves the panel as it was.</li>
+  <li><strong>The Records Home button asks first</strong> (S01, S02). <code>records/page.tsx</code>: the button awaits the existing <code>confirmDiscardOpenForm</code>, the same check as Close and the sidebar links. That function already clears the draft on Discard and does nothing when the form is clean.</li>
+  <li><strong>Leaving never drops the last few seconds of typing</strong> (S01 detail, browser Back). <code>InspectionForm.tsx</code>: the 800 ms autosave timer is kept in a ref, and when the form closes with a write still pending, it is written straight away. Saves and Discard are unaffected: a save writes and stops autosave first, and Discard waits on the dialog for longer than 800 ms, so nothing is pending by then.</li>
+  <li><strong>A save that could not be stored or sent no longer deletes photos or risks a duplicate</strong> (S15, S17). <code>records/page.tsx</code> <code>saveNewInspection</code>:
+    <ul>
+      <li>That case no longer calls <code>discardQueuedInspection</code>. That call deleted uploaded photos even when the row might have arrived.</li>
+      <li>The unsent attempt is remembered while the form is open. Tapping Save again with nothing changed reuses the same inspection id, task ids and uploaded photos. If the first try did arrive, the server refuses the repeat as a duplicate, and the existing code already counts that as arrived. If anything was changed, it starts afresh, as today.</li>
+    </ul>
+  </li>
+  <li><strong>The false "still here on this phone" message</strong> (V02). It is used for new inspections and for edits, and in both cases what is true is that the work is still in the open form. New text: "The inspection could not be sent. It is still in the form, so keep this screen open and tap Save again when you have signal."</li>
+</ol>
+
+<h2>Not changed, and why</h2>
+<ul>
+  <li><strong>An unreadable stored draft</strong> (S12): the app cannot show or recover it, so keeping it would only stop new drafts being kept. It stays as it is; the reason is noted in the docs.</li>
+  <li><strong>Browser and swipe Back</strong> stay unguarded by design (the plan treats them separately). Change 4 means the draft is complete when they are used.</li>
+  <li><strong>Edits keep no draft</strong>, as today (the plan assesses edit recovery separately). Change 3 protects them from the Home button.</li>
+  <li><strong>"On this phone" on a desktop</strong> and the other outbox wording: WP03.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ 1. Draft write result, the in-form line, and the resume panel note</li>
+  <li>☑ 2. Start again confirmation</li>
+  <li>☑ 3. Home button confirmation</li>
+  <li>☑ 4. Write the pending draft on close</li>
+  <li>☑ 5. Keep the photos and reuse the id after an unstored, unsent save</li>
+  <li>☑ 6. Correct the no-signal message</li>
+  <li>☑ Update <code>docs/features/inspection-drafts.md</code>, <code>docs/features/inspection-outbox.md</code>, the WP01 baseline (expected results) and WP02 progress in both plans</li>
+  <li>☑ Type check, lint the changed files, run the existing records and draft tests</li>
+  <li>☑ QA audit (<code>qa-engineer</code>)</li>
+  <li>☐ Ask you to test the build, and list what to check on a phone</li>
+  <li>☑ Review section below</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned in four files, plus a one-line hardening in <code>src/lib/inspection-outbox.ts</code> found by the QA audit.</p>
+<ul>
+  <li><code>inspection-draft.ts</code>: the save reports its result; a copy kept without photos records how many; a clear counter stops a write queued before a Discard or Start again from bringing the draft back. The close-time write depends on this.</li>
+  <li><code>InspectionForm.tsx</code>: the autosave timer is kept in a ref and written when the form closes; a status line under the step bar; Start again asks first; the Carry on panel says when photos were not kept.</li>
+  <li><code>records/page.tsx</code>: Home goes through the same discard check as Close; an unstored, unsent save is remembered and reused if Save is tapped again unchanged, and its photos are no longer deleted; the no-signal message is true for new and edited inspections.</li>
+  <li>QA audit: one High. An attempt that is never stored is retried from memory, and the super change was only marked done in memory after the call. If the call threw, a retry could have added the supers twice. It is now marked done before the call, in memory as on the device. No other Critical or High findings. Low notes: a double tap on Start again could open the question twice; a live line added to the page may not be read out by every screen reader.</li>
+  <li>Checks: type check clean, lint clean on the changed files, 55 existing tests pass (records forms, navigation guard, mobile screen rules). No build run.</li>
+  <li>Docs: <code>inspection-drafts.md</code>, <code>inspection-outbox.md</code>, the WP01 baseline (expected results) and WP02 progress in both plans.</li>
+</ul>
+<p>Waiting for your build test.</p>
+</body>
+</html>

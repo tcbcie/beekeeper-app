@@ -35,7 +35,7 @@ A new inspection can be saved with no signal. It stays on the phone, shows as wa
 
 * **The id is chosen on the phone.** A repeat is refused with `23505`, which means an earlier try arrived and only its answer was lost, so it counts as success. Never drop this.
 * **Record progress after each step** (`uploadedUrls`, `rowSaved`), and always send from the stored entry, never a copy held on screen. A missing entry means another tab finished it.
-* **The super change is attempted at most once,** because it adds to the count. It is marked done before the call. If the answer is lost, the beekeeper is warned to check, rather than risking it being counted twice.
+* **The super change is attempted at most once,** because it adds to the count. It is marked done before the call, on the device and in memory (an entry that could not be stored is retried from memory). If the answer is lost, the beekeeper is warned to check, rather than risking it being counted twice.
 * **Only a definite refusal is a failure** (`isRefusal`). A lost connection, an expired session, a server under strain and anything unrecognised stay queued. Losing an inspection is worse than retrying one.
 * **Don't discard a refused entry silently.** It stays until the beekeeper chooses.
 * **Sends can overlap,** from the form and the runner or from another tab. `inFlight` and `navigator.locks` prevent this.
@@ -51,7 +51,7 @@ A new inspection can be saved with no signal. It stays on the phone, shows as wa
 | Password reset, account deletion | Yes |
 | Session expires | **No.** They send after the next sign-in as the same user |
 
-During impersonation nothing is queued, so a save with no signal shows an error and the form stays open.
+During impersonation nothing is queued, so a save with no signal shows an error and the form stays open. Save again behaves as in "Storage full" below.
 
 ## 5. Edge Cases & Risks
 
@@ -61,7 +61,10 @@ During impersonation nothing is queued, so a save with no signal shows an error 
 * **Weather** is recorded only if sent within two hours of saving, as later it would be the wrong weather.
 * **Waiting inspections aren't in the lists** or in "last inspected" until they arrive. Prefills for the next visit won't include them either.
 * **Opening with no signal:** Dashboard, Hives, Records and Tasks open if the app has been used since the last update. Hive and Apiary detail open only if visited before.
-* **Storage full:** if it can't be kept on the phone, it isn't treated as saved. The form stays open with an error.
+* **Storage full:** if it can't be kept on the phone, it isn't treated as saved. The form stays open with "The inspection could not be sent. It is still in the form, so keep this screen open and tap Save again when you have signal." The attempt is remembered while the page is open, not discarded (WP02, 04/11/2026):
+  * its uploaded photos are kept, because the row may have arrived with only the answer lost;
+  * Save again with nothing changed reuses the same inspection id, task ids and uploaded photos, so a first try that did arrive is recognised as a duplicate and counted as arrived, not saved twice;
+  * if the form was changed in between, it starts afresh. A first try that did arrive then remains as well, and its photos are left in place.
 
 ## 6. Testing Checklist (real phone)
 
