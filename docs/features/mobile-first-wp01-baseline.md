@@ -171,3 +171,12 @@ Layout changes on the access screens, secondary forms, Hives top bar and the pho
 ### WP08 – 05/11/2026
 
 Presentation and wording only; no WP01 scenario changes. Hive cards put the hive first with an outlined Overview & Records; login credits moved below the sign-in methods; Mel's spoken name says what Mel is.
+
+### WP09 – 05/11/2026 (not yet re-run)
+
+No WP01 scenario changes its steps. What a re-run should now show:
+
+- Hives (November to February): no "Need inspection" in the summary and grey inspection badges; from March, "Need inspection (over 14 days)" matches the red badges exactly.
+- Badges read "Inspected N days ago" and change at local midnight, not UTC (V11).
+- DB01 value table, stores: a new inspection starts "Not recorded" and stays NULL unless the slider is moved; the "Last reading" hint shows only readings since 1 August (V12).
+- Dashboard: high varroa and task rows give a date; a shared apiary's page no longer says "no recorded concerns" (V13).

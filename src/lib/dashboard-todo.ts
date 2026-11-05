@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, parseLocalDate } from '@/lib/date-utils'
+import { daysSince, getCurrentDate, parseLocalDate } from '@/lib/date-utils'
 import { formatQueenlessShortLabel } from '@/lib/queenless'
 import { isGettingLight, isPossibleSwarm, SWARM_DROP_WINDOW_HOURS } from '@/lib/scale-alerts'
 import type { DashboardApiary, DashboardScaleSummary } from '@/types/dashboard'
@@ -33,6 +33,14 @@ export function formatDayMonth(date: string | null | undefined): string | null {
   return parsed.toLocaleDateString('en-IE', { day: 'numeric', month: 'long' })
 }
 
+/** "due today", "was due 28 August" or "due 28 August", for a task's date */
+export function dueText(date: string): string {
+  const today = getCurrentDate()
+  if (date === today) return 'due today'
+  const day = formatDayMonth(date) ?? date
+  return date < today ? `was due ${day}` : `due ${day}`
+}
+
 // The RPC payload is jsonb at the wire boundary: a stale or partial payload must not crash the list
 function listOf<T>(value: T[] | undefined | null): T[] {
   return Array.isArray(value) ? value : []
@@ -43,11 +51,7 @@ export const VISIT_DUE_AFTER_DAYS = 14
 
 /** Days since the apiary's latest record of any kind (a feed or treatment is a visit too), or null */
 export function daysSinceLastVisit(apiary: DashboardApiary): number | null {
-  const date = apiary.lastVisitDate ?? apiary.lastInspectionDate
-  if (!date) return null
-  const last = parseLocalDate(date)
-  if (Number.isNaN(last.getTime())) return null
-  return Math.max(differenceInCalendarDays(last, new Date()), 0)
+  return daysSince(apiary.lastVisitDate ?? apiary.lastInspectionDate)
 }
 
 /** March to October: from November to February beekeepers rightly stay away for weeks (owner, 30 October 2026) */
@@ -68,6 +72,12 @@ function describeWhen(iso: string): string {
   const hour = date.getHours()
   const part = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening'
   return `${date.toLocaleDateString('en-IE', { weekday: 'long' })} ${part}`
+}
+
+/** "4.2% at the check on 28 October"; older payloads have no date and keep the 30-day wording */
+function varroaDetail(rate: number | null | undefined, checkDay: string | null): string {
+  if (typeof rate !== 'number') return 'over 3% in the last 30 days'
+  return checkDay ? `${rate}% at the check on ${checkDay}` : `${rate}% at a check in the last 30 days`
 }
 
 const inspectHiveHref = (hiveId: string) => `/dashboard/records?hive=${hiveId}&type=inspection`
@@ -128,7 +138,7 @@ export function buildApiaryTodos(apiary: DashboardApiary, scales?: DashboardScal
       kind: 'Recorded',
       tone: 'amber',
       title: `Hive ${hive.number}: high varroa`,
-      detail: typeof hive.rate === 'number' ? `${hive.rate}% at a check in the last 30 days` : 'over 3% in the last 30 days',
+      detail: varroaDetail(hive.rate, formatDayMonth(hive.checkDate)),
       action: { label: 'Open', href: openHiveHref(hive.id) },
     })
   }
@@ -161,12 +171,13 @@ export function buildApiaryTodos(apiary: DashboardApiary, scales?: DashboardScal
   const dueCount = Math.max(apiary.dueTaskCount ?? 0, dueTasks.length)
   if (dueCount > 0) {
     const others = dueCount - 1
+    const firstDue = dueTasks[0]?.dueDate ? dueText(dueTasks[0].dueDate) : 'due'
     items.push({
       key: `${apiary.id}:tasks`,
       kind: 'Task',
       tone: 'blue',
       title: dueTasks[0]?.title || `${dueCount} tasks due`,
-      detail: others > 0 ? `due, and ${others} more` : 'due',
+      detail: others > 0 ? `${firstDue}, and ${others} more` : firstDue,
       // The count is the Tasks page "Due" view, so the link opens that view for this apiary
       action: { label: 'Tasks', href: `/dashboard/tasks?apiary=${apiary.id}&view=due` },
     })

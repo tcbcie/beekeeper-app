@@ -172,6 +172,9 @@ export function useHivesList() {
  .select(columns)
  .in('hive_id', chunk)
  .order(dateColumn, { ascending: false })
+ // Two records on the same day: the one entered last is the latest (DB02). The id only keeps
+ // the order stable when the entry time is missing too.
+ .order('created_at', { ascending: false, nullsFirst: false })
  .order('id', { ascending: true })
  // The column list is a parameter, so the client can't type the rows; T names them.
  .range(from, to) as unknown as PromiseLike<{ data: T[] | null; error: unknown }>))

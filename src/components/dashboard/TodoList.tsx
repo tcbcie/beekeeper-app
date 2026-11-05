@@ -105,6 +105,8 @@ export default function TodoList({ apiaries, oldQueens, scalesByApiary }: TodoLi
         </p>
       ) : (
         <div className="mt-1">
+          {/* What "N jobs" counts (DB03): rows, with an apiary's due tasks sharing one */}
+          <p className="text-sm text-text-secondary">Each line is one job. Due tasks at an apiary share one line.</p>
           {shown.map(group => (
             <section key={group.key} aria-label={group.heading}>
               <div className="mt-3 flex items-center justify-between gap-2">

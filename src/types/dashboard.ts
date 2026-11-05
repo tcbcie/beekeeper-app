@@ -142,7 +142,7 @@ export interface DashboardApiary {
   /** A varroa check over 3% in the last 30 days, highest first */
   highVarroaHives?: DashboardAttentionHive[]
   /** The first three tasks counted by dueTaskCount */
-  dueTasks?: { id: string; title: string }[]
+  dueTasks?: { id: string; title: string; dueDate?: string | null }[]
 }
 
 export interface DashboardAttentionHive {
@@ -153,6 +153,8 @@ export interface DashboardAttentionHive {
   lastQueenDate?: string | null
   broodlessSince?: string | null
   rate?: number | null
+  /** High varroa: local date of the highest check (WP09, 05/11/2026) */
+  checkDate?: string | null
 }
 
 export interface DashboardStats {

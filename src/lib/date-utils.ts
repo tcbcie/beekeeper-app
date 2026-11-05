@@ -164,6 +164,19 @@ export function differenceInCalendarDays(fromDate: Date, toDate: Date): number {
 }
 
 /**
+ * Whole local calendar days from a date to today, never negative. Read as a local day, not UTC
+ * midnight, so the count does not drop by one just after midnight in summer time.
+ * @param dateString - YYYY-MM-DD
+ * @returns Days, or null when there is no valid date
+ */
+export function daysSince(dateString: string | null | undefined): number | null {
+  if (!dateString) return null
+  const date = parseLocalDate(dateString)
+  if (Number.isNaN(date.getTime())) return null
+  return Math.max(differenceInCalendarDays(date, new Date()), 0)
+}
+
+/**
  * Format a local date-only string without letting the browser treat it as UTC
  * @param dateString - YYYY-MM-DD
  * @param locale - Output locale

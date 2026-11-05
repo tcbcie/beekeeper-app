@@ -1,7 +1,6 @@
 'use client'
 
-import { formatDayMonth } from '@/lib/dashboard-todo'
-import { STORES_BAND_TEXT_CLASSES, storesBand, storesWord } from '@/lib/stores-level'
+import { formatStoresDate, STORES_BAND_TEXT_CLASSES, storesBand, storesWord } from '@/lib/stores-level'
 
 interface StoresDialProps {
   /** Stores level, 0-100, or null when there is no reading for this winter. */
@@ -32,7 +31,9 @@ export default function StoresDial({ level, date }: StoresDialProps) {
   const angle = Math.PI * (1 - clamped / 100)
   const needleX = (50 + 30 * Math.cos(angle)).toFixed(2)
   const needleY = (50 - 30 * Math.sin(angle)).toFixed(2)
-  const dateLabel = formatDayMonth(date)
+  // A beekeeper's estimate on the day of the inspection, not a live reading
+  const estimated = formatStoresDate(date)
+  const estimatedText = estimated ? `Estimated ${estimated}` : 'Estimated at inspection'
 
   return (
     <div className="flex items-center gap-2">
@@ -42,7 +43,7 @@ export default function StoresDial({ level, date }: StoresDialProps) {
         viewBox="0 0 100 60"
         className="shrink-0"
         role="img"
-        aria-label={`Stores ${clamped} percent, ${word}`}
+        aria-label={`Stores ${clamped} percent, ${word}. ${estimatedText}`}
       >
         <path d="M10 50 A40 40 0 0 1 37.64 11.96" fill="none" strokeWidth="10" className="stroke-red-600 dark:stroke-red-500" />
         <path d="M37.64 11.96 A40 40 0 0 1 82.36 26.49" fill="none" strokeWidth="10" className="stroke-amber-600 dark:stroke-amber-500" />
@@ -54,7 +55,7 @@ export default function StoresDial({ level, date }: StoresDialProps) {
         <span className={`block font-bold tabular-nums ${STORES_BAND_TEXT_CLASSES[storesBand(clamped)]}`}>
           {clamped}% &middot; {word}
         </span>
-        <span className="block text-text-tertiary">Stores{dateLabel ? `, ${dateLabel}` : ''}</span>
+        <span className="block text-text-tertiary">Stores · {estimatedText}</span>
       </span>
     </div>
   )

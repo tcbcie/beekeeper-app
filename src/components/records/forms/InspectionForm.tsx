@@ -19,7 +19,7 @@ import InspectionStepper, { INSPECTION_STEPS } from './InspectionStepper'
 import { DISCARD_INSPECTION_PROMPT } from '@/lib/inspection-discard'
 import { clearInspectionDraft, describeDraftSavedAt, inspectionDraftClearCount, inspectionDraftOwner, loadInspectionDraft, saveInspectionDraft, type DraftSaveResult } from '@/lib/inspection-draft'
 import type { InspectionDraft, InspectionDraftContent } from '@/lib/local-db'
-import { STORES_BAND_TEXT_CLASSES, storesBand, storesWord } from '@/lib/stores-level'
+import { STORES_BAND_TEXT_CLASSES, STORES_BANDS_TEXT, storesBand, storesWord } from '@/lib/stores-level'
 import type { StoresBand } from '@/lib/stores-level'
 
 interface InspectionFormProps {
@@ -2027,8 +2027,9 @@ export default function InspectionForm({
         </div>
         )}
 
-        {/* Stores Level Section. Starts unrecorded: stores change between visits, so the last
-            reading is shown for reference and only becomes this inspection's value on a tap. */}
+        {/* Stores Level Section. Starts unrecorded, like super fullness: nothing is copied from the
+            last visit and there is no starting value, so moving the slider is the only way to record
+            one (owner decision D2, 05/11/2026). The last reading is shown for reference. */}
         {step === 2 && (
           <div className="md:col-span-2 rounded-lg border border-border p-4">
             <div className="flex items-start justify-between gap-3">
@@ -2036,51 +2037,51 @@ export default function InspectionForm({
                 <h4 className="text-sm font-semibold text-foreground">Stores Level</h4>
                 <p className="mt-1 text-sm text-text-tertiary">100% means enough to get through winter, about 18 kg.</p>
               </div>
-              {formData.stores_level !== null && (
+              {formData.stores_level !== null ? (
                 <span className={`shrink-0 text-lg font-bold tabular-nums ${STORES_BAND_TEXT_CLASSES[storesBand(formData.stores_level)]}`}>
                   {formData.stores_level}% &middot; {storesWord(formData.stores_level)}
+                </span>
+              ) : (
+                <span className="shrink-0 rounded-full border border-border px-3 py-1 text-sm font-medium text-text-secondary">
+                  Not recorded
                 </span>
               )}
             </div>
 
-            {formData.stores_level === null ? (
-              <div className="mt-3 flex items-center justify-between gap-2">
-                <p className="text-sm font-medium text-text-secondary">Not recorded</p>
-                <Button
-                  unstyled
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, stores_level: lastStoresReading?.level ?? 50 }))}
-                  className="min-h-[48px] flex-shrink-0 px-4 rounded-md border border-border bg-surface-elevated text-sm font-semibold text-text-secondary hover:bg-surface-secondary hover:text-text-primary whitespace-nowrap transition-colors touch-manipulation"
-                >
-                  Record stores
-                </Button>
+            <div className="mt-3">
+              {formData.stores_level === null && (
+                <p className="text-sm text-text-secondary">Move the slider to record stores.</p>
+              )}
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={formData.stores_level ?? 0}
+                onChange={(e) => {
+                  const level = Number(e.target.value)
+                  setFormData(prev => ({ ...prev, stores_level: level }))
+                }}
+                aria-label="Stores level percentage"
+                aria-valuetext={formData.stores_level === null
+                  ? 'Not recorded'
+                  : `${formData.stores_level} percent, ${storesWord(formData.stores_level)}`}
+                className={`h-12 w-full cursor-pointer touch-manipulation ${formData.stores_level === null
+                  ? 'accent-text-tertiary'
+                  : storesSliderClasses[storesBand(formData.stores_level)]}`}
+              />
+              <div className="flex h-2 overflow-hidden rounded-full" aria-hidden="true">
+                <div className="w-2/5 bg-red-600" />
+                <div className="w-2/5 bg-amber-600" />
+                <div className="w-1/5 bg-green-600" />
               </div>
-            ) : (
-              <div className="mt-3">
-                <input
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={5}
-                  value={formData.stores_level}
-                  onChange={(e) => {
-                    const level = Number(e.target.value)
-                    setFormData(prev => ({ ...prev, stores_level: level }))
-                  }}
-                  aria-label="Stores level percentage"
-                  aria-valuetext={`${formData.stores_level} percent, ${storesWord(formData.stores_level)}`}
-                  className={`h-12 w-full cursor-pointer touch-manipulation ${storesSliderClasses[storesBand(formData.stores_level)]}`}
-                />
-                <div className="flex h-2 overflow-hidden rounded-full" aria-hidden="true">
-                  <div className="w-2/5 bg-red-600" />
-                  <div className="w-2/5 bg-amber-600" />
-                  <div className="w-1/5 bg-green-600" />
-                </div>
-                <div className="mt-1 flex text-sm text-text-tertiary" aria-hidden="true">
-                  <span className="w-2/5">0</span>
-                  <span className="w-2/5">40</span>
-                  <span className="flex w-1/5 justify-between"><span>80</span><span>100</span></span>
-                </div>
+              <div className="mt-1 flex text-sm text-text-tertiary" aria-hidden="true">
+                <span className="w-2/5">0</span>
+                <span className="w-2/5">40</span>
+                <span className="flex w-1/5 justify-between"><span>80</span><span>100</span></span>
+              </div>
+              <p className="mt-1 text-sm text-text-secondary">{STORES_BANDS_TEXT}</p>
+              {formData.stores_level !== null && (
                 <div className="mt-2 flex justify-end">
                   <Button
                     unstyled
@@ -2092,8 +2093,8 @@ export default function InspectionForm({
                     Clear
                   </Button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {lastStoresReading && (
               <p className="mt-2 text-sm text-text-tertiary">

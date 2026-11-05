@@ -6,6 +6,8 @@ import { Edit2, Trash2, MapPin, Map, Camera, Clock } from 'lucide-react'
 import type { Apiary } from '@/types/apiary'
 import Button from '@/components/ui/Button'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
+import { daysSince } from '@/lib/date-utils'
+import { INSPECTION_BADGE_CLASSES, inspectedAgoText, inspectionAgeTone } from '@/lib/inspection-age'
 
 interface ApiaryCardProps {
   apiary: Apiary
@@ -23,9 +25,8 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
   const router = useRouter()
   const normalisedImageUrl = normaliseStoragePublicUrl(apiary.image_url)
 
-  const daysSinceInspection = apiary.last_inspection_date
-    ? Math.floor((Date.now() - new Date(apiary.last_inspection_date).getTime()) / (1000 * 60 * 60 * 24))
-    : null
+  // Local calendar days and the Hives badge's rule (src/lib/inspection-age.ts)
+  const daysSinceInspection = daysSince(apiary.last_inspection_date)
 
   return (
     <div
@@ -115,23 +116,12 @@ export default function ApiaryCard({ apiary, onEdit, onDelete, onImageClick, isR
             {apiary.hive_count} hive{apiary.hive_count !== 1 ? 's' : ''}
           </span>
         )}
-        {daysSinceInspection !== null ? (
-          <span className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded-full border ${
-            daysSinceInspection < 7
-              ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
-              : daysSinceInspection < 14
-              ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700'
-              : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700'
-          }`}>
-            <Clock size={10} />
-            Inspected {daysSinceInspection}d ago
+        {(daysSinceInspection !== null || (apiary.hive_count ?? 0) > 0) && (
+          <span className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded-full border ${INSPECTION_BADGE_CLASSES[inspectionAgeTone(daysSinceInspection)]}`}>
+            <Clock size={14} aria-hidden="true" />
+            {inspectedAgoText(daysSinceInspection)}
           </span>
-        ) : apiary.hive_count && apiary.hive_count > 0 ? (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-sm font-medium bg-surface-secondary text-text-secondary rounded-full border border-border">
-            <Clock size={10} />
-            Never inspected
-          </span>
-        ) : null}
+        )}
       </div>
 
       {apiary.notes && (

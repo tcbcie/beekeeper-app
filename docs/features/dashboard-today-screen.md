@@ -65,8 +65,10 @@ Data: one Open-Meteo hourly forecast (temperature, precipitation probability, pr
 | March to October: apiary with no record of any kind for more than 14 days ("Visit Home · last visit 20 days ago"). Off from November to February, when beekeepers rightly stay away; the greeting then makes no claim about visits | red | Inspect (new inspection with the apiary chosen) |
 | Hive marked queenless (one line per hive, with reason) | red | Open hive |
 | March to October: hive opened in the last 21 days with no queen or eggs seen in that time, or broodless 21 days (one line per hive). A hive left closed is deliberate and is not listed | amber | Inspect that hive |
-| Hive with a varroa check over 3% in 30 days (one line per hive, with the rate) | amber | Open hive |
-| Tasks due today or earlier, rearing-batch milestones left out (first title, "and N more") | blue | Tasks (Tasks page, "Due" view, that apiary) |
+| Hive with a varroa check over 3% in 30 days (one line per hive, with the highest rate and its date: "4.2% at the check on 28 October") | amber | Open hive |
+| Tasks due today or earlier, rearing-batch milestones left out (first title, its date and "and N more": "was due 1 November, and 2 more") | blue | Tasks (Tasks page, "Due" view, that apiary) |
+
+Under the heading, one line says what a job is: "Each line is one job. Due tasks at an apiary share one line." The count itself is unchanged: each line counts once, including the visit suggestion, each hive concern and up to two scale alerts per scale hive (WP09, 05/11/2026). Queenless rows carry no date because they are the hive's current state, not an old record.
 
 Every job shows where it comes from, before its detail (30 October 2026): **Recorded** (the user entered it), **Scale** (a device measured it), **Task** (scheduled) or **Suggested** (the app is inferring). A missing record is never worded as a problem.
 
@@ -75,6 +77,10 @@ Every job shows where it comes from, before its detail (30 October 2026): **Reco
 A beekeeper who visits an apiary and leaves a hive closed does so on purpose, so hives skipped on a visit are never listed or counted. "Oldest check" was removed because one such hive set the figure for the whole apiary. The dashboard now reports the **last visit**: the latest record of any kind at the apiary (inspection, feeding, varroa treatment or check, harvest), from `lastVisitDate` (`supabase/migrations/20261030090000_dashboard_last_visit.sql`, applied as `dashboard_last_visit`). `overdueHives`, `oldestInspectionDate`, `uninspectedHiveCount` and `overdueInspectionHiveCount` are still returned but no longer shown.
 
 ## 5. Database (MCP server)
+
+WP09 (05/11/2026): `supabase/migrations/20261105120000_dashboard_todo_dates.sql`, applied as `dashboard_todo_dates`. Each `highVarroaHives` entry adds `checkDate` (the local date of its highest check in the last 30 days) and each `dueTasks` entry adds `dueDate`. Additive; grants unchanged. Older payloads without them keep the earlier wording.
+
+On an apiary's own page, a shared apiary has no concerns to list, because the overview covers only your own apiaries. It now says "Hive concerns for a shared apiary show on its owner's dashboard." and, with no tasks, "No open tasks here." instead of claiming there are no concerns (V13).
 
 `supabase/migrations/20261029150000_dashboard_today_screen.sql`, applied as `dashboard_today_screen`. `get_dashboard_overview` additionally returns `firstName` and, per apiary, `overdueHives`, `queenlessHives`, `queenCheckHives`, `highVarroaHives` and `dueTasks` (the hives behind the existing counts). Additive; grants unchanged (authenticated, service_role).
 

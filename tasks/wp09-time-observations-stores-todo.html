@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>WP09 time, observations and stores</title>
+</head>
+<body>
+<h1>WP09 – Clarify time, observations and stores meaning</h1>
+<p>Plan: <code>docs/features/mobile-first-implementation-plan.html</code> (WP09, refinements, owner decisions 2 and 3). Findings: D02, H01, H07, V11–V13, DB02–DB04. Thresholds stay as they are (stores 40/80, varroa 3%, visit 14 days), and no task or record is read differently. One optional database change is in decision D3.</p>
+
+<h2>What the code does today</h2>
+<ul>
+  <li><strong>Three "overdue" rules.</strong>
+    <ul>
+      <li>Hives "Need Inspection (14+ days)": 14 × 24 hours, inspections only, all year, dates read as UTC.</li>
+      <li>Dashboard Visit: more than 14 calendar days, any record, off November to February.</li>
+      <li>Hive badge "23d": UTC as well, so it reads a day low just after midnight in summer time. It is red from 14 days.</li>
+    </ul>
+  </li>
+  <li><strong>Same-day records</strong> (DB02): the "latest" of two records on the same day is picked by ID, which is effectively random.</li>
+  <li><strong>Stores.</strong>
+    <ul>
+      <li>The hive card dial reads "Stores, 28 August", with no year and no word saying it is a beekeeper's estimate.</li>
+      <li>List rows show "Stores: Low" with no date.</li>
+      <li>On a new inspection, "Last reading" can come from any past year (V12), and "Record stores" starts the slider at that reading, or at 50.</li>
+    </ul>
+  </li>
+  <li><strong>To do</strong> (D02, DB03).
+    <ul>
+      <li>High varroa says "in the last 30 days" and the task row says "due", with no date. The database does not send those dates to the app.</li>
+      <li>Queenless is a current flag on the hive, with no date stored anywhere.</li>
+      <li>"N jobs" counts each row, and all due tasks at one apiary share a single row.</li>
+    </ul>
+  </li>
+  <li><strong>Shared apiary page</strong> (V13): concerns come only from the owner's own overview, so a shared apiary can say "Nothing to do here: no open tasks or recorded concerns" when there may be concerns.</li>
+</ul>
+
+<h2>Changes</h2>
+<ol>
+  <li><strong>One rule for "Need inspection"</strong> (decision 2, V11), <code>hives/page.tsx</code>.
+    <ul>
+      <li>It uses the dashboard's rule: more than 14 days, counted in local calendar days. It reuses <code>VISIT_DUE_AFTER_DAYS</code> and <code>isVisitSeason()</code> from <code>dashboard-todo.ts</code>.</li>
+      <li>The label becomes "Need inspection (over 14 days)".</li>
+      <li>From November to February the count is left out of the summary line.</li>
+      <li>It still counts inspections only, so a feed does not hide an overdue inspection, as today.</li>
+    </ul>
+  </li>
+  <li><strong>The badge says what it measures</strong> (H01, V11), <code>HiveListCard.tsx</code> and <code>HiveListRow.tsx</code>.
+    <ul>
+      <li>"23d" and "23d ago" become "Inspected 23 days ago" (also "today" and "1 day ago"). "Never" becomes "Never inspected".</li>
+      <li>Days are local calendar days, from one small shared helper, <code>daysSince(date)</code> in <code>date-utils.ts</code>.</li>
+      <li>The clock icon is hidden from screen readers.</li>
+      <li>Red starts at 15 days, so a red badge always matches the "over 14 days" count. Green under 7 and amber 7–14 are unchanged.</li>
+      <li>Winter colour: see D1.</li>
+    </ul>
+  </li>
+  <li><strong>Same-day ties</strong> (DB02), <code>useHivesList.ts</code>: records on the same day are ordered by when they were entered (<code>created_at</code>, newest first), then by ID. All five record tables have that column (checked in the live database). This makes the latest record, latest stores reading and latest super fullness reliable.</li>
+  <li><strong>Stores readings carry their date</strong> (H07).
+    <ul>
+      <li>Card dial: the second line reads "Estimated 28 August", with the year added when the reading is from last year (January to April). The spoken name includes it too, e.g. "Stores 60 percent, Top up, estimated 28 August".</li>
+      <li>List row: "Stores: Low, 28 August".</li>
+      <li>The rule for which readings show (this season only, hidden May to July) is unchanged.</li>
+    </ul>
+  </li>
+  <li><strong>Stores on a new inspection</strong> (V12, DB04, decision 3), <code>records/page.tsx</code> and <code>InspectionForm.tsx</code>.
+    <ul>
+      <li>"Last reading" uses this season's readings only, the same rule as the hive card (<code>storesSeasonStart</code>). From May to July there is no hint.</li>
+      <li>A line under the scale explains the bands: "Low under 40% · Top up 40–79% · Enough 80% and over".</li>
+      <li>How the slider starts: see D2.</li>
+    </ul>
+  </li>
+  <li><strong>To do rows say when</strong> (D02), <code>dashboard-todo.ts</code>.
+    <ul>
+      <li>With D3: "4.2% at the check on 28 October" and "due 1 November, and 2 more".</li>
+      <li>Without D3: wording only. "due" becomes "due today or earlier".</li>
+      <li>Queenless stays as it is: it is the hive's current state, not an old record.</li>
+    </ul>
+  </li>
+  <li><strong>What a job is</strong> (DB03), <code>TodoList.tsx</code>: one line under the To do heading, shown when there are jobs: "Each line is one job. Due tasks at an apiary share one line." Nothing about what counts changes.</li>
+  <li><strong>Shared apiary page</strong> (V13), <code>ApiaryJobs.tsx</code>: when the apiary is shared with you, a note reads "Hive concerns for a shared apiary show on its owner's dashboard." The empty message becomes "No open tasks here." instead of claiming there are no concerns.</li>
+  <li><s><strong>Hive card "last record" date</strong></s>: dropped during the work. A varroa check's date is a full timestamp, which the current code already shows correctly, and the date-only types show the right day anywhere in Ireland. Changing it would have broken the timestamp case.</li>
+</ol>
+
+<h2>Decisions (all accepted as recommended, 05/11/2026)</h2>
+<ol>
+  <li><strong>D1 – Badge colour in winter.</strong> With "Need inspection" off from November to February, a red "Inspected 40 days ago" in December still reads as overdue, although nobody should open a hive then.
+    <ul>
+      <li>Recommended: November to February, the badge shows the days in neutral grey, with no green, amber or red.</li>
+      <li>Alternative: keep the colours all year.</li>
+    </ul>
+  </li>
+  <li><strong>D2 – How the stores slider starts</strong> (decision 3 left this open). Today "Record stores" starts the slider at the last reading, or at 50. Saving without moving it then copies an old reading, or records 50.
+    <ul>
+      <li>Recommended: the same as super fullness. The slider is always shown and reads "Not recorded" until it is moved. Nothing is copied and there is no 50. The "Last reading" hint and Clear stay.</li>
+      <li>Alternative A: keep the "Record stores" tap, but always start at 50, never at the last reading.</li>
+      <li>Alternative B: keep it as it is.</li>
+    </ul>
+  </li>
+  <li><strong>D3 – Dates on the varroa and task rows.</strong> These need the dashboard's database function (<code>get_dashboard_overview</code>) to send two extra fields: the date of the high varroa check and each due task's date. Existing fields are not touched, the change is additive, and no data or tables change. It would be applied through the MCP connection, with the SQL also saved in <code>supabase/migrations</code>.
+    <ul>
+      <li>Recommended: yes.</li>
+      <li>Alternative: wording only now (item 6 without D3), with the dates as a later proposal.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2>Not changed</h2>
+<ul>
+  <li>Thresholds (stores bands, varroa 3%, the 14 days) and how tasks are resolved.</li>
+  <li>Which records count as a dashboard visit (any record) or a Hives inspection (inspections only). Only the wording and the dates line up.</li>
+  <li>Dashboard section order and density: WP11.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ 1. Need inspection: shared rule, label, off in winter</li>
+  <li>☑ 2. Badge words, local days, red from 15, winter colour (D1)</li>
+  <li>☑ 3. Same-day ties by entry time</li>
+  <li>☑ 4. Stores dates on the card and row</li>
+  <li>☑ 5. Stores on a new inspection: this season only, band line, slider start (D2)</li>
+  <li>☑ 6. To do dates (D3)</li>
+  <li>☑ 7. Jobs line</li>
+  <li>☑ 8. Shared apiary note</li>
+  <li>– 9. Last record local date (dropped, see item 9 above)</li>
+  <li>☑ Docs (<code>winter-stores-level.md</code>, <code>dashboard-today-screen.md</code>, the Hives list doc, WP01 baseline, WP09 progress in both plans)</li>
+  <li>☑ Type check, lint, tests</li>
+  <li>☑ QA audit</li>
+  <li>☑ Review section, and ask you to test the build</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned: 14 code files, one new helper (<code>src/lib/inspection-age.ts</code>) and one database migration.</p>
+<ul>
+  <li><strong>Database (D3):</strong>
+    <ul>
+      <li>The repo copy of <code>get_dashboard_overview</code> was first checked against the live function (identical MD5).</li>
+      <li>It was then replaced through MCP as <code>dashboard_todo_dates</code>, with the same SQL saved in <code>supabase/migrations/20261105120000_dashboard_todo_dates.sql</code>. The live and saved bodies match (MD5).</li>
+      <li>Grants are unchanged (authenticated, postgres, service_role), and a call as the demo account ran cleanly. No tables or data changed.</li>
+    </ul>
+  </li>
+  <li><strong>One overdue rule:</strong> <code>daysSince</code> (local calendar days) and <code>inspection-age.ts</code> are shared by the Hives summary, the hive card, the phone row and the apiary list card. The dashboard's <code>daysSinceLastVisit</code> now uses the same <code>daysSince</code>.</li>
+  <li><strong>Stores:</strong>
+    <ul>
+      <li><code>formatStoresDate</code> adds the year only for an older reading.</li>
+      <li>The slider has a single form, "Not recorded" until moved. The "Record stores" button and its 50 are gone.</li>
+      <li>The hint uses this season's readings only.</li>
+    </ul>
+  </li>
+  <li><strong>Dashboard:</strong> <code>dueText</code> moved from <code>ApiaryJobs.tsx</code> to <code>dashboard-todo.ts</code>, so the dashboard and the apiary page word task dates the same way. Older payloads without dates keep the earlier wording.</li>
+  <li><strong>Checks:</strong> type check clean, lint clean, full suite passes (881 passed, 23 skipped). After the QA fix, 612 lib, style and component tests pass. No build run.</li>
+  <li><strong>QA audit:</strong> one Medium, fixed.
+    <ul>
+      <li>The apiary list card (<code>ApiaryCard.tsx</code>) had its own copy of the old badge rule: UTC days, red from 14, red in winter. It now uses the shared rule, text and colours. The badge colours moved into <code>inspection-age.ts</code> so both cards share them.</li>
+      <li>No Critical or High.</li>
+    </ul>
+  </li>
+  <li><strong>Low:</strong>
+    <ul>
+      <li>An unrecorded stores slider sits at 0, so recording exactly 0% needs a move away and back, as for super fullness.</li>
+      <li>"due today" uses the device's date, while the database uses Irish time. These are the same in Ireland.</li>
+    </ul>
+  </li>
+  <li><strong>Docs:</strong> <code>winter-stores-level.md</code>, <code>dashboard-today-screen.md</code>, <code>mobile-first-phase4-list-simplification-plan.md</code>, the WP01 baseline and both plans.</li>
+</ul>
+<p>Waiting for your build test.</p>
+</body>
+</html>

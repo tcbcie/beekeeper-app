@@ -255,3 +255,10 @@ only where it is reachable from. No schema, RLS policy, RPC or payload is altere
 
 - `FilterDisclosure` with `inlineOnPhone`: when filters are active and the panel is closed, "Clear filters" now shows on its own row on phones. Before, it appeared only inside the opened panel. This applies to Hives and the Records filter bar.
 - Hives: the "+" button shows "Add" on phones ("Add Hive" from `sm` up). Its spoken name stays "Add Hive".
+
+## Update 05/11/2026 (WP09): inspection age says what it measures
+
+- The hive badge (card and phone row) reads "Inspected 23 days ago", "Inspected today" or "Never inspected" instead of "23d". The apiary list card uses the same text.
+- Days are local calendar days (`daysSince` in `src/lib/date-utils.ts`), so the count no longer reads a day low just after midnight in summer time (V11).
+- One rule with the dashboard (`src/lib/inspection-age.ts`, owner decision 2): green under 7 days, amber up to 14, red after 14. From November to February every badge is grey, and the summary leaves out "Need inspection (over 14 days)", because nobody should open a hive then. Inspections only, as before.
+- Two records of the same type on the same day: the one entered last now counts as the latest (`created_at`, then id), for the badge, stores and super fullness (DB02).

@@ -7,8 +7,9 @@ import IconButton from '@/components/ui/IconButton'
 import ModalShell from '@/components/ui/ModalShell'
 import { formatQueenlessLabel } from '@/lib/queenless'
 import { formatRemovalLabel } from '@/lib/treatment-removal'
-import { getCurrentDate } from '@/lib/date-utils'
-import { STORES_BAND_TEXT_CLASSES, storesBand, storesSeasonStart, storesWord } from '@/lib/stores-level'
+import { daysSince, getCurrentDate } from '@/lib/date-utils'
+import { inspectedAgoText, inspectionAgeTone, type InspectionAgeTone } from '@/lib/inspection-age'
+import { formatStoresDate, STORES_BAND_TEXT_CLASSES, storesBand, storesSeasonStart, storesWord } from '@/lib/stores-level'
 
 interface HiveListRowProps {
   hive: Hive
@@ -27,11 +28,11 @@ interface HiveListRowProps {
 
 const SHEET_ACTION = 'flex min-h-[56px] w-full items-center gap-3 px-4 text-left text-base font-medium'
 
-function inspectionTone(days: number | null): string {
-  if (days === null) return 'text-text-secondary'
-  if (days < 7) return 'text-green-800 dark:text-green-300'
-  if (days < 14) return 'text-amber-800 dark:text-amber-300'
-  return 'text-red-800 dark:text-red-300'
+const INSPECTION_TEXT_CLASSES: Record<InspectionAgeTone, string> = {
+  recent: 'text-green-800 dark:text-green-300',
+  'due-soon': 'text-amber-800 dark:text-amber-300',
+  overdue: 'text-red-800 dark:text-red-300',
+  neutral: 'text-text-secondary',
 }
 
 /**
@@ -48,14 +49,13 @@ export default function HiveListRow({
 
   // last_inspection_date specifically: last_record covers any record type, so a recent
   // treatment would mask an overdue inspection.
-  const days = hive.last_inspection_date
-    ? Math.floor((Date.now() - new Date(hive.last_inspection_date).getTime()) / (1000 * 60 * 60 * 24))
-    : null
+  const days = daysSince(hive.last_inspection_date)
 
   const storesSince = hive.archived_at ? null : storesSeasonStart(getCurrentDate())
   const storesLevel = storesSince && hive.last_stores_date && hive.last_stores_date >= storesSince
     ? hive.last_stores_level ?? null
     : null
+  const storesDate = formatStoresDate(hive.last_stores_date)
   const queenName = hive.queens?.queen_number
   const details = [hive.apiaries?.name, queenName && `Queen ${queenName}`].filter(Boolean).join(' · ')
 
@@ -64,8 +64,8 @@ export default function HiveListRow({
       <span className="flex items-baseline justify-between gap-3">
         <span className="min-w-0 break-words text-lg font-bold text-foreground">{hive.hive_number}</span>
         {!hive.archived_at && (
-          <span className={`flex-shrink-0 text-sm font-semibold ${inspectionTone(days)}`}>
-            {days === null ? 'Never inspected' : `${days}d ago`}
+          <span className={`flex-shrink-0 text-sm font-semibold ${INSPECTION_TEXT_CLASSES[inspectionAgeTone(days)]}`}>
+            {inspectedAgoText(days)}
           </span>
         )}
       </span>
@@ -89,7 +89,9 @@ export default function HiveListRow({
           </span>
         )}
         {storesLevel !== null && storesBand(storesLevel) !== 'enough' && (
-          <span className={STORES_BAND_TEXT_CLASSES[storesBand(storesLevel)]}>Stores: {storesWord(storesLevel)}</span>
+          <span className={STORES_BAND_TEXT_CLASSES[storesBand(storesLevel)]}>
+            Stores: {storesWord(storesLevel)}{storesDate && `, ${storesDate}`}
+          </span>
         )}
       </span>
     </>

@@ -1,5 +1,5 @@
 'use client'
-import { getCurrentDate } from '@/lib/date-utils'
+import { daysSince, getCurrentDate } from '@/lib/date-utils'
 import { useEffect, useState, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -31,6 +31,8 @@ import SegmentedControl from '@/components/ui/SegmentedControl'
 import StickyActionBar from '@/components/ui/StickyActionBar'
 import { useHivesList } from '@/hooks/useHivesList'
 import { isQueenClipped } from '@/lib/queen-clipped'
+import { isVisitSeason } from '@/lib/dashboard-todo'
+import { isInspectionOverdue } from '@/lib/inspection-age'
 import { useListPositionMemory } from '@/hooks/useListPositionMemory'
 import { useHiveModels } from '@/hooks/useHiveModels'
 import { describeHiveModel, hivePhotoUrl } from '@/lib/hive-model'
@@ -736,12 +738,12 @@ export default function HivesPage() {
  // Summary stats
  const activeCount = filteredHives.filter(h => !h.archived_at).length
  const archivedCount = filteredHives.filter(h => h.archived_at).length
- const fourteenDaysAgo = Date.now() - 14 * 24 * 60 * 60 * 1000
- const needInspectionCount = filteredHives.filter(h => {
- if (h.archived_at) return false
- if (!h.last_inspection_date) return true
- return new Date(h.last_inspection_date).getTime() < fourteenDaysAgo
- }).length
+ // The dashboard's rule (src/lib/inspection-age.ts): more than 14 days, and left out of the
+ // summary from November to February, when no hive is overdue
+ const inspectionSeason = isVisitSeason()
+ const needInspectionCount = filteredHives.filter(h =>
+ !h.archived_at && isInspectionOverdue(daysSince(h.last_inspection_date))
+ ).length
  // Hives with a treatment still on them. Shown only when there are any, so the
  // line does not gain a permanent "0 Treatments On" for most of the year.
  const treatmentsOnCount = filteredHives.filter(h => !h.archived_at && h.active_treatment).length
@@ -915,7 +917,8 @@ export default function HivesPage() {
  {/* Summary stats bar */}
  {filteredHives.length > 0 && (
  <p className="text-sm text-text-secondary">
- {activeCount} Active | {archivedCount} Archived | {needInspectionCount} Need Inspection (14+ days)
+ {activeCount} Active | {archivedCount} Archived
+ {inspectionSeason && ` | ${needInspectionCount} Need inspection (over 14 days)`}
  {treatmentsOnCount > 0 && ` | ${treatmentsOnCount} Treatment${treatmentsOnCount > 1 ? 's' : ''} On`}
  </p>
  )}

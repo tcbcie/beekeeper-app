@@ -12,7 +12,8 @@ import { formatRemovalLabel } from '@/lib/treatment-removal'
 import { isQueenClipped } from '@/lib/queen-clipped'
 import SuperFullnessGauge from '@/components/hive/SuperFullnessGauge'
 import StoresDial from '@/components/hive/StoresDial'
-import { getCurrentDate } from '@/lib/date-utils'
+import { daysSince, getCurrentDate } from '@/lib/date-utils'
+import { INSPECTION_BADGE_CLASSES, inspectedAgoText, inspectionAgeTone } from '@/lib/inspection-age'
 import { storesSeasonStart } from '@/lib/stores-level'
 
 // Feeders are blue, apart from the amber and yellow boxes, and matching the apiary 3D view
@@ -69,9 +70,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  // Days since last inspection badge. Must use last_inspection_date specifically —
  // last_record covers any record type (inspections, varroa treatments, feedings,
  // harvests), so a recent treatment would mask an older overdue inspection.
- const daysSinceInspection = hive.last_inspection_date
- ? Math.floor((Date.now() - new Date(hive.last_inspection_date).getTime()) / (1000 * 60 * 60 * 24))
- : null
+ const daysSinceInspection = daysSince(hive.last_inspection_date)
 
  // Whether any super's fullness changed vs the previous recorded reading — drives the
  // "Previous readings" caption beneath the setup stack.
@@ -236,23 +235,10 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  )}
  {/* Days since inspection badge */}
  {!hive.archived_at && (
- daysSinceInspection !== null ? (
- <span className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded border ${
- daysSinceInspection < 7
- ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
- : daysSinceInspection < 14
- ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700'
- : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700'
- }`}>
- <Clock size={10} />
- {daysSinceInspection}d
+ <span className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded border ${INSPECTION_BADGE_CLASSES[inspectionAgeTone(daysSinceInspection)]}`}>
+ <Clock size={14} aria-hidden="true" />
+ {inspectedAgoText(daysSinceInspection)}
  </span>
- ) : (
- <span className="inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded border bg-surface-secondary text-text-secondary border-border">
- <Clock size={10} />
- Never
- </span>
- )
  )}
  {isOwner && (
  <div

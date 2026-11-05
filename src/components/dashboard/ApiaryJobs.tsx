@@ -12,20 +12,12 @@ import type { ApiaryTask } from '@/hooks/useApiaryJobs'
 import { useInspectionForecast } from '@/hooks/useInspectionForecast'
 import { useScaleSummaries } from '@/hooks/useScaleSummaries'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
-import { buildApiaryTodos, formatDayMonth } from '@/lib/dashboard-todo'
-import { getCurrentDate } from '@/lib/date-utils'
+import { buildApiaryTodos, dueText } from '@/lib/dashboard-todo'
 import { formatWindow, isGoodDay, weekdayName } from '@/lib/inspection-weather'
 import type { DayVerdict } from '@/lib/inspection-weather'
 import { seasonShowsForecast } from '@/lib/seasonal-lead'
 import { getSeason } from '@/lib/seasons'
 import { supabase } from '@/lib/supabase'
-
-function dueText(date: string): string {
-  const today = getCurrentDate()
-  if (date === today) return 'due today'
-  const day = formatDayMonth(date) ?? date
-  return date < today ? `was due ${day}` : `due ${day}`
-}
 
 function visitWindowText(days: DayVerdict[]): string {
   const [today, ...later] = days
@@ -104,6 +96,7 @@ export default function ApiaryJobs({ apiaryId, latitude, longitude }: ApiaryJobs
   )
 
   const isEmpty = recordJobs.length === 0 && tasks.length === 0
+  const isShared = !overview && !failed
 
   return (
     <Panel padding="md">
@@ -129,10 +122,14 @@ export default function ApiaryJobs({ apiaryId, latitude, longitude }: ApiaryJobs
       ) : (
         <>
           {failed && <p className="mt-2 text-base text-red-800 dark:text-red-300">Some jobs could not be loaded, so this list may be incomplete.</p>}
+          {/* The overview covers only your own apiaries, so a shared one has no concerns to list (V13) */}
+          {isShared && (
+            <p className="mt-2 text-base text-text-secondary">Hive concerns for a shared apiary show on its owner&apos;s dashboard.</p>
+          )}
           {isEmpty && !failed && (
             <p className="mt-2 flex items-center gap-2 text-base text-green-800 dark:text-green-300">
               <CheckCircle size={18} aria-hidden="true" />
-              Nothing to do here: no open tasks or recorded concerns.
+              {isShared ? 'No open tasks here.' : 'Nothing to do here: no open tasks or recorded concerns.'}
             </p>
           )}
           {!isEmpty && (

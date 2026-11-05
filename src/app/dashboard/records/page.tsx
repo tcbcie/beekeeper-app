@@ -48,6 +48,7 @@ import { useRecordsData } from '@/hooks/useRecordsData'
 import { useRecordFilters, VISIT_DEFAULTS } from '@/hooks/useRecordFilters'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { getCurrentDate, toLocalDateString, toLocalDateTimeInputValue } from '@/lib/date-utils'
+import { storesSeasonStart } from '@/lib/stores-level'
 import ImageZoomModal from '@/components/ui/ImageZoomModal'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { normaliseStoragePublicUrl } from '@/lib/storage-url'
@@ -296,14 +297,18 @@ export default function RecordsPage() {
   }, [inspections])
 
   // Most recent stores reading per hive, shown for reference on a new inspection. Skips inspections
-  // that left it unrecorded, so one quick visit doesn't hide the last real reading.
+  // that left it unrecorded, so one quick visit doesn't hide the last real reading. Only this
+  // season's readings count, the same rule as the hive card (V12): none from May to July.
   const previousStoresByHive = useMemo<Record<string, { level: number; date: string }>>(() => {
     const latestReadings: Record<string, { level: number; date: string }> = {}
+    const since = storesSeasonStart(getCurrentDate())
+    if (!since) return latestReadings
 
     for (const inspection of inspections) {
       if (!inspection.hive_id || inspection.stores_level === null || inspection.hive_id in latestReadings) {
         continue
       }
+      if (inspection.inspection_date < since) continue
 
       latestReadings[inspection.hive_id] = { level: inspection.stores_level, date: inspection.inspection_date }
     }
