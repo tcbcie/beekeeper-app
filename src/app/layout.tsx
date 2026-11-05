@@ -11,25 +11,32 @@ import KeyboardInset from "@/components/KeyboardInset";
 import { IOS_SPLASH_IMAGES } from "@/lib/ios-splash";
 import "./globals.css";
 
+// Same rules as src/app/providers/theme-provider.tsx, run before the first paint: 'system' follows
+// the device and is the default for anyone who never chose; 'auto' is the 6am-8pm schedule.
 const themeBootstrapScript = `
 (() => {
   try {
-    const saved = localStorage.getItem('theme');
-    const theme = saved === 'light' || saved === 'dark' || saved === 'auto' ? saved : 'auto';
+    let saved = null;
+    try { saved = localStorage.getItem('theme'); } catch {}
+    const theme = saved === 'light' || saved === 'dark' || saved === 'system' || saved === 'auto' ? saved : 'system';
     const hour = new Date().getHours();
-    const resolved = theme === 'auto' ? (hour >= 6 && hour < 20 ? 'light' : 'dark') : theme;
+    const deviceDark = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const resolved = theme === 'auto'
+      ? (hour >= 6 && hour < 20 ? 'light' : 'dark')
+      : theme === 'system' ? (deviceDark ? 'dark' : 'light') : theme;
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(resolved);
     root.style.colorScheme = resolved;
     const themeColour = resolved === 'dark' ? '#0a0f1a' : '#faf8f5';
-    let metaThemeColour = document.querySelector('meta[name="theme-color"]');
-    if (!metaThemeColour) {
-      metaThemeColour = document.createElement('meta');
-      metaThemeColour.setAttribute('name', 'theme-color');
-      document.head.appendChild(metaThemeColour);
+    const metas = document.querySelectorAll('meta[name="theme-color"]');
+    if (metas.length === 0) {
+      const meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      meta.setAttribute('content', themeColour);
+      document.head.appendChild(meta);
     }
-    metaThemeColour.setAttribute('content', themeColour);
+    metas.forEach((meta) => meta.setAttribute('content', themeColour));
   } catch {}
 })();
 `;

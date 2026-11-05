@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>WP10 appearance preferences</title>
+</head>
+<body>
+<h1>WP10 – Make appearance preferences explicit</h1>
+<p>Plan: <code>docs/features/mobile-first-implementation-plan.html</code> (WP10 and refinements). Findings: F11, V21. No database change: the choice is kept on the device, as now.</p>
+
+<h2>What the code does today</h2>
+<ul>
+  <li><strong>The choices.</strong> Profile → Appearance offers three buttons: Light ("Field"), Dark ("Evening") and Auto ("6am-8pm"). Auto means light from 6am to 8pm and dark otherwise, by the device's clock, checked once a minute.</li>
+  <li><strong>The default.</strong> Nothing is saved for a new user, so they get Auto by the clock. Nothing in the app follows the phone's own light or dark setting.</li>
+  <li><strong>Where it lives.</strong> The choice is stored in the browser under <code>theme</code>. Two places apply it: the start-up script in <code>layout.tsx</code>, which runs before the first paint, and <code>theme-provider.tsx</code>. They hold duplicate copies of the same rule.</li>
+  <li><strong>The buttons</strong> have no selected state for screen readers.</li>
+  <li><strong>Browser bar colour</strong> (V21). The page carries two <code>theme-color</code> tags, one for a light phone and one for a dark phone. The app updates only the first. On a phone set to dark, the bar can stay dark while the app is light.</li>
+  <li><strong>Charts</strong> read the theme from the page itself, so they need no change.</li>
+</ul>
+
+<h2>Changes</h2>
+<ol>
+  <li><strong>A "Use device setting" choice</strong> (F11), in <code>theme-provider.tsx</code> and the start-up script in <code>layout.tsx</code>.
+    <ul>
+      <li>The new stored value <code>system</code> follows the phone's light or dark setting, read with <code>prefers-color-scheme</code>.</li>
+      <li>It updates straight away when the phone switches, for example at sunset.</li>
+      <li>A phone change affects only this choice. Light, Dark and the schedule ignore it.</li>
+    </ul>
+  </li>
+  <li><strong>Saved choices are kept exactly.</strong>
+    <ul>
+      <li>Light stays Light and Dark stays Dark.</li>
+      <li>A saved Auto keeps working by the clock, as before. It is never quietly switched to the device setting. Its label changes, see D1.</li>
+    </ul>
+  </li>
+  <li><strong>Default for people who never chose</strong>: see D2. The start-up script and the provider use the same default, so the first paint matches.</li>
+  <li><strong>Clear choices</strong> in <code>theme-switcher.tsx</code>.
+    <ul>
+      <li>The buttons become a radio group with a hidden "Appearance" legend, using <code>RadioChoiceOption</code> (green when chosen, as elsewhere). The chosen option is announced.</li>
+      <li>Each option is at least 48px, one per row on phones and two per row from <code>sm</code> up.</li>
+      <li>The descriptions say what each choice does:
+        <ul>
+          <li>Light: "Easiest to read outdoors"</li>
+          <li>Dark: "For evenings and low light"</li>
+          <li>Use device setting: "Follows your phone or computer"</li>
+          <li>The schedule: see D1</li>
+        </ul>
+      </li>
+      <li>The Profile intro line: "Your choice is kept on this device."</li>
+    </ul>
+  </li>
+  <li><strong>Browser bar colour</strong> (V21): the start-up script and the provider update every <code>theme-color</code> tag, not just the first, so the bar always matches the app.</li>
+</ol>
+
+<h2>Decisions (both accepted as recommended, 05/11/2026)</h2>
+<ol>
+  <li><strong>D1 – Keep the clock schedule?</strong> Anyone who picked Auto chose it on purpose.
+    <ul>
+      <li>Recommended: keep it as a fourth choice, "Light by day", described as "Light 6am to 8pm, dark after". Existing Auto users keep their behaviour, under a clearer name.</li>
+      <li>Alternative: remove it. Anyone with Auto saved would then move to "Use device setting", which changes their behaviour, so the plan advises against it.</li>
+    </ul>
+  </li>
+  <li><strong>D2 – Default for people who never chose</strong> (everyone with nothing saved, including new users).
+    <ul>
+      <li>Recommended: Use device setting. It respects what the person already set on their phone, and is how most apps behave.</li>
+      <li>Alternative A: Light. The app is designed light-first for outdoor work, and dark only when chosen.</li>
+      <li>Alternative B: keep the clock schedule as the default (no change in behaviour).</li>
+    </ul>
+    <p>Whatever is chosen, existing users with nothing saved will see the new default on their next visit. Anyone who wants something else picks it once.</p>
+  </li>
+</ol>
+
+<h2>Not changed</h2>
+<ul>
+  <li>Where the choice is stored (this device only) and its key.</li>
+  <li><code>manifest.json</code> colours (installed app splash) stay cream.</li>
+  <li><code>offline.html</code>, which already follows the device setting.</li>
+  <li>Map styles and chart colours.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ 1. Provider: system choice, live device changes, default (D2), all theme-color tags</li>
+  <li>☑ 2. Start-up script: the same rules, so the first paint matches</li>
+  <li>☑ 3. Switcher: radio group, labels, schedule option (D1), Profile intro</li>
+  <li>☑ Docs (<code>dark-mode-consistency-fixes-plan.md</code>, <code>profile-page-split.md</code>, WP01 baseline, WP10 progress in both plans)</li>
+  <li>☑ Type check, lint, tests</li>
+  <li>☑ QA audit</li>
+  <li>☑ Review section, and ask you to test the build (both themes, phone set to light and to dark)</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned in 4 files: <code>theme-provider.tsx</code>, <code>layout.tsx</code> (start-up script), <code>theme-switcher.tsx</code> and the Profile intro line. No database change.</p>
+<ul>
+  <li><strong>Provider:</strong>
+    <ul>
+      <li>New stored value <code>system</code>, which is the default when nothing valid is saved.</li>
+      <li>The device-setting listener runs only while that choice is active. The minute timer runs only for Light by day.</li>
+      <li>Every <code>theme-color</code> tag is updated. <code>Theme</code> is exported for the switcher.</li>
+    </ul>
+  </li>
+  <li><strong>Start-up script:</strong>
+    <ul>
+      <li>The same four values and default.</li>
+      <li>The storage read has its own guard, so a blocked storage (private window) still gets the device setting at first paint. Before, the script stopped and left the page light until the app loaded.</li>
+    </ul>
+  </li>
+  <li><strong>Switcher:</strong> a fieldset with a hidden "Appearance" legend, four <code>RadioChoiceOption</code>s (green, at least 48px), one column on phones and two from <code>sm</code>.</li>
+  <li><strong>Checks:</strong> type check clean, lint clean, full suite passes (881 passed, 23 skipped). No test covered the theme. No build run.</li>
+  <li><strong>QA audit:</strong> one Medium, fixed.
+    <ul>
+      <li>Safari before 14 (older iPads) has no <code>addEventListener</code> on media queries, so the new listener would have thrown and crashed the app. It now falls back to <code>addListener</code>.</li>
+      <li>No Critical or High.</li>
+    </ul>
+  </li>
+  <li><strong>Low:</strong>
+    <ul>
+      <li>If Next places its <code>theme-color</code> tags after the start-up script, the script adds its own tag and the app corrects all of them once it loads. That is the same as before, and why V21 still needs a phone check.</li>
+      <li>An older copy of the app still open in another tab ignores the new <code>system</code> value until it reloads.</li>
+    </ul>
+  </li>
+  <li><strong>Docs:</strong> <code>dark-mode-consistency-fixes-plan.md</code> §10, <code>profile-page-split.md</code>, the WP01 baseline and both plans. <code>.claude/skills/ui/SKILL.md</code> still describes the old clock Auto. It has changes of yours that are not committed, so I left it alone.</li>
+</ul>
+<p>Waiting for your build test.</p>
+</body>
+</html>

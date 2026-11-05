@@ -81,7 +81,7 @@ eyesight, so density comes from dropping frames and duplicated prose:
 - My data export (JSON / CSV)
 - Features (label printing, logbook, CRM, apiary map — `ToggleRow`s)
 - Notifications (task/event email reminders + frequency)
-- Appearance (`ThemeSwitcher`)
+- Appearance (`ThemeSwitcher`: Light, Dark, Use device setting, Light by day; see `dark-mode-consistency-fixes-plan.md` §10)
 - Tools & Teams — 3 link cards to the Scales, Apiary Team and Rearing Team sub-pages
 - Account — change password, and delete account (formerly its own *Danger Zone*
   section; the row is red-styled and the confirmation modal does the real guarding)

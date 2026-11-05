@@ -180,3 +180,7 @@ No WP01 scenario changes its steps. What a re-run should now show:
 - Badges read "Inspected N days ago" and change at local midnight, not UTC (V11).
 - DB01 value table, stores: a new inspection starts "Not recorded" and stays NULL unless the slider is moved; the "Last reading" hint shows only readings since 1 August (V12).
 - Dashboard: high varroa and task rows give a date; a shared apiary's page no longer says "no recorded concerns" (V13).
+
+### WP10 – 05/11/2026 (not yet re-run)
+
+No WP01 scenario changes. For the phone checklist: with nothing saved, the app now follows the phone's light or dark setting, and the browser bar should match the app in every combination (phone light or dark, app Light, Dark, Use device setting or Light by day) (V21).

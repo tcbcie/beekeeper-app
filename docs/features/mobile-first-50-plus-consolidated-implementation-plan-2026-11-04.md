@@ -180,6 +180,8 @@ Provide clear Light, Dark and Use device setting options. If a schedule is retai
 
 **Verification refinement - WP10:** The switcher already shows "Auto · 6am-8pm", so the gap is the missing Use device setting option and the clock default. The mapping decision must also cover users with no saved preference, who default to clock-based Auto. Add a device check of the two browser-bar colour tags, of which only the first is updated (V21). The Tailwind dark-mode fix is already done.
 
+**Progress - WP10 (05/11/2026):** Code complete and QA-audited, awaiting the owner's build test. Owner decisions (05/11/2026): D1 keep the clock schedule as "Light by day" (a saved `auto` keeps its behaviour); D2 "Use device setting" (`system`) is the default for anyone with nothing saved. Appearance is a radio group of Light, Dark, Use device setting and Light by day, each saying what it does; only the device-setting choice follows device changes, live; the start-up script and the provider share the rules so the first paint matches; every `theme-color` tag is updated (V21, still needs a phone check). Not changed: storage (this device), manifest colours, maps and charts.
+
 #### WP11 - Validate information order and disclosure before changing defaults
 
 **P3 conditional | M/L | Evidence: D03, D05, H03, H04; supporting H02, R03. Depends on WP07-WP09 and representative-user evidence.**

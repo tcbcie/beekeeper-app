@@ -68,7 +68,7 @@ No database access or schema changes are required for this feature.
 * `src/app/reset-password/page.tsx`
 
 ## 8. Manual Verification Checklist
-1. Toggle `Light`, `Dark`, and `Auto` on Profile and confirm no visible flash during page refresh.
+1. Choose `Light`, `Dark`, `Use device setting` and `Light by day` on Profile and confirm no visible flash during page refresh.
 2. Confirm browser theme chrome updates correctly on mobile for light/dark.
 3. Validate status badges and alert panels on:
    * Dashboard overview shared-data cards
@@ -84,3 +84,21 @@ No database access or schema changes are required for this feature.
 ## 9. Notes
 * No database changes were required.
 * No build/test execution was performed by the agent, per project instruction.
+
+## 10. Update 05/11/2026 (WP10): explicit appearance choices
+
+Profile → Appearance is a radio group (green when chosen, announced by screen readers) with four choices, stored on the device under `theme` as before:
+
+| Choice | Stored value | Behaviour |
+|---|---|---|
+| Light ("Easiest to read outdoors") | `light` | Always light |
+| Dark ("For evenings and low light") | `dark` | Always dark |
+| Use device setting ("Follows your phone or computer") | `system` | Follows `prefers-color-scheme` and changes straight away when the device switches. **Default for anyone with nothing saved** (owner decision D2) |
+| Light by day ("Light 6am to 8pm, dark after") | `auto` | The old clock schedule, checked once a minute. Kept, and renamed, so anyone who chose Auto keeps exactly that behaviour (owner decision D1) |
+
+- A device change affects only Use device setting; Light, Dark and Light by day ignore it.
+- A saved `auto` is never moved to `system`. Users with nothing saved, who previously got the clock schedule by default, now follow their device.
+- The start-up script in `layout.tsx` and `theme-provider.tsx` apply the same rules, so the first paint matches the app.
+- Both now update every `theme-color` tag, not just the first. The page has one per device setting, and the browser bar uses the one matching the device, so a dark phone showing the light app used to keep a dark bar (V21). This still needs a check on a real phone.
+- Older Safari (before 14) has no `addEventListener` on media queries, so the provider falls back to `addListener`.
+- Not changed: `manifest.json` colours (cream), `offline.html` (already follows the device), maps and charts (charts read the `.dark` class when they draw).

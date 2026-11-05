@@ -1160,7 +1160,7 @@ export default function ProfilePage() {
           {/* Appearance */}
           <CollapsibleSection title="Appearance" storageKey="appearance">
             <p className="mb-4 text-sm text-text-secondary">
-              Light mode is optimised for outdoor field work; dark mode suits evening planning.
+              Light is easiest to read outdoors. Your choice is kept on this device.
             </p>
             <ThemeSwitcher />
           </CollapsibleSection>
