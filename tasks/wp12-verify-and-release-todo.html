@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>WP12 verify and release</title>
+</head>
+<body>
+<h1>WP12 – Verify, document and prepare release</h1>
+<p>Plan: <code>docs/features/mobile-first-implementation-plan.html</code> (WP12, the release gate). Acceptance: the critical loss, access and save-understanding scenarios pass; the behaviour that changed is reviewed; you report the build result; unresolved limits and deferred ideas are written down. No participant result is invented or read off screenshots. I do not run the build or change the version number.</p>
+
+<h2>Where things stand</h2>
+<ul>
+  <li><strong>WP02–WP10</strong> are committed and pushed. Your build test is outstanding for each. Every "Expected after WPxx" section in the WP01 baseline is still marked "not yet re-run".</li>
+  <li><strong>Phone checklist</strong> (10 steps, plus the browser-bar check from WP10) has not been run yet.</li>
+  <li><strong>WP11</strong> is waiting for beekeeper sessions. Defaults are unchanged.</li>
+  <li><strong>The plan's own status</strong> still says "Implementation has not begun", at the top and in the footer of both plan files.</li>
+  <li><strong>Release notes</strong> live in the <code>changelog</code> database table. The version bump script fills them from commit messages and publishes them straight away. The latest entries are 1.14.0 (2 November) and nothing covers WP02–WP11 yet.</li>
+</ul>
+
+<h2>Changes</h2>
+<ol>
+  <li><strong>One release checklist</strong>: a new <code>docs/features/mobile-first-release-checklist.md</code>, the single place to tick off before release.
+    <ul>
+      <li><em>Release gate</em>: the critical scenarios that must pass (losing work, saving offline, understanding what was saved). Each one is marked by how it is checked: desktop Chrome, phone, or code only.</li>
+      <li><em>Your build test</em>: the checks from each package (WP02–WP10) gathered into one list.</li>
+      <li><em>Phone checklist</em>: the 10 baseline steps, plus the WP09 winter badges and the WP10 browser-bar colour.</li>
+      <li><em>Known gaps and deferred items</em>, each with its source and what would close it:
+        <ul>
+          <li>automatic retry while the app is open</li>
+          <li>edit conflicts in two tabs (needs a database proposal)</li>
+          <li>a super change on a hive you can see but not change (needs a database proposal)</li>
+          <li>"not checked" for Queen seen and Eggs (needs a design review)</li>
+          <li>step bar, footer and Hives bar at large text (waiting for the phone)</li>
+          <li>an unreadable stored draft</li>
+          <li>the small-text long tail</li>
+          <li>WP11</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+  <li><strong>Re-run the desktop scenarios</strong> on www.hivecraic.com with the demo account, as in WP01, if you agree (D1).
+    <ul>
+      <li>Scenarios: S01, S02, S04, S05, S06, S09 and S25–S29.</li>
+      <li>Also the visible WP08–WP10 changes: inspection badges, stores "Not recorded", seasonal pills, the Appearance choices.</li>
+      <li>Results go into the baseline as pass or fail with the date. Test drafts are discarded, and a database check confirms nothing was left behind.</li>
+    </ul>
+  </li>
+  <li><strong>Plan status</strong>: the top, Overview and footer of both plan files say what is actually true:
+    <ul>
+      <li>WP01–WP10 done, waiting for your build and phone checks;</li>
+      <li>WP11 waiting for evidence;</li>
+      <li>WP12 is the gate.</li>
+    </ul>
+  </li>
+  <li><strong>Release notes draft</strong> (D2): short, plain-English lines for what beekeepers will notice, for you to use when you bump the version. They are not written to the database now.</li>
+</ol>
+
+<h2>Decisions (05/11/2026): re-run yes, release notes drafted</h2>
+<ol>
+  <li><strong>D1 – Desktop re-run now?</strong>
+    <ul>
+      <li>Recommended: yes, once Chrome is connected and the demo account is signed in on www.hivecraic.com, and the latest commit has been deployed. Same rules as WP01: demo account only, test records deleted, screenshots kept out of the repository.</li>
+      <li>Alternative: skip it, and rely on your build test and phone checklist.</li>
+    </ul>
+  </li>
+  <li><strong>D2 – Release notes.</strong>
+    <ul>
+      <li>Recommended: I draft them in the release checklist for you to paste or adjust at the version bump, which stays your manual step. The bump script would otherwise turn the long commit messages into the notes.</li>
+      <li>Alternative: no draft; the bump script uses the commit messages as they are.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2>Not changed</h2>
+<ul>
+  <li>No app code, unless the re-run finds a defect. That would get its own check-in.</li>
+  <li>Version number and changelog rows: your manual bump.</li>
+  <li>No participant results.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ 1. Release checklist doc</li>
+  <li>☑ 2. Desktop re-run and baseline results (D1). It was paused at first because Chrome was signed in to the owner's own account; it ran after the switch to the demo account.</li>
+  <li>☑ 3. Plan status in both plans</li>
+  <li>☑ 4. Release notes draft (D2), in section 6 of the checklist</li>
+  <li>☑ Review section, and ask you for the build test and phone checklist</li>
+</ul>
+
+<h2>Review</h2>
+<p>Documentation and verification only; no app code changed.</p>
+<ul>
+  <li><strong>Release checklist</strong> (<code>docs/features/mobile-first-release-checklist.md</code>), with six sections:
+    <ul>
+      <li>the release gate table, with a result column;</li>
+      <li>the owner build test for WP02–WP10;</li>
+      <li>a 13-step phone checklist: the 10 baseline steps, the WP09 winter badges, the WP10 browser-bar check, and the open step 3 question;</li>
+      <li>the desktop re-run;</li>
+      <li>known limits, each with what would close it;</li>
+      <li>a release notes draft for the version bump. Nothing was written to the <code>changelog</code> table. The browser-bar line is kept only once the phone check passes.</li>
+    </ul>
+  </li>
+  <li><strong>Desktop re-run</strong> (demo account, www.hivecraic.com, latest changes confirmed live):
+    <ul>
+      <li>S01, S02, S04, S05, S09, S25, S26, S27, S28 and S29 pass. All seven that failed in WP01 now pass.</li>
+      <li>S06 was not re-run. Browser Back does not work in the automation tab, and a full reload raises Chrome's "Leave site?" dialog, which would block the automation. No package changed this path.</li>
+      <li>Also confirmed live:
+        <ul>
+          <li>WP03: the resume panel says "On this device", so that known limit is closed.</li>
+          <li>WP08: the "No reading" pill.</li>
+          <li>WP09: the jobs line, task dates, grey badges, no "Need inspection" in November, and stores "Not recorded" with the band line.</li>
+          <li>WP10: the four appearance choices.</li>
+        </ul>
+      </li>
+      <li>Low: the edit-mode review says "tap" on a desktop as well.</li>
+    </ul>
+  </li>
+  <li><strong>Clean-up:</strong> both test drafts were deleted through the app and the edit was discarded. A read-only database check found no new inspections or tasks on the demo account, and the edited inspection's weight unchanged. The test tabs are closed; Chrome stays signed in as the demo account.</li>
+  <li><strong>Plans:</strong> the status at the top and in the footer now matches reality, and WP12 progress is recorded in both plans.</li>
+  <li><strong>Still open before release:</strong> your build test, the phone checklist, accepting or checking the code-only scenarios (S10, S11, S15, S17, S19–S21), and then your version bump. WP11 evidence does not block release.</li>
+</ul>
+<p>Waiting for your build test and phone checklist.</p>
+</body>
+</html>

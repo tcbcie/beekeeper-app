@@ -1,6 +1,6 @@
 ﻿# Feature: Mobile-first usability and visual consistency - consolidated implementation plan
 **Date:** 04/11/2026
-**Status:** Draft - findings verified 04/11/2026, awaiting implementation approval
+**Status:** In progress - WP01-WP10 built and pushed, awaiting the owner's build test and phone checklist; WP11 pending field-study evidence; WP12 release gate open (05/11/2026)
 
 ## 1. Overview
 
@@ -23,7 +23,9 @@ This is the single implementation backlog for the five review documents. It cons
 
 **Evidence limits:** public-page rendering and authenticated screenshots exist. Authenticated interactions, current real-device behaviour and field-study outcomes remain unverified. Screenshot concerns are not automatically confirmed accessibility failures. Existing-inspection editing is not equivalent to creating a new offline inspection.
 
-**Approval boundary:** preparing this plan is complete. Implementation has not begun. Approval authorises the bounded work below; packages marked conditional still require their stated evidence before a behavioural change. No account credentials, recruitment messages, production-data experiments or database migrations are implied.
+**Approval boundary:** the plan was approved on 04/11/2026 and WP01-WP11 were carried out under it (see each package's progress note). Approval authorised the bounded work below; packages marked conditional still require their stated evidence before a behavioural change. No account credentials, recruitment messages, production-data experiments or database migrations are implied.
+
+**Release status (05/11/2026):** WP01-WP10 are code complete, QA-audited and pushed; each awaits the owner's build test, and the phone checklist has not been run. WP11 is pending evidence, with its study materials ready. WP12 gathers everything still to check, the known limits and a release notes draft in [mobile-first-release-checklist.md](./mobile-first-release-checklist.md).
 
 ## 2. Scope & Simplicity
 
@@ -201,6 +203,8 @@ Compare the current dashboard with a short attention summary followed by apiarie
 Repeat relevant device and participant tasks against each changed release candidate. Record known gaps, update feature/capability documentation and the task checklist, and append the review summary. Keep private recordings, identifiers and raw screenshots outside source control. Request the owner to run the build; do not run it as the agent.
 
 **Acceptance:** critical loss/access/save-understanding scenarios pass; affected screenshots and behaviour are reviewed; the owner reports the build result; unresolved limitations and deferred hypotheses are explicit. No participant results are invented or inferred from owner screenshots.
+
+**Progress - WP12 (05/11/2026):** Release checklist written ([mobile-first-release-checklist.md](./mobile-first-release-checklist.md)): the release gate, the owner build test for WP02-WP10, a 13-step phone checklist, known limits, and a release notes draft for the owner's version bump (nothing written to the database). Desktop re-run on the demo account: S01, S02, S04, S05, S09 and S25-S29 pass; S06 not re-run (automation). The visible WP03, WP08, WP09 and WP10 changes were confirmed live, and a database check found nothing left behind. Still open before release: the owner's build test, the phone checklist, the code-only scenarios accepted or checked, and WP11 evidence (which does not block release).
 
 ### Database Connections (MCP Server)
 

@@ -188,3 +188,41 @@ No WP01 scenario changes. For the phone checklist: with nothing saved, the app n
 ### WP11 – 05/11/2026 (pending evidence)
 
 No app change. The information order comparison (field-study pack §7a, T10–T12) runs in the participant sessions; this baseline gains no new scenario until then.
+
+### WP12 desktop re-run – 05/11/2026
+
+Same setup as the WP01 run: Chrome on Windows, desktop window 1528 × 651–698 CSS px, demo account on www.hivecraic.com, with the WP09 changes confirmed live (To do jobs line and task dates showing). Nothing was saved.
+
+| Scenario | WP01 | Now | What happened |
+|---|---|---|---|
+| S01 | Fails | **Passes** | Weight typed on a new inspection, then Home: "Discard this inspection?" with Keep editing and Discard |
+| S02 | Fails | **Passes** | Editing an existing inspection, weight typed, then Home: the same question |
+| S04 | Passes | **Passes** | Cancel on the changed form asked |
+| S05 | Passes | **Passes** | The sidebar Hives link asked |
+| S06 | As designed | Not re-run | Browser Back would not move in the automation tab, and a full reload would raise Chrome's own "Leave site?" dialog, which blocks automation. WP02–WP10 did not change this path |
+| S09 | Fails | **Passes** | Start again asked "Delete the unfinished inspection?" with Keep it and Delete it |
+| S25 | Confirmed | **Passes** | Steps show numbers only. After visiting step 3 no step shows a tick, and spoken names say "already visited" |
+| S26 | Fails | **Passes** | Step 2 shows "Hive 29-DA · HDF Apiary I · 5 Nov"; step 5 in edit mode shows "Hive 57-DA · HDF Apiary I · 31 Jan" |
+| S27 | Fails | **Passes** | Edit-mode review reads "Check your changes below, then tap Update Inspection. They are not saved until you do." and lists the changed weight |
+| S28 | Fails | **Passes** | Next rgb(22, 101, 52) solid; Save Inspection light and outlined; Previous and Cancel neutral |
+| S29 | Fails | **Passes** | Five Shift+Tab presses inside "Discard this inspection?" kept focus in the dialog (ending on Discard) |
+
+**Visible changes also checked**
+- WP03: the resume panel now says "On this device since 5 Nov, 19:57", not "on this phone".
+- WP08: the seasonal card pill reads "No reading".
+- WP09:
+  - To do shows "Each line is one job…" and "Task · was due 27 September, and 5 more".
+  - On Hives, every badge reads "Inspected N days ago" in grey, and the summary is "4 Active | 0 Archived" with no "Need inspection" (November).
+  - The stores dial reads "Stores not checked".
+  - On a new inspection, stores reads "Not recorded", with "Move the slider to record stores." and the band line.
+- WP10: Profile → Appearance shows four radio choices (Light, Dark, Use device setting, Light by day), each with its description, about 82px tall, under the legend "Appearance".
+
+**Low, noted:** the edit-mode review says "tap Update Inspection" on a desktop too, like the other "tap" wording.
+
+**Clean-up:** both test drafts were deleted through the app (Start again → Delete it, and Cancel → Discard), and the edit was discarded.
+
+A read-only database check afterwards found:
+- no new inspections or tasks on the demo account in the last two hours;
+- the edited inspection's weight still empty.
+
+The browser stays signed in as the demo account.
