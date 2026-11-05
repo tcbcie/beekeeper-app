@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>WP07 progression and exits</title>
+</head>
+<body>
+<h1>WP07 – Clarify progression, inspection scope and exits</h1>
+<p>Plan: <code>docs/features/mobile-first-implementation-plan.html</code> (WP07, refinements, owner decision 4). Findings: I02, I05, F09, H05, V09, V22. No database change.</p>
+
+<h2>Changes</h2>
+<ol>
+  <li><strong>Next and Save look different</strong> (I02, V09), <code>InspectionForm.tsx</code>. On steps 1 to 4, Next stays the solid green button and Save becomes the outlined neutral button (<code>tone="neutral"</code>). Saving early still works. On step 5, Save is the only main button and stays solid green, as now.</li>
+  <li><strong>Which hive, on every step</strong> (I05), <code>InspectionForm.tsx</code>: from step 2 on, one line under the step bar reads e.g. "Hive 29-DA · HDF Apiary I · 4 Nov". It comes from the form's own hive, apiary and date. Step 1 already shows the hive field.</li>
+  <li><strong>Close stays in reach on phones</strong> (I05), <code>records/page.tsx</code>. On a phone the record form is a full screen that scrolls, and its title row with Close scrolled away. It now stays pinned at the top, below the status bar, on phones only. This applies to every record form, as they share the title row.</li>
+  <li><strong>New inspection from Hives</strong> (H05, V22, decision 4): the Hives button passes the apiary being viewed (when one is chosen) and an empty hive (<code>&amp;hive=</code>). <code>records/page.tsx</code> treats an empty hive in the link as "let the beekeeper choose", so no remembered hive is picked. Other links, including the dashboard's, keep today's behaviour.</li>
+  <li><strong>Dashboard quick action on a touch phone</strong> (F09), <code>dashboard/page.tsx</code>:
+    <ul>
+      <li>The page already scrolls to the apiaries. Now the instruction "Tap an apiary below to apply …" also receives focus and is a status message, so a screen reader reads it.</li>
+      <li>Today the whole banner is a cancel button. It becomes plain text with its own 48px Cancel button, so a tap on the instruction no longer cancels.</li>
+      <li>The text goes from 14px to 16px.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2>Not changed</h2>
+<ul>
+  <li>The order and number of steps, and saving from any step.</li>
+  <li>The step bar and footer sizes: that waits on the phone checklist (WP06).</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ 1. Next / Save emphasis</li>
+  <li>☑ 2. Hive line on steps 2 to 5</li>
+  <li>☑ 3. Pinned title row with Close on phones</li>
+  <li>☑ 4. Hives link passes the apiary, no hive</li>
+  <li>☑ 5. Dashboard quick-action banner</li>
+  <li>☑ Docs (<code>inspection-save-any-step.md</code>, the dashboard quick action doc, WP01 baseline expectations, WP07 progress in both plans)</li>
+  <li>☑ Type check, lint, tests</li>
+  <li>☑ QA audit</li>
+  <li>☑ Review section, and ask you to test the build</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned in 4 files: <code>InspectionForm.tsx</code>, <code>records/page.tsx</code>, <code>hives/page.tsx</code> and <code>dashboard/page.tsx</code>.</p>
+<ul>
+  <li>Checks: type check clean, lint clean, full suite passes (881 passed, 23 skipped). No build run.</li>
+  <li>QA audit: no Critical, High or Medium. Checked:
+    <ul>
+      <li>An empty <code>hive=</code> only reaches the "new record" branch of the Records link handling, so other links are unaffected.</li>
+      <li>From Hives with an apiary chosen, the day's remembered place becomes that apiary with no hive, the same as the dashboard's apiary links.</li>
+      <li>The pinned title row is phones only (<code>md:static</code> matches the 768px full-screen breakpoint) and sits under the form's dialogs.</li>
+      <li>Tapping a second quick action while one is active updates the instruction, which as a status message is read out again.</li>
+    </ul>
+  </li>
+  <li>Low: after an apiary is tapped and the action applied, the instruction disappears and focus returns to the page. Each action then opens a form or another page, so nothing is left waiting for focus.</li>
+  <li>Docs: <code>inspection-save-any-step.md</code>, the WP01 baseline (expected S23, S24, S26, S28) and WP07 progress in both plans.</li>
+</ul>
+<p>Waiting for your build test.</p>
+</body>
+</html>

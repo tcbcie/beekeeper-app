@@ -47,3 +47,7 @@ because a fixed bar would collide with Mel's button and the mobile navigation (s
 Related: [inspection-stepper-legibility-plan.md](./inspection-stepper-legibility-plan.md),
 [mobile-first-phase3-inspection-flow-plan.md](./mobile-first-phase3-inspection-flow-plan.md), which
 describe the earlier Review-only design.
+
+## Update 04/11/2026 (WP07)
+
+On steps 1-4 Save is the outlined neutral button, so Next leads; on step 5 Save is the solid green main button. From step 2 a line under the step bar names the hive, apiary and date. On phones the form's title row with Close stays pinned at the top.

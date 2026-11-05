@@ -142,6 +142,8 @@ Give Next and saving distinct emphasis on intermediate stages; retain deliberate
 
 **Verification refinement - WP07:** Next and Save are the same colour (#166534), so give them different emphasis (V09); the last step already makes Save the only main button. Pass the selected apiary from the Hives New inspection button (V22); whether a hive remembered from earlier that day is still preselected is an owner decision. The dashboard already scrolls the apiaries into view after the first tap; only moving focus and announcing the instruction remain. Previous and Close already have accessible names, and Close already asks before discarding; what remains is a hive context line and keeping Close reachable. Update the out-of-date phone layout in `inspection-save-any-step.md`.
 
+**Progress - WP07 (04/11/2026):** Code complete and QA-audited (no Critical, High or Medium); awaiting the owner's build test. Save outlined on steps 1-4; hive line on steps 2-5; pinned title row with Close on phones; Hives passes the apiary and no hive; dashboard quick-action instruction focused, announced and given its own Cancel.
+
 #### WP08 - Unify visual presentation without changing information order
 
 **P2 | M | Evidence: F10, D04, D06, D07, H02, H06, I06, R03. Depends on WP05-WP07 where shared components overlap.**

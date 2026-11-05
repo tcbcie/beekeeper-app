@@ -1503,6 +1503,9 @@ export default function InspectionForm({
     </div>
   ), [])
 
+  const contextHive = hives.find(candidate => candidate.id === formData.hive_id)
+  const contextApiary = apiaries.find(candidate => candidate.id === (contextHive?.apiary_id ?? formApiaryId))
+
   // The choice comes first, with no fields showing, so nothing can be typed into a new
   // inspection while an earlier one is waiting.
   if (pendingDraft && !isEditing) {
@@ -1537,6 +1540,17 @@ export default function InspectionForm({
         canJumpAhead={canJumpAhead}
       />
       </div>
+
+      {/* Which hive this is, once the hive field (step 1) is out of sight */}
+      {step > 1 && contextHive && (
+        <p className="mb-3 text-base font-medium text-foreground">
+          Hive {contextHive.hive_number}
+          {contextApiary && <span className="text-text-secondary"> · {contextApiary.name}</span>}
+          {formData.inspection_date && (
+            <span className="text-text-secondary"> · {formatLocalDate(formData.inspection_date, 'en-IE', { day: 'numeric', month: 'short' })}</span>
+          )}
+        </p>
+      )}
 
       {draftKeepProblem && (
         <p role="status" className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
@@ -2653,9 +2667,10 @@ export default function InspectionForm({
             )}
           </div>
 
+          {/* Next leads on steps 1-4, so Save is outlined there; on the last step Save is the main action */}
           <Button
             type="button"
-            tone="success"
+            tone={step === LAST_STEP ? 'success' : 'neutral'}
             onClick={saveInspection}
             disabled={submitting || fetchingWeather || voiceNoteBusy || (step === LAST_STEP && outstandingErrors.length > 0)}
             className={`${step === LAST_STEP ? "col-span-2" : ""} px-2 sm:px-6 py-3 min-h-[56px] sm:min-h-[48px] touch-manipulation font-medium w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed`}

@@ -733,7 +733,9 @@ export default function RecordsPage() {
       // Waits for the hives, as the remembered hive is only used if it is in the link's apiary.
       const apiaryParam = searchParams.get('apiary')
       const apiaryId = apiaryParam ?? rememberedPlace?.apiaryId ?? defaultLocation.apiaryId
-      const hiveId = rememberedPlace?.apiaryId === apiaryId ? rememberedPlace.hiveId : ''
+      // An empty hive in the link (from Hives) means let the beekeeper choose: no remembered hive.
+      const hiveId = searchParams.has('hive') ? ''
+        : rememberedPlace?.apiaryId === apiaryId ? rememberedPlace.hiveId : ''
       setApiaryId(apiaryId)
       setHiveId(hiveId)
       setAutoHiveId('')
@@ -1764,7 +1766,9 @@ export default function RecordsPage() {
           // Its own screen on a phone, covering the list and bottom bar, so there is only the job
           // in hand. The close button keeps the same discard guard.
           <div ref={formRef} className="field-journal-panel record-form-screen mb-6 p-4">
-            <div className="flex items-center justify-between mb-2 md:mb-4">
+            {/* On a phone the form is its own scrolling screen: the title and Close stay pinned below
+                the status bar rather than scrolling away. Full width, so nothing shows past its ends. */}
+            <div className="sticky top-[env(safe-area-inset-top,0px)] z-20 -mx-3 mb-2 flex items-center justify-between bg-background px-3 py-1 md:static md:mx-0 md:mb-4 md:bg-transparent md:px-0 md:py-0">
               <h2 className="text-lg font-semibold text-foreground">
                 {formType === 'inspection' && (editingInspection ? 'Edit Inspection' : 'New Inspection')}
                 {formType === 'varroa_treatment' && (editingTreatment?.id ? 'Edit Treatment' : 'New Treatment')}

@@ -996,7 +996,8 @@ export default function HivesPage() {
  {showNewInspectionBar && (
  <div className="md:hidden">
  <StickyActionBar>
- <Link href="/dashboard/records?create=inspection" className="fj-btn fj-btn-success min-h-[56px] w-full text-base">
+ {/* The apiary being viewed, and an empty hive so Records lets the beekeeper choose one */}
+ <Link href={`/dashboard/records?create=inspection${filterApiaryId ? `&apiary=${encodeURIComponent(filterApiaryId)}` : ''}&hive=`} className="fj-btn fj-btn-success min-h-[56px] w-full text-base">
  New inspection
  </Link>
  </StickyActionBar>

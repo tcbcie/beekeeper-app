@@ -158,3 +158,12 @@ Colour only; no WP01 scenario changes. Contrast changes are listed in `contrast-
 ### WP06 – 04/11/2026
 
 Layout changes on the access screens, secondary forms, Hives top bar and the photo picker. S30, S31 and the new checklist steps 8 and 9 decide whether the step bar, the footer or the Hives bar need changing. Nothing was changed there without a reproduced problem.
+
+### Expected after WP07 – 04/11/2026 (not yet re-run)
+
+| Scenario | Now expected |
+|---|---|
+| S23 | From Hives, the apiary being viewed is chosen and no hive is preselected |
+| S24 | The quick-action instruction receives focus, is read out, and has its own Cancel |
+| S26 | Steps 2-5 show "Hive X · Apiary · date" |
+| S28 | Save is outlined on steps 1-4; Next is the solid green button |

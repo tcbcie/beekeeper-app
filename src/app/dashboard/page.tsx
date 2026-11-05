@@ -127,10 +127,14 @@ export default function DashboardPage() {
  const activeActionRef = useRef(activeAction)
  activeActionRef.current = activeAction
 
- // The apiaries are further down the page: bring them into view for the second tap
+ // The apiaries are further down the page: bring them into view for the second tap, and move
+ // focus to the instruction so a screen reader says what to do next.
  const hasActiveAction = activeAction !== null
+ const actionBannerRef = useRef<HTMLDivElement>(null)
  useEffect(() => {
-   if (hasActiveAction) document.getElementById('my-apiaries')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+   if (!hasActiveAction) return
+   document.getElementById('my-apiaries')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+   actionBannerRef.current?.focus({ preventScroll: true })
  }, [hasActiveAction])
 
  const handleApiaryActionDrop = useCallback((apiaryId: string) => {
@@ -415,15 +419,17 @@ export default function DashboardPage() {
   <div id="my-apiaries" className="scroll-mt-4">
    <h2 className="text-lg font-semibold text-foreground mb-3">My apiaries</h2>
  {activeAction && (
+   // The instruction is text, with its own Cancel: a tap on the words no longer cancels.
    <div
-     role="button"
-     tabIndex={0}
-     onClick={() => setActiveAction(null)}
-     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setActiveAction(null) }}
-     className="mb-3 flex items-center justify-between px-4 py-2.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-sm font-semibold cursor-pointer"
+     ref={actionBannerRef}
+     role="status"
+     tabIndex={-1}
+     className="mb-3 flex items-center justify-between gap-3 px-4 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-base font-semibold focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
    >
      <span>Tap an apiary below to apply &ldquo;{activeAction.label}&rdquo;</span>
-     <span className="text-sm underline">Cancel</span>
+     <Button unstyled type="button" onClick={() => setActiveAction(null)} className="min-h-[48px] flex-shrink-0 px-2 underline underline-offset-2">
+       Cancel
+     </Button>
    </div>
  )}
    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
