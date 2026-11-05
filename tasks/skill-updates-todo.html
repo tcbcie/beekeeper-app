@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Skill updates</title>
+</head>
+<body>
+<h1>Bring the project skills up to date</h1>
+<p>Two read-only reviews checked every active project skill in <code>.claude/skills/</code> against the code on 05/11/2026. This plan fixes what they found. Only skill text changes, plus a one-line fix to one script. No app code or database changes.</p>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ <strong>frontend-design</strong>: rewrite as a short HiveCraic version. Keep the useful process from the current plugin text: plan, ground the design in the subject, build, then critique it. Remove what clashes with HiveCraic:
+    <ul>
+      <li>"never use system fonts" (HiveCraic uses device system fonts via <code>--font-ui-*</code>)</li>
+      <li>"vary between light and dark" (the app is light-first and high contrast)</li>
+      <li>maximalism, grain, custom cursors and dramatic shadows</li>
+    </ul>
+    Add: the users are 50+ beekeepers in the field; minimum 14px text and 48px touch targets; sentence case; <code>ui</code> and <code>mobile-screen</code> win on conflict. Rename the skill so it no longer clashes with the plugin's <code>frontend-design:frontend-design</code>, which is off now but still installed. Update the matching line in <code>.claude/CLAUDE.md</code> to the new name.</li>
+  <li>☑ <strong>ui</strong>: keep the accurate header (lines 1–23). Replace the old design-idea samples (about 1,450 lines) with a short reference:
+    <ul>
+      <li>tokens in <code>src/app/globals.css</code> (<code>:root</code>, <code>.dark</code>, <code>@theme inline</code>), with no Tailwind config</li>
+      <li>semantic classes (<code>bg-background</code>, <code>bg-surface</code>, <code>text-text-primary</code>, <code>border-border</code>, <code>--field-border</code>)</li>
+      <li>four theme modes with <code>system</code> as the default</li>
+      <li>charts via <code>src/lib/chart-theme.ts</code></li>
+      <li>bottom nav plus desktop sidebar as they really are</li>
+      <li>safe-area helpers (<code>.above-bottom-nav</code>, <code>.pb-bottom-nav</code>)</li>
+      <li>an inventory of the <code>src/components/ui</code> primitives, with the rule "use <code>Button tone=…</code>, never <code>fj-btn-*</code> classes"</li>
+    </ul>
+    Drop the stale advice:
+    <ul>
+      <li><code>tailwind.config</code></li>
+      <li>the <code>*-light/*-dark</code> class pairs</li>
+      <li>Recharts</li>
+      <li><code>text-xs</code> and uppercase</li>
+      <li>"no left sidebar", floating nav and gesture navigation</li>
+      <li>the 44px targets</li>
+      <li><code>min-h-screen</code></li>
+    </ul>
+  </li>
+  <li>☑ <strong>qa-engineer</strong>: change the checking step to <code>npm run typecheck</code> and <code>npx eslint &lt;changed files&gt;</code> (CI lints the whole project). Remove "filter out pre-existing tests/ errors". Add one line naming the recurring project rules: <code>firstOf()</code>, <code>useSubmitLock</code>, <code>getTeamAccess()</code>, and <code>.select('id')</code> with a 0-row check on writes.</li>
+  <li>☑ <strong>ai tools</strong>:
+    <ul>
+      <li>Fix the template's error handling to use <code>logToolError(error)</code>.</li>
+      <li>Replace the "tool definition helper" line: tools are plain <code>Tool</code> objects from <code>src/lib/ai/tools/index.ts</code>.</li>
+      <li>Add "register new modules in <code>index.ts</code>".</li>
+      <li>Add "<code>getSupabase()</code> throws outside <code>runWithUserSupabase</code>".</li>
+      <li>Make the "only use the user's data" line its own rule.</li>
+    </ul>
+  </li>
+  <li>☑ <strong>bump-version</strong> (skill): say that it also writes changelog rows to the live database from recent commits. List the exact files to stage instead of <code>git add .</code>. Add "no Co-Authored-By line" and "only on the user's explicit request".</li>
+  <li>☑ <strong>scripts/bump-version.mjs</strong>: add the missing <code>import * as readline from 'readline'</code>. Without it, running without <code>--yes</code> crashes on a major bump or whenever there are uncommitted changes.</li>
+  <li>☑ <strong>vercel-react-best-practices</strong>: add a short "Project notes" section:
+    <ul>
+      <li>React 19.1.0 (no <code>&lt;Activity&gt;</code>) and Next 15.5</li>
+      <li>no SWR (use the screen-cache pattern) and no <code>better-all</code></li>
+      <li>project rules win on conflict</li>
+    </ul>
+  </li>
+  <li>☑ <strong>design-taste-frontend</strong>: add one line at the top. For HiveCraic app screens, <code>ui</code> and <code>mobile-screen</code> override it (14px text, 48px targets, AAA contrast, light-first). Its font and asset download steps do not apply (system fonts, CSP enforced).</li>
+  <li>☑ <strong>calibrate</strong> (switched off): quote its <code>description</code> so the header parses if it is ever turned back on.</li>
+  <li>☑ <strong>versioning</strong> (switched off): it is stale (it describes interactive prompts, tag pushes and automatic bumps) and duplicates <code>bump-version</code>. Delete it, after moving its useful reference parts (file list, semver guide) into <code>bump-version</code>.</li>
+  <li>☑ Run the QA audit on the script change (the only code change).</li>
+  <li>☑ Write the review section below.</li>
+</ul>
+
+<h2>No change needed</h2>
+<ul>
+  <li><strong>mobile-screen</strong>: every file, class and rule it names checks out against the code.</li>
+</ul>
+
+<h2>Notes</h2>
+<ul>
+  <li>Nothing is committed. All edits are working-tree changes you can review in <code>git diff</code>.</li>
+  <li>The <code>ui</code> rewrite is the largest change, from about 1,490 lines to about 150. The old text stays in git history.</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned. Every skill's frontmatter now parses with a real YAML parser.</p>
+<ul>
+  <li><strong>hivecraic-frontend-design</strong> (new name, was <code>frontend-design</code>): rewritten for HiveCraic. The licence file moved with it, and <code>.claude/CLAUDE.md</code> now names the new skill in the UX rule.</li>
+  <li><strong>ui</strong>: 1,492 lines down to about 125. Every class, file and component it names was checked against <code>globals.css</code>, <code>src/components/ui</code>, the theme provider, the nav components and <code>chart-theme.ts</code>.</li>
+  <li><strong>qa-engineer</strong>: checks now use <code>npm run typecheck</code> and ESLint, it never runs tests, and it names the recurring project rules.</li>
+  <li><strong>ai tools</strong>: the template now uses <code>logToolError</code> and the real <code>Tool</code> type, with two new rules (only the user's data; running and registering tools).</li>
+  <li><strong>bump-version</strong>: says what the script really does, including the live changelog rows, the seven files to stage by name, the semver guide from <code>versioning</code>, and no Co-Authored-By.</li>
+  <li><strong>versioning</strong>: deleted.</li>
+  <li><strong>vercel-react-best-practices</strong>, <strong>design-taste-frontend</strong>: short HiveCraic notes at the top.</li>
+  <li><strong>calibrate</strong>: description quoted, so the header parses.</li>
+</ul>
+<p>QA audit of <code>scripts/bump-version.mjs</code>:</p>
+<ul>
+  <li>🟠 High (fixed): <code>readline</code> was never imported, so a major bump without <code>--yes</code> crashed.</li>
+  <li>🟡 Medium (fixed): the uncommitted-changes question sat inside a catch-all meant for "git not available". With the missing import, that catch swallowed the crash and the bump went ahead <em>without asking</em>. Now only the git call is guarded, and the question is always asked.</li>
+  <li>⚪ Low (left): the script's closing hints (<code>git add .</code>, "manual changelog update in about/page.tsx") are out of date. The skill now tells Claude to ignore them.</li>
+</ul>
+<p>Checks: <code>node --check</code>, ESLint on the script and <code>npm run typecheck</code> are all clean. A dry run of the script was blocked by the permission check, and no tests were run (manual only). Still to do by you: try <code>npm run version:bump -- --dry-run</code> if you want to see the prompt behaviour.</p>
+<p>Leftover: <code>.claude/settings.local.json</code> still has <code>"versioning": "off"</code> in <code>skillOverrides</code>. It is harmless now that the skill is gone.</p>
+</body>
+</html>

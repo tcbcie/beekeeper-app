@@ -1,3 +1,8 @@
+---
+name: ai tools
+description: Rules for creating or changing backend tools the AI assistant (Mel) can call, covering tenancy isolation via getSupabase(), safe lookups and failure handling. Use when adding or editing anything under src/lib/ai/tools.
+---
+
 # Skill: Creating Safe Backend Tools for the AI Assistant
 
 ## Description
@@ -47,16 +52,22 @@ When creating a new tool, you **MUST** adhere to these non-negotiable rules to e
     * A failed query must not read as zero. Return `` `Error fetching X: ${logToolError(error)}` `` or throw; the chat handler then answers "couldn't look that up" itself and the failure never reaches the model as data.
     * Team apiaries are included by default (`includeShared === false` for own only). Scales are the exception: Mel reads them with the caller's own BEEP/Wolf token, so only scales on the caller's own apiaries.
     * A colony whose status isn't `active` is not in any hive. Harvest weights go through `harvestWeightKg()` and per-hive totals are keyed by hive id.
-Only use data either based on the users data or on the Knowledge in the database. Never use any data that is part of the model.
+
+9.  **Only the user's data or the knowledge base:**
+    * Answers use only the user's own data or the knowledge held in the database. Never use data that is part of the model.
+
+10. **Running and registering tools:**
+    * `getSupabase()` throws outside `runWithUserSupabase()` (set per chat request in `src/app/api/chat/route.ts`). A script or test that calls a tool must wrap it the same way.
+    * A new tool file must be imported (`import * as xTools from './x'`) and spread into the `tools` registry in `src/lib/ai/tools/index.ts`, or Mel will never see it.
 
 ## Tool Structure Template
 
-All tools must follow this TypeScript structure, utilizing the project's tool definition helper (assumed to be based on Vercel AI SDK standards).
+Tools are plain objects typed as `Tool` (`src/lib/ai/tools/index.ts`); there is no definition helper or AI SDK wrapper. All tools follow this structure.
 
 ```typescript
 import { z } from 'zod'
 import type { Tool } from './index'
-import { getSupabase } from './utils'
+import { getSupabase, logToolError } from './utils'
 
 // 1. Export name = registry key = `name`. It must be unique across ALL tool files (the
 //    registry spreads every module, so a duplicate silently replaces the earlier tool).
@@ -64,13 +75,15 @@ export const getExampleRecords: Tool = {
   name: 'getExampleRecords',
   description: 'A clear, concise description for the LLM telling it WHAT this tool does and WHEN to use it.',
 
-  // 2. Parameters the LLM provides, validated by the dispatcher
+  // 2. Parameters the LLM provides. executeTool() in index.ts validates them against this schema
+  //    (and strips null values) before execute runs.
   parameters: z.object({
     // parameterName: z.string().describe('Description of parameter purpose'),
   }),
 
   // 3. The execution logic: userId is the authenticated caller, never an LLM argument
-  execute: async (_rawArgs: unknown, userId: string) => {
+  execute: async (rawArgs: unknown, userId: string) => {
+    const args = rawArgs as { /* parameterName?: string */ } // already validated
     const supabase = getSupabase() // the user's own client: RLS applies
 
     const { data, error } = await supabase
@@ -79,10 +92,9 @@ export const getExampleRecords: Tool = {
       .eq('user_id', userId) // still scope explicitly
       .limit(20)
 
-    if (error) {
-      console.error('Tool execution error:', error)
-      return 'An error occurred while attempting to fetch the data.'
-    }
+    // Logs the detail on the server; the TOOL_DB_ERROR text makes the chat handler answer
+    // "couldn't look that up" itself, so the failure never reaches the model as data.
+    if (error) return `Error fetching example records: ${logToolError(error)}`
     if (!data || data.length === 0) {
       return 'No relevant data found matching that request.'
     }

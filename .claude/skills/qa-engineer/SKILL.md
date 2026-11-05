@@ -58,9 +58,10 @@ Deliver findings as a **strict, Senior-level Code Review**:
 After implementing fixes, verify with the project's tooling — **do not run the build** (prompt the
 user to test it in the browser instead):
 
-- `npx tsc --noEmit` — confirm no new type errors in the changed files (the repo has pre-existing
-  `tests/` mock-typing errors; filter those out).
-- `npx eslint <changed files>` — confirm clean.
+- `npm run typecheck` — must be clean. CI blocks on it and there are no known pre-existing errors,
+  so treat any error as new.
+- `npx eslint <changed files>` — must be clean (CI lints the whole project with `npm run lint`).
+- **Never run any tests** (full suite or single files); prompt the user to run them.
 
 ## Project conventions
 
@@ -68,5 +69,8 @@ user to test it in the browser instead):
 - Respect the audience: users are 50+ with reduced eyesight — keep accessibility (large targets, high
   contrast, readable minimum font sizes) in scope when auditing UI.
 - All Supabase queries must respect RLS and be user-scoped.
+- Check the recurring project rules held in the memory index, especially: `firstOf()` for to-one
+  embeds, `useSubmitLock` on create/save buttons, `getTeamAccess()` for team access, and
+  `.select('id')` plus a 0-row check on updates/deletes that RLS can silently block.
 - When committing fixes: clear messages, logical grouping, and **do not** add a
   `Co-Authored-By: Claude` line.

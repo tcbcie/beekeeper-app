@@ -1,6 +1,6 @@
 ---
 name: calibrate
-description: In-session self-improvement. Reviews the current conversation for corrections, preferences, and patterns, then suggests specific skill/setup updates. Triggers on "calibrate", "what can you improve", "update your skills", "what did we learn", "tune up". Lite mode: "calibrate lite" or "/calibrate lite" — fast 1-3 suggestion sweep for shorter sessions.
+description: 'In-session self-improvement. Reviews the current conversation for corrections, preferences, and patterns, then suggests specific skill/setup updates. Triggers on "calibrate", "what can you improve", "update your skills", "what did we learn", "tune up". Lite mode: "calibrate lite" or "/calibrate lite" — fast 1-3 suggestion sweep for shorter sessions.'
 ---
 
 # Calibrate: In-Session Self-Improvement

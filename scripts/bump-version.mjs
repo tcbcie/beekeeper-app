@@ -24,6 +24,7 @@ import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync, execFileSync } from 'child_process';
+import * as readline from 'readline';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -166,21 +167,23 @@ async function main() {
     return;
   }
 
-  // Check for uncommitted changes
+  // Check for uncommitted changes. Only the git call is guarded: the prompt sits outside the
+  // try, so a failing prompt can never be mistaken for "no git" and silently skip the question.
+  let status = '';
   try {
-    const status = execSync('git status --porcelain', { encoding: 'utf8' });
-    if (status.trim()) {
-      console.log('\n⚠️  WARNING: You have uncommitted changes');
-      console.log('   It\'s recommended to commit or stash changes before bumping version');
-      
-      const proceed = await confirm('\n🤔 Continue anyway? (y/N): ');
-      if (!proceed) {
-        console.log('\n❌ Version bump cancelled');
-        process.exit(0);
-      }
-    }
+    status = execSync('git status --porcelain', { encoding: 'utf8' });
   } catch {
     // Not a git repository or git not available - continue anyway
+  }
+  if (status.trim()) {
+    console.log('\n⚠️  WARNING: You have uncommitted changes');
+    console.log('   It\'s recommended to commit or stash changes before bumping version');
+
+    const proceed = await confirm('\n🤔 Continue anyway? (y/N): ');
+    if (!proceed) {
+      console.log('\n❌ Version bump cancelled');
+      process.exit(0);
+    }
   }
 
   // Call update-version script
