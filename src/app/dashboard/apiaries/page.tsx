@@ -843,17 +843,17 @@ export default function ApiariesPage() {
                   </Button>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center w-full max-w-xs h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-accent-primary hover:bg-surface-elevated/70 transition-colors">
+                <label className="relative flex flex-col items-center justify-center w-full max-w-xs h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-accent-primary hover:bg-surface-elevated/70 transition-colors focus-within:ring-2 focus-within:ring-forest-600 focus-within:ring-offset-2">
                   <div className="flex flex-col items-center justify-center py-4">
                     <Camera size={24} className="text-text-tertiary mb-2" />
-                    <p className="text-sm text-text-tertiary">Click to upload photo</p>
+                    <p className="text-sm text-text-tertiary">Add a photo</p>
                     <p className="text-sm text-text-tertiary mt-1">PNG, JPG up to 5MB</p>
                   </div>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleImageChange}
-                    className="hidden"
+                    className="sr-only"
                   />
                 </label>
               )}

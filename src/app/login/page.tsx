@@ -172,12 +172,6 @@ function LoginForm() {
       <div className="mx-auto w-full max-w-md py-6 sm:py-10">
         <Panel className="overflow-hidden p-5 sm:p-8" padding="none">
           <div className="space-y-7">
-            <div className="flex justify-center">
-              <span className="inline-flex items-center rounded-full border border-amber-300/70 bg-amber-100/80 px-3 py-1 text-sm font-semibold text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                Field Journal Access
-              </span>
-            </div>
-
             <div className="space-y-4 text-center">
               <div className="mx-auto inline-flex max-w-full flex-wrap items-center justify-center gap-3 rounded-2xl border border-border bg-surface-elevated/70 px-4 py-3 shadow-sm">
                 <Image src="/logo.png" alt="HiveCraic" width={40} height={40} priority className="h-10 w-10" />
@@ -194,11 +188,6 @@ function LoginForm() {
                   : 'Sign in to track hives, inspections, queens and shared team work in one place.'}
                 className="text-center [&>div]:mx-auto [&>div]:max-w-sm [&>div]:w-full [&_h1]:text-2xl [&_h1]:sm:text-3xl"
               />
-
-              <div className="space-y-1 text-sm text-text-secondary">
-                <p>Crafted with honeyed hearts by tcbc.ie</p>
-                <p>with Tribes Beekeepers Association and Tribes QRBG</p>
-              </div>
             </div>
 
             <form
@@ -320,6 +309,12 @@ function LoginForm() {
               </svg>
               <span className="font-medium text-foreground">Continue with Google</span>
             </Button>
+
+            {/* Credits sit at the foot, after the sign-in methods, so the form comes first */}
+            <div className="space-y-1 text-center text-sm text-text-secondary">
+              <p>Crafted with honeyed hearts by tcbc.ie</p>
+              <p>with Tribes Beekeepers Association and Tribes QRBG</p>
+            </div>
 
             <div className="flex items-center justify-center gap-2 text-sm text-text-tertiary">
               <span className="rounded-full border border-forest-200 bg-forest-50 px-2 py-1 font-mono text-forest-700 dark:border-forest-900 dark:bg-forest-950/30 dark:text-forest-300">

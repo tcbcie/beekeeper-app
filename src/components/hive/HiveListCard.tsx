@@ -3,7 +3,7 @@ import { useId, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { ExternalLink, MoreVertical, ArchiveRestore, Archive, Trash2, Scale, Clock, QrCode, Syringe } from 'lucide-react'
+import { ExternalLink, MoreVertical, ArchiveRestore, Archive, Trash2, Scale, Clock, QrCode, Syringe, Users, Share2, ClipboardList, MapPin, Crown } from 'lucide-react'
 import type { Hive } from '@/types/hive'
 import { queenStatusBadgeClass } from '@/types/queen'
 import Button from '@/components/ui/Button'
@@ -137,17 +137,6 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </label>
  )}
 
- {/* Overview & Records Button - Top of Card */}
- <Button
- onClick={() => {
- onOpen?.(hive.id)
- router.push(`/dashboard/hives/${hive.id}`)
- }}
- className="w-full px-4 py-3 mb-4 text-sm bg-forest-600 dark:bg-forest-500 text-white rounded-lg hover:bg-forest-700 dark:hover:bg-forest-600 font-semibold shadow-sm min-h-[48px]"
- >
- Overview & Records
- </Button>
-
  <div className="flex justify-between items-start gap-2 mb-3">
  {/* min-w-0 + break-words: a compound hive number ("77-HMN+|70-HMN+") is one
      unbreakable token, and a flex item's default min-width:auto would size this
@@ -182,25 +171,25 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  )}
  {hive.is_shared && hive.team_name && (
  <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-sm font-medium rounded flex items-center gap-1 w-fit border border-blue-300 dark:border-blue-800">
- <span>👥</span>
+ <Users size={14} aria-hidden="true" />
  <span>Shared via {hive.team_name}</span>
  </span>
  )}
  {!hive.is_shared && hive.shared_with_team && (
  <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-sm font-medium rounded flex items-center gap-1 w-fit border border-purple-300 dark:border-purple-800">
- <span>📤</span>
+ <Share2 size={14} aria-hidden="true" />
  <span>Shared with {hive.shared_with_team}</span>
  </span>
  )}
  {hive.archived_at && (
  <span className="px-2 py-0.5 bg-surface dark:bg-surface-elevated text-text-primary text-sm font-medium rounded flex items-center gap-1 w-fit border border-border">
- <span>📦</span>
+ <Archive size={14} aria-hidden="true" />
  <span>Archived {new Date(hive.archived_at).toLocaleDateString()}</span>
  </span>
  )}
  {hive.active_tasks_count !== undefined && hive.active_tasks_count > 0 && (
  <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-sm font-semibold rounded flex items-center gap-1 w-fit border border-amber-400 dark:border-amber-700">
- <span>📋</span>
+ <ClipboardList size={14} aria-hidden="true" />
  <span className="font-bold">{hive.active_tasks_count}</span>
  <span>Active Task{hive.active_tasks_count > 1 ? 's' : ''}</span>
  </span>
@@ -341,9 +330,21 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </div>
  </div>
 
+ {/* After the hive's name and status, so the hive comes first; outlined, as the card's secondary action */}
+ <Button
+ tone="neutral"
+ onClick={() => {
+ onOpen?.(hive.id)
+ router.push(`/dashboard/hives/${hive.id}`)
+ }}
+ className="w-full mb-4 min-h-[48px] font-semibold"
+ >
+ Overview & Records
+ </Button>
+
  <div className="space-y-2 text-sm mb-4">
  <div className="flex items-center gap-2">
- <span className="text-text-tertiary">📍</span>
+ <MapPin size={16} aria-hidden="true" className="flex-shrink-0 text-text-tertiary" />
  <span className="font-medium text-text-primary">{hive.apiaries?.name || 'No apiary'}</span>
  {(hive.order_in_apiary || hive.row_in_apiary) && (
  <span className="text-sm text-text-tertiary ml-1">
@@ -352,7 +353,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  )}
  </div>
  <div className="flex flex-wrap items-center gap-2">
- <span className="text-text-tertiary">👑</span>
+ <Crown size={16} aria-hidden="true" className="flex-shrink-0 text-text-tertiary" />
  {hive.queens?.id ? (
  <span className="flex items-center gap-1">
  {hive.queens.marking_color && (
@@ -416,7 +417,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </div>
  {hive.last_record && (
  <div className="flex items-center gap-2">
- <span className="text-text-tertiary">📋</span>
+ <ClipboardList size={16} aria-hidden="true" className="flex-shrink-0 text-text-tertiary" />
  <span className="text-sm">
  <span className="font-medium text-text-secondary">{hive.last_record.type}</span>
  <span className="text-text-tertiary"> &bull; {new Date(hive.last_record.date).toLocaleDateString('en-IE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>

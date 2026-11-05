@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>WP08 visual consistency</title>
+</head>
+<body>
+<h1>WP08 – Unify visual presentation without changing information order</h1>
+<p>Plan: <code>docs/features/mobile-first-implementation-plan.html</code> (WP08 and refinements). Findings: F10, D04, D06, D07, H02, H06, I06, R03. The order of information stays as it is (that is WP11); these are presentation and wording fixes.</p>
+
+<h2>Changes</h2>
+<ol>
+  <li><strong>Seasonal card pills say a state, not an order</strong> (D06), <code>src/lib/seasonal-lead.ts</code>. The pills are labels, not buttons, but four read as instructions:
+    <ul>
+      <li>"Check" (a scale hive getting lighter) becomes "Lighter"</li>
+      <li>"Heft" (no scale reading) becomes "No reading"</li>
+      <li>"To do" (no treatment, or no inspection yet this year) becomes "Not yet"</li>
+      <li>"Look" (sudden weight drop) becomes "Sudden drop"</li>
+    </ul>
+    "Checking", "Steady" and "Done" already describe a state and stay. The notes beside each pill still say what to do ("heft on your next visit").
+  </li>
+  <li><strong>Hive card: the hive comes first</strong> (H02), <code>HiveListCard.tsx</code>. The full-width green "Overview &amp; Records" button moves from above the hive number to just below the hive's name and status, and becomes the outlined secondary button (<code>tone="neutral"</code>). Same label, same target.</li>
+  <li><strong>Hive card: icons instead of emoji</strong> (H06). Shared via, Shared with, Archived, Active tasks, apiary, queen and last record use the matching line icons already in the app (Users, Share2, Archive, ClipboardList, MapPin, Crown), hidden from screen readers. The emoji in the hive box drawing (🍯 🐝 🚪) stay, as beekeeping imagery.</li>
+  <li><strong>Login: the form comes sooner</strong> (R03). The decorative "Field Journal Access" badge goes. The two credit lines (tcbc.ie; Tribes Beekeepers Association and Tribes QRBG) move from above the form to the bottom, beside the version. Nothing is removed apart from the badge.</li>
+  <li><strong>Photo boxes say what is true</strong> (I06). "Click to upload … or drag and drop" appears in four places: inspection, varroa check, diagnosis and apiary photo. It becomes "Add photos" or "Add a photo". Dragging was never wired up in any of them, and "click" reads oddly on a phone. The three other boxes get the same keyboard fix as the inspection one in WP06: the input is visually hidden instead of <code>display: none</code>, with a focus ring.</li>
+  <li><strong>Mel's name</strong> (D07), <code>ChatButton.tsx</code>: the spoken name becomes "Open Mel, the beekeeping assistant" (Close stays "Close Mel"), so a screen reader says what Mel is. Its colour was already brought in line in WP05.</li>
+  <li><strong>Card corners</strong> (D04): the dashboard's recent-visit rows go from 4px to 8px corners, matching the other rows. The apiary rows keep their heavier border, which helps a tap target stand out.</li>
+</ol>
+
+<h2>Not changed</h2>
+<ul>
+  <li>The voice note button's own colours: its contrast was fixed in WP05, and moving it onto the shared tones would change its size.</li>
+  <li>The order of dashboard sections, card density and defaults: WP11.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ 1. Seasonal pills</li>
+  <li>☑ 2. Overview &amp; Records below the hive identity, outlined</li>
+  <li>☑ 3. Hive card icons</li>
+  <li>☑ 4. Login badge and credits</li>
+  <li>☑ 5. Photo box wording and keyboard access</li>
+  <li>☑ 6. Mel's spoken name</li>
+  <li>☑ 7. Recent-visit corners</li>
+  <li>☑ Docs, WP08 progress in both plans</li>
+  <li>☑ Type check, lint, tests</li>
+  <li>☑ QA audit</li>
+  <li>☑ Review section, and ask you to test the build</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned in 9 files: <code>seasonal-lead.ts</code>, <code>HiveListCard.tsx</code>, <code>login/page.tsx</code>, <code>ChatButton.tsx</code>, <code>InspectionForm.tsx</code>, <code>VarroaCheckForm.tsx</code>, <code>DiagnosisUploader.tsx</code>, <code>apiaries/page.tsx</code> and <code>dashboard/page.tsx</code>.</p>
+<ul>
+  <li>Checks: type check clean, lint clean, full suite passes (881 passed, 23 skipped). No test referred to the old pill words, labels or badge. No build run.</li>
+  <li>QA audit: no Critical, High or Medium. Checked: each moved file input still follows its own box (the script confirmed the input sits between the box text and its class); new icons are hidden from screen readers, so each label's spoken text is unchanged apart from the emoji; Overview &amp; Records keeps its click handler and target.</li>
+  <li>Low: "No reading" and "Sudden drop" are wider pills; the row's title column can wrap to make room.</li>
+  <li>Docs: <code>dashboard-today-screen.md</code>, <code>inspection-multi-photo-plan.md</code>, the WP01 baseline and both plans.</li>
+</ul>
+<p>Waiting for your build test.</p>
+</body>
+</html>

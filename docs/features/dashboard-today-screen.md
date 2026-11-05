@@ -108,3 +108,7 @@ Two scale alerts join the To do list, with thresholds agreed with the owner (`sr
 In stores months (September to February, and June for the June gap) the seasonal panel adds **"Your hives · Scales this week: 34-DA -2.7 kg, 26-DA -2.1 kg, 29-DA +1.3 kg"**, every scale hive's 7-day change with the fastest-losing first. It uses the scale summaries already loaded (`useScaleSummaries`), so it costs no request and no database change. The owner chose this line only; lines for feeding and varroa-treatment records were offered and not taken.
 
 Related: [dashboard-simplify-plan.md](./dashboard-simplify-plan.md), [dashboard-apiary-weather.md](./dashboard-apiary-weather.md), [gdd-dashboard-bloom.md](./gdd-dashboard-bloom.md).
+
+## Update 05/11/2026 (WP08): pills name a state
+
+The seasonal card's pills are labels, not buttons, so they now describe a state rather than give an order: "Check" is "Lighter", "Heft" is "No reading", "To do" is "Not yet", and "Look" is "Sudden drop". "Checking", "Steady" and "Done" are unchanged. Each row's note still says what to do. The recent-visit rows have 8px corners like the other rows. The quick-action instruction (WP07) is a status message with its own Cancel.

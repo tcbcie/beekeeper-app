@@ -167,3 +167,7 @@ Layout changes on the access screens, secondary forms, Hives top bar and the pho
 | S24 | The quick-action instruction receives focus, is read out, and has its own Cancel |
 | S26 | Steps 2-5 show "Hive X · Apiary · date" |
 | S28 | Save is outlined on steps 1-4; Next is the solid green button |
+
+### WP08 – 05/11/2026
+
+Presentation and wording only; no WP01 scenario changes. Hive cards put the hive first with an outlined Overview & Records; login credits moved below the sign-in methods; Mel's spoken name says what Mel is.

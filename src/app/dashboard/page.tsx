@@ -638,7 +638,7 @@ function RecentActivitySection({ recentActivity, apiaries, recentActivityError, 
   <Link
    key={visit.key}
    href={apiaryId ? `/dashboard/records?apiary=${apiaryId}` : '/dashboard/records'}
-   className="block min-h-12 p-3 bg-surface dark:bg-surface-elevated rounded border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors"
+   className="block min-h-12 p-3 bg-surface dark:bg-surface-elevated rounded-lg border border-border hover:border-forest-500 dark:hover:border-forest-400 transition-colors"
   >
    <span className="font-medium text-foreground block break-words">{formatDayMonth(visit.date) ?? visit.date} · {visit.apiaryName}</span>
    <span className="text-sm font-medium text-text-secondary">{visit.summary}</span>

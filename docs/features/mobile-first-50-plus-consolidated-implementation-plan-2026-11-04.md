@@ -154,6 +154,8 @@ Standardise section surfaces, clickable rows, badges and action roles. Keep hive
 
 **Verification refinement - WP08:** Status pills are already non-interactive; the fix is wording, because "Heft", "Check" and "To do" read as instructions. The assistant's accessible name is "Open Mel", so it can be judged now. "Click to upload / or drag and drop" appears in four files. The voice button bypasses the shared button tones. On access screens only the credits and extra framing need moving; the version already sits last.
 
+**Progress - WP08 (05/11/2026):** Code complete and QA-audited, awaiting the owner's build test. Seasonal pills name a state (Lighter, No reading, Not yet, Sudden drop); hive cards show the hive first, with an outlined Overview & Records and line icons instead of emoji in status and detail rows; login loses the decorative badge and moves the credits below the sign-in methods; photo boxes say "Add photos"/"Add a photo" (no false drag-and-drop) and are all keyboard-reachable; Mel is announced as the beekeeping assistant; recent-visit rows match the other rows' corners. Not changed: voice button tones, section order and defaults (WP11).
+
 #### WP09 - Clarify time, observations and stores meaning
 
 **P1 meaning clarification, P2 presentation | M | Evidence: D02, H01, H07, V11-V13. Depends on verified existing calculations.**

@@ -140,3 +140,7 @@ Two findings were recorded and deliberately **not** changed:
 - The wider suite has **137 pre-existing failures across 18 files** (auth, changelog, StatCard, GDD tracker, ingest utils and similar). Confirmed identical at `HEAD` in a clean worktree before and after this change, so none are attributable to it.
 
 **Still to do: browser verification by the owner.** Attach two or three photographs to an inspection, save, reopen, remove the middle one, save again, and check the card badge and the viewer's next/previous.
+
+## Update 05/11/2026 (WP08): photo box wording
+
+"Click to upload or drag and drop" became "Add photos" (inspection) and "Add a photo" (varroa check, diagnosis, apiary photo). Dragging was never wired up, and "click" read oddly on a phone. All four file inputs are visually hidden (`sr-only`) rather than `display: none`, so Tab reaches them, and the dashed box shows a focus ring.

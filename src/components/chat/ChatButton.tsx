@@ -29,7 +29,7 @@ export default function ChatButton() {
                       ? 'bg-surface-elevated dark:bg-surface-elevated rotate-0'
                       : 'bg-forest-800 hover:bg-forest-900'
                     }`}
-        aria-label={isOpen ? 'Close Mel' : 'Open Mel'}
+        aria-label={isOpen ? 'Close Mel' : 'Open Mel, the beekeeping assistant'}
       >
         {isOpen ? (
           <X className="w-6 h-6 text-foreground" />

@@ -2549,9 +2549,9 @@ export default function InspectionForm({
                   <Camera size={24} className="text-text-tertiary mb-1" />
                   <p className="text-sm text-text-tertiary text-center">
                     <span className="font-semibold">
-                      {totalPhotoCount === 0 ? 'Click to upload' : 'Add more photos'}
+                      {totalPhotoCount === 0 ? 'Add photos' : 'Add more photos'}
                     </span>
-                    {totalPhotoCount === 0 ? ' or drag and drop' : ` — ${totalPhotoCount} of ${MAX_INSPECTION_PHOTOS} attached`}
+                    {totalPhotoCount > 0 && ` — ${totalPhotoCount} of ${MAX_INSPECTION_PHOTOS} attached`}
                   </p>
                   <p className="text-sm text-text-tertiary">PNG, JPG, WEBP up to 10MB each</p>
                 </div>

@@ -96,12 +96,12 @@ function autumnLead(input: SeasonalLeadInput, now: Date): SeasonalLead {
     scalesLoading
       ? { key: 'stores', title: 'Stores', note: storesNote, pill: 'Checking', tone: 'amber' }
       : light.length > 0
-        ? { key: 'stores', title: 'Stores', note: storesNote, pill: 'Check', tone: 'amber', action: { label: 'Record feed', href: NEW_FEED } }
+        ? { key: 'stores', title: 'Stores', note: storesNote, pill: 'Lighter', tone: 'amber', action: { label: 'Record feed', href: NEW_FEED } }
         : withFigures.length > 0
           ? { key: 'stores', title: 'Stores', note: storesNote, pill: 'Steady', tone: 'green' }
-          : { key: 'stores', title: 'Stores', note: `${storesNote}. About 18 kg is a rough guide`, pill: 'Heft', tone: 'amber' },
+          : { key: 'stores', title: 'Stores', note: `${storesNote}. About 18 kg is a rough guide`, pill: 'No reading', tone: 'amber' },
     untreated.length > 0
-      ? { key: 'varroa', title: 'Varroa treatment', note: `None recorded since 1 July at ${untreated.map(a => a.name).join(', ')}`, pill: 'To do', tone: 'amber', action: { label: 'Record treatment', href: NEW_TREATMENT } }
+      ? { key: 'varroa', title: 'Varroa treatment', note: `None recorded since 1 July at ${untreated.map(a => a.name).join(', ')}`, pill: 'Not yet', tone: 'amber', action: { label: 'Record treatment', href: NEW_TREATMENT } }
       : { key: 'varroa', title: 'Varroa treatment', note: lastTreated ? `Last recorded ${lastTreated}` : 'None recorded', pill: 'Done', tone: 'green' },
   ]
   let answer: string
@@ -134,7 +134,7 @@ function winterLead(input: SeasonalLeadInput): SeasonalLead {
     key: `light:${s.hiveId}`,
     title: hiveName(s),
     note: `${signedKg(s.change7d)} in 7 days, heft to check stores`,
-    pill: 'Check',
+    pill: 'Lighter',
     tone: 'amber',
     action: { label: 'Record feed', href: `/dashboard/records?hive=${s.hiveId}&type=feeding` },
   }))
@@ -149,7 +149,7 @@ function winterLead(input: SeasonalLeadInput): SeasonalLead {
       key: 'noscale',
       title: `${withoutScale} ${hivesWord(withoutScale)} without a scale`,
       note: `${lastFedNote(apiaries)}, heft on your next visit`,
-      pill: 'Heft',
+      pill: 'No reading',
       tone: 'amber',
     })
   }
@@ -185,7 +185,7 @@ function springLead(input: SeasonalLeadInput, now: Date): SeasonalLead {
     rows.push({ key: 'done', title: looked.map(a => a.name).join(', '), note: latest ? `First look done, latest ${latest}` : 'First look done', pill: 'Done', tone: 'green' })
   }
   if (notYet.length > 0) {
-    rows.push({ key: 'notyet', title: notYet.map(a => a.name).join(', '), note: 'No inspection yet this year', pill: 'To do', tone: 'amber' })
+    rows.push({ key: 'notyet', title: notYet.map(a => a.name).join(', '), note: 'No inspection yet this year', pill: 'Not yet', tone: 'amber' })
   }
 
   let answer: string
@@ -228,7 +228,7 @@ function swarmLead(input: SeasonalLeadInput, now: Date): SeasonalLead {
       key: `swarm:${s.hiveId}`,
       title: s.hiveNumber ? `Hive ${s.hiveNumber}` : hiveName(s),
       note: `Lost ${drop.kg.toFixed(1)} kg within ${SWARM_DROP_WINDOW_HOURS} hours, ${when.toLocaleDateString('en-IE', { weekday: 'long' })} ${part}`,
-      pill: 'Look',
+      pill: 'Sudden drop',
       tone: 'amber',
     }
   })

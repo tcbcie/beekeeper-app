@@ -531,17 +531,17 @@ export default function VarroaCheckForm({
                   </IconButton>
                 </div>
               )}
-              <label className="flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-orange-500 dark:hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all p-4">
+              <label className="relative flex-1 flex flex-col items-center justify-center min-h-[80px] border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-orange-500 dark:hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-all p-4 focus-within:ring-2 focus-within:ring-forest-600 focus-within:ring-offset-2">
                 <div className="flex flex-col items-center justify-center">
                   <Camera size={24} className="text-text-tertiary mb-1" />
                   <p className="text-sm text-text-tertiary text-center">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
+                    <span className="font-semibold">Add a photo</span>
                   </p>
                   <p className="text-sm text-text-tertiary">PNG, JPG, WEBP up to 10MB</p>
                 </div>
                 <input
                   type="file"
-                  className="hidden"
+                  className="sr-only"
                   accept="image/*"
                   onChange={handleImageChange}
                 />
