@@ -6,7 +6,7 @@
 
 The dashboard is the first screen a beekeeper sees. It now answers four questions, in order:
 
-1. **Can I open my hives today?** – a clear answer with the reason and the best window, and the next five days.
+1. **What matters this season?** – the seasonal top card (section 3a). It replaced the separate "Can I open my hives today?" card; its forecast tiles show from March to July.
 2. **What should I do, and where?** – one To do list naming the hives, each with a button that starts the job.
 3. **Is anything wrong?** – only exceptions appear in To do; nothing when all is well.
 4. **What should I think about this time of year?** – two or three seasonal reminders for Ireland.
@@ -15,17 +15,26 @@ It replaces the earlier apiary cards, the "Today around your apiaries" strip ([d
 
 ## 2. Layout (top to bottom)
 
+Checked against the code on 05/11/2026 (WP11). One column on a phone.
+
 | Part | Content | File |
 |---|---|---|
+| Notices | Unfinished inspection, inspections waiting to send, and the saved-copy notice, each only when needed | `UnfinishedInspectionNotice`, `InspectionOutbox`, `CachedDataNotice` |
 | Greeting | "Good afternoon, Rico" and "21 hives in 4 apiaries · 1 apiary not visited for 14 days" | `src/app/dashboard/page.tsx` |
 | Quick actions | New inspection / New task. On touch, tapping scrolls to My apiaries to choose one; with no apiary it opens the form | page |
+| Pending invitations | Only when there are any | `src/components/dashboard/PendingInvitationsCard.tsx` |
+| Error panel | Only when the dashboard failed to load | page (`AlertPanel`) |
 | Strong wind warning | Only when gusts of 90 km/h or more are forecast at an apiary in the next 72 hours. See [dashboard-wind-warning.md](./dashboard-wind-warning.md) | `src/components/dashboard/WindWarningCard.tsx` |
 | Seasonal top card | One question for the season, its answer from the user's records, and one action. See section 3a | `src/components/dashboard/SeasonalLeadCard.tsx`, rules in `src/lib/seasonal-lead.ts` |
 | To do | Grouped by apiary (nearest first); first five jobs, "Show all N jobs" | `src/components/dashboard/TodoList.tsx`, rules in `src/lib/dashboard-todo.ts` |
 | My apiaries | One row each: hives, last visit, scales' change this week, "N jobs" or "All good" | `src/components/dashboard/ApiaryWeatherRow.tsx` (`variant="card"`) |
-| {Month} in Ireland | Seasonal reminders, one set per month | `src/components/dashboard/SeasonalReminders.tsx` |
-| Upcoming events, Teams | Unchanged | page |
+| {Month} in Ireland | Seasonal reminders, one set per month, at most five (limit set in the database) | `src/components/dashboard/SeasonalReminders.tsx` |
+| Upcoming events | Every task or event in the next 7 days (not today's), no limit | `src/components/dashboard/UpcomingEvents.tsx` |
 | Recent visits | Records grouped by day and apiary ("25 October · AP01 - Colm: 3 feeds, 1 inspection"), latest five; links to the records list for that apiary | page, `get_recent_activity` |
+| Teams & collaboration | Only for team or rearing-group members; folded closed, its figures load when opened | page |
+| Version | The app version | page |
+
+Nothing else folds, and no open or closed state is remembered. Whether a shorter order with folded supporting sections would serve beekeepers better is WP11, waiting for the field study; until then this order stays (see `docs/reviews/mobile-first-wp11-comparison-mockups.html`).
 
 The weather, 7-day forecast, GDD, blooms and nectar/pollen block now sits on the apiary page (`ApiaryWeatherRow` `variant="conditions"`, loaded on demand), so nothing is lost.
 

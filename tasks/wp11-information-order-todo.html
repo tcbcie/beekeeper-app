@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>WP11 information order</title>
+</head>
+<body>
+<h1>WP11 – Validate information order and disclosure before changing defaults</h1>
+<p>Plan: <code>docs/features/mobile-first-implementation-plan.html</code> (WP11). Findings: D03, D05, H03, H04, with H02 and R03 supporting. This package is conditional. It changes defaults only on evidence from beekeepers aged 50+. If no sessions are possible, it stays pending and today's order and defaults are kept. No participant results exist yet: the field-study pack is still "materials only".</p>
+
+<h2>What the code shows today</h2>
+<ul>
+  <li><strong>Dashboard on a phone</strong>, one column, in this order:
+    <ol>
+      <li>Notices</li>
+      <li>Greeting and summary</li>
+      <li>Two quick actions</li>
+      <li>Invitations, errors and wind warnings, each only when needed</li>
+      <li>Seasonal card (with forecast tiles March to July)</li>
+      <li>To do: first 5 jobs, then "Show all N jobs"</li>
+      <li>My apiaries: all of them, those with jobs first</li>
+      <li>"{Month} in Ireland": up to 5, a limit set in the database</li>
+      <li>Upcoming Events: every task in the next 7 days, with no limit</li>
+      <li>Recent visits: the latest 5, with View All Records</li>
+      <li>Teams, folded closed</li>
+      <li>Version</li>
+    </ol>
+    <p>Nothing else folds, and no open or closed state is remembered.</p>
+  </li>
+  <li><strong>Hives on a phone</strong>: List is already the default (compact rows), and Cards is one tap away. The choice is remembered. Desktop always shows Cards. Nothing inside a card folds. Each card always shows:
+    <ul>
+      <li>the setup drawing, about 200px for 2 supers and 2 brood boxes</li>
+      <li>the model and photo row (03/11)</li>
+      <li>notes in full</li>
+    </ul>
+    <p>So it is about one hive per phone screen.</p>
+  </li>
+  <li><strong>Already done, so not re-tested as new</strong>: To do stops at 5, Recent visits is 5 with View All Records, and List is the phone default.</li>
+  <li><strong>Doc drift</strong>: <code>dashboard-today-screen.md</code> lists Recent visits after Teams; the code has it before. Notices, invitations, the error panel and the version line are missing from its table.</li>
+</ul>
+
+<h2>Proposed work (no change to what a beekeeper sees)</h2>
+<ol>
+  <li><strong>Add the WP11 comparison to the field-study pack</strong> (<code>docs/reviews/mobile-first-field-study-pack-2026-11-03.md</code>). The pack has no tasks for this yet, so add:
+    <ul>
+      <li>T10 – <em>Most important job</em>: "What needs doing first today?" Measures success, time and route.</li>
+      <li>T11 – <em>Advice and history</em>: "What does the app suggest for this month?" and "When did you last visit the home apiary?" Both must stay findable.</li>
+      <li>T12 – <em>Find a hive with a concern</em>, comparing List and Cards: "Which hive is low on stores?", then start its inspection.</li>
+      <li>Ratings: the four appearance ratings and a paired preference (A/B order alternated, labels hidden), as the pack already sets out.</li>
+      <li>Decision rule, from the plan: a change ships only if task-start success and finding important work are kept or improved, advice and history stay findable, and ratings support it. Mixed evidence keeps today's order.</li>
+    </ul>
+  </li>
+  <li><strong>Make the alternative designs to compare</strong> (format: see D1).
+    <ul>
+      <li>Dashboard B: a short attention summary (To do capped at 3), then apiaries. Monthly guidance, Upcoming Events and Recent visits sit in sections that open on a tap, each showing its count.</li>
+      <li>Cards B: the setup drawing, model row and long notes fold behind "Show setup". The card leads with the operational summary (inspection age, queen, stores, tasks).</li>
+      <li>A (today) is the real app.</li>
+    </ul>
+  </li>
+  <li><strong>Fix the dashboard doc</strong> so its layout table matches the code (order, missing sections, Teams folded).</li>
+  <li><strong>Record WP11 as pending evidence</strong> in both plans and the baseline. Defaults stay as they are.</li>
+</ol>
+
+<h2>Decisions (05/11/2026): static mock-ups, ship nothing now, prepare for sessions</h2>
+<ol>
+  <li><strong>D1 – How to build the B designs.</strong>
+    <ul>
+      <li>Recommended: static phone-size mock-ups (one HTML page with fictional data, kept in <code>docs/reviews</code>). There is no change to the app and no risk. They are good for finding work, appearance and preference, but cannot start a real inspection.</li>
+      <li>Alternative: an in-app preview, switched on only for the test account. It uses real screens and real tasks, but adds code to the live app that must be removed afterwards.</li>
+    </ul>
+  </li>
+  <li><strong>D2 – Anything to ship now, without sessions?</strong>
+    <ul>
+      <li>Recommended: nothing. The plan says not to change defaults from screenshots.</li>
+      <li>Alternative: an optional "Show setup" fold on Cards that starts open, so nothing changes unless someone folds it, and remembers the choice. Low risk, but it is new UI without evidence.</li>
+    </ul>
+  </li>
+  <li><strong>D3 – Can you run the sessions?</strong> They need the owner details the pack asks for (organiser, venue, consent, retention dates) and 6–8 beekeepers aged 50+. If not soon, WP11 stays pending and WP12 can go ahead without it.</li>
+</ol>
+
+<h2>Not changed</h2>
+<ul>
+  <li>Dashboard order, limits and folding. Hives List/Cards default, the remembered choice, and the card content.</li>
+  <li>No participant results are written or inferred.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ 1. Field-study pack: T10–T12, ratings, decision rule</li>
+  <li>☑ 2. B designs (static mock-ups)</li>
+  <li>☑ 3. Dashboard doc matches the code</li>
+  <li>☑ 4. WP11 recorded as pending evidence (both plans, baseline)</li>
+  <li>– QA check of code: not needed, no app code changed</li>
+  <li>☑ Review section</li>
+</ul>
+
+<h2>Review</h2>
+<p>Documentation and study materials only; no app code, defaults or data changed.</p>
+<ul>
+  <li><strong>Field-study pack:</strong>
+    <ul>
+      <li>New §7a, an optional block of about 10 minutes with tasks T10, T11a/b and T12a/b.</li>
+      <li>B is scored as "found it / where would you tap", never as an interactive result.</li>
+      <li>Also added: a WP11 fixture row, a timing note, and the plan's decision rule (mixed or missing evidence keeps today's order).</li>
+    </ul>
+  </li>
+  <li><strong>Mock-ups</strong> (<code>docs/reviews/mobile-first-wp11-comparison-mockups.html</code>): two 390px phone screens in the app's light colours and device fonts, with fictional data matching the fixture.
+    <ul>
+      <li>Today B: the summary line as the app writes it, two quick actions, the seasonal card folded to its title, To do capped at 3 with "Show all 4 jobs", My apiaries, then monthly guidance, Upcoming events and Recent visits folded with counts.</li>
+      <li>Cards B: three Orchard hives, each with stores, tasks, queen and last record as facts. Overview &amp; Records stays. The setup drawing, model and notes sit behind "Show setup".</li>
+      <li>The folds are native <code>details</code> elements (keyboard reachable, at least 48px). The moderator notes sit closed at the end.</li>
+    </ul>
+  </li>
+  <li><strong>Design check:</strong> the colours, 14px minimum text and 48px targets follow the app's rules. The only differences from A are the order and folding, as listed in the moderator notes. Cut during review: an invented summary sentence, replaced with the app's real wording.</li>
+  <li><strong>Dashboard doc:</strong> the layout table now matches the code. Recent visits sits before Teams. Notices, invitations, the error panel and the version line are added. Teams is described as folded. The overview no longer describes the retired "Can I open my hives today?" card.</li>
+  <li><strong>Pending:</strong> the sessions themselves. Owner details are needed first (organiser, venue, consent, retention dates, pack §4), along with 6–8 beekeepers aged 50+ and the test-account fixture.</li>
+</ul>
+<p>Please open the mock-up page in a browser to check it before the sessions.</p>
+</body>
+</html>

@@ -104,6 +104,7 @@ Use an isolated test account and disposable fictional records. Never use a parti
 | Outbox case | Disposable new inspection with a unique task code and a reproducible failed-send state |
 | Secondary forms | Fictional purchase “Study feeder” and expense “Study feed”, £12.50 or the configured account currency recorded explicitly |
 | Archive/delete | Study Retired hive with history; separate Study Mistake disposable hive with no valuable history |
+| Information order (WP11, optional) | At Orchard Study: Orchard 03 with a Low stores reading this season, two due tasks, a visit 6 days ago; at least one monthly guidance entry and one Upcoming Event. Matches the fictional data in the WP11 mock-up |
 
 Reset fixtures between participants and task branches; preserve evidence before resetting. Use unique participant/task codes to distinguish duplicates. Do not prepopulate real personal or apiary data. Verify that changes cannot trigger real notifications or external transactions.
 
@@ -143,7 +144,7 @@ Start with usual settings. Offer an optional enlarged-text or alternative-theme 
 
 ## 6. Moderator script and timing
 
-Budget approximately 75 minutes: welcome/consent 8; device/context 5; core tasks 20; offline/recovery 15; secondary/destructive-choice tasks 10; outdoor comparison 8; visual ratings/debrief 9. Offer a break around the midpoint and whenever requested. Split into two appointments if needed; do not rush to complete the battery.
+Budget approximately 75 minutes: welcome/consent 8; device/context 5; core tasks 20; offline/recovery 15; secondary/destructive-choice tasks 10; outdoor comparison 8; visual ratings/debrief 9. The optional WP11 information order block (section 7a) adds about 10 minutes; run it in a second appointment if the first is full. Offer a break around the midpoint and whenever requested. Split into two appointments if needed; do not rush to complete the battery.
 
 **Opening:** “Thank you for helping. There are no right answers about what you like. If something is hard to use, that is useful for us to learn. Please work as you normally would and, when comfortable, say what you are looking for or expecting. I may stay quiet while you try. You can stop or skip anything.”
 
@@ -176,6 +177,40 @@ Moderator notes and checks are **not** read aloud. Split combined cards into the
 For a blocked-storage or update-warning scenario, add an optional labelled moderator scenario only if safely rehearsed. It does not replace live recovery tasks. Do not induce storage pressure by filling a participant's phone or delete their browser data.
 
 For T4–T7, record initial understanding before explanation, then debrief and check understanding again. Later learning must not be counted as initial unaided success. Before leaving, explain any unresolved state and show what test work was preserved or lost.
+
+### 7a. Information order comparison (WP11, added 05/11/2026)
+
+An optional block of about 10 minutes, run after T1 and before the visual ratings in section 9. It informs WP11 only. Today's dashboard order and the Hives defaults stay as they are unless this block supports a change (decision rule below).
+
+- **A** is the real app on the test account.
+- **B** is the static mock-up `docs/reviews/mobile-first-wp11-comparison-mockups.html`. It uses fictional data matching the fixture and has one screen each for the dashboard and Cards.
+- Alternate which comes first across participants: P01 A then B, P02 B then A, and so on. Keep version labels hidden.
+- Say that B is a picture of a possible design: "it does not save anything".
+- Score B tasks on whether the participant finds the item and where they would tap; nothing is entered. Never count a B answer as an interactive result.
+
+The fixture needs three things at Orchard Study:
+- one hive whose last stores reading is Low (Orchard 03);
+- two due tasks;
+- a visit 6 days ago.
+
+Monthly guidance and Upcoming Events must each show at least one entry.
+
+| ID | Participant prompt | Moderator checks and outcome evidence |
+| --- | --- | --- |
+| T10 Most important job | "You have a few minutes before heading out. What needs doing first today?" | Names a red or top To do item, and where they looked first. Record time to first correct answer, scrolling, and anything they took for a job that is not one. On B, also note whether the folded sections were noticed. |
+| T11a Monthly advice | "What does the app suggest beekeepers do this month?" | Finds "{Month} in Ireland" (A) or opens the folded section (B). Advice must stay findable: an N or A here counts against a change. |
+| T11b Last visit | "When did you last record a visit to Orchard Study?" | Recent visits, the apiary row or View All Records. Record the route. |
+| T12a Hive with a concern | "Which hive at Orchard Study is low on stores?" Ask once in List, once in Cards A, once in Cards B; alternate the order. | Correct hive (Orchard 03), time and scrolling. Note whether the setup drawing or photo slowed them or helped. |
+| T12b Start its inspection | "Start an inspection for that hive." (A only; on B ask "Where would you tap?") | A: correct hive preselected and the form open. B: what they point at is recorded as a route, not an outcome. |
+
+Then collect the four section 9 ratings for dashboard A and B and for Cards A and B, and a paired preference for each (no preference and "depends" allowed). Last, ask which hive view they would use day to day, List or Cards.
+
+**Decision rule (from the plan, WP11).** A change to the dashboard order or the card default is supported only if all of these hold:
+- T10 and T12 success are the same or better on B;
+- T11 advice and history stay findable unaided;
+- the reading-comfort and action-clarity counts favour B.
+
+Mixed or missing evidence keeps today's design. Ship only the parts that are independently supported, such as a single fold, and never a whole redesign. Report raw counts, including ties and declines.
 
 ## 8. Outcomes, ratings and observation sheet
 

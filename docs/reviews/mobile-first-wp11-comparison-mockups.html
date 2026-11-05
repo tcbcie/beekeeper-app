@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HiveCraic layout study</title>
+<!--
+  WP11 comparison mock-ups (design B), 05/11/2026. Static: nothing here saves or loads data.
+  Used only in the field-study block in docs/reviews/mobile-first-field-study-pack-2026-11-03.md §7a.
+  All names and figures are fictional and match the study fixture. Light theme only, so it is
+  compared with the real app (design A) set to Light. Colours and type copy the app's tokens
+  (src/app/globals.css) so that only the order and folding differ.
+-->
+<style>
+  :root {
+    color-scheme: light;
+    --background: #faf8f5;
+    --surface: #ffffff;
+    --surface-elevated: #f5f1e8;
+    --surface-secondary: #f0ebe2;
+    --text-primary: #1a1a1a;
+    --text-secondary: #374151;
+    --text-tertiary: #555555;
+    --border: #e5e5e5;
+    --field-border: #857d74;
+    --forest-50: #f0fdf4;
+    --forest-700: #15803d;
+    --forest-800: #166534;
+    --red-800: #991b1b;
+    --red-100: #fee2e2;
+    --red-300: #fca5a5;
+    --amber-800: #92400e;
+    --amber-100: #fef3c7;
+    --amber-300: #fcd34d;
+    --blue-800: #1e40af;
+    --green-800: #166534;
+    --green-100: #dcfce7;
+    --green-300: #86efac;
+    --font-ui-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #e9e5dc;
+    color: var(--text-primary);
+    font-family: var(--font-ui-sans);
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  .screens {
+    display: grid;
+    gap: 32px;
+    justify-content: center;
+    padding: 24px 16px 48px;
+  }
+  @media (min-width: 880px) {
+    .screens { grid-template-columns: repeat(2, 390px); align-items: start; }
+  }
+  .phone {
+    width: 100%;
+    max-width: 390px;
+    background: var(--background);
+    border: 1px solid #cfc8bb;
+    border-radius: 24px;
+    overflow: hidden;
+  }
+  .screen { padding: 16px 12px 24px; display: grid; gap: 20px; }
+  h1, h2, h3, p { margin: 0; }
+  h1 { font-size: 24px; font-weight: 700; }
+  h2 { font-size: 18px; font-weight: 600; }
+  h3 { font-size: 20px; font-weight: 700; }
+  .muted { color: var(--text-secondary); font-size: 14px; }
+  .tertiary { color: var(--text-tertiary); font-size: 14px; }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 48px; padding: 0 16px; border-radius: 10px;
+    font: inherit; font-weight: 600; font-size: 16px; cursor: pointer;
+  }
+  .btn-primary { background: var(--forest-800); color: #fff; border: 1px solid var(--forest-800); }
+  .btn-neutral { background: var(--surface); color: var(--text-primary); border: 1px solid var(--field-border); }
+  .btn-link { background: none; border: 0; color: var(--forest-800); padding: 0 4px; text-decoration: underline; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .full { width: 100%; }
+
+  /* To do rows: dot, title, kind · detail, action */
+  .todo { list-style: none; margin: 8px 0 0; padding: 0; }
+  .todo li { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-top: 1px solid var(--border); }
+  .todo li:first-child { border-top: 0; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+  .dot.red { background: #dc2626; } .dot.amber { background: #d97706; } .dot.blue { background: #2563eb; }
+  .todo .body { flex: 1; min-width: 0; }
+  .todo .title { font-weight: 600; }
+  .todo .action { flex-shrink: 0; }
+  .group-heading { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-top: 12px; }
+
+  /* Apiary rows */
+  .apiary { display: flex; justify-content: space-between; gap: 12px; align-items: center; min-height: 72px; }
+  .pill { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 14px; font-weight: 600; border: 1px solid; white-space: nowrap; }
+  .pill.jobs { background: var(--amber-100); color: var(--amber-800); border-color: var(--amber-300); }
+  .pill.good { background: var(--green-100); color: var(--green-800); border-color: var(--green-300); }
+  .pill.red { background: var(--red-100); color: var(--red-800); border-color: var(--red-300); }
+  .pill.neutral { background: var(--surface-secondary); color: var(--text-secondary); border-color: var(--border); }
+
+  /* Folded sections: native details, so they open with a tap, Enter or Space */
+  details.fold { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+  details.fold > summary {
+    list-style: none; cursor: pointer; min-height: 56px; padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    font-weight: 600; font-size: 18px;
+  }
+  details.fold > summary::-webkit-details-marker { display: none; }
+  details.fold > summary .count { font-weight: 400; color: var(--text-secondary); font-size: 16px; }
+  details.fold > summary::after { content: "Show"; font-size: 16px; font-weight: 600; color: var(--forest-800); text-decoration: underline; }
+  details.fold[open] > summary::after { content: "Hide"; }
+  details.fold .fold-body { padding: 0 16px 16px; }
+  summary:focus-visible, .btn:focus-visible { outline: 3px solid var(--forest-700); outline-offset: 2px; }
+  .plain { list-style: none; margin: 0; padding: 0; }
+  .plain li { padding: 10px 0; border-top: 1px solid var(--border); }
+  .plain li:first-child { border-top: 0; }
+
+  /* Hives top bar */
+  .search { width: 100%; min-height: 48px; border: 1px solid var(--field-border); border-radius: 10px; padding: 0 12px; font: inherit; background: var(--surface); color: var(--text-tertiary); display: flex; align-items: center; }
+  .segmented { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--field-border); border-radius: 10px; overflow: hidden; }
+  .segmented span { min-height: 48px; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+  .segmented .on { background: var(--forest-800); color: #fff; }
+
+  /* Hive card B: what decides a visit first, setup on request */
+  .card { display: grid; gap: 12px; }
+  .card-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+  .badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .facts { display: grid; gap: 8px; margin: 0; }
+  .facts div { display: grid; grid-template-columns: 88px 1fr; gap: 8px; }
+  .facts dt { color: var(--text-secondary); font-size: 14px; padding-top: 2px; }
+  .facts dd { margin: 0; }
+  .low { color: var(--red-800); font-weight: 700; }
+  .topup { color: var(--amber-800); font-weight: 700; }
+  .enough { color: var(--green-800); font-weight: 700; }
+  details.setup { border: 1px solid var(--border); border-radius: 10px; background: var(--surface-elevated); }
+  details.setup > summary { list-style: none; cursor: pointer; min-height: 48px; padding: 0 12px; display: flex; align-items: center; font-weight: 600; color: var(--forest-800); text-decoration: underline; }
+  details.setup > summary::-webkit-details-marker { display: none; }
+  details.setup > summary::before { content: "Show setup"; }
+  details.setup[open] > summary::before { content: "Hide setup"; }
+  details.setup .setup-body { padding: 0 12px 12px; display: grid; gap: 12px; }
+  .model { display: flex; gap: 12px; align-items: center; }
+  .photo { width: 64px; height: 64px; border-radius: 8px; background: var(--surface-secondary); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-tertiary); }
+  .stack { display: grid; gap: 3px; width: 180px; margin: 0 auto; }
+  .box { border: 2px solid #6b4f2a; border-radius: 3px; background: #f3e3c3; height: 32px; position: relative; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .box.brood { height: 40px; background: #e8cfa0; }
+  .box.excluder { height: 10px; background: #9ca3af; border-color: #6b7280; }
+  .box.floor { height: 18px; background: #c9a46a; }
+  .fill { position: absolute; left: 0; top: 0; bottom: 0; background: rgba(217, 119, 6, 0.35); }
+  .box span { position: relative; }
+</style>
+</head>
+<body>
+<main class="screens">
+
+  <!-- Screen 1: Today (dashboard). A short attention summary, then apiaries; supporting content folded with counts. -->
+  <section class="phone" aria-label="Screen 1">
+    <div class="screen">
+      <div>
+        <h1>Good morning, Pat</h1>
+        <p class="muted" style="margin-top:4px">9 hives in 2 apiaries</p>
+      </div>
+
+      <div class="grid-2">
+        <button class="btn btn-primary" type="button">New inspection</button>
+        <button class="btn btn-neutral" type="button">New task</button>
+      </div>
+
+      <details class="fold">
+        <summary><span>Winter: just check food <span class="count">· 2 checks</span></span></summary>
+        <div class="fold-body">
+          <ul class="plain">
+            <li><strong>Heft hives</strong> <span class="pill neutral">No reading</span><br><span class="muted">5 hives have no scale; heft them on your next visit.</span></li>
+            <li><strong>Orchard 17</strong> <span class="pill jobs">Lighter</span><br><span class="muted">The scale shows it getting lighter; record a feed if you add fondant.</span></li>
+          </ul>
+        </div>
+      </details>
+
+      <div class="panel">
+        <h2>To do <span class="muted" style="font-weight:400">· 4 jobs</span></h2>
+        <p class="muted" style="margin-top:4px">Each line is one job. Due tasks at an apiary share one line.</p>
+        <p class="group-heading">Orchard Study</p>
+        <ul class="todo">
+          <li>
+            <span class="dot red" aria-hidden="true"></span>
+            <div class="body">
+              <p class="title">Hive Orchard 07 marked queenless</p>
+              <p class="muted"><strong>Recorded</strong> · reason: no eggs seen</p>
+            </div>
+            <button class="btn btn-neutral action" type="button">Open</button>
+          </li>
+          <li>
+            <span class="dot amber" aria-hidden="true"></span>
+            <div class="body">
+              <p class="title">Hive Orchard 17 getting lighter</p>
+              <p class="muted"><strong>Scale</strong> · -1.8 kg in 7 days, check stores</p>
+            </div>
+            <button class="btn btn-neutral action" type="button">Open</button>
+          </li>
+        </ul>
+        <p class="group-heading">Meadow Study</p>
+        <ul class="todo">
+          <li>
+            <span class="dot amber" aria-hidden="true"></span>
+            <div class="body">
+              <p class="title">Hive Meadow 12: high varroa</p>
+              <p class="muted"><strong>Recorded</strong> · 4.2% at the check on 28 October</p>
+            </div>
+            <button class="btn btn-neutral action" type="button">Open</button>
+          </li>
+        </ul>
+        <button class="btn btn-link" type="button" style="margin-top:8px">Show all 4 jobs</button>
+      </div>
+
+      <div class="panel">
+        <h2>My apiaries</h2>
+        <ul class="plain" style="margin-top:8px">
+          <li class="apiary">
+            <div>
+              <p style="font-weight:600">Orchard Study</p>
+              <p class="muted">6 hives · last visit 6 days ago</p>
+            </div>
+            <span class="pill jobs">3 jobs</span>
+          </li>
+          <li class="apiary">
+            <div>
+              <p style="font-weight:600">Meadow Study</p>
+              <p class="muted">3 hives · last visit 12 days ago</p>
+            </div>
+            <span class="pill jobs">1 job</span>
+          </li>
+        </ul>
+      </div>
+
+      <details class="fold">
+        <summary><span>November in Ireland <span class="count">· 4 suggestions</span></span></summary>
+        <div class="fold-body">
+          <ul class="plain">
+            <li>Heft each hive to check stores; add fondant to light ones.</li>
+            <li>Fit mouse guards if not already on.</li>
+            <li>Check roofs are weighted down before storms.</li>
+            <li>Plan an oxalic acid treatment for the broodless period.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="fold">
+        <summary><span>Upcoming events <span class="count">· 2 in the next 7 days</span></span></summary>
+        <div class="fold-body">
+          <ul class="plain">
+            <li><strong>Top up fondant</strong><br><span class="muted">Orchard Study · Monday</span></li>
+            <li><strong>Association meeting</strong><br><span class="muted">Thursday</span></li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="fold">
+        <summary><span>Recent visits <span class="count">· 5</span></span></summary>
+        <div class="fold-body">
+          <ul class="plain">
+            <li><strong>30 October · Orchard Study</strong><br><span class="muted">3 inspections, 1 feed</span></li>
+            <li><strong>24 October · Meadow Study</strong><br><span class="muted">2 inspections, 1 varroa check</span></li>
+            <li><strong>18 October · Orchard Study</strong><br><span class="muted">2 feeds</span></li>
+            <li><strong>11 October · Meadow Study</strong><br><span class="muted">1 varroa treatment</span></li>
+            <li><strong>4 October · Orchard Study</strong><br><span class="muted">4 inspections</span></li>
+          </ul>
+          <button class="btn btn-link" type="button">View all records</button>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- Screen 2: Hives as cards. What decides a visit first; the box drawing, model and notes on request. -->
+  <section class="phone" aria-label="Screen 2">
+    <div class="screen">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <h1>Hives</h1>
+        <button class="btn btn-primary" type="button">+ Add</button>
+      </div>
+      <div class="search">Search hives</div>
+      <div>
+        <p class="muted" style="margin-bottom:6px">Show hives as</p>
+        <div class="segmented"><span>List</span><span class="on">Cards</span></div>
+      </div>
+      <p class="muted">9 Active | 0 Archived</p>
+
+      <article class="panel card">
+        <div class="card-head">
+          <h3>Orchard 02</h3>
+          <div class="badges">
+            <span class="pill good">Active</span>
+            <span class="pill neutral">Inspected 6 days ago</span>
+          </div>
+        </div>
+        <dl class="facts">
+          <div><dt>Apiary</dt><dd>Orchard Study · row 1, position 2</dd></div>
+          <div><dt>Queen</dt><dd>Q-25-03 · 2025, marked blue</dd></div>
+          <div><dt>Stores</dt><dd><span class="enough">85% · Enough</span><br><span class="tertiary">Estimated 30 October</span></dd></div>
+          <div><dt>Last record</dt><dd>Inspection · 30/10/2026</dd></div>
+        </dl>
+        <button class="btn btn-neutral full" type="button">Overview &amp; Records</button>
+        <details class="setup">
+          <summary></summary>
+          <div class="setup-body">
+            <div class="model"><div class="photo">Photo</div><div><p style="font-weight:600">National, cedar</p><p class="muted">Full size</p></div></div>
+            <div class="stack" aria-label="1 super, 40% full; 1 brood box">
+              <div class="box"><div class="fill" style="width:40%"></div><span>Super 40%</span></div>
+              <div class="box excluder"></div>
+              <div class="box brood"><span>Brood</span></div>
+              <div class="box floor"></div>
+            </div>
+            <p class="muted">Feeder: contact · Entrance: winter</p>
+          </div>
+        </details>
+      </article>
+
+      <article class="panel card">
+        <div class="card-head">
+          <h3>Orchard 03</h3>
+          <div class="badges">
+            <span class="pill good">Active</span>
+            <span class="pill neutral">Inspected 6 days ago</span>
+          </div>
+        </div>
+        <dl class="facts">
+          <div><dt>Apiary</dt><dd>Orchard Study · row 1, position 3</dd></div>
+          <div><dt>Queen</dt><dd>Q-24-07 · 2024, marked yellow</dd></div>
+          <div><dt>Stores</dt><dd><span class="low">30% · Low</span><br><span class="tertiary">Estimated 30 October</span></dd></div>
+          <div><dt>Tasks</dt><dd>1 active task</dd></div>
+          <div><dt>Last record</dt><dd>Inspection · 30/10/2026</dd></div>
+        </dl>
+        <button class="btn btn-neutral full" type="button">Overview &amp; Records</button>
+        <details class="setup">
+          <summary></summary>
+          <div class="setup-body">
+            <div class="model"><div class="photo">Photo</div><div><p style="font-weight:600">National, cedar</p><p class="muted">Full size</p></div></div>
+            <div class="stack" aria-label="1 super, 10% full; 2 brood boxes">
+              <div class="box"><div class="fill" style="width:10%"></div><span>Super 10%</span></div>
+              <div class="box excluder"></div>
+              <div class="box brood"><span>Brood</span></div>
+              <div class="box brood"><span>Brood</span></div>
+              <div class="box floor"></div>
+            </div>
+            <p class="muted">Feeder: none · Entrance: winter</p>
+            <p class="muted">Notes: Requeened in June from an Orchard 07 daughter. Calm on the frames; light after the August honey harvest.</p>
+          </div>
+        </details>
+      </article>
+
+      <article class="panel card">
+        <div class="card-head">
+          <h3>Orchard 07</h3>
+          <div class="badges">
+            <span class="pill good">Active</span>
+            <span class="pill red">Queenless</span>
+            <span class="pill neutral">Inspected 6 days ago</span>
+          </div>
+        </div>
+        <dl class="facts">
+          <div><dt>Apiary</dt><dd>Orchard Study · row 2, position 1</dd></div>
+          <div><dt>Queen</dt><dd>No details</dd></div>
+          <div><dt>Stores</dt><dd><span class="topup">55% · Top up</span><br><span class="tertiary">Estimated 30 October</span></dd></div>
+          <div><dt>Last record</dt><dd>Inspection · 30/10/2026</dd></div>
+        </dl>
+        <button class="btn btn-neutral full" type="button">Overview &amp; Records</button>
+        <details class="setup">
+          <summary></summary>
+          <div class="setup-body">
+            <div class="model"><div class="photo">Photo</div><div><p style="font-weight:600">National, poly</p><p class="muted">Full size</p></div></div>
+            <div class="stack" aria-label="1 brood box">
+              <div class="box excluder"></div>
+              <div class="box brood"><span>Brood</span></div>
+              <div class="box floor"></div>
+            </div>
+            <p class="muted">Feeder: contact · Entrance: winter</p>
+          </div>
+        </details>
+      </article>
+    </div>
+  </section>
+
+</main>
+
+<!-- Moderator notes, kept closed and at the end so a participant does not read them -->
+<details style="max-width:812px;margin:0 auto 32px;padding:0 16px">
+  <summary style="min-height:48px;display:flex;align-items:center;cursor:pointer;font-weight:600">Moderator notes</summary>
+  <div style="font-size:16px;display:grid;gap:8px">
+    <p>Design B for the WP11 block (field-study pack §7a). Design A is the real app on the test account, set to Light. Alternate A/B order between participants and keep version labels hidden.</p>
+    <p>Nothing here saves or loads. Score T10–T12 on B by what the participant finds and where they would tap, never as an interactive result.</p>
+    <p>Matched content: Orchard 03 is the hive low on stores; two due tasks at Orchard Study (Top up fondant, Check mouse guards) share one To do line, which the "Show all" view reveals; last visit 6 days ago.</p>
+    <p>Differences from A, and only these: To do shows 3 jobs before "Show all"; the seasonal card is folded to its title line; monthly guidance, Upcoming events and Recent visits are folded with counts; hive cards list stores and tasks as facts and fold the setup drawing, model and notes behind "Show setup".</p>
+  </div>
+</details>
+</body>
+</html>

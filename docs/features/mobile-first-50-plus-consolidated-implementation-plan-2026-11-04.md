@@ -192,6 +192,8 @@ Compare the current dashboard with a short attention summary followed by apiarie
 
 **Verification refinement - WP11:** Three candidate changes already exist: To do stops at five with Show all, Recent visits links to View All Records, and List is already the phone default. Compare tighter limits rather than adding these. Add Upcoming Events and the new hive model and photo row (03/11) to the evidence; Cards are probably longer than the screenshots show.
 
+**Progress - WP11 (05/11/2026): pending evidence.** No app change and no default changed (owner decisions D1–D3, 05/11/2026: static mock-ups; ship nothing now; prepare for sessions). Prepared: field-study pack §7a with tasks T10 (most important job), T11a/b (monthly advice, last visit) and T12a/b (hive with a concern in List, Cards A and Cards B; start its inspection), a matching fixture, ratings and the decision rule; design B as static mock-ups in `docs/reviews/mobile-first-wp11-comparison-mockups.html` (To do capped at 3, seasonal card, monthly guidance, Upcoming events and Recent visits folded with counts; cards lead with stores and tasks and fold the setup behind "Show setup"). `dashboard-today-screen.md` now matches the code's order. Results will be recorded only from real sessions; mixed or missing evidence keeps today's order.
+
 #### WP12 - Verify, document and prepare release
 
 **P1 release gate | M/L including external sessions | Evidence: all packages and the [field-study pack](../reviews/mobile-first-field-study-pack-2026-11-03.md).**

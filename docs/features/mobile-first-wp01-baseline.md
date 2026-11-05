@@ -184,3 +184,7 @@ No WP01 scenario changes its steps. What a re-run should now show:
 ### WP10 – 05/11/2026 (not yet re-run)
 
 No WP01 scenario changes. For the phone checklist: with nothing saved, the app now follows the phone's light or dark setting, and the browser bar should match the app in every combination (phone light or dark, app Light, Dark, Use device setting or Light by day) (V21).
+
+### WP11 – 05/11/2026 (pending evidence)
+
+No app change. The information order comparison (field-study pack §7a, T10–T12) runs in the participant sessions; this baseline gains no new scenario until then.
