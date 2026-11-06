@@ -447,7 +447,7 @@ function AboutPageContent() {
 
  <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Version</h3>
  <p className="text-text-secondary">
- <strong>Current Version:</strong> 1.14.0 (2nd November 2026)
+ <strong>Current Version:</strong> 1.14.1 (5th November 2026)
  </p>
 
  <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Credits</h3>
