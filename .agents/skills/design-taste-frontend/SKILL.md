@@ -15,6 +15,8 @@ description: >-
 
 # tasteskill v2
 
+> **HiveCraic note:** this skill is for public marketing and landing pages. For HiveCraic app screens (dashboard, hives, records, settings and so on), the `ui`, `mobile-screen` and `hivecraic-frontend-design` skills override it: minimum 14px text (16px in inputs), 48px touch targets, AAA contrast, light-first, sentence case, existing `src/components/ui` primitives. Its font and asset download steps do not apply: HiveCraic uses device system fonts, downloads nothing, and enforces a CSP (`next.config.ts`).
+
 A page built by a model usually looks like the average of every page the model has seen: a centred
 headline over three lines, a little label above it, a row of icon cards, a soft gradient, a few thin
 rules and a monospace caption. Nothing in it is wrong and nothing in it was decided.

@@ -9,6 +9,8 @@ metadata:
 
 # Vercel React Best Practices
 
+> **HiveCraic project notes:** the app runs Next.js 15.5 and React 19.1.0 (exact pin), so `<Activity>` (`rendering-activity`) is not available until React 19.2. SWR is not installed: ignore `client-swr-dedup` and `client-event-listeners` and use the project's screen-cache pattern (`openScreenCache`) instead. `better-all` is not installed; use plain `Promise.all` and do not add the dependency. Most screens are client-rendered with Supabase, so the RSC caching rules apply only to server routes. Project rules in `.claude/CLAUDE.md` and memory win on any conflict.
+
 Comprehensive performance optimization guide for React and Next.js applications, maintained by Vercel. Contains 57 rules across 8 categories, prioritized by impact to guide automated refactoring and code generation.
 
 ## When to Apply
