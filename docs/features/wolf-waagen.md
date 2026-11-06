@@ -1059,3 +1059,22 @@ WolfScalePanel
 ## Largest drop for the dashboard swarm alert (29 October 2026)
 
 The summary response also returns `largestDrop3h` (`{ kg, at, stillDownKg }` or `null`; `stillDownKg` is how much is still missing at the latest reading): the biggest loss between hourly readings no more than 3 hours apart in the 48-hour series the summary already downloads, so it costs no extra Wolf call. The dashboard reports 1.5–5 kg from April to July as a possible swarm. See [dashboard-today-screen.md](./dashboard-today-screen.md).
+
+## One-hour weight spikes left out (06/11/2026)
+
+**Problem.** Some Wolf scales send a single hourly reading that is kilograms too low and are back to normal the next hour. Scale 42J04513 (PE8QO7) did it 14 times in the 7 days to 05/11/2026: mostly about 3.7 kg low, at 04:00, 10:00, 16:00 and 22:00 Irish time, and once 14.8 kg low. Wolf's own app hides them. HiveCraic used every reading as it came, so:
+- the Scale Overview card showed 29.7 kg against Wolf's 44.5 kg, with a 24-hour change of −11.11 kg against Wolf's −0.08 kg;
+- the inspection form could fill in, and save, a bad weight;
+- a 3.7 kg dip fits the dashboard's swarm range, so from April to July a bad latest reading could raise a false "possible swarm";
+- the hive panel's charts and Mel's scale answers showed the same dips.
+
+**Fix.** `dropWeightSpikes()` in `src/lib/wolf-waagen-api.ts`, applied by `wolfGetMeasurements()` to **hourly** series only (every hourly Wolf reading passes through it: card, panel charts, inspection form, swarm alert, Mel):
+- a reading more than 1 kg from both neighbours, while they agree within 0.5 kg, is left out;
+- the first reading is left out when it is more than 1 kg from the second and the second and third agree, so a change never starts from a spike;
+- the newest reading is held back when it is more than 1 kg from the last good one. The next hour shows whether it is real: a super added or taken off, or a swarm, stays at its new level and counts from the next reading, at most an hour late.
+
+Readings are only left out, never changed, and Wolf's hourly `yield` is not used. Daily values are Wolf's own and showed no spikes, so 7-day and 30-day figures are unchanged. **Known limit:** two spikes in a row are not caught (not seen in the data). Checked against the captured readings: the four spikes in the last 30 hours of PE8QO7 were left out, giving 44.4 kg and −0.17 kg over 24 hours; R4JLXN was unchanged.
+
+**Humidity.** Wolf's temperature, humidity, rain and wind are identical for every scale on the account each hour: they come from the shared weather station, not the hive. The Scale Overview card now labels Wolf humidity "Station humidity".
+
+**The scale itself.** A reading 3.7 kg low every 6 hours suggests a fault in that scale, worth reporting to Wolf.

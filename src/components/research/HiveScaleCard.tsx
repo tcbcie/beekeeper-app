@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink, Sun, Cloud, CloudRain, CloudSnow, CloudFog, Sprout, MapPin, LineChart } from 'lucide-react'
+import { Scale, RefreshCw, TrendingUp, TrendingDown, Flame, Thermometer, Droplets, Battery, ExternalLink, Sun, Cloud, CloudRain, CloudSnow, CloudFog, Sprout, MapPin, LineChart, Clock } from 'lucide-react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import Button from '@/components/ui/Button'
@@ -9,6 +9,7 @@ import IconButton from '@/components/ui/IconButton'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import ModalShell from '@/components/ui/ModalShell'
 import { fetchCurrentYearGDD } from '@/lib/gdd'
+import { BEEKEEPER_TIME_ZONE, toDublinDate } from '@/lib/dublin-date'
 
 // The hive page's own charts, downloaded only when a period's chart is opened (chart.js stays out of the first load)
 const ScaleHistoryChart = dynamic(() => import('@/components/hive/ScaleHistoryChart'), {
@@ -69,6 +70,22 @@ interface ScaleData {
  temperature: number | null
  humidity: number | null
  battery: number | null
+ /** When the scale took the reading shown (the vendor's time, not when it was fetched) */
+ readingTime: string | null
+}
+
+// A reading older than this is flagged: the scale may have stopped sending
+const STALE_READING_HOURS = 3
+
+/** "21:00", or "4 Nov, 21:00" when not from today, in Irish time (Wolf sends Central European time) */
+function describeReadingTime(time: string | null): { text: string; stale: boolean } | null {
+ const at = time ? new Date(time) : null
+ if (!at || Number.isNaN(at.getTime())) return null
+ const clock = at.toLocaleTimeString('en-IE', { timeZone: BEEKEEPER_TIME_ZONE, hour: '2-digit', minute: '2-digit' })
+ const day = toDublinDate(at) === toDublinDate()
+ ? ''
+ : `${at.toLocaleDateString('en-IE', { timeZone: BEEKEEPER_TIME_ZONE, day: 'numeric', month: 'short' })}, `
+ return { text: `${day}${clock}`, stale: Date.now() - at.getTime() > STALE_READING_HOURS * 60 * 60 * 1000 }
 }
 
 // One weather request per location, shared by every card in the same apiary for 30 minutes.
@@ -130,7 +147,8 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  prevWeightChange30d: null,
  temperature: null,
  humidity: null,
- battery: null
+ battery: null,
+ readingTime: null
  }
 
  if (isBeep && hive.beep_device_id) {
@@ -142,6 +160,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  const json = await response.json()
  const lv = json.lastValues
  result.weight = lv?.weight_kg_corrected ?? lv?.weight_kg ?? null
+ result.readingTime = lv?.time ?? null
  result.weightChange24h = json.weightChange24h ?? null
  result.weightChange7d = json.weightChange7d ?? null
  result.weightChange30d = json.weightChange30d ?? null
@@ -171,6 +190,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  const json = await response.json()
  const lv = json.lastValues
  result.weight = lv?.weight_kg ?? null
+ result.readingTime = lv?.time ?? null
  result.weightChange24h = json.weightChange24h ?? null
  result.weightChange7d = json.weightChange7d ?? null
  result.weightChange30d = json.weightChange30d ?? null
@@ -267,6 +287,7 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  const hasChanges = changes.some(c => c.now !== null)
  const hasPreviousChanges = changes.some(c => c.before !== null)
  const formatChange = (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}`
+ const reading = describeReadingTime(data?.readingTime ?? null)
 
  if (loading) {
  return (
@@ -374,6 +395,16 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  <div>
  <div className="text-2xl font-bold text-foreground tabular-nums">{data.weight.toFixed(1)} kg</div>
  <div className="text-sm text-text-secondary">Total weight</div>
+ {reading && (
+ <div
+ className={`mt-1 flex items-center gap-1 text-sm ${reading.stale ? 'text-amber-800 dark:text-amber-300' : 'text-text-tertiary'}`}
+ title={reading.stale ? `No newer reading from the scale for over ${STALE_READING_HOURS} hours` : 'When the scale took this reading'}
+ >
+ <Clock size={14} aria-hidden="true" />
+ {/* Old readings say so in words, not only in colour */}
+ {reading.stale ? `No reading since ${reading.text}` : `Reading at ${reading.text}`}
+ </div>
+ )}
  </div>
  )}
 
@@ -439,12 +470,14 @@ export default function HiveScaleCard({ hive }: HiveScaleCardProps) {
  </div>
  )}
  {data.humidity !== null && (
- <div title="Measured by the scale, not the weather forecast">
+ <div title={isWolf
+ ? 'From the weather station that sends with your Wolf scales, not inside the hive'
+ : 'Measured by the scale, not the weather forecast'}>
  <div className="flex items-center gap-1 text-lg font-semibold text-foreground tabular-nums">
  <Droplets size={16} className="text-cyan-500" aria-hidden="true" />
  {data.humidity.toFixed(0)}%
  </div>
- <div className="text-sm text-text-secondary">Scale humidity</div>
+ <div className="text-sm text-text-secondary">{isWolf ? 'Station humidity' : 'Scale humidity'}</div>
  </div>
  )}
  {data.battery !== null && (

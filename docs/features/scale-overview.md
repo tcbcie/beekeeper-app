@@ -45,17 +45,20 @@ Every value carries a label (29 October 2026, see [scale-card-labels-plan.md](./
 +------------------------------------------------+
 | 45.8 kg                                        |
 | Total weight                                   |
+| ◷ Reading at 21:00                             |
 | Change (kg)    24 hours   7 days   30 days     |
 | This period    ↘ -0.40   ↘ -1.48   ↗ +0.44     |
 | Period before    -0.23     +1.35     +5.05     |
 |------------------------------------------------|
 | 33.8°C            90%                          |
-| Brood temp.       Scale humidity               |
+| Brood temp.       Station humidity (Wolf)      |
 | 90%               3366                         |
 | Battery           GDD since 1 Jan              |
 +------------------------------------------------+
 ```
 - "Outside now" is Open-Meteo weather at the apiary, not a scale reading.
+- "Reading at" is when the scale took the reading shown (the vendor's `lastValues.time`), in Irish time, with the date when it is not from today ("4 Nov, 21:00"). It is not the fetch time: every refresh asks the vendor afresh. Over 3 hours old, it reads "No reading since …" in amber, so the warning is in words as well as colour, because the scale may have stopped sending (06/11/2026).
+- Humidity is "Scale humidity" on BEEP cards and "Station humidity" on Wolf cards: Wolf's humidity comes from the shared weather station, identical for every scale on the account (06/11/2026).
 - "Period before" is the change over the period of the same length immediately before (48–24 h ago, the 7 days before, the 30 days before).
 - The temperature is "Brood temp." for both scale types (Wolf `brood_temp_c`; BEEP `t_i ?? t ?? t_0`). A low reading means the sensor sits outside the brood area, not that it is a different measurement.
 - GDD is growing degree days since 1 January at the apiary, shown as a whole number (Wolf calls it GTS).
@@ -138,7 +141,7 @@ How each API calculates the changes:
 - Compares oldest weight in each period to current `weight_kg_corrected` or `weight_kg`
 
 **Wolf Waagen API** (`/api/wolf-waagen/data`):
-- 24h: newest minus oldest over the last 24 hourly readings (not corrected for interventions)
+- 24h: newest minus oldest over the last 24 hourly readings (not corrected for interventions). One-hour weight spikes are left out first, and a newest reading that jumps over 1 kg waits an hour to be confirmed (see "One-hour weight spikes left out" in [wolf-waagen.md](./wolf-waagen.md))
 - 7d and 30d: daily readings, newest minus oldest, with feeding/harvest jumps over 0.5 kg removed (see [wolf-waagen.md](./wolf-waagen.md))
 
 ## Access Control

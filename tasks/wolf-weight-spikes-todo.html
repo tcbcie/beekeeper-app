@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Wolf weight spikes</title>
+</head>
+<body>
+<h1>Leave out Wolf's one-hour weight spikes, and show when the reading was taken</h1>
+
+<h2>What is wrong</h2>
+<p>Wolf scale 42J04513 (PE8QO7, hive 26-DA) sends single hourly readings that are kilograms too low, then goes straight back to normal. There were 14 in the 7 days to 05/11/2026, mostly at 04:00, 10:00, 16:00 and 22:00 Irish time. Most were about 3.7 kg low; one, at 21:00 on 05/11, was 14.8 kg low. Wolf's own screen leaves them out. HiveCraic uses every hourly reading as it arrives, so:</p>
+<ul>
+  <li><strong>Scale Overview card</strong>: showed 29.7 kg against Wolf's 44.5 kg, and a 24-hour change of −11.11 kg (bad reading minus bad reading) against Wolf's −0.08 kg.</li>
+  <li><strong>Inspection form</strong>: fills in the weight from the latest reading, so a bad reading can be <em>saved into an inspection</em>.</li>
+  <li><strong>Dashboard</strong>: a 3.7 kg dip falls inside the swarm range (1.5–5 kg within 3 hours). From April to July, a bad latest reading can raise a false "possible swarm".</li>
+  <li><strong>Hive panel charts and Mel's scale answers</strong>: they draw and read the same dips.</li>
+</ul>
+<p>The other scale (42M03446) had none. Daily readings are Wolf's own daily values and show no spikes, so the 7-day and 30-day figures are not affected.</p>
+
+<h2>The fix (one place)</h2>
+<p>Every hourly Wolf reading comes through <code>wolfGetMeasurements()</code> in <code>src/lib/wolf-waagen-api.ts</code>. The card, hive panel, inspection form, swarm alert and Mel all use it. A small function there leaves out a reading whose weight is a one-hour spike, for <strong>hourly</strong> series only:</p>
+<ul>
+  <li><strong>Middle reading</strong>: it differs from both the hour before and the hour after by more than 1 kg, while those two agree within 0.5 kg. That is a spike, so it is left out.</li>
+  <li><strong>Newest reading</strong>: it jumps more than 1 kg from the hour before. It is held back until the next reading shows whether the change is real. A real change (a super added or taken off, a swarm) stays at its new level, so it counts from the next hour on: at most one hour late.</li>
+  <li><strong>First reading</strong>: it differs from the second by more than 1 kg while the second and third agree. Left out, so the 24-hour change never starts from a spike.</li>
+</ul>
+<p>It doesn't use Wolf's hourly change figure, whose timing doesn't line up exactly with the readings, and it never changes a value; it only leaves bad readings out. A left-out reading is dropped whole, so the brood temperature shown comes from the same hour as the weight.</p>
+<p>Known limit: two bad readings in a row would not be caught (not seen in the data).</p>
+
+<h2>Reading time on the card</h2>
+<ul>
+  <li>Under "Total weight", show when the reading was taken, in Irish time (Wolf sends Central European time): "Reading at 21:00", or "Reading at 4 Nov, 21:00" if it is not from today.</li>
+  <li>If the reading is more than 3 hours old, show the line in the warning colour, so a scale that has stopped sending is noticed.</li>
+  <li>This is the time of the reading, not the time of fetching: every refresh asks Wolf afresh, so the fetch time would always say "now".</li>
+  <li>Same for BEEP cards, if BEEP's latest values carry a time (to be checked first; if not, Wolf only).</li>
+</ul>
+
+<h2>Humidity label (small, related)</h2>
+<p>For Wolf, the humidity comes from the shared weather station: both scales show identical temperature, humidity, rain and wind every hour. The card calls it "Scale humidity" and its tooltip says "Measured by the scale". For Wolf cards, change the label to "Station humidity" and fix the tooltip. BEEP cards keep "Scale humidity".</p>
+
+<h2>Not in this change</h2>
+<ul>
+  <li>The battery percentage: both scales report exactly 4.00 V, so 88% is the app's honest conversion; Wolf uses its own scale. The card's and panel's different voltage ranges are a separate, known item.</li>
+  <li>GDD against Wolf's GTS, and 24 hours against Wolf's calendar days: different measures, not faults.</li>
+  <li>The scale itself: a reading 3.7 kg low every 6 hours suggests a fault worth reporting to Wolf. That is for you, not the code.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ Add the spike filter to <code>src/lib/wolf-waagen-api.ts</code> and apply it in <code>wolfGetMeasurements()</code> for hourly series</li>
+  <li>☑ Card: keep the reading time from <code>lastValues.time</code> and show it under Total weight, in Irish time, in the warning colour when more than 3 hours old (design checked with the <code>hivecraic-frontend-design</code> and <code>mobile-screen</code> skills)</li>
+  <li>☑ Check whether BEEP's latest values carry a time; show it on BEEP cards if they do</li>
+  <li>☑ Card: "Station humidity" label and tooltip for Wolf cards</li>
+  <li>☑ Update <code>docs/features/wolf-waagen.md</code> and <code>docs/features/scale-overview.md</code></li>
+  <li>☑ Type check, lint and the QA audit (no tests run by Claude; you run them)</li>
+  <li>☐ Check the PE8QO7 card again against Wolf in the signed-in browser after you deploy</li>
+  <li>☑ Write the review section</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned, in two code files and two docs. No database change.</p>
+<ul>
+  <li><strong><code>src/lib/wolf-waagen-api.ts</code></strong>: new <code>dropWeightSpikes()</code>. <code>wolfGetMeasurements()</code> applies it to hourly series, so the card, hive panel charts, inspection form, swarm alert and Mel all get clean readings from one place. Daily series are untouched.</li>
+  <li><strong><code>src/components/research/HiveScaleCard.tsx</code></strong>:
+    <ul>
+      <li>"Reading at 21:00" under Total weight, in Irish time, with the date when it is not from today.</li>
+      <li>Over 3 hours old, it reads "No reading since …" in amber.</li>
+      <li>Wolf cards say "Station humidity", with a matching tooltip.</li>
+      <li>BEEP readings carry a <code>time</code> too, so BEEP cards show it as well.</li>
+    </ul>
+  </li>
+  <li><strong>Docs</strong>: a new section in <code>docs/features/wolf-waagen.md</code>; card layout, labels and the 24-hour note updated in <code>docs/features/scale-overview.md</code>.</li>
+</ul>
+<p><strong>Evidence.</strong> The filter was run on the hourly readings captured on 05/11/2026 (last 30 hours):</p>
+<ul>
+  <li><strong>PE8QO7</strong>: the four spikes (11-04 22:00 40.8 kg, 11-05 10:00 40.85 kg, 16:00 40.8 kg, 22:00 29.6 kg, all Central European time) were left out. The card would show <strong>44.4 kg</strong> and <strong>−0.17 kg</strong> over 24 hours, in line with Wolf's 44.5 kg and −0.08 kg, instead of 29.6 kg and −14.99 kg.</li>
+  <li><strong>R4JLXN</strong>: nothing left out (−0.15 kg).</li>
+  <li><strong>Made-up cases</strong>: a real step is kept once the next reading confirms it. A step at the newest reading is held back. A spike at the start is left out. A good newest reading after a spike is kept.</li>
+</ul>
+<p><strong>QA audit</strong></p>
+<ul>
+  <li>🟡 Medium (fixed): an old reading was flagged by colour alone. It now says "No reading since …".</li>
+  <li>⚪ Low (left):
+    <ul>
+      <li>A reading without a weight next to a spike stops it being caught. None seen in the data.</li>
+      <li>The age warning refreshes with the card's 5-minute poll.</li>
+      <li>BEEP's time format is assumed to include its time zone; to check after deploy.</li>
+      <li>Wolf's battery voltage arrives as text ("4.00") although it is typed as a number. It works, and was already the case before this change.</li>
+    </ul>
+  </li>
+</ul>
+<p><strong>Checks</strong>: <code>npm run typecheck</code> and ESLint on both files are clean. No tests or build were run (yours to run).</p>
+<p><strong>Still open</strong>: compare the 26-DA card with Wolf after deploying. The browser sign-in had expired, so the live check couldn't be done here. Separately, the scale's reading 3.7 kg low every 6 hours is worth reporting to Wolf.</p>
+</body>
+</html>

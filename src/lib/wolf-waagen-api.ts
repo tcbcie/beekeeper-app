@@ -175,6 +175,50 @@ function parseReading(raw: WolfSensorReading): WolfParsedReading {
   }
 }
 
+/** A reading this far (kg) from the readings around it is a one-hour weight spike... */
+const WEIGHT_SPIKE_KG = 1
+/** ...when the readings either side of it agree within this (kg) */
+const SPIKE_NEIGHBOURS_AGREE_KG = 0.5
+
+/**
+ * Leave out one-hour weight spikes from an hourly series. Some Wolf scales send a single reading
+ * kilograms too low and are back to normal the next hour (PE8QO7: ~3.7 kg low every 6 hours,
+ * once 14.8 kg, November 2026). Wolf's own app hides them; used as they came, they showed as the
+ * card's weight, the 24-hour change, a possible swarm, and the inspection form's weight.
+ *
+ * - A reading more than 1 kg from both neighbours, while they agree, is a spike.
+ * - The first reading is a spike when it is more than 1 kg from the second, and the second and
+ *   third agree, so a change never starts from one.
+ * - The newest reading is held back when it is more than 1 kg from the last good one: the next
+ *   hour shows whether the change is real (a super added, a swarm) or a spike. A real change stays,
+ *   so it counts from the next reading, at most an hour late.
+ *
+ * Readings are only ever left out, never changed. Two spikes in a row are not caught.
+ */
+export function dropWeightSpikes(readings: WolfParsedReading[]): WolfParsedReading[] {
+  const w = readings.map(r => r.weight_kg)
+  const apart = (a: number | undefined, b: number | undefined, kg: number) =>
+    typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) > kg
+  const agree = (a: number | undefined, b: number | undefined) =>
+    typeof a === 'number' && typeof b === 'number' && Math.abs(a - b) <= SPIKE_NEIGHBOURS_AGREE_KG
+  const last = readings.length - 1
+
+  const spike = readings.map((_, i) => {
+    if (i === 0) return apart(w[0], w[1], WEIGHT_SPIKE_KG) && agree(w[1], w[2])
+    if (i === last) return false
+    return apart(w[i], w[i - 1], WEIGHT_SPIKE_KG) && apart(w[i], w[i + 1], WEIGHT_SPIKE_KG) && agree(w[i - 1], w[i + 1])
+  })
+
+  // The newest reading against the last good one before it (not a spike just before it)
+  if (last > 0) {
+    let j = last - 1
+    while (j >= 0 && spike[j]) j--
+    if (j >= 0 && apart(w[last], w[j], WEIGHT_SPIKE_KG)) spike[last] = true
+  }
+
+  return readings.filter((_, i) => !spike[i])
+}
+
 // ============================================================================
 // API Functions
 // ============================================================================
@@ -274,8 +318,10 @@ export async function wolfGetMeasurements(
     throw new Error(data.message || 'Failed to fetch measurements')
   }
 
-  // Parse all readings to numeric values
-  return (data.data || []).map(parseReading)
+  // Parse all readings to numeric values. Hourly series lose their one-hour weight spikes here,
+  // the one place every hourly reading passes through; daily values are Wolf's own and have none.
+  const readings = (data.data || []).map(parseReading)
+  return resolution === 'hourly' ? dropWeightSpikes(readings) : readings
 }
 
 /**
