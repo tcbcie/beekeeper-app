@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Tools favourites</title>
+</head>
+<body>
+<h1>Tools – Favourites at the top</h1>
+<p>Follows the Tools card order (<code>tasks/tools-card-order-todo.html</code>, commit <code>c4e1be60</code>). Feature doc: <code>docs/features/tools-card-order.md</code>.</p>
+
+<h2>Why</h2>
+<p>The tools a beekeeper uses most change with the season. Moving cards within a section is not enough. Moving them into other sections would put cards under headings they do not belong to. So the beekeeper stars tools instead, and starred tools sit in a <strong>Favourites</strong> section at the top of the page (your decision, 06/11/2026).</p>
+
+<h2>What the code does today</h2>
+<ul>
+  <li><code>profiles.tool_order</code> (jsonb list of ids) holds the order within each section. NULL means the standard order.</li>
+  <li>Arrange mode is a one-column list with up and down arrows per tool, plus Save order, Cancel and Reset to the standard order.</li>
+  <li>The helpers in <code>src/lib/tool-order.ts</code> sort and move tools. A tool missing from the saved order goes to the end of its section.</li>
+</ul>
+
+<h2>How it will work for the beekeeper</h2>
+<ol>
+  <li><strong>Star a tool.</strong> In arrange mode each row gets a star button (48px) next to the arrows.
+    <ul>
+      <li>Screen readers hear "Add Feeding Calculator to favourites", and "Remove … from favourites" once it is starred.</li>
+      <li>A starred tool shows a filled green star, because selections are green.</li>
+    </ul>
+  </li>
+  <li><strong>Favourites</strong> is the first section in arrange mode.
+    <ul>
+      <li>Starring a tool moves it to the end of Favourites. The arrows order it within Favourites.</li>
+      <li>Removing the star moves the tool back to the end of its own section.</li>
+      <li>A tool is never in two places, so the page does not get longer.</li>
+      <li>While Favourites is empty, arrange mode shows "Tap the star on a tool to add it here."</li>
+    </ul>
+  </li>
+  <li><strong>On the normal page</strong> Favourites is the first section, with the same cards as everywhere else. With no favourites the section is not shown, and the page looks as it does today.</li>
+  <li><strong>Reset</strong> becomes "Reset to the standard layout". It clears the favourites and restores the standard order. It still needs Save.</li>
+  <li>Save, Cancel, the saved message, the error message, the time limits and the screen reader announcements all work as now. Starring is announced too, for example "Feeding Calculator added to favourites".</li>
+  <li>On a phone the row is narrower with three buttons, so the small tool icon in arrange mode is hidden below the <code>sm</code> width to give the name room.</li>
+</ol>
+
+<pre>
+ Phone, arrange mode
+ ┌─────────────────────────────────┐
+ │ Favourites                      │
+ │ ┌─────────────────────────────┐ │
+ │ │ TBR Swarm Planner     ★ ▲ ▼ │ │
+ │ │ Feeding Calculator    ★ ▲ ▼ │ │
+ │ └─────────────────────────────┘ │
+ │ Calculators                     │
+ │ ┌─────────────────────────────┐ │
+ │ │ Fondant Recipe        ☆ ▲ ▼ │ │
+ │ │ Frame Cells           ☆ ▲ ▼ │ │
+ │ └─────────────────────────────┘ │
+ │ ...                             │
+ │ [  Save order  ] [ Cancel ]     │
+ │ Reset to the standard layout    │
+ └─────────────────────────────────┘
+</pre>
+
+<h2>Technical changes</h2>
+<ol>
+  <li><strong>Database</strong> (Supabase MCP migration, plus a file in <code>supabase/migrations</code>):
+    <ul>
+      <li>A new column, <code>profiles.tool_favourites jsonb</code>. It holds the starred tool ids in their Favourites order. NULL means no favourites.</li>
+      <li>The same check as <code>tool_order</code>: a list of at most 50 entries.</li>
+      <li>The same column grant for SELECT. Then run the advisors.</li>
+      <li><code>tool_order</code> is unchanged and still holds the order within the sections.</li>
+    </ul>
+  </li>
+  <li><strong><code>src/lib/auth.ts</code></strong>: add <code>tool_favourites</code> to <code>PROFILE_COLUMNS</code>.</li>
+  <li><strong><code>src/lib/tool-order.ts</code></strong>: one new pure helper, <code>withFavourites(sections, favourites, name)</code>.
+    <ul>
+      <li>It returns a Favourites section first, in the saved order, followed by the sections with the starred tools taken out.</li>
+      <li>Unknown and repeated ids are ignored.</li>
+      <li>The Favourites section is then just another section, so the existing <code>moveTool</code> and <code>toolOrderIds</code> work on it unchanged.</li>
+    </ul>
+  </li>
+  <li><strong><code>src/app/dashboard/tools/page.tsx</code></strong>:
+    <ul>
+      <li>Read both columns.</li>
+      <li>The grid and the arrange draft are built with <code>withFavourites</code>. The grid hides an empty Favourites section.</li>
+      <li>A star toggle in arrange mode.</li>
+      <li>One save writes both columns. Favourites becomes NULL when empty. The section order becomes NULL when it matches the standard order with the favourites taken out.</li>
+      <li>Reset clears the favourites.</li>
+    </ul>
+  </li>
+  <li><strong>Tests</strong>: extend <code>tests/lib/tool-order.test.ts</code> for <code>withFavourites</code> (for you to run).</li>
+  <li><strong>Docs</strong>: <code>tools-card-order.md</code> and <code>tools-card-grid.md</code>.</li>
+</ol>
+
+<h2>Not changed</h2>
+<ul>
+  <li>The tools themselves, their names, links and panels, and the <code>?section=</code> links.</li>
+  <li>The standard sections and their names.</li>
+  <li>Navigation.</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ 1. Migration: <code>profiles.tool_favourites</code>, check, grant, advisors</li>
+  <li>☑ 2. <code>auth.ts</code>: column list</li>
+  <li>☑ 3. <code>withFavourites</code> helper (plus <code>toggleFavourite</code>) and tests</li>
+  <li>☑ 4. Tools page: Favourites section, star toggle, save, reset</li>
+  <li>☑ 5. Docs</li>
+  <li>☑ 6. QA audit</li>
+  <li>☑ 7. Review section, and ask you to run the tests and test the build</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned, in five files plus the migration.</p>
+<ul>
+  <li><strong>Database</strong> (live, and in <code>supabase/migrations/20261106130000_profiles_tool_favourites.sql</code>):
+    <ul>
+      <li><code>profiles.tool_favourites jsonb</code>, with the same check as <code>tool_order</code>.</li>
+      <li>The SELECT grant is in place, and UPDATE is covered by the existing table grant.</li>
+      <li>The advisors show nothing new.</li>
+    </ul>
+  </li>
+  <li><strong><code>src/lib/tool-order.ts</code></strong>: two new pure helpers.
+    <ul>
+      <li><code>withFavourites</code> puts Favourites first and takes the starred tools out of their sections.</li>
+      <li><code>toggleFavourite</code> stars or unstars a tool. Starring moves it to the end of Favourites; unstarring moves it to the end of its own section.</li>
+      <li>The existing <code>moveTool</code> orders Favourites like any other section.</li>
+    </ul>
+  </li>
+  <li><strong><code>src/app/dashboard/tools/page.tsx</code></strong>:
+    <ul>
+      <li>Both columns are read on load.</li>
+      <li>Favourites is section 0 in the grid and in arrange mode.</li>
+      <li>Each row has a 48px star button with a filled green star when starred.</li>
+      <li>The hints for empty sections are in place, and the grid hides empty sections.</li>
+      <li>One save writes both columns.</li>
+      <li>Reset clears the favourites and becomes "Reset to the standard layout".</li>
+      <li>The intro line in arrange mode now mentions the star.</li>
+      <li>The tool icon is hidden in arrange mode on phones.</li>
+    </ul>
+  </li>
+  <li><strong><code>src/lib/auth.ts</code></strong>: <code>tool_favourites</code> added to <code>PROFILE_COLUMNS</code>.</li>
+  <li><strong>Tests:</strong> <code>tests/lib/tool-order.test.ts</code> has new cases for <code>withFavourites</code> and <code>toggleFavourite</code> (not run, for you to run).</li>
+  <li><strong>Docs:</strong> <code>tools-card-order.md</code> rewritten for favourites, and <code>tools-card-grid.md</code> updated.</li>
+  <li><strong>Deviation from the plan:</strong> the star button does not use a pressed state. Its label changes instead, from "Add … to favourites" to "Remove … from favourites". A changing label together with a pressed state would be read twice and is not recommended.</li>
+  <li><strong>Checks:</strong> type check clean, lint clean on the changed files. No build or tests run.</li>
+  <li><strong>QA audit:</strong> two Medium, both fixed. No Critical or High.
+    <ul>
+      <li><strong>Accidental double tap:</strong> starring removes the row, so the next tool slides under the finger. A quick second tap (gloves, a shaky hand) would star that one too. A star tap within half a second of the previous one is now ignored.</li>
+      <li><strong>Page jump:</strong> putting keyboard focus back on a starred tool scrolled the page up to Favourites, which made starring several tools further down tiresome. Focus now returns without scrolling. Screen readers still hear "… added to favourites".</li>
+    </ul>
+  </li>
+  <li><strong>Low:</strong> an older copy of the app still open on another device ignores favourites until it reloads. If it saves an order, the favourites are kept.</li>
+</ul>
+<p>Tested by you on 06/11/2026: all good.</p>
+</body>
+</html>

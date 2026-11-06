@@ -4,9 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { applyToolOrder, moveTool, parseToolOrder, toolOrderIds } from '@/lib/tool-order'
+import { applyToolOrder, moveTool, parseToolOrder, toggleFavourite, toolOrderIds, withFavourites } from '@/lib/tool-order'
 import { useSubmitLock } from '@/hooks/useSubmitLock'
-import { Wrench, Droplet, Cookie, Cloud, Send, Thermometer, Grid3X3, Camera, Wallet, Package, ShoppingCart, QrCode, ArrowLeft, Scissors, ArrowUpDown, ChevronUp, ChevronDown, type LucideIcon } from 'lucide-react'
+import { Wrench, Droplet, Cookie, Cloud, Send, Thermometer, Grid3X3, Camera, Wallet, Package, ShoppingCart, QrCode, ArrowLeft, Scissors, ArrowUpDown, ChevronUp, ChevronDown, Star, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
@@ -63,8 +63,9 @@ interface ToolCategory {
  tools: ToolCard[]
 }
 
-// The standard order. Each beekeeper can rearrange the cards within a section; their order is
-// saved in profiles.tool_order (see docs/features/tools-card-order.md).
+// The standard order. Each beekeeper can rearrange the cards within a section and star tools into
+// a Favourites section at the top; saved in profiles.tool_order and profiles.tool_favourites
+// (see docs/features/tools-card-order.md).
 const TOOL_CATEGORIES: ToolCategory[] = [
  {
  name: 'Calculators',
@@ -100,9 +101,12 @@ const TOOL_CATEGORIES: ToolCategory[] = [
  },
 ]
 
-const STANDARD_ORDER = toolOrderIds(TOOL_CATEGORIES).join()
+const STANDARD_IDS = toolOrderIds(TOOL_CATEGORIES)
+// Starred tools sit in this section, always first (see withFavourites)
+const FAVOURITES = 'Favourites'
 const ORDER_LOAD_TIMEOUT_MS = 5000
 const ORDER_SAVE_TIMEOUT_MS = 10000
+const STAR_TAP_GAP_MS = 500
 
 export default function ToolsPage() {
  const [userId, setUserId] = useState<string | null>(null)
@@ -111,25 +115,35 @@ export default function ToolsPage() {
  const searchParams = useSearchParams()
  const toast = useToast()
 
- // Card order: the saved one, and a draft while arranging (null = not arranging)
+ // Card layout: the saved order and favourites, and a draft while arranging (null = not
+ // arranging). Section 0 of `categories` and of the draft is always Favourites.
  const [savedOrder, setSavedOrder] = useState<string[] | null>(null)
+ const [savedFavourites, setSavedFavourites] = useState<string[] | null>(null)
  const [orderLoaded, setOrderLoaded] = useState(false)
  const [draft, setDraft] = useState<ToolCategory[] | null>(null)
  const [announcement, setAnnouncement] = useState('')
- const pendingFocusRef = useRef<{ id: string; direction: 'up' | 'down' } | null>(null)
+ const pendingFocusRef = useRef<{ id: string; button: 'up' | 'down' | 'star' } | null>(null)
+ const lastStarTapRef = useRef(0)
  const { submitting: savingOrder, run: runSaveOrder } = useSubmitLock()
- const categories = useMemo(() => applyToolOrder(TOOL_CATEGORIES, savedOrder), [savedOrder])
+ const categories = useMemo(
+ () => withFavourites(applyToolOrder(TOOL_CATEGORIES, savedOrder), savedFavourites, FAVOURITES),
+ [savedOrder, savedFavourites],
+ )
 
- // A moved row can lose keyboard focus when React moves it, so put focus back on the
- // arrow that was pressed, or on the other arrow once the row reaches the end of its section
+ // A moved row can lose keyboard focus when React moves it, so put focus back on the button
+ // that was pressed, or on the other arrow once the row reaches the end of its section
  useEffect(() => {
  const pending = pendingFocusRef.current
  if (!pending) return
  pendingFocusRef.current = null
- const pressed = document.getElementById(`arrange-${pending.id}-${pending.direction}`) as HTMLButtonElement | null
- const other = document.getElementById(`arrange-${pending.id}-${pending.direction === 'up' ? 'down' : 'up'}`) as HTMLButtonElement | null
+ const pressed = document.getElementById(`arrange-${pending.id}-${pending.button}`) as HTMLButtonElement | null
+ const other = pending.button === 'star'
+ ? null
+ : document.getElementById(`arrange-${pending.id}-${pending.button === 'up' ? 'down' : 'up'}`) as HTMLButtonElement | null
  const target = pressed && !pressed.disabled ? pressed : other
- target?.focus()
+ // A starred tool jumps to another section: keep the page where it is, so a beekeeper
+ // starring several tools further down is not scrolled away each time
+ target?.focus({ preventScroll: pending.button === 'star' })
  }, [draft])
 
  // Feeding calculator state
@@ -158,23 +172,26 @@ export default function ToolsPage() {
  return
  }
  setUserId(id)
- // The beekeeper's own card order. Only the card grid waits for it, and never for long:
- // on a weak signal or a failed read the standard order is shown.
+ // The beekeeper's own card order and favourites. Only the card grid waits for them, and
+ // never for long: on a weak signal or a failed read the standard layout is shown.
  let order: string[] | null = null
+ let favourites: string[] | null = null
  try {
  const { data, error } = await supabase
  .from('profiles')
- .select('tool_order')
+ .select('tool_order, tool_favourites')
  .eq('id', id)
  .abortSignal(AbortSignal.timeout(ORDER_LOAD_TIMEOUT_MS))
  .maybeSingle()
  if (error) console.error('Error loading tool order:', error)
  order = parseToolOrder(data?.tool_order)
+ favourites = parseToolOrder(data?.tool_favourites)
  } catch (err) {
  console.error('Error loading tool order:', err)
  }
  if (cancelled) return
  setSavedOrder(order)
+ setSavedFavourites(favourites)
  setOrderLoaded(true)
  }
  initUser()
@@ -261,28 +278,46 @@ export default function ToolsPage() {
  const tool = section?.tools[toolIndex]
  const target = toolIndex + direction
  if (!tool || target < 0 || target >= section.tools.length) return
- pendingFocusRef.current = { id: tool.id, direction: direction === -1 ? 'up' : 'down' }
+ pendingFocusRef.current = { id: tool.id, button: direction === -1 ? 'up' : 'down' }
  setDraft(moveTool(draft, sectionIndex, toolIndex, direction))
  setAnnouncement(`${tool.label} moved to position ${target + 1} of ${section.tools.length} in ${section.name}`)
  }
 
+ // Starring moves a tool to the end of Favourites; unstarring moves it back to the end of its own section
+ const toggleDraftFavourite = (sectionIndex: number, toolIndex: number) => {
+ if (!draft) return
+ const tool = draft[sectionIndex]?.tools[toolIndex]
+ if (!tool) return
+ // Starring removes the row, so the next tool slides under the finger: a quick second tap
+ // (gloves, a shaky hand) would star that one too. Ignore a star tap straight after another.
+ const now = Date.now()
+ if (now - lastStarTapRef.current < STAR_TAP_GAP_MS) return
+ lastStarTapRef.current = now
+ pendingFocusRef.current = { id: tool.id, button: 'star' }
+ setDraft(toggleFavourite(draft, sectionIndex, toolIndex, TOOL_CATEGORIES))
+ setAnnouncement(sectionIndex === 0 ? `${tool.label} removed from favourites` : `${tool.label} added to favourites`)
+ }
+
  const resetDraft = () => {
- setDraft(TOOL_CATEGORIES)
- setAnnouncement('Standard order restored. Tap Save order to keep it.')
+ setDraft(withFavourites(TOOL_CATEGORIES, null, FAVOURITES))
+ setAnnouncement('Standard layout restored. Tap Save order to keep it.')
  }
 
  const saveOrder = () => runSaveOrder(async () => {
  if (!draft) return
- const ids = toolOrderIds(draft)
+ const favourites = draft[0].tools.map(tool => tool.id)
+ const sectionIds = toolOrderIds(draft.slice(1))
  // The standard order is saved as NULL, so tools added later land where we place them
- const value = ids.join() === STANDARD_ORDER ? null : ids
+ const standardIds = STANDARD_IDS.filter(id => !favourites.includes(id))
+ const order = sectionIds.join() === standardIds.join() ? null : sectionIds
+ const favouritesValue = favourites.length > 0 ? favourites : null
  // A time limit, so a weak signal ends in a clear message rather than "Saving…" for ever.
- // Saving again is safe: it writes the same order.
+ // Saving again is safe: it writes the same layout.
  let saved = false
  try {
  const { data, error } = await supabase
  .from('profiles')
- .update({ tool_order: value })
+ .update({ tool_order: order, tool_favourites: favouritesValue })
  .eq('id', userId)
  .select('id')
  .abortSignal(AbortSignal.timeout(ORDER_SAVE_TIMEOUT_MS))
@@ -295,7 +330,8 @@ export default function ToolsPage() {
  toast.error('Could not save the tool order. Check your signal and try again.')
  return
  }
- setSavedOrder(value)
+ setSavedOrder(order)
+ setSavedFavourites(favouritesValue)
  setDraft(null)
  setAnnouncement('')
  toast.success('Tool order saved')
@@ -311,7 +347,7 @@ export default function ToolsPage() {
  <div className="flex flex-wrap items-center justify-between gap-3">
  <p className="text-text-secondary">
  {activeSection === null && draft
- ? 'Use the arrows to change the order. Tap Save order when you are done.'
+ ? 'Tap the star to keep a tool in Favourites at the top. Use the arrows to change the order, then tap Save order.'
  : 'Helpful tools and utilities for managing your beekeeping operations.'}
  </p>
  {activeSection === null && !draft && orderLoaded && (
@@ -333,13 +369,32 @@ export default function ToolsPage() {
  <h2 id={`arrange-section-${sectionIndex}`} className="text-sm font-semibold text-text-tertiary mb-3">
  {category.name}
  </h2>
+ {category.tools.length === 0 ? (
+ <p className="text-text-secondary">
+ {sectionIndex === 0 ? 'Tap the star on a tool to add it here.' : 'All of these tools are in Favourites.'}
+ </p>
+ ) : (
  <ul className="bg-surface rounded-lg border border-border divide-y divide-border">
  {category.tools.map((tool, toolIndex) => (
- <li key={tool.id} className="flex items-center gap-3 p-3">
- <div className="p-2 rounded-lg bg-surface-secondary">
+ <li key={tool.id} className="flex items-center gap-2 sm:gap-3 p-3">
+ {/* Hidden on phones so the name has room beside the three buttons */}
+ <div className="hidden sm:block p-2 rounded-lg bg-surface-secondary">
  <tool.icon size={20} aria-hidden="true" className="text-forest-600 dark:text-forest-400" />
  </div>
  <span className="flex-1 min-w-0 font-semibold text-foreground">{tool.label}</span>
+ <Button
+ id={`arrange-${tool.id}-star`}
+ onClick={() => toggleDraftFavourite(sectionIndex, toolIndex)}
+ disabled={savingOrder}
+ aria-label={sectionIndex === 0 ? `Remove ${tool.label} from favourites` : `Add ${tool.label} to favourites`}
+ className="min-w-12 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
+ >
+ <Star
+ size={22}
+ aria-hidden="true"
+ className={sectionIndex === 0 ? 'fill-forest-600 text-forest-600 dark:fill-forest-400 dark:text-forest-400' : 'text-text-secondary'}
+ />
+ </Button>
  <Button
  id={`arrange-${tool.id}-up`}
  onClick={() => moveDraftTool(sectionIndex, toolIndex, -1)}
@@ -361,6 +416,7 @@ export default function ToolsPage() {
  </li>
  ))}
  </ul>
+ )}
  </section>
  ))}
 
@@ -378,7 +434,7 @@ export default function ToolsPage() {
  disabled={savingOrder}
  className="min-h-12 px-1 font-medium text-forest-700 dark:text-forest-300 underline underline-offset-4"
  >
- Reset to the standard order
+ Reset to the standard layout
  </Button>
  </div>
  )}
@@ -387,7 +443,8 @@ export default function ToolsPage() {
  {activeSection === null && !draft && !orderLoaded && <LoadingSpinner text="Loading tools..." />}
  {activeSection === null && !draft && orderLoaded && (
  <div className="space-y-8">
- {categories.map((category, catIndex) => (
+ {/* Empty sections (no favourites yet, or every tool starred) are not shown */}
+ {categories.filter(category => category.tools.length > 0).map((category, catIndex) => (
  <div key={category.name} className={`animate-fade-in-up stagger-${catIndex + 1}`}>
  <h2 className="text-sm font-semibold text-text-tertiary mb-3">
  {category.name}

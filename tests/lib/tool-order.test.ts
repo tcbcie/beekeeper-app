@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyToolOrder, moveTool, parseToolOrder, toolOrderIds } from '@/lib/tool-order'
+import { applyToolOrder, moveTool, parseToolOrder, toggleFavourite, toolOrderIds, withFavourites } from '@/lib/tool-order'
 
 const sections = [
   { name: 'Calculators', tools: [{ id: 'feeding' }, { id: 'fondant' }, { id: 'cells' }] },
@@ -59,5 +59,54 @@ describe('moveTool', () => {
     expect(toolOrderIds(moveTool(sections, 0, 0, -1))).toEqual(toolOrderIds(sections))
     expect(toolOrderIds(moveTool(sections, 0, 2, 1))).toEqual(toolOrderIds(sections))
     expect(toolOrderIds(moveTool(sections, 5, 0, 1))).toEqual(toolOrderIds(sections))
+  })
+})
+
+const ids = (list: { name: string; tools: { id: string }[] }[]) =>
+  list.map(section => [section.name, section.tools.map(tool => tool.id)])
+
+describe('withFavourites', () => {
+  it('puts an empty Favourites section first when nothing is starred', () => {
+    expect(ids(withFavourites(sections, null, 'Favourites'))).toEqual([
+      ['Favourites', []],
+      ['Calculators', ['feeding', 'fondant', 'cells']],
+      ['Hive Health', ['varroa', 'gdd', 'tbr']],
+    ])
+  })
+
+  it('moves starred tools to Favourites in their saved order, never in two places', () => {
+    expect(ids(withFavourites(sections, ['tbr', 'feeding'], 'Favourites'))).toEqual([
+      ['Favourites', ['tbr', 'feeding']],
+      ['Calculators', ['fondant', 'cells']],
+      ['Hive Health', ['varroa', 'gdd']],
+    ])
+  })
+
+  it('ignores unknown and repeated ids', () => {
+    expect(ids(withFavourites(sections, ['old-tool', 'gdd', 'gdd'], 'Favourites'))[0]).toEqual(['Favourites', ['gdd']])
+  })
+})
+
+describe('toggleFavourite', () => {
+  const arranged = withFavourites(sections, ['tbr'], 'Favourites')
+
+  it('stars a tool by moving it to the end of Favourites', () => {
+    expect(ids(toggleFavourite(arranged, 1, 1, sections))).toEqual([
+      ['Favourites', ['tbr', 'fondant']],
+      ['Calculators', ['feeding', 'cells']],
+      ['Hive Health', ['varroa', 'gdd']],
+    ])
+  })
+
+  it('unstars a tool by moving it to the end of its own section', () => {
+    expect(ids(toggleFavourite(arranged, 0, 0, sections))).toEqual([
+      ['Favourites', []],
+      ['Calculators', ['feeding', 'fondant', 'cells']],
+      ['Hive Health', ['varroa', 'gdd', 'tbr']],
+    ])
+  })
+
+  it('leaves the sections unchanged for a tool that is not there', () => {
+    expect(ids(toggleFavourite(arranged, 1, 9, sections))).toEqual(ids(arranged))
   })
 })
