@@ -1,12 +1,16 @@
 'use client'
 import dynamic from 'next/dynamic'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getCurrentUserId } from '@/lib/auth'
-import { Wrench, Droplet, Cookie, Cloud, Send, Thermometer, Grid3X3, Camera, Wallet, Package, ShoppingCart, QrCode, ArrowLeft, Scissors } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { applyToolOrder, moveTool, parseToolOrder, toolOrderIds } from '@/lib/tool-order'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
+import { Wrench, Droplet, Cookie, Cloud, Send, Thermometer, Grid3X3, Camera, Wallet, Package, ShoppingCart, QrCode, ArrowLeft, Scissors, ArrowUpDown, ChevronUp, ChevronDown, type LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import Button from '@/components/ui/Button'
+import { useToast } from '@/components/ui/Toast'
 
 // Panels load on demand: only the one on screen is downloaded, so heavy libraries
 // (chart.js, QR codes) and large tabs stay out of the first load.
@@ -45,11 +49,88 @@ const PurchaseList = dynamic(() => import('@/components/tools/PurchaseList'), {
 
 type ToolsSection = 'feeding' | 'fondant' | 'cells' | 'varroa' | 'gdd' | 'tbr' | 'diagnosis' | 'profitloss' | 'traceability' | 'purchases'
 
+interface ToolCard {
+ id: string
+ label: string
+ description: string
+ icon: LucideIcon
+ type: 'inline' | 'link'
+ href?: string
+}
+
+interface ToolCategory {
+ name: string
+ tools: ToolCard[]
+}
+
+// The standard order. Each beekeeper can rearrange the cards within a section; their order is
+// saved in profiles.tool_order (see docs/features/tools-card-order.md).
+const TOOL_CATEGORIES: ToolCategory[] = [
+ {
+ name: 'Calculators',
+ tools: [
+ { id: 'feeding', label: 'Feeding Calculator', description: 'Calculate sugar syrup ratios for 1:1 and 3:2 feeds', icon: Droplet, type: 'inline' },
+ { id: 'fondant', label: 'Fondant Recipe', description: 'Scale fondant ingredients for any batch size', icon: Cookie, type: 'inline' },
+ { id: 'cells', label: 'Frame Cells', description: 'Estimate cell counts across different frame sizes', icon: Grid3X3, type: 'inline' },
+ ],
+ },
+ {
+ name: 'Hive Health',
+ tools: [
+ { id: 'varroa', label: 'Varroa Weather', description: 'Weather-based varroa pressure forecasts for your apiaries', icon: Cloud, type: 'inline' },
+ { id: 'gdd', label: 'GDD Tracker', description: 'Growing degree-day accumulation for forage predictions', icon: Thermometer, type: 'inline' },
+ { id: 'tbr', label: 'TBR Swarm Planner', description: 'Time a total brood removal to peak foragers for the summer flow', icon: Scissors, type: 'inline' },
+ { id: 'diagnosis', label: 'Diagnosis', description: 'Upload photos for AI-assisted hive health analysis', icon: Camera, type: 'inline' },
+ ],
+ },
+ {
+ name: 'Business',
+ tools: [
+ { id: 'profitloss', label: 'Profit & Loss', description: 'Track income and expenses across your operation', icon: Wallet, type: 'inline' },
+ { id: 'purchases', label: 'Purchases', description: 'Manage equipment and supply purchases', icon: ShoppingCart, type: 'inline' },
+ { id: 'traceability', label: 'Provenance', description: 'Honey traceability and batch tracking records', icon: Package, type: 'inline' },
+ ],
+ },
+ {
+ name: 'Utilities',
+ tools: [
+ { id: 'qr-tags', label: 'QR Tags', description: 'Generate and manage QR codes for your hives', icon: QrCode, type: 'link', href: '/dashboard/qr-tags' },
+ { id: 'wild-colony', label: 'Report Wild Colony', description: 'Help track wild and feral bee colonies in your area', icon: Send, type: 'link', href: '/dashboard/submit-colony' },
+ ],
+ },
+]
+
+const STANDARD_ORDER = toolOrderIds(TOOL_CATEGORIES).join()
+const ORDER_LOAD_TIMEOUT_MS = 5000
+const ORDER_SAVE_TIMEOUT_MS = 10000
+
 export default function ToolsPage() {
  const [userId, setUserId] = useState<string | null>(null)
  const [activeSection, setActiveSection] = useState<ToolsSection | null>(null)
  const router = useRouter()
  const searchParams = useSearchParams()
+ const toast = useToast()
+
+ // Card order: the saved one, and a draft while arranging (null = not arranging)
+ const [savedOrder, setSavedOrder] = useState<string[] | null>(null)
+ const [orderLoaded, setOrderLoaded] = useState(false)
+ const [draft, setDraft] = useState<ToolCategory[] | null>(null)
+ const [announcement, setAnnouncement] = useState('')
+ const pendingFocusRef = useRef<{ id: string; direction: 'up' | 'down' } | null>(null)
+ const { submitting: savingOrder, run: runSaveOrder } = useSubmitLock()
+ const categories = useMemo(() => applyToolOrder(TOOL_CATEGORIES, savedOrder), [savedOrder])
+
+ // A moved row can lose keyboard focus when React moves it, so put focus back on the
+ // arrow that was pressed, or on the other arrow once the row reaches the end of its section
+ useEffect(() => {
+ const pending = pendingFocusRef.current
+ if (!pending) return
+ pendingFocusRef.current = null
+ const pressed = document.getElementById(`arrange-${pending.id}-${pending.direction}`) as HTMLButtonElement | null
+ const other = document.getElementById(`arrange-${pending.id}-${pending.direction === 'up' ? 'down' : 'up'}`) as HTMLButtonElement | null
+ const target = pressed && !pressed.disabled ? pressed : other
+ target?.focus()
+ }, [draft])
 
  // Feeding calculator state
  const [sugarAmount, setSugarAmount] = useState<number>(10)
@@ -68,15 +149,36 @@ export default function ToolsPage() {
  }, [searchParams])
 
  useEffect(() => {
+ let cancelled = false
  const initUser = async () => {
  const id = await getCurrentUserId()
+ if (cancelled) return
  if (!id) {
  router.push('/login')
  return
  }
  setUserId(id)
+ // The beekeeper's own card order. Only the card grid waits for it, and never for long:
+ // on a weak signal or a failed read the standard order is shown.
+ let order: string[] | null = null
+ try {
+ const { data, error } = await supabase
+ .from('profiles')
+ .select('tool_order')
+ .eq('id', id)
+ .abortSignal(AbortSignal.timeout(ORDER_LOAD_TIMEOUT_MS))
+ .maybeSingle()
+ if (error) console.error('Error loading tool order:', error)
+ order = parseToolOrder(data?.tool_order)
+ } catch (err) {
+ console.error('Error loading tool order:', err)
+ }
+ if (cancelled) return
+ setSavedOrder(order)
+ setOrderLoaded(true)
  }
  initUser()
+ return () => { cancelled = true }
  }, [router])
 
  if (!userId) {
@@ -143,40 +245,61 @@ export default function ToolsPage() {
  router.push('/dashboard/tools', { scroll: false })
  }
 
- const toolCategories = [
- {
- name: 'Calculators',
- tools: [
- { id: 'feeding' as const, label: 'Feeding Calculator', description: 'Calculate sugar syrup ratios for 1:1 and 3:2 feeds', icon: Droplet, type: 'inline' as const },
- { id: 'fondant' as const, label: 'Fondant Recipe', description: 'Scale fondant ingredients for any batch size', icon: Cookie, type: 'inline' as const },
- { id: 'cells' as const, label: 'Frame Cells', description: 'Estimate cell counts across different frame sizes', icon: Grid3X3, type: 'inline' as const },
- ],
- },
- {
- name: 'Hive Health',
- tools: [
- { id: 'varroa' as const, label: 'Varroa Weather', description: 'Weather-based varroa pressure forecasts for your apiaries', icon: Cloud, type: 'inline' as const },
- { id: 'gdd' as const, label: 'GDD Tracker', description: 'Growing degree-day accumulation for forage predictions', icon: Thermometer, type: 'inline' as const },
- { id: 'tbr' as const, label: 'TBR Swarm Planner', description: 'Time a total brood removal to peak foragers for the summer flow', icon: Scissors, type: 'inline' as const },
- { id: 'diagnosis' as const, label: 'Diagnosis', description: 'Upload photos for AI-assisted hive health analysis', icon: Camera, type: 'inline' as const },
- ],
- },
- {
- name: 'Business',
- tools: [
- { id: 'profitloss' as const, label: 'Profit & Loss', description: 'Track income and expenses across your operation', icon: Wallet, type: 'inline' as const },
- { id: 'purchases' as const, label: 'Purchases', description: 'Manage equipment and supply purchases', icon: ShoppingCart, type: 'inline' as const },
- { id: 'traceability' as const, label: 'Provenance', description: 'Honey traceability and batch tracking records', icon: Package, type: 'inline' as const },
- ],
- },
- {
- name: 'Utilities',
- tools: [
- { id: 'qr-tags' as const, label: 'QR Tags', description: 'Generate and manage QR codes for your hives', icon: QrCode, type: 'link' as const, href: '/dashboard/qr-tags' },
- { id: 'wild-colony' as const, label: 'Report Wild Colony', description: 'Help track wild and feral bee colonies in your area', icon: Send, type: 'link' as const, href: '/dashboard/submit-colony' },
- ],
- },
- ]
+ const startArranging = () => {
+ setAnnouncement('')
+ setDraft(categories)
+ }
+
+ const cancelArranging = () => {
+ setAnnouncement('')
+ setDraft(null)
+ }
+
+ const moveDraftTool = (sectionIndex: number, toolIndex: number, direction: -1 | 1) => {
+ if (!draft) return
+ const section = draft[sectionIndex]
+ const tool = section?.tools[toolIndex]
+ const target = toolIndex + direction
+ if (!tool || target < 0 || target >= section.tools.length) return
+ pendingFocusRef.current = { id: tool.id, direction: direction === -1 ? 'up' : 'down' }
+ setDraft(moveTool(draft, sectionIndex, toolIndex, direction))
+ setAnnouncement(`${tool.label} moved to position ${target + 1} of ${section.tools.length} in ${section.name}`)
+ }
+
+ const resetDraft = () => {
+ setDraft(TOOL_CATEGORIES)
+ setAnnouncement('Standard order restored. Tap Save order to keep it.')
+ }
+
+ const saveOrder = () => runSaveOrder(async () => {
+ if (!draft) return
+ const ids = toolOrderIds(draft)
+ // The standard order is saved as NULL, so tools added later land where we place them
+ const value = ids.join() === STANDARD_ORDER ? null : ids
+ // A time limit, so a weak signal ends in a clear message rather than "Saving…" for ever.
+ // Saving again is safe: it writes the same order.
+ let saved = false
+ try {
+ const { data, error } = await supabase
+ .from('profiles')
+ .update({ tool_order: value })
+ .eq('id', userId)
+ .select('id')
+ .abortSignal(AbortSignal.timeout(ORDER_SAVE_TIMEOUT_MS))
+ if (error) console.error('Error saving tool order:', error)
+ saved = !error && (data?.length ?? 0) > 0
+ } catch (err) {
+ console.error('Error saving tool order:', err)
+ }
+ if (!saved) {
+ toast.error('Could not save the tool order. Check your signal and try again.')
+ return
+ }
+ setSavedOrder(value)
+ setDraft(null)
+ setAnnouncement('')
+ toast.success('Tool order saved')
+ })
 
  return (
  <div className="space-y-6">
@@ -185,14 +308,86 @@ export default function ToolsPage() {
  <h1 className="text-3xl font-bold text-foreground">Tools</h1>
  </div>
 
+ <div className="flex flex-wrap items-center justify-between gap-3">
  <p className="text-text-secondary">
- Helpful tools and utilities for managing your beekeeping operations.
+ {activeSection === null && draft
+ ? 'Use the arrows to change the order. Tap Save order when you are done.'
+ : 'Helpful tools and utilities for managing your beekeeping operations.'}
  </p>
+ {activeSection === null && !draft && orderLoaded && (
+ <Button onClick={startArranging}>
+ <ArrowUpDown size={18} aria-hidden="true" />
+ Arrange tools
+ </Button>
+ )}
+ </div>
 
- {/* Landing Grid View */}
- {activeSection === null && (
+ {/* Screen readers hear where a moved tool now sits */}
+ <p className="sr-only" aria-live="polite">{announcement}</p>
+
+ {/* Arrange mode: one column on every screen, so up and down mean exactly that */}
+ {activeSection === null && draft && (
+ <div className="space-y-6 max-w-2xl">
+ {draft.map((category, sectionIndex) => (
+ <section key={category.name} aria-labelledby={`arrange-section-${sectionIndex}`}>
+ <h2 id={`arrange-section-${sectionIndex}`} className="text-sm font-semibold text-text-tertiary mb-3">
+ {category.name}
+ </h2>
+ <ul className="bg-surface rounded-lg border border-border divide-y divide-border">
+ {category.tools.map((tool, toolIndex) => (
+ <li key={tool.id} className="flex items-center gap-3 p-3">
+ <div className="p-2 rounded-lg bg-surface-secondary">
+ <tool.icon size={20} aria-hidden="true" className="text-forest-600 dark:text-forest-400" />
+ </div>
+ <span className="flex-1 min-w-0 font-semibold text-foreground">{tool.label}</span>
+ <Button
+ id={`arrange-${tool.id}-up`}
+ onClick={() => moveDraftTool(sectionIndex, toolIndex, -1)}
+ disabled={toolIndex === 0 || savingOrder}
+ aria-label={`Move ${tool.label} up`}
+ className="min-w-12 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
+ >
+ <ChevronUp size={22} aria-hidden="true" />
+ </Button>
+ <Button
+ id={`arrange-${tool.id}-down`}
+ onClick={() => moveDraftTool(sectionIndex, toolIndex, 1)}
+ disabled={toolIndex === category.tools.length - 1 || savingOrder}
+ aria-label={`Move ${tool.label} down`}
+ className="min-w-12 px-3 disabled:opacity-40 disabled:cursor-not-allowed"
+ >
+ <ChevronDown size={22} aria-hidden="true" />
+ </Button>
+ </li>
+ ))}
+ </ul>
+ </section>
+ ))}
+
+ <div className="flex flex-wrap items-center gap-3">
+ <Button tone="success" onClick={saveOrder} disabled={savingOrder} className="flex-1 sm:flex-none min-h-14 px-6">
+ {savingOrder ? 'Saving…' : 'Save order'}
+ </Button>
+ <Button onClick={cancelArranging} disabled={savingOrder} className="min-h-14 px-6 disabled:opacity-60">
+ Cancel
+ </Button>
+ </div>
+ <Button
+ unstyled
+ onClick={resetDraft}
+ disabled={savingOrder}
+ className="min-h-12 px-1 font-medium text-forest-700 dark:text-forest-300 underline underline-offset-4"
+ >
+ Reset to the standard order
+ </Button>
+ </div>
+ )}
+
+ {/* Landing Grid View: waits briefly for the saved order so the cards do not jump */}
+ {activeSection === null && !draft && !orderLoaded && <LoadingSpinner text="Loading tools..." />}
+ {activeSection === null && !draft && orderLoaded && (
  <div className="space-y-8">
- {toolCategories.map((category, catIndex) => (
+ {categories.map((category, catIndex) => (
  <div key={category.name} className={`animate-fade-in-up stagger-${catIndex + 1}`}>
  <h2 className="text-sm font-semibold text-text-tertiary mb-3">
  {category.name}

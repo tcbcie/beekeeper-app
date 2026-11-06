@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Tools card order</title>
+</head>
+<body>
+<h1>Tools – let each beekeeper arrange the cards</h1>
+<p>Feature plan: <code>docs/features/tools-card-order.md</code>. Page: <code>src/app/dashboard/tools/page.tsx</code>.</p>
+
+<h2>What the code does today</h2>
+<ul>
+  <li><strong>The cards</strong> come from a <code>toolCategories</code> list written inside the page component: four sections (Calculators, Hive Health, Business, Utilities) and 12 tools in a fixed order. Nothing else in the app uses that list.</li>
+  <li><strong>No reorder feature exists anywhere</strong> in the app, so there is no pattern to copy. <code>@dnd-kit/core</code> is installed (apiary map only); the sortable add-on is not.</li>
+  <li><strong>Per-user settings</strong> live as columns on <code>profiles</code> (the <code>enable_*</code> switches). There is no preferences table. Browser storage (<code>usePersistentState</code>) is cleared on sign-out and is per device.</li>
+  <li><strong>No tests</strong> cover the Tools page.</li>
+  <li><code>docs/features/tools-card-grid.md</code> is out of date: it misses the TBR Swarm Planner.</li>
+</ul>
+
+<h2>How it will work for the beekeeper</h2>
+<ol>
+  <li>Next to the intro line, a new <strong>Arrange tools</strong> button (48px, neutral tone, up-down arrow icon).</li>
+  <li>Tapping it switches the page into arrange mode:
+    <ul>
+      <li>The grid becomes a single-column list on every screen size, so "up" and "down" mean exactly that.</li>
+      <li>Each row shows the tool's icon and name, with two 48px buttons: <em>Move up</em> and <em>Move down</em> (screen readers hear "Move Feeding Calculator up"). The top row's up button and the bottom row's down button are disabled.</li>
+      <li>Cards do not open tools while arranging.</li>
+      <li>A short line explains: "Use the arrows to change the order. Tap Save order when you are done."</li>
+      <li>At the bottom, in thumb reach: <strong>Save order</strong> (primary, green), <strong>Cancel</strong>, and a quieter <strong>Reset to the standard order</strong>.</li>
+    </ul>
+  </li>
+  <li><strong>Save order</strong> writes the order once, shows "Tool order saved" and returns to the normal grid in the new order. If the save fails, it says "Could not save the tool order. Check your signal and try again." and stays in arrange mode, so nothing is lost.</li>
+  <li><strong>Cancel</strong> drops the changes. <strong>Reset</strong> puts the draft back to the standard order (still needs Save).</li>
+  <li>Arrow buttons, not drag and drop: they work with gloves and one hand, need no new library, and meet WCAG 2.5.1. Drag could be added later as a shortcut.</li>
+</ol>
+
+<pre>
+ Phone, arrange mode
+ ┌─────────────────────────────────┐
+ │ Tools                           │
+ │ Use the arrows to change ...    │
+ │ Calculators                     │
+ │ ┌─────────────────────────────┐ │
+ │ │ (drop) Feeding Calculator ▲ ▼│ │
+ │ │ (cake) Fondant Recipe     ▲ ▼│ │
+ │ │ (grid) Frame Cells        ▲ ▼│ │
+ │ └─────────────────────────────┘ │
+ │ Hive Health  ...                │
+ │ [  Save order  ] [ Cancel ]     │
+ │ Reset to the standard order     │
+ └─────────────────────────────────┘
+</pre>
+
+<h2>Technical changes</h2>
+<ol>
+  <li><strong>Database</strong> (Supabase MCP migration, plus a SQL file in <code>supabase/migrations</code>):
+    <ul>
+      <li><code>profiles.tool_order jsonb</code> (a list of tool ids), nullable. NULL means the standard order. Built as <code>text[]</code> first, then changed to <code>jsonb</code> with your OK, because the profile data export can only restore lists into <code>jsonb</code>.</li>
+      <li>A check that keeps it to a list of at most 50 entries.</li>
+      <li><code>GRANT SELECT (tool_order)</code> to anon and authenticated (profiles has column-level SELECT). Check the UPDATE grant covers it too.</li>
+      <li>Not a privileged column, so the guard trigger is untouched. Run the security advisors afterwards.</li>
+    </ul>
+  </li>
+  <li><strong><code>src/lib/auth.ts</code></strong>: add <code>tool_order</code> to <code>PROFILE_COLUMNS</code> and the profile type.</li>
+  <li><strong>New <code>src/lib/tool-order.ts</code></strong> (small, pure functions):
+    <ul>
+      <li><code>applyToolOrder(categories, savedOrder)</code>: sorts each section's tools by the saved list. Tools missing from the list (a tool added in a later release) keep their standard place at the end of their section. Unknown ids in the list are ignored.</li>
+      <li><code>moveTool(order, id, direction)</code>: swaps a tool with its neighbour in the same section.</li>
+    </ul>
+  </li>
+  <li><strong><code>src/app/dashboard/tools/page.tsx</code></strong>:
+    <ul>
+      <li>Move <code>toolCategories</code> out of the component to a module constant (it never changes).</li>
+      <li>After the user id is known, read <code>tool_order</code> from the user's own profile. If the read fails, show the standard order (the page still works).</li>
+      <li>Arrange mode as above, with the save behind <code>useSubmitLock</code> and a <code>.select('id')</code> zero-row check. Saving the standard order writes NULL, so future new tools land where we place them.</li>
+      <li>Card rendering and the tool panels are unchanged.</li>
+    </ul>
+  </li>
+  <li><strong>Test</strong>: a small unit test for <code>tool-order.ts</code> (for you to run).</li>
+  <li><strong>Docs</strong>: new <code>docs/features/tools-card-order.md</code>; update <code>tools-card-grid.md</code> (arrange mode, and the missing TBR card).</li>
+</ol>
+
+<h2>Decisions (both accepted as recommended, 06/11/2026)</h2>
+<ol>
+  <li><strong>D1 – Where can a card move?</strong>
+    <ul>
+      <li>Recommended: <em>within its own section</em> (e.g. put TBR first in Hive Health). Sections keep their meaning and the list stays short to arrange.</li>
+      <li>Alternative A: within sections, <em>and</em> move whole sections up or down (e.g. Hive Health above Calculators). A little more code and a second set of arrows.</li>
+      <li>Alternative B: drop the sections and make one free list of all 12 tools.</li>
+    </ul>
+  </li>
+  <li><strong>D2 – Where is the order kept?</strong>
+    <ul>
+      <li>Recommended: <em>on the account</em> (the new profiles column). It follows the beekeeper from phone to computer, survives sign-out and iOS clearing storage.</li>
+      <li>Alternative: on the device only (browser storage). No database change, but it is lost on sign-out and differs per device.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2>Not changed</h2>
+<ul>
+  <li>Which tools exist, their names, descriptions, icons and links.</li>
+  <li>The <code>?section=</code> links from other pages.</li>
+  <li>Navigation (sidebar, bottom bar, More drawer).</li>
+</ul>
+
+<h2>To do</h2>
+<ul>
+  <li>☑ 1. Migration: <code>profiles.tool_order</code>, check, grants, advisors</li>
+  <li>☑ 2. <code>auth.ts</code>: column list (the profile type there holds only id, role and created_at, so no type change)</li>
+  <li>☑ 3. <code>tool-order.ts</code> helpers and unit test</li>
+  <li>☑ 4. Tools page: load saved order, arrange mode, save, cancel, reset</li>
+  <li>☑ 5. Docs (<code>tools-card-order.md</code>, <code>tools-card-grid.md</code>)</li>
+  <li>☑ 6. QA audit</li>
+  <li>☑ 7. Review section, and ask you to run the tests and test the build (phone and desktop, light and dark)</li>
+</ul>
+
+<h2>Review</h2>
+<p>Built as planned, with one change: the column is <code>jsonb</code>, not <code>text[]</code>. Six files plus the migration.</p>
+<ul>
+  <li><strong>Database</strong> (live in Supabase, and in <code>supabase/migrations/20261106120000_profiles_tool_order.sql</code>):
+    <ul>
+      <li><code>profiles.tool_order jsonb</code>, with a check that it is a list of at most 50 entries.</li>
+      <li>Column SELECT granted to anon and authenticated. UPDATE was already table-level and limited to the user's own row.</li>
+      <li>The security advisors show nothing new.</li>
+      <li>The first version was <code>text[]</code>. The data export writes lists as JSON text, so a saved order would not have restored. The switch to <code>jsonb</code> converted the empty column in place, because dropping it was declined. The live database and the migration file match.</li>
+    </ul>
+  </li>
+  <li><strong><code>src/lib/tool-order.ts</code></strong>: four small pure helpers.
+    <ul>
+      <li>Check the saved value.</li>
+      <li>Sort each section.</li>
+      <li>Move a tool within its section.</li>
+      <li>List the ids.</li>
+      <li>Tools not in a saved order (new ones) stay at the end of their section, and unknown ids are ignored.</li>
+    </ul>
+  </li>
+  <li><strong><code>src/app/dashboard/tools/page.tsx</code></strong>:
+    <ul>
+      <li>The card list moved out of the component, unchanged, as <code>TOOL_CATEGORIES</code>.</li>
+      <li>The grid shows the beekeeper's order.</li>
+      <li>"Arrange tools" opens a one-column list with 48px up and down arrows. The arrows at the ends are faded and disabled.</li>
+      <li>Save order (56px, green), Cancel, and Reset to the standard order.</li>
+      <li>Screen readers hear each move, and keyboard focus stays on the moved tool.</li>
+      <li>The tool panels and the card design are unchanged.</li>
+    </ul>
+  </li>
+  <li><strong><code>src/lib/auth.ts</code></strong>: <code>tool_order</code> added to <code>PROFILE_COLUMNS</code>.</li>
+  <li><strong>Test:</strong> <code>tests/lib/tool-order.test.ts</code> (not run, for you to run).</li>
+  <li><strong>Docs:</strong> <code>docs/features/tools-card-order.md</code> (new) and <code>tools-card-grid.md</code>, which now also lists the TBR Swarm Planner.</li>
+  <li><strong>Checks:</strong> type check clean, lint clean on the changed files. No build or tests run.</li>
+  <li><strong>QA audit:</strong> one High and two Medium, all fixed.
+    <ul>
+      <li><strong>High:</strong> the first version held the whole page until the saved order arrived. On weak signal that could keep every tool, and links such as GDD, behind a spinner. Now tools open at once. Only the card grid waits, for at most 5 seconds, then shows the standard order.</li>
+      <li><strong>Medium:</strong> the save had no time limit, so "Saving…" could hang with every button locked. It now gives up after 10 seconds with "Could not save the tool order. Check your signal and try again." and stays in arrange mode.</li>
+      <li><strong>Medium:</strong> if the browser's Back or Forward opened a tool during arranging, the arrange instructions showed above that tool. They now show only on the card grid.</li>
+      <li>No Critical.</li>
+    </ul>
+  </li>
+  <li><strong>Low:</strong>
+    <ul>
+      <li>Teammates who can already read a profile can also read its tool order. That is harmless.</li>
+      <li>An admin impersonating a user changes that user's order, the same as the other profile settings.</li>
+      <li>Not part of this feature: the data export already writes <code>inspections.image_urls</code> (a <code>text[]</code>) as JSON text, so that column does not restore from an export.</li>
+    </ul>
+  </li>
+</ul>
+<p>Tested by you on 06/11/2026: all good.</p>
+</body>
+</html>

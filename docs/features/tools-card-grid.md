@@ -10,13 +10,16 @@ The Tools page uses a categorised card grid as its landing view instead of a fla
 2. **Open an inline tool** — click a card, URL updates to `?section=<id>`, card grid hides, back button + tool content appears
 3. **Open a link tool** (QR Tags, Report Wild Colony) — navigates to its dedicated page
 4. **Back to Tools** — returns to the landing grid, URL clears
+5. **Arrange tools** — each beekeeper can change the order of the cards within each section. See `tools-card-order.md`.
 
 ## Categories
+
+The standard order (each beekeeper can rearrange the cards within a section):
 
 | Category | Tools |
 |---|---|
 | **Calculators** | Feeding Calculator, Fondant Recipe, Frame Cells |
-| **Hive Health** | Varroa Weather, GDD Tracker, Diagnosis |
+| **Hive Health** | Varroa Weather, GDD Tracker, TBR Swarm Planner, Diagnosis |
 | **Business** | Profit & Loss, Purchases, Provenance |
 | **Utilities** | QR Tags (link), Report Wild Colony (link) |
 
@@ -28,7 +31,8 @@ The Tools page uses a categorised card grid as its landing view instead of a fla
 
 ## File
 
-- `src/app/dashboard/tools/page.tsx` — single file containing all changes
+- `src/app/dashboard/tools/page.tsx` — the cards (`TOOL_CATEGORIES`), the landing grid, arrange mode and the tool panels
+- `src/lib/tool-order.ts` — applies and changes a beekeeper's card order
 
 ## Responsive Behaviour
 
