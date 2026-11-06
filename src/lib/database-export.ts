@@ -115,6 +115,20 @@ export function sqlValue(value: unknown): string {
   return `'${escapeSqlString(String(value))}'`
 }
 
+// Postgres text[] columns. A JSON string will not load into text[], so these are
+// written as ARRAY[...]::text[]. jsonb columns holding arrays (e.g. profiles.tool_order)
+// stay as JSON text. A new text[] column in an exported table must be added here.
+const TEXT_ARRAY_COLUMNS: Record<string, readonly string[]> = {
+  inspections: ['image_urls'],
+}
+
+function sqlColumnValue(table: string, column: string, value: unknown): string {
+  if (Array.isArray(value) && TEXT_ARRAY_COLUMNS[table]?.includes(column)) {
+    return `ARRAY[${value.map(sqlValue).join(', ')}]::text[]`
+  }
+  return sqlValue(value)
+}
+
 export function buildInsertSql(
   schema: string,
   table: string,
@@ -122,7 +136,7 @@ export function buildInsertSql(
 ): string {
   const columns = Object.keys(row)
   const columnSql = columns.map(sqlIdentifier).join(', ')
-  const valuesSql = columns.map(column => sqlValue(row[column])).join(', ')
+  const valuesSql = columns.map(column => sqlColumnValue(table, column, row[column])).join(', ')
 
   return `INSERT INTO ${sqlIdentifier(schema)}.${sqlIdentifier(table)} (${columnSql}) VALUES (${valuesSql});`
 }

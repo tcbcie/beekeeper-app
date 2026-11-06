@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>SQL export – text[] columns</title>
+</head>
+<body>
+<h1>SQL export – make <code>text[]</code> values restore</h1>
+<p>Shared helper: <code>src/lib/database-export.ts</code>. Callers: <code>src/components/settings/ProfileExport.tsx</code> (personal SQL export) and <code>src/app/api/admin/export-all-data/route.ts</code> (complete database export). Both write data rows through <code>buildInsertSql(schema, table, row)</code>.</p>
+
+<h2>The problem</h2>
+<p><code>sqlValue</code> writes every object or array as a quoted JSON string. For an inspection with photos that gives:</p>
+<pre>INSERT INTO "public"."inspections" (..., "image_urls", ...) VALUES (..., '["https://a.jpg","https://b.jpg"]', ...);</pre>
+<p>That loads into a <code>jsonb</code> column, but Postgres rejects it for a <code>text[]</code> column (<em>malformed array literal</em>), so a restore fails on the first inspection that has photos.</p>
+
+<h2>What the live database says (checked via the Supabase MCP)</h2>
+<ul>
+  <li><strong>Array columns in <code>public</code>:</strong> only <code>inspections.image_urls</code> (<code>text[]</code>).</li>
+  <li><strong><code>jsonb</code> columns that can hold arrays or objects:</strong> <code>profiles.tool_order</code>, <code>hives.configuration</code>, <code>hive_configuration_history.configuration</code>, <code>inspections.brood_frames_per_box</code>, <code>inspections.honey_super_fullness</code>, <code>knowledge_base.metadata</code>. These must stay as JSON text, which already works.</li>
+  <li><code>storage.buckets.allowed_mime_types</code> is also <code>text[]</code>, but the admin route already turns it into a <code>'{…}'</code> string before calling the helper, so it is not affected and is left alone. <code>auth.users</code> and <code>auth.identities</code> have no array columns.</li>
+</ul>
+
+<h2>Approach (smallest correct change)</h2>
+<p><code>sqlValue</code> on its own cannot tell <code>text[]</code> from <code>jsonb</code>: both arrive as a JS array. <code>buildInsertSql</code> does know the table and column, so the fix lives there:</p>
+<pre>
+// Postgres text[] columns. A JSON string will not load into text[], so these are
+// written as ARRAY[...]::text[]. jsonb columns holding arrays (e.g. profiles.tool_order)
+// stay as JSON text. A new text[] column in an exported table must be added here.
+const TEXT_ARRAY_COLUMNS: Record&lt;string, readonly string[]&gt; = {
+  inspections: ['image_urls'],
+}
+
+// inside buildInsertSql, per column:
+const value = row[column]
+if (Array.isArray(value) &amp;&amp; TEXT_ARRAY_COLUMNS[table]?.includes(column)) {
+  return `ARRAY[${value.map(sqlValue).join(', ')}]::text[]`
+}
+return sqlValue(value)
+</pre>
+<ul>
+  <li>Each element reuses <code>sqlValue</code>, so quotes in URLs are escaped exactly as today and a <code>null</code> element becomes <code>NULL</code>.</li>
+  <li>An empty array becomes <code>ARRAY[]::text[]</code>, which is valid (the cast gives it a type).</li>
+  <li><code>null</code> stays <code>NULL</code>; every other column and every <code>jsonb</code> value is written exactly as before.</li>
+  <li>Result for the example above: <code>ARRAY['https://a.jpg', 'https://b.jpg']::text[]</code>.</li>
+  <li>Why a list rather than reading column types at export time: there is one such column, the personal export has no access to column metadata, and a two-line constant is simpler than a new query. The rule is written next to it and in the doc.</li>
+</ul>
+
+<h2>Todo</h2>
+<ul>
+  <li><input type="checkbox" checked disabled> Add <code>TEXT_ARRAY_COLUMNS</code> and the array branch in <code>buildInsertSql</code> (<code>src/lib/database-export.ts</code>) – the only code change.</li>
+  <li><input type="checkbox" checked disabled> Add a short "Array columns" note and the rule to <code>docs/features/database-export-coverage-and-restore-plan.md</code> (Implementation Notes).</li>
+  <li><input type="checkbox" checked disabled> Run the <code>qa-engineer</code> audit on the change and apply any fixes.</li>
+  <li><input type="checkbox" checked disabled> Ask the owner to run tests and (optionally) a restore of an export with an inspection that has photos.</li>
+</ul>
+
+<h2>Not changing</h2>
+<ul>
+  <li><code>sqlValue</code> itself (still used for <code>WHERE</code> clauses and the admin <code>ON CONFLICT</code> inserts).</li>
+  <li>The storage bucket <code>allowed_mime_types</code> handling.</li>
+  <li>No new tests are written (owner runs tests manually). If wanted, a one-line case in a future <code>tests/lib/database-export.test.ts</code> could assert the <code>ARRAY[...]</code> output.</li>
+</ul>
+
+<h2>Review</h2>
+<p>Approved by the owner ("go ahead") on 06/11/2026 and implemented as planned.</p>
+<ul>
+  <li><strong>Code:</strong> <code>src/lib/database-export.ts</code> gains <code>TEXT_ARRAY_COLUMNS</code> (<code>inspections: ['image_urls']</code>) and a small private <code>sqlColumnValue(table, column, value)</code> that <code>buildInsertSql</code> now calls per column. Array values in a listed column become <code>ARRAY[...]::text[]</code> (elements via <code>sqlValue</code>); everything else goes through <code>sqlValue</code> exactly as before. No caller changed; both the personal and the admin export pick it up through <code>buildInsertSql</code>.</li>
+  <li><strong>Unchanged:</strong> <code>sqlValue</code>, all <code>jsonb</code> output (e.g. <code>profiles.tool_order</code> still <code>'["a","b"]'</code>), the admin <code>ON CONFLICT</code> inserts for <code>auth</code>/<code>storage</code>.</li>
+  <li><strong>Doc:</strong> 06/11/2026 note and rule added to <code>docs/features/database-export-coverage-and-restore-plan.md</code>.</li>
+  <li><strong>Checks:</strong> <code>npm run typecheck</code> clean; <code>npx eslint src/lib/database-export.ts</code> clean. Tests and build not run (owner runs them).</li>
+</ul>
+<h3>QA audit</h3>
+<ul>
+  <li>🔴 Critical / 🟠 High / 🟡 Medium: none.</li>
+  <li>🟢 Low: the list is keyed by table name only, not schema. Only <code>public</code> tables go through <code>buildInsertSql</code>, so this is fine today.</li>
+  <li>🟢 Low: a <code>text[]</code> array mixing numbers and strings would make the <code>ARRAY[...]</code> constructor pick the wrong type. PostgREST always returns <code>text[]</code> elements as strings or <code>null</code>, so this cannot happen; no change made.</li>
+  <li>Nothing in the app parses the exported SQL back, so no reader needs updating.</li>
+</ul>
+<h3>Owner to verify</h3>
+<ul>
+  <li>Run the tests as usual.</li>
+  <li>Optional: export from Settings, find an inspection with photos and check its line shows <code>ARRAY['https://…']::text[]</code>; restoring it into a scratch database should no longer fail on <code>image_urls</code>.</li>
+</ul>
+</body>
+</html>
