@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
@@ -14,6 +15,14 @@ import { orderBalance } from '@/lib/crm-orders'
 import { firstOf } from '@/lib/embed'
 import CategoryBreakdown from '@/components/ui/CategoryBreakdown'
 import SelectField from '@/components/ui/SelectField'
+import { Skeleton } from '@/components/ui/Skeleton'
+
+// chart.js loads only when the chart is shown; the placeholder matches the
+// chart panel's height so nothing jumps.
+const MonthlyIncomeChart = dynamic(() => import('@/components/crm/MonthlyIncomeChart'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[19rem] lg:h-[22rem] rounded-lg" />,
+})
 
 interface InsightOrder {
   status: string
@@ -146,7 +155,7 @@ export default function SalesInsightsPage() {
       amount: Number(r.amount) || 0,
     }))
 
-    return { incomeYear, incomeMonth, ordersYear, ordersMonth, outstanding, pendingCount, categories, topCustomers }
+    return { incomeYear, incomeMonth, ordersYear, ordersMonth, outstanding, pendingCount, categories, topCustomers, yearIncome }
   }, [orders, income, selectedYear])
 
   if (loading) return <LoadingSpinner text="Loading sales insights..." />
@@ -221,6 +230,11 @@ export default function SalesInsightsPage() {
               <p className="text-sm text-text-tertiary">pending order{stats.pendingCount !== 1 ? 's' : ''}</p>
             </Panel>
           </div>
+
+          {/* Income by month, stacked from orders / other (hidden when the year has none) */}
+          {stats.incomeYear > 0 && (
+            <MonthlyIncomeChart rows={stats.yearIncome} year={year} isUkNi={isUkNi} />
+          )}
 
           {/* Income by category */}
           <CategoryBreakdown

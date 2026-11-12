@@ -255,6 +255,21 @@ orders only and missed the other two.
   and the open (pending) order count still read `crm_orders`. They are today's
   position, so they do not follow the year, and the footnote says so. When the
   month card is hidden (a past year), the desktop row uses three columns.
+- **Income by month (year, 12/11/2026):** `src/components/crm/MonthlyIncomeChart.tsx`,
+  a stacked Chart.js bar chart, one bar per month from January to December of
+  the chosen year:
+  - "From orders" (rows with `crm_order_id`) sits at the bottom and "Other" (jar
+    sales and income added by hand) on top, so each bar's height is that month's
+    income. A 2px gap in the surface colour separates the two parts.
+  - Tapping anywhere in a month shows both parts and a Total footer.
+  - Colours were checked with the dataviz palette validator. Green and blue pass
+    every check in both modes (colour-blind ΔE about 27): light `#15803d` and
+    `#2563eb`, dark `#16a34a` and `#3b82f6`. A green with honey amber was also
+    checked and fell into the warning band in dark mode, so it was not used.
+  - Text is at least 14px, including the tooltips. Screen readers get a summary
+    and a hidden table (month, from orders, other, total).
+  - It is hidden when the year has no income. chart.js loads on demand
+    (`next/dynamic`) behind a skeleton of the same height.
 - **Income by category (year):** ledger income grouped by income category,
   shown as a ranked bar list. Order product types map one-to-one to these
   categories (see below), so order figures are unchanged. Drawn by the shared

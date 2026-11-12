@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Sales Insights monthly chart</title>
+</head>
+<body>
+<h1>Sales Insights – monthly income chart</h1>
+<p>Follows the Sales Insights year selector (commit <code>392b4ea5</code>) and the P&amp;L chart (<code>MonthlyChart.tsx</code>). Feature doc: <code>docs/features/crm-module.md</code>.</p>
+
+<h2>How it will work for the beekeeper</h2>
+<ul>
+  <li>A chart, <strong>Income by month (2025)</strong>, sits under the headline cards. It shows January to December of the year chosen in the Year drop-down.</li>
+  <li>Each month is one <strong>stacked bar</strong>: "From orders" at the bottom and "Other" (jar sales and income added by hand) on top. The full height is that month's income. This is the same split as the "Income in {year}" card, now month by month, so the season shape and where the money came from read together.</li>
+  <li>Tapping anywhere in a month shows "From orders €X", "Other €Y" and "Total €Z".</li>
+  <li>It is hidden when the chosen year has no income.</li>
+</ul>
+<pre>
+ Sales Insights (phone, 2025, illustration only)
+ ┌─────────────────────────────────┐
+ │ Income by month (2025)          │
+ │ ■ From orders  ■ Other          │
+ │ €600 ┤            ▒             │
+ │ €300 ┤      ▒  ▒  █  ▒          │
+ │   €0 ┼──█──█──█──█──█──█──────  │
+ │      J  F  M  A  M  J  J …   D  │
+ └─────────────────────────────────┘
+   █ from orders (bottom)   ▒ other (top)
+</pre>
+
+<h2>Design checks (dataviz skill, validator run)</h2>
+<ul>
+  <li>Two series, one money axis. The bars are stacked because the two parts add up to a meaningful total, the month's income.</li>
+  <li>"From orders" and "Other" are two kinds of income, not good and bad, so they need two clearly different hues. Results:
+    <table border="1" cellpadding="6" cellspacing="0">
+      <tr><th>Option</th><th>Light</th><th>Dark (on <code>#111827</code>)</th></tr>
+      <tr><td><strong>A. Green and blue</strong></td><td><code>#15803d</code> and <code>#2563eb</code>: every check passes, ΔE 27.4</td><td><code>#16a34a</code> and <code>#3b82f6</code>: every check passes, ΔE 27.5</td></tr>
+      <tr><td>B. Green and honey amber</td><td><code>#166534</code> and <code>#d97706</code>: every check passes, ΔE 14.7</td><td><code>#16a34a</code> and <code>#d97706</code>: ΔE 6.2, the warning band, allowed only with a second cue (fixed order and a gap between segments)</td></tr>
+    </table>
+  </li>
+  <li>"From orders" is always at the bottom, with a 2px gap between the segments and 4px rounded tops. The legend is always shown.</li>
+  <li>Text is 14px through <code>themeChartOptions</code> and in the tooltips. Screen readers get a summary and a hidden table (month, from orders, other, total).</li>
+</ul>
+
+<h2>To do</h2>
+<ol>
+  <li>☑ New <code>src/components/crm/MonthlyIncomeChart.tsx</code>. It takes the chosen year's income rows (already filtered on the page), the year and the UK/NI flag. It buckets by the month in the date string and draws a stacked <code>Bar</code>. It follows the P&amp;L chart's patterns: <code>themeChartOptions</code>, 14px tooltips, index tooltip with a total footer, and the hidden table. A separate small component is simpler and safer than bending the P&amp;L income and expenses chart to fit a different job.</li>
+  <li>☑ <code>insights/page.tsx</code>: keep the chosen year's income rows in <code>stats</code>, then load the chart with <code>next/dynamic</code> behind a <code>Skeleton</code> of the same height, between the cards and Income by category.</li>
+  <li>☑ Docs: <code>crm-module.md</code>, Sales Insights.</li>
+  <li>☑ QA audit, typecheck and lint, then you test it in the app.</li>
+</ol>
+
+<h2>Review (12/11/2026)</h2>
+<p>Plan approved with option A, green and blue. Built as planned, with no database changes and no new query: the chart uses the year's income rows the page already loads.</p>
+<ul>
+  <li><code>src/components/crm/MonthlyIncomeChart.tsx</code> (new):
+    <ul>
+      <li>Twelve month buckets from the date string, split by <code>crm_order_id</code>.</li>
+      <li>A stacked <code>Bar</code>: "From orders" at the bottom, with a 2px top border in the surface colour as the gap, and "Other" on top with 4px rounded tops.</li>
+      <li>Index tooltip with a Total footer, 14px tooltip fonts, <code>themeChartOptions</code>, a screen reader summary and a hidden table.</li>
+    </ul>
+  </li>
+  <li><code>src/app/dashboard/crm/insights/page.tsx</code>: <code>stats</code> also returns <code>yearIncome</code>. The chart loads with <code>next/dynamic</code> behind a <code>Skeleton</code>, between the cards and Income by category, when the year has income.</li>
+  <li><code>docs/features/crm-module.md</code>: an "Income by month" entry in the Sales Insights section.</li>
+</ul>
+<h3>QA audit</h3>
+<ul>
+  <li>No Critical, High or Medium findings. A month with no "Other" income leaves the 2px gap invisible against the panel, and empty months draw nothing.</li>
+  <li>🟢 Note: as with the P&amp;L chart, switching theme while the page is open recolours the chart on its next redraw, for example after changing the year.</li>
+  <li><code>npm run typecheck</code> and eslint: clean. Tests and build were not run, per your rules. I have not seen the chart drawn.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>Current year: the stacked bars add up to "Income in {year}". Tapping a month shows From orders, Other and Total.</li>
+  <li>Change the year: the chart follows, and a year with no income has no chart.</li>
+  <li>Phone (390 wide), in light and dark mode: the green and blue are easy to tell apart, the gap between them shows, and the labels do not overlap.</li>
+</ol>
+</body>
+</html>
