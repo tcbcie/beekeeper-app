@@ -5,7 +5,7 @@ A demonstration account exists for showcasing the HiveCraic app without exposing
 
 ## Credentials
 - **Email:** `demo@hivecraic.com`
-- **Password:** `HiveCraic2026!`
+- **Password:** kept in the owner's password manager, never written in the repo
 
 ## Account Details
 - **User ID:** `10b5ecdd-d1f8-41a0-b756-73ac1f5c68d1`
@@ -53,4 +53,4 @@ When manually inserting into `auth.users`, two things are required for login to 
 ## Security Notes
 - The demo account has standard RLS policies applied
 - It cannot see or modify data from other users
-- Password should be changed if the account is used in a public-facing context
+- The password is never written in the repo or in any doc. It was changed on 12 November 2026 after an earlier version of this file contained it; the old value remains in git history and no longer works

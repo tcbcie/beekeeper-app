@@ -15,7 +15,7 @@
 ## Review
 
 ### Summary
-Created a demo account (`demo@hivecraic.com` / `HiveCraic2026!`) with a full copy of live data from the source account. All 18 tables were copied with correct FK remapping.
+Created a demo account (`demo@hivecraic.com`, password kept in the owner's password manager) with a full copy of live data from the source account. All 18 tables were copied with correct FK remapping.
 
 ### Record Count Verification (source vs demo)
 
