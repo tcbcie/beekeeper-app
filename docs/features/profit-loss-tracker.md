@@ -24,6 +24,7 @@ Completed: January 17, 2026
 - Dropdown categories specific to beekeeping
 - Summary cards: Total Income, Total Expenses, Net Profit/Loss
 - Income by category: ranked bars for the chosen period, largest first (12/11/2026)
+- Expenses by category: the same, in red, under the income breakdown (12/11/2026)
 - Time period filtering
 - Edit and delete records
 - CSV export (respects current time filter)
@@ -133,6 +134,12 @@ interface FinancialRecord {
 - One row per income category: name, amount, and a green bar sized against the largest category
 - Hidden when the chosen period has no income
 - Built from the records already loaded (no extra query) with the shared `src/components/ui/CategoryBreakdown.tsx`, the same component CRM Sales Insights uses, so both screens group and sort income the same way
+
+### Expenses by Category
+- Directly under Income by category, with the same time filter and title pattern: "Expenses by category (this year)"
+- Red bars (`tone="expense"`), matching the Expenses card, so income and expenses read apart at a glance
+- Hidden when the period has no expenses
+- The two panels stack on a phone and sit side by side from the `lg` width when both show
 
 ### Record Cards
 - Left border color indicates type (green=income, red=expense)

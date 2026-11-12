@@ -124,11 +124,14 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
     }
   }, [filteredRecords])
 
-  // Income rows for the category breakdown; it follows the time filter.
-  const incomeByCategory = useMemo(() => filteredRecords
-    .filter(r => r.record_type === 'income')
-    .map(r => ({ name: firstOf(r.category)?.value || 'Other Income', amount: Number(r.amount) || 0 })),
-  [filteredRecords])
+  // Income and expense rows for the category breakdowns; they follow the time filter.
+  const byCategory = useMemo(() => {
+    const rows = (type: FinancialRecord['record_type'], fallback: string) => filteredRecords
+      .filter(r => r.record_type === type)
+      .map(r => ({ name: firstOf(r.category)?.value || fallback, amount: Number(r.amount) || 0 }))
+    return { income: rows('income', 'Other Income'), expense: rows('expense', 'Other Expense') }
+  }, [filteredRecords])
+  const periodLabel = timePeriod === 'month' ? 'this month' : timePeriod === 'year' ? 'this year' : 'all time'
 
   // Handle form submit
   const handleSubmit = async (record: Partial<FinancialRecord>) => {
@@ -319,12 +322,23 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
         />
       )}
 
-      {/* Income by category (hidden when the period has no income) */}
-      <CategoryBreakdown
-        title={`Income by category (${timePeriod === 'month' ? 'this month' : timePeriod === 'year' ? 'this year' : 'all time'})`}
-        items={incomeByCategory}
-        isUkNi={isUkNi}
-      />
+      {/* Income and expenses by category: each hidden when the period has none;
+          stacked on a phone, side by side from lg when both show. */}
+      {(byCategory.income.length > 0 || byCategory.expense.length > 0) && (
+        <div className={`grid gap-6 ${byCategory.income.length > 0 && byCategory.expense.length > 0 ? 'lg:grid-cols-2' : ''}`}>
+          <CategoryBreakdown
+            title={`Income by category (${periodLabel})`}
+            items={byCategory.income}
+            isUkNi={isUkNi}
+          />
+          <CategoryBreakdown
+            title={`Expenses by category (${periodLabel})`}
+            items={byCategory.expense}
+            isUkNi={isUkNi}
+            tone="expense"
+          />
+        </div>
+      )}
 
       {/* Records List */}
       {filteredRecords.length === 0 ? (

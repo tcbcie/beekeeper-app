@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>P&amp;L expenses by category</title>
+</head>
+<body>
+<h1>Profit &amp; Loss – expenses by category</h1>
+<p>Follows the income breakdown (<code>tasks/pl-income-by-category-todo.html</code>, commit <code>620fed04</code>). Feature doc: <code>docs/features/profit-loss-tracker.md</code>.</p>
+
+<h2>How it will work for the beekeeper</h2>
+<ul>
+  <li>A panel <strong>Expenses by category</strong> sits directly under "Income by category". It follows the same time filter, for example "Expenses by category (this year)".</li>
+  <li>It uses the same bars. They are red, matching the Expenses card above, so income and expenses can be told apart at a glance.</li>
+  <li>It is hidden when the period has no expenses. There is no new query.</li>
+  <li>On a phone the two panels stack. On a wide screen they sit side by side, so the records list is not pushed far down.</li>
+</ul>
+<pre>
+ Profit &amp; Loss (phone, figures for illustration only)
+ ┌─────────────────────────────────┐
+ │ Income   Expenses   Net         │
+ ├─────────────────────────────────┤
+ │ Income by category (this year)  │
+ │ Honey Sales   ███████ (green)   │
+ ├─────────────────────────────────┤
+ │ Expenses by category (this year)│
+ │ Feed - Sugar  ███████ (red)     │
+ │ Treatments    ███               │
+ ├─────────────────────────────────┤
+ │ records list, as now …          │
+ └─────────────────────────────────┘
+</pre>
+
+<h2>To do</h2>
+<ol>
+  <li>☑ <code>CategoryBreakdown</code>: an optional <code>tone</code> prop, <code>'income'</code> (green, the default) or <code>'expense'</code> (red). Sales Insights is unchanged.</li>
+  <li>☑ P&amp;L: memoised expense rows from <code>filteredRecords</code>. Both panels go in one wrapper that stacks on a phone and has two columns from <code>lg</code> up.</li>
+  <li>☑ Docs: <code>profit-loss-tracker.md</code>.</li>
+  <li>☑ QA audit, typecheck and lint, then you test it in the app.</li>
+</ol>
+
+<h2>Review (12/11/2026)</h2>
+<p>Plan approved with red bars. Built as planned, with no database changes and no new query.</p>
+<ul>
+  <li><code>src/components/ui/CategoryBreakdown.tsx</code>: optional <code>tone</code> prop. <code>'expense'</code> draws <code>bg-red-500</code> bars and the default stays green, so Sales Insights is unchanged.</li>
+  <li><code>src/components/tools/ProfitLoss/index.tsx</code>: one memo builds the income and expense rows from <code>filteredRecords</code>, with the fallbacks "Other Income" and "Other Expense". Both panels sit in one wrapper that renders only when either has rows, and it has two columns from <code>lg</code> only when both show.</li>
+  <li><code>docs/features/profit-loss-tracker.md</code>: features line and a new "Expenses by Category" section.</li>
+</ul>
+<h3>QA audit</h3>
+<ul>
+  <li>No Critical or High findings. The wrapper is not rendered when both panels would be hidden, so there is no empty gap. Amounts are read with <code>Number()</code>. Text is at least 14px. The red bars are hidden from screen readers and the figures are in text, so colour is never the only signal.</li>
+  <li><code>npm run typecheck</code> and eslint on the changed files: clean. Tests and build were not run, per your rules.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>P&amp;L: the expense categories add up to the Expenses card for each time filter.</li>
+  <li>A period with expenses but no income shows only the expenses panel, at full width.</li>
+  <li>Desktop: with both panels showing, they sit side by side. Phone (390 wide): they stack. Check light and dark mode.</li>
+</ol>
+</body>
+</html>

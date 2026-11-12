@@ -17,13 +17,15 @@ interface CategoryBreakdownProps {
   isUkNi: boolean
   /** Shown when nothing adds up above zero. Without it the panel is hidden. */
   emptyText?: string
+  /** Bar colour: green for income (default), red for expenses, matching the P&L cards. */
+  tone?: 'income' | 'expense'
 }
 
 /**
  * Money by category as a ranked bar list, largest first. Shared by Profit & Loss
  * and CRM Sales Insights so both screens group, sort and draw it the same way.
  */
-export default function CategoryBreakdown({ title, caption, items, isUkNi, emptyText }: CategoryBreakdownProps) {
+export default function CategoryBreakdown({ title, caption, items, isUkNi, emptyText, tone = 'income' }: CategoryBreakdownProps) {
   const totals = new Map<string, number>()
   for (const { name, amount } of items) {
     totals.set(name, (totals.get(name) || 0) + (Number(amount) || 0))
@@ -54,7 +56,7 @@ export default function CategoryBreakdown({ title, caption, items, isUkNi, empty
               </div>
               <div className="h-2 rounded-full bg-surface-elevated overflow-hidden" aria-hidden="true">
                 <div
-                  className="h-full rounded-full bg-forest-500"
+                  className={`h-full rounded-full ${tone === 'expense' ? 'bg-red-500' : 'bg-forest-500'}`}
                   style={{ width: `${max > 0 ? Math.max(4, (r.amount / max) * 100) : 0}%` }}
                 />
               </div>
