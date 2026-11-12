@@ -21,7 +21,7 @@ export interface DCAConfirmation {
   notes: string | null
 }
 
-const CACHE_KEY_PREFIX = 'dca-predictions-v5-'
+const CACHE_KEY_PREFIX = 'dca-predictions-v6-'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 const MAX_APIARIES = 10
 

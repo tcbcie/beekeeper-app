@@ -85,6 +85,8 @@ interface ScoredCandidate extends CandidateSeed {
   terrainScore: number
   saddleScore: number
   shelterScore: number
+  aspectScore: number
+  windScore: number
   supportScore: number
   confirmationSupportScore: number
   confirmationSuppressionScore: number
@@ -135,6 +137,17 @@ const MAX_CONFIRMATION_ANCHOR_SCORE = 6
 const MAX_SIGHTING_DISTANCE_KM = 5
 // DCAs stay in the same place for many years, so a confirmed sighting never fades below this.
 const MIN_CONFIRMED_RECENCY_WEIGHT = 0.7
+
+// Aspect and wind shelter each move a score by at most this much, up or down.
+const MAX_ASPECT_SCORE = 3
+const MAX_WIND_SCORE = 3
+// North side this much higher than the south side (1 km apart) counts as fully south-facing.
+const ASPECT_FULL_RISE_M = 20
+// Upwind ground this much higher than the candidate (500 m away) counts as fully sheltered.
+const WIND_FULL_SHELTER_M = 15
+// The prevailing wind over Ireland and Britain is south-westerly, so the upwind side of a
+// candidate is its S, SW and W neighbours (positions in CANDIDATE_CONTEXT_BEARINGS).
+const PREVAILING_WIND_SIDE = [4, 5, 6]
 
 /** Thrown when the elevation service returned nothing at all, so no prediction is possible. */
 export class ElevationUnavailableError extends Error {
@@ -559,6 +572,42 @@ function scoreCandidateLandscape(
   return { terrainScore, saddleScore, shelterScore }
 }
 
+/**
+ * Two signals from the ground 500 m around a candidate, each from -3 to +3 so that level ground
+ * scores 0 and the score thresholds keep their meaning:
+ *
+ * - Aspect: drones favour warm, south-facing ground. Ground that rises to the north faces
+ *   south (+); ground that rises to the south faces north (-).
+ * - Wind: drones favour shelter. Higher ground on the side the prevailing wind comes from
+ *   gives shelter (+); lower ground there leaves the spot exposed (-).
+ *
+ * `neighbourElevs` follows CANDIDATE_CONTEXT_BEARINGS: N, NE, E, SE, S, SW, W, NW.
+ * Not yet checked against known DCAs: the weights are deliberately small.
+ */
+export function scoreAspectAndWind(
+  candidateElev: number | null,
+  neighbourElevs: (number | null)[]
+): { aspectScore: number; windScore: number } {
+  const side = (indices: number[]): number | null => {
+    const values = indices.map(index => neighbourElevs[index])
+    return values.every((value): value is number => typeof value === 'number') ? mean(values) : null
+  }
+
+  const north = side([7, 0, 1])
+  const south = side([3, 4, 5])
+  const upwind = side(PREVAILING_WIND_SIDE)
+
+  const aspectScore = north === null || south === null
+    ? 0
+    : Math.round(clamp((north - south) / ASPECT_FULL_RISE_M, -1, 1) * MAX_ASPECT_SCORE)
+  const windScore = candidateElev === null || upwind === null
+    ? 0
+    : Math.round(clamp((upwind - candidateElev) / WIND_FULL_SHELTER_M, -1, 1) * MAX_WIND_SCORE)
+
+  // `+ 0` turns a rounded -0 into 0
+  return { aspectScore: aspectScore + 0, windScore: windScore + 0 }
+}
+
 function addSupportScores(candidates: ScoredCandidate[]): ScoredCandidate[] {
   return candidates.map(candidate => {
     const nearbyApiaryIds = new Set<string>()
@@ -621,6 +670,8 @@ function mergePredictions(predictions: ScoredCandidate[]): ScoredCandidate[] {
       terrainScore: Math.max(...group.map(candidate => candidate.terrainScore)),
       saddleScore: Math.max(...group.map(candidate => candidate.saddleScore)),
       shelterScore: Math.max(...group.map(candidate => candidate.shelterScore)),
+      aspectScore: Math.max(...group.map(candidate => candidate.aspectScore)),
+      windScore: Math.max(...group.map(candidate => candidate.windScore)),
       supportScore: Math.max(...group.map(candidate => candidate.supportScore)),
       confirmationSupportScore: Math.max(...group.map(candidate => candidate.confirmationSupportScore)),
       confirmationSuppressionScore: Math.max(...group.map(candidate => candidate.confirmationSuppressionScore)),
@@ -717,6 +768,8 @@ function buildSignalSummary(candidate: ScoredCandidate): string {
     { label: 'terrain support', value: candidate.terrainScore },
     { label: 'saddle support', value: candidate.saddleScore },
     { label: 'sheltered opening', value: candidate.shelterScore },
+    { label: 'south-facing ground', value: candidate.aspectScore },
+    { label: 'shelter from the prevailing wind', value: candidate.windScore },
     { label: 'multi-apiary support', value: candidate.supportScore },
     { label: 'recent confirmations', value: candidate.confirmationSupportScore },
   ]
@@ -879,6 +932,7 @@ export async function predictDCAs(
         candidate.isFlatSource,
         candidate.lowContrast
       )
+      const { aspectScore, windScore } = scoreAspectAndWind(candidateElev, neighbourElevs)
 
       const sourceApiary = apiaryMap.get(candidate.apiaryId)
       if (!sourceApiary) return null
@@ -903,6 +957,8 @@ export async function predictDCAs(
         terrainScore,
         saddleScore,
         shelterScore,
+        aspectScore,
+        windScore,
         confirmationSupportScore: confirmationInfluence.supportScore,
         confirmationSuppressionScore: confirmationInfluence.suppressionScore,
         confirmationMixedEvidence: confirmationInfluence.mixedEvidence,
@@ -918,6 +974,8 @@ export async function predictDCAs(
           terrainScore +
           saddleScore +
           shelterScore +
+          aspectScore +
+          windScore +
           candidate.confirmationAnchorScore +
           confirmationInfluence.netScore,
       }

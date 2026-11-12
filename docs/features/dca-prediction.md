@@ -18,6 +18,8 @@ The output should be treated as a ranked hotspot estimate, not a verified point 
    - **Terrain support** - local depression or relief support
    - **Saddle support** - pass or junction-like support from opposing terrain openings
    - **Sheltered opening** - moderate enclosure and surrounding structure rather than full exposure or full closure
+   - **Aspect** (added 12/11/2026) - south-facing ground scores up to +3, north-facing ground down to -3. Worked out from the heights 500 m to the north and south of the candidate; 20 m of rise counts as fully south-facing
+   - **Wind shelter** (added 12/11/2026) - higher ground on the south-west side scores up to +3, lower ground there down to -3. The prevailing wind is taken as south-westerly, which holds for Ireland and Britain; 15 m of higher ground 500 m upwind counts as full shelter
 5. **Confirmation priors** - Nearby confirmations are converted into bounded local priors that add positive support or negative suppression according to proximity, recency, and clustering.
 6. **Water check** - A candidate on open sea is dropped. The elevation service reports exactly 0 m over sea, so a point at 0 m with at least half of its surroundings also at 0 m counts as sea. Lakes sit above sea level and are not detected.
 7. **Reinforcement and filtering** - Hotspots can be weakly reinforced by nearby apiaries, filtered by score threshold, and merged within 500 m. Each selected apiary keeps its own best hotspot; the rest fill up to 5 results, so apiaries far apart are not crowded out.
@@ -35,6 +37,8 @@ The current phase 3 model combines these signals:
 | Terrain support | Local relief around the candidate point |
 | Saddle support | Pass or junction-like structure near the candidate |
 | Sheltered opening | Moderate enclosure and terrain variability |
+| Aspect | South-facing ground up, north-facing ground down (-3 to +3) |
+| Wind shelter | Sheltered from the south-west up, exposed to it down (-3 to +3) |
 | Cross-apiary support | Weak reinforcement when several apiaries support the same hotspot |
 | Confirmation support | Recency-weighted positive field evidence near the candidate |
 | Confirmation suppression | Recency-weighted negative field evidence that can hold confidence down |
@@ -68,7 +72,7 @@ Display radius remains:
 
 - **Execution:** Scoring runs in the browser; terrain heights come through the app's own server route
 - **Terrain data:** `POST /api/elevation` (Open-Meteo behind it, cached on the server for 30 days, up to 1,000 points per call). See `apiary-elevation.md`
-- **Caching:** `localStorage` with the `dca-predictions-v5-` cache namespace keyed by apiary coordinates and confirmation state, kept for 24 hours. An empty result is never cached. The cache is cleared whenever a sighting is added or removed
+- **Caching:** `localStorage` with the `dca-predictions-v6-` cache namespace keyed by apiary coordinates and confirmation state, kept for 24 hours. An empty result is never cached. The cache is cleared whenever a sighting is added or removed
 - **Apiary limit:** Maximum 10 selected apiaries per calculation
 - **Database:** Existing `dca_confirmations` table remains the field-evidence source
 
@@ -120,4 +124,6 @@ A hotspot is coloured green (drones seen) or grey (no drones) when one of the us
 - The engine is still limited to what can be inferred from the current elevation source
 - Phase 2 adds richer derived terrain signals, but it still does not use external land-cover, vegetation, weather, or true line-feature datasets
 - Open-Meteo elevation data is useful for broad terrain structure, not fine-grained local verification
+- Aspect and wind shelter have not been checked against known DCAs: no confirmed sighting existed in the database when they were added, so their weights are deliberately small. Review them once a few real DCAs are recorded
+- The wind direction is a fixed south-westerly, not measured per site. An apiary outside Ireland and Britain, or a valley that funnels wind differently, is not allowed for
 - Field checks still matter; the map output is a planning aid, not proof of a true DCA

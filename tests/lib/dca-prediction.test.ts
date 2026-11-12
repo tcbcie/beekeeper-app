@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { predictDCAs, ElevationUnavailableError } from '@/lib/dca-prediction'
+import { predictDCAs, scoreAspectAndWind, ElevationUnavailableError } from '@/lib/dca-prediction'
 import { fetchElevationBatch } from '@/lib/elevation'
 
 /**
@@ -85,5 +85,36 @@ describe('predictDCAs', () => {
     result.flyways.forEach(flyway => {
       expect(distanceKm({ latitude: flyway.toLatitude, longitude: flyway.toLongitude }, sighting)).toBeGreaterThan(5)
     })
+  })
+})
+
+describe('scoreAspectAndWind', () => {
+  // Heights around a candidate, in the order N, NE, E, SE, S, SW, W, NW
+
+  it('scores level ground as neutral', () => {
+    expect(scoreAspectAndWind(50, [50, 50, 50, 50, 50, 50, 50, 50])).toEqual({ aspectScore: 0, windScore: 0 })
+  })
+
+  it('favours south-facing ground and marks it down for facing the wind', () => {
+    // Rises to the north: 60 m on the north side, 40 m on the south side, 50 m east and west.
+    // Aspect: (60 - 40) / 20 = fully south-facing = +3.
+    // Wind: upwind side (S, SW, W) averages (40 + 40 + 50) / 3 = 43.3 m, 6.7 m below the
+    // candidate, so 6.7 / 15 of the way to fully exposed = -1.3, rounded to -1.
+    expect(scoreAspectAndWind(50, [60, 60, 50, 40, 40, 40, 50, 60])).toEqual({ aspectScore: 3, windScore: -1 })
+  })
+
+  it('marks down north-facing ground', () => {
+    expect(scoreAspectAndWind(50, [40, 40, 50, 60, 60, 60, 50, 40]).aspectScore).toBe(-3)
+  })
+
+  it('favours a spot with higher ground on the south-west side', () => {
+    // S, SW and W at 65 m, everything else level with the candidate: 15 m of shelter = +3
+    expect(scoreAspectAndWind(50, [50, 50, 50, 50, 65, 65, 65, 50]).windScore).toBe(3)
+  })
+
+  it('stays neutral when heights are missing', () => {
+    expect(scoreAspectAndWind(null, [60, 60, 50, 40, 40, 40, 50, 60]).windScore).toBe(0)
+    expect(scoreAspectAndWind(50, [null, 60, 50, 40, 40, 40, 50, 60]).aspectScore).toBe(0)
+    expect(scoreAspectAndWind(50, [60, 60, 50, 40, 40, null, 50, 60])).toEqual({ aspectScore: 0, windScore: 0 })
   })
 })

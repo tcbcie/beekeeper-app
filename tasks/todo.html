@@ -222,6 +222,20 @@
 <p><strong>What it changes for a beekeeper:</strong> a 10-apiary prediction is about 6 requests to our own server instead of up to 50 one after another to Open-Meteo, and apiary positions no longer leave the phone for an outside service.</p>
 <p><strong>Not done:</strong> the cache is per group of 100 points, not per point, so it helps when the same apiaries are predicted again (any device, any user with the same points), not for nearby but different points. Only the height lookups moved; the weather features still call Open-Meteo from the browser.</p>
 
+<h3>Batch 4.4 &mdash; aspect and wind shelter in the scoring, built on 12 November 2026</h3>
+<ul class="todo">
+  <li>&#9745; <strong>Aspect:</strong> south-facing ground adds up to 3 points to a hotspot&rsquo;s score, north-facing ground takes up to 3 away. <span class="file">src/lib/dca-prediction.ts</span></li>
+  <li>&#9745; <strong>Wind shelter:</strong> higher ground on the south-west side adds up to 3 points, lower ground there takes up to 3 away.</li>
+  <li>&#9745; Both use heights the engine already fetches, so no extra requests. Level ground scores 0 on both, so the existing thresholds keep their meaning.</li>
+  <li>&#9745; The popup&rsquo;s &ldquo;Signals&rdquo; line can now say &ldquo;south-facing ground&rdquo; or &ldquo;shelter from the prevailing wind&rdquo;.</li>
+  <li>&#9745; Saved predictions from the old scoring are no longer used (cache name moved to v6). <span class="file">src/hooks/useDCAPredictions.ts</span></li>
+  <li>&#9745; Five new tests for the two signals. <span class="file">tests/lib/dca-prediction.test.ts</span></li>
+  <li>&#9745; Docs updated. Type-check and lint pass. Audit done, nothing to fix.</li>
+  <li>&#9744; <strong>For you:</strong> run <code>npx vitest run tests/lib/dca-prediction.test.ts</code>, then predict DCAs for apiaries you know well and judge whether the hotspots moved sensibly.</li>
+</ul>
+<p><strong>Not validated.</strong> The database holds no confirmed DCA sighting (only two &ldquo;no drones&rdquo; answers), so there was nothing to check the new scoring against. That is why each signal is limited to 3 points out of a typical 40 to 80.</p>
+<p><strong>Two choices I made that you may want to change:</strong> the prevailing wind is a fixed south-westerly rather than looked up per apiary (no new outside service, right for Ireland and Britain); and confidence levels do not count the two new signals yet.</p>
+
 <h2>6. One thing for you to check</h2>
 <p>The elevation data comes from Open-Meteo&rsquo;s free service. As far as I know that tier is for non-commercial use with a daily request limit. HiveCraic takes subscriptions, so their terms are worth reading. <span class="file">docs/features/apiary-elevation.md</span> says there are no limits.</p>
 
