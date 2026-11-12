@@ -4,6 +4,7 @@ import { getCurrentDate } from '@/lib/date-utils'
 import { downloadCsv, toCsv } from '@/lib/csv'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Wallet, Plus, Loader2, Info, Download } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
@@ -28,6 +29,11 @@ const MonthlyChart = dynamic(() => import('./MonthlyChart'), {
 
 type TimePeriod = 'month' | 'year' | 'all'
 
+// A year from the address (?year=2025&compare=2024, e.g. from Sales Insights).
+// Only a plain four-digit year is accepted; anything else is ignored.
+const yearParam = (value: string | null): number | null =>
+  value && /^\d{4}$/.test(value) ? Number(value) : null
+
 const PERIOD_OPTIONS: ReadonlyArray<{ value: TimePeriod; label: string }> = [
   { value: 'month', label: 'This Month' },
   { value: 'year', label: 'Year' },
@@ -50,9 +56,10 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
   const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null)
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('year')
   // The year shown when the period is Year; starts at the current year.
-  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear())
+  const searchParams = useSearchParams()
+  const [selectedYear, setSelectedYear] = useState(() => yearParam(searchParams.get('year')) ?? new Date().getFullYear())
   // Year to compare with in the Year view (null = none).
-  const [compareYear, setCompareYear] = useState<number | null>(null)
+  const [compareYear, setCompareYear] = useState<number | null>(() => yearParam(searchParams.get('compare')))
   // Only applies in the Year view and never to the year on show, so changing
   // either just switches the comparison off (no state to reset).
   const activeCompareYear = timePeriod === 'year' && compareYear !== selectedYear ? compareYear : null
@@ -114,15 +121,17 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
   }, [fetchCategories, fetchRecords, userId])
 
   // Years to choose from: the current year, the year on show (so it never vanishes
-  // when its last record is deleted) and every year with records, newest first.
+  // when its last record is deleted), the year compared with (it may come from the
+  // address with no records here) and every year with records, newest first.
   const yearOptions = useMemo(() => {
     const years = new Set<number>([new Date().getFullYear(), selectedYear])
+    if (compareYear != null) years.add(compareYear)
     for (const r of records) {
       const year = Number(r.transaction_date.slice(0, 4))
       if (Number.isInteger(year)) years.add(year)
     }
     return [...years].sort((a, b) => b - a)
-  }, [records, selectedYear])
+  }, [records, selectedYear, compareYear])
 
   // The comparison year's records and totals (empty when there is no comparison).
   const compareRecords = useMemo(

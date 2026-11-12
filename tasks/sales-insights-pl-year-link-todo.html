@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Sales Insights P&amp;L year link</title>
+</head>
+<body>
+<h1>Sales Insights – open P&amp;L on the same year</h1>
+<p>You asked for a monthly expenses chart on Sales Insights and chose "Link to P&amp;L instead" (12/11/2026). Sales Insights stays the sales and order view. Expenses and profit stay in P&amp;L, which already has the monthly income, expenses and net profit chart with year comparison. Feature docs: <code>crm-module.md</code> and <code>profit-loss-tracker.md</code>.</p>
+
+<h2>How it will work for the beekeeper</h2>
+<ul>
+  <li>On Sales Insights the link row names the year: <strong>"See expenses and profit for 2025 in Profit &amp; Loss"</strong>.</li>
+  <li>Tapping it opens P&amp;L with <strong>Year 2025</strong> already chosen. If a comparison year is set on Sales Insights, <strong>Compare with</strong> is set to the same year. The monthly expenses chart for that year is then on screen in one tap.</li>
+  <li>Opening P&amp;L any other way works as now: Year, the current year, no comparison.</li>
+</ul>
+
+<h2>To do</h2>
+<ol>
+  <li>☑ <code>insights/page.tsx</code>: the link becomes <code>/dashboard/tools?section=profitloss&amp;year=2025</code>, plus <code>&amp;compare=2024</code> when a comparison is active. The text names the year.</li>
+  <li>☑ <code>ProfitLoss/index.tsx</code>: read <code>year</code> and <code>compare</code> once with <code>useSearchParams</code> as the starting values of <code>selectedYear</code> and <code>compareYear</code>. Only a plain four-digit year is accepted, and anything else falls back to the current year or none. The existing rule still switches off a comparison equal to the year.</li>
+  <li>☑ Docs: <code>crm-module.md</code> (the link) and <code>profit-loss-tracker.md</code> (the address options).</li>
+  <li>☑ QA audit, typecheck and lint, then you test it in the app.</li>
+</ol>
+
+<h2>Review (12/11/2026)</h2>
+<p>Plan approved. Built as planned. No database changes, no new query, and no chart duplicated.</p>
+<ul>
+  <li><code>src/app/dashboard/crm/insights/page.tsx</code>: the link goes to <code>?section=profitloss&amp;year={year}</code>, plus <code>&amp;compare={year}</code> when a comparison is active. Its text is "See expenses and profit for {year} in Profit &amp; Loss".</li>
+  <li><code>src/components/tools/ProfitLoss/index.tsx</code>: <code>useSearchParams</code>, plus a <code>yearParam()</code> guard that accepts only <code>^\d{4}$</code>. <code>selectedYear</code> and <code>compareYear</code> start from <code>year</code> and <code>compare</code>, or fall back to the current year and none.</li>
+  <li>Docs: <code>crm-module.md</code> covers the link and why there is no expenses chart in Sales Insights. <code>profit-loss-tracker.md</code> gains a new "Opening on a Year" section.</li>
+</ul>
+<h3>QA audit</h3>
+<ul>
+  <li>🟡 <strong>Fixed:</strong> Sales Insights can offer a comparison year that has orders but no P&amp;L records. P&amp;L would then compare against it while its drop-downs, which list only years with records, showed "None". The year compared with is now always listed.</li>
+  <li>🟢 Checked: a bad or crafted address value such as <code>?year=abc</code> or <code>?year=99999</code> is ignored. The Tools page already uses <code>useSearchParams</code>, so the P&amp;L reading it adds nothing new. Opening another tool or going back to the Tools list clears the parameters, as before.</li>
+  <li><code>npm run typecheck</code> and eslint: clean. Tests and build were not run, per your rules.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>Sales Insights on 2025, Compare with 2024: the link reads "See expenses and profit for 2025 in Profit &amp; Loss". Tapping it opens P&amp;L on Year 2025, compared with 2024, with the expenses chart showing.</li>
+  <li>Opening P&amp;L from the Tools page as usual: the current year, no comparison.</li>
+</ol>
+</body>
+</html>

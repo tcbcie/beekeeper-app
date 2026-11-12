@@ -306,11 +306,13 @@ export default function SalesInsightsPage() {
             )}
           </Panel>
 
+          {/* Expenses and profit live in Profit & Loss: open it on the same year
+              (and comparison), where the monthly income and expenses chart is. */}
           <Link
-            href="/dashboard/tools?section=profitloss"
+            href={`/dashboard/tools?section=profitloss&year=${year}${activeCompareYear != null ? `&compare=${activeCompareYear}` : ''}`}
             className="flex items-center justify-between gap-3 min-h-12 px-4 py-3 rounded-lg border border-border bg-surface font-medium text-foreground hover:bg-surface-elevated/50"
           >
-            <span>See costs and profit in Profit &amp; Loss</span>
+            <span>See expenses and profit for {year} in Profit &amp; Loss</span>
             <ChevronRight size={20} className="text-text-tertiary flex-shrink-0" aria-hidden="true" />
           </Link>
 

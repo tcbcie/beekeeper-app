@@ -296,8 +296,14 @@ orders only and missed the other two.
   orders query (`customer_id, order_date, customer:crm_customers(name)`, one FK,
   read with `firstOf`). The page no longer queries the summary view. Each name
   links to the customer detail page.
-- **Costs and profit:** a link row to Profit & Loss
-  (`/dashboard/tools?section=profitloss`); expenses and net stay there.
+- **Costs and profit:** a link row, "See expenses and profit for 2025 in Profit
+  & Loss". It opens P&L on the same year and comparison
+  (`/dashboard/tools?section=profitloss&year=2025&compare=2024`), where the
+  monthly income, expenses and net profit chart is.
+  - Expenses and net stay in P&L by design. A request for a monthly expenses
+    chart on Sales Insights (12/11/2026) was answered with this one-tap link
+    rather than a duplicate chart, which would also have put costs on the paid
+    CRM screens.
 - The empty state ("No sales yet") shows only when the user has no orders and
   no income at all. A year with nothing shows €0, "No income recorded in 2025"
   and "No orders in 2025".

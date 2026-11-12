@@ -149,6 +149,11 @@ interface FinancialRecord {
 - Screen readers get a summary label on the chart (income, expenses and net) and a hidden table of the same figures, with net shown as "Not yet" for months still to come
 - chart.js loads only when the chart shows (`next/dynamic`), behind a skeleton of the same height
 
+### Opening on a Year (address options)
+- `?section=profitloss&year=2025&compare=2024` opens P&L in the Year view on 2025, compared with 2024. Sales Insights uses this for its "See expenses and profit for 2025" link
+- Both are read once, with `useSearchParams`, as the starting values of the Year and Compare with drop-downs. Only a plain four-digit year is accepted. Anything else falls back to the current year and no comparison, and a comparison equal to the year is switched off as usual
+- The year compared with is always listed in the drop-downs, even if P&L has no records for it. That can happen with a year that has only CRM orders
+
 ### Year Comparison
 - In the **Year** view a **Compare with** drop-down sits next to Year. It starts at "None" and lists the other years with records, newest first
 - The comparison applies only in the Year view and never to the year on show. It is worked out from state (`activeCompareYear`), so changing the period or picking the same year switches it off with no state to reset
