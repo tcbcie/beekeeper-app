@@ -149,8 +149,23 @@ Click the **Export** button to download filtered records as CSV:
 
 Financial records are also included in the Settings backup export.
 
+## Where income comes from (12/11/2026)
+
+`financial_records` is the one book of money in HiveCraic. Income reaches it in three ways:
+
+| Source | How | Edit in P&L? |
+|--------|-----|--------------|
+| Added by hand | **Add Record** in this tool | Yes |
+| Jar sale | **Record a jar sale** on a jar label (Traceability), Honey Sales category | Yes |
+| CRM order | Posted by the database when an order is fully paid, one row per income category, tagged `crm_order_id` (see `crm-module.md`) | No: the row shows **From order ORD-…**, linking to the order. Unpaying or cancelling the order removes the row |
+
+- `crm_order_id uuid` (nullable, `REFERENCES crm_orders(id) ON DELETE SET NULL`). Deleting an order keeps its income as history, and the row becomes an ordinary editable record.
+- The records query embeds `order:crm_orders(order_number)` (one FK, read with `firstOf`).
+- CRM **Sales Insights** reads this year's income from this table, split into "from orders" and "other", so both screens always show the same income. Expenses and net profit live only here; Sales Insights links here for them.
+- The app cannot tell when one sale was recorded twice (an order and a jar sale). The "from orders / other" split on Sales Insights makes it easy to spot.
+
 ## Currency
 
-All amounts are in EUR with Irish locale formatting (`en-IE`).
+Amounts show in EUR with Irish formatting (`en-IE`), or in GBP (`en-GB`) for users marked as UK/NI residents in their profile. The CSV column header follows the same choice.
 
 Update 04/11/2026 (WP06): Date and Amount stack into one column below 640px.

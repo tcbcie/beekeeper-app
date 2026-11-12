@@ -234,17 +234,28 @@ is informational and does not affect fulfilment or revenue — see
 
 ## Sales Insights
 
-`crm/insights` — a cash-basis sales overview, computed client-side from the
-user's orders (`+ items`) and `crm_customer_summary`:
+`crm/insights` — a cash-basis sales overview. Since 12/11/2026 every income
+figure comes from the Profit & Loss ledger (`financial_records`, this
+calendar year's income rows), so it covers all three income sources: fully-paid
+orders (posted by `_crm_recognise_revenue`, tagged `crm_order_id`), jar sales
+recorded from Traceability, and income added by hand. Before that the page read
+orders only and missed the other two.
 
-- **Headline stats:** paid this year, paid this month, outstanding balance, and
-  open (pending) order count. "Paid" counts only **fully-paid** orders, dated by
-  `paid_date` — matching the income ledger. Outstanding is the summed
-  `orderBalance` across live orders (so deposits sit here until cleared).
-- **Sales by product (year):** paid line items grouped by product type, shown as
-  a ranked bar list.
+- **Headline stats:** income this year and income this month, each split into
+  "from orders" (rows with `crm_order_id`) and "other" — the split also makes a
+  sale recorded twice (an order and a jar sale) easy to spot. Outstanding (the
+  summed `orderBalance` across live orders, so deposits sit here until cleared)
+  and the open (pending) order count still read `crm_orders`, as they are
+  order-only.
+- **Income by category (year):** ledger income grouped by income category,
+  shown as a ranked bar list. Order product types map one-to-one to these
+  categories (see below), so order figures are unchanged.
 - **Top customers:** the top five by lifetime total from `crm_customer_summary`,
   each linking to the customer detail page.
+- **Costs and profit:** a link row to Profit & Loss
+  (`/dashboard/tools?section=profitloss`); expenses and net stay there.
+- The empty state shows only when the user has no orders and no income this
+  year.
 
 ## Order Lifecycle
 
@@ -317,7 +328,9 @@ that could half-fail:
 | `crm_product_income_category` | Single source of truth for the product→category map |
 
 Manually-entered finance records are never touched. The rows flow straight into
-the existing Profit & Loss tool and reports, accurate by category.
+the existing Profit & Loss tool and reports, accurate by category. In P&L these
+rows show "From order ORD-…" (a link to the order) instead of Edit and Delete,
+so they are changed only through the order and the two never disagree.
 
 ### Product type → income category
 

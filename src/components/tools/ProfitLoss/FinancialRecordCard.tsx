@@ -1,7 +1,9 @@
 'use client'
 
-import { Pencil, Trash2, TrendingUp, TrendingDown } from 'lucide-react'
+import Link from 'next/link'
+import { Pencil, Trash2, TrendingUp, TrendingDown, ChevronRight } from 'lucide-react'
 import { FinancialRecord } from '@/types/records'
+import { firstOf } from '@/lib/embed'
 import IconButton from '@/components/ui/IconButton'
 
 interface FinancialRecordCardProps {
@@ -18,6 +20,7 @@ export default function FinancialRecordCard({
   isUkNi
 }: FinancialRecordCardProps) {
   const isIncome = record.record_type === 'income'
+  const orderNumber = firstOf(record.order)?.order_number
 
   // Format date as DD/MM/YYYY
   const formatDate = (dateStr: string) => {
@@ -113,25 +116,37 @@ export default function FinancialRecordCard({
             {isIncome ? '+' : '-'}{formatAmount(record.amount)}
           </span>
 
-          {/* Actions */}
-          <div className="flex items-center gap-1">
-            <IconButton
-              onClick={() => onEdit(record)}
-              tone="blue"
-              size="sm"
-              title="Edit"
+          {/* Actions: a row posted by a paid order is managed by that order
+              (unpaying or cancelling it removes the row), so it links there
+              instead of offering Edit and Delete. */}
+          {record.crm_order_id ? (
+            <Link
+              href={`/dashboard/crm/orders/${record.crm_order_id}`}
+              className="inline-flex items-center gap-1 min-h-12 text-sm font-medium text-forest-700 dark:text-forest-300 underline underline-offset-2"
             >
-              <Pencil size={16} />
-            </IconButton>
-            <IconButton
-              onClick={() => onDelete(record)}
-              tone="danger"
-              size="sm"
-              title="Delete"
-            >
-              <Trash2 size={16} />
-            </IconButton>
-          </div>
+              {orderNumber ? `From order ${orderNumber}` : 'From an order'}
+              <ChevronRight size={16} aria-hidden="true" />
+            </Link>
+          ) : (
+            <div className="flex items-center gap-1">
+              <IconButton
+                onClick={() => onEdit(record)}
+                tone="blue"
+                size="sm"
+                title="Edit"
+              >
+                <Pencil size={16} />
+              </IconButton>
+              <IconButton
+                onClick={() => onDelete(record)}
+                tone="danger"
+                size="sm"
+                title="Delete"
+              >
+                <Trash2 size={16} />
+              </IconButton>
+            </div>
+          )}
         </div>
       </div>
     </div>

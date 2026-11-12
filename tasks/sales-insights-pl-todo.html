@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Sales Insights and P&amp;L</title>
+</head>
+<body>
+<h1>Sales Insights and Profit &amp; Loss: one source of truth</h1>
+<p>Review date 12/11/2026. Feature docs: <code>docs/features/crm-module.md</code> (Sales Insights section) and <code>docs/features/profit-loss-tracker.md</code>.</p>
+
+<h2>The question</h2>
+<p>Sales Insights (CRM, order management) does not show income recorded in the Profit &amp; Loss tool. Do we need both? Should they be merged?</p>
+
+<h2>What the code does today</h2>
+<pre>
+  Manual P&amp;L entry ─────────────┐
+                                 │
+  Jar sale (Traceability) ───────┼──►  financial_records  ──►  Profit &amp; Loss tool
+                                 │      (the ledger)            income, expenses, net
+  CRM order, fully paid ─────────┘
+      │  (database posts one income row per category, tagged crm_order_id)
+      │
+      └──────────────────────────────────►  Sales Insights
+                                             reads crm_orders ONLY
+</pre>
+<ul>
+  <li><strong>The ledger (<code>financial_records</code>) already holds every euro.</strong> When an order is fully paid, <code>_crm_recognise_revenue</code> posts its income into the ledger, and reverses it when the order is unpaid or cancelled. That part works. On your account all 9 paid orders (€889) are in the ledger.</li>
+  <li><strong>Sales Insights reads orders only</strong> (<code>src/app/dashboard/crm/insights/page.tsx:44-56</code>). Jar sales and income you type into P&amp;L never appear there. On your account that is <strong>49 rows, €2,596.98</strong>, mostly Honey Sales.</li>
+  <li><strong>The footnote is wrong for most users.</strong> It says the figures match "your income ledger" (<code>insights/page.tsx:207-210</code>). That is only true when every sale is an order.</li>
+  <li><strong>Order income can drift in P&amp;L.</strong> Rows posted by an order look like any other row in P&amp;L (<code>FinancialRecordCard.tsx</code>) and can be edited or deleted there. The order still says paid, so the two screens disagree.</li>
+  <li>The two screens do different jobs. Sales Insights answers "who owes me, what must I fulfil, who buys most". P&amp;L answers "what came in, what went out, am I making money". Only the revenue figure overlaps.</li>
+</ul>
+
+<h2>Recommendation: keep both screens, share one source of truth</h2>
+<p>A full merge (one "Finances" page) is not worth it. The CRM is a paid, opt-in module and P&amp;L is in Tools for everyone, so a merged page would need two access levels. Its order-only parts (outstanding, to fulfil, top customers) mean nothing to someone who sells only at the gate. Instead:</p>
+<ul>
+  <li><strong>The ledger is the one book of money.</strong> Every sales figure in Sales Insights comes from it, so jar sales and typed-in income appear, and the two screens can never disagree.</li>
+  <li><strong>Sales Insights keeps the order desk parts</strong> (Outstanding, Open to fulfil, Top customers) and links to P&amp;L for costs and profit.</li>
+  <li><strong>P&amp;L shows which rows came from an order</strong> and leaves those to the order, so nothing drifts.</li>
+</ul>
+
+<pre>
+ Sales Insights (phone, figures for illustration only)
+ ┌─────────────────────────────────┐
+ │ Income in 2026   Income Nov     │
+ │ €3,485.98        €120.00        │
+ │ €889 orders ·    €0 orders ·    │
+ │ €2,597 other     €120 other     │
+ │ Outstanding      Open to fulfil │
+ │ €60.00           2 pending      │
+ ├─────────────────────────────────┤
+ │ Income by category (2026)       │
+ │ Honey Sales      ███████ €2,900 │
+ │ Queen Sales      ██      €455   │
+ ├─────────────────────────────────┤
+ │ Top customers  (orders, as now) │
+ ├─────────────────────────────────┤
+ │ Costs and profit: Open P&amp;L  ›   │
+ └─────────────────────────────────┘
+</pre>
+
+<h2>To do</h2>
+<p>UI items run through the <code>hivecraic-frontend-design</code> and <code>mobile-screen</code> skills first.</p>
+<ol>
+  <li>☑ <strong>Sales Insights, income cards from the ledger.</strong> One extra query in the existing <code>Promise.all</code>: this year's income rows from <code>financial_records</code> (<code>record_type = 'income'</code>, <code>transaction_date &gt;= 1 Jan</code>, with the category name and <code>crm_order_id</code>). "Paid in {year}" and "Paid this month" become "Income in {year}" and "Income this month", each with a sub-line "€X from orders · €Y other". Dates are compared as local date strings, as the page does now.</li>
+  <li>☑ <strong>Sales Insights, income by category.</strong> "Sales by product" becomes "Income by category ({year})", grouped by ledger category. Order product types already map one-to-one to these categories, so order figures stay the same and jar sales and typed-in income are added. The order-items maths is then removed from the page.</li>
+  <li>☑ <strong>Sales Insights, footnote and link.</strong> The footnote says what the figures are: income from your Profit &amp; Loss records, including orders once fully paid, with deposits under Outstanding. It adds a link "Costs and profit: open Profit &amp; Loss" to <code>/dashboard/tools?section=profitloss</code>. The empty state checks orders <em>and</em> income, so someone with jar sales but no orders still sees their figures.</li>
+  <li>☑ <strong>P&amp;L, order rows marked and left to the order.</strong> The records query also embeds <code>crm_orders(order_number)</code> through <code>crm_order_id</code>, read with <code>firstOf()</code>. A row from an order shows "From order ORD-2026-003", linking to the order, in place of Edit and Delete. Add <code>crm_order_id</code> to the <code>FinancialRecord</code> type.</li>
+  <li>☑ <strong>Docs.</strong> Update the Sales Insights section of <code>crm-module.md</code>. Update <code>profit-loss-tracker.md</code> to cover the three income sources, <code>crm_order_id</code>, order rows being read-only, and EUR/GBP display.</li>
+  <li>☑ QA audit (<code>qa-engineer</code> skill), then you test it in the app.</li>
+</ol>
+
+<h2>Not in this change (worth knowing)</h2>
+<ul>
+  <li><strong>Double counting.</strong> Recording a jar sale for honey that was also sold through an order counts it twice. The app cannot tell, but the "orders / other" split makes it easy to spot.</li>
+  <li><strong>Database lock on order rows.</strong> Edit and Delete are hidden for order rows, but RLS still lets the owner change their own rows through the API. A trigger could block that later if wanted.</li>
+  <li><strong>Gaps.</strong> P&amp;L has no category breakdown for people without the CRM, Purchase List prices do not post expenses, and Mel cannot answer money questions. Each could be its own small change later.</li>
+</ul>
+
+<h2>Review (12/11/2026)</h2>
+<p>Plan approved and built as planned. No database changes were needed: the ledger already had <code>crm_order_id</code> and orders already posted into it.</p>
+<h3>What changed</h3>
+<table border="1" cellpadding="6" cellspacing="0">
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><code>src/app/dashboard/crm/insights/page.tsx</code></td><td>One extra query in the existing <code>Promise.all</code>: this year's income from <code>financial_records</code>. "Income in {year}" and "Income this month" each show "€X from orders" and "€Y other" on separate lines. "Sales by product" became "Income by category". New link row "See costs and profit in Profit &amp; Loss". Corrected footnote. The order query is now only status and amounts, with no line items. The empty state checks orders and income. A failed load shows "Sales insights did not load" rather than €0 or "No sales yet".</td></tr>
+  <tr><td><code>src/components/tools/ProfitLoss/index.tsx</code></td><td>The records query also embeds <code>order:crm_orders(order_number)</code> (one foreign key, so unambiguous).</td></tr>
+  <tr><td><code>src/components/tools/ProfitLoss/FinancialRecordCard.tsx</code></td><td>Rows with <code>crm_order_id</code> show the link "From order ORD-…" (48px tall, read with <code>firstOf()</code>) instead of Edit and Delete.</td></tr>
+  <tr><td><code>src/types/records.ts</code></td><td><code>FinancialRecord</code> gains <code>crm_order_id</code> and <code>order</code>.</td></tr>
+  <tr><td><code>docs/features/crm-module.md</code>, <code>docs/features/profit-loss-tracker.md</code></td><td>Sales Insights now reads the ledger. The three income sources, order rows being read-only in P&amp;L, and EUR/GBP display.</td></tr>
+</table>
+<h3>Expected result on your account</h3>
+<p>Before, Sales Insights showed only the €889 from 9 paid orders across all time. After, "Income in 2026" shows every 2026 income row in P&amp;L, split into orders and other. It is the same figure as P&amp;L's Total Income under "This Year".</p>
+<h3>QA audit (qa-engineer)</h3>
+<ul>
+  <li>🟠 <strong>Fixed:</strong> if either load failed, the page showed €0 income or "No sales yet this year" with only a passing toast. It now shows "Sales insights did not load".</li>
+  <li>🟢 Checked: all queries are scoped by <code>user_id</code> and RLS is <code>auth.uid() = user_id</code> on both tables. Amounts are read with <code>Number()</code>. Dates are compared as local date strings. The year has upper and lower bounds, so future-dated rows do not count. The to-one embeds use <code>firstOf()</code>. Text is at least 14px and the targets are 48px.</li>
+  <li>🟡 Accepted: Supabase returns at most 1,000 rows per query. That would cap a year with over 1,000 income entries, and P&amp;L itself has the same limit. Fine for current users.</li>
+  <li>🟡 Accepted: if the CRM is switched off, the "From order" link redirects to the dashboard. The row stays read-only, which is correct because the order still manages it.</li>
+  <li><code>npm run typecheck</code> and eslint on the changed files: clean. Tests and build were not run, per your rules.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>Sales Insights: "Income in 2026" equals P&amp;L Total Income under This Year. The orders and other lines add up. A jar sale shows under Honey Sales.</li>
+  <li>P&amp;L: an order's row shows "From order ORD-…" and opens that order. Hand-added rows still have Edit and Delete.</li>
+  <li>Mark an order unpaid, then paid again: its row leaves P&amp;L and comes back, and Sales Insights follows.</li>
+  <li>Check on a phone (390 wide) in light and dark mode.</li>
+</ol>
+</body>
+</html>

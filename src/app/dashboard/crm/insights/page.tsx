@@ -4,23 +4,29 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
-import { BarChart3 } from 'lucide-react'
+import { BarChart3, ChevronRight } from 'lucide-react'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import EmptyState from '@/components/ui/EmptyState'
 import Panel from '@/components/ui/Panel'
 import { useToast } from '@/components/ui/Toast'
 import { formatMoney } from '@/lib/crm-currency'
 import { orderBalance } from '@/lib/crm-orders'
-import { PRODUCT_TYPE_LABELS, type ProductType } from '@/types/crm'
+import { firstOf } from '@/lib/embed'
 
 interface InsightOrder {
-  order_date: string
-  paid_date: string | null
   status: string
-  payment_status: string
   total_amount: number
   amount_paid: number
-  items: { product_type: ProductType; quantity: number; unit_price: number }[]
+}
+
+// One income row from the Profit & Loss ledger (financial_records). Paid orders
+// post their income here too, tagged with crm_order_id, so the ledger is the
+// single source for every sales figure on this page.
+interface IncomeRow {
+  amount: number
+  transaction_date: string
+  crm_order_id: string | null
+  category: { value: string } | { value: string }[] | null
 }
 
 interface TopCustomer {
@@ -36,16 +42,27 @@ export default function SalesInsightsPage() {
   const router = useRouter()
   const toast = useToast()
   const [orders, setOrders] = useState<InsightOrder[]>([])
+  const [income, setIncome] = useState<IncomeRow[]>([])
   const [topCustomers, setTopCustomers] = useState<TopCustomer[]>([])
   const [isUkNi, setIsUkNi] = useState(false)
   const [loading, setLoading] = useState(true)
+  // A failed load must not show €0 or "No sales yet" as if it were true.
+  const [loadFailed, setLoadFailed] = useState(false)
 
   const fetchData = useCallback(async (uid: string) => {
-    const [ordersRes, custRes, profileRes] = await Promise.all([
+    const year = new Date().getFullYear()
+    const [ordersRes, incomeRes, custRes, profileRes] = await Promise.all([
       supabase
         .from('crm_orders')
-        .select('order_date, paid_date, status, payment_status, total_amount, amount_paid, items:crm_order_items(product_type, quantity, unit_price)')
+        .select('status, total_amount, amount_paid')
         .eq('user_id', uid),
+      supabase
+        .from('financial_records')
+        .select('amount, transaction_date, crm_order_id, category:dropdown_values(value)')
+        .eq('user_id', uid)
+        .eq('record_type', 'income')
+        .gte('transaction_date', `${year}-01-01`)
+        .lt('transaction_date', `${year + 1}-01-01`),
       supabase
         .from('crm_customer_summary')
         .select('id, name, orders_total, order_count')
@@ -55,8 +72,12 @@ export default function SalesInsightsPage() {
       supabase.from('profiles').select('is_uk_ni_resident').eq('id', uid).maybeSingle(),
     ])
 
-    if (ordersRes.error) toast.error('Failed to load sales insights')
+    if (ordersRes.error || incomeRes.error) {
+      toast.error('Failed to load sales insights')
+      setLoadFailed(true)
+    }
     setOrders((ordersRes.data || []) as InsightOrder[])
+    setIncome((incomeRes.data || []) as IncomeRow[])
     setTopCustomers(
       (custRes.data || [])
         .map((c) => ({
@@ -80,66 +101,90 @@ export default function SalesInsightsPage() {
     init()
   }, [router, fetchData])
 
-  // Cash-basis, mirroring the ledger: revenue counts only fully-paid orders,
-  // dated by paid_date. Outstanding is the balance owed across live orders.
+  // Income comes from the Profit & Loss ledger (this year's rows): jar sales,
+  // income added by hand, and fully-paid orders (posted with crm_order_id, dated
+  // by paid_date). Outstanding and pending are order-only, so they still read orders.
   const stats = useMemo(() => {
     const now = new Date()
-    const yearStart = `${now.getFullYear()}-01-01`
-    const monthStart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`
-    let paidYear = 0, paidMonth = 0, outstanding = 0, pendingCount = 0
-    const byProduct = {} as Record<ProductType, number>
+    const monthKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`
+    let incomeYear = 0, incomeMonth = 0, ordersYear = 0, ordersMonth = 0
+    let outstanding = 0, pendingCount = 0
+    const byCategory: Record<string, number> = {}
+
+    for (const r of income) {
+      const amount = Number(r.amount) || 0
+      const fromOrder = r.crm_order_id != null
+      const inMonth = r.transaction_date.slice(0, 7) === monthKey
+      incomeYear += amount
+      if (fromOrder) ordersYear += amount
+      if (inMonth) {
+        incomeMonth += amount
+        if (fromOrder) ordersMonth += amount
+      }
+      const name = firstOf(r.category)?.value || 'Other Income'
+      byCategory[name] = (byCategory[name] || 0) + amount
+    }
 
     for (const o of orders) {
       if (o.status === 'cancelled') continue
       outstanding += orderBalance(o)
       if (o.status === 'pending') pendingCount += 1
-      if (o.payment_status === 'paid') {
-        const total = Number(o.total_amount) || 0
-        const date = o.paid_date || o.order_date
-        if (date >= monthStart) paidMonth += total
-        if (date >= yearStart) {
-          paidYear += total
-          for (const i of o.items || []) {
-            byProduct[i.product_type] = (byProduct[i.product_type] || 0) + (Number(i.quantity) || 0) * (Number(i.unit_price) || 0)
-          }
-        }
-      }
     }
 
-    const products = (Object.keys(PRODUCT_TYPE_LABELS) as ProductType[])
-      .filter((t) => byProduct[t])
-      .map((t) => ({ type: t, amount: byProduct[t] }))
+    const categories = Object.entries(byCategory)
+      .filter(([, amount]) => amount > 0)
+      .map(([name, amount]) => ({ name, amount }))
       .sort((a, b) => b.amount - a.amount)
-    const maxProduct = products.reduce((m, p) => Math.max(m, p.amount), 0)
+    const maxCategory = categories.reduce((m, c) => Math.max(m, c.amount), 0)
 
-    return { paidYear, paidMonth, outstanding, pendingCount, products, maxProduct }
-  }, [orders])
+    return { incomeYear, incomeMonth, ordersYear, ordersMonth, outstanding, pendingCount, categories, maxCategory }
+  }, [orders, income])
 
   if (loading) return <LoadingSpinner text="Loading sales insights..." />
 
   const year = new Date().getFullYear()
+  // "€X from orders" and "€Y other" under each income figure, so a sale recorded
+  // twice (an order and a jar sale) is easy to spot.
+  const split = (total: number, fromOrders: number) => (
+    <>
+      <p className="text-sm text-text-tertiary tabular-nums">{formatMoney(fromOrders, isUkNi)} from orders</p>
+      <p className="text-sm text-text-tertiary tabular-nums">{formatMoney(total - fromOrders, isUkNi)} other</p>
+    </>
+  )
 
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-foreground">Sales Insights</h1>
 
-      {orders.length === 0 ? (
+      {loadFailed ? (
         <EmptyState
           icon={BarChart3}
-          title="No Sales Yet"
-          description="Once you create orders and mark them paid, your sales overview will appear here."
+          title="Sales insights did not load"
+          description="Check your connection, then open this page again."
+        />
+      ) : orders.length === 0 && income.length === 0 ? (
+        <EmptyState
+          icon={BarChart3}
+          title="No sales yet this year"
+          description="Orders you mark paid, jar sales and income you add in Profit & Loss will appear here."
         />
       ) : (
         <>
           {/* Headline stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Panel padding="md">
-              <p className="text-sm text-text-secondary">Paid in {year}</p>
-              <p className="text-2xl font-bold text-foreground tabular-nums">{formatMoney(stats.paidYear, isUkNi)}</p>
+              <p className="text-sm text-text-secondary">Income in {year}</p>
+              <p className="text-2xl font-bold text-foreground tabular-nums">{formatMoney(stats.incomeYear, isUkNi)}</p>
+              {stats.incomeYear > 0 && (
+                split(stats.incomeYear, stats.ordersYear)
+              )}
             </Panel>
             <Panel padding="md">
-              <p className="text-sm text-text-secondary">Paid this month</p>
-              <p className="text-2xl font-bold text-foreground tabular-nums">{formatMoney(stats.paidMonth, isUkNi)}</p>
+              <p className="text-sm text-text-secondary">Income this month</p>
+              <p className="text-2xl font-bold text-foreground tabular-nums">{formatMoney(stats.incomeMonth, isUkNi)}</p>
+              {stats.incomeMonth > 0 && (
+                split(stats.incomeMonth, stats.ordersMonth)
+              )}
             </Panel>
             <Panel padding="md">
               <p className="text-sm text-text-secondary">Outstanding</p>
@@ -152,26 +197,26 @@ export default function SalesInsightsPage() {
             </Panel>
           </div>
 
-          {/* Sales by product */}
+          {/* Income by category */}
           <Panel padding="md">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-foreground">Sales by product ({year})</h3>
-              <span className="text-sm text-text-tertiary">Paid orders</span>
+              <h3 className="font-semibold text-foreground">Income by category ({year})</h3>
+              <span className="text-sm text-text-tertiary">All income</span>
             </div>
-            {stats.products.length === 0 ? (
-              <p className="text-sm text-text-tertiary">No paid sales yet this year.</p>
+            {stats.categories.length === 0 ? (
+              <p className="text-sm text-text-tertiary">No income recorded yet this year.</p>
             ) : (
               <div className="space-y-2">
-                {stats.products.map((p) => (
-                  <div key={p.type}>
+                {stats.categories.map((c) => (
+                  <div key={c.name}>
                     <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="text-text-secondary">{PRODUCT_TYPE_LABELS[p.type]}</span>
-                      <span className="font-medium text-foreground tabular-nums">{formatMoney(p.amount, isUkNi)}</span>
+                      <span className="text-text-secondary">{c.name}</span>
+                      <span className="font-medium text-foreground tabular-nums">{formatMoney(c.amount, isUkNi)}</span>
                     </div>
                     <div className="h-2 rounded-full bg-surface-elevated overflow-hidden">
                       <div
                         className="h-full rounded-full bg-forest-500"
-                        style={{ width: `${stats.maxProduct > 0 ? Math.max(4, (p.amount / stats.maxProduct) * 100) : 0}%` }}
+                        style={{ width: `${stats.maxCategory > 0 ? Math.max(4, (c.amount / stats.maxCategory) * 100) : 0}%` }}
                       />
                     </div>
                   </div>
@@ -204,9 +249,17 @@ export default function SalesInsightsPage() {
             )}
           </Panel>
 
+          <Link
+            href="/dashboard/tools?section=profitloss"
+            className="flex items-center justify-between gap-3 min-h-12 px-4 py-3 rounded-lg border border-border bg-surface font-medium text-foreground hover:bg-surface-elevated/50"
+          >
+            <span>See costs and profit in Profit &amp; Loss</span>
+            <ChevronRight size={20} className="text-text-tertiary flex-shrink-0" aria-hidden="true" />
+          </Link>
+
           <p className="text-sm text-text-tertiary">
-            Revenue figures count fully-paid orders only (cash basis), matching your income ledger. Deposits on
-            part-paid orders are shown under Outstanding until the balance clears.
+            Income comes from your Profit &amp; Loss records: jar sales, income you add yourself, and orders once
+            they are fully paid. Deposits on part-paid orders show under Outstanding until the balance clears.
           </p>
         </>
       )}

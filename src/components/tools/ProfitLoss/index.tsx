@@ -56,7 +56,8 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
         .from('financial_records')
         .select(`
           *,
-          category:dropdown_values(value)
+          category:dropdown_values(value),
+          order:crm_orders(order_number)
         `)
         .eq('user_id', userId)
         .order('transaction_date', { ascending: false })

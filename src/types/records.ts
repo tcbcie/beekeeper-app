@@ -427,8 +427,12 @@ export interface FinancialRecord {
   notes: string | null
   created_at?: string
   updated_at?: string
+  // Set when a fully-paid CRM order posted this row; the order manages it.
+  crm_order_id?: string | null
   // Joined data from dropdown_values
   category?: { value: string }
+  // Joined order (to-one embed; read with firstOf)
+  order?: { order_number: string } | { order_number: string }[] | null
 }
 
 // Purchase list item
