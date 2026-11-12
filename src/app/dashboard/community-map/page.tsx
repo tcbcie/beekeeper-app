@@ -43,6 +43,13 @@ interface UserApiary {
   isTeam: boolean
 }
 
+/** Another beekeeper's shared DCA sighting: offset position and the year, nothing else. */
+interface SharedSighting {
+  latitude: number
+  longitude: number
+  observation_year: number
+}
+
 interface WildColony {
   id: string
   latitude: number
@@ -97,6 +104,7 @@ interface MapPrefs {
   showWild?: unknown
   showCA?: unknown
   showDCA?: unknown
+  showSharedDCA?: unknown
   flightRadius?: unknown
   dcaApiaries?: unknown
 }
@@ -291,6 +299,9 @@ export default function CommunityMapPage() {
   const [recordMode, setRecordMode] = useState(false)
   const [draftSighting, setDraftSighting] = useState<{ latitude: number; longitude: number } | null>(null)
   const [draftNote, setDraftNote] = useState('')
+  const [draftShare, setDraftShare] = useState(false)
+  const [sharedSightings, setSharedSightings] = useState<SharedSighting[]>([])
+  const [showSharedSightings, setShowSharedSightings] = useState(() => savedBool(savedPrefs.showSharedDCA, true))
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const markers = useRef<mapboxgl.Marker[]>([])
@@ -311,6 +322,7 @@ export default function CommunityMapPage() {
   const dca = useDCAPredictions(userApiaries, dcaNeighbours)
   const confirmDCA = dca.confirmDCA
   const removeConfirmation = dca.removeConfirmation
+  const setSharing = dca.setSharing
 
   // Ticked apiaries that still exist (a remembered choice may name one since deleted)
   const selectedDCAIds = useMemo(
@@ -328,13 +340,14 @@ export default function CommunityMapPage() {
         showWild: showWildColonies,
         showCA: showConservationAreas,
         showDCA: showDCAPredictions,
+        showSharedDCA: showSharedSightings,
         flightRadius,
         dcaApiaries: selectedDCAApiaries,
       }))
     } catch {
       // Storage unavailable or full: the choices just are not remembered
     }
-  }, [showUserApiaries, showSharedApiaries, showAllApiaries, showWildColonies, showConservationAreas, showDCAPredictions, flightRadius, selectedDCAApiaries])
+  }, [showUserApiaries, showSharedApiaries, showAllApiaries, showWildColonies, showConservationAreas, showDCAPredictions, showSharedSightings, flightRadius, selectedDCAApiaries])
 
   // Check auth and load every layer. The lookups run together, and one that fails is named on
   // screen with a Try again button rather than showing as an empty layer.
@@ -376,12 +389,14 @@ export default function CommunityMapPage() {
           return { powerUser, wild, all }
         }
 
-        const [shared, own, privileged, areas] = await Promise.all([
+        const [shared, own, privileged, areas, sightings] = await Promise.all([
           supabase.rpc('get_shared_apiaries_obfuscated'),
           loadOwnApiaries(),
           loadPrivileged(),
           // Through a function, so the rows never carry their owner's id or apiary id
           supabase.rpc('get_conservation_areas'),
+          // Only sightings their owners chose to share, offset and without owner details
+          supabase.rpc('get_shared_dca_sightings'),
         ])
         if (cancelled) return
 
@@ -414,6 +429,9 @@ export default function CommunityMapPage() {
 
         if (areas.error || !areas.data) failed.push('conservation areas')
         else setConservationAreas(areas.data as ConservationArea[])
+
+        if (sightings.error || !sightings.data) failed.push('shared DCA sightings')
+        else setSharedSightings(sightings.data as SharedSighting[])
       } catch (err) {
         console.error('Failed to load the community map:', err)
         if (failed.length === 0) failed.push('the map layers')
@@ -526,8 +544,8 @@ export default function CommunityMapPage() {
   }, [userApiaries])
 
   // Save an answer or a sighting and say what happened
-  const saveSighting = useCallback(async (lat: number, lng: number, seen: boolean, notes?: string) => {
-    const status = await confirmDCA(lat, lng, seen, notes)
+  const saveSighting = useCallback(async (lat: number, lng: number, seen: boolean, notes?: string, share = false) => {
+    const status = await confirmDCA(lat, lng, seen, notes, share)
     if (status === 'saved') toast.success(seen ? 'Sighting saved' : 'Saved: no drones here')
     else if (status === 'duplicate') toast.info('You already recorded this here in the last week.')
     else toast.error('Could not save. Check your signal and try again.')
@@ -546,6 +564,15 @@ export default function CommunityMapPage() {
     if (removed) toast.success('Sighting removed')
     else toast.error('Could not remove the sighting. Check your signal and try again.')
   }, [confirm, removeConfirmation, toast])
+
+  // Sharing is the beekeeper's choice for each sighting, and can be undone the same way
+  const toggleSharing = useCallback(async (sighting: DCAConfirmation) => {
+    const share = !sighting.is_shared
+    const changed = await setSharing(sighting.id, share)
+    if (!changed) toast.error('Could not change sharing. Check your signal and try again.')
+    else if (share) toast.success('Sighting shared. Others see it up to 5 km from the true spot.')
+    else toast.success('Sighting no longer shared')
+  }, [setSharing, toast])
 
   // Add markers for all apiaries
   useEffect(() => {
@@ -816,6 +843,35 @@ export default function CommunityMapPage() {
       })
     }
 
+    // Other beekeepers' shared DCA sightings (sky blue rings), offset like shared apiaries
+    if (showSharedSightings) {
+      sharedSightings.forEach(sighting => {
+        if (!map.current) return
+        const latitude = Number(sighting.latitude)
+        const longitude = Number(sighting.longitude)
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return
+
+        const distance = calculateNearestDistance(latitude, longitude)
+        const year = Number(sighting.observation_year)
+        const el = markerElement('shared-dca-marker', '<div style="background-color: white; width: 18px; height: 18px; border-radius: 50%; border: 5px solid #0284c7; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>')
+        const popup = newPopup().setHTML(`
+          <div style="padding: 4px 8px;">
+            ${popupTitle('#0284c7', 'Shared DCA sighting')}
+            ${Number.isFinite(year) ? popupLine(`Drones seen in ${year}`) : ''}
+            ${popupLine('Shown up to 5 km from its true position')}
+            ${distance !== undefined ? popupLine(roughDistanceText(distance)) : ''}
+          </div>
+        `)
+
+        const marker = new mb.Marker({ element: el })
+          .setLngLat([longitude, latitude])
+          .setPopup(popup)
+          .addTo(map.current)
+
+        markers.current.push(marker)
+      })
+    }
+
     // DCA layer: predicted hotspots (rose; green or grey once the beekeeper has answered) and
     // the beekeeper's own sightings that are not inside a hotspot
     // The layer needs an apiary: without one its switch is hidden, so nothing is drawn either
@@ -881,7 +937,20 @@ export default function CommunityMapPage() {
       const sightingLines = (sighting: DCAConfirmation) => `
         ${popupLine(`${sighting.confirmed ? 'Drones seen' : 'No drones seen'} on ${escapeHtml(formatDateIrish(sighting.observation_date))}`)}
         ${sighting.notes ? popupLine(escapeHtml(sighting.notes)) : ''}
+        ${sighting.is_shared ? popupLine('Shared with other beekeepers, up to 5 km from here') : ''}
       `
+      // Remove, plus share or stop sharing for a "drones seen" sighting
+      const sightingActions = (sighting: DCAConfirmation, removeLabel: string) => {
+        const buttons = [popupButton(removeLabel, POPUP_BUTTON_RED, () => removeSighting(sighting))]
+        if (sighting.confirmed) {
+          buttons.push(popupButton(
+            sighting.is_shared ? 'Stop sharing' : 'Share with other beekeepers',
+            POPUP_BUTTON_GREY,
+            () => toggleSharing(sighting)
+          ))
+        }
+        return buttons
+      }
       const actionRow = (...buttons: HTMLButtonElement[]) => {
         const actions = document.createElement('div')
         actions.style.cssText = 'display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 8px 4px;'
@@ -928,7 +997,7 @@ export default function CommunityMapPage() {
           </div>
         `
         content.appendChild(match
-          ? actionRow(popupButton('Remove my answer', POPUP_BUTTON_RED, () => removeSighting(match)))
+          ? actionRow(...sightingActions(match, 'Remove my answer'))
           : actionRow(
               popupButton('Drones seen', POPUP_BUTTON_GREEN, () => saveSighting(pred.latitude, pred.longitude, true)),
               popupButton('No drones', POPUP_BUTTON_GREY, () => saveSighting(pred.latitude, pred.longitude, false)),
@@ -959,7 +1028,7 @@ export default function CommunityMapPage() {
             ${sightingLines(sighting)}
           </div>
         `
-        content.appendChild(actionRow(popupButton('Remove sighting', POPUP_BUTTON_RED, () => removeSighting(sighting))))
+        content.appendChild(actionRow(...sightingActions(sighting, 'Remove sighting')))
 
         const marker = new mb.Marker({ element: el })
           .setLngLat([longitude, latitude])
@@ -970,7 +1039,7 @@ export default function CommunityMapPage() {
       })
     }
 
-  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations, saveSighting, removeSighting, allApiaries, showAllApiaries, styleVersion])
+  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations, saveSighting, removeSighting, toggleSharing, sharedSightings, showSharedSightings, allApiaries, showAllApiaries, styleVersion])
 
   // Recording a sighting, step 1: the next tap on the map picks the spot
   useEffect(() => {
@@ -979,6 +1048,7 @@ export default function CommunityMapPage() {
     const onClick = (e: mapboxgl.MapMouseEvent) => {
       setDraftSighting({ latitude: e.lngLat.lat, longitude: e.lngLat.lng })
       setDraftNote('')
+      setDraftShare(false)
       setRecordMode(false)
     }
     m.on('click', onClick)
@@ -1008,7 +1078,7 @@ export default function CommunityMapPage() {
 
   const saveDraftSighting = () => saveLock.run(async () => {
     if (!draftSighting) return
-    const status = await saveSighting(draftSighting.latitude, draftSighting.longitude, true, draftNote)
+    const status = await saveSighting(draftSighting.latitude, draftSighting.longitude, true, draftNote, draftShare)
     // A failed save keeps the pin and the note, so the beekeeper can try again
     if (status !== 'failed') {
       setDraftSighting(null)
@@ -1185,6 +1255,13 @@ export default function CommunityMapPage() {
                 checked={showConservationAreas}
                 onChange={setShowConservationAreas}
               />
+              <ToggleRow
+                id="layer-shared-dca"
+                label={`Shared DCA sightings (${sharedSightings.length})`}
+                description={swatch('bg-sky-600', 'Seen by other beekeepers, up to 5 km out')}
+                checked={showSharedSightings}
+                onChange={setShowSharedSightings}
+              />
               {userApiaries.length > 0 && (
                 <ToggleRow
                   id="layer-dca"
@@ -1263,7 +1340,7 @@ export default function CommunityMapPage() {
             </div>
 
             <p className="text-sm text-text-secondary">
-              Other beekeepers&apos; apiaries are moved by up to 5 km to protect their privacy.
+              Other beekeepers&apos; apiaries and DCA sightings are moved by up to 5 km to protect their privacy.
               Your own apiaries are shown where they really are.
             </p>
           </div>
@@ -1297,6 +1374,20 @@ export default function CommunityMapPage() {
               className="mt-1 min-h-[48px] w-full rounded-lg border border-border bg-surface px-3 text-base text-foreground"
             />
           </div>
+          <label className="flex min-h-[48px] cursor-pointer items-start gap-3 text-base text-foreground">
+            <input
+              type="checkbox"
+              checked={draftShare}
+              onChange={e => setDraftShare(e.target.checked)}
+              className="mt-1 h-5 w-5 flex-shrink-0 rounded border-border accent-green-700"
+            />
+            <span>
+              Share with other beekeepers
+              <span className="block text-sm text-text-secondary">
+                Shown up to 5 km from the true spot, without your name or note.
+              </span>
+            </span>
+          </label>
           <div className="flex gap-2">
             <Button type="button" onClick={() => setDraftSighting(null)} disabled={saveLock.submitting}>
               Cancel

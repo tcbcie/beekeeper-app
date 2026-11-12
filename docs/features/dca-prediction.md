@@ -109,7 +109,18 @@ A hotspot is coloured green (drones seen) or grey (no drones) when one of the us
 - A confirmed sighting within 5 km of a selected apiary seeds a hotspot when no terrain-generated candidate lands nearby. A sighting further away is ignored for that selection
 - The lower score threshold for sighting-backed hotspots applies only to candidates a sighting actually backs
 - A valid selected apiary can preserve one low-confidence fallback hotspot if normal filtering would otherwise return no visible result
-- Confirmations remain user-private only
+- A sighting is private unless its owner chooses to share it (see Sharing a sighting). Shared sightings from other beekeepers are shown on the map but do not feed the prediction, because their positions are offset
+
+### Sharing a sighting (added 12/11/2026)
+
+Sharing is the beekeeper's choice for each sighting, and is off unless they tick it.
+
+- **When recording:** a "Share with other beekeepers" tick-box on the sighting card, unticked by default
+- **Afterwards:** "Share with other beekeepers" / "Stop sharing" in the popup of any of their own "drones seen" sightings, including an answered hotspot
+- **Only "drones seen" can be shared.** A "no drones" answer stays private; the database refuses to share one
+- **What others see:** a sky-blue ring in the "Shared DCA sightings" layer, moved by up to 5 km with the same salted offset as shared apiaries, and the year. No name, no note, no exact date
+- **No approval step.** Nothing typed by a beekeeper is shown to others, so there is nothing to moderate; a beekeeper can stop sharing at any time, and removing the sighting removes it for everyone
+- **Database:** `dca_confirmations.is_shared` (default false) and `get_shared_dca_sightings()`, which returns other beekeepers' shared sightings to signed-in users only. Migration `supabase/migrations/20261112200000_dca_sightings_opt_in_sharing.sql` (applied)
 
 ## Edge Cases
 

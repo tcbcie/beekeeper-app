@@ -19,6 +19,8 @@ export interface DCAConfirmation {
   confirmed: boolean
   observation_date: string
   notes: string | null
+  /** The beekeeper chose to share this sighting with other beekeepers (confirmed sightings only). */
+  is_shared: boolean
 }
 
 const CACHE_KEY_PREFIX = 'dca-predictions-v7-'
@@ -36,7 +38,7 @@ type PredictionRunStatus = 'idle' | 'success' | 'fallback' | 'empty'
 /** What happened to a sighting the beekeeper tried to save. */
 export type SightingSaveStatus = 'saved' | 'duplicate' | 'failed'
 
-const CONFIRMATION_COLUMNS = 'id, latitude, longitude, confirmed, observation_date, notes'
+const CONFIRMATION_COLUMNS = 'id, latitude, longitude, confirmed, observation_date, notes, is_shared'
 
 /** Saved predictions were worked out from the old sightings, so they go when a sighting changes. */
 function clearPredictionCache(): void {
@@ -378,7 +380,8 @@ export function useDCAPredictions(apiaries: Apiary[], neighbours: NeighbourApiar
     lat: number,
     lng: number,
     confirmed: boolean,
-    notes?: string
+    notes?: string,
+    share = false
   ): Promise<SightingSaveStatus> => {
     if (!isValidCoordinatePair(lat, lng)) return 'failed'
 
@@ -394,7 +397,7 @@ export function useDCAPredictions(apiaries: Apiary[], neighbours: NeighbourApiar
       const trimmedNotes = notes?.trim()
       const { data, error: insertError } = await supabase
         .from('dca_confirmations')
-        .insert({ user_id: userId, latitude: lat, longitude: lng, confirmed, notes: trimmedNotes || null })
+        .insert({ user_id: userId, latitude: lat, longitude: lng, confirmed, notes: trimmedNotes || null, is_shared: confirmed && share })
         .select(CONFIRMATION_COLUMNS)
         .single()
 
@@ -433,6 +436,28 @@ export function useDCAPredictions(apiaries: Apiary[], neighbours: NeighbourApiar
     }
   }, [refreshAfterSightingChange])
 
+  /** Starts or stops sharing one of the beekeeper's own sightings. Resolves false when nothing changed. */
+  const setSharing = useCallback(async (id: string, share: boolean): Promise<boolean> => {
+    try {
+      // An update the database refuses returns no error and no rows, so the rows are counted
+      const { data, error: updateError } = await supabase
+        .from('dca_confirmations')
+        .update({ is_shared: share })
+        .eq('id', id)
+        .select('id')
+
+      if (updateError || !data || data.length === 0) return false
+
+      const apply = (list: DCAConfirmation[]) =>
+        list.map(confirmation => (confirmation.id === id ? { ...confirmation, is_shared: share } : confirmation))
+      setConfirmations(apply)
+      confirmationsRef.current = apply(confirmationsRef.current)
+      return true
+    } catch {
+      return false
+    }
+  }, [])
+
   const clear = useCallback(() => {
     callIdRef.current++
     lastSelectionRef.current = []
@@ -451,5 +476,5 @@ export function useDCAPredictions(apiaries: Apiary[], neighbours: NeighbourApiar
         ? 'fallback'
         : 'success'
 
-  return { predictions, flyways, confirmations, loading, error, calculate, clear, confirmDCA, removeConfirmation, hasCalculated, runStatus }
+  return { predictions, flyways, confirmations, loading, error, calculate, clear, confirmDCA, removeConfirmation, setSharing, hasCalculated, runStatus }
 }

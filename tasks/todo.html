@@ -248,6 +248,23 @@
 <p><strong>How much it does:</strong> little, by design. Shared apiaries are shown up to 5 km from where they are, so the signal lifts every hotspot in an area with many colonies by a similar amount; it rarely changes which of one apiary&rsquo;s hotspots ranks first. In such areas a hotspot just under the cut-off can now appear.</p>
 <p><strong>Left out:</strong> wild colonies and the all-apiaries layer (only Power Users can see them, and a prediction should not depend on who is looking), and your own apiaries that are not ticked.</p>
 
+<h3>Batch 4.6 &mdash; shared DCA sightings, opt-in per sighting, built on 12 November 2026</h3>
+<ul class="todo">
+  <li>&#9745; <strong>Database, applied to the live database:</strong> a new <code>is_shared</code> column on sightings (off by default), a rule that only &ldquo;drones seen&rdquo; sightings can be shared, and <code>get_shared_dca_sightings()</code> for other beekeepers to read them. <span class="file">supabase/migrations/20261112200000_dca_sightings_opt_in_sharing.sql</span></li>
+  <li>&#9745; <strong>Sharing when recording:</strong> a &ldquo;Share with other beekeepers&rdquo; tick-box on the sighting card, unticked by default.</li>
+  <li>&#9745; <strong>Sharing afterwards:</strong> &ldquo;Share with other beekeepers&rdquo; / &ldquo;Stop sharing&rdquo; in the popup of your own &ldquo;drones seen&rdquo; sightings.</li>
+  <li>&#9745; <strong>New layer:</strong> &ldquo;Shared DCA sightings&rdquo; (sky-blue rings), on by default, for everyone.</li>
+  <li>&#9745; Docs updated. Type-check and lint pass. Audit done, nothing to fix. Checked in the database: the new function cannot be called without signing in.</li>
+  <li>&#9744; <strong>For you to test, ideally with two accounts:</strong> record a sighting with the box ticked; check the other account sees a blue ring a few kilometres away with the year only; stop sharing and check it goes.</li>
+</ul>
+<p><strong>What others see:</strong> the spot moved by up to 5 km and the year. Not your name, your note or the exact date. Your own shared sighting stays at its true spot on your map.</p>
+<p><strong>Choices I made that you may want to change:</strong></p>
+<ul>
+  <li><strong>No approval step.</strong> Nothing a beekeeper types is shown to others, so there is nothing to moderate. A false sighting can only be removed by its owner or in the database.</li>
+  <li><strong>5 km offset,</strong> the same as shared apiaries, as proposed. It protects where the sharer keeps bees but makes a shared DCA hard to find on the ground; one number changes it.</li>
+  <li><strong>Shared sightings do not feed the prediction,</strong> because their positions are offset.</li>
+</ul>
+
 <h2>6. One thing for you to check</h2>
 <p>The elevation data comes from Open-Meteo&rsquo;s free service. As far as I know that tier is for non-commercial use with a daily request limit. HiveCraic takes subscriptions, so their terms are worth reading. <span class="file">docs/features/apiary-elevation.md</span> says there are no limits.</p>
 
