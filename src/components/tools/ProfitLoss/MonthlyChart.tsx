@@ -35,8 +35,10 @@ const COLOURS = {
 interface MonthlyChartProps {
   /** Records already filtered by the P&L time filter. */
   records: FinancialRecord[]
-  /** 'year': January to December of this year, by month. 'all': one pair per year. */
+  /** 'year': January to December of `year`, by month. 'all': one pair per year. */
   period: 'year' | 'all'
+  /** The year shown when period is 'year'. */
+  year: number
   isUkNi: boolean
 }
 
@@ -44,13 +46,13 @@ interface Bucket {
   label: string
   income: number
   expense: number
-  /** A month of this year still to come: no net point, so the line stops at today. */
+  /** A month still to come: no net point, so the line stops at today. */
   future?: boolean
 }
 
 // Buckets by the YYYY-MM-DD string itself, so no time zone can move a record
 // into the wrong month.
-function buildBuckets(records: FinancialRecord[], period: 'year' | 'all'): Bucket[] {
+function buildBuckets(records: FinancialRecord[], period: 'year' | 'all', year: number): Bucket[] {
   const add = (b: Bucket | undefined, r: FinancialRecord) => {
     if (!b) return
     const amount = Number(r.amount) || 0
@@ -60,16 +62,16 @@ function buildBuckets(records: FinancialRecord[], period: 'year' | 'all'): Bucke
 
   if (period === 'year') {
     const now = new Date()
-    const year = now.getFullYear()
+    const nowYear = now.getFullYear()
     const monthName = new Intl.DateTimeFormat('en-GB', { month: 'short' })
     const buckets: Bucket[] = Array.from({ length: 12 }, (_, m) => ({
       label: monthName.format(new Date(year, m, 1)),
       income: 0,
       expense: 0,
-      future: m > now.getMonth(),
+      future: year > nowYear || (year === nowYear && m > now.getMonth()),
     }))
     for (const r of records) {
-      if (r.transaction_date.slice(0, 4) !== String(year)) continue
+      if (Number(r.transaction_date.slice(0, 4)) !== year) continue
       add(buckets[Number(r.transaction_date.slice(5, 7)) - 1], r)
     }
     return buckets
@@ -86,9 +88,9 @@ function buildBuckets(records: FinancialRecord[], period: 'year' | 'all'): Bucke
   return [...byYear.values()].sort((a, b) => a.label.localeCompare(b.label))
 }
 
-export default function MonthlyChart({ records, period, isUkNi }: MonthlyChartProps) {
+export default function MonthlyChart({ records, period, year, isUkNi }: MonthlyChartProps) {
   const isDark = isDarkMode()
-  const buckets = useMemo(() => buildBuckets(records, period), [records, period])
+  const buckets = useMemo(() => buildBuckets(records, period, year), [records, period, year])
 
   const options = useMemo(() => {
     const wholeMoney = new Intl.NumberFormat(isUkNi ? 'en-GB' : 'en-IE', {
@@ -161,7 +163,7 @@ export default function MonthlyChart({ records, period, isUkNi }: MonthlyChartPr
 
   if (buckets.length === 0) return null
 
-  const title = period === 'year' ? 'Income and expenses by month' : 'Income and expenses by year'
+  const title = period === 'year' ? `Income and expenses by month (${year})` : 'Income and expenses by year'
   const totalIncome = buckets.reduce((s, b) => s + b.income, 0)
   const totalExpense = buckets.reduce((s, b) => s + b.expense, 0)
   const summary = `${title}: income ${formatMoney(totalIncome, isUkNi)}, expenses ${formatMoney(totalExpense, isUkNi)}, net profit ${formatMoney(totalIncome - totalExpense, isUkNi)}. The figures are in the table that follows.`

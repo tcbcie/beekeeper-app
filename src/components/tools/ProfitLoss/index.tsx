@@ -13,11 +13,13 @@ import FinancialRecordForm from './FinancialRecordForm'
 import FinancialRecordCard from './FinancialRecordCard'
 import FinancialSummary from './FinancialSummary'
 import Button from '@/components/ui/Button'
+import SegmentedControl from '@/components/ui/SegmentedControl'
+import SelectField from '@/components/ui/SelectField'
 import CategoryBreakdown from '@/components/ui/CategoryBreakdown'
 import { firstOf } from '@/lib/embed'
 import { Skeleton } from '@/components/ui/Skeleton'
 
-// chart.js loads only when the chart is shown (This Year / All Time); the
+// chart.js loads only when the chart is shown (Year / All Time); the
 // placeholder matches the chart panel's height so nothing jumps.
 const MonthlyChart = dynamic(() => import('./MonthlyChart'), {
   ssr: false,
@@ -25,6 +27,12 @@ const MonthlyChart = dynamic(() => import('./MonthlyChart'), {
 })
 
 type TimePeriod = 'month' | 'year' | 'all'
+
+const PERIOD_OPTIONS: ReadonlyArray<{ value: TimePeriod; label: string }> = [
+  { value: 'month', label: 'This Month' },
+  { value: 'year', label: 'Year' },
+  { value: 'all', label: 'All Time' },
+]
 
 interface ProfitLossProps {
   userId: string
@@ -41,6 +49,8 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
   const [showForm, setShowForm] = useState(false)
   const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null)
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('year')
+  // The year shown when the period is Year; starts at the current year.
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear())
 
   // Fetch dropdown categories
   const fetchCategories = useCallback(async () => {
@@ -98,25 +108,34 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
       })
   }, [fetchCategories, fetchRecords, userId])
 
+  // Years to choose from: the current year, the year on show (so it never vanishes
+  // when its last record is deleted) and every year with records, newest first.
+  const yearOptions = useMemo(() => {
+    const years = new Set<number>([new Date().getFullYear(), selectedYear])
+    for (const r of records) {
+      const year = Number(r.transaction_date.slice(0, 4))
+      if (Number.isInteger(year)) years.add(year)
+    }
+    return [...years].sort((a, b) => b - a)
+  }, [records, selectedYear])
+
   // Filter records by time period
   const filteredRecords = useMemo(() => {
-    const now = new Date()
-    let startDate: Date
-
     switch (timePeriod) {
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-        break
+      case 'month': {
+        const now = new Date()
+        const startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+        return records.filter(r => new Date(r.transaction_date) >= startDate)
+      }
       case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1)
-        break
+        // Year read from the date string: no time zone slips, and a mistyped
+        // year (0226) matches its own option (226) so it can be found and fixed.
+        return records.filter(r => Number(r.transaction_date.slice(0, 4)) === selectedYear)
       case 'all':
       default:
         return records
     }
-
-    return records.filter(r => new Date(r.transaction_date) >= startDate)
-  }, [records, timePeriod])
+  }, [records, timePeriod, selectedYear])
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -140,7 +159,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
       .map(r => ({ name: firstOf(r.category)?.value || fallback, amount: Number(r.amount) || 0 }))
     return { income: rows('income', 'Other Income'), expense: rows('expense', 'Other Expense') }
   }, [filteredRecords])
-  const periodLabel = timePeriod === 'month' ? 'this month' : timePeriod === 'year' ? 'this year' : 'all time'
+  const periodLabel = timePeriod === 'month' ? 'this month' : timePeriod === 'year' ? String(selectedYear) : 'all time'
 
   // Handle form submit
   const handleSubmit = async (record: Partial<FinancialRecord>) => {
@@ -242,7 +261,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
       r.notes || ''
     ])
 
-    downloadCsv(`pl-records-${timePeriod}-${getCurrentDate()}.csv`, toCsv(headers, rows))
+    downloadCsv(`pl-records-${timePeriod === 'year' ? selectedYear : timePeriod}-${getCurrentDate()}.csv`, toCsv(headers, rows))
 
     toast.success('Records exported')
   }
@@ -288,23 +307,22 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
         </div>
       </div>
 
-      {/* Time Period Filter */}
-      <div className="flex gap-2">
-        {(['month', 'year', 'all'] as TimePeriod[]).map((period) => (
-          <Button
-            key={period}
-            onClick={() => setTimePeriod(period)}
-            size="xs"
-            tone={timePeriod === period ? 'blue' : 'neutral'}
-            className={`text-sm ${
-              timePeriod === period
-                ? ''
-                : 'bg-surface-secondary text-text-secondary hover:bg-surface-secondary/80'
-            }`}
-          >
-            {period === 'month' ? 'This Month' : period === 'year' ? 'This Year' : 'All Time'}
-          </Button>
-        ))}
+      {/* Time period: This Month, a chosen Year, or All Time */}
+      <div className="space-y-3">
+        <SegmentedControl label="Period" options={PERIOD_OPTIONS} value={timePeriod} onChange={setTimePeriod} />
+        {timePeriod === 'year' && (
+          <div className="w-40">
+            <SelectField
+              label="Year"
+              value={String(selectedYear)}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+            >
+              {yearOptions.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </SelectField>
+          </div>
+        )}
       </div>
 
       {/* Summary Cards */}
@@ -331,9 +349,9 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
         />
       )}
 
-      {/* Income and expenses over time: by month for This Year, by year for All Time */}
+      {/* Income and expenses over time: by month for a chosen Year, by year for All Time */}
       {timePeriod !== 'month' && filteredRecords.length > 0 && (
-        <MonthlyChart records={filteredRecords} period={timePeriod} isUkNi={isUkNi} />
+        <MonthlyChart records={filteredRecords} period={timePeriod} year={selectedYear} isUkNi={isUkNi} />
       )}
 
       {/* Income and expenses by category: each hidden when the period has none;

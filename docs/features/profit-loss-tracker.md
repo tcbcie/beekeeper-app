@@ -16,17 +16,21 @@ Completed: January 17, 2026
 4. Select **Income** or **Expense** type
 5. Fill in date, amount (EUR), category, and optional description/notes
 6. View summary cards showing totals
-7. Use time filters: This Month, This Year, All Time
+7. Choose a period: This Month, Year (then pick the year), or All Time
 
 ## Features
 
 - Income/Expense choice: a radio group with the shared `RadioChoiceOption`, selected in green (WP04, 04/11/2026; was a green/red toggle), with every label tied to its field
 - Dropdown categories specific to beekeeping
 - Summary cards: Total Income, Total Expenses, Net Profit/Loss
-- Income and expenses chart with a net profit line: by month for This Year, by year for All Time (12/11/2026)
+- Income and expenses chart with a net profit line: by month for a chosen Year, by year for All Time (12/11/2026)
 - Income by category: ranked bars for the chosen period, largest first (12/11/2026)
 - Expenses by category: the same, in red, under the income breakdown (12/11/2026)
-- Time period filtering
+- Time period filtering: This Month, Year with a year selector, All Time (12/11/2026)
+  - The period row is the shared `SegmentedControl` (green when chosen, 48px). It was three blue buttons, and the old "This Year" is now "Year"
+  - Choosing **Year** shows a **Year** drop-down (`SelectField`). It starts at the current year and lists the current year, the year on show and every year with records, newest first
+  - Year keeps records whose date string starts with that year. The year is read from `YYYY-MM-DD`, so there are no time zone slips and records dated in a later year are not counted. A mistyped year (0226) appears as its own option (226), so it can be found and fixed
+  - Totals, chart, category panels, records list and CSV all follow the chosen year
 - Edit and delete records
 - CSV export (respects current time filter)
 - Mobile responsive design
@@ -132,11 +136,11 @@ interface FinancialRecord {
 
 ### Income and Expenses Chart
 - `src/components/tools/ProfitLoss/MonthlyChart.tsx`, a Chart.js grouped bar chart between the summary cards and the category panels
-- **This Year:** "Income and expenses by month", January to December of the current year (months still to come are empty)
+- **Year:** "Income and expenses by month (2025)", January to December of the chosen year (months still to come are empty)
 - **All Time:** "Income and expenses by year", one pair of bars for each year that has records
 - **This Month:** no chart, because the totals already show the month. It is also hidden when the period has no records
 - Records are bucketed by their `YYYY-MM-DD` string, so no time zone moves a record into another month
-- **Net profit line** (income minus expenses): blue to match the Net Profit card, 2px, with 8px dots, drawn on top of the bars (`order: 0`). It dips below a darker 2px **zero line** in loss months. In This Year it stops at the current month (later months are `null`)
+- **Net profit line** (income minus expenses): blue to match the Net Profit card, 2px, with 8px dots, drawn on top of the bars (`order: 0`). It dips below a darker 2px **zero line** in loss months. For the current year it stops at the current month (later months are `null`). A past year shows all twelve months
 - One money axis (whole euros or pounds), legend at the top in the order Income, Expenses, Net profit. Tapping anywhere in a month shows all three figures (`interaction: { mode: 'index', intersect: false }`), so nobody has to hit a thin bar. Text is at least 14px through `themeChartOptions` plus 14px tooltip fonts
 - **Colours, checked as a set with the dataviz palette validator (`--pairs all`).** The card colours green-500 and red-500 fail for colour-blind readers, so the chart uses darker steps:
   - Light: income `#15803d` (green-700), expenses `#dc2626` (red-600), net `#2563eb` (blue-600). All checks pass
@@ -145,13 +149,13 @@ interface FinancialRecord {
 - chart.js loads only when the chart shows (`next/dynamic`), behind a skeleton of the same height
 
 ### Income by Category
-- Sits between the summary cards and the records list, and follows the time filter: "Income by category (this month / this year / all time)"
+- Sits between the summary cards and the records list, and follows the time filter: "Income by category (this month / 2025 / all time)"
 - One row per income category: name, amount, and a green bar sized against the largest category
 - Hidden when the chosen period has no income
 - Built from the records already loaded (no extra query) with the shared `src/components/ui/CategoryBreakdown.tsx`, the same component CRM Sales Insights uses, so both screens group and sort income the same way
 
 ### Expenses by Category
-- Directly under Income by category, with the same time filter and title pattern: "Expenses by category (this year)"
+- Directly under Income by category, with the same time filter and title pattern: "Expenses by category (2025)"
 - Red bars (`tone="expense"`), matching the Expenses card, so income and expenses read apart at a glance
 - Hidden when the period has no expenses
 - The two panels stack on a phone and sit side by side from the `lg` width when both show
@@ -174,7 +178,7 @@ interface FinancialRecord {
 Click the **Export** button to download filtered records as CSV:
 - Filename: `pl-records-{period}-{date}.csv`
 - Columns: Date, Type, Category, Amount (EUR), Description, Notes
-- Respects current time filter (Month/Year/All)
+- Respects the current period (Month / chosen Year / All). The filename uses the year for Year, e.g. `pl-records-2025-{date}.csv`
 
 Financial records are also included in the Settings backup export.
 

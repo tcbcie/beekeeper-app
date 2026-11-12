@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>P&amp;L year selector</title>
+</head>
+<body>
+<h1>Profit &amp; Loss – year selector</h1>
+<p>Follows the P&amp;L chart work (commit <code>55af9cc1</code>). Feature doc: <code>docs/features/profit-loss-tracker.md</code>.</p>
+
+<h2>Why</h2>
+<p>P&amp;L can show only this month, this year or all time. To look back at last season, for a tax return or to compare with this year, there is no way to choose 2025.</p>
+
+<h2>How it will work for the beekeeper</h2>
+<ul>
+  <li>The period row becomes <strong>This Month | Year | All Time</strong>. "This Year" is renamed "Year".</li>
+  <li>When <strong>Year</strong> is chosen, a <strong>Year</strong> drop-down appears underneath, set to the current year. It lists the current year plus every year that has records, newest first.</li>
+  <li>Picking a year updates everything for that year: the totals, the chart (January to December of that year), income and expenses by category, the records list and the CSV export.</li>
+  <li>For a past year, the net line runs through all twelve months. For the current year it still stops at this month.</li>
+  <li>Panel titles name the year, for example "Income by category (2025)" and "Income and expenses by month (2025)". The CSV file is named <code>pl-records-2025-….csv</code>.</li>
+</ul>
+<pre>
+ Profit &amp; Loss (phone)
+ ┌─────────────────────────────────┐
+ │ ┌───────────┬────────┬────────┐ │
+ │ │This Month │▓ Year ▓│All Time│ │  ← green when chosen, 48px
+ │ └───────────┴────────┴────────┘ │
+ │ Year                            │
+ │ ┌──────────────┐                │
+ │ │ 2025       ▾ │                │  ← only when Year is chosen
+ │ └──────────────┘                │
+ │ Income   Expenses   Net         │
+ │ chart (2025) …                  │
+ └─────────────────────────────────┘
+</pre>
+
+<h2>To do</h2>
+<ol>
+  <li>☑ <strong>Period row:</strong> swap the three blue buttons for the existing <code>SegmentedControl</code> primitive. It is green when chosen with 48px targets, as the UI rules require: selections are green, not blue. The labels are This Month, Year and All Time.</li>
+  <li>☑ <strong>Year select:</strong> <code>selectedYear</code> state, defaulting to the current year. Shown with the existing <code>SelectField</code> (16px, labelled "Year") when Year is chosen. The options are the current year plus the years in the loaded records, newest first.</li>
+  <li>☑ <strong>Filter:</strong> Year keeps records whose date starts with the chosen year, compared as a string. That also stops a record dated next year from being counted in this year's totals, a caveat noted in the chart review. This Month and All Time are unchanged.</li>
+  <li>☑ <strong>Chart:</strong> <code>MonthlyChart</code> takes a <code>year</code> prop in place of "now". Future months are cut off only for the current year, and the title shows the year.</li>
+  <li>☑ <strong>Titles and CSV:</strong> the period label is the year number, and the CSV file name uses the year.</li>
+  <li>☑ <strong>Docs:</strong> <code>profit-loss-tracker.md</code>.</li>
+  <li>☑ QA audit, typecheck and lint, then you test it in the app.</li>
+</ol>
+
+<h2>Review (12/11/2026)</h2>
+<p>Plan approved, including the switch to the green <code>SegmentedControl</code>. Built as planned, with no database changes and no new query.</p>
+<ul>
+  <li><code>src/components/tools/ProfitLoss/index.tsx</code>:
+    <ul>
+      <li>The <code>PERIOD_OPTIONS</code> and <code>SegmentedControl</code> replace the blue buttons.</li>
+      <li><code>selectedYear</code> state, and memoised <code>yearOptions</code>: the current year, the year on show and every year with records.</li>
+      <li>A <code>SelectField</code> labelled "Year" shows when Year is chosen.</li>
+      <li>The Year filter reads the year from the date string.</li>
+      <li>The period label is the year number, and the CSV file name uses the year.</li>
+    </ul>
+  </li>
+  <li><code>src/components/tools/ProfitLoss/MonthlyChart.tsx</code>: new <code>year</code> prop. A month counts as still to come only in the current year, or in a later year. The title shows the year.</li>
+  <li><code>docs/features/profit-loss-tracker.md</code>: how-to, features, chart, category titles and CSV name.</li>
+</ul>
+<h3>QA audit</h3>
+<ul>
+  <li>🟠 <strong>Fixed:</strong> a mistyped year such as 0226 was offered as "226", but the filter compared strings ("226-"), so choosing it showed nothing. The filter and the chart now compare the year as a number.</li>
+  <li>🟡 <strong>Fixed:</strong> deleting the last record of the year on show dropped that year from the options. The drop-down then showed a different year from the one on screen. The year on show is now always an option.</li>
+  <li>🟢 Note: This Month still uses its date comparison from before this change, which is correct for Irish and UK time zones.</li>
+  <li><code>npm run typecheck</code> and eslint: clean. Tests and build were not run, per your rules.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>The period row is green when chosen. Year shows the Year drop-down, and the other two hide it.</li>
+  <li>Pick 2025: the totals, chart (all twelve months with the net line), both category panels and the list show 2025. Export names the file <code>pl-records-2025-….csv</code>.</li>
+  <li>Back on the current year, the net line still stops at this month.</li>
+  <li>Phone (390 wide): "This Month", "Year" and "All Time" fit on one line, and the drop-down is easy to tap.</li>
+</ol>
+</body>
+</html>
