@@ -23,6 +23,7 @@ Completed: January 17, 2026
 - Income/Expense choice: a radio group with the shared `RadioChoiceOption`, selected in green (WP04, 04/11/2026; was a green/red toggle), with every label tied to its field
 - Dropdown categories specific to beekeeping
 - Summary cards: Total Income, Total Expenses, Net Profit/Loss
+- Income and expenses chart: by month for This Year, by year for All Time (12/11/2026)
 - Income by category: ranked bars for the chosen period, largest first (12/11/2026)
 - Expenses by category: the same, in red, under the income breakdown (12/11/2026)
 - Time period filtering
@@ -128,6 +129,19 @@ interface FinancialRecord {
 - **Income Card**: Green background, shows total income
 - **Expenses Card**: Red background, shows total expenses
 - **Net Card**: Blue (profit) or Orange (loss), shows net result
+
+### Income and Expenses Chart
+- `src/components/tools/ProfitLoss/MonthlyChart.tsx`, a Chart.js grouped bar chart between the summary cards and the category panels
+- **This Year:** "Income and expenses by month", January to December of the current year (months still to come are empty)
+- **All Time:** "Income and expenses by year", one pair of bars for each year that has records
+- **This Month:** no chart, because the totals already show the month. It is also hidden when the period has no records
+- Records are bucketed by their `YYYY-MM-DD` string, so no time zone moves a record into another month
+- One money axis (whole euros or pounds), legend at the top, and tap or hover tooltips such as "Income: €120.00". Text is at least 14px through `themeChartOptions` plus 14px tooltip fonts
+- **Colours, checked with the dataviz palette validator.** The card colours green-500 and red-500 fail for colour-blind readers, so the chart uses darker steps:
+  - Light: income `#15803d` (green-700), expenses `#dc2626` (red-600). CVD ΔE 8.6
+  - Dark on `#111827`: income `#16a34a` (green-600), expenses `#b91c1c` (red-700). CVD ΔE 11.0
+- Screen readers get a summary label on the chart and a hidden table of the same figures
+- chart.js loads only when the chart shows (`next/dynamic`), behind a skeleton of the same height
 
 ### Income by Category
 - Sits between the summary cards and the records list, and follows the time filter: "Income by category (this month / this year / all time)"

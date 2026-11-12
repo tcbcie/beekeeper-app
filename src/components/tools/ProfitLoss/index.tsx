@@ -3,6 +3,7 @@
 import { getCurrentDate } from '@/lib/date-utils'
 import { downloadCsv, toCsv } from '@/lib/csv'
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { Wallet, Plus, Loader2, Info, Download } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
@@ -14,6 +15,14 @@ import FinancialSummary from './FinancialSummary'
 import Button from '@/components/ui/Button'
 import CategoryBreakdown from '@/components/ui/CategoryBreakdown'
 import { firstOf } from '@/lib/embed'
+import { Skeleton } from '@/components/ui/Skeleton'
+
+// chart.js loads only when the chart is shown (This Year / All Time); the
+// placeholder matches the chart panel's height so nothing jumps.
+const MonthlyChart = dynamic(() => import('./MonthlyChart'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[19rem] lg:h-[22rem] rounded-lg" />,
+})
 
 type TimePeriod = 'month' | 'year' | 'all'
 
@@ -320,6 +329,11 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
           saving={saving}
           isUkNi={isUkNi}
         />
+      )}
+
+      {/* Income and expenses over time: by month for This Year, by year for All Time */}
+      {timePeriod !== 'month' && filteredRecords.length > 0 && (
+        <MonthlyChart records={filteredRecords} period={timePeriod} isUkNi={isUkNi} />
       )}
 
       {/* Income and expenses by category: each hidden when the period has none;

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>P&amp;L monthly chart</title>
+</head>
+<body>
+<h1>Profit &amp; Loss – income and expenses chart</h1>
+<p>Follows the category breakdowns (commits <code>620fed04</code> and <code>6e187abf</code>). Feature doc: <code>docs/features/profit-loss-tracker.md</code>.</p>
+
+<h2>How it will work for the beekeeper</h2>
+<ul>
+  <li>A bar chart, <strong>Income and expenses by month</strong>, sits between the totals and the category panels. Each month has two bars side by side: income in green and expenses in red. There is a legend at the top, and tapping a bar shows "Income: €120.00".</li>
+  <li><strong>It follows the time filter</strong> (your choice, see the question):
+    <ul>
+      <li><strong>This Year:</strong> January to December of this year. Months still to come are empty, so the season always reads the same way.</li>
+      <li><strong>All Time:</strong> one pair of bars for each year that has records, "Income and expenses by year". Months across several years would be too thin to read on a phone.</li>
+      <li><strong>This Month:</strong> no chart, because one month is already shown by the totals.</li>
+    </ul>
+  </li>
+  <li>It is hidden when the period has no records.</li>
+</ul>
+<pre>
+ Profit &amp; Loss (phone, This Year, illustration only)
+ ┌─────────────────────────────────┐
+ │ Income   Expenses   Net         │
+ ├─────────────────────────────────┤
+ │ Income and expenses by month    │
+ │ ■ Income  ■ Expenses            │
+ │ €800 ┤          ▆               │
+ │ €400 ┤ ▃▅    ▂ ▆█ ▅▂            │
+ │   €0 ┼─┴┴─┴┴─┴┴─┴┴─┴┴─ ─ ─ ─ ─  │
+ │      J  F  M  A  M  J  J …   D  │
+ ├─────────────────────────────────┤
+ │ Income by category …            │
+ │ Expenses by category …          │
+ └─────────────────────────────────┘
+</pre>
+
+<h2>Design checks (dataviz skill)</h2>
+<ul>
+  <li><strong>One axis</strong> in euro or pound, the same unit for both series. No second axis.</li>
+  <li><strong>Colours checked with the validator script</strong>, not by eye. Plain green-500 and red-500, as on the cards, <strong>fail</strong> for colour-blind readers (ΔE 3.5), so the chart uses darker steps that are all existing Tailwind colours:
+    <table border="1" cellpadding="6" cellspacing="0">
+      <tr><th>Mode</th><th>Income</th><th>Expenses</th><th>Result</th></tr>
+      <tr><td>Light (on white)</td><td>green-700 <code>#15803d</code></td><td>red-600 <code>#dc2626</code></td><td>All checks pass, CVD ΔE 8.6</td></tr>
+      <tr><td>Dark (on <code>#111827</code>)</td><td>green-600 <code>#16a34a</code></td><td>red-700 <code>#b91c1c</code></td><td>All checks pass, CVD ΔE 11.0</td></tr>
+    </table>
+  </li>
+  <li>The legend is always shown, and income is always the left bar, so identity never rests on colour alone. Bars have 4px rounded tops sitting on the baseline, with a small gap between the pair.</li>
+  <li>Text is 14px and the grid is recessive, both through <code>themeChartOptions</code>. <code>isDarkMode()</code> is in the <code>useMemo</code> dependencies.</li>
+  <li><strong>Screen readers</strong> get a short summary on the chart, plus a hidden table of the same figures (month, income, expenses).</li>
+</ul>
+
+<h2>To do</h2>
+<ol>
+  <li>☑ New <code>src/components/tools/ProfitLoss/MonthlyChart.tsx</code>. It takes the filtered records, the period and the UK/NI flag. It buckets by month (This Year) or by year (All Time) using the date strings, so there are no time zone slips. It renders a <code>react-chartjs-2</code> <code>Bar</code> with the colours, axis and tooltip above, and the hidden table.</li>
+  <li>☑ P&amp;L <code>index.tsx</code>: load the chart with <code>next/dynamic</code> (chart.js loads only when the chart shows) behind a placeholder of the same height, and render it for This Year and All Time when there are records.</li>
+  <li>☑ Docs: <code>profit-loss-tracker.md</code>.</li>
+  <li>☑ QA audit, typecheck and lint, then you test it in the app.</li>
+</ol>
+
+<h2>Review (12/11/2026)</h2>
+<p>Plan approved with "Follow filter". Built as planned, with no database changes and no new query.</p>
+<ul>
+  <li><code>src/components/tools/ProfitLoss/MonthlyChart.tsx</code> (new):
+    <ul>
+      <li>Buckets by date string: twelve months of this year, or the years that have records.</li>
+      <li>A Chart.js <code>Bar</code> with the validated colours, one money axis, a legend, tooltips and 4px rounded tops.</li>
+      <li>The chart has a summary label for screen readers, and a hidden table holds the same figures.</li>
+    </ul>
+  </li>
+  <li><code>src/components/tools/ProfitLoss/index.tsx</code>: loads the chart with <code>next/dynamic</code> behind a <code>Skeleton</code> of the same height. It shows for This Year and All Time when there are records.</li>
+  <li><code>docs/features/profit-loss-tracker.md</code>: features line and a new "Income and Expenses Chart" section.</li>
+</ul>
+<h3>QA audit</h3>
+<ul>
+  <li>🟠 <strong>Fixed:</strong> All Time first made one bar per year from the earliest to the latest record. A single mistyped year, such as 0226, would have created about 1,800 empty years and frozen the screen. It now shows only the years that have records.</li>
+  <li>🟡 <strong>Fixed:</strong> Chart.js tooltips default to 12px. Both tooltip fonts are now 14px.</li>
+  <li>🟢 Note: if the theme is switched while the P&amp;L is open, the chart colours update on the next redraw, for example after changing the filter. The other charts in the app behave the same way.</li>
+  <li>🟢 Note: P&amp;L's This Year filter also lets through records dated in a later year. The month chart shows only this year, so in that rare case its bars add up to less than the cards.</li>
+  <li><code>npm run typecheck</code> and eslint on the changed files: clean. Tests and build were not run, per your rules. I have not seen the chart drawn, so please look at it (see below).</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>This Year: twelve months, with income on the left (green) and expenses on the right (red). For each month, a tap shows the amount. The bars add up to the cards.</li>
+  <li>All Time: one pair of bars per year. This Month: no chart.</li>
+  <li>Phone (390 wide) and desktop, in light and dark mode: the month labels do not overlap and the legend is readable.</li>
+</ol>
+</body>
+</html>
