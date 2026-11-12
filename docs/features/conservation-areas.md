@@ -73,7 +73,7 @@ Conservation areas are stored in the `conservation_areas` table:
 
 | Operation | Who |
 |---|---|
-| SELECT | All authenticated users (to be narrowed to the owner and Power Users/Admins, see below) |
+| SELECT | Owner or Power Users/Admins. Everyone else reads `get_conservation_areas()` (see below) |
 | INSERT | Regular users (apiary-linked only) or Power Users/Admins |
 | UPDATE | Owner or Power Users/Admins |
 | DELETE | Owner or Power Users/Admins |
@@ -84,9 +84,9 @@ The community map reads `get_conservation_areas()`, not the table. The function 
 
 Migration: `supabase/migrations/20261112120000_conservation_areas_read_function.sql` (applied).
 
-### Step 2, not yet applied
+### Table read policy narrowed (applied 12/11/2026)
 
-The table itself is still readable row-by-row by every signed-in user, so the owner's id can still be fetched through the API directly. Narrowing the SELECT policy closes that, but the app version live before this change reads the table and would then show no conservation areas. So step 2 is applied only after the version that calls the function is deployed:
+Until this step the table was readable row-by-row by every signed-in user, so an owner's id could be fetched through the API directly. Once the app version that calls the function was live, the SELECT policy was narrowed:
 
 ```sql
 DROP POLICY "Authenticated users can view conservation areas" ON public.conservation_areas;
@@ -94,7 +94,9 @@ CREATE POLICY "Owners and power users can view conservation areas" ON public.con
   FOR SELECT USING (user_id = (SELECT auth.uid()) OR (SELECT is_power_user_or_admin()));
 ```
 
-After it, direct reads work for the owner (the apiary form) and for Power Users/Admins (Settings); everyone else goes through the function. A team member editing a team-mate's apiary will see its conservation tick-box as unticked.
+Migration: `supabase/migrations/20261112183000_conservation_areas_narrow_select_policy.sql` (applied).
+
+Direct reads now work only for the owner (the apiary form) and for Power Users/Admins (Settings); everyone else goes through the function. A team member editing a team-mate's apiary sees its conservation tick-box as unticked.
 
 ## Seed Data
 
