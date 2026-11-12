@@ -1,6 +1,6 @@
 # Feature: Community Map Conservation Toggle Default
 **Date:** 16/03/2026
-**Status:** Draft
+**Status:** Implemented. Layer choices are now also remembered on the device (see `community-map.md`).
 
 ## 1. Overview
 Adjust the Community Apiary Map so conservation areas are hidden by default on first load. This makes the initial view less cluttered while preserving the existing ability to enable the layer manually.

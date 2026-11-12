@@ -15,7 +15,7 @@ Adjust the Community Map so privileged overlays are less intrusive on first load
 The Community Map already controls layer visibility through local React state in `src/app/dashboard/community-map/page.tsx`. This change reuses that pattern by updating the initial visibility state during the authenticated bootstrap flow for privileged users, while keeping the existing toggle controls, marker rendering, and layer rendering checks intact.
 
 ### Database Connections (MCP Server)
-No database change is required. The map can continue fetching `shared_apiaries_obfuscated`, `wild_colonies_obfuscated`, and `conservation_areas` exactly as it does now. Only the initial visibility of the rendered overlays changes.
+No database change is required. The map can continue fetching its layers exactly as it does now. (Since security batch 4 these are the `get_shared_apiaries_obfuscated` and `get_wild_colonies_obfuscated` functions; the views of the same names were dropped.) Only the initial visibility of the rendered overlays changes.
 
 ## 4. Edge Cases & Risks
 * Wild colonies must remain available immediately when a Power User or Admin enables the toggle after load.

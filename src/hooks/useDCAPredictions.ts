@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { predictDCAs, type DCAPrediction, type DCAFlyway, type ConfirmedLocation } from '@/lib/dca-prediction'
+import { predictDCAs, ElevationUnavailableError, type DCAPrediction, type DCAFlyway, type DCAResult, type ConfirmedLocation } from '@/lib/dca-prediction'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 
@@ -32,6 +32,21 @@ interface CachedResult {
 }
 
 type PredictionRunStatus = 'idle' | 'success' | 'fallback' | 'empty'
+
+/** What happened to a sighting the beekeeper tried to save. */
+export type SightingSaveStatus = 'saved' | 'duplicate' | 'failed'
+
+const CONFIRMATION_COLUMNS = 'id, latitude, longitude, confirmed, observation_date, notes'
+
+/** Saved predictions were worked out from the old sightings, so they go when a sighting changes. */
+function clearPredictionCache(): void {
+  try {
+    const keys = Object.keys(localStorage).filter(key => key.startsWith(CACHE_KEY_PREFIX))
+    keys.forEach(key => localStorage.removeItem(key))
+  } catch {
+    // Ignore storage access failures.
+  }
+}
 
 const CONFIRMATION_DUPLICATE_RADIUS_KM = 0.05
 const CONFIRMATION_DUPLICATE_WINDOW_DAYS = 7
@@ -221,6 +236,8 @@ export function useDCAPredictions(apiaries: Apiary[]) {
   const callIdRef = useRef(0)
   const confirmationsRef = useRef<DCAConfirmation[]>([])
   const pendingConfirmationKeysRef = useRef<Set<string>>(new Set())
+  // The apiaries of the prediction on show, so it can be worked out again when a sighting changes
+  const lastSelectionRef = useRef<string[]>([])
 
   useEffect(() => {
     confirmationsRef.current = confirmations
@@ -235,7 +252,7 @@ export function useDCAPredictions(apiaries: Apiary[]) {
         if (!userId) return
         const { data, error: fetchError } = await supabase
           .from('dca_confirmations')
-          .select('id, latitude, longitude, confirmed, observation_date, notes')
+          .select(CONFIRMATION_COLUMNS)
           .eq('user_id', userId)
         if (!isActive || fetchError) return
 
@@ -256,14 +273,17 @@ export function useDCAPredictions(apiaries: Apiary[]) {
     }
   }, [])
 
-  const calculate = useCallback(async (selectedApiaryIds: string[]) => {
+  /** Resolves with the result on show, or null when there is none (nothing selected, failed, superseded). */
+  const calculate = useCallback(async (selectedApiaryIds: string[]): Promise<DCAResult | null> => {
     if (selectedApiaryIds.length === 0) {
+      callIdRef.current++
+      lastSelectionRef.current = []
       setPredictions([])
       setFlyways([])
       setError(null)
       setHasCalculated(false)
       setLoading(false)
-      return
+      return null
     }
 
     const ids = selectedApiaryIds.slice(0, MAX_APIARIES)
@@ -271,17 +291,21 @@ export function useDCAPredictions(apiaries: Apiary[]) {
 
     if (selected.length === 0) {
       setError('No valid apiaries selected')
-      return
+      return null
     }
 
+    lastSelectionRef.current = ids
     const cacheKey = getCacheKey(ids, apiaries, confirmationsRef.current)
     const cached = loadCache(cacheKey)
     if (cached) {
+      // Supersede any calculation still running, so it cannot overwrite this result when it lands
+      callIdRef.current++
       setPredictions(cached.predictions)
       setFlyways(cached.flyways)
       setError(null)
       setHasCalculated(true)
-      return
+      setLoading(false)
+      return { predictions: cached.predictions, flyways: cached.flyways }
     }
 
     const thisCallId = ++callIdRef.current
@@ -302,64 +326,97 @@ export function useDCAPredictions(apiaries: Apiary[]) {
         }))
 
       const result = await predictDCAs(selected, confirmedLocations)
-      if (callIdRef.current !== thisCallId) return
+      if (callIdRef.current !== thisCallId) return null
 
       setPredictions(result.predictions)
       setFlyways(result.flyways)
       setHasCalculated(true)
-      saveCache(cacheKey, { ...result, timestamp: Date.now() })
-    } catch {
+      // An empty result is never saved: it is cheap to work out again and may just be a bad moment
+      if (result.predictions.length > 0) saveCache(cacheKey, { ...result, timestamp: Date.now() })
+      return result
+    } catch (err) {
       if (callIdRef.current === thisCallId) {
-        setError('Failed to calculate DCA predictions. Please try again.')
+        setError(err instanceof ElevationUnavailableError
+          ? 'Could not get terrain heights. Check your signal and try again.'
+          : 'Could not work out DCA predictions. Please try again.')
         setPredictions([])
         setFlyways([])
         setHasCalculated(false)
       }
+      return null
     } finally {
       if (callIdRef.current === thisCallId) setLoading(false)
     }
   }, [apiaries])
 
-  const confirmDCA = useCallback(async (lat: number, lng: number, confirmed: boolean): Promise<boolean> => {
-    if (!isValidCoordinatePair(lat, lng)) return false
+  /** After a sighting changes: drop saved predictions and redo the one on show. */
+  const refreshAfterSightingChange = useCallback(() => {
+    clearPredictionCache()
+    if (lastSelectionRef.current.length > 0) void calculate(lastSelectionRef.current)
+  }, [calculate])
+
+  const confirmDCA = useCallback(async (
+    lat: number,
+    lng: number,
+    confirmed: boolean,
+    notes?: string
+  ): Promise<SightingSaveStatus> => {
+    if (!isValidCoordinatePair(lat, lng)) return 'failed'
 
     const pendingKey = `${lat.toFixed(5)}:${lng.toFixed(5)}:${confirmed ? '1' : '0'}`
-    if (pendingConfirmationKeysRef.current.has(pendingKey)) return true
-    if (isDuplicateRecentConfirmation(confirmationsRef.current, lat, lng, confirmed)) return true
+    if (pendingConfirmationKeysRef.current.has(pendingKey)) return 'duplicate'
+    if (isDuplicateRecentConfirmation(confirmationsRef.current, lat, lng, confirmed)) return 'duplicate'
 
-    const userId = await getCurrentUserId()
-    if (!userId) return false
-
+    pendingConfirmationKeysRef.current.add(pendingKey)
     try {
-      pendingConfirmationKeysRef.current.add(pendingKey)
+      const userId = await getCurrentUserId()
+      if (!userId) return 'failed'
 
+      const trimmedNotes = notes?.trim()
       const { data, error: insertError } = await supabase
         .from('dca_confirmations')
-        .insert({ user_id: userId, latitude: lat, longitude: lng, confirmed })
-        .select('id, latitude, longitude, confirmed, observation_date, notes')
+        .insert({ user_id: userId, latitude: lat, longitude: lng, confirmed, notes: trimmedNotes || null })
+        .select(CONFIRMATION_COLUMNS)
         .single()
 
-      if (insertError || !data) return false
+      if (insertError || !data) return 'failed'
 
       const newConfirmation = data as DCAConfirmation
       setConfirmations(prev => [...prev, newConfirmation])
       confirmationsRef.current = [...confirmationsRef.current, newConfirmation]
-
-      try {
-        const keys = Object.keys(localStorage).filter(key => key.startsWith(CACHE_KEY_PREFIX))
-        keys.forEach(key => localStorage.removeItem(key))
-      } catch {
-        // Ignore storage access failures.
-      }
-
-      return true
+      refreshAfterSightingChange()
+      return 'saved'
+    } catch {
+      return 'failed'
     } finally {
       pendingConfirmationKeysRef.current.delete(pendingKey)
     }
-  }, [])
+  }, [refreshAfterSightingChange])
+
+  /** Removes one of the beekeeper's own sightings. Resolves false when nothing was removed. */
+  const removeConfirmation = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      // A delete the database refuses returns no error and no rows, so the rows are counted
+      const { data, error: deleteError } = await supabase
+        .from('dca_confirmations')
+        .delete()
+        .eq('id', id)
+        .select('id')
+
+      if (deleteError || !data || data.length === 0) return false
+
+      setConfirmations(prev => prev.filter(confirmation => confirmation.id !== id))
+      confirmationsRef.current = confirmationsRef.current.filter(confirmation => confirmation.id !== id)
+      refreshAfterSightingChange()
+      return true
+    } catch {
+      return false
+    }
+  }, [refreshAfterSightingChange])
 
   const clear = useCallback(() => {
     callIdRef.current++
+    lastSelectionRef.current = []
     setPredictions([])
     setFlyways([])
     setError(null)
@@ -375,5 +432,5 @@ export function useDCAPredictions(apiaries: Apiary[]) {
         ? 'fallback'
         : 'success'
 
-  return { predictions, flyways, confirmations, loading, error, calculate, clear, confirmDCA, hasCalculated, runStatus }
+  return { predictions, flyways, confirmations, loading, error, calculate, clear, confirmDCA, removeConfirmation, hasCalculated, runStatus }
 }

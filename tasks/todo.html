@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Five Quick Fixes from the Feature Review</title>
+<title>Plan &mdash; Community Map and DCA Prediction Review</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -21,167 +21,196 @@
 </head>
 <body>
 
-<h1>Five Quick Fixes from the Feature Review</h1>
+<h1>Community Map and DCA Prediction Review</h1>
 
-<p><strong>Status:</strong> built, waiting on your browser test &nbsp;&middot;&nbsp; <strong>Date:</strong> 12 November 2026</p>
+<p><strong>Status:</strong> batches 1 to 3 built, waiting on your phone test and test run &nbsp;&middot;&nbsp; <strong>Date:</strong> 12 November 2026</p>
 
 <blockquote>
-<p><strong>Your request:</strong> start with the five fixes from the review and write the plan.</p>
+<p><strong>Your request:</strong> revisit the community map, including the engine that predicts drone congregation areas, looking for functional improvements, missing features and usability improvements. You approved batches 1, 2 and 3 with my recommendations on decisions B to F, and asked for a batch 4 proposal afterwards.</p>
 </blockquote>
 
-<h2>1. Decisions I need from you</h2>
+<h2>1. Decisions taken</h2>
 
 <table>
-  <tr><th>#</th><th>Question</th><th>My recommendation</th></tr>
+  <tr><th>#</th><th>Question</th><th>Decision</th></tr>
+  <tr><td>A</td><td>Scope</td><td>Batches 1, 2 and 3 now; batch 4 as a proposal (section 5).</td></tr>
+  <tr><td>B</td><td>Conservation-area position</td><td>Its own database step, in batch 4.</td></tr>
+  <tr><td>C</td><td>Team apiaries</td><td>Count as &ldquo;your apiaries&rdquo; on the map and in the DCA picker.</td></tr>
+  <tr><td>D</td><td>Time filter</td><td>Removed.</td></tr>
+  <tr><td>E</td><td>Terrain view</td><td>Tilts the map.</td></tr>
+  <tr><td>F</td><td>Engine tests</td><td>Written, for you to run.</td></tr>
+</table>
+
+<h2>2. The work</h2>
+
+<h3>Batch 1 &mdash; Reliability fixes</h3>
+<ul class="todo">
+  <li>&#9745; The map&rsquo;s lookups run together and the loading state always clears.</li>
+  <li>&#9745; A layer that fails to load is named above the map with a Try again button.</li>
+  <li>&#9745; The map frame shows a message when the map itself cannot load.</li>
+  <li>&#9745; The engine reports a failure when no elevation data came back, and an empty result is never saved.</li>
+  <li>&#9745; An older calculation can no longer overwrite a newer saved result.</li>
+  <li>&#9745; Saving a sighting says whether it was saved, already recorded, or failed.</li>
+  <li>&#9745; A sighting becomes a hotspot only within 5 km of a selected apiary; the lower score threshold applies only near that sighting.</li>
+  <li>&#9745; A hotspot is coloured as answered only when the sighting is inside its own circle.</li>
+  <li>&#9745; Leftover clustering code removed.</li>
+</ul>
+
+<h3>Batch 2 &mdash; Phone usability</h3>
+<ul class="todo">
+  <li>&#9745; One &ldquo;Layers&rdquo; button opens a scrolling panel holding every control.</li>
+  <li>&#9745; The map key is part of that panel (each switch shows its colour and count), so it works in full screen.</li>
+  <li>&#9745; The map is sized to the phone screen; zoom buttons moved to the bottom right; full-screen controls clear the status bar.</li>
+  <li>&#9745; &ldquo;Show my position&rdquo; button, asking for location only when tapped.</li>
+  <li>&#9745; 48px tap area on every marker, the map&rsquo;s own buttons and the popup close button.</li>
+  <li>&#9745; Popups have a close button and readable text in both light and dark.</li>
+  <li>&#9745; Layer choices, flight radius and ticked DCA apiaries are remembered on the device.</li>
+  <li>&#9745; Time filter removed; Terrain view tilts the map.</li>
+  <li>&#9745; Distances to offset apiaries read &ldquo;About 3 km&rdquo;; subtitle and privacy wording corrected.</li>
+  <li>&#9745; Screen-reader labels on the icon buttons; layer switches are real switches.</li>
+  <li>&#9745; DCA key covers predicted, drones seen, no drones and the dashed flight lines.</li>
+</ul>
+
+<h3>Batch 3 &mdash; DCA sightings and engine</h3>
+<ul class="todo">
+  <li>&#9745; &ldquo;Record a DCA sighting&rdquo;: tap the button, tap the map, add an optional note, save.</li>
+  <li>&#9745; &ldquo;Remove my answer&rdquo; / &ldquo;Remove sighting&rdquo; in the popup, with a confirmation prompt.</li>
+  <li>&#9745; Best-guess (fallback) hotspots can be answered.</li>
+  <li>&#9745; Optional note on a recorded sighting, shown in its popup.</li>
+  <li>&#9745; The prediction on show is worked out again straight after a sighting is saved or removed.</li>
+  <li>&#9745; Confirmed sightings never fade below 70% weight.</li>
+  <li>&#9745; Each selected apiary keeps its own best hotspot in the results.</li>
+  <li>&#9745; Hotspots on open sea are dropped.</li>
+  <li>&#9745; Team apiaries included.</li>
+  <li>&#9745; Engine tests written: <span class="file">tests/lib/dca-prediction.test.ts</span>.</li>
+</ul>
+
+<h3>Documentation</h3>
+<ul class="todo">
+  <li>&#9745; <span class="file">docs/features/dca-prediction.md</span> updated.</li>
+  <li>&#9745; <span class="file">docs/features/community-map.md</span> added.</li>
+  <li>&#9745; The two stale community map notes corrected.</li>
+</ul>
+
+<h2>3. Review</h2>
+
+<h3>What changed</h3>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><span class="file">src/app/dashboard/community-map/page.tsx</span></td><td>Loading, the Layers panel, markers and popups, the sighting flow, remembered choices. The map now opens on your apiaries instead of the whole country.</td></tr>
+  <tr><td><span class="file">src/hooks/useDCAPredictions.ts</span></td><td>Save status, remove a sighting, notes, recalculation after a change, no saved empty results, the overwrite race.</td></tr>
+  <tr><td><span class="file">src/lib/dca-prediction.ts</span></td><td>Elevation failure, sea check, 5 km sighting limit, local threshold, 70% floor, best hotspot per apiary.</td></tr>
+  <tr><td><span class="file">src/app/globals.css</span></td><td>48px map buttons and popup close button, on this screen only.</td></tr>
+  <tr><td><span class="file">tests/lib/dca-prediction.test.ts</span></td><td>Five engine tests against a made-up landscape.</td></tr>
+</table>
+
+<h3>Checked and not checked</h3>
+<ul>
+  <li>Type-check and lint pass on the changed files.</li>
+  <li>I have not run the app, the build or the tests. Nothing here has been seen on a screen yet.</li>
+  <li>The map height on a phone is my estimate of the space left under the header and above the bottom bar. It needs your eye on a real phone.</li>
+</ul>
+
+<h3>Where the result differs from the plan</h3>
+<ul>
+  <li><strong>Changing an answer</strong> is two taps: remove it, then answer again. There is no single &ldquo;switch&rdquo; button.</li>
+  <li><strong>Notes</strong> can be added when recording a sighting on the map, not when answering a predicted hotspot (that stays one tap).</li>
+  <li><strong>Water:</strong> only open sea is detected. The elevation service reports exactly 0 m over sea; lakes sit above sea level and look like flat land, so they are not caught.</li>
+  <li><strong>Privacy banner and legend card</strong> are gone from the page; their content is in the Layers panel, which leaves the first screen to the map.</li>
+  <li><strong>Red close button in full screen</strong> is removed. The full-screen button beside it did the same job.</li>
+  <li><strong>Team apiaries</strong> a team-mate also shares publicly are no longer drawn a second time as an offset purple marker.</li>
+</ul>
+
+<h3>What I found during the audit and left alone</h3>
+<ul>
+  <li>If your sightings fail to load, predictions run without them and nothing says so.</li>
+  <li>If one apiary gets no elevation data but others do, it silently contributes no hotspots.</li>
+  <li>A team member with a very large number of shared apiaries could hit a request-length limit; the Apiaries screen builds the same request the same way.</li>
+</ul>
+
+<h2>4. For you to test</h2>
+<ul class="todo">
+  <li>&#9744; Run <code>npx vitest run tests/lib/dca-prediction.test.ts</code>. I worked the expected scores out by hand, so tell me if any of the five fail.</li>
+  <li>&#9744; On a phone: open the map, open Layers, switch each layer, scroll the panel to the bottom.</li>
+  <li>&#9744; Tick an apiary, tap Predict DCAs; the panel should close and the map move to the hotspots.</li>
+  <li>&#9744; Tap a hotspot, answer &ldquo;Drones seen&rdquo;, then reopen it and remove the answer.</li>
+  <li>&#9744; Record a DCA sighting with a note; reopen its marker.</li>
+  <li>&#9744; Full screen on an installed phone: controls should clear the status bar.</li>
+  <li>&#9744; Terrain view, and the &ldquo;show my position&rdquo; button.</li>
+  <li>&#9744; Dark mode: popup text and the panel.</li>
+  <li>&#9744; With a coastal apiary: no hotspot should sit on the sea.</li>
+</ul>
+
+<h2>5. Batch 4 proposal</h2>
+
+<p>In the order I would do them. Each is separate; none depends on another unless noted.</p>
+
+<table>
+  <tr><th>#</th><th>Item</th><th>What it gives</th><th>Size and risk</th></tr>
   <tr>
-    <td>A</td>
-    <td>Who changes the demo account password?</td>
-    <td>You, in the Supabase dashboard. The old one stays in git history, so removing it from the docs is not enough on its own.</td>
+    <td>4.1</td>
+    <td>Conservation-area privacy</td>
+    <td>The owner&rsquo;s id stops being readable by other signed-in users. The position stays exact, since the point of declaring one is that neighbours know where it is.</td>
+    <td>Small. One database function for the map to read from, and a tighter read policy. Back up first.</td>
   </tr>
   <tr>
-    <td>B</td>
-    <td>Should &ldquo;My data export&rdquo; be open to every signed-in user, including lapsed subscribers?</td>
-    <td>Yes. People should always be able to take their own records with them.</td>
+    <td>4.2</td>
+    <td>Database definitions into the repo</td>
+    <td><code>dca_confirmations</code>, <code>conservation_areas</code>, <code>wild_colonies</code> and the offset functions exist only in the live database. A copy in the repo makes them reviewable and restorable.</td>
+    <td>Small. No change to the live database; read and record only.</td>
   </tr>
   <tr>
-    <td>C</td>
-    <td>What should a lapsed or opted-out user see on a customer or order link?</td>
-    <td>A short message saying why, with a button to Profile. Reading old orders without a subscription is a bigger change and is left out.</td>
+    <td>4.3</td>
+    <td>Elevation lookups through the server, with caching</td>
+    <td>Faster predictions (a 10-apiary run is about 23 requests one after another from the phone today), apiary positions no longer sent straight to an outside service, and one place to swap the provider. Do this first if the Open-Meteo terms rule out the free tier.</td>
+    <td>Medium. One API route with sign-in and rate limits, plus a cache.</td>
   </tr>
   <tr>
-    <td>D</td>
-    <td>Are the new Tools card wordings below right?</td>
-    <td>See fix 2.</td>
+    <td>4.4</td>
+    <td>Prevailing wind and aspect in the engine</td>
+    <td>The two biggest gaps against what is known about DCAs: drones favour sheltered, open ground. Aspect comes from heights the engine already fetches. Wind needs a climate source.</td>
+    <td>Medium. Changes scoring, so it needs your known DCAs to check against.</td>
+  </tr>
+  <tr>
+    <td>4.5</td>
+    <td>Neighbouring colony density</td>
+    <td>Shared apiaries and wild colonies already on the map count as evidence of drone supply near a candidate.</td>
+    <td>Small to medium. Positions are offset by up to 5 km, so it can only be a weak signal.</td>
+  </tr>
+  <tr>
+    <td>4.6</td>
+    <td>Community DCA sightings</td>
+    <td>Beekeepers who choose to can share confirmed DCAs, shown offset like apiaries. This is the feature the screen&rsquo;s name promises.</td>
+    <td>Large. Consent setting, new database function, and a decision on moderation.</td>
+  </tr>
+  <tr>
+    <td>4.7</td>
+    <td>Land cover and lakes</td>
+    <td>Woodland edges and open ground for scoring; lakes for the water check.</td>
+    <td>Large. A new map-data source; worth it only after 4.4 shows the scoring holds up.</td>
+  </tr>
+  <tr>
+    <td>4.8</td>
+    <td>Clustering for the all-apiaries layer</td>
+    <td>Keeps the Power User view fast as registered apiaries grow.</td>
+    <td>Medium. Only matters at a few hundred apiaries or more.</td>
   </tr>
 </table>
 
-<h2>2. The fixes</h2>
+<p><strong>My recommendation:</strong> 4.1 and 4.2 together next, as they are small and close the one privacy gap. Then 4.3, then 4.4 once you can name a few DCAs you know to be real.</p>
 
-<h3>Fix 1 &mdash; Demo password out of the repo</h3>
-<p>The password is written in two files: <span class="file">docs/features/demo-account.md:8</span> and <span class="file">tasks/demo-account-todo.md:18</span>.</p>
+<h3>Batch 4.1 and 4.2 &mdash; done on 12 November 2026, one step held back</h3>
 <ul class="todo">
-  <li>&#9745; Replace the password in both files with &ldquo;kept in the owner&rsquo;s password manager&rdquo;.</li>
-  <li>&#9745; Update the Security Notes in <span class="file">demo-account.md</span> to say the password is never written in the repo.</li>
-  <li>&#9745; <strong>You:</strong> change the demo account password in Supabase (decision A).</li>
+  <li>&#9745; <strong>4.1, step 1:</strong> new database function <code>get_conservation_areas()</code>, applied to the live database. It returns the areas without the owner&rsquo;s id or apiary id, to signed-in users only. <span class="file">supabase/migrations/20261112120000_conservation_areas_read_function.sql</span></li>
+  <li>&#9745; The community map reads that function instead of the table.</li>
+  <li>&#9744; <strong>4.1, step 2 &mdash; not applied:</strong> narrow the table&rsquo;s read policy to the owner and Power Users/Admins. The app version live today reads the table directly and would show no conservation areas, so this waits until the new version is deployed. Until then the owner&rsquo;s id can still be read through the API. The SQL is in <span class="file">docs/features/conservation-areas.md</span>.</li>
+  <li>&#9745; <strong>4.2:</strong> the three tables, their policies and the offset helper functions are recorded in <span class="file">sql/community_map_live_definitions.sql</span>. It is a reference read from the live database, not a migration, and has not been run anywhere.</li>
+  <li>&#9745; Security advisors checked after the change: the new function is not callable without signing in. Nothing new was raised.</li>
 </ul>
+<p>After step 2, a team member editing a team-mate&rsquo;s apiary will see its conservation tick-box as unticked, because they can no longer read that row.</p>
 
-<h3>Fix 2 &mdash; Tools cards say what the tools do</h3>
-<p>Two descriptions in <span class="file">src/app/dashboard/tools/page.tsx:81,84</span> promise more than exists.</p>
-<table>
-  <tr><th>Card</th><th>Now</th><th>Proposed</th></tr>
-  <tr>
-    <td>Varroa Weather</td>
-    <td>Weather-based varroa pressure forecasts for your apiaries</td>
-    <td>See which days this week suit each varroa treatment</td>
-  </tr>
-  <tr>
-    <td>Diagnosis</td>
-    <td>Upload photos for AI-assisted hive health analysis</td>
-    <td>Send photos of hive problems to help build a future diagnosis tool</td>
-  </tr>
-</table>
-<ul class="todo">
-  <li>&#9745; Change the two description strings.</li>
-  <li>&#9745; Search the About page and docs for the same two claims and correct any copies.</li>
-</ul>
-
-<h3>Fix 3 &mdash; Jar sale shows the right currency</h3>
-<p>The profit and loss screen shows pounds for UK and Northern Ireland residents and euro for everyone else (<span class="file">src/lib/crm-currency.ts</span>). The jar sale window always shows &euro; and warns that &ldquo;the P&amp;L records in euro&rdquo;, which is wrong for a UK user.</p>
-<ul class="todo">
-  <li>&#9745; <span class="file">JarLabelsTab.tsx:169</span>: add <code>is_uk_ni_resident</code> to the profile read it already makes, and pass it to the sale window.</li>
-  <li>&#9745; <span class="file">RecordJarSaleModal.tsx</span>: show the total and the success message with the shared <code>formatMoney</code> helper.</li>
-  <li>&#9745; Same file: show the warning only when the selling currency differs from the P&amp;L currency, and name that currency in the text.</li>
-</ul>
-
-<h3>Fix 4 &mdash; Mel uses your records on mixed questions</h3>
-<p>A question such as &ldquo;Hive 4 has 6% mites, what should I do?&rdquo; is classed as &ldquo;hybrid&rdquo;. Today that only searches the knowledge base (<span class="file">src/lib/rag.ts:277</span>), so hive 4 is never looked up.</p>
-<ul class="todo">
-  <li>&#9745; Move the knowledge-base formatting, which is written out twice, into one small helper in <span class="file">rag.ts</span>.</li>
-  <li>&#9745; In the hybrid case, run the knowledge search and the existing records lookup together, and give Mel both.</li>
-  <li>&#9745; If the records lookup fails or no tool fits, answer from the knowledge base alone, as today.</li>
-</ul>
-<p>Cost: one extra small model call on hybrid questions only. Records still go through the existing tools, so the per-user scoping is unchanged.</p>
-
-<h3>Fix 5 &mdash; Lapsed subscribers are not locked out</h3>
-<p>Two places shut a lapsed user out without telling them why.</p>
-<ul class="todo">
-  <li>&#9745; <span class="file">src/app/dashboard/profile/page.tsx:1005</span>: remove the subscription condition around &ldquo;My data export&rdquo; (decision B). I will first confirm that nothing on the server also blocks the download.</li>
-  <li>&#9745; <span class="file">src/app/dashboard/crm/layout.tsx</span>: replace the silent redirect with a short message and a button to Profile (decision C).</li>
-</ul>
-
-<h2>3. After the fixes</h2>
-<ul class="todo">
-  <li>&#9745; Run the <code>qa-engineer</code> audit on the changed files and apply its fixes.</li>
-  <li>&#9745; Update the docs: <span class="file">demo-account.md</span>, <span class="file">crm-module.md</span> (gate message, jar sale currency), and a short note on Mel&rsquo;s hybrid questions.</li>
-  <li>&#9745; Add a review section to this file.</li>
-  <li>&#9745; <strong>You:</strong> test in the browser (list to follow in the review section). I will not run the build or the tests.</li>
-</ul>
-
-<h2>4. Review</h2>
-
-<p><strong>Status:</strong> built, waiting on your browser test. Type-check and lint are clean on the changed files. No build and no tests were run.</p>
-
-<table>
-  <tr><th>Fix</th><th>What changed</th><th>Files</th></tr>
-  <tr>
-    <td>1. Demo password</td>
-    <td>Removed from both files; the doc now says it is never written in the repo. You confirmed the password has been changed.</td>
-    <td><span class="file">docs/features/demo-account.md</span>, <span class="file">tasks/demo-account-todo.md</span></td>
-  </tr>
-  <tr>
-    <td>2. Tools cards</td>
-    <td>Two descriptions reworded as agreed. No other copies of the two claims were found in the app.</td>
-    <td><span class="file">src/app/dashboard/tools/page.tsx</span></td>
-  </tr>
-  <tr>
-    <td>3. Jar sale currency</td>
-    <td>The total and the success message follow the P&amp;L currency. The warning appears only when the selling currency differs from it, and names it.</td>
-    <td><span class="file">JarLabelsTab.tsx</span>, <span class="file">RecordJarSaleModal.tsx</span></td>
-  </tr>
-  <tr>
-    <td>4. Mel hybrid questions</td>
-    <td>Records and knowledge base are looked up together. The duplicated formatting and the records lookup became two small helpers, shared with the existing paths.</td>
-    <td><span class="file">src/lib/rag.ts</span></td>
-  </tr>
-  <tr>
-    <td>5. Lapsed subscribers</td>
-    <td>&ldquo;My data export&rdquo; shows for every signed-in user; the export has no server-side gate. The CRM pages show a message and a button to Profile.</td>
-    <td><span class="file">profile/page.tsx</span>, <span class="file">crm/layout.tsx</span></td>
-  </tr>
-</table>
-
-<h3>QA audit</h3>
-<ul>
-  <li><strong>Critical / High:</strong> none.</li>
-  <li><strong>Medium, fixed:</strong> on a hybrid question, a failed records lookup was dropped silently, so Mel could answer as if there were no records. Mel is now told the lookup failed and says so.</li>
-  <li><strong>Low, left:</strong> the sale window shows euro if it is opened before the profile has loaded or if that read fails. The amount saved is not affected.</li>
-</ul>
-
-<h3>Docs updated</h3>
-<ul>
-  <li><span class="file">crm-module.md</span>, <span class="file">profile-export.md</span>, <span class="file">jar-label-qr-codes.md</span>, <span class="file">demo-account.md</span></li>
-  <li>New: <span class="file">mel-hybrid-questions.md</span></li>
-</ul>
-
-<h3>Please test</h3>
-<ul class="todo">
-  <li>&#9744; Tools page: the Varroa Weather and Diagnosis cards show the new wording.</li>
-  <li>&#9744; Record a jar sale as a euro user: total and message in &euro;, no warning.</li>
-  <li>&#9744; Record a jar sale as a UK/NI resident: total and message in &pound;; with selling currency EUR the warning names GBP.</li>
-  <li>&#9744; Ask Mel a mixed question about a real hive, such as &ldquo;Hive 4 has 6% mites, what should I do?&rdquo; The answer should use that hive&rsquo;s records and cite sources.</li>
-  <li>&#9744; Ask Mel a plain records question and a plain advice question: both behave as before.</li>
-  <li>&#9744; With a lapsed account: Profile shows &ldquo;My data export&rdquo; and both downloads work.</li>
-  <li>&#9744; With Sales / CRM switched off: open <code>/dashboard/crm/orders</code> and see the message and the Profile button.</li>
-  <li>&#9744; Run the test suite; I did not find tests covering these files, but I did not run any.</li>
-</ul>
-
-<h2>5. Out of scope</h2>
-<ul>
-  <li>The larger items from the review: offline saves for other record types, push reminders, the quick inspection.</li>
-  <li>Photos in the data export.</li>
-  <li>Read-only access to old orders for lapsed subscribers.</li>
-  <li>Version number changes and commits, until you ask.</li>
-</ul>
+<h2>6. One thing for you to check</h2>
+<p>The elevation data comes from Open-Meteo&rsquo;s free service. As far as I know that tier is for non-commercial use with a daily request limit. HiveCraic takes subscriptions, so their terms are worth reading. <span class="file">docs/features/apiary-elevation.md</span> says there are no limits.</p>
 
 </body>
 </html>

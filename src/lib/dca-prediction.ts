@@ -130,6 +130,19 @@ const MAX_RESULTS = 5
 const MAX_CONFIRMATION_SUPPORT_SCORE = 10
 const MAX_CONFIRMATION_SUPPRESSION_SCORE = 9
 const MAX_CONFIRMATION_ANCHOR_SCORE = 6
+// A sighting further than this from every selected apiary is outside drone flight range, so it
+// is never added as a hotspot for them.
+const MAX_SIGHTING_DISTANCE_KM = 5
+// DCAs stay in the same place for many years, so a confirmed sighting never fades below this.
+const MIN_CONFIRMED_RECENCY_WEIGHT = 0.7
+
+/** Thrown when the elevation service returned nothing at all, so no prediction is possible. */
+export class ElevationUnavailableError extends Error {
+  constructor() {
+    super('Elevation data is unavailable')
+    this.name = 'ElevationUnavailableError'
+  }
+}
 
 const DIRECTION_LABELS = [
   'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
@@ -191,7 +204,9 @@ function buildConfirmationPriors(
       latitude: location.latitude,
       longitude: location.longitude,
       confirmed: location.confirmed,
-      recencyWeight: confirmationRecencyWeight(location.observationDate),
+      recencyWeight: location.confirmed
+        ? Math.max(MIN_CONFIRMED_RECENCY_WEIGHT, confirmationRecencyWeight(location.observationDate))
+        : confirmationRecencyWeight(location.observationDate),
       radiusKm: location.confirmed
         ? CONFIRMATION_SUPPORT_RADIUS_KM
         : CONFIRMATION_SUPPRESSION_RADIUS_KM,
@@ -714,6 +729,32 @@ function buildSignalSummary(candidate: ScoredCandidate): string {
   return `${signals[0].label}, ${signals[1].label}`
 }
 
+/**
+ * The elevation service reports exactly 0 m over open sea. A point at 0 m with at least half of
+ * its surroundings also at 0 m is treated as sea. Lakes sit above sea level and are not detected.
+ */
+function isOpenWater(candidateElev: number | null, neighbourElevs: (number | null)[]): boolean {
+  if (candidateElev !== 0) return false
+  return neighbourElevs.filter(value => value === 0).length >= neighbourElevs.length / 2
+}
+
+/**
+ * Picks the hotspots to show from a list sorted best first. Each selected apiary keeps its own
+ * best hotspot, so apiaries far apart are not crowded out; the rest fill up to MAX_RESULTS.
+ */
+function selectResults(merged: ScoredCandidate[], apiaryIds: string[]): ScoredCandidate[] {
+  const picked = new Set<ScoredCandidate>()
+  for (const apiaryId of apiaryIds) {
+    const best = merged.find(candidate => candidate.apiaryId.split(',').includes(apiaryId))
+    if (best) picked.add(best)
+  }
+  for (const candidate of merged) {
+    if (picked.size >= MAX_RESULTS) break
+    picked.add(candidate)
+  }
+  return merged.filter(candidate => picked.has(candidate))
+}
+
 export async function predictDCAs(
   apiaries: Apiary[],
   confirmedLocations?: ConfirmedLocation[]
@@ -735,6 +776,8 @@ export async function predictDCAs(
 
   const allSamplePoints = apiaryData.flatMap(item => item.samplePoints)
   const sampleElevations = await fetchElevationBatch(allSamplePoints)
+  // Every lookup failed (no signal, service down): report it instead of "no hotspot found"
+  if (sampleElevations.every(value => value === null)) throw new ElevationUnavailableError()
 
   let offset = 0
   const allCandidates: CandidateSeed[] = []
@@ -771,7 +814,7 @@ export async function predictDCAs(
         }
       }
 
-      if (!nearestApiary) continue
+      if (!nearestApiary || nearestDistance > MAX_SIGHTING_DISTANCE_KM) continue
 
       const dLng = (prior.longitude - nearestApiary.longitude) * Math.PI / 180
       const lat1 = nearestApiary.latitude * Math.PI / 180
@@ -816,6 +859,7 @@ export async function predictDCAs(
     ...candidateContextSets.flat(),
   ]
   const contextElevations = await fetchElevationBatch(allContextPoints)
+  if (contextElevations.every(value => value === null)) throw new ElevationUnavailableError()
 
   let scored = allCandidates
     .map((candidate, index): ScoredCandidate | null => {
@@ -825,6 +869,9 @@ export async function predictDCAs(
         neighbourStart,
         neighbourStart + CANDIDATE_CONTEXT_BEARINGS.length
       )
+
+      // Drones do not gather over the sea. A spot the beekeeper reported themselves is kept.
+      if (!candidate.injectedByConfirmation && isOpenWater(candidateElev, neighbourElevs)) return null
 
       const { terrainScore, saddleScore, shelterScore } = scoreCandidateLandscape(
         candidateElev,
@@ -879,21 +926,19 @@ export async function predictDCAs(
 
   scored = addSupportScores(scored)
 
-  const hasPositiveConfirmationEvidence = confirmationPriors.some(
-    prior => prior.confirmed && prior.recencyWeight >= 0.35
-  )
-  const filterThreshold = hasPositiveConfirmationEvidence
-    ? MIN_SCORE - MAX_CONFIRMATION_SUPPORT_SCORE
-    : MIN_SCORE
-
   const fallbackCandidate = selectFallbackCandidate(scored)
 
-  scored = scored.filter(candidate => candidate.score >= filterThreshold)
+  // The lower threshold applies only to candidates a confirmed sighting actually backs, not to
+  // every candidate because a sighting exists somewhere.
+  scored = scored.filter(candidate => {
+    const backedBySighting = candidate.injectedByConfirmation || candidate.confirmationSupportScore > 0
+    return candidate.score >= (backedBySighting ? MIN_SCORE - MAX_CONFIRMATION_SUPPORT_SCORE : MIN_SCORE)
+  })
   scored = mergePredictions(scored)
   if (scored.length === 0 && fallbackCandidate) {
     scored = [fallbackCandidate]
   }
-  scored = scored.slice(0, MAX_RESULTS)
+  scored = selectResults(scored, validApiaries.map(apiary => apiary.id))
 
   const predictions: DCAPrediction[] = scored.map(candidate => {
     const confidence = candidate.isFallback ? 'low' : confidenceForCandidate(candidate)

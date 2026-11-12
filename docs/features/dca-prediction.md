@@ -19,7 +19,8 @@ The output should be treated as a ranked hotspot estimate, not a verified point 
    - **Saddle support** - pass or junction-like support from opposing terrain openings
    - **Sheltered opening** - moderate enclosure and surrounding structure rather than full exposure or full closure
 5. **Confirmation priors** - Nearby confirmations are converted into bounded local priors that add positive support or negative suppression according to proximity, recency, and clustering.
-6. **Reinforcement and filtering** - Hotspots can be weakly reinforced by nearby apiaries, filtered by score threshold, merged within 500 m, and limited to the top 5 results.
+6. **Water check** - A candidate on open sea is dropped. The elevation service reports exactly 0 m over sea, so a point at 0 m with at least half of its surroundings also at 0 m counts as sea. Lakes sit above sea level and are not detected.
+7. **Reinforcement and filtering** - Hotspots can be weakly reinforced by nearby apiaries, filtered by score threshold, and merged within 500 m. Each selected apiary keeps its own best hotspot; the rest fill up to 5 results, so apiaries far apart are not crowded out.
 
 ## Current Score Components
 
@@ -56,18 +57,18 @@ Display radius remains:
 
 ## User Interface
 
-- Toggle in the community map visibility filters panel
-- When enabled, an apiary selector panel appears with checkboxes
-- User selects apiaries and clicks `Predict DCAs`
+- "Drone congregation areas" switch in the community map's Layers panel
+- When on, the panel lists the user's apiaries (own and team) with tick-boxes; the ticked apiaries are remembered on the device
+- User ticks apiaries and taps `Predict DCAs`. On success the panel closes, a message says how many sites were found, and the map moves to show them
 - Predicted hotspots appear as rose circles with dashed flyway lines from contributing apiaries
-- Popup content includes score, confidence, contributing apiaries, and a compact `Signals:` summary showing the strongest landscape evidence
-- When thresholding would otherwise remove every result, the panel can still show a low-confidence fallback hotspot instead of silently showing nothing
+- Popup content includes direction, score, confidence, contributing apiaries, and a compact `Signals:` summary showing the strongest landscape evidence
+- When thresholding would otherwise remove every result, the map shows one low-confidence "best guess" hotspot instead of silently showing nothing
 
 ## Technical Details
 
 - **Execution:** Entirely client-side
 - **Terrain data:** Open-Meteo Elevation API
-- **Caching:** `localStorage` with the `dca-predictions-v5-` cache namespace keyed by apiary coordinates and confirmation state
+- **Caching:** `localStorage` with the `dca-predictions-v5-` cache namespace keyed by apiary coordinates and confirmation state, kept for 24 hours. An empty result is never cached. The cache is cleared whenever a sighting is added or removed
 - **Apiary limit:** Maximum 10 selected apiaries per calculation
 - **Database:** Existing `dca_confirmations` table remains the field-evidence source
 
@@ -79,18 +80,27 @@ Display radius remains:
 | `src/lib/dca-prediction.ts` | Phase 3 landscape-aware prediction engine with confirmation priors |
 | `src/hooks/useDCAPredictions.ts` | Hook, confirmation loading, and cache-keyed prediction flow |
 | `src/app/dashboard/community-map/page.tsx` | Map integration and popup display |
+| `tests/lib/dca-prediction.test.ts` | Engine tests against a made-up landscape |
 
 ## Field Confirmation
 
-Beekeepers can still confirm or deny DCA hotspots from the map popups.
+Beekeepers record what they find in the field in three ways:
+
+- **Answer a hotspot** - "Drones seen" or "No drones" in a hotspot's popup, including the best-guess hotspot
+- **Record a DCA sighting** - the button in the Layers panel, then a tap on the map where drones were gathering, with an optional note. This works anywhere, not only on a predicted hotspot
+- **Remove an answer or sighting** - "Remove my answer" / "Remove sighting" in the popup, after a confirmation prompt. To change an answer, remove it and answer again
+
+A hotspot is coloured green (drones seen) or grey (no drones) when one of the user's sightings lies inside its circle. Sightings outside every hotspot on show appear as their own ring markers. After a sighting is saved or removed, the prediction on show is worked out again straight away.
 
 ### Current Behaviour
 
 - Positive confirmations are treated as local priors with recency and distance decay rather than as a late score bump
+- DCAs stay in the same place for many years, so a confirmed sighting never fades below 70% weight. "No drones" answers still fade with age, down to 30% after two years
 - Nearby same-polarity confirmations are clustered before scoring so duplicate records do not inflate support linearly
 - Clustered or recent confirmations reinforce a hotspot more strongly than isolated or stale records
 - Negative confirmations suppress score and confidence locally, but do not act as absolute bans
-- Recent positive confirmations can still seed a plausible hotspot when no terrain-generated candidate lands nearby
+- A confirmed sighting within 5 km of a selected apiary seeds a hotspot when no terrain-generated candidate lands nearby. A sighting further away is ignored for that selection
+- The lower score threshold for sighting-backed hotspots applies only to candidates a sighting actually backs
 - A valid selected apiary can preserve one low-confidence fallback hotspot if normal filtering would otherwise return no visible result
 - Confirmations remain user-private only
 
@@ -100,7 +110,8 @@ Beekeepers can still confirm or deny DCA hotspots from the map popups.
 - **Flat terrain:** The engine still returns ranked guesses, but confidence is deliberately held down
 - **Threshold collapse:** If normal filtering removes every candidate for a valid selected apiary, the strongest candidate can be preserved as a low-confidence fallback
 - **Sparse support:** Single-apiary candidates usually remain low confidence
-- **API failure:** Error message in the selector panel and no predictions shown
+- **Elevation service unreachable:** When no heights come back at all, the panel says "Could not get terrain heights. Check your signal and try again." and nothing is cached
+- **Sighting not saved:** A message says so; a repeat of the same answer within 50 m and 7 days is reported as already recorded
 - **10+ apiaries selected:** First 10 are used
 
 ## Limitations

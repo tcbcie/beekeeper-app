@@ -73,10 +73,28 @@ Conservation areas are stored in the `conservation_areas` table:
 
 | Operation | Who |
 |---|---|
-| SELECT | All authenticated users |
+| SELECT | All authenticated users (to be narrowed to the owner and Power Users/Admins, see below) |
 | INSERT | Regular users (apiary-linked only) or Power Users/Admins |
 | UPDATE | Owner or Power Users/Admins |
 | DELETE | Owner or Power Users/Admins |
+
+## How the map reads conservation areas (12/11/2026)
+
+The community map reads `get_conservation_areas()`, not the table. The function returns the active areas with the display columns only: no `user_id` and no `apiary_id`, so an apiary-declared area no longer names its owner to other beekeepers. The position stays exact, because the point of declaring an area is that neighbours know where it is. Only signed-in users can call it.
+
+Migration: `supabase/migrations/20261112120000_conservation_areas_read_function.sql` (applied).
+
+### Step 2, not yet applied
+
+The table itself is still readable row-by-row by every signed-in user, so the owner's id can still be fetched through the API directly. Narrowing the SELECT policy closes that, but the app version live before this change reads the table and would then show no conservation areas. So step 2 is applied only after the version that calls the function is deployed:
+
+```sql
+DROP POLICY "Authenticated users can view conservation areas" ON public.conservation_areas;
+CREATE POLICY "Owners and power users can view conservation areas" ON public.conservation_areas
+  FOR SELECT USING (user_id = (SELECT auth.uid()) OR (SELECT is_power_user_or_admin()));
+```
+
+After it, direct reads work for the owner (the apiary form) and for Power Users/Admins (Settings); everyone else goes through the function. A team member editing a team-mate's apiary will see its conservation tick-box as unticked.
 
 ## Seed Data
 

@@ -1334,6 +1334,21 @@ textarea::placeholder {
   line-height: 1.4;
 }
 
+/* Community map: the map's own buttons (zoom, compass, show my position) and the popup close
+   button are about 29px as shipped. 48px is the app's minimum tap target. */
+.community-map .mapboxgl-ctrl-group button {
+  width: 48px;
+  height: 48px;
+}
+
+.community-map .mapboxgl-popup-close-button {
+  width: 48px;
+  height: 48px;
+  font-size: 24px;
+  line-height: 1;
+  color: inherit;
+}
+
 /* Mapbox popup dark mode styling */
 .dark .mapboxgl-popup-content {
   background-color: var(--surface-elevated);
