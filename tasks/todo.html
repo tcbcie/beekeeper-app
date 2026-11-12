@@ -203,11 +203,24 @@
 <ul class="todo">
   <li>&#9745; <strong>4.1, step 1:</strong> new database function <code>get_conservation_areas()</code>, applied to the live database. It returns the areas without the owner&rsquo;s id or apiary id, to signed-in users only. <span class="file">supabase/migrations/20261112120000_conservation_areas_read_function.sql</span></li>
   <li>&#9745; The community map reads that function instead of the table.</li>
-  <li>&#9744; <strong>4.1, step 2 &mdash; not applied:</strong> narrow the table&rsquo;s read policy to the owner and Power Users/Admins. The app version live today reads the table directly and would show no conservation areas, so this waits until the new version is deployed. Until then the owner&rsquo;s id can still be read through the API. The SQL is in <span class="file">docs/features/conservation-areas.md</span>.</li>
+  <li>&#9745; <strong>4.1, step 2 &mdash; applied on 12 November 2026</strong>, once the new version was live: the table&rsquo;s read policy is narrowed to the owner and Power Users/Admins. <span class="file">supabase/migrations/20261112183000_conservation_areas_narrow_select_policy.sql</span></li>
   <li>&#9745; <strong>4.2:</strong> the three tables, their policies and the offset helper functions are recorded in <span class="file">sql/community_map_live_definitions.sql</span>. It is a reference read from the live database, not a migration, and has not been run anywhere.</li>
   <li>&#9745; Security advisors checked after the change: the new function is not callable without signing in. Nothing new was raised.</li>
 </ul>
 <p>After step 2, a team member editing a team-mate&rsquo;s apiary will see its conservation tick-box as unticked, because they can no longer read that row.</p>
+
+<h3>Batch 4.3 &mdash; elevation lookups through the server, built on 12 November 2026</h3>
+<ul class="todo">
+  <li>&#9745; New server route <code>POST /api/elevation</code>: signed-in, active accounts only; up to 1,000 points a call and 300 calls an hour per user. <span class="file">src/app/api/elevation/route.ts</span></li>
+  <li>&#9745; The route asks Open-Meteo for 100 points at a time, all at once instead of one after another, and keeps successful answers for 30 days.</li>
+  <li>&#9745; The lookup helper now calls that route. Nothing else changed: the DCA engine and the apiary form use the same two functions as before. <span class="file">src/lib/elevation.ts</span></li>
+  <li>&#9745; New rate-limit bucket <code>elevation</code>. No database change was needed. <span class="file">src/lib/rate-limit.ts</span></li>
+  <li>&#9745; Docs updated: <span class="file">docs/features/apiary-elevation.md</span>, <span class="file">dca-prediction.md</span>, <span class="file">community-map.md</span>.</li>
+  <li>&#9745; Type-check and lint pass. Audit done, nothing to fix.</li>
+  <li>&#9744; <strong>For you to test:</strong> on the apiary form, set a position and check the height fills in; on the community map, predict DCAs for a few apiaries, then again after removing a sighting (the second run should be quicker).</li>
+</ul>
+<p><strong>What it changes for a beekeeper:</strong> a 10-apiary prediction is about 6 requests to our own server instead of up to 50 one after another to Open-Meteo, and apiary positions no longer leave the phone for an outside service.</p>
+<p><strong>Not done:</strong> the cache is per group of 100 points, not per point, so it helps when the same apiaries are predicted again (any device, any user with the same points), not for nearby but different points. Only the height lookups moved; the weather features still call Open-Meteo from the browser.</p>
 
 <h2>6. One thing for you to check</h2>
 <p>The elevation data comes from Open-Meteo&rsquo;s free service. As far as I know that tier is for non-commercial use with a daily request limit. HiveCraic takes subscriptions, so their terms are worth reading. <span class="file">docs/features/apiary-elevation.md</span> says there are no limits.</p>

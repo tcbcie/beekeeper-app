@@ -66,8 +66,8 @@ Display radius remains:
 
 ## Technical Details
 
-- **Execution:** Entirely client-side
-- **Terrain data:** Open-Meteo Elevation API
+- **Execution:** Scoring runs in the browser; terrain heights come through the app's own server route
+- **Terrain data:** `POST /api/elevation` (Open-Meteo behind it, cached on the server for 30 days, up to 1,000 points per call). See `apiary-elevation.md`
 - **Caching:** `localStorage` with the `dca-predictions-v5-` cache namespace keyed by apiary coordinates and confirmation state, kept for 24 hours. An empty result is never cached. The cache is cleared whenever a sighting is added or removed
 - **Apiary limit:** Maximum 10 selected apiaries per calculation
 - **Database:** Existing `dca_confirmations` table remains the field-evidence source
@@ -76,7 +76,8 @@ Display radius remains:
 
 | File | Purpose |
 |------|---------|
-| `src/lib/elevation.ts` | Batch elevation lookups |
+| `src/lib/elevation.ts` | Batch elevation lookups, sent to `/api/elevation` |
+| `src/app/api/elevation/route.ts` | Server route: sign-in, rate limit, lookup and caching |
 | `src/lib/dca-prediction.ts` | Phase 3 landscape-aware prediction engine with confirmation priors |
 | `src/hooks/useDCAPredictions.ts` | Hook, confirmation loading, and cache-keyed prediction flow |
 | `src/app/dashboard/community-map/page.tsx` | Map integration and popup display |

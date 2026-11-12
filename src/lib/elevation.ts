@@ -1,6 +1,10 @@
+import { supabase } from '@/lib/supabase'
+import { ELEVATION_MAX_POINTS } from '@/lib/elevation-limits'
+
+const REQUEST_TIMEOUT_MS = 30_000
+
 /**
- * Fetch elevation (height above sea level) for given coordinates
- * using the free Open-Meteo Elevation API.
+ * Fetch elevation (height above sea level) for given coordinates.
  *
  * Returns elevation in metres, or null on failure.
  */
@@ -8,32 +12,14 @@ export async function fetchElevation(
   latitude: number,
   longitude: number
 ): Promise<number | null> {
-  if (!isFinite(latitude) || !isFinite(longitude)) return null
-
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 10_000)
-
-  try {
-    const response = await fetch(
-      `https://api.open-meteo.com/v1/elevation?latitude=${latitude}&longitude=${longitude}`,
-      { signal: controller.signal }
-    )
-    if (!response.ok) return null
-
-    const data = await response.json()
-    const elevation = data?.elevation?.[0]
-    return typeof elevation === 'number' && isFinite(elevation) ? elevation : null
-  } catch {
-    return null
-  } finally {
-    clearTimeout(timeoutId)
-  }
+  const [elevation] = await fetchElevationBatch([{ latitude, longitude }])
+  return elevation ?? null
 }
 
 /**
- * Fetch elevations for multiple points in a single request.
- * Open-Meteo supports comma-separated coordinates (up to 100 per request).
- * Chunks larger arrays automatically.
+ * Fetch elevations for multiple points through our own server route (/api/elevation), which
+ * looks them up, caches them and keeps apiary positions from going straight from the phone to
+ * an outside service. Larger arrays are sent in several requests.
  *
  * Returns array of elevations in metres (or null per point on failure),
  * matching the input order.
@@ -41,44 +27,48 @@ export async function fetchElevation(
 export async function fetchElevationBatch(
   points: { latitude: number; longitude: number }[]
 ): Promise<(number | null)[]> {
-  if (points.length === 0) return []
-
-  // Guard against NaN/Infinity coords producing malformed URLs
-  const sanitised = points.map(p => ({
-    latitude: isFinite(p.latitude) ? p.latitude : 0,
-    longitude: isFinite(p.longitude) ? p.longitude : 0,
-    valid: isFinite(p.latitude) && isFinite(p.longitude),
-  }))
-
-  const CHUNK_SIZE = 100
-  const TIMEOUT_MS = 10_000
   const results: (number | null)[] = new Array(points.length).fill(null)
 
-  for (let i = 0; i < sanitised.length; i += CHUNK_SIZE) {
-    const chunk = sanitised.slice(i, i + CHUNK_SIZE)
-    const lats = chunk.map(p => p.latitude).join(',')
-    const lngs = chunk.map(p => p.longitude).join(',')
+  // Points that are not real coordinates stay null and are never sent.
+  const valid: number[] = []
+  points.forEach((point, index) => {
+    if (
+      Number.isFinite(point.latitude) && Math.abs(point.latitude) <= 90 &&
+      Number.isFinite(point.longitude) && Math.abs(point.longitude) <= 180
+    ) valid.push(index)
+  })
+  if (valid.length === 0) return results
 
-    try {
-      // The time limit stays armed while the body is read below.
-      const response = await fetch(
-        `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lngs}`,
-        { signal: AbortSignal.timeout(TIMEOUT_MS) }
-      )
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return results
 
-      if (!response.ok) continue
+    for (let i = 0; i < valid.length; i += ELEVATION_MAX_POINTS) {
+      const indices = valid.slice(i, i + ELEVATION_MAX_POINTS)
+      try {
+        // The time limit stays armed while the body is read below.
+        const response = await fetch('/api/elevation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ points: indices.map(index => [points[index].latitude, points[index].longitude]) }),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        })
+        if (!response.ok) continue
 
-      const data = await response.json()
-      const elevations: number[] = data?.elevation ?? []
+        const data: { elevations?: unknown } | null = await response.json()
+        const elevations = data?.elevations
+        if (!Array.isArray(elevations)) continue
 
-      for (let j = 0; j < chunk.length; j++) {
-        if (!chunk[j].valid) continue // invalid input coord → leave null
-        const val = elevations[j]
-        results[i + j] = typeof val === 'number' && isFinite(val) ? val : null
+        indices.forEach((index, j) => {
+          const value: unknown = elevations[j]
+          results[index] = typeof value === 'number' && Number.isFinite(value) ? value : null
+        })
+      } catch {
+        // Leave nulls for this request (timeout, network error, etc.)
       }
-    } catch {
-      // Leave nulls for this chunk (timeout, network error, etc.)
     }
+  } catch {
+    // No session could be read: every point stays null
   }
 
   return results

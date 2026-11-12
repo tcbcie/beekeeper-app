@@ -18,6 +18,9 @@ export const RATE_LIMITS = {
   voiceDaily: { bucket: 'voice_daily', limit: 60, windowSeconds: DAY },
   newsSearch: { bucket: 'news_search', limit: 60, windowSeconds: HOUR },
   geocode: { bucket: 'geocode', limit: 60, windowSeconds: HOUR },
+  // A free service, limited so the route can't be used as an open relay. A DCA prediction
+  // for ten apiaries is about six calls; setting an apiary's position is one.
+  elevation: { bucket: 'elevation', limit: 300, windowSeconds: HOUR },
   invoiceEmail: { bucket: 'invoice_email', limit: 25, windowSeconds: HOUR },
   // BEEP / Wolf connect: stops the routes being used to test credentials against the vendors.
   scaleConnect: { bucket: 'scale_connect', limit: 5, windowSeconds: HOUR },
