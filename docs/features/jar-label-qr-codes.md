@@ -175,7 +175,7 @@ Selling five jars at a stall is therefore one record, not five, and no typing be
 Notes on the implementation:
 
 - `financial_records.category_id` is **NOT NULL**, so the Honey Sales category is resolved by name before saving. If it is missing the form says so and refuses to save rather than writing a broken row.
-- The P&L records in euro. If your selling currency is not EUR the form says so and asks for the euro value you actually received - there is no conversion, because we have no rate to trust.
+- The P&L is kept in pounds for UK and Northern Ireland residents and in euro for everyone else (`is_uk_ni_resident`, the same rule as the finance module). The sale form shows its total in that currency. If your selling currency is different the form says so and asks for the value you actually received in the P&L currency - there is no conversion, because we have no rate to trust.
 - No webhook, no automatic reconciliation, and deliberately no "payments received" view. A `revolut.me` link has no API, so an automated path does not exist - not now, not later. Card providers could support one, which is a reason to revisit Stripe if reconciliation ever matters more than simplicity.
 
 ### Retail channels

@@ -78,10 +78,10 @@ const TOOL_CATEGORIES: ToolCategory[] = [
  {
  name: 'Hive Health',
  tools: [
- { id: 'varroa', label: 'Varroa Weather', description: 'Weather-based varroa pressure forecasts for your apiaries', icon: Cloud, type: 'inline' },
+ { id: 'varroa', label: 'Varroa Weather', description: 'See which days this week suit each varroa treatment', icon: Cloud, type: 'inline' },
  { id: 'gdd', label: 'GDD Tracker', description: 'Growing degree-day accumulation for forage predictions', icon: Thermometer, type: 'inline' },
  { id: 'tbr', label: 'TBR Swarm Planner', description: 'Time a total brood removal to peak foragers for the summer flow', icon: Scissors, type: 'inline' },
- { id: 'diagnosis', label: 'Diagnosis', description: 'Upload photos for AI-assisted hive health analysis', icon: Camera, type: 'inline' },
+ { id: 'diagnosis', label: 'Diagnosis', description: 'Send photos of hive problems to help build a future diagnosis tool', icon: Camera, type: 'inline' },
  ],
  },
  {

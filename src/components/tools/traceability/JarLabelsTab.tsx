@@ -106,6 +106,8 @@ export default function JarLabelsTab({
   // form needs it to explain why a payment panel would or would not appear.
   const [paymentsReady, setPaymentsReady] = useState(false)
   const [paymentCurrency, setPaymentCurrency] = useState<string>('')
+  // The P&L shows pounds for UK/NI residents and euro for everyone else; a recorded sale follows it.
+  const [isUkNi, setIsUkNi] = useState(false)
 
   const fetchLabels = useCallback(async () => {
     const { data, error } = await supabase
@@ -166,7 +168,7 @@ export default function JarLabelsTab({
   const fetchPaymentSetup = useCallback(async () => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('enable_jar_payments, sales_revolut_url, sales_currency')
+      .select('enable_jar_payments, sales_revolut_url, sales_currency, is_uk_ni_resident')
       .eq('id', userId)
       .maybeSingle()
 
@@ -175,6 +177,7 @@ export default function JarLabelsTab({
       data.enable_jar_payments === true && isAllowedPaymentUrl(data.sales_revolut_url, 'revolut')
     )
     setPaymentCurrency(data.sales_currency || 'EUR')
+    setIsUkNi(data.is_uk_ni_resident === true)
   }, [userId])
 
   useEffect(() => {
@@ -789,6 +792,7 @@ export default function JarLabelsTab({
           userId={userId}
           label={saleLabel}
           salesCurrency={paymentCurrency}
+          isUkNi={isUkNi}
           onClose={() => setSaleLabel(null)}
         />
       )}

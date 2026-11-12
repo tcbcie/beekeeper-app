@@ -9,13 +9,16 @@ import ModalShell from '@/components/ui/ModalShell'
 import FieldLabel from '@/components/ui/FieldLabel'
 import TextInput from '@/components/ui/TextInput'
 import Button from '@/components/ui/Button'
+import { currencyCode, formatMoney } from '@/lib/crm-currency'
 import type { TraceLabel } from '@/types/traceability'
 
 interface RecordJarSaleModalProps {
   userId: string
   label: TraceLabel
-  /** The producer's selling currency, to warn when it is not the P&L's EUR. */
+  /** The producer's selling currency, to warn when it is not the P&L's currency. */
   salesCurrency: string
+  /** UK/NI residents keep their P&L in pounds, everyone else in euro (see crm-currency). */
+  isUkNi: boolean
   onClose: () => void
 }
 
@@ -41,9 +44,11 @@ export default function RecordJarSaleModal({
   userId,
   label,
   salesCurrency,
+  isUkNi,
   onClose,
 }: RecordJarSaleModalProps) {
   const toast = useToast()
+  const plCurrency = currencyCode(isUkNi)
 
   const [date, setDate] = useState(todayIso())
   const [quantity, setQuantity] = useState('1')
@@ -128,7 +133,7 @@ export default function RecordJarSaleModal({
       return
     }
 
-    toast.success(`Recorded €${total.toFixed(2)} to your P&L`)
+    toast.success(`Recorded ${formatMoney(total, isUkNi)} to your P&L`)
     onClose()
   }
 
@@ -186,7 +191,7 @@ export default function RecordJarSaleModal({
           <div className="flex items-baseline justify-between">
             <span className="text-text-secondary">Total</span>
             <span className="text-2xl font-bold text-foreground">
-              {total !== null ? `€${total.toFixed(2)}` : '—'}
+              {total !== null ? formatMoney(total, isUkNi) : '—'}
             </span>
           </div>
           <p className="mt-1 text-sm text-text-tertiary">
@@ -195,12 +200,12 @@ export default function RecordJarSaleModal({
           </p>
         </div>
 
-        {salesCurrency && salesCurrency !== 'EUR' && (
+        {salesCurrency && salesCurrency !== plCurrency && (
           <p className="flex items-start gap-2 text-sm text-amber-600 dark:text-amber-400">
             <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
             <span>
-              Your selling currency is {salesCurrency}, but the P&amp;L records in euro. Enter the
-              euro value you actually received.
+              Your selling currency is {salesCurrency}, but your P&amp;L is kept in {plCurrency}.
+              Enter the {plCurrency} value you actually received.
             </span>
           </p>
         )}
