@@ -236,6 +236,18 @@
 <p><strong>Not validated.</strong> The database holds no confirmed DCA sighting (only two &ldquo;no drones&rdquo; answers), so there was nothing to check the new scoring against. That is why each signal is limited to 3 points out of a typical 40 to 80.</p>
 <p><strong>Two choices I made that you may want to change:</strong> the prevailing wind is a fixed south-westerly rather than looked up per apiary (no new outside service, right for Ireland and Britain); and confidence levels do not count the two new signals yet.</p>
 
+<h3>Batch 4.5 &mdash; neighbouring colonies in the scoring, built on 12 November 2026</h3>
+<ul class="todo">
+  <li>&#9745; A hotspot gains up to 3 points for other beekeepers&rsquo; shared hives within 6 km, nearer hives counting for more. <span class="file">src/lib/dca-prediction.ts</span></li>
+  <li>&#9745; The community map hands the shared apiaries it already loads to the prediction. No new request and no database change. <span class="file">src/app/dashboard/community-map/page.tsx</span>, <span class="file">src/hooks/useDCAPredictions.ts</span></li>
+  <li>&#9745; The popup&rsquo;s &ldquo;Signals&rdquo; line can now say &ldquo;other colonies nearby&rdquo;.</li>
+  <li>&#9745; Saved predictions are worked out again (cache name moved to v7) and now also depend on the shared apiaries nearby.</li>
+  <li>&#9745; Four new tests. Docs updated. Type-check and lint pass. Audit done, nothing to fix.</li>
+  <li>&#9744; <strong>For you:</strong> run <code>npx vitest run tests/lib/dca-prediction.test.ts</code> and predict DCAs for an apiary with shared apiaries around it.</li>
+</ul>
+<p><strong>How much it does:</strong> little, by design. Shared apiaries are shown up to 5 km from where they are, so the signal lifts every hotspot in an area with many colonies by a similar amount; it rarely changes which of one apiary&rsquo;s hotspots ranks first. In such areas a hotspot just under the cut-off can now appear.</p>
+<p><strong>Left out:</strong> wild colonies and the all-apiaries layer (only Power Users can see them, and a prediction should not depend on who is looking), and your own apiaries that are not ticked.</p>
+
 <h2>6. One thing for you to check</h2>
 <p>The elevation data comes from Open-Meteo&rsquo;s free service. As far as I know that tier is for non-commercial use with a daily request limit. HiveCraic takes subscriptions, so their terms are worth reading. <span class="file">docs/features/apiary-elevation.md</span> says there are no limits.</p>
 

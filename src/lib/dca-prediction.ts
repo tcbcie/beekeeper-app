@@ -40,6 +40,13 @@ interface Apiary {
   longitude: number
 }
 
+/** Another beekeeper's apiary near the selection. Its position is only known to within 5 km. */
+export interface NeighbourApiary {
+  latitude: number
+  longitude: number
+  hiveCount: number
+}
+
 export interface ConfirmedLocation {
   latitude: number
   longitude: number
@@ -87,6 +94,7 @@ interface ScoredCandidate extends CandidateSeed {
   shelterScore: number
   aspectScore: number
   windScore: number
+  droneSupplyScore: number
   supportScore: number
   confirmationSupportScore: number
   confirmationSuppressionScore: number
@@ -148,6 +156,13 @@ const WIND_FULL_SHELTER_M = 15
 // The prevailing wind over Ireland and Britain is south-westerly, so the upwind side of a
 // candidate is its S, SW and W neighbours (positions in CANDIDATE_CONTEXT_BEARINGS).
 const PREVAILING_WIND_SIDE = [4, 5, 6]
+
+// Other beekeepers' hives near a candidate mean more drones in the air. Their apiaries are shown
+// up to 5 km from where they really are, so this is a wide, weak signal: hives within this
+// distance count, nearer ones for more, and this many (after weighting) earn the full score.
+const NEIGHBOUR_RADIUS_KM = 6
+const NEIGHBOUR_FULL_HIVES = 20
+const MAX_DRONE_SUPPLY_SCORE = 3
 
 /** Thrown when the elevation service returned nothing at all, so no prediction is possible. */
 export class ElevationUnavailableError extends Error {
@@ -608,6 +623,24 @@ export function scoreAspectAndWind(
   return { aspectScore: aspectScore + 0, windScore: windScore + 0 }
 }
 
+/** 0 to 3 points for other beekeepers' hives around a candidate. See NEIGHBOUR_RADIUS_KM. */
+export function scoreDroneSupply(
+  latitude: number,
+  longitude: number,
+  neighbours: NeighbourApiary[]
+): number {
+  let weightedHives = 0
+  for (const neighbour of neighbours) {
+    if (!isValidLatitude(neighbour.latitude) || !isValidLongitude(neighbour.longitude)) continue
+    if (!Number.isFinite(neighbour.hiveCount) || neighbour.hiveCount <= 0) continue
+
+    const distanceKm = haversine(latitude, longitude, neighbour.latitude, neighbour.longitude)
+    if (distanceKm >= NEIGHBOUR_RADIUS_KM) continue
+    weightedHives += neighbour.hiveCount * (1 - distanceKm / NEIGHBOUR_RADIUS_KM)
+  }
+  return Math.round(clamp(weightedHives / NEIGHBOUR_FULL_HIVES, 0, 1) * MAX_DRONE_SUPPLY_SCORE)
+}
+
 function addSupportScores(candidates: ScoredCandidate[]): ScoredCandidate[] {
   return candidates.map(candidate => {
     const nearbyApiaryIds = new Set<string>()
@@ -672,6 +705,7 @@ function mergePredictions(predictions: ScoredCandidate[]): ScoredCandidate[] {
       shelterScore: Math.max(...group.map(candidate => candidate.shelterScore)),
       aspectScore: Math.max(...group.map(candidate => candidate.aspectScore)),
       windScore: Math.max(...group.map(candidate => candidate.windScore)),
+      droneSupplyScore: Math.max(...group.map(candidate => candidate.droneSupplyScore)),
       supportScore: Math.max(...group.map(candidate => candidate.supportScore)),
       confirmationSupportScore: Math.max(...group.map(candidate => candidate.confirmationSupportScore)),
       confirmationSuppressionScore: Math.max(...group.map(candidate => candidate.confirmationSuppressionScore)),
@@ -770,6 +804,7 @@ function buildSignalSummary(candidate: ScoredCandidate): string {
     { label: 'sheltered opening', value: candidate.shelterScore },
     { label: 'south-facing ground', value: candidate.aspectScore },
     { label: 'shelter from the prevailing wind', value: candidate.windScore },
+    { label: 'other colonies nearby', value: candidate.droneSupplyScore },
     { label: 'multi-apiary support', value: candidate.supportScore },
     { label: 'recent confirmations', value: candidate.confirmationSupportScore },
   ]
@@ -810,7 +845,8 @@ function selectResults(merged: ScoredCandidate[], apiaryIds: string[]): ScoredCa
 
 export async function predictDCAs(
   apiaries: Apiary[],
-  confirmedLocations?: ConfirmedLocation[]
+  confirmedLocations?: ConfirmedLocation[],
+  neighbours: NeighbourApiary[] = []
 ): Promise<DCAResult> {
   const validApiaries = apiaries.filter(apiary =>
     Boolean(apiary.id) &&
@@ -933,6 +969,7 @@ export async function predictDCAs(
         candidate.lowContrast
       )
       const { aspectScore, windScore } = scoreAspectAndWind(candidateElev, neighbourElevs)
+      const droneSupplyScore = scoreDroneSupply(candidate.latitude, candidate.longitude, neighbours)
 
       const sourceApiary = apiaryMap.get(candidate.apiaryId)
       if (!sourceApiary) return null
@@ -959,6 +996,7 @@ export async function predictDCAs(
         shelterScore,
         aspectScore,
         windScore,
+        droneSupplyScore,
         confirmationSupportScore: confirmationInfluence.supportScore,
         confirmationSuppressionScore: confirmationInfluence.suppressionScore,
         confirmationMixedEvidence: confirmationInfluence.mixedEvidence,
@@ -976,6 +1014,7 @@ export async function predictDCAs(
           shelterScore +
           aspectScore +
           windScore +
+          droneSupplyScore +
           candidate.confirmationAnchorScore +
           confirmationInfluence.netScore,
       }

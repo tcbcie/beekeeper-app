@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { predictDCAs, scoreAspectAndWind, ElevationUnavailableError } from '@/lib/dca-prediction'
+import { predictDCAs, scoreAspectAndWind, scoreDroneSupply, ElevationUnavailableError } from '@/lib/dca-prediction'
 import { fetchElevationBatch } from '@/lib/elevation'
 
 /**
@@ -116,5 +116,37 @@ describe('scoreAspectAndWind', () => {
     expect(scoreAspectAndWind(null, [60, 60, 50, 40, 40, 40, 50, 60]).windScore).toBe(0)
     expect(scoreAspectAndWind(50, [null, 60, 50, 40, 40, 40, 50, 60]).aspectScore).toBe(0)
     expect(scoreAspectAndWind(50, [60, 60, 50, 40, 40, null, 50, 60])).toEqual({ aspectScore: 0, windScore: 0 })
+  })
+})
+
+describe('scoreDroneSupply', () => {
+  const spot = { latitude: 53.4, longitude: -8.2 }
+  /** A neighbouring apiary the given distance due north of the spot. */
+  const neighbourAt = (km: number, hiveCount: number) => ({
+    latitude: spot.latitude + km / KM_PER_DEGREE_LATITUDE,
+    longitude: spot.longitude,
+    hiveCount,
+  })
+
+  it('scores nothing when there are no neighbours', () => {
+    expect(scoreDroneSupply(spot.latitude, spot.longitude, [])).toBe(0)
+  })
+
+  it('gives the full score for many hives close by', () => {
+    // 40 hives at 3 km count as 40 x (1 - 3/6) = 20, the amount that earns all 3 points
+    expect(scoreDroneSupply(spot.latitude, spot.longitude, [neighbourAt(3, 40)])).toBe(3)
+  })
+
+  it('gives part of the score for a few hives', () => {
+    // 10 hives at 3 km count as 5, a quarter of the way: 0.75, rounded to 1
+    expect(scoreDroneSupply(spot.latitude, spot.longitude, [neighbourAt(3, 10)])).toBe(1)
+  })
+
+  it('ignores apiaries beyond 6 km, without hives, or without a real position', () => {
+    expect(scoreDroneSupply(spot.latitude, spot.longitude, [
+      neighbourAt(7, 100),
+      neighbourAt(1, 0),
+      { latitude: NaN, longitude: spot.longitude, hiveCount: 100 },
+    ])).toBe(0)
   })
 })

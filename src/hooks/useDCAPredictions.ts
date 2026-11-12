@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { predictDCAs, ElevationUnavailableError, type DCAPrediction, type DCAFlyway, type DCAResult, type ConfirmedLocation } from '@/lib/dca-prediction'
+import { predictDCAs, ElevationUnavailableError, type DCAPrediction, type DCAFlyway, type DCAResult, type ConfirmedLocation, type NeighbourApiary } from '@/lib/dca-prediction'
 import { supabase } from '@/lib/supabase'
 import { getCurrentUserId } from '@/lib/auth'
 
@@ -21,7 +21,7 @@ export interface DCAConfirmation {
   notes: string | null
 }
 
-const CACHE_KEY_PREFIX = 'dca-predictions-v6-'
+const CACHE_KEY_PREFIX = 'dca-predictions-v7-'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 const MAX_APIARIES = 10
 
@@ -173,10 +173,19 @@ function getConfirmationSignature(confirmations: DCAConfirmation[]): string {
   return hashString(parts.join('|'))
 }
 
+function getNeighbourSignature(neighbours: NeighbourApiary[]): string {
+  if (neighbours.length === 0) return 'none'
+  const parts = neighbours
+    .map(neighbour => `${neighbour.latitude.toFixed(4)},${neighbour.longitude.toFixed(4)},${neighbour.hiveCount}`)
+    .sort()
+  return hashString(parts.join('|'))
+}
+
 function getCacheKey(
   apiaryIds: string[],
   apiaries: Apiary[],
-  confirmations: DCAConfirmation[]
+  confirmations: DCAConfirmation[],
+  neighbours: NeighbourApiary[]
 ): string {
   // Include coordinates and confirmation state so cache invalidates cleanly.
   const apiaryParts = [...apiaryIds].sort().map(id => {
@@ -184,7 +193,7 @@ function getCacheKey(
     return apiary ? `${id}:${apiary.latitude.toFixed(4)},${apiary.longitude.toFixed(4)}` : id
   })
 
-  return `${CACHE_KEY_PREFIX}${apiaryParts.join('|')}|c:${getConfirmationSignature(confirmations)}`
+  return `${CACHE_KEY_PREFIX}${apiaryParts.join('|')}|c:${getConfirmationSignature(confirmations)}|n:${getNeighbourSignature(neighbours)}`
 }
 
 function loadCache(key: string): CachedResult | null {
@@ -226,7 +235,10 @@ function saveCache(key: string, result: CachedResult): void {
   }
 }
 
-export function useDCAPredictions(apiaries: Apiary[]) {
+const NO_NEIGHBOURS: NeighbourApiary[] = []
+
+/** `neighbours` are other beekeepers' apiaries; pass a memoised array. */
+export function useDCAPredictions(apiaries: Apiary[], neighbours: NeighbourApiary[] = NO_NEIGHBOURS) {
   const [predictions, setPredictions] = useState<DCAPrediction[]>([])
   const [flyways, setFlyways] = useState<DCAFlyway[]>([])
   const [confirmations, setConfirmations] = useState<DCAConfirmation[]>([])
@@ -242,6 +254,12 @@ export function useDCAPredictions(apiaries: Apiary[]) {
   useEffect(() => {
     confirmationsRef.current = confirmations
   }, [confirmations])
+
+  // Read when a prediction starts, so a late-loading layer does not restart anything
+  const neighboursRef = useRef(neighbours)
+  useEffect(() => {
+    neighboursRef.current = neighbours
+  }, [neighbours])
 
   useEffect(() => {
     let isActive = true
@@ -295,7 +313,8 @@ export function useDCAPredictions(apiaries: Apiary[]) {
     }
 
     lastSelectionRef.current = ids
-    const cacheKey = getCacheKey(ids, apiaries, confirmationsRef.current)
+    const currentNeighbours = neighboursRef.current
+    const cacheKey = getCacheKey(ids, apiaries, confirmationsRef.current, currentNeighbours)
     const cached = loadCache(cacheKey)
     if (cached) {
       // Supersede any calculation still running, so it cannot overwrite this result when it lands
@@ -325,7 +344,7 @@ export function useDCAPredictions(apiaries: Apiary[]) {
           observationDate: confirmation.observation_date,
         }))
 
-      const result = await predictDCAs(selected, confirmedLocations)
+      const result = await predictDCAs(selected, confirmedLocations, currentNeighbours)
       if (callIdRef.current !== thisCallId) return null
 
       setPredictions(result.predictions)

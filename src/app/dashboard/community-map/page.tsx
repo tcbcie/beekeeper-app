@@ -301,7 +301,14 @@ export default function CommunityMapPage() {
   const toast = useToast()
   const confirm = useConfirm()
   const saveLock = useSubmitLock()
-  const dca = useDCAPredictions(userApiaries)
+  // Other beekeepers' hives count as a weak sign of drones near a hotspot. Only the shared layer
+  // is used, so a prediction does not depend on the viewer's role.
+  const dcaNeighbours = useMemo(() => sharedApiaries.map(apiary => ({
+    latitude: Number(apiary.latitude),
+    longitude: Number(apiary.longitude),
+    hiveCount: Number(apiary.hive_count),
+  })), [sharedApiaries])
+  const dca = useDCAPredictions(userApiaries, dcaNeighbours)
   const confirmDCA = dca.confirmDCA
   const removeConfirmation = dca.removeConfirmation
 
