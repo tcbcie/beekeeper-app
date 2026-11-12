@@ -23,6 +23,7 @@ Completed: January 17, 2026
 - Income/Expense choice: a radio group with the shared `RadioChoiceOption`, selected in green (WP04, 04/11/2026; was a green/red toggle), with every label tied to its field
 - Dropdown categories specific to beekeeping
 - Summary cards: Total Income, Total Expenses, Net Profit/Loss
+- Income by category: ranked bars for the chosen period, largest first (12/11/2026)
 - Time period filtering
 - Edit and delete records
 - CSV export (respects current time filter)
@@ -126,6 +127,12 @@ interface FinancialRecord {
 - **Income Card**: Green background, shows total income
 - **Expenses Card**: Red background, shows total expenses
 - **Net Card**: Blue (profit) or Orange (loss), shows net result
+
+### Income by Category
+- Sits between the summary cards and the records list, and follows the time filter: "Income by category (this month / this year / all time)"
+- One row per income category: name, amount, and a green bar sized against the largest category
+- Hidden when the chosen period has no income
+- Built from the records already loaded (no extra query) with the shared `src/components/ui/CategoryBreakdown.tsx`, the same component CRM Sales Insights uses, so both screens group and sort income the same way
 
 ### Record Cards
 - Left border color indicates type (green=income, red=expense)

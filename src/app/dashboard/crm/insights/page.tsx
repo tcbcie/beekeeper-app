@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast'
 import { formatMoney } from '@/lib/crm-currency'
 import { orderBalance } from '@/lib/crm-orders'
 import { firstOf } from '@/lib/embed'
+import CategoryBreakdown from '@/components/ui/CategoryBreakdown'
 
 interface InsightOrder {
   status: string
@@ -109,7 +110,6 @@ export default function SalesInsightsPage() {
     const monthKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`
     let incomeYear = 0, incomeMonth = 0, ordersYear = 0, ordersMonth = 0
     let outstanding = 0, pendingCount = 0
-    const byCategory: Record<string, number> = {}
 
     for (const r of income) {
       const amount = Number(r.amount) || 0
@@ -121,8 +121,6 @@ export default function SalesInsightsPage() {
         incomeMonth += amount
         if (fromOrder) ordersMonth += amount
       }
-      const name = firstOf(r.category)?.value || 'Other Income'
-      byCategory[name] = (byCategory[name] || 0) + amount
     }
 
     for (const o of orders) {
@@ -131,13 +129,12 @@ export default function SalesInsightsPage() {
       if (o.status === 'pending') pendingCount += 1
     }
 
-    const categories = Object.entries(byCategory)
-      .filter(([, amount]) => amount > 0)
-      .map(([name, amount]) => ({ name, amount }))
-      .sort((a, b) => b.amount - a.amount)
-    const maxCategory = categories.reduce((m, c) => Math.max(m, c.amount), 0)
+    const categories = income.map((r) => ({
+      name: firstOf(r.category)?.value || 'Other Income',
+      amount: Number(r.amount) || 0,
+    }))
 
-    return { incomeYear, incomeMonth, ordersYear, ordersMonth, outstanding, pendingCount, categories, maxCategory }
+    return { incomeYear, incomeMonth, ordersYear, ordersMonth, outstanding, pendingCount, categories }
   }, [orders, income])
 
   if (loading) return <LoadingSpinner text="Loading sales insights..." />
@@ -198,32 +195,13 @@ export default function SalesInsightsPage() {
           </div>
 
           {/* Income by category */}
-          <Panel padding="md">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-foreground">Income by category ({year})</h3>
-              <span className="text-sm text-text-tertiary">All income</span>
-            </div>
-            {stats.categories.length === 0 ? (
-              <p className="text-sm text-text-tertiary">No income recorded yet this year.</p>
-            ) : (
-              <div className="space-y-2">
-                {stats.categories.map((c) => (
-                  <div key={c.name}>
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="text-text-secondary">{c.name}</span>
-                      <span className="font-medium text-foreground tabular-nums">{formatMoney(c.amount, isUkNi)}</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-surface-elevated overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-forest-500"
-                        style={{ width: `${stats.maxCategory > 0 ? Math.max(4, (c.amount / stats.maxCategory) * 100) : 0}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Panel>
+          <CategoryBreakdown
+            title={`Income by category (${year})`}
+            caption="All income"
+            items={stats.categories}
+            isUkNi={isUkNi}
+            emptyText="No income recorded yet this year."
+          />
 
           {/* Top customers */}
           <Panel padding="md">

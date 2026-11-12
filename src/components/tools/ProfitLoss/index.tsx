@@ -12,6 +12,8 @@ import FinancialRecordForm from './FinancialRecordForm'
 import FinancialRecordCard from './FinancialRecordCard'
 import FinancialSummary from './FinancialSummary'
 import Button from '@/components/ui/Button'
+import CategoryBreakdown from '@/components/ui/CategoryBreakdown'
+import { firstOf } from '@/lib/embed'
 
 type TimePeriod = 'month' | 'year' | 'all'
 
@@ -121,6 +123,12 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
       net: income - expenses
     }
   }, [filteredRecords])
+
+  // Income rows for the category breakdown; it follows the time filter.
+  const incomeByCategory = useMemo(() => filteredRecords
+    .filter(r => r.record_type === 'income')
+    .map(r => ({ name: firstOf(r.category)?.value || 'Other Income', amount: Number(r.amount) || 0 })),
+  [filteredRecords])
 
   // Handle form submit
   const handleSubmit = async (record: Partial<FinancialRecord>) => {
@@ -310,6 +318,13 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
           isUkNi={isUkNi}
         />
       )}
+
+      {/* Income by category (hidden when the period has no income) */}
+      <CategoryBreakdown
+        title={`Income by category (${timePeriod === 'month' ? 'this month' : timePeriod === 'year' ? 'this year' : 'all time'})`}
+        items={incomeByCategory}
+        isUkNi={isUkNi}
+      />
 
       {/* Records List */}
       {filteredRecords.length === 0 ? (

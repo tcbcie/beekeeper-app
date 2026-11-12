@@ -249,7 +249,8 @@ orders only and missed the other two.
   order-only.
 - **Income by category (year):** ledger income grouped by income category,
   shown as a ranked bar list. Order product types map one-to-one to these
-  categories (see below), so order figures are unchanged.
+  categories (see below), so order figures are unchanged. Drawn by the shared
+  `src/components/ui/CategoryBreakdown.tsx`, which Profit & Loss also uses.
 - **Top customers:** the top five by lifetime total from `crm_customer_summary`,
   each linking to the customer detail page.
 - **Costs and profit:** a link row to Profit & Loss

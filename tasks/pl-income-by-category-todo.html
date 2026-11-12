@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>P&amp;L income by category</title>
+</head>
+<body>
+<h1>Profit &amp; Loss – income by category</h1>
+<p>Follows the Sales Insights change (<code>tasks/sales-insights-pl-todo.html</code>, commit <code>8de45b84</code>). Feature doc: <code>docs/features/profit-loss-tracker.md</code>.</p>
+
+<h2>Why</h2>
+<p>P&amp;L shows only three totals and a flat list, so you cannot see what the income is made of. Sales Insights has an "Income by category" breakdown, but only people with the CRM see it. P&amp;L is open to everyone in Tools.</p>
+
+<h2>What the code does today</h2>
+<ul>
+  <li><code>ProfitLoss/index.tsx</code> already loads every record with its category name, and filters by This Month, This Year or All Time (<code>filteredRecords</code>).</li>
+  <li>Sales Insights draws its "Income by category" bars inline (<code>crm/insights/page.tsx</code>). It groups income rows by category and sorts them largest first.</li>
+</ul>
+
+<h2>How it will work for the beekeeper</h2>
+<ul>
+  <li>A panel <strong>Income by category</strong> sits between the totals and the list of records. It uses the same bars as Sales Insights: category name, amount, and a green bar sized against the largest.</li>
+  <li>It follows the time filter, so This Month, This Year and All Time each show their own breakdown. The heading says which period, for example "Income by category (this year)".</li>
+  <li>When the chosen period has no income, the panel is hidden, so the page does not grow for nothing.</li>
+  <li>There is no new query. It uses the records P&amp;L already loads.</li>
+</ul>
+<pre>
+ Profit &amp; Loss (phone, figures for illustration only)
+ ┌─────────────────────────────────┐
+ │ [This Month] [This Year] [All]  │
+ │ Income   Expenses   Net profit  │
+ ├─────────────────────────────────┤
+ │ Income by category (this year)  │
+ │ Honey Sales      ███████ €2,900 │
+ │ Queen Sales      ██      €455   │
+ │ Wax Sales        █       €368   │
+ ├─────────────────────────────────┤
+ │ records list, as now …          │
+ └─────────────────────────────────┘
+</pre>
+
+<h2>To do</h2>
+<ol>
+  <li>☑ <strong>Shared component</strong> <code>src/components/ui/CategoryBreakdown.tsx</code>. It takes a title, a list of <code>{ name, amount }</code> and the UK/NI flag. It groups by name, sorts largest first and draws the bars, which are the existing Sales Insights markup moved here. Text is at least 14px, the colours are the existing ones, and there is no animation.</li>
+  <li>☑ <strong>P&amp;L:</strong> render it from <code>filteredRecords</code> (income rows only), between the totals and the list, and hide it when there is no income.</li>
+  <li>☑ <strong>Sales Insights:</strong> use the same component in place of its inline bars and grouping, so both screens look and add up the same. No change for the user.</li>
+  <li>☑ <strong>Docs:</strong> update <code>profit-loss-tracker.md</code> (Features and UI Components) and the Sales Insights section of <code>crm-module.md</code> (shared component).</li>
+  <li>☑ QA audit, typecheck and lint, then you test it in the app.</li>
+</ol>
+
+<h2>Not in this change</h2>
+<ul>
+  <li>Expenses by category. It is the same component with expense rows, so it is easy to add if you want it now.</li>
+  <li>Charts over time, such as income per month.</li>
+</ul>
+
+<h2>Review (12/11/2026)</h2>
+<p>Plan approved with "Income only". Built as planned, with no database changes and no new query.</p>
+<table border="1" cellpadding="6" cellspacing="0">
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td><code>src/components/ui/CategoryBreakdown.tsx</code> (new)</td><td>Groups <code>{ name, amount }</code> rows by name, sorts them largest first and draws the bars (the markup moved from Sales Insights). Amounts are read with <code>Number()</code>. The bars are hidden from screen readers because the figures are in text. It shows <code>emptyText</code> when there is nothing above zero, or is hidden when no <code>emptyText</code> is given.</td></tr>
+  <tr><td><code>src/components/tools/ProfitLoss/index.tsx</code></td><td>Memoised income rows from <code>filteredRecords</code>. The panel sits between the totals and the list, its title names the period, and it is hidden when the period has no income.</td></tr>
+  <tr><td><code>src/app/dashboard/crm/insights/page.tsx</code></td><td>Uses the shared component. Its own grouping and bar markup are removed, and what the user sees is unchanged.</td></tr>
+  <tr><td><code>docs/features/profit-loss-tracker.md</code>, <code>docs/features/crm-module.md</code></td><td>New section and features line, and a note on the shared component.</td></tr>
+</table>
+<h3>QA audit</h3>
+<ul>
+  <li>No Critical or High findings. Keys are unique because rows are grouped by name first. Zero, NaN and empty input are guarded. Text is at least 14px. There is no motion.</li>
+  <li>🟢 Note: the P&amp;L time filter compares dates with <code>new Date(...)</code> (code that existed before this change). For Irish and UK time zones it matches the date-string comparison on Sales Insights, so "This Year" agrees on both screens. West of UTC it could drop a first-of-month record. Left as it is.</li>
+  <li><code>npm run typecheck</code> and eslint on the changed files: clean. Tests and build were not run, per your rules.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>P&amp;L: switch between This Month, This Year and All Time. The breakdown title and figures follow the filter, and the category amounts add up to the Income card.</li>
+  <li>Choose a period with no income: the panel disappears.</li>
+  <li>Sales Insights: Income by category looks and adds up as before.</li>
+  <li>On a phone (390 wide), in light and dark mode.</li>
+</ol>
+</body>
+</html>
