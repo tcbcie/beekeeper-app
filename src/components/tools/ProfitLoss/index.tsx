@@ -51,6 +51,11 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('year')
   // The year shown when the period is Year; starts at the current year.
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear())
+  // Year to compare with in the Year view (null = none).
+  const [compareYear, setCompareYear] = useState<number | null>(null)
+  // Only applies in the Year view and never to the year on show, so changing
+  // either just switches the comparison off (no state to reset).
+  const activeCompareYear = timePeriod === 'year' && compareYear !== selectedYear ? compareYear : null
 
   // Fetch dropdown categories
   const fetchCategories = useCallback(async () => {
@@ -118,6 +123,21 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
     }
     return [...years].sort((a, b) => b - a)
   }, [records, selectedYear])
+
+  // The comparison year's records and totals (empty when there is no comparison).
+  const compareRecords = useMemo(
+    () => (activeCompareYear == null ? [] : records.filter(r => Number(r.transaction_date.slice(0, 4)) === activeCompareYear)),
+    [records, activeCompareYear],
+  )
+  const compareTotals = useMemo(() => {
+    if (activeCompareYear == null) return null
+    let income = 0, expenses = 0
+    for (const r of compareRecords) {
+      if (r.record_type === 'income') income += Number(r.amount) || 0
+      else expenses += Number(r.amount) || 0
+    }
+    return { year: activeCompareYear, income, expenses, net: income - expenses }
+  }, [compareRecords, activeCompareYear])
 
   // Filter records by time period
   const filteredRecords = useMemo(() => {
@@ -311,16 +331,30 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
       <div className="space-y-3">
         <SegmentedControl label="Period" options={PERIOD_OPTIONS} value={timePeriod} onChange={setTimePeriod} />
         {timePeriod === 'year' && (
-          <div className="w-40">
-            <SelectField
-              label="Year"
-              value={String(selectedYear)}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-            >
-              {yearOptions.map(year => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </SelectField>
+          <div className="flex flex-wrap gap-3">
+            <div className="w-40">
+              <SelectField
+                label="Year"
+                value={String(selectedYear)}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+              >
+                {yearOptions.map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </SelectField>
+            </div>
+            <div className="w-40">
+              <SelectField
+                label="Compare with"
+                value={activeCompareYear == null ? '' : String(activeCompareYear)}
+                onChange={(e) => setCompareYear(e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">None</option>
+                {yearOptions.filter(year => year !== selectedYear).map(year => (
+                  <option key={year} value={year}>{year}</option>
+                ))}
+              </SelectField>
+            </div>
           </div>
         )}
       </div>
@@ -331,6 +365,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
         totalExpenses={totals.expenses}
         netProfit={totals.net}
         isUkNi={isUkNi}
+        compare={compareTotals}
       />
 
       {/* Form */}
@@ -351,7 +386,14 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
 
       {/* Income and expenses over time: by month for a chosen Year, by year for All Time */}
       {timePeriod !== 'month' && filteredRecords.length > 0 && (
-        <MonthlyChart records={filteredRecords} period={timePeriod} year={selectedYear} isUkNi={isUkNi} />
+        <MonthlyChart
+          records={filteredRecords}
+          period={timePeriod}
+          year={selectedYear}
+          compareYear={activeCompareYear}
+          compareRecords={compareRecords}
+          isUkNi={isUkNi}
+        />
       )}
 
       {/* Income and expenses by category: each hidden when the period has none;

@@ -27,9 +27,11 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointEleme
 // like the Net Profit card. Dark expense red is #c62828: red-700 (#b91c1c) was
 // under 3:1 contrast on #111827. Its colour-blind ΔE 7.8 against the green is in
 // the allowed band because income is always the left bar and the legend shows.
+// The comparison year's net line is a neutral grey reference mark (dashed, with
+// hollow points), not a new category: at least 4.5:1 on both surfaces.
 const COLOURS = {
-  light: { income: '#15803d', expense: '#dc2626', net: '#2563eb' },
-  dark: { income: '#16a34a', expense: '#c62828', net: '#3b82f6' },
+  light: { income: '#15803d', expense: '#dc2626', net: '#2563eb', compare: '#6b7280', surface: '#ffffff' },
+  dark: { income: '#16a34a', expense: '#c62828', net: '#3b82f6', compare: '#9ca3af', surface: '#111827' },
 }
 
 interface MonthlyChartProps {
@@ -39,6 +41,10 @@ interface MonthlyChartProps {
   period: 'year' | 'all'
   /** The year shown when period is 'year'. */
   year: number
+  /** Year view only: another year whose monthly net profit is drawn as a dashed line. */
+  compareYear?: number | null
+  /** That year's records. */
+  compareRecords?: FinancialRecord[]
   isUkNi: boolean
 }
 
@@ -88,9 +94,14 @@ function buildBuckets(records: FinancialRecord[], period: 'year' | 'all', year: 
   return [...byYear.values()].sort((a, b) => a.label.localeCompare(b.label))
 }
 
-export default function MonthlyChart({ records, period, year, isUkNi }: MonthlyChartProps) {
+export default function MonthlyChart({ records, period, year, compareYear = null, compareRecords, isUkNi }: MonthlyChartProps) {
   const isDark = isDarkMode()
   const buckets = useMemo(() => buildBuckets(records, period, year), [records, period, year])
+  // Month buckets of the comparison year (Year view only).
+  const compareBuckets = useMemo(
+    () => (period === 'year' && compareYear != null ? buildBuckets(compareRecords ?? [], 'year', compareYear) : null),
+    [period, compareYear, compareRecords],
+  )
 
   const options = useMemo(() => {
     const wholeMoney = new Intl.NumberFormat(isUkNi ? 'en-GB' : 'en-IE', {
@@ -99,13 +110,13 @@ export default function MonthlyChart({ records, period, year, isUkNi }: MonthlyC
       maximumFractionDigits: 0,
     })
     const { ink, grid } = chartColours(isDark)
-    // Legend and tooltip in dataset order (Income, Expenses, Net profit), not
-    // drawing order: the line has order 0 so it is drawn on top of the bars.
+    // Legend and tooltip in dataset order (Income, Expenses, Net profit, then the
+    // comparison year), not drawing order: the lines are drawn on top of the bars.
     const byDataset = (a: { datasetIndex?: number }, b: { datasetIndex?: number }) => (a.datasetIndex ?? 0) - (b.datasetIndex ?? 0)
     const base: ChartOptions<'bar' | 'line'> = {
       responsive: true,
       maintainAspectRatio: false,
-      // A tap anywhere in a month shows all three figures, no need to hit a thin bar.
+      // A tap anywhere in a month shows every figure, no need to hit a thin bar.
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { position: 'top', labels: { boxWidth: 14, boxHeight: 14, sort: byDataset } },
@@ -158,15 +169,37 @@ export default function MonthlyChart({ records, period, year, isUkNi }: MonthlyC
         },
       ],
     }
+    if (compareBuckets && compareYear != null) {
+      chartData.datasets.push({
+        type: 'line' as const,
+        label: `Net profit ${compareYear}`,
+        data: compareBuckets.map((b) => (b.future ? null : b.income - b.expense)),
+        // Drawn under this year's blue line (lower order is drawn on top).
+        order: 0.5,
+        borderColor: colours.compare,
+        backgroundColor: colours.surface,
+        pointBorderColor: colours.compare,
+        pointBackgroundColor: colours.surface,
+        borderWidth: 2,
+        borderDash: [4, 4],
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        tension: 0,
+      })
+    }
     return chartData
-  }, [buckets, isDark])
+  }, [buckets, compareBuckets, compareYear, isDark])
 
   if (buckets.length === 0) return null
 
   const title = period === 'year' ? `Income and expenses by month (${year})` : 'Income and expenses by year'
   const totalIncome = buckets.reduce((s, b) => s + b.income, 0)
   const totalExpense = buckets.reduce((s, b) => s + b.expense, 0)
-  const summary = `${title}: income ${formatMoney(totalIncome, isUkNi)}, expenses ${formatMoney(totalExpense, isUkNi)}, net profit ${formatMoney(totalIncome - totalExpense, isUkNi)}. The figures are in the table that follows.`
+  const compareNet = compareBuckets ? compareBuckets.reduce((s, b) => s + b.income - b.expense, 0) : 0
+  const compareText = compareBuckets && compareYear != null
+    ? ` Compared with net profit ${formatMoney(compareNet, isUkNi)} in ${compareYear}.`
+    : ''
+  const summary = `${title}: income ${formatMoney(totalIncome, isUkNi)}, expenses ${formatMoney(totalExpense, isUkNi)}, net profit ${formatMoney(totalIncome - totalExpense, isUkNi)}.${compareText} The figures are in the table that follows.`
 
   return (
     <Panel padding="md">
@@ -182,17 +215,22 @@ export default function MonthlyChart({ records, period, year, isUkNi }: MonthlyC
             <th scope="col">Income</th>
             <th scope="col">Expenses</th>
             <th scope="col">Net profit</th>
+            {compareBuckets && <th scope="col">Net profit {compareYear}</th>}
           </tr>
         </thead>
         <tbody>
-          {buckets.map((b) => (
-            <tr key={b.label}>
-              <th scope="row">{b.label}</th>
-              <td>{formatMoney(b.income, isUkNi)}</td>
-              <td>{formatMoney(b.expense, isUkNi)}</td>
-              <td>{b.future ? 'Not yet' : formatMoney(b.income - b.expense, isUkNi)}</td>
-            </tr>
-          ))}
+          {buckets.map((b, i) => {
+            const c = compareBuckets?.[i]
+            return (
+              <tr key={b.label}>
+                <th scope="row">{b.label}</th>
+                <td>{formatMoney(b.income, isUkNi)}</td>
+                <td>{formatMoney(b.expense, isUkNi)}</td>
+                <td>{b.future ? 'Not yet' : formatMoney(b.income - b.expense, isUkNi)}</td>
+                {c && <td>{c.future ? 'Not yet' : formatMoney(c.income - c.expense, isUkNi)}</td>}
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </Panel>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>P&amp;L year comparison</title>
+</head>
+<body>
+<h1>Profit &amp; Loss chart – year comparison</h1>
+<p>Follows the P&amp;L year selector (commit <code>45e71f42</code>) and the net profit line (commit <code>55af9cc1</code>). Feature doc: <code>docs/features/profit-loss-tracker.md</code>.</p>
+
+<h2>The question a beekeeper is asking</h2>
+<p>"Am I doing better or worse than last year, and in which months?" The chart can show one year at a time. All Time already compares whole years side by side, but not month by month.</p>
+
+<h2>How it will work for the beekeeper</h2>
+<ul>
+  <li>With <strong>Year</strong> chosen, a second drop-down, <strong>Compare with</strong>, sits next to Year. It starts at "None" and lists the other years that have records, newest first.</li>
+  <li>When a year is chosen, the chart adds a <strong>dashed grey line, "Net profit 2025"</strong>, month by month, next to this year's solid blue net line. Above the lines means a better month than last year. If the comparison year is the current year, its line stops at this month, as usual.</li>
+  <li>Tapping a month shows this year's income, expenses and net profit, plus "Net profit 2025".</li>
+  <li><strong>The three totals cards</strong> each gain a small line under the figure, for example "2025: €2,140", so the whole-year comparison is there without reading the chart.</li>
+  <li>"Compare with" is cleared when you choose the same year in Year, or leave the Year period.</li>
+</ul>
+<pre>
+ Profit &amp; Loss (phone, Year 2026 compared with 2025, illustration only)
+ Year [2026 ▾]   Compare with [2025 ▾]
+ ┌─────────┬──────────┬──────────┐
+ │ Income  │ Expenses │ Net      │
+ │ €3,486  │ €5,254   │ -€1,768  │
+ │ 2025:   │ 2025:    │ 2025:    │
+ │ €2,140  │ €1,900   │ €240     │
+ └─────────┴──────────┴──────────┘
+ Income and expenses by month (2026)
+ ■ Income ■ Expenses ─●─ Net profit  - -○- - Net profit 2025
+</pre>
+
+<h2>Design checks (dataviz skill)</h2>
+<ul>
+  <li><strong>The comparison is one extra line, not six series.</strong> Last year's income and expenses bars as well would make 12 months × 4 bars, too thin to read on a phone. Net profit is the one figure that sums up a month.</li>
+  <li><strong>Grey and dashed is a reference mark, not a new category.</strong> Last year in neutral grey is the usual way to show "previous period". It is told apart from this year's blue by both its dash and its colour, and by the legend. Grey (light <code>#6b7280</code>, dark <code>#9ca3af</code>) has at least 4.5:1 contrast on both surfaces. The validator's colour-variety check does not apply to a neutral reference line. The existing three colours are unchanged.</li>
+  <li>The line is 2px with 4px dashes and 8px hollow points, so it stays visible where it crosses the blue line. One money axis, as before.</li>
+  <li>The hidden table for screen readers gains a "Net profit 2025" column, and the summary says what is compared.</li>
+</ul>
+
+<h2>To do</h2>
+<ol>
+  <li>☑ <code>index.tsx</code>:
+    <ul>
+      <li><code>compareYear</code> state (<code>null</code> means none). A "Compare with" <code>SelectField</code> next to Year, listing the years with records except the chosen one.</li>
+      <li>It is reset when it would equal the chosen year, or when the period is not Year.</li>
+      <li>Memoised comparison totals (income, expenses and net from that year's records), passed to the summary cards and the chart.</li>
+    </ul>
+  </li>
+  <li>☑ <code>FinancialSummary.tsx</code>: an optional <code>compare</code> prop that shows "2025: €X" under each figure, at 14px in the secondary text colour.</li>
+  <li>☑ <code>MonthlyChart.tsx</code>: optional <code>compareRecords</code> and <code>compareYear</code>. It reuses <code>buildBuckets</code> for the comparison year and adds the dashed grey line dataset with its legend and tooltip entry, plus the table column.</li>
+  <li>☑ Docs: <code>profit-loss-tracker.md</code>.</li>
+  <li>☑ QA audit, typecheck and lint, then you test it in the app.</li>
+</ol>
+
+<h2>Review (12/11/2026)</h2>
+<p>Plan approved with "Net profit line". Built as planned, with no database changes and no new query: the comparison uses the records P&amp;L already loads.</p>
+<ul>
+  <li><code>index.tsx</code>:
+    <ul>
+      <li><code>compareYear</code> state, plus a derived <code>activeCompareYear</code> that applies only in the Year view and never to the year on show. This replaces the planned "reset", so no effect is needed.</li>
+      <li>Memoised <code>compareRecords</code> and <code>compareTotals</code>.</li>
+      <li>"Compare with" <code>SelectField</code> next to Year (they wrap on narrow screens).</li>
+    </ul>
+  </li>
+  <li><code>FinancialSummary.tsx</code>: optional <code>compare</code> prop that shows "2025: €X" under each figure. Net is signed.</li>
+  <li><code>MonthlyChart.tsx</code>: optional <code>compareYear</code> and <code>compareRecords</code>. <code>buildBuckets</code> is reused for that year. The dashed grey line dataset uses <code>order: 0.5</code>, so it is drawn under the blue line. Legend and tooltip keep dataset order. The summary and hidden table include the comparison.</li>
+  <li><code>docs/features/profit-loss-tracker.md</code>: features line and a "Year Comparison" section.</li>
+</ul>
+<h3>QA audit</h3>
+<ul>
+  <li>No Critical, High or Medium findings. All new hooks run before the loading return. The comparison records are memoised, so the chart does not redraw needlessly. Picking the same year in both drop-downs simply shows "None".</li>
+  <li>🟢 Note: if the chosen year has no records but the comparison year does, the cards show the comparison and the chart stays hidden, as it does for any empty year.</li>
+  <li><code>npm run typecheck</code> and eslint: clean. Tests and build were not run, per your rules. I have not seen the chart drawn.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>Year 2026, Compare with 2025: a dashed grey line follows 2025's monthly net profit, the cards show "2025: €X", and a tap shows both net figures.</li>
+  <li>Switch Year to 2025: Compare with goes back to None. Leave and return to Year: no comparison is left behind.</li>
+  <li>Phone (390 wide), in light and dark mode: the two drop-downs fit or wrap neatly, the dashed line is distinct from the blue one, and the cards' extra line is readable.</li>
+</ol>
+</body>
+</html>

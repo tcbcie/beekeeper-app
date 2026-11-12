@@ -7,13 +7,16 @@ interface FinancialSummaryProps {
   totalExpenses: number
   netProfit: number
   isUkNi?: boolean
+  /** Another year's totals, shown as "2025: €X" under each figure. */
+  compare?: { year: number; income: number; expenses: number; net: number } | null
 }
 
 export default function FinancialSummary({
   totalIncome,
   totalExpenses,
   netProfit,
-  isUkNi
+  isUkNi,
+  compare
 }: FinancialSummaryProps) {
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat(isUkNi ? 'en-GB' : 'en-IE', {
@@ -33,6 +36,7 @@ export default function FinancialSummary({
         <p className="text-lg font-bold text-green-600 dark:text-green-400">
           {formatAmount(totalIncome)}
         </p>
+        {compare && <p className="text-sm text-text-secondary mt-1">{compare.year}: {formatAmount(compare.income)}</p>}
       </div>
 
       {/* Expenses Card */}
@@ -44,6 +48,7 @@ export default function FinancialSummary({
         <p className="text-lg font-bold text-red-600 dark:text-red-400">
           {formatAmount(totalExpenses)}
         </p>
+        {compare && <p className="text-sm text-text-secondary mt-1">{compare.year}: {formatAmount(compare.expenses)}</p>}
       </div>
 
       {/* Net Profit/Loss Card */}
@@ -73,6 +78,8 @@ export default function FinancialSummary({
         }`}>
           {formatAmount(Math.abs(netProfit))}
         </p>
+        {/* Signed, so a loss year reads as -€X beside this year's profit or loss label. */}
+        {compare && <p className="text-sm text-text-secondary mt-1">{compare.year}: {formatAmount(compare.net)}</p>}
       </div>
     </div>
   )

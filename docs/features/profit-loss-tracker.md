@@ -24,6 +24,7 @@ Completed: January 17, 2026
 - Dropdown categories specific to beekeeping
 - Summary cards: Total Income, Total Expenses, Net Profit/Loss
 - Income and expenses chart with a net profit line: by month for a chosen Year, by year for All Time (12/11/2026)
+- Year comparison: compare the chosen year with another year, on the chart and the totals cards (12/11/2026)
 - Income by category: ranked bars for the chosen period, largest first (12/11/2026)
 - Expenses by category: the same, in red, under the income breakdown (12/11/2026)
 - Time period filtering: This Month, Year with a year selector, All Time (12/11/2026)
@@ -147,6 +148,14 @@ interface FinancialRecord {
   - Dark on `#111827`: income `#16a34a` (green-600), expenses `#c62828`, net `#3b82f6` (blue-500). All checks pass. The expense red was `#b91c1c` until the net line was added, when the validator showed it under 3:1 contrast. Its colour-blind ΔE 7.8 against the green is in the band allowed with a second cue: income is always the left bar and the legend always shows
 - Screen readers get a summary label on the chart (income, expenses and net) and a hidden table of the same figures, with net shown as "Not yet" for months still to come
 - chart.js loads only when the chart shows (`next/dynamic`), behind a skeleton of the same height
+
+### Year Comparison
+- In the **Year** view a **Compare with** drop-down sits next to Year. It starts at "None" and lists the other years with records, newest first
+- The comparison applies only in the Year view and never to the year on show. It is worked out from state (`activeCompareYear`), so changing the period or picking the same year switches it off with no state to reset
+- **Chart:** a dashed grey line "Net profit 2025" (2px, 4px dashes, 8px hollow points) shows the comparison year's monthly net profit. It is drawn under this year's solid blue line. If the comparison year is the current year, it stops at this month. Tapping a month adds "Net profit 2025" to the tooltip, and the screen reader summary and hidden table gain the comparison figures
+- One extra line, not last year's bars: twelve months of four bars each would be too thin on a phone, and net profit sums up a month
+- **Colour:** the grey is a neutral reference mark for the previous period, not a new category. It is light `#6b7280` and dark `#9ca3af`, each at least 4.5:1 on its surface, and is also told apart from the blue by its dashes and the legend. The validated income, expense and net colours are unchanged
+- **Totals cards:** each card shows "2025: €X" under its figure. The net figure is signed, so a loss year reads as -€X
 
 ### Income by Category
 - Sits between the summary cards and the records list, and follows the time filter: "Income by category (this month / 2025 / all time)"
