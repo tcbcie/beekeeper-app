@@ -23,7 +23,7 @@ Completed: January 17, 2026
 - Income/Expense choice: a radio group with the shared `RadioChoiceOption`, selected in green (WP04, 04/11/2026; was a green/red toggle), with every label tied to its field
 - Dropdown categories specific to beekeeping
 - Summary cards: Total Income, Total Expenses, Net Profit/Loss
-- Income and expenses chart: by month for This Year, by year for All Time (12/11/2026)
+- Income and expenses chart with a net profit line: by month for This Year, by year for All Time (12/11/2026)
 - Income by category: ranked bars for the chosen period, largest first (12/11/2026)
 - Expenses by category: the same, in red, under the income breakdown (12/11/2026)
 - Time period filtering
@@ -136,11 +136,12 @@ interface FinancialRecord {
 - **All Time:** "Income and expenses by year", one pair of bars for each year that has records
 - **This Month:** no chart, because the totals already show the month. It is also hidden when the period has no records
 - Records are bucketed by their `YYYY-MM-DD` string, so no time zone moves a record into another month
-- One money axis (whole euros or pounds), legend at the top, and tap or hover tooltips such as "Income: €120.00". Text is at least 14px through `themeChartOptions` plus 14px tooltip fonts
-- **Colours, checked with the dataviz palette validator.** The card colours green-500 and red-500 fail for colour-blind readers, so the chart uses darker steps:
-  - Light: income `#15803d` (green-700), expenses `#dc2626` (red-600). CVD ΔE 8.6
-  - Dark on `#111827`: income `#16a34a` (green-600), expenses `#b91c1c` (red-700). CVD ΔE 11.0
-- Screen readers get a summary label on the chart and a hidden table of the same figures
+- **Net profit line** (income minus expenses): blue to match the Net Profit card, 2px, with 8px dots, drawn on top of the bars (`order: 0`). It dips below a darker 2px **zero line** in loss months. In This Year it stops at the current month (later months are `null`)
+- One money axis (whole euros or pounds), legend at the top in the order Income, Expenses, Net profit. Tapping anywhere in a month shows all three figures (`interaction: { mode: 'index', intersect: false }`), so nobody has to hit a thin bar. Text is at least 14px through `themeChartOptions` plus 14px tooltip fonts
+- **Colours, checked as a set with the dataviz palette validator (`--pairs all`).** The card colours green-500 and red-500 fail for colour-blind readers, so the chart uses darker steps:
+  - Light: income `#15803d` (green-700), expenses `#dc2626` (red-600), net `#2563eb` (blue-600). All checks pass
+  - Dark on `#111827`: income `#16a34a` (green-600), expenses `#c62828`, net `#3b82f6` (blue-500). All checks pass. The expense red was `#b91c1c` until the net line was added, when the validator showed it under 3:1 contrast. Its colour-blind ΔE 7.8 against the green is in the band allowed with a second cue: income is always the left bar and the legend always shows
+- Screen readers get a summary label on the chart (income, expenses and net) and a hidden table of the same figures, with net shown as "Not yet" for months still to come
 - chart.js loads only when the chart shows (`next/dynamic`), behind a skeleton of the same height
 
 ### Income by Category

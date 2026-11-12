@@ -6,25 +6,30 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
+  LineElement,
+  PointElement,
   Tooltip,
   Legend,
+  type ChartData,
   type ChartOptions,
 } from 'chart.js'
-import { Bar } from 'react-chartjs-2'
+import { Chart } from 'react-chartjs-2'
 import Panel from '@/components/ui/Panel'
 import { formatMoney } from '@/lib/crm-currency'
-import { isDarkMode, themeChartOptions } from '@/lib/chart-theme'
+import { chartColours, isDarkMode, themeChartOptions } from '@/lib/chart-theme'
 import type { FinancialRecord } from '@/types/records'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend)
 
-// Colours checked with the dataviz palette validator (12/11/2026). The lighter
-// green-500/red-500 used on the cards fail for colour-blind readers (ΔE 3.5), so
-// the chart uses darker steps: light green-700/red-600 (ΔE 8.6), dark
-// green-600/red-700 on #111827 (ΔE 11.0).
+// Colours checked as a set with the dataviz palette validator (--pairs all,
+// 12/11/2026). The lighter green-500/red-500 used on the cards fail for
+// colour-blind readers (ΔE 3.5), so the chart uses darker steps. Net is blue,
+// like the Net Profit card. Dark expense red is #c62828: red-700 (#b91c1c) was
+// under 3:1 contrast on #111827. Its colour-blind ΔE 7.8 against the green is in
+// the allowed band because income is always the left bar and the legend shows.
 const COLOURS = {
-  light: { income: '#15803d', expense: '#dc2626' },
-  dark: { income: '#16a34a', expense: '#b91c1c' },
+  light: { income: '#15803d', expense: '#dc2626', net: '#2563eb' },
+  dark: { income: '#16a34a', expense: '#c62828', net: '#3b82f6' },
 }
 
 interface MonthlyChartProps {
@@ -39,6 +44,8 @@ interface Bucket {
   label: string
   income: number
   expense: number
+  /** A month of this year still to come: no net point, so the line stops at today. */
+  future?: boolean
 }
 
 // Buckets by the YYYY-MM-DD string itself, so no time zone can move a record
@@ -52,12 +59,14 @@ function buildBuckets(records: FinancialRecord[], period: 'year' | 'all'): Bucke
   }
 
   if (period === 'year') {
-    const year = new Date().getFullYear()
+    const now = new Date()
+    const year = now.getFullYear()
     const monthName = new Intl.DateTimeFormat('en-GB', { month: 'short' })
-    const buckets = Array.from({ length: 12 }, (_, m) => ({
+    const buckets: Bucket[] = Array.from({ length: 12 }, (_, m) => ({
       label: monthName.format(new Date(year, m, 1)),
       income: 0,
       expense: 0,
+      future: m > now.getMonth(),
     }))
     for (const r of records) {
       if (r.transaction_date.slice(0, 4) !== String(year)) continue
@@ -87,15 +96,23 @@ export default function MonthlyChart({ records, period, isUkNi }: MonthlyChartPr
       currency: isUkNi ? 'GBP' : 'EUR',
       maximumFractionDigits: 0,
     })
-    const base: ChartOptions<'bar'> = {
+    const { ink, grid } = chartColours(isDark)
+    // Legend and tooltip in dataset order (Income, Expenses, Net profit), not
+    // drawing order: the line has order 0 so it is drawn on top of the bars.
+    const byDataset = (a: { datasetIndex?: number }, b: { datasetIndex?: number }) => (a.datasetIndex ?? 0) - (b.datasetIndex ?? 0)
+    const base: ChartOptions<'bar' | 'line'> = {
       responsive: true,
       maintainAspectRatio: false,
+      // A tap anywhere in a month shows all three figures, no need to hit a thin bar.
+      interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { position: 'top', labels: { boxWidth: 14, boxHeight: 14 } },
+        legend: { position: 'top', labels: { boxWidth: 14, boxHeight: 14, sort: byDataset } },
         tooltip: {
           // 14px floor for the app's readers (Chart.js defaults to 12px here).
           titleFont: { size: 14 },
           bodyFont: { size: 14 },
+          itemSort: byDataset,
+          filter: (item) => item.parsed.y != null,
           callbacks: {
             label: (ctx) => `${ctx.dataset.label}: ${formatMoney(Number(ctx.parsed.y) || 0, isUkNi)}`,
           },
@@ -103,7 +120,15 @@ export default function MonthlyChart({ records, period, isUkNi }: MonthlyChartPr
       },
       scales: {
         x: { grid: { display: false } },
-        y: { beginAtZero: true, ticks: { callback: (v) => wholeMoney.format(Number(v)) } },
+        y: {
+          beginAtZero: true,
+          ticks: { callback: (v) => wholeMoney.format(Number(v)) },
+          // A clear zero line, so loss months read as below it.
+          grid: {
+            color: (ctx) => (ctx.tick?.value === 0 ? ink : grid),
+            lineWidth: (ctx) => (ctx.tick?.value === 0 ? 2 : 1),
+          },
+        },
       },
     }
     return themeChartOptions(base, isDark)
@@ -111,14 +136,27 @@ export default function MonthlyChart({ records, period, isUkNi }: MonthlyChartPr
 
   const data = useMemo(() => {
     const colours = isDark ? COLOURS.dark : COLOURS.light
-    const bar = { borderRadius: 4, borderSkipped: 'bottom' as const, barPercentage: 0.9, categoryPercentage: 0.75 }
-    return {
+    const bar = { type: 'bar' as const, order: 1, borderRadius: 4, borderSkipped: 'bottom' as const, barPercentage: 0.9, categoryPercentage: 0.75 }
+    const chartData: ChartData<'bar' | 'line', (number | null)[], string> = {
       labels: buckets.map((b) => b.label),
       datasets: [
         { label: 'Income', data: buckets.map((b) => b.income), backgroundColor: colours.income, ...bar },
         { label: 'Expenses', data: buckets.map((b) => b.expense), backgroundColor: colours.expense, ...bar },
+        {
+          type: 'line' as const,
+          label: 'Net profit',
+          data: buckets.map((b) => (b.future ? null : b.income - b.expense)),
+          order: 0,
+          borderColor: colours.net,
+          backgroundColor: colours.net,
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          tension: 0,
+        },
       ],
     }
+    return chartData
   }, [buckets, isDark])
 
   if (buckets.length === 0) return null
@@ -126,13 +164,13 @@ export default function MonthlyChart({ records, period, isUkNi }: MonthlyChartPr
   const title = period === 'year' ? 'Income and expenses by month' : 'Income and expenses by year'
   const totalIncome = buckets.reduce((s, b) => s + b.income, 0)
   const totalExpense = buckets.reduce((s, b) => s + b.expense, 0)
-  const summary = `${title}: income ${formatMoney(totalIncome, isUkNi)}, expenses ${formatMoney(totalExpense, isUkNi)}. The figures are in the table that follows.`
+  const summary = `${title}: income ${formatMoney(totalIncome, isUkNi)}, expenses ${formatMoney(totalExpense, isUkNi)}, net profit ${formatMoney(totalIncome - totalExpense, isUkNi)}. The figures are in the table that follows.`
 
   return (
     <Panel padding="md">
       <h3 className="font-semibold text-foreground mb-2">{title}</h3>
       <div className="relative h-60 lg:h-72">
-        <Bar data={data} options={options} role="img" aria-label={summary} />
+        <Chart type="bar" data={data} options={options} role="img" aria-label={summary} />
       </div>
       <table className="sr-only">
         <caption>{title}</caption>
@@ -141,6 +179,7 @@ export default function MonthlyChart({ records, period, isUkNi }: MonthlyChartPr
             <th scope="col">{period === 'year' ? 'Month' : 'Year'}</th>
             <th scope="col">Income</th>
             <th scope="col">Expenses</th>
+            <th scope="col">Net profit</th>
           </tr>
         </thead>
         <tbody>
@@ -149,6 +188,7 @@ export default function MonthlyChart({ records, period, isUkNi }: MonthlyChartPr
               <th scope="row">{b.label}</th>
               <td>{formatMoney(b.income, isUkNi)}</td>
               <td>{formatMoney(b.expense, isUkNi)}</td>
+              <td>{b.future ? 'Not yet' : formatMoney(b.income - b.expense, isUkNi)}</td>
             </tr>
           ))}
         </tbody>

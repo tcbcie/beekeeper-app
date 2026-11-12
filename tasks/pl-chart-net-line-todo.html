@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>P&amp;L chart net line</title>
+</head>
+<body>
+<h1>Profit &amp; Loss chart – net profit line</h1>
+<p>Follows the income and expenses chart (<code>tasks/pl-monthly-chart-todo.html</code>, commit <code>e09ba229</code>). Feature doc: <code>docs/features/profit-loss-tracker.md</code>.</p>
+
+<h2>How it will work for the beekeeper</h2>
+<ul>
+  <li>A blue line, <strong>Net profit</strong> (income minus expenses), runs across the bars with a dot on each month, or on each year in All Time. It is blue to match the Net Profit card.</li>
+  <li>When a month makes a loss, the line dips below a <strong>clear zero line</strong>, and the axis extends below €0 to show it.</li>
+  <li><strong>This Year:</strong> the line stops at the current month. It does not run flat along €0 through months that have not happened yet.</li>
+  <li><strong>Easier tapping:</strong> tapping anywhere in a month now shows all three figures together, "Income", "Expenses" and "Net profit", with no need to hit a thin bar. That helps with gloves.</li>
+  <li>The legend gains "Net profit". The screen reader summary and the hidden table gain a net column.</li>
+</ul>
+<pre>
+ This Year (phone, illustration only)
+ ■ Income  ■ Expenses  ─●─ Net profit
+ €800 ┤          ▆
+ €400 ┤ ▃▅    ●──▆█─●
+   €0 ┼═┴┴═●══┴┴═══┴┴═●══════════   ← zero line
+-€200 ┤  ●╱              (line stops at this month)
+      J  F  M  A  M  J  J …     D
+</pre>
+
+<h2>Design checks (dataviz skill, validator run)</h2>
+<ul>
+  <li>The net line shares the one money axis: same unit, no second axis.</li>
+  <li><strong>All three colours were checked against each other</strong> with the validator (<code>--pairs all</code>):
+    <table border="1" cellpadding="6" cellspacing="0">
+      <tr><th>Mode</th><th>Income</th><th>Expenses</th><th>Net line</th><th>Result</th></tr>
+      <tr><td>Light</td><td><code>#15803d</code></td><td><code>#dc2626</code></td><td>blue-600 <code>#2563eb</code></td><td>All checks pass</td></tr>
+      <tr><td>Dark</td><td><code>#16a34a</code></td><td><strong><code>#c62828</code></strong> (was <code>#b91c1c</code>)</td><td>blue-500 <code>#3b82f6</code></td><td>Pass. Colour-blind ΔE 7.8 is in the allowed band, because income is always the left bar and the legend is always shown</td></tr>
+    </table>
+    The earlier dark red, <code>#b91c1c</code>, was <strong>under 3:1 contrast</strong> against the dark background (2.74). The validator flagged it on this run, so the dark expense red becomes <code>#c62828</code>, which clears 3:1.
+  </li>
+  <li>The line is 2px with 8px dots, drawn on top of the bars. The zero gridline is darker than the others.</li>
+</ul>
+
+<h2>To do</h2>
+<ol>
+  <li>☑ <code>MonthlyChart.tsx</code>:
+    <ul>
+      <li>Add a <code>net</code> line dataset. In This Year it is <code>null</code> after the current month.</li>
+      <li>Switch from <code>Bar</code> to the mixed <code>Chart type="bar"</code> and register <code>LineElement</code> and <code>PointElement</code>.</li>
+      <li>Set <code>interaction: { mode: 'index', intersect: false }</code>, a darker zero gridline, the new colours, the net column in the hidden table and net in the summary.</li>
+    </ul>
+  </li>
+  <li>☑ Docs: <code>profit-loss-tracker.md</code>, the chart section and colour table.</li>
+  <li>☑ QA audit, typecheck and lint, then you test it in the app.</li>
+</ol>
+
+<h2>Review (12/11/2026)</h2>
+<p>Plan approved. Built as planned in one file, <code>src/components/tools/ProfitLoss/MonthlyChart.tsx</code>, plus the doc. No database changes.</p>
+<ul>
+  <li><strong>Chart type:</strong> the chart is now a mixed <code>Chart type="bar"</code>, with <code>LineElement</code> and <code>PointElement</code> registered. The net dataset is a line with <code>order: 0</code>, so it is drawn on top.</li>
+  <li><strong>This Year:</strong> net is <code>null</code> for months still to come, so the line stops at today.</li>
+  <li><strong>Tooltip:</strong> <code>index</code> mode with <code>intersect: false</code>. Points with no value are filtered out of the tooltip.</li>
+  <li><strong>Order:</strong> the legend and tooltip are sorted in dataset order (Income, Expenses, Net profit). Without that, the line's drawing order would put it first.</li>
+  <li><strong>Zero line:</strong> the zero gridline uses the ink colour at 2px. The other gridlines are unchanged.</li>
+  <li><strong>Colours:</strong> net is blue-600 in light mode and blue-500 in dark mode. The dark expense red is now <code>#c62828</code>, because <code>#b91c1c</code> was under 3:1 contrast.</li>
+  <li><strong>Screen readers:</strong> the summary now includes net, and the hidden table has a Net profit column ("Not yet" for months still to come).</li>
+</ul>
+<h3>QA audit</h3>
+<ul>
+  <li>No Critical or High findings.</li>
+  <li><code>themeChartOptions</code> keeps a grid colour the chart sets itself, so the zero-line rule takes effect.</li>
+  <li>Empty months still show €0 for income and expenses. Only the net point is skipped, and only for months still to come.</li>
+  <li><code>npm run typecheck</code> and eslint: clean. One typing fix was needed: Chart.js legend items have an optional <code>datasetIndex</code>. Tests and build were not run, per your rules. I have not seen the chart drawn.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>This Year: a blue line through each month up to now, dipping below the zero line in a loss month. Tapping a month shows Income, Expenses and Net profit together.</li>
+  <li>All Time: one net point per year.</li>
+  <li>Dark mode: the red bars are clearly visible against the background. Phone (390 wide): the legend fits and the labels do not overlap.</li>
+</ol>
+</body>
+</html>
