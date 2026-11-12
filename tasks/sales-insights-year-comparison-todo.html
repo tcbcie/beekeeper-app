@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Sales Insights year comparison</title>
+</head>
+<body>
+<h1>Sales Insights chart – year comparison</h1>
+<p>Matches the P&amp;L year comparison (<code>tasks/pl-year-comparison-todo.html</code>, commit <code>613e0167</code>). Feature doc: <code>docs/features/crm-module.md</code> (Sales Insights).</p>
+
+<h2>How it will work for the beekeeper</h2>
+<ul>
+  <li>A <strong>Compare with</strong> drop-down sits next to Year. It starts at "None" and lists the other years with income or orders, newest first. It is the same control as on P&amp;L.</li>
+  <li>When a year is chosen, the <strong>Income by month</strong> chart adds a <strong>dashed grey line, "Income 2025"</strong>. It shows that year's total income for each month, so it lines up with the top of each stacked bar. A bar above the line means a better month than last year.</li>
+  <li>If the comparison year is the current year, its line stops at this month. For a past year it runs all twelve months, which also shows the shape of the season still to come when you view this year.</li>
+  <li>Tapping a month shows From orders, Other, Total and "Income 2025".</li>
+  <li>The <strong>"Income in 2026" card</strong> gains a line "2025: €X" under its split. Outstanding and Open to fulfil stay as today's position. Income by category and Top customers stay as the chosen year.</li>
+  <li>The comparison switches itself off when it would equal the chosen year.</li>
+</ul>
+<pre>
+ Year [2026 ▾]   Compare with [2025 ▾]
+ Income by month (2026)
+ ■ From orders  ■ Other  - -○- - Income 2025
+ €600 ┤      ○- -○
+ €300 ┤ ▒ ○╱ ▒    ╲○ ▒
+   €0 ┼─█──█──█──█──█── …
+</pre>
+
+<h2>Design checks (dataviz skill)</h2>
+<ul>
+  <li>It uses the same reference mark as P&amp;L: a neutral grey (light <code>#6b7280</code>, dark <code>#9ca3af</code>, at least 4.5:1), 2px with 4px dashes and 8px hollow points. It is told apart from the green and blue bars by its form (a line), its dashes and the legend. The validated green and blue are unchanged.</li>
+  <li>The line has its own <code>stack</code>, so it is never added on top of the stacked bars. One money axis.</li>
+  <li>The hidden table gains an "Income 2025" column, and the summary names the comparison.</li>
+</ul>
+
+<h2>To do</h2>
+<ol>
+  <li>☑ <code>insights/page.tsx</code>: <code>compareYear</code> state, with a derived active value that is never the chosen year. A "Compare with" <code>SelectField</code> next to Year. Memoised comparison income rows and their total. The Income card shows "2025: €X", and the rows go to the chart.</li>
+  <li>☑ <code>MonthlyIncomeChart.tsx</code>: optional <code>compareRows</code> and <code>compareYear</code>. Switch to the mixed <code>Chart type="bar"</code> and register the line and point elements. Add the dashed grey line dataset on its own stack, the tooltip entry, and the table column and summary.</li>
+  <li>☑ Docs: <code>crm-module.md</code>.</li>
+  <li>☑ QA audit, typecheck and lint, then you test it in the app.</li>
+</ol>
+
+<h2>Review (12/11/2026)</h2>
+<p>Plan approved. Built as planned, with no database changes and no new query: the comparison uses the income rows the page already loads.</p>
+<ul>
+  <li><code>src/app/dashboard/crm/insights/page.tsx</code>:
+    <ul>
+      <li><code>compareYear</code> state and a derived <code>activeCompareYear</code>.</li>
+      <li>A "Compare with" <code>SelectField</code> next to Year (they wrap on narrow screens).</li>
+      <li>Memoised <code>compareIncome</code> and <code>compareTotal</code>.</li>
+      <li>The Income card shows "2025: €X", and the rows go to the chart.</li>
+    </ul>
+  </li>
+  <li><code>src/components/crm/MonthlyIncomeChart.tsx</code>:
+    <ul>
+      <li>The bucketing moved into <code>monthBuckets()</code> and is reused for the comparison year, with months still to come set to <code>null</code>.</li>
+      <li>Now a mixed <code>Chart type="bar"</code> with the line and point elements registered. The bars are on stack <code>income</code> and the dashed grey line on its own stack <code>compare</code>, with <code>order: -1</code> so it is drawn on top.</li>
+      <li>The tooltip Total adds only the bars. The summary and hidden table include the comparison.</li>
+    </ul>
+  </li>
+  <li><code>docs/features/crm-module.md</code>: a "Year comparison" entry in Sales Insights.</li>
+</ul>
+<h3>QA audit</h3>
+<ul>
+  <li>🟡 <strong>Fixed:</strong> the line's lower drawing order would have listed "Income 2025" first in the legend and tooltip. Both are now sorted by dataset order, as on the P&amp;L chart.</li>
+  <li>🟢 Checked: the line has its own stack, so its values are never added onto the bars. The Total footer leaves out the line. All new hooks run before the loading return. As on P&amp;L, a chosen year with no income hides the chart, but the card still shows the comparison.</li>
+  <li><code>npm run typecheck</code> and eslint: clean. Tests and build were not run, per your rules. I have not seen the chart drawn.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>Year 2026, Compare with 2025: the dashed grey line sits at last year's monthly totals, not stacked on the bars. The Income card shows "2025: €X". A tap shows From orders, Other, Income 2025 and the Total of the bars only.</li>
+  <li>Setting Year to 2025 switches the comparison back to None.</li>
+  <li>Phone (390 wide), in light and dark mode: both drop-downs fit or wrap neatly, and the grey line stands out from the green and blue bars.</li>
+</ol>
+</body>
+</html>

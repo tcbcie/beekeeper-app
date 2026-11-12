@@ -64,6 +64,10 @@ export default function SalesInsightsPage() {
   // A failed load must not show €0 or "No sales yet" as if it were true.
   const [loadFailed, setLoadFailed] = useState(false)
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear())
+  // Year to compare the chart and income card with (null = none). Never the year
+  // on show, so picking that year just switches the comparison off.
+  const [compareYear, setCompareYear] = useState<number | null>(null)
+  const activeCompareYear = compareYear !== selectedYear ? compareYear : null
 
   const fetchData = useCallback(async (uid: string) => {
     // All income rows (as Profit & Loss loads them); the chosen year is picked on the page.
@@ -158,6 +162,16 @@ export default function SalesInsightsPage() {
     return { incomeYear, incomeMonth, ordersYear, ordersMonth, outstanding, pendingCount, categories, topCustomers, yearIncome }
   }, [orders, income, selectedYear])
 
+  // The comparison year's income rows and total (empty when there is no comparison).
+  const compareIncome = useMemo(
+    () => (activeCompareYear == null ? [] : income.filter((r) => yearOf(r.transaction_date) === activeCompareYear)),
+    [income, activeCompareYear],
+  )
+  const compareTotal = useMemo(
+    () => compareIncome.reduce((s, r) => s + (Number(r.amount) || 0), 0),
+    [compareIncome],
+  )
+
   if (loading) return <LoadingSpinner text="Loading sales insights..." />
 
   const year = selectedYear
@@ -189,16 +203,30 @@ export default function SalesInsightsPage() {
         />
       ) : (
         <>
-          <div className="w-40">
-            <SelectField
-              label="Year"
-              value={String(selectedYear)}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-            >
-              {yearOptions.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </SelectField>
+          <div className="flex flex-wrap gap-3">
+            <div className="w-40">
+              <SelectField
+                label="Year"
+                value={String(selectedYear)}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+              >
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </SelectField>
+            </div>
+            <div className="w-40">
+              <SelectField
+                label="Compare with"
+                value={activeCompareYear == null ? '' : String(activeCompareYear)}
+                onChange={(e) => setCompareYear(e.target.value ? Number(e.target.value) : null)}
+              >
+                <option value="">None</option>
+                {yearOptions.filter((y) => y !== selectedYear).map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </SelectField>
+            </div>
           </div>
 
           {/* Headline stats */}
@@ -208,6 +236,9 @@ export default function SalesInsightsPage() {
               <p className="text-2xl font-bold text-foreground tabular-nums">{formatMoney(stats.incomeYear, isUkNi)}</p>
               {stats.incomeYear > 0 && (
                 split(stats.incomeYear, stats.ordersYear)
+              )}
+              {activeCompareYear != null && (
+                <p className="text-sm text-text-secondary tabular-nums mt-1">{activeCompareYear}: {formatMoney(compareTotal, isUkNi)}</p>
               )}
             </Panel>
             {/* A month card only makes sense for the current year. */}
@@ -233,7 +264,13 @@ export default function SalesInsightsPage() {
 
           {/* Income by month, stacked from orders / other (hidden when the year has none) */}
           {stats.incomeYear > 0 && (
-            <MonthlyIncomeChart rows={stats.yearIncome} year={year} isUkNi={isUkNi} />
+            <MonthlyIncomeChart
+              rows={stats.yearIncome}
+              year={year}
+              compareYear={activeCompareYear}
+              compareRows={compareIncome}
+              isUkNi={isUkNi}
+            />
           )}
 
           {/* Income by category */}

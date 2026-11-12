@@ -270,6 +270,22 @@ orders only and missed the other two.
     and a hidden table (month, from orders, other, total).
   - It is hidden when the year has no income. chart.js loads on demand
     (`next/dynamic`) behind a skeleton of the same height.
+- **Year comparison (12/11/2026):** a **Compare with** drop-down next to Year.
+  It starts at "None" and lists the other years with income or orders. It is
+  derived (`activeCompareYear`) and never the year on show, so picking that year
+  switches it off.
+  - The chart adds a dashed grey line "Income 2025": that year's total income
+    per month, so it lines up with the top of each stacked bar. The line has its
+    own `stack`, so it is never added onto the bars. If the comparison year is
+    the current year, it stops at this month.
+  - It uses the same neutral reference mark as the P&L comparison: light
+    `#6b7280`, dark `#9ca3af`, 2px, 4px dashes, 8px hollow points.
+  - Tapping a month adds "Income 2025". The Total footer still adds only the two
+    stacked parts. Legend and tooltip keep dataset order.
+  - The "Income in {year}" card shows "2025: €X". The screen reader summary and
+    hidden table include the comparison.
+  - Outstanding, Open to fulfil, Income by category and Top customers do not
+    compare.
 - **Income by category (year):** ledger income grouped by income category,
   shown as a ranked bar list. Order product types map one-to-one to these
   categories (see below), so order figures are unchanged. Drawn by the shared
