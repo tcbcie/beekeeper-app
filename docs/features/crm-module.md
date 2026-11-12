@@ -35,8 +35,10 @@ The CRM is shown only when **both** conditions hold:
   `filterByFeatures` unless `crmEnabled` is true (the bottom nav bar never shows
   CRM — it isn't flagged `bottomNav`). Mirrors the existing
   `userRole === 'Admin'` gate for the Settings item.
-- **Route guard:** `src/app/dashboard/crm/layout.tsx` redirects to `/dashboard`
-  unless `crmEnabled` — defence in depth for direct URL access.
+- **Route guard:** `src/app/dashboard/crm/layout.tsx` shows a short "not
+  available" message with a button to the profile unless `crmEnabled` — defence
+  in depth for direct URL access. It used to redirect to `/dashboard` without
+  saying why (changed 12 November 2026).
 - **Server-side enforcement:** the subscription is the actual entitlement, so the
   value-creating RPCs (`crm_create_order`, `crm_save_order_items`, and the
   mark-paid branch of `crm_set_order_payment`) call `_crm_require_subscription()`

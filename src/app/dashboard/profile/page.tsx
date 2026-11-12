@@ -1001,8 +1001,8 @@ export default function ProfilePage() {
             </ToggleRow>
           </CollapsibleSection>
 
-          {/* Data Export - Only visible for users with active subscription */}
-          {subscriptionStatus?.is_active && (
+          {/* Data Export - open to every signed-in user, so a lapsed subscriber can still take
+              their own records with them */}
             <CollapsibleSection title="My data export" storageKey="export">
               <p className="mb-4 text-sm text-text-secondary">
                 Download everything you own &mdash; apiaries, hives, queens, inspections and varroa records &mdash; for backup, analysis or migration.
@@ -1046,7 +1046,6 @@ export default function ProfilePage() {
                 </Button>
               </div>
             </CollapsibleSection>
-          )}
         </div>
 
         <div className="space-y-6">

@@ -42,7 +42,7 @@ The following tables lack a `user_id` column and are linked via parent tables. T
 - nihbs_monthly_returns (uses `updated_by`)
 
 ## Access
-Profile page > "Export My Data" section (requires active subscription).
+Profile page > "My data export" section. Open to every signed-in user since 12 November 2026, so a lapsed subscriber can still take their own records with them (it used to need an active subscription). The export reads through Row Level Security in the browser; there is no separate server-side gate.
 
 ## File
 `src/app/dashboard/profile/page.tsx` — `exportMyDataAsJSON()` and `exportMyDataAsCSV()` functions.
