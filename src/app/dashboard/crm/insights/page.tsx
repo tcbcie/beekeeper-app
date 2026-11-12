@@ -13,11 +13,15 @@ import { formatMoney } from '@/lib/crm-currency'
 import { orderBalance } from '@/lib/crm-orders'
 import { firstOf } from '@/lib/embed'
 import CategoryBreakdown from '@/components/ui/CategoryBreakdown'
+import SelectField from '@/components/ui/SelectField'
 
 interface InsightOrder {
   status: string
   total_amount: number
   amount_paid: number
+  order_date: string
+  customer_id: string | null
+  customer: { name: string } | { name: string }[] | null
 }
 
 // One income row from the Profit & Loss ledger (financial_records). Paid orders
@@ -38,38 +42,32 @@ interface TopCustomer {
 }
 
 const pad = (n: number) => String(n).padStart(2, '0')
+// Year read from a YYYY-MM-DD string, so no time zone moves a record.
+const yearOf = (date: string) => Number(date.slice(0, 4))
 
 export default function SalesInsightsPage() {
   const router = useRouter()
   const toast = useToast()
   const [orders, setOrders] = useState<InsightOrder[]>([])
   const [income, setIncome] = useState<IncomeRow[]>([])
-  const [topCustomers, setTopCustomers] = useState<TopCustomer[]>([])
   const [isUkNi, setIsUkNi] = useState(false)
   const [loading, setLoading] = useState(true)
   // A failed load must not show €0 or "No sales yet" as if it were true.
   const [loadFailed, setLoadFailed] = useState(false)
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear())
 
   const fetchData = useCallback(async (uid: string) => {
-    const year = new Date().getFullYear()
-    const [ordersRes, incomeRes, custRes, profileRes] = await Promise.all([
+    // All income rows (as Profit & Loss loads them); the chosen year is picked on the page.
+    const [ordersRes, incomeRes, profileRes] = await Promise.all([
       supabase
         .from('crm_orders')
-        .select('status, total_amount, amount_paid')
+        .select('status, total_amount, amount_paid, order_date, customer_id, customer:crm_customers(name)')
         .eq('user_id', uid),
       supabase
         .from('financial_records')
         .select('amount, transaction_date, crm_order_id, category:dropdown_values(value)')
         .eq('user_id', uid)
-        .eq('record_type', 'income')
-        .gte('transaction_date', `${year}-01-01`)
-        .lt('transaction_date', `${year + 1}-01-01`),
-      supabase
-        .from('crm_customer_summary')
-        .select('id, name, orders_total, order_count')
-        .eq('user_id', uid)
-        .order('orders_total', { ascending: false })
-        .limit(5),
+        .eq('record_type', 'income'),
       supabase.from('profiles').select('is_uk_ni_resident').eq('id', uid).maybeSingle(),
     ])
 
@@ -79,16 +77,6 @@ export default function SalesInsightsPage() {
     }
     setOrders((ordersRes.data || []) as InsightOrder[])
     setIncome((incomeRes.data || []) as IncomeRow[])
-    setTopCustomers(
-      (custRes.data || [])
-        .map((c) => ({
-          id: c.id,
-          name: c.name,
-          orders_total: Number(c.orders_total) || 0,
-          order_count: Number(c.order_count) || 0,
-        }))
-        .filter((c) => c.orders_total > 0),
-    )
     setIsUkNi(profileRes.data?.is_uk_ni_resident || false)
     setLoading(false)
   }, [toast])
@@ -102,16 +90,27 @@ export default function SalesInsightsPage() {
     init()
   }, [router, fetchData])
 
-  // Income comes from the Profit & Loss ledger (this year's rows): jar sales,
+  // Years to choose from: the current year, the year on show and every year with
+  // income or orders, newest first.
+  const yearOptions = useMemo(() => {
+    const years = new Set<number>([new Date().getFullYear(), selectedYear])
+    for (const r of income) years.add(yearOf(r.transaction_date))
+    for (const o of orders) if (o.order_date) years.add(yearOf(o.order_date))
+    return [...years].filter(Number.isInteger).sort((a, b) => b - a)
+  }, [income, orders, selectedYear])
+
+  // Income comes from the Profit & Loss ledger (the chosen year's rows): jar sales,
   // income added by hand, and fully-paid orders (posted with crm_order_id, dated
-  // by paid_date). Outstanding and pending are order-only, so they still read orders.
+  // by paid_date). Outstanding and pending are today's position across all live
+  // orders, so they do not follow the year.
   const stats = useMemo(() => {
     const now = new Date()
     const monthKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`
     let incomeYear = 0, incomeMonth = 0, ordersYear = 0, ordersMonth = 0
     let outstanding = 0, pendingCount = 0
+    const yearIncome = income.filter((r) => yearOf(r.transaction_date) === selectedYear)
 
-    for (const r of income) {
+    for (const r of yearIncome) {
       const amount = Number(r.amount) || 0
       const fromOrder = r.crm_order_id != null
       const inMonth = r.transaction_date.slice(0, 7) === monthKey
@@ -123,23 +122,37 @@ export default function SalesInsightsPage() {
       }
     }
 
+    // Top customers for the year: non-cancelled orders dated in it, paid or not,
+    // the same rule as crm_customer_summary but for one year.
+    const byCustomer = new Map<string, TopCustomer>()
     for (const o of orders) {
       if (o.status === 'cancelled') continue
       outstanding += orderBalance(o)
       if (o.status === 'pending') pendingCount += 1
+      if (!o.customer_id || !o.order_date || yearOf(o.order_date) !== selectedYear) continue
+      const c = byCustomer.get(o.customer_id)
+        ?? { id: o.customer_id, name: firstOf(o.customer)?.name || 'Customer', orders_total: 0, order_count: 0 }
+      c.orders_total += Number(o.total_amount) || 0
+      c.order_count += 1
+      byCustomer.set(o.customer_id, c)
     }
+    const topCustomers = [...byCustomer.values()]
+      .filter((c) => c.orders_total > 0)
+      .sort((a, b) => b.orders_total - a.orders_total)
+      .slice(0, 5)
 
-    const categories = income.map((r) => ({
+    const categories = yearIncome.map((r) => ({
       name: firstOf(r.category)?.value || 'Other Income',
       amount: Number(r.amount) || 0,
     }))
 
-    return { incomeYear, incomeMonth, ordersYear, ordersMonth, outstanding, pendingCount, categories }
-  }, [orders, income])
+    return { incomeYear, incomeMonth, ordersYear, ordersMonth, outstanding, pendingCount, categories, topCustomers }
+  }, [orders, income, selectedYear])
 
   if (loading) return <LoadingSpinner text="Loading sales insights..." />
 
-  const year = new Date().getFullYear()
+  const year = selectedYear
+  const isCurrentYear = selectedYear === new Date().getFullYear()
   // "€X from orders" and "€Y other" under each income figure, so a sale recorded
   // twice (an order and a jar sale) is easy to spot.
   const split = (total: number, fromOrders: number) => (
@@ -162,13 +175,25 @@ export default function SalesInsightsPage() {
       ) : orders.length === 0 && income.length === 0 ? (
         <EmptyState
           icon={BarChart3}
-          title="No sales yet this year"
+          title="No sales yet"
           description="Orders you mark paid, jar sales and income you add in Profit & Loss will appear here."
         />
       ) : (
         <>
+          <div className="w-40">
+            <SelectField
+              label="Year"
+              value={String(selectedYear)}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+            >
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </SelectField>
+          </div>
+
           {/* Headline stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className={`grid grid-cols-2 gap-3 ${isCurrentYear ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
             <Panel padding="md">
               <p className="text-sm text-text-secondary">Income in {year}</p>
               <p className="text-2xl font-bold text-foreground tabular-nums">{formatMoney(stats.incomeYear, isUkNi)}</p>
@@ -176,13 +201,16 @@ export default function SalesInsightsPage() {
                 split(stats.incomeYear, stats.ordersYear)
               )}
             </Panel>
-            <Panel padding="md">
-              <p className="text-sm text-text-secondary">Income this month</p>
-              <p className="text-2xl font-bold text-foreground tabular-nums">{formatMoney(stats.incomeMonth, isUkNi)}</p>
-              {stats.incomeMonth > 0 && (
-                split(stats.incomeMonth, stats.ordersMonth)
-              )}
-            </Panel>
+            {/* A month card only makes sense for the current year. */}
+            {isCurrentYear && (
+              <Panel padding="md">
+                <p className="text-sm text-text-secondary">Income this month</p>
+                <p className="text-2xl font-bold text-foreground tabular-nums">{formatMoney(stats.incomeMonth, isUkNi)}</p>
+                {stats.incomeMonth > 0 && (
+                  split(stats.incomeMonth, stats.ordersMonth)
+                )}
+              </Panel>
+            )}
             <Panel padding="md">
               <p className="text-sm text-text-secondary">Outstanding</p>
               <p className="text-2xl font-bold text-foreground tabular-nums">{formatMoney(stats.outstanding, isUkNi)}</p>
@@ -200,17 +228,17 @@ export default function SalesInsightsPage() {
             caption="All income"
             items={stats.categories}
             isUkNi={isUkNi}
-            emptyText="No income recorded yet this year."
+            emptyText={`No income recorded in ${year}.`}
           />
 
           {/* Top customers */}
           <Panel padding="md">
-            <h3 className="font-semibold text-foreground mb-3">Top customers</h3>
-            {topCustomers.length === 0 ? (
-              <p className="text-sm text-text-tertiary">No customer sales recorded yet.</p>
+            <h3 className="font-semibold text-foreground mb-3">Top customers ({year})</h3>
+            {stats.topCustomers.length === 0 ? (
+              <p className="text-sm text-text-tertiary">No orders in {year}.</p>
             ) : (
               <div className="divide-y divide-border">
-                {topCustomers.map((c) => (
+                {stats.topCustomers.map((c) => (
                   <Link
                     key={c.id}
                     href={`/dashboard/crm/customers/${c.id}`}
@@ -238,6 +266,7 @@ export default function SalesInsightsPage() {
           <p className="text-sm text-text-tertiary">
             Income comes from your Profit &amp; Loss records: jar sales, income you add yourself, and orders once
             they are fully paid. Deposits on part-paid orders show under Outstanding until the balance clears.
+            Outstanding and open orders are as of today.
           </p>
         </>
       )}

@@ -235,28 +235,41 @@ is informational and does not affect fulfilment or revenue — see
 ## Sales Insights
 
 `crm/insights` — a cash-basis sales overview. Since 12/11/2026 every income
-figure comes from the Profit & Loss ledger (`financial_records`, this
-calendar year's income rows), so it covers all three income sources: fully-paid
+figure comes from the Profit & Loss ledger (`financial_records` income rows),
+so it covers all three income sources: fully-paid
 orders (posted by `_crm_recognise_revenue`, tagged `crm_order_id`), jar sales
 recorded from Traceability, and income added by hand. Before that the page read
 orders only and missed the other two.
 
-- **Headline stats:** income this year and income this month, each split into
+- **Year selector (12/11/2026):** a **Year** drop-down (`SelectField`) under the
+  title, starting at the current year. It lists the current year, the year on
+  show and every year with income or orders, newest first. All income rows are
+  loaded, as P&L loads them, and the year is read from the `YYYY-MM-DD` string,
+  so no time zone moves a record. Income, Income by category and Top customers
+  follow the chosen year.
+- **Headline stats:** income in the chosen year and, for the current year only,
+  income this month, each split into
   "from orders" (rows with `crm_order_id`) and "other" — the split also makes a
   sale recorded twice (an order and a jar sale) easy to spot. Outstanding (the
   summed `orderBalance` across live orders, so deposits sit here until cleared)
-  and the open (pending) order count still read `crm_orders`, as they are
-  order-only.
+  and the open (pending) order count still read `crm_orders`. They are today's
+  position, so they do not follow the year, and the footnote says so. When the
+  month card is hidden (a past year), the desktop row uses three columns.
 - **Income by category (year):** ledger income grouped by income category,
   shown as a ranked bar list. Order product types map one-to-one to these
   categories (see below), so order figures are unchanged. Drawn by the shared
   `src/components/ui/CategoryBreakdown.tsx`, which Profit & Loss also uses.
-- **Top customers:** the top five by lifetime total from `crm_customer_summary`,
-  each linking to the customer detail page.
+- **Top customers (year):** the top five by total of non-cancelled orders dated
+  in the chosen year, paid or not. This is the same rule as the
+  `crm_customer_summary` view, applied to one year. It is computed from the
+  orders query (`customer_id, order_date, customer:crm_customers(name)`, one FK,
+  read with `firstOf`). The page no longer queries the summary view. Each name
+  links to the customer detail page.
 - **Costs and profit:** a link row to Profit & Loss
   (`/dashboard/tools?section=profitloss`); expenses and net stay there.
-- The empty state shows only when the user has no orders and no income this
-  year.
+- The empty state ("No sales yet") shows only when the user has no orders and
+  no income at all. A year with nothing shows €0, "No income recorded in 2025"
+  and "No orders in 2025".
 
 ## Order Lifecycle
 

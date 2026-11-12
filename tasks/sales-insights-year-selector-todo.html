@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Sales Insights year selector</title>
+</head>
+<body>
+<h1>Sales Insights – year selector</h1>
+<p>Matches the P&amp;L year selector (<code>tasks/pl-year-selector-todo.html</code>, commit <code>45e71f42</code>). Feature doc: <code>docs/features/crm-module.md</code> (Sales Insights).</p>
+
+<h2>What the page does today</h2>
+<ul>
+  <li><strong>Income in {year}, Income this month and Income by category:</strong> these read this year's income only. The query is limited to the current year (<code>insights/page.tsx</code>).</li>
+  <li><strong>Outstanding and Open to fulfil:</strong> today's position across all live orders, with no year involved.</li>
+  <li><strong>Top customers:</strong> the lifetime top five from the <code>crm_customer_summary</code> view. That view sums non-cancelled orders by order date, paid or not.</li>
+</ul>
+
+<h2>How it will work for the beekeeper</h2>
+<ul>
+  <li>A <strong>Year</strong> drop-down sits under the page title, set to the current year. It lists the current year, the year on show and every year with income or orders, newest first. It uses the same <code>SelectField</code> as P&amp;L.</li>
+  <li><strong>Follow the chosen year:</strong> "Income in 2025" (with the orders and other split), Income by category (2025) and Top customers (2025, see the question).</li>
+  <li><strong>"Income this month"</strong> shows only when the current year is chosen. A month card makes no sense for 2025.</li>
+  <li><strong>Outstanding and Open to fulfil stay as today's position.</strong> They describe now, not a year. The footnote says so: "Outstanding and open orders are as of today."</li>
+</ul>
+<pre>
+ Sales Insights (phone)
+ ┌─────────────────────────────────┐
+ │ Sales Insights                  │
+ │ Year                            │
+ │ ┌──────────────┐                │
+ │ │ 2025       ▾ │                │
+ │ └──────────────┘                │
+ │ Income in 2025   Outstanding    │
+ │ €1,240           €60  (today)   │
+ │ €400 orders      Open to fulfil │
+ │ €840 other       2 pending      │
+ ├─────────────────────────────────┤
+ │ Income by category (2025)       │
+ │ Top customers (2025)            │
+ │ See costs and profit in P&amp;L  › │
+ └─────────────────────────────────┘
+</pre>
+
+<h2>To do</h2>
+<ol>
+  <li>☑ <strong>Income query:</strong> drop the current-year limit and load all income rows, as P&amp;L does. The year is then picked on the page, with the year read from the date string, as in P&amp;L. The same rows also give the list of years.</li>
+  <li>☑ <strong>Year select:</strong> <code>selectedYear</code> state with memoised year options. The cards and the category panel follow the chosen year, and Income this month shows only for the current year.</li>
+  <li>☑ <strong>Top customers for the chosen year:</strong> the orders query adds <code>customer_id, order_date</code> and the customer name (to-one embed, read with <code>firstOf</code>). The top five come from non-cancelled orders dated in that year, the same rule as the summary view but for one year. This drops the separate <code>crm_customer_summary</code> query, so there is one query fewer.</li>
+  <li>☑ <strong>Empty state:</strong> "No sales yet" when there are no orders and no income at all. A year with nothing shows €0, and the panels show "No income recorded in 2025" and "No orders in 2025".</li>
+  <li>☑ <strong>Footnote:</strong> add "Outstanding and open orders are as of today."</li>
+  <li>☑ <strong>Docs:</strong> <code>crm-module.md</code>.</li>
+  <li>☑ QA audit, typecheck and lint, then you test it in the app.</li>
+</ol>
+
+<h2>Review (12/11/2026)</h2>
+<p>Plan approved with "Top customers follow the year". Built as planned in <code>src/app/dashboard/crm/insights/page.tsx</code>, plus the doc. No database changes. There is one query fewer: <code>crm_customer_summary</code> is no longer read.</p>
+<ul>
+  <li><strong>Queries:</strong> the income query has no year limit. The orders query adds <code>order_date, customer_id, customer:crm_customers(name)</code>.</li>
+  <li><strong>Year:</strong> <code>selectedYear</code> state, with memoised <code>yearOptions</code> (the current year, the year on show, and the years of income and orders). The <code>yearOf()</code> helper reads the year from the date string.</li>
+  <li><strong>Stats:</strong> income, the orders and other split, and categories use the chosen year's rows. Top customers comes from that year's non-cancelled orders. Outstanding and pending are unchanged.</li>
+  <li><strong>Display:</strong> "Income this month" shows only for the current year. The headline row is three columns on desktop when it is hidden. Titles show the year, the empty texts name it, and the footnote says "Outstanding and open orders are as of today."</li>
+</ul>
+<h3>QA audit</h3>
+<ul>
+  <li>🟡 <strong>Fixed:</strong> for a past year the month card is hidden, which left an empty slot in the four-column desktop row. The row now has three columns then.</li>
+  <li>🟢 The year on show is always an option, as in P&amp;L. Orders without a customer or date are skipped for Top customers but still count towards Outstanding.</li>
+  <li>🟢 Accepted: the page now loads all income rows, not one year's. Supabase returns at most 1,000 rows per query, the same limit P&amp;L already has. Fine for current accounts (your largest has about 60 income rows).</li>
+  <li><code>npm run typecheck</code> and eslint: clean. Tests and build were not run, per your rules.</li>
+</ul>
+<h3>Please test</h3>
+<ol>
+  <li>Current year: the figures are the same as before. Top customers now counts only this year's orders.</li>
+  <li>Pick last year: "Income in 2025" matches P&amp;L Year 2025 Total Income, the month card disappears, and Outstanding and Open to fulfil do not change.</li>
+  <li>Phone (390 wide): the drop-down is easy to tap, and the cards sit two by two (or two plus one).</li>
+</ol>
+</body>
+</html>
