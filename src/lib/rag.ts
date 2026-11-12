@@ -206,6 +206,29 @@ async function logToolSuggestion(query: string, userId: string) {
   }
 }
 
+// Knowledge-base results as context for the model, each with its citation (and page, if known).
+function formatKnowledgeContext(results: KnowledgeSearchResult[]): string {
+  return `KNOWLEDGE BASE RESULTS:\n\n${results.map((r) => {
+    const pageNum = (r.metadata as { loc?: { pageNumber?: number } })?.loc?.pageNumber
+    const pageInfo = pageNum ? ` (page ${pageNum})` : ''
+    return `--- Source: ${r.citation}${pageInfo} ---\n${r.content}`
+  }).join('\n\n')}`
+}
+
+// Look up the user's records through the one tool that fits the question. Returns the context
+// for the model, null when no tool fits, or TOOL_FAILED when the lookup itself failed.
+async function lookUpRecords(query: string, userId: string): Promise<string | null | typeof TOOL_FAILED> {
+  const toolMatch = await matchQueryToTool(query)
+  if (!toolMatch?.toolName || !getTool(toolMatch.toolName)) return null
+
+  const toolResult = await executeTool(toolMatch.toolName, toolMatch.args, userId)
+  if (toolResult === TOOL_FAILED || (typeof toolResult === 'string' && toolResult.includes(TOOL_DB_ERROR))) {
+    return TOOL_FAILED
+  }
+  if (typeof toolResult === 'string') return toolResult
+  return `Here is the data from your records:\n\n${JSON.stringify(toolResult, null, 2)}\n\nUse this data to answer the user's question directly.`
+}
+
 // Main RAG handler - orchestrates the entire chat flow
 export async function handleChatQuery(
   query: string,
@@ -230,15 +253,9 @@ export async function handleChatQuery(
 
   switch (classification.intent) {
     case 'knowledge': {
-      // Search knowledge base
       const results = await searchKnowledgeBase(query)
       if (results.length > 0) {
-        // Format context with proper citations from source table
-        context = `KNOWLEDGE BASE RESULTS:\n\n${results.map((r) => {
-          const pageNum = (r.metadata as { loc?: { pageNumber?: number } })?.loc?.pageNumber
-          const pageInfo = pageNum ? ` (page ${pageNum})` : ''
-          return `--- Source: ${r.citation}${pageInfo} ---\n${r.content}`
-        }).join('\n\n')}`
+        context = formatKnowledgeContext(results)
         sources = results.map(r => r.citation).filter(Boolean)
       }
       break
@@ -249,21 +266,13 @@ export async function handleChatQuery(
       // (see the note above logToolSuggestion). If no tool matches, the
       // query is logged for tool-gap analysis and the user gets a "no
       // data" response -- no free-form SQL ever reaches the database.
-      const toolMatch = await matchQueryToTool(query)
-
-      if (toolMatch?.toolName && getTool(toolMatch.toolName)) {
-        const toolResult = await executeTool(toolMatch.toolName, toolMatch.args, userId)
-        // A failed lookup (logged where it happened) is answered here, not handed to the model
-        // as if it were the user's records.
-        if (toolResult === TOOL_FAILED || (typeof toolResult === 'string' && toolResult.includes(TOOL_DB_ERROR))) {
-          return { response: LOOKUP_FAILED_REPLY, intent: classification.intent }
-        }
-        if (typeof toolResult === 'string') {
-          context = toolResult
-        } else {
-          context = `Here is the data from your records:\n\n${JSON.stringify(toolResult, null, 2)}\n\nUse this data to answer the user's question directly.`
-        }
+      const recordsContext = await lookUpRecords(query, userId)
+      // A failed lookup (logged where it happened) is answered here, not handed to the model
+      // as if it were the user's records.
+      if (recordsContext === TOOL_FAILED) {
+        return { response: LOOKUP_FAILED_REPLY, intent: classification.intent }
       }
+      if (recordsContext) context = recordsContext
 
       if (!context) {
         // No tool covered this query. Log it for tool-gap analysis and reply without a
@@ -275,17 +284,31 @@ export async function handleChatQuery(
     }
 
     case 'hybrid': {
-      // For now, treat hybrid as knowledge search
-      const results = await searchKnowledgeBase(query)
+      // A question about the user's own records that also needs advice ("hive 4 has 6% mites,
+      // what should I do?"): look up both at once. The records side is best effort: with no
+      // matching tool, or a failed lookup, the answer comes from the knowledge base alone.
+      const [results, recordsContext] = await Promise.all([
+        searchKnowledgeBase(query).catch((error) => {
+          console.error('Knowledge base search failed:', error)
+          return [] as KnowledgeSearchResult[]
+        }),
+        lookUpRecords(query, userId).catch((error) => {
+          console.error('Records lookup failed:', error)
+          return null
+        }),
+      ])
+      const parts: string[] = []
+      if (recordsContext === TOOL_FAILED) {
+        // Say so, rather than let the model answer as if the user had no such records.
+        parts.push("The user's own records could not be looked up just now. Tell them so, and answer from general guidance only.")
+      } else if (recordsContext) {
+        parts.push(recordsContext)
+      }
       if (results.length > 0) {
-        // Use same formatting as knowledge case
-        context = `KNOWLEDGE BASE RESULTS:\n\n${results.map((r) => {
-          const pageNum = (r.metadata as { loc?: { pageNumber?: number } })?.loc?.pageNumber
-          const pageInfo = pageNum ? ` (page ${pageNum})` : ''
-          return `--- Source: ${r.citation}${pageInfo} ---\n${r.content}`
-        }).join('\n\n')}`
+        parts.push(formatKnowledgeContext(results))
         sources = results.map(r => r.citation).filter(Boolean)
       }
+      context = parts.join('\n\n')
       break
     }
 

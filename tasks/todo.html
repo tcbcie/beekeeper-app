@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Save Inspection from Any Step</title>
+<title>Plan &mdash; Five Quick Fixes from the Feature Review</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
   h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
+  h3 { margin-top: 1.6rem; }
   code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
   table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
   th, td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
@@ -16,118 +17,170 @@
   ul.todo { list-style: none; padding-left: 0; }
   ul.todo li { margin: .35rem 0; }
   .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
-  .mocks { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; }
-  .mock { border: 1px solid #d8e3da; border-radius: 10px; padding: .9rem 1rem; flex: 1 1 15rem; max-width: 22rem; }
-  .mock h3 { margin: 0 0 .6rem; font-size: .95rem; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-bottom: .5rem; }
-  .btn { display: block; text-align: center; padding: .6rem; border-radius: 8px; font-weight: 600; border: 1px solid #c4cbc6; margin-bottom: .5rem; }
-  .row .btn { margin-bottom: 0; }
-  .next { background: #1f4d33; color: #fff; border-color: #1f4d33; }
-  .save { background: #15803d; color: #fff; border-color: #15803d; }
 </style>
 </head>
 <body>
 
-<h1>Save Inspection from Any Step</h1>
+<h1>Five Quick Fixes from the Feature Review</h1>
 
-<p><strong>Status:</strong> built, waiting on your browser test &nbsp;&middot;&nbsp; <strong>Date:</strong> 2 November 2026</p>
+<p><strong>Status:</strong> built, waiting on your browser test &nbsp;&middot;&nbsp; <strong>Date:</strong> 12 November 2026</p>
 
 <blockquote>
-<p><strong>Your request:</strong> an inspection can only be saved on the last section, so recording something on an earlier screen means clicking Next, Next, Next.</p>
+<p><strong>Your request:</strong> start with the five fixes from the review and write the plan.</p>
 </blockquote>
 
-<h2>1. What I found</h2>
-
-<ul>
-  <li>You&rsquo;re right: Save only appears on step 5 (<span class="file">InspectionForm.tsx:2477</span>). This was deliberate, so that every save ended with a review.</li>
-  <li>The only required fields are hive, date and time, all on step 1, so nothing on steps 2 to 5 needs to hold a save back.</li>
-  <li>There is already a shortcut: once step 1 is valid, tapping <strong>5 Review</strong> in the row at the top jumps there. That still takes an extra tap and an extra screen, and nothing on screen suggests it.</li>
-  <li>Saving already reads every step&rsquo;s values, whichever step is open, so the save itself doesn&rsquo;t need to change.</li>
-</ul>
-
-<h2>2. The change</h2>
-
-<p>Save Inspection appears on every step, next to Next. Review stays as an optional last step for anyone who wants to check before saving.</p>
-
-<div class="mocks">
-  <div class="mock">
-    <h3>Now, steps 1 to 4 (phone)</h3>
-    <span class="btn">Previous</span>
-    <span class="btn next">Next</span>
-    <span class="btn">Cancel</span>
-  </div>
-  <div class="mock">
-    <h3>Proposed, steps 1 to 4 (phone)</h3>
-    <div class="row"><span class="btn">Previous</span><span class="btn next">Next</span></div>
-    <span class="btn save">Save Inspection</span>
-    <span class="btn">Cancel</span>
-  </div>
-</div>
+<h2>1. Decisions I need from you</h2>
 
 <table>
-  <tr><th>Topic</th><th>Decision</th><th>Why</th></tr>
-  <tr><td>Colour</td><td>Save is green, on every step including Review</td><td>The app&rsquo;s rule is that saves are green. It also stops Save and Next looking like the same button.</td></tr>
-  <tr><td>Phone layout</td><td>Previous and Next share a row, with Save below at full width</td><td>Keeps the button stack no taller than today, and it&rsquo;s harder to hit Save when reaching for Next.</td></tr>
-  <tr><td>Position</td><td>At the bottom of each step, not fixed to the screen</td><td>A fixed bar collides with Mel&rsquo;s button and the mobile navigation, as noted in <span class="file">record-forms-bottom-save.md</span>.</td></tr>
-  <tr><td>Missing hive, date or time</td><td>Save stays tappable, jumps to step 1, names the missing field and moves to it</td><td>A greyed-out button gives no reason. The form already has this handling, and an incomplete inspection still can&rsquo;t be saved.</td></tr>
-  <tr><td>Enter key</td><td>Still moves to the next step, and only saves on Review</td><td>Pressing Enter after typing a weight must not file an inspection by accident.</td></tr>
-  <tr><td>Double taps</td><td>Same protection as today</td><td>All Save buttons go through the existing lock, so it saves once.</td></tr>
-  <tr><td>Editing an inspection</td><td>Works the same way, with the label Update Inspection</td><td>Correcting one field shouldn&rsquo;t mean walking through every step either.</td></tr>
+  <tr><th>#</th><th>Question</th><th>My recommendation</th></tr>
+  <tr>
+    <td>A</td>
+    <td>Who changes the demo account password?</td>
+    <td>You, in the Supabase dashboard. The old one stays in git history, so removing it from the docs is not enough on its own.</td>
+  </tr>
+  <tr>
+    <td>B</td>
+    <td>Should &ldquo;My data export&rdquo; be open to every signed-in user, including lapsed subscribers?</td>
+    <td>Yes. People should always be able to take their own records with them.</td>
+  </tr>
+  <tr>
+    <td>C</td>
+    <td>What should a lapsed or opted-out user see on a customer or order link?</td>
+    <td>A short message saying why, with a button to Profile. Reading old orders without a subscription is a bigger change and is left out.</td>
+  </tr>
+  <tr>
+    <td>D</td>
+    <td>Are the new Tools card wordings below right?</td>
+    <td>See fix 2.</td>
+  </tr>
 </table>
 
-<h2>3. Two effects to be aware of</h2>
+<h2>2. The fixes</h2>
 
-<ul>
-  <li><strong>Values filled in for you get saved without being seen.</strong> A new inspection pre-fills Super Fullness and right-sized frames from the last visit, and weight from a connected scale. Saving from step 1 stores them on this inspection without you opening the step that shows them. This already happens if you jump to Review, but Review at least lists them. I think that&rsquo;s acceptable, because they are the hive&rsquo;s last known values.</li>
-  <li><strong>A near-empty inspection is one tap away.</strong> If the hive is preselected, date and time fill in automatically, so step 1 is ready to save at once. It only saves on a deliberate tap, and the form already treats visit details alone as a valid inspection.</li>
-</ul>
-
-<h2>4. Tasks</h2>
+<h3>Fix 1 &mdash; Demo password out of the repo</h3>
+<p>The password is written in two files: <span class="file">docs/features/demo-account.md:8</span> and <span class="file">tasks/demo-account-todo.md:18</span>.</p>
 <ul class="todo">
-  <li>&#9745; <strong>Form:</strong> move the save logic in <span class="file">InspectionForm.tsx</span> into its own function, called by the Save button on every step. Enter keeps its current behaviour.</li>
-  <li>&#9745; <strong>Buttons:</strong> new layout and green Save, on phone and desktop.</li>
-  <li>&#9745; <strong>Wording:</strong> update the code comments and the Review step text, which currently describe Save as being on Review only.</li>
-  <li>&#9745; <strong>Tests:</strong> update the &ldquo;shows Save only on the review step&rdquo; test, and add saving from an earlier step and saving with no hive.</li>
-  <li>&#9745; <strong>Docs:</strong> add <span class="file">docs/features/inspection-save-any-step.md</span>.</li>
-  <li>&#9745; <strong>QA:</strong> run the <code>qa-engineer</code> audit and apply its fixes.</li>
-  <li>&#9744; <strong>Your test:</strong> the checklist is in the review below; waiting on you.</li>
-  <li>&#9745; <strong>Review:</strong> add the review section to this file.</li>
+  <li>&#9745; Replace the password in both files with &ldquo;kept in the owner&rsquo;s password manager&rdquo;.</li>
+  <li>&#9745; Update the Security Notes in <span class="file">demo-account.md</span> to say the password is never written in the repo.</li>
+  <li>&#9745; <strong>You:</strong> change the demo account password in Supabase (decision A).</li>
 </ul>
 
-<h2>5. Review</h2>
+<h3>Fix 2 &mdash; Tools cards say what the tools do</h3>
+<p>Two descriptions in <span class="file">src/app/dashboard/tools/page.tsx:81,84</span> promise more than exists.</p>
+<table>
+  <tr><th>Card</th><th>Now</th><th>Proposed</th></tr>
+  <tr>
+    <td>Varroa Weather</td>
+    <td>Weather-based varroa pressure forecasts for your apiaries</td>
+    <td>See which days this week suit each varroa treatment</td>
+  </tr>
+  <tr>
+    <td>Diagnosis</td>
+    <td>Upload photos for AI-assisted hive health analysis</td>
+    <td>Send photos of hive problems to help build a future diagnosis tool</td>
+  </tr>
+</table>
+<ul class="todo">
+  <li>&#9745; Change the two description strings.</li>
+  <li>&#9745; Search the About page and docs for the same two claims and correct any copies.</li>
+</ul>
 
-<h3>What changed</h3>
-<p>Only <span class="file">InspectionForm.tsx</span> changed in the app: Save is on every step, in the new layout and in green. The save logic is now its own function, and the Enter key behaves as before. The tests and docs were updated to match.</p>
+<h3>Fix 3 &mdash; Jar sale shows the right currency</h3>
+<p>The profit and loss screen shows pounds for UK and Northern Ireland residents and euro for everyone else (<span class="file">src/lib/crm-currency.ts</span>). The jar sale window always shows &euro; and warns that &ldquo;the P&amp;L records in euro&rdquo;, which is wrong for a UK user.</p>
+<ul class="todo">
+  <li>&#9745; <span class="file">JarLabelsTab.tsx:169</span>: add <code>is_uk_ni_resident</code> to the profile read it already makes, and pass it to the sale window.</li>
+  <li>&#9745; <span class="file">RecordJarSaleModal.tsx</span>: show the total and the success message with the shared <code>formatMoney</code> helper.</li>
+  <li>&#9745; Same file: show the warning only when the selling currency differs from the P&amp;L currency, and name that currency in the text.</li>
+</ul>
 
-<h3>Addition beyond the plan</h3>
-<p><strong>Voice notes:</strong> Save is now disabled while a voice note is recording or being transcribed. Save now sits on the same step as the microphone, so without this a tap could easily lose the note.</p>
+<h3>Fix 4 &mdash; Mel uses your records on mixed questions</h3>
+<p>A question such as &ldquo;Hive 4 has 6% mites, what should I do?&rdquo; is classed as &ldquo;hybrid&rdquo;. Today that only searches the knowledge base (<span class="file">src/lib/rag.ts:277</span>), so hive 4 is never looked up.</p>
+<ul class="todo">
+  <li>&#9745; Move the knowledge-base formatting, which is written out twice, into one small helper in <span class="file">rag.ts</span>.</li>
+  <li>&#9745; In the hybrid case, run the knowledge search and the existing records lookup together, and give Mel both.</li>
+  <li>&#9745; If the records lookup fails or no tool fits, answer from the knowledge base alone, as today.</li>
+</ul>
+<p>Cost: one extra small model call on hybrid questions only. Records still go through the existing tools, so the per-user scoping is unchanged.</p>
+
+<h3>Fix 5 &mdash; Lapsed subscribers are not locked out</h3>
+<p>Two places shut a lapsed user out without telling them why.</p>
+<ul class="todo">
+  <li>&#9745; <span class="file">src/app/dashboard/profile/page.tsx:1005</span>: remove the subscription condition around &ldquo;My data export&rdquo; (decision B). I will first confirm that nothing on the server also blocks the download.</li>
+  <li>&#9745; <span class="file">src/app/dashboard/crm/layout.tsx</span>: replace the silent redirect with a short message and a button to Profile (decision C).</li>
+</ul>
+
+<h2>3. After the fixes</h2>
+<ul class="todo">
+  <li>&#9745; Run the <code>qa-engineer</code> audit on the changed files and apply its fixes.</li>
+  <li>&#9745; Update the docs: <span class="file">demo-account.md</span>, <span class="file">crm-module.md</span> (gate message, jar sale currency), and a short note on Mel&rsquo;s hybrid questions.</li>
+  <li>&#9745; Add a review section to this file.</li>
+  <li>&#9745; <strong>You:</strong> test in the browser (list to follow in the review section). I will not run the build or the tests.</li>
+</ul>
+
+<h2>4. Review</h2>
+
+<p><strong>Status:</strong> built, waiting on your browser test. Type-check and lint are clean on the changed files. No build and no tests were run.</p>
+
+<table>
+  <tr><th>Fix</th><th>What changed</th><th>Files</th></tr>
+  <tr>
+    <td>1. Demo password</td>
+    <td>Removed from both files; the doc now says it is never written in the repo. You confirmed the password has been changed.</td>
+    <td><span class="file">docs/features/demo-account.md</span>, <span class="file">tasks/demo-account-todo.md</span></td>
+  </tr>
+  <tr>
+    <td>2. Tools cards</td>
+    <td>Two descriptions reworded as agreed. No other copies of the two claims were found in the app.</td>
+    <td><span class="file">src/app/dashboard/tools/page.tsx</span></td>
+  </tr>
+  <tr>
+    <td>3. Jar sale currency</td>
+    <td>The total and the success message follow the P&amp;L currency. The warning appears only when the selling currency differs from it, and names it.</td>
+    <td><span class="file">JarLabelsTab.tsx</span>, <span class="file">RecordJarSaleModal.tsx</span></td>
+  </tr>
+  <tr>
+    <td>4. Mel hybrid questions</td>
+    <td>Records and knowledge base are looked up together. The duplicated formatting and the records lookup became two small helpers, shared with the existing paths.</td>
+    <td><span class="file">src/lib/rag.ts</span></td>
+  </tr>
+  <tr>
+    <td>5. Lapsed subscribers</td>
+    <td>&ldquo;My data export&rdquo; shows for every signed-in user; the export has no server-side gate. The CRM pages show a message and a button to Profile.</td>
+    <td><span class="file">profile/page.tsx</span>, <span class="file">crm/layout.tsx</span></td>
+  </tr>
+</table>
 
 <h3>QA audit</h3>
-<p>No Critical or High findings.</p>
-<table>
-  <tr><th>Severity</th><th>Finding</th><th>Outcome</th></tr>
-  <tr><td>Medium</td><td>While recording, the disabled Save read &ldquo;Finishing voice note...&rdquo;, which hid that the beekeeper needed to stop it.</td><td>Fixed: it now reads &ldquo;Stop the voice note to save&rdquo;.</td></tr>
-  <tr><td>Low</td><td>Saving immediately after picking a hive can run before the pre-filled values arrive, leaving them out of that inspection.</td><td>Left as it is and documented: nothing already recorded is lost, and the window is short.</td></tr>
-</table>
-
-<h3>Checks</h3>
 <ul>
-  <li>Type check and lint on the form: passed, including after the label fix.</li>
-  <li>Inspection flow, unsaved-changes and typography tests: 48 of 48 passed, including four new ones. The flow tests were re-run after the label fix: 27 of 27 passed.</li>
-  <li>Not run, per your rule: the build. Nothing has been checked in a browser yet.</li>
-  <li>Not committed.</li>
+  <li><strong>Critical / High:</strong> none.</li>
+  <li><strong>Medium, fixed:</strong> on a hybrid question, a failed records lookup was dropped silently, so Mel could answer as if there were no records. Mel is now told the lookup failed and says so.</li>
+  <li><strong>Low, left:</strong> the sale window shows euro if it is opened before the profile has loaded or if that read fails. The amount saved is not affected.</li>
 </ul>
 
-<h3>Your browser checklist</h3>
+<h3>Docs updated</h3>
+<ul>
+  <li><span class="file">crm-module.md</span>, <span class="file">profile-export.md</span>, <span class="file">jar-label-qr-codes.md</span>, <span class="file">demo-account.md</span></li>
+  <li>New: <span class="file">mel-hybrid-questions.md</span></li>
+</ul>
+
+<h3>Please test</h3>
 <ul class="todo">
-  <li>&#9744; Phone at its narrowest: Previous and Next fit side by side, with Save below in green.</li>
-  <li>&#9744; Pick a hive on step 1 and tap Save: it saves, and the record appears.</li>
-  <li>&#9744; Fill in something on step 2, tap Save there: the value is on the saved record.</li>
-  <li>&#9744; New inspection with no hive, tap Save: the form asks for the hive and saves nothing.</li>
-  <li>&#9744; Type a weight and press Enter: it moves to step 2 and doesn&rsquo;t save.</li>
-  <li>&#9744; Edit an inspection: the button reads Update Inspection, and works from any step.</li>
-  <li>&#9744; Start a voice note on step 4: Save asks you to stop it first, and the note is in the saved record.</li>
-  <li>&#9744; Dark mode: Save is green and easy to read.</li>
+  <li>&#9744; Tools page: the Varroa Weather and Diagnosis cards show the new wording.</li>
+  <li>&#9744; Record a jar sale as a euro user: total and message in &euro;, no warning.</li>
+  <li>&#9744; Record a jar sale as a UK/NI resident: total and message in &pound;; with selling currency EUR the warning names GBP.</li>
+  <li>&#9744; Ask Mel a mixed question about a real hive, such as &ldquo;Hive 4 has 6% mites, what should I do?&rdquo; The answer should use that hive&rsquo;s records and cite sources.</li>
+  <li>&#9744; Ask Mel a plain records question and a plain advice question: both behave as before.</li>
+  <li>&#9744; With a lapsed account: Profile shows &ldquo;My data export&rdquo; and both downloads work.</li>
+  <li>&#9744; With Sales / CRM switched off: open <code>/dashboard/crm/orders</code> and see the message and the Profile button.</li>
+  <li>&#9744; Run the test suite; I did not find tests covering these files, but I did not run any.</li>
+</ul>
+
+<h2>5. Out of scope</h2>
+<ul>
+  <li>The larger items from the review: offline saves for other record types, push reminders, the quick inspection.</li>
+  <li>Photos in the data export.</li>
+  <li>Read-only access to old orders for lapsed subscribers.</li>
+  <li>Version number changes and commits, until you ask.</li>
 </ul>
 
 </body>
