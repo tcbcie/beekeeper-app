@@ -92,6 +92,7 @@ Display radius remains:
 |------|---------|
 | `src/lib/elevation.ts` | Batch elevation lookups, sent to `/api/elevation` |
 | `src/app/api/elevation/route.ts` | Server route: sign-in, rate limit, lookup and caching |
+| `src/app/api/admin/dca-sightings/unshare/route.ts` | Admin route that takes a sighting off the shared map |
 | `src/lib/land-cover.ts` | Water and woodland lookups for the hotspots on show |
 | `src/lib/dca-prediction.ts` | Phase 3 landscape-aware prediction engine with confirmation priors |
 | `src/hooks/useDCAPredictions.ts` | Hook, confirmation loading, and cache-keyed prediction flow |
@@ -128,7 +129,8 @@ Sharing is the beekeeper's choice for each sighting, and is off unless they tick
 - **Afterwards:** "Share with other beekeepers" / "Stop sharing" in the popup of any of their own "drones seen" sightings, including an answered hotspot
 - **Only "drones seen" can be shared.** A "no drones" answer stays private; the database refuses to share one
 - **What others see:** a sky-blue ring in the "Shared DCA sightings" layer, moved by up to 1 km (reduced from 5 km on 13/11/2026 so the place can still be found), in a fixed, salted direction per sighting, and the year. No name, no note, no exact date
-- **No approval step.** Nothing typed by a beekeeper is shown to others, so there is nothing to moderate; a beekeeper can stop sharing at any time, and removing the sighting removes it for everyone
+- **No approval step.** Nothing typed by a beekeeper is shown to others; a beekeeper can stop sharing at any time, and removing the sighting removes it for everyone
+- **Moderation (added 13/11/2026):** an Admin sees a "Remove from shared map" button in a shared sighting's popup. After a confirmation prompt the sighting stops being shared; it is not deleted, and its owner keeps it as a private sighting. The removal is written to the admin audit log (`dca_sighting_unshared`). The owner is not told and is not stopped from sharing it again. Route: `POST /api/admin/dca-sightings/unshare`. `get_shared_dca_sightings()` returns the row id to Admins only (NULL for everyone else) so the route knows which sighting is meant; migration `20261113110000_dca_shared_sightings_admin_id.sql` (applied)
 - **Database:** `dca_confirmations.is_shared` (default false) and `get_shared_dca_sightings()`, which returns other beekeepers' shared sightings to signed-in users only. Migrations `supabase/migrations/20261112200000_dca_sightings_opt_in_sharing.sql` and `20261113100000_dca_shared_sightings_one_km_offset.sql` (both applied). The function works the offset out itself: `obfuscate_coordinates()` rounds to two decimal places, which alone would move a point by more than 1 km
 
 ## Edge Cases

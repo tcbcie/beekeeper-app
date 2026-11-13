@@ -48,6 +48,8 @@ interface SharedSighting {
   latitude: number
   longitude: number
   observation_year: number
+  /** Only Admins are given this, so they can take the sighting off the shared map. */
+  id: string | null
 }
 
 interface WildColony {
@@ -578,6 +580,35 @@ export default function CommunityMapPage() {
     else toast.success('Sighting no longer shared')
   }, [setSharing, toast])
 
+  // Moderation: an Admin takes another beekeeper's sighting off the shared map
+  const unshareAsAdmin = useCallback(async (id: string) => {
+    const agreed = await confirm({
+      title: 'Remove this sighting from the shared map?',
+      message: 'Other beekeepers will no longer see it. The beekeeper who recorded it keeps it as a private sighting.',
+      confirmLabel: 'Remove from shared map',
+      variant: 'danger',
+    })
+    if (!agreed) return
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = session && await fetch('/api/admin/dca-sightings/unshare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ id }),
+        signal: AbortSignal.timeout(15_000),
+      })
+      // 404 means it was already unshared (by its owner or another Admin): gone either way
+      if (response && (response.ok || response.status === 404)) {
+        setSharedSightings(prev => prev.filter(sighting => sighting.id !== id))
+        toast.success('Sighting removed from the shared map')
+        return
+      }
+    } catch {
+      // Reported below
+    }
+    toast.error('Could not remove the sighting. Check your signal and try again.')
+  }, [confirm, toast])
+
   // Add markers for all apiaries
   useEffect(() => {
     // mapLoaded is only set after the library has loaded and the map exists.
@@ -948,14 +979,24 @@ export default function CommunityMapPage() {
         const distance = calculateNearestDistance(latitude, longitude)
         const year = Number(sighting.observation_year)
         const el = markerElement('shared-dca-marker', '<div style="background-color: white; width: 18px; height: 18px; border-radius: 50%; border: 5px solid #0284c7; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>')
-        const popup = newPopup().setHTML(`
+        const content = document.createElement('div')
+        content.innerHTML = `
           <div style="padding: 4px 8px;">
             ${popupTitle('#0284c7', 'Shared DCA sighting')}
             ${Number.isFinite(year) ? popupLine(`Drones seen in ${year}`) : ''}
             ${popupLine('Shown up to 1 km from its true position')}
             ${distance !== undefined ? popupLine(roughDistanceText(distance)) : ''}
           </div>
-        `)
+        `
+        // Admins only: the id is not sent to anyone else
+        const sightingId = sighting.id
+        if (sightingId) {
+          const actions = document.createElement('div')
+          actions.style.cssText = 'margin: 8px 8px 4px;'
+          actions.appendChild(popupButton('Remove from shared map', POPUP_BUTTON_RED, () => unshareAsAdmin(sightingId)))
+          content.appendChild(actions)
+        }
+        const popup = newPopup().setDOMContent(content)
 
         const marker = new mb.Marker({ element: el })
           .setLngLat([longitude, latitude])
@@ -1134,7 +1175,7 @@ export default function CommunityMapPage() {
     }
 
     return removeAllApiariesTap
-  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations, saveSighting, removeSighting, toggleSharing, sharedSightings, showSharedSightings, allApiaries, showAllApiaries, styleVersion])
+  }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations, saveSighting, removeSighting, toggleSharing, unshareAsAdmin, sharedSightings, showSharedSightings, allApiaries, showAllApiaries, styleVersion])
 
   // Recording a sighting, step 1: the next tap on the map picks the spot
   useEffect(() => {

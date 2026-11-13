@@ -302,6 +302,17 @@
 </ul>
 <p>The trade-off: a shared sighting now narrows down where its owner keeps bees more than before, since DCAs are usually within a few kilometres of an apiary.</p>
 
+<h3>Moderation of shared sightings &mdash; built on 13 November 2026</h3>
+<ul class="todo">
+  <li>&#9745; <strong>For Admins:</strong> a shared sighting&rsquo;s popup has a &ldquo;Remove from shared map&rdquo; button, with a confirmation prompt. <span class="file">src/app/dashboard/community-map/page.tsx</span></li>
+  <li>&#9745; <strong>New admin route</strong> that stops the sighting being shared and records the removal in the admin audit log. <span class="file">src/app/api/admin/dca-sightings/unshare/route.ts</span></li>
+  <li>&#9745; <strong>Database, applied to the live database:</strong> <code>get_shared_dca_sightings()</code> gives the sighting&rsquo;s id to Admins only, so the route knows which one is meant. Everyone else still gets nothing that identifies it. <span class="file">supabase/migrations/20261113110000_dca_shared_sightings_admin_id.sql</span></li>
+  <li>&#9745; Docs updated. Type-check and lint pass. Audit done, nothing to fix.</li>
+  <li>&#9744; <strong>For you to test, with an Admin account and a second account:</strong> share a sighting from the second account; as Admin, tap its blue ring, remove it, and check it goes; check the second account still has the sighting, now unshared.</li>
+</ul>
+<p><strong>What removal does:</strong> the sighting stops being shared. It is not deleted; its owner keeps it as a private sighting and it still counts towards their own predictions.</p>
+<p><strong>What it does not do:</strong> the owner is not told, and nothing stops them sharing it again. Power Users do not get the button, only Admins.</p>
+
 <h2>6. One thing for you to check</h2>
 <p>The elevation data comes from Open-Meteo&rsquo;s free service. As far as I know that tier is for non-commercial use with a daily request limit. HiveCraic takes subscriptions, so their terms are worth reading. <span class="file">docs/features/apiary-elevation.md</span> says there are no limits.</p>
 

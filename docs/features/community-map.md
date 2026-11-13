@@ -48,7 +48,7 @@ Every marker has a 48px tap area, including the grouped circles and single dots 
 ## Privacy
 
 - Other beekeepers' apiaries are offset in the database by `get_shared_apiaries_obfuscated()` and returned without owner details. See `community-map-all-apiaries-layer.md`.
-- DCA sightings are private to the beekeeper who recorded them unless they choose to share one. A shared sighting is offset by up to 1 km and returned by `get_shared_dca_sightings()` with the year only: no owner, note or exact date. See `dca-prediction.md`.
+- DCA sightings are private to the beekeeper who recorded them unless they choose to share one. A shared sighting is offset by up to 1 km and returned by `get_shared_dca_sightings()` with the year only: no owner, note or exact date. Admins can take one off the shared map from its popup. See `dca-prediction.md`.
 - Conservation areas are read through `get_conservation_areas()`, which returns no owner or apiary id. An apiary declared as a conservation area is shown at its exact position by design. The table itself is readable only by a row's owner and Power Users/Admins; see `conservation-areas.md`.
 - Terrain heights for DCA prediction are looked up by the server (`/api/elevation`), so apiary positions do not go from the phone to an outside service.
 - The tables and helper functions that existed only in the live database are recorded in `sql/community_map_live_definitions.sql`.
