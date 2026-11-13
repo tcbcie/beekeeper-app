@@ -24,7 +24,7 @@ Typing free-form observation notes on a phone while inspecting a hive is awkward
 3. Speak freely — e.g. "queen was seen, lots of eggs, five frames of brood, bees calm today, took one frame of stores".
 4. Tap **Stop** (same button, now red and pulsing).
 5. A spinner appears ("Transcribing..."). Audio is POSTed to `/api/voice-notes-transcribe`.
-6. The server transcribes (Whisper) then cleans up (GPT-4o-mini).
+6. The server transcribes, then cleans up the text (models are set in `src/lib/openai.ts`).
 7. Cleaned text is **appended** to whatever is already in the Notes textarea (with a leading newline if the field is non-empty), so existing typed notes are never overwritten.
 8. User can edit the result freely before saving.
 
@@ -33,9 +33,9 @@ Typing free-form observation notes on a phone while inspecting a hive is awkward
 Apiculture vocabulary (varroa, propolis, supersedure, foulbrood, Apiguard, NIHBS, etc.) is generic-conversation-rare, so out-of-the-box speech-to-text routinely mishears it. Two server-side levers are applied in `src/app/api/voice-notes-transcribe/route.ts`:
 
 1. **Transcription bias** — `APICULTURE_PROMPT` (≈200 tokens, packed under the 224-token cap) is passed as the `prompt` parameter to the OpenAI transcription call. This biases the acoustic model toward beekeeping vocabulary before any text is produced.
-2. **Cleanup correction map** — `CLEANUP_SYSTEM_PROMPT` includes a misheard→corrected examples block (e.g. *"borrow a" → "varroa"*, *"proper list" → "propolis"*, *"fowl brood" → "foulbrood"*). GPT-4o-mini fixes leftover mishears the acoustic bias did not catch, with strict instructions never to invent a correction when the spoken word is unclear.
+2. **Cleanup correction map** — `CLEANUP_SYSTEM_PROMPT` includes a misheard→corrected examples block (e.g. *"borrow a" → "varroa"*, *"proper list" → "propolis"*, *"fowl brood" → "foulbrood"*). The clean-up model fixes leftover mishears the acoustic bias did not catch, with strict instructions never to invent a correction when the spoken word is unclear.
 
-Transcription model is `gpt-4o-transcribe` (upgraded from `whisper-1`) — same SDK call signature, materially better on accented and noisy audio, `prompt` parameter still respected.
+Transcription model is `gpt-transcribe` and the clean-up model is `gpt-6-luna` (since November 2026; OpenAI switches off `gpt-4o-mini` on 14 January 2027 and `gpt-4o-transcribe` on 26 February 2027). Both names live in `src/lib/openai.ts` (`TRANSCRIPTION_MODEL`, `CHAT`). The `prompt` parameter is still respected. `gpt-6-luna` is a reasoning model, so `CHAT` fixes `reasoning_effort: 'none'` for every call, and calls use `max_completion_tokens`.
 
 A future per-user glossary table is sketched in `tasks/voice-transcription-accuracy-todo.html` (Phase 2). It is gated on real-world evidence from Phase 1 — ship the static bias first, measure, then decide whether per-user terms add enough value to justify the schema and CRUD UI.
 

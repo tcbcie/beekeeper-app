@@ -9,6 +9,15 @@ const DEFAULT_TIMEOUT_MS = 30_000
 const DEFAULT_MAX_RETRIES = 1
 const CHAT_TIMEOUT_MS = 60_000
 
+// Every OpenAI model the app uses, in one place. When OpenAI retires a model, change it here.
+// CHAT is spread into every chat call. The chat model is a reasoning model, so the effort is
+// fixed at 'none' here: left at its default, the hidden reasoning is billed as output and eats
+// the max_completion_tokens cap, which leaves short answers empty.
+// EMBEDDING_MODEL must stay the one the knowledge base was embedded with (1536 dimensions).
+export const CHAT = { model: 'gpt-6-luna', reasoning_effort: 'none' } as const
+export const EMBEDDING_MODEL = 'text-embedding-3-small'
+export const TRANSCRIPTION_MODEL = 'gpt-transcribe'
+
 // Lazy initialization of OpenAI client (server-side only)
 let _openai: OpenAI | null = null
 
@@ -30,7 +39,7 @@ function getOpenAI(): OpenAI {
 // Generate embedding for text using OpenAI's embedding model
 export async function generateEmbedding(text: string): Promise<number[]> {
   const response = await getOpenAI().embeddings.create({
-    model: 'text-embedding-3-small',
+    model: EMBEDDING_MODEL,
     input: text,
   })
   if (!response.data?.[0]?.embedding) {
@@ -46,7 +55,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   for (let i = 0; i < texts.length; i += 100) {
     const batch = texts.slice(i, i + 100)
     const response = await getOpenAI().embeddings.create({
-      model: 'text-embedding-3-small',
+      model: EMBEDDING_MODEL,
       input: batch,
     })
     const ordered = [...(response.data ?? [])].sort((a, b) => a.index - b.index)
@@ -58,17 +67,16 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   return embeddings
 }
 
-// Chat completion with specified model
+// Chat completion
 export async function generateChatResponse(
-  messages: OpenAI.Chat.ChatCompletionMessageParam[],
-  model: 'gpt-4o-mini' | 'gpt-4o' = 'gpt-4o-mini'
+  messages: OpenAI.Chat.ChatCompletionMessageParam[]
 ): Promise<string> {
   const response = await getOpenAI().chat.completions.create(
     {
-      model,
+      ...CHAT,
       messages,
       temperature: 0.7,
-      max_tokens: 1000,
+      max_completion_tokens: 1000,
     },
     { timeout: CHAT_TIMEOUT_MS }
   )
@@ -82,10 +90,10 @@ export async function generateJsonResponse(
   maxTokens: number
 ): Promise<string> {
   const response = await getOpenAI().chat.completions.create({
-    model: 'gpt-4o-mini',
+    ...CHAT,
     messages,
     temperature: 0,
-    max_tokens: maxTokens,
+    max_completion_tokens: maxTokens,
     response_format: { type: 'json_object' },
   })
   return response.choices?.[0]?.message?.content || ''
@@ -132,13 +140,13 @@ IMPORTANT: If the user asks about "which hive/colony" or their specific mite cou
 Respond with JSON only: {"intent": "category", "confidence": 0.0-1.0}`
 
   const response = await getOpenAI().chat.completions.create({
-    model: 'gpt-4o-mini',
+    ...CHAT,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: query }
     ],
     temperature: 0,
-    max_tokens: 100,
+    max_completion_tokens: 100,
     response_format: { type: 'json_object' }
   })
 

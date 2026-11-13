@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireUser } from '@/lib/server/api-auth'
 import { consumeRateLimits, RATE_LIMITS, RATE_LIMITED_MESSAGE } from '@/lib/rate-limit'
-import { openai as getOpenAI } from '@/lib/openai'
+import { openai as getOpenAI, CHAT, TRANSCRIPTION_MODEL } from '@/lib/openai'
 
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024
 const TRANSCRIPTION_TIMEOUT_MS = 60_000
 const CLEANUP_TIMEOUT_MS = 30_000
 
-// Apiculture vocabulary bias passed as the Whisper / gpt-4o-transcribe `prompt`.
+// Apiculture vocabulary bias passed as the transcription `prompt`.
 // Kept under ~200 tokens (cap is 224) and ordered most-distinctive-first so it
 // survives any silent truncation by the API.
 const APICULTURE_PROMPT =
@@ -20,7 +20,7 @@ const APICULTURE_PROMPT =
   'queen cells, swarm cells, supersedure cells, apiary, eircode, ' +
   'Buckfast, Carniolan, Italian, Native Irish black bee, NIHBS.'
 
-// Whisper / gpt-4o-transcribe silently truncate the `prompt` parameter at
+// OpenAI transcription models silently truncate the `prompt` parameter at
 // ~224 tokens. A char/4 heuristic is a safe lower bound; warn at boot if our
 // prompt approaches the cap so the next contributor sees it without needing
 // to discover the silent truncation in production.
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     try {
       const result = await client.audio.transcriptions.create(
         {
-          model: 'gpt-4o-transcribe',
+          model: TRANSCRIPTION_MODEL,
           file: audio,
           language: 'en',
           prompt: APICULTURE_PROMPT
@@ -151,13 +151,13 @@ export async function POST(request: NextRequest) {
     try {
       const completion = await client.chat.completions.create(
         {
-          model: 'gpt-4o-mini',
+          ...CHAT,
           messages: [
             { role: 'system', content: CLEANUP_SYSTEM_PROMPT },
             { role: 'user', content: transcript }
           ],
           temperature: 0.2,
-          max_tokens: cleanupMaxTokens
+          max_completion_tokens: cleanupMaxTokens
         },
         { timeout: CLEANUP_TIMEOUT_MS, maxRetries: 1 }
       )

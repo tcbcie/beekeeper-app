@@ -348,7 +348,7 @@ ${context ? `\n<records>\n${context.replace(/<\/?records>/gi, '')}\n</records>` 
     { role: 'user', content: query }
   ]
 
-  const response = await generateChatResponse(messages, 'gpt-4o-mini')
+  const response = await generateChatResponse(messages)
 
   return {
     response,
