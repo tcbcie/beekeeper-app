@@ -53,7 +53,8 @@ export async function extractTextWithOCR(buffer, openai) {
             const base64Image = imageBuffer.toString('base64')
 
             const response = await openai.chat.completions.create({
-                model: 'gpt-4o',
+                model: 'gpt-6-luna',
+                reasoning_effort: 'none',
                 messages: [
                     {
                         role: 'user',
@@ -72,7 +73,7 @@ export async function extractTextWithOCR(buffer, openai) {
                         ]
                     }
                 ],
-                max_tokens: 4000
+                max_completion_tokens: 4000
             })
 
             const pageText = response.choices[0].message.content

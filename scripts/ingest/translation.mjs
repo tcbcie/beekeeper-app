@@ -1,3 +1,5 @@
+// OpenAI model names here mirror src/lib/openai.ts (CHAT). gpt-6-luna is a reasoning model:
+// reasoning is switched off, and it takes max_completion_tokens, not max_tokens.
 // Detect language of text using GPT
 export async function detectLanguage(text, openai) {
   // Take a sample of text for detection
@@ -5,7 +7,8 @@ export async function detectLanguage(text, openai) {
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-6-luna',
+      reasoning_effort: 'none',
       messages: [
         {
           role: 'system',
@@ -18,7 +21,7 @@ export async function detectLanguage(text, openai) {
 ${sample}`
         }
       ],
-      max_tokens: 10,
+      max_completion_tokens: 10,
       temperature: 0
     })
 
@@ -34,7 +37,8 @@ ${sample}`
 export async function translateToEnglish(text, sourceLanguage, openai) {
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-6-luna',
+      reasoning_effort: 'none',
       messages: [
         {
           role: 'system',
@@ -45,7 +49,7 @@ export async function translateToEnglish(text, sourceLanguage, openai) {
           content: text
         }
       ],
-      max_tokens: 4000,
+      max_completion_tokens: 4000,
       temperature: 0.3
     })
 
