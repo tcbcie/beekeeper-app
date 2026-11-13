@@ -22,6 +22,10 @@ All layers are switched in the **Layers** panel, opened by the button at the top
 
 An apiary that is already on the map as yours or your team's is left out of the shared and all-apiaries layers, so it is not shown twice.
 
+### Grouping in the all-apiaries layer (added 13/11/2026)
+
+The all-apiaries layer is drawn by the map itself rather than as one marker element per apiary, so it stays fast with hundreds of apiaries. Zoomed out, nearby apiaries are grouped into an indigo circle showing how many it holds; tapping it zooms in until it splits. From zoom level 12 every apiary is shown on its own, with the same popup as before. The other layers are still individual markers.
+
 The layer choices, the flight radius and the apiaries ticked for DCA prediction are remembered on the device (`localStorage`, key `community-map-prefs-v1`).
 
 ## Other controls
@@ -34,7 +38,7 @@ The layer choices, the flight radius and the apiaries ticked for DCA prediction 
 
 ## Popups
 
-Every marker has a 48px tap area. Popups have a close button, use the popup's own text colour with a coloured dot in the title, and say "About 3 km from your nearest apiary" for other beekeepers' apiaries, because those positions are offset.
+Every marker has a 48px tap area, including the grouped circles and single dots of the all-apiaries layer. Popups have a close button, use the popup's own text colour with a coloured dot in the title, and say "About 3 km from your nearest apiary" for other beekeepers' apiaries, because those positions are offset.
 
 ## Loading and failures
 

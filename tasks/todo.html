@@ -282,6 +282,17 @@
 </ul>
 <p>If the lookup fails (no signal, limit reached), the prediction is shown as before, without land cover.</p>
 
+<h3>Batch 4.8 &mdash; grouping in the all-apiaries layer, built on 13 November 2026</h3>
+<ul class="todo">
+  <li>&#9745; The Power User &ldquo;All apiaries&rdquo; layer is drawn by the map itself instead of one marker element per apiary, so it stays fast with hundreds of apiaries. <span class="file">src/app/dashboard/community-map/page.tsx</span></li>
+  <li>&#9745; Zoomed out, nearby apiaries are grouped into an indigo circle with a count. Tapping it zooms in until it splits.</li>
+  <li>&#9745; Zoomed in, each apiary is a dot with the same popup as before and a 48px tap area.</li>
+  <li>&#9745; Docs updated. Type-check and lint pass. Audit done, nothing to fix.</li>
+  <li>&#9744; <strong>For you, as a Power User or Admin:</strong> switch on &ldquo;All apiaries&rdquo;; check the numbered circles, tap one to zoom, tap a single dot for its popup; change the map view (Map, Satellite, Terrain) and check the layer comes back each time.</li>
+</ul>
+<p><strong>Only this layer is grouped.</strong> Shared apiaries, wild colonies and the rest are still individual markers. Ordinary users see no change.</p>
+<p><strong>One small difference:</strong> the dots are drawn on the map surface, so the other layers&rsquo; markers always sit on top of them.</p>
+
 <h2>6. One thing for you to check</h2>
 <p>The elevation data comes from Open-Meteo&rsquo;s free service. As far as I know that tier is for non-commercial use with a daily request limit. HiveCraic takes subscriptions, so their terms are worth reading. <span class="file">docs/features/apiary-elevation.md</span> says there are no limits.</p>
 

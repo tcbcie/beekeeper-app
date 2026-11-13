@@ -94,6 +94,10 @@ const MAP_STYLE_OPTIONS: ReadonlyArray<{ value: MapStyleKey; label: string }> = 
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
 
+// The all-apiaries layer is drawn by the map (grouped when zoomed out), not as marker elements
+const ALL_APIARIES_SOURCE = 'all-apiaries'
+const ALL_APIARY_LAYERS = ['all-apiaries-clusters', 'all-apiaries-count', 'all-apiaries-tap', 'all-apiaries-points']
+
 // Layer choices are remembered on this device, so they are not set again on every visit.
 const PREFS_KEY = 'community-map-prefs-v1'
 
@@ -591,11 +595,14 @@ export default function CommunityMapPage() {
       'shared-flight-radius-fill', 'shared-flight-radius-outline',
       'ca-fill', 'ca-outline',
       'dca-fill', 'dca-outline', 'dca-flyway-lines',
+      ...ALL_APIARY_LAYERS,
     ]
     const sourcesToRemove = [
       'user-flight-radius', 'shared-flight-radius', 'ca-source',
-      'dca-source', 'dca-flyways',
+      'dca-source', 'dca-flyways', ALL_APIARIES_SOURCE,
     ]
+    // Set when the all-apiaries layer is drawn; undone when the effect runs again
+    let removeAllApiariesTap: (() => void) | undefined
     layersToRemove.forEach(layer => {
       if (map.current?.getLayer(layer)) map.current.removeLayer(layer)
     })
@@ -716,31 +723,118 @@ export default function CommunityMapPage() {
 
       // Add markers for all registered apiaries (indigo) - Power Users/Admins only
       // Coordinates already obfuscated server-side
-      if (isPowerUser && showAllApiaries) {
-        allApiaries.forEach((apiary) => {
-          if (!map.current) return
-
-          const distance = calculateNearestDistance(apiary.latitude, apiary.longitude)
-
-          const el = markerElement('all-apiary-marker', `<div style="background-color: #6366f1; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); opacity: 0.85;"></div>`)
-
-          const popup = newPopup().setHTML(`
-            <div style="padding: 4px 8px;">
-              ${popupTitle('#6366f1', 'Registered apiary')}
-              ${apiary.city ? popupLine(`Near ${escapeHtml(apiary.city)}`) : ''}
-              ${popupLine(`${Number(apiary.hive_count)} ${apiary.hive_count === 1 ? 'hive' : 'hives'}`)}
-              ${popupLine('Shown up to 5 km from its true position')}
-              ${distance !== undefined ? popupLine(roughDistanceText(distance)) : ''}
-            </div>
-          `)
-
-          const marker = new mb.Marker({ element: el })
-            .setLngLat([apiary.longitude, apiary.latitude])
-            .setPopup(popup)
-            .addTo(map.current)
-
-          markers.current.push(marker)
+      // Drawn by the map itself and grouped into numbered circles when zoomed out: one marker
+      // element per apiary slows the map once there are a few hundred of them.
+      if (isPowerUser && showAllApiaries && allApiaries.length > 0) {
+        const m = map.current
+        m.addSource(ALL_APIARIES_SOURCE, {
+          type: 'geojson',
+          cluster: true,
+          clusterMaxZoom: 11,
+          clusterRadius: 50,
+          data: {
+            type: 'FeatureCollection',
+            features: allApiaries
+              .filter(apiary => Number.isFinite(Number(apiary.latitude)) && Number.isFinite(Number(apiary.longitude)))
+              .map(apiary => ({
+                type: 'Feature' as const,
+                geometry: { type: 'Point' as const, coordinates: [Number(apiary.longitude), Number(apiary.latitude)] },
+                properties: { city: apiary.city ?? '', hiveCount: Number(apiary.hive_count) || 0 },
+              })),
+          },
         })
+        m.addLayer({
+          id: 'all-apiaries-clusters',
+          type: 'circle',
+          source: ALL_APIARIES_SOURCE,
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': '#6366f1',
+            'circle-opacity': 0.9,
+            // At least 48px across, growing with the number of apiaries inside
+            'circle-radius': ['step', ['get', 'point_count'], 24, 25, 28, 100, 32],
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff',
+          },
+        })
+        // The number needs the style's fonts; without them the circles still show
+        if (m.getStyle()?.glyphs) {
+          m.addLayer({
+            id: 'all-apiaries-count',
+            type: 'symbol',
+            source: ALL_APIARIES_SOURCE,
+            filter: ['has', 'point_count'],
+            layout: {
+              'text-field': ['get', 'point_count_abbreviated'],
+              'text-size': 16,
+              'text-allow-overlap': true,
+            },
+            paint: { 'text-color': '#ffffff' },
+          })
+        }
+        // A near-invisible 48px circle under each single apiary gives it a full tap area
+        m.addLayer({
+          id: 'all-apiaries-tap',
+          type: 'circle',
+          source: ALL_APIARIES_SOURCE,
+          filter: ['!', ['has', 'point_count']],
+          paint: { 'circle-radius': 24, 'circle-color': '#6366f1', 'circle-opacity': 0.01 },
+        })
+        m.addLayer({
+          id: 'all-apiaries-points',
+          type: 'circle',
+          source: ALL_APIARIES_SOURCE,
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-radius': 8,
+            'circle-color': '#6366f1',
+            'circle-opacity': 0.85,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff',
+          },
+        })
+
+        let openPopup: mapboxgl.Popup | null = null
+        const onTap = (e: mapboxgl.MapMouseEvent) => {
+          if (!m.getLayer('all-apiaries-tap')) return
+          const feature = m.queryRenderedFeatures(e.point, { layers: ['all-apiaries-clusters', 'all-apiaries-tap'] })[0]
+          if (!feature || feature.geometry.type !== 'Point') return
+          const [longitude, latitude] = feature.geometry.coordinates
+          const properties = feature.properties ?? {}
+
+          // A numbered circle: zoom in until it splits
+          const clusterId: unknown = properties.cluster_id
+          if (typeof clusterId === 'number') {
+            const source = m.getSource(ALL_APIARIES_SOURCE) as mapboxgl.GeoJSONSource | undefined
+            source?.getClusterExpansionZoom(clusterId, (error, zoom) => {
+              if (error || typeof zoom !== 'number') return
+              m.easeTo({ center: [longitude, latitude], zoom })
+            })
+            return
+          }
+
+          const city = typeof properties.city === 'string' ? properties.city : ''
+          const hiveCount = Number(properties.hiveCount) || 0
+          const distance = calculateNearestDistance(latitude, longitude)
+          openPopup?.remove()
+          openPopup = newPopup()
+            .setLngLat([longitude, latitude])
+            .setHTML(`
+              <div style="padding: 4px 8px;">
+                ${popupTitle('#6366f1', 'Registered apiary')}
+                ${city ? popupLine(`Near ${escapeHtml(city)}`) : ''}
+                ${popupLine(`${hiveCount} ${hiveCount === 1 ? 'hive' : 'hives'}`)}
+                ${popupLine('Shown up to 5 km from its true position')}
+                ${distance !== undefined ? popupLine(roughDistanceText(distance)) : ''}
+              </div>
+            `)
+            .addTo(m)
+        }
+        m.on('click', onTap)
+        removeAllApiariesTap = () => {
+          m.off('click', onTap)
+          openPopup?.remove()
+        }
       }
 
       // Add markers for wild colonies (amber/orange) - Power Users only
@@ -1039,6 +1133,7 @@ export default function CommunityMapPage() {
       })
     }
 
+    return removeAllApiariesTap
   }, [mapLoaded, sharedApiaries, userApiaries, showUserApiaries, showSharedApiaries, flightRadius, calculateNearestDistance, isPowerUser, showWildColonies, wildColonies, conservationAreas, showConservationAreas, showDCAPredictions, dca.predictions, dca.flyways, dca.confirmations, saveSighting, removeSighting, toggleSharing, sharedSightings, showSharedSightings, allApiaries, showAllApiaries, styleVersion])
 
   // Recording a sighting, step 1: the next tap on the map picks the spot
