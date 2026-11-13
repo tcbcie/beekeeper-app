@@ -26,7 +26,7 @@
 
 <h1>Technology Stack Review</h1>
 
-<p><strong>Status:</strong> batches 1 and 2 built, waiting on your test run. Batches 3 and 4, error monitoring and push notifications not started &nbsp;&middot;&nbsp; <strong>Date:</strong> 13 November 2026</p>
+<p><strong>Status:</strong> batches 1 and 2 are live. Ingest scripts moved to the new model (not yet committed). Plans for error monitoring and push notifications are written and waiting for your approval (section 8). Batches 3 and 4 not started &nbsp;&middot;&nbsp; <strong>Date:</strong> 13 November 2026</p>
 
 <blockquote>
 <p><strong>Your request:</strong> a full review of the frameworks, libraries and external services, and whether they are still the best fit for the application, the user experience and the functionality.</p>
@@ -259,6 +259,51 @@
   <li>&#9744; Mel: a question about your own data (&ldquo;How many hives do I have?&rdquo;), a knowledge question (&ldquo;How do I treat varroa?&rdquo;) and a greeting</li>
   <li>&#9744; Record a voice note with beekeeping words (varroa, propolis, supersedure) and check the cleaned text</li>
   <li>&#9744; Sign in and out, and an Eircode lookup (supabase-js update)</li>
+</ul>
+
+<h2>8. Next: ingest scripts, error monitoring, push notifications</h2>
+
+<h3>Knowledge-base ingest scripts (done, not committed)</h3>
+<ul class="todo">
+  <li>&#9745; Language detection, translation and page scanning moved from <code>gpt-4o</code> / <code>gpt-4o-mini</code> to <code>gpt-6-luna</code>, with the same two setting changes as the app <span class="file">scripts/ingest/translation.mjs, scripts/ingest/text-extraction.mjs</span></li>
+  <li>&#9745; One live request confirmed the new model reads images (the scanning step needs it)</li>
+  <li>&#9744; Not run end to end: that would ingest a real document. Try one document next time you add to the knowledge base.</li>
+</ul>
+<p>QA audit: no critical or high findings. One note: page scanning used the larger <code>gpt-4o</code>; <code>gpt-6-luna</code> is OpenAI&rsquo;s named replacement but scan quality on poor photocopies is untested. The scripts also still offer Google&rsquo;s <code>gemini-2.0-flash</code> through an older Google library; I have not checked its retirement date.</p>
+
+<h3>Error monitoring (D2) &mdash; plan</h3>
+<p>Full plan: <span class="file">docs/features/error-monitoring-plan.md</span></p>
+<ul>
+  <li>Sentry, EU region, errors only (no tracing, no session recording).</li>
+  <li>Catches every uncaught crash in the browser and on the server, plus deliberate reports from the places that cost data: the error screens, a refused or stuck offline inspection, the Stripe webhook, the nightly clean-up and invoice email.</li>
+  <li>Sends an account id only. No email, no beekeeping records, nothing during impersonation, no link tokens, and &ldquo;no signal&rdquo; errors are ignored.</li>
+  <li>Needs: you create the Sentry account; one address added to the security policy; a privacy page update.</li>
+</ul>
+<ul class="todo">
+  <li>&#9744; Batch A: capture</li>
+  <li>&#9744; Batch B: privacy page and documents</li>
+</ul>
+
+<h3>Push notifications (D3) &mdash; plan</h3>
+<p>Full plan: <span class="file">docs/features/push-notifications-plan.md</span></p>
+<ul>
+  <li>One switch in Profile &rarr; Notifications: &ldquo;Notifications on this phone&rdquo;.</li>
+  <li>Task, event, treatment and batch-event reminders then arrive on the lock screen at the time already set on the task. Email carries on as now.</li>
+  <li>Reuses what exists: the <code>push_subscriptions</code> table (already in the live database, empty, correctly locked down) and the 15-minute reminder job. No new table, no new job, no new profile setting.</li>
+  <li>iPhone: works only after &ldquo;Add to Home Screen&rdquo;; the switch explains that.</li>
+</ul>
+<ul class="todo">
+  <li>&#9744; Batch A: the phone side (switch, saving the subscription, tap opens Tasks, sign-out removes it)</li>
+  <li>&#9744; Batch B: sending from the reminder job</li>
+</ul>
+
+<h3>Decisions needed</h3>
+<ul class="todo">
+  <li>&#9744; <strong>E1:</strong> Sentry in the EU region, errors only?</li>
+  <li>&#9744; <strong>E2:</strong> Privacy page: list all current third-party services while adding Sentry, or only Sentry?</li>
+  <li>&#9744; <strong>P1:</strong> Is a phone subscription alone enough to get push reminders, or should push also obey the email &ldquo;Task reminders&rdquo; / &ldquo;Event reminders&rdquo; switches?</li>
+  <li>&#9744; <strong>P2:</strong> Tap opens the Tasks page, or the hive the reminder is about?</li>
+  <li>&#9744; <strong>Order:</strong> I suggest error monitoring first, so the push work and the Next.js upgrade are watched by it.</li>
 </ul>
 
 </body>
