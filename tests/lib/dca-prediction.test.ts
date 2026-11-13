@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { predictDCAs, scoreAspectAndWind, scoreDroneSupply, ElevationUnavailableError } from '@/lib/dca-prediction'
+import { predictDCAs, scoreAspectAndWind, scoreDroneSupply, scoreLandCover, ElevationUnavailableError } from '@/lib/dca-prediction'
 import { fetchElevationBatch } from '@/lib/elevation'
+import { fetchLandCover } from '@/lib/land-cover'
 
 /**
  * The DCA engine works from terrain heights alone, so these tests swap the elevation service
@@ -9,6 +10,11 @@ import { fetchElevationBatch } from '@/lib/elevation'
 
 vi.mock('@/lib/elevation', () => ({
   fetchElevationBatch: vi.fn(),
+}))
+
+// Nothing is known about the ground unless a test says otherwise
+vi.mock('@/lib/land-cover', () => ({
+  fetchLandCover: vi.fn(async (points: unknown[]) => points.map(() => null)),
 }))
 
 type Point = { latitude: number; longitude: number }
@@ -148,5 +154,29 @@ describe('scoreDroneSupply', () => {
       neighbourAt(1, 0),
       { latitude: NaN, longitude: spot.longitude, hiveCount: 100 },
     ])).toBe(0)
+  })
+})
+
+describe('land cover', () => {
+  beforeEach(() => {
+    vi.mocked(fetchElevationBatch).mockReset()
+  })
+
+  it('drops a hotspot that sits on a lake', async () => {
+    // Flat ground gives one best-guess hotspot; the land-cover lookup says it is on water
+    useLandscape(() => 50)
+    vi.mocked(fetchLandCover).mockResolvedValueOnce([{ onWater: true, inWoodland: false, nearWoodland: false }])
+
+    const result = await predictDCAs([apiary])
+
+    expect(result.predictions).toEqual([])
+    expect(result.flyways).toEqual([])
+  })
+
+  it('marks down woodland, marks up a woodland edge and leaves open ground alone', () => {
+    expect(scoreLandCover({ onWater: false, inWoodland: true, nearWoodland: true })).toBe(-4)
+    expect(scoreLandCover({ onWater: false, inWoodland: false, nearWoodland: true })).toBe(3)
+    expect(scoreLandCover({ onWater: false, inWoodland: false, nearWoodland: false })).toBe(0)
+    expect(scoreLandCover(null)).toBe(0)
   })
 })

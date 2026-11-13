@@ -22,8 +22,14 @@ The output should be treated as a ranked hotspot estimate, not a verified point 
    - **Wind shelter** (added 12/11/2026) - higher ground on the south-west side scores up to +3, lower ground there down to -3. The prevailing wind is taken as south-westerly, which holds for Ireland and Britain; 15 m of higher ground 500 m upwind counts as full shelter
    - **Other colonies nearby** (added 12/11/2026) - up to +3 for other beekeepers' hives within 6 km of the candidate, nearer hives counting for more; about 20 weighted hives earn the full 3. Only the shared-apiaries layer is used, so a prediction does not depend on the viewer's role. Those positions are offset by up to 5 km, so this is a wide, weak signal: it lifts hotspots in areas with many colonies more than it chooses between hotspots of one apiary
 5. **Confirmation priors** - Nearby confirmations are converted into bounded local priors that add positive support or negative suppression according to proximity, recency, and clustering.
-6. **Water check** - A candidate on open sea is dropped. The elevation service reports exactly 0 m over sea, so a point at 0 m with at least half of its surroundings also at 0 m counts as sea. Lakes sit above sea level and are not detected.
-7. **Reinforcement and filtering** - Hotspots can be weakly reinforced by nearby apiaries, filtered by score threshold, and merged within 500 m. Each selected apiary keeps its own best hotspot; the rest fill up to 5 results, so apiaries far apart are not crowded out.
+6. **Water check** - A candidate on open sea is dropped. The elevation service reports exactly 0 m over sea, so a point at 0 m with at least half of its surroundings also at 0 m counts as sea. Lakes sit above sea level and are not detected here; the land-cover step below catches them.
+7. **Land cover** (added 13/11/2026) - For the hotspots about to be shown (not every candidate), the engine asks Mapbox what is on the ground:
+   - **On water** (lake, river, reservoir, sea) - the hotspot is dropped and the next best takes its place, unless the beekeeper reported it themselves. This catches the lakes the height check cannot see
+   - **Inside woodland** - 4 points off
+   - **Open ground with woodland within 300 m** - 3 points on
+   - **Could not be looked up** - no change
+   Replacements are looked up in turn, at most three rounds
+8. **Reinforcement and filtering** - Hotspots can be weakly reinforced by nearby apiaries, filtered by score threshold, and merged within 500 m. Each selected apiary keeps its own best hotspot; the rest fill up to 5 results, so apiaries far apart are not crowded out.
 
 ## Current Score Components
 
@@ -41,6 +47,7 @@ The current phase 3 model combines these signals:
 | Aspect | South-facing ground up, north-facing ground down (-3 to +3) |
 | Wind shelter | Sheltered from the south-west up, exposed to it down (-3 to +3) |
 | Other colonies nearby | Other beekeepers' shared hives within 6 km (0 to +3) |
+| Land cover | Inside woodland -4, woodland edge within 300 m +3; on water the hotspot is dropped |
 | Cross-apiary support | Weak reinforcement when several apiaries support the same hotspot |
 | Confirmation support | Recency-weighted positive field evidence near the candidate |
 | Confirmation suppression | Recency-weighted negative field evidence that can hold confidence down |
@@ -74,7 +81,8 @@ Display radius remains:
 
 - **Execution:** Scoring runs in the browser; terrain heights come through the app's own server route
 - **Terrain data:** `POST /api/elevation` (Open-Meteo behind it, cached on the server for 30 days, up to 1,000 points per call). See `apiary-elevation.md`
-- **Caching:** `localStorage` with the `dca-predictions-v7-` cache namespace keyed by apiary coordinates, confirmation state and the shared apiaries nearby, kept for 24 hours. An empty result is never cached. The cache is cleared whenever a sighting is added or removed
+- **Caching:** `localStorage` with the `dca-predictions-v8-` cache namespace keyed by apiary coordinates, confirmation state and the shared apiaries nearby, kept for 24 hours. An empty result is never cached. The cache is cleared whenever a sighting is added or removed
+- **Land cover:** Mapbox Tilequery API, called from the browser with the map key the app already uses (`mapbox-streets-v8` water and landuse, `mapbox-terrain-v2` landcover). One request per hotspot shown, usually 5 to 15 for a prediction that is not already saved on the device. Requests are billed by Mapbox per request and limited to 600 a minute
 - **Apiary limit:** Maximum 10 selected apiaries per calculation
 - **Database:** Existing `dca_confirmations` table remains the field-evidence source
 
@@ -84,6 +92,7 @@ Display radius remains:
 |------|---------|
 | `src/lib/elevation.ts` | Batch elevation lookups, sent to `/api/elevation` |
 | `src/app/api/elevation/route.ts` | Server route: sign-in, rate limit, lookup and caching |
+| `src/lib/land-cover.ts` | Water and woodland lookups for the hotspots on show |
 | `src/lib/dca-prediction.ts` | Phase 3 landscape-aware prediction engine with confirmation priors |
 | `src/hooks/useDCAPredictions.ts` | Hook, confirmation loading, and cache-keyed prediction flow |
 | `src/app/dashboard/community-map/page.tsx` | Map integration and popup display |
@@ -135,9 +144,10 @@ Sharing is the beekeeper's choice for each sighting, and is off unless they tick
 ## Limitations
 
 - The engine is still limited to what can be inferred from the current elevation source
-- Phase 2 adds richer derived terrain signals, but it still does not use external land-cover, vegetation, weather, or true line-feature datasets
+- Land cover is checked only for the hotspots about to be shown, so it can remove or re-rank them but does not search for better ground elsewhere. Hedgerows, single tree lines and weather are not used
+- The positions of the hotspots on show (not of the apiaries) are sent from the browser to Mapbox for the land-cover lookup
 - Open-Meteo elevation data is useful for broad terrain structure, not fine-grained local verification
 - Wild colonies and the Power User all-apiaries layer are not counted as nearby colonies, and neither are the beekeeper's own unselected apiaries
-- Aspect, wind shelter and nearby colonies have not been checked against known DCAs: no confirmed sighting existed in the database when they were added, so their weights are deliberately small. Review them once a few real DCAs are recorded
+- Aspect, wind shelter, nearby colonies and land cover have not been checked against known DCAs: no confirmed sighting existed in the database when they were added, so their weights are deliberately small. Review them once a few real DCAs are recorded
 - The wind direction is a fixed south-westerly, not measured per site. An apiary outside Ireland and Britain, or a valley that funnels wind differently, is not allowed for
 - Field checks still matter; the map output is a planning aid, not proof of a true DCA

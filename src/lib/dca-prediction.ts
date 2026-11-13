@@ -6,6 +6,7 @@
  */
 
 import { fetchElevationBatch } from './elevation'
+import { fetchLandCover, type LandCover } from './land-cover'
 
 export interface DCAPrediction {
   latitude: number
@@ -95,6 +96,7 @@ interface ScoredCandidate extends CandidateSeed {
   aspectScore: number
   windScore: number
   droneSupplyScore: number
+  landCoverScore: number
   supportScore: number
   confirmationSupportScore: number
   confirmationSuppressionScore: number
@@ -163,6 +165,14 @@ const PREVAILING_WIND_SIDE = [4, 5, 6]
 const NEIGHBOUR_RADIUS_KM = 6
 const NEIGHBOUR_FULL_HIVES = 20
 const MAX_DRONE_SUPPLY_SCORE = 3
+
+// Drones gather over open ground, often beside a tree line. A hotspot inside woodland is marked
+// down; one on open ground with woodland within 300 m is marked up.
+const IN_WOODLAND_SCORE = -4
+const WOODLAND_EDGE_SCORE = 3
+// Land cover is looked up only for the hotspots about to be shown. When one is dropped or
+// marked down, others take its place and are looked up in turn, at most this many times.
+const MAX_LAND_COVER_ROUNDS = 3
 
 /** Thrown when the elevation service returned nothing at all, so no prediction is possible. */
 export class ElevationUnavailableError extends Error {
@@ -641,6 +651,13 @@ export function scoreDroneSupply(
   return Math.round(clamp(weightedHives / NEIGHBOUR_FULL_HIVES, 0, 1) * MAX_DRONE_SUPPLY_SCORE)
 }
 
+/** Points for what is on the ground at a hotspot. Nothing known scores 0. */
+export function scoreLandCover(landCover: LandCover | null): number {
+  if (!landCover) return 0
+  if (landCover.inWoodland) return IN_WOODLAND_SCORE
+  return landCover.nearWoodland ? WOODLAND_EDGE_SCORE : 0
+}
+
 function addSupportScores(candidates: ScoredCandidate[]): ScoredCandidate[] {
   return candidates.map(candidate => {
     const nearbyApiaryIds = new Set<string>()
@@ -805,6 +822,7 @@ function buildSignalSummary(candidate: ScoredCandidate): string {
     { label: 'south-facing ground', value: candidate.aspectScore },
     { label: 'shelter from the prevailing wind', value: candidate.windScore },
     { label: 'other colonies nearby', value: candidate.droneSupplyScore },
+    { label: 'woodland edge nearby', value: candidate.landCoverScore },
     { label: 'multi-apiary support', value: candidate.supportScore },
     { label: 'recent confirmations', value: candidate.confirmationSupportScore },
   ]
@@ -997,6 +1015,7 @@ export async function predictDCAs(
         aspectScore,
         windScore,
         droneSupplyScore,
+        landCoverScore: 0,
         confirmationSupportScore: confirmationInfluence.supportScore,
         confirmationSuppressionScore: confirmationInfluence.suppressionScore,
         confirmationMixedEvidence: confirmationInfluence.mixedEvidence,
@@ -1035,7 +1054,32 @@ export async function predictDCAs(
   if (scored.length === 0 && fallbackCandidate) {
     scored = [fallbackCandidate]
   }
-  scored = selectResults(scored, validApiaries.map(apiary => apiary.id))
+  // Land cover for the hotspots about to be shown. One on water (a lake, which the height check
+  // above cannot see) is dropped unless the beekeeper reported it; woodland moves the score.
+  const apiaryIds = validApiaries.map(apiary => apiary.id)
+  const checked = new Set<ScoredCandidate>()
+  for (let round = 0; round < MAX_LAND_COVER_ROUNDS; round++) {
+    const unchecked = selectResults(scored, apiaryIds).filter(candidate => !checked.has(candidate))
+    if (unchecked.length === 0) break
+
+    const landCovers = await fetchLandCover(unchecked)
+    const onWater = new Set<ScoredCandidate>()
+    unchecked.forEach((candidate, index) => {
+      const landCover = landCovers[index]
+      checked.add(candidate)
+      if (landCover?.onWater && !candidate.injectedByConfirmation) {
+        onWater.add(candidate)
+        return
+      }
+      candidate.landCoverScore = scoreLandCover(landCover)
+      candidate.score += candidate.landCoverScore
+    })
+    scored = scored
+      .filter(candidate => !onWater.has(candidate))
+      .sort((left, right) => right.score - left.score)
+  }
+
+  scored = selectResults(scored, apiaryIds)
 
   const predictions: DCAPrediction[] = scored.map(candidate => {
     const confidence = candidate.isFallback ? 'low' : confidenceForCandidate(candidate)

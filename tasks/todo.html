@@ -265,6 +265,23 @@
   <li><strong>Shared sightings do not feed the prediction,</strong> because their positions are offset.</li>
 </ul>
 
+<h3>Batch 4.7 &mdash; land cover and lakes, built on 13 November 2026</h3>
+<ul class="todo">
+  <li>&#9745; <strong>Lakes:</strong> a hotspot on a lake, river, reservoir or the sea is dropped and the next best takes its place. A spot you reported yourself is kept. <span class="file">src/lib/dca-prediction.ts</span></li>
+  <li>&#9745; <strong>Woodland:</strong> a hotspot inside woodland loses 4 points; one on open ground with woodland within 300 m gains 3. The popup&rsquo;s &ldquo;Signals&rdquo; line can say &ldquo;woodland edge nearby&rdquo;.</li>
+  <li>&#9745; <strong>Source:</strong> Mapbox&rsquo;s own map data, read with the map key the app already has. <span class="file">src/lib/land-cover.ts</span></li>
+  <li>&#9745; Checked by hand against Mapbox before building: two lakes and open sea came back as water, a Wicklow forest as woodland nearby, farmland as neither.</li>
+  <li>&#9745; Saved predictions are worked out again (cache name moved to v8). Two new tests. Docs updated. Type-check and lint pass. Audit done, nothing to fix.</li>
+  <li>&#9744; <strong>For you:</strong> run <code>npx vitest run tests/lib/dca-prediction.test.ts</code>; predict DCAs for an apiary beside a lake or a forest and check no hotspot lands on the water.</li>
+</ul>
+<p><strong>Only the hotspots about to be shown are checked</strong>, not every candidate: usually 5 to 15 requests for a prediction that is not already saved on the phone. It removes and re-ranks hotspots; it does not go looking for better ground elsewhere.</p>
+<p><strong>Two things to know:</strong></p>
+<ul>
+  <li><strong>Cost.</strong> Mapbox bills these lookups per request. I do not know your plan&rsquo;s free allowance; at this volume it should be small, but it is worth a look in the Mapbox dashboard after a week.</li>
+  <li><strong>Privacy.</strong> The positions of the hotspots on show (within about 4 km of an apiary, not the apiary itself) go from the phone to Mapbox, which already receives the area of map being viewed.</li>
+</ul>
+<p>If the lookup fails (no signal, limit reached), the prediction is shown as before, without land cover.</p>
+
 <h2>6. One thing for you to check</h2>
 <p>The elevation data comes from Open-Meteo&rsquo;s free service. As far as I know that tier is for non-commercial use with a daily request limit. HiveCraic takes subscriptions, so their terms are worth reading. <span class="file">docs/features/apiary-elevation.md</span> says there are no limits.</p>
 

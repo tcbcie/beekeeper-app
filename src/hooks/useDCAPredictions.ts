@@ -23,7 +23,7 @@ export interface DCAConfirmation {
   is_shared: boolean
 }
 
-const CACHE_KEY_PREFIX = 'dca-predictions-v7-'
+const CACHE_KEY_PREFIX = 'dca-predictions-v8-'
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
 const MAX_APIARIES = 10
 
