@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Apiary Map Review</title>
+<title>Plan &mdash; Technology Stack Review</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -17,215 +17,249 @@
   ul.todo { list-style: none; padding-left: 0; }
   ul.todo li { margin: .35rem 0; }
   .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
+  .keep { color: #2f7a4d; font-weight: 600; }
+  .change { color: #b45309; font-weight: 600; }
+  .risk { color: #b91c1c; font-weight: 600; }
 </style>
 </head>
 <body>
 
-<h1>Apiary Map Review</h1>
+<h1>Technology Stack Review</h1>
 
-<p><strong>Status:</strong> all three batches built. Batches 1 and 2 are live; batch 3 and decision E are waiting on your phone test and test run &nbsp;&middot;&nbsp; <strong>Date:</strong> 13 November 2026</p>
+<p><strong>Status:</strong> batches 1 and 2 built, waiting on your test run. Batches 3 and 4, error monitoring and push notifications not started &nbsp;&middot;&nbsp; <strong>Date:</strong> 13 November 2026</p>
 
 <blockquote>
-<p><strong>Your request:</strong> a full review of the apiary map from a usability point of view, a feature point of view, and any other general improvements.</p>
-<p><strong>Scope I assumed:</strong> the hive-layout map inside one apiary (2D map at <code>/dashboard/apiaries/[id]/map</code> and its 3D view), not the community map reviewed yesterday. The previous community map plan that lived in this file is still in git history.</p>
+<p><strong>Your request:</strong> a full review of the frameworks, libraries and external services, and whether they are still the best fit for the application, the user experience and the functionality.</p>
+<p><strong>How it was done:</strong> three read-only agents swept the code, configuration and <code>docs/features</code>; I ran <code>npm outdated</code> and <code>npm audit</code> and checked the key claims myself. No tests or builds were run. The apiary map plan that lived in this file is in git history.</p>
 </blockquote>
 
-<h2>1. Where the map stands today</h2>
+<h2>1. Verdict in short</h2>
 
-<p>The map is a to-scale rectangle of the apiary. The owner drags hives and benches onto a 0.25 m grid, turns them, sets the entrance and north, and can print the result. A 3D view shows the same layout read-only. Every change saves at once.</p>
+<p><strong>The core stack is still the right fit and should stay.</strong> Next.js on Vercel, Supabase, Tailwind 4, the hand-built UI primitives, Dexie and the hand-written service worker suit a phone-first app for the apiary. Heavy libraries (charts, maps, 3D, Excel) are already loaded on demand. Nothing needs replacing wholesale.</p>
 
-<table>
-  <tr><th>Fact (live database, today)</th><th>Value</th></tr>
-  <tr><td>Accounts with the map switched on</td><td>4</td></tr>
-  <tr><td>Apiaries with at least one hive placed</td><td>10</td></tr>
-  <tr><td>Hives placed</td><td>74</td></tr>
-  <tr><td>Largest live apiary</td><td>20 hives</td></tr>
-</table>
+<p>What does need attention falls into four groups:</p>
+<ol>
+  <li><strong>Three free services are used outside their terms</strong> for a paid app: Open-Meteo, OpenStreetMap tiles and Nominatim.</li>
+  <li><strong>Two gaps that hurt field users:</strong> no error monitoring, and no real push notifications.</li>
+  <li><strong>The framework is one major version behind</strong> (Next.js 15 against 16), which also blocks one security fix.</li>
+  <li><strong>Housekeeping:</strong> one high-severity library update, four unused packages, one duplicate map library.</li>
+</ol>
 
-<p>The map is off by default and only reachable after a switch in Profile, which explains the low take-up.</p>
-
-<h2>2. Findings</h2>
-
-<h3>2.1 Faults</h3>
+<h2>2. What stays (good fit)</h2>
 
 <table>
-  <tr><th>#</th><th>Finding</th><th>Where</th></tr>
-  <tr><td>F1</td><td><strong>A hive moved to another apiary keeps its old map position.</strong> Bulk move clears the row and order but not the map position, and no database trigger clears it. The hive appears at a phantom spot on the new apiary&rsquo;s map. The move dialogue tells the user the position is cleared.</td><td class="file">src/app/dashboard/hives/page.tsx:249</td></tr>
-  <tr><td>F2</td><td><strong>A failed first load shows an empty, view-only map.</strong> There is a brief message but no way to retry, and the owner sees &ldquo;You have view-only access&rdquo;.</td><td class="file">src/hooks/useApiaryMap.ts:296</td></tr>
-  <tr><td>F3</td><td><strong>The 2D map downloads every inspection of every hive in the apiary</strong> on each open, with no limit, to get super fullness that only the 3D view uses.</td><td class="file">src/hooks/useApiaryMap.ts:266</td></tr>
-  <tr><td>F4</td><td><strong>The map never refreshes on return to the screen.</strong> The feature document promises it. A phone left open shows an old layout until the page is reloaded.</td><td class="file">src/hooks/useApiaryMap.ts</td></tr>
-  <tr><td>F5</td><td><strong>Follow-up saves ignore blocked writes.</strong> Moving a bench, resizing and deleting a bench update each hive afterwards and check only for an error, not for zero rows saved.</td><td class="file">src/hooks/useApiaryMap.ts:451, 536, 567</td></tr>
-  <tr><td>F6</td><td><strong>A failed save can restore the wrong position.</strong> Two quick changes to one hive (drag, then turn) can roll back to a stale snapshot. Already listed as a Low finding in the phase 2 audit and not fixed.</td><td class="file">src/hooks/useApiaryMap.ts:185, 340</td></tr>
-  <tr><td>F7</td><td><strong>&ldquo;Delete bench&rdquo; acts at once</strong> with no confirmation and no undo.</td><td class="file">src/components/apiaries/YardMap.tsx:710</td></tr>
-  <tr><td>F8</td><td><strong>Three messages still say &ldquo;yard&rdquo;</strong>, and two titles are in title case (&ldquo;Apiary Map&rdquo;, &ldquo;3D Apiary View&rdquo;).</td><td class="file">useApiaryMap.ts:298, 310, 363; map/page.tsx:27; map/3d/page.tsx:28</td></tr>
-  <tr><td>F9</td><td>Small rule breaks: two 3D buttons are 44 px high (rule is 48 px); the &ldquo;Open hive&rdquo; link uses button classes directly; the hive panel uses a looser &ldquo;is placed&rdquo; test than the rest of the map.</td><td class="file">YardScene3D.tsx:173; HiveInspectorPanel.tsx:43, 105</td></tr>
+  <tr><th>Piece</th><th>Verdict</th><th>Why</th></tr>
+  <tr><td>Next.js App Router on Vercel</td><td class="keep">Keep, upgrade</td><td>Right framework. 54 pages, 29 API routes, no edge runtime, no middleware. Only the version is behind.</td></tr>
+  <tr><td>React 19</td><td class="keep">Keep</td><td>Pinned at 19.1.0; moves with the Next.js upgrade.</td></tr>
+  <tr><td>Supabase (database, sign-in, storage, edge functions, scheduled jobs, vector search)</td><td class="keep">Keep</td><td>The whole security model (RLS) is built on it. No case for moving.</td></tr>
+  <tr><td>Tailwind 4 + own UI primitives + lucide icons</td><td class="keep">Keep</td><td>40 primitives, no component kit to go stale, device fonts (no font download). Suits the 14px-floor rules.</td></tr>
+  <tr><td>Screen cache, drafts and outbox on Dexie</td><td class="keep">Keep</td><td>Purpose-built for poor signal. TanStack Query was already considered and rejected for good reasons (<span class="file">docs/features/screen-cache.md</span>).</td></tr>
+  <tr><td>Hand-written service worker</td><td class="keep">Keep</td><td>322 lines, does the job. Serwist/Workbox would add a dependency for no user gain.</td></tr>
+  <tr><td>Chart.js</td><td class="keep">Keep</td><td>One chart library, 8 screens, all loaded on demand.</td></tr>
+  <tr><td>Mapbox GL</td><td class="keep">Keep</td><td>Community map and location picker, loaded on demand, tiles cached for offline. Should become the only map library (see 3.2).</td></tr>
+  <tr><td>three.js / react-three-fiber, dnd-kit, exceljs, html-to-image, proj4, qrcode.react</td><td class="keep">Keep</td><td>Each used on one or two screens and correctly kept out of the first load.</td></tr>
+  <tr><td>Stripe hosted Checkout</td><td class="keep">Keep</td><td>Simplest safe option for a one-off yearly payment. Webhook is idempotent.</td></tr>
+  <tr><td>Resend for email</td><td class="keep">Keep</td><td>Works; called directly, so the installed SDK package is unused.</td></tr>
+  <tr><td>BEEP and Wolf Waagen scale links</td><td class="keep">Keep</td><td>Two vendors, two clients, by design.</td></tr>
+  <tr><td>Vitest + Testing Library, ESLint 9, TypeScript 5.9</td><td class="keep">Keep</td><td>Current. TypeScript 7 and ESLint 10 can wait until the Next.js upgrade is settled.</td></tr>
+  <tr><td>Browser print for Brother labels</td><td class="keep">Keep</td><td>No printer SDK to maintain; WebUSB/Bluetooth would not work on iPhone anyway.</td></tr>
 </table>
 
-<h3>2.2 Usability on a phone</h3>
+<h2>3. Findings that need a change or a decision</h2>
+
+<h3>3.1 Free services used outside their terms <span class="risk">(highest priority)</span></h3>
 
 <table>
-  <tr><th>#</th><th>Finding</th></tr>
-  <tr><td>U1</td><td><strong>The map is always at least 720 px wide</strong>, so it scrolls sideways on every phone, even for the default 5 m apiary. There is no zoom, no fit-to-screen and no full-screen view. The user never sees the whole apiary at once.</td></tr>
-  <tr><td>U2</td><td><strong>The controls come before the map.</strong> Up to nine setup controls (entrance, bench size, add bench, print, size, north) fill the first screen, though they are used once and then rarely.</td></tr>
-  <tr><td>U3</td><td><strong>Hive details open below the map</strong>, often off-screen, with no scroll to them. A tap on a hive can look as if nothing happened.</td></tr>
-  <tr><td>U4</td><td><strong>Dragging is the only way to place or move a hive</strong>, and on a phone it needs a 200 ms hold that the screen never mentions. A quick drag does nothing at all. This breaks the project rule that every gesture has a visible alternative.</td></tr>
-  <tr><td>U5</td><td><strong>The map is always in edit mode for the owner.</strong> A held finger at the apiary moves a hive, and the move saves at once with no undo.</td></tr>
-  <tr><td>U6</td><td><strong>Queenless is shown by a red border only</strong>, and there is no legend. An active hive with no queen recorded has the same green border as a healthy one.</td></tr>
-  <tr><td>U7</td><td><strong>View-only users cannot see unplaced hives</strong>, not even a count, and they still read the hint &ldquo;Drag hives to match their real position&rdquo;.</td></tr>
-  <tr><td>U8</td><td>Loading is plain text instead of a skeleton; nothing shows that a change was saved; the &ldquo;no hives yet&rdquo; message has no link to add one.</td></tr>
+  <tr><th>#</th><th>Finding</th><th>Where</th><th>Recommendation</th></tr>
+  <tr><td>S1</td><td><strong>Open-Meteo&rsquo;s free service is for non-commercial use</strong>, and HiveCraic is sold. Your own feature document already flags this as an open check. Weather, wind warnings, GDD, foraging hours, the TBR planner and elevation all depend on it (about 10 separate callers).</td><td class="file">docs/features/apiary-elevation.md; lib/apiary-weather.ts, lib/gdd.ts, hooks/useWindWarnings.ts and 7 more</td><td>Technically it is the best fit (no key, good Irish coverage), so keep the service and take their paid commercial plan. That plan uses an API key, which must not sit in the browser, so the calls would move behind one small server route with one shared weather helper. <em>Your decision: pay for the plan, or accept the risk.</em> See 3.5 for the plans and cost.</td></tr>
+  <tr><td>S2</td><td><strong>The public trace page draws its map from OpenStreetMap&rsquo;s volunteer tile servers</strong>, which are not meant for production apps and can block a site without notice. This is the page customers reach from a jar label.</td><td class="file">src/components/maps/ApiaryAreaMap.tsx:32</td><td>Draw this one small map with Mapbox instead. That also removes Leaflet, the second map library (see H4).</td></tr>
+  <tr><td>S3</td><td><strong>Nominatim (free OpenStreetMap address lookup) is called straight from users&rsquo; phones</strong> in three places. Its policy allows only light use and asks for an identifying header that a browser cannot send.</td><td class="file">dashboard/apiaries/page.tsx:187; lib/apiary-weather.ts:49, 55</td><td>Send these lookups through the existing Google geocode server route (already used for Eircodes, with a rate limit) and drop Nominatim.</td></tr>
+  <tr><td>S4</td><td><strong>Mapbox place-name lookup uses the old v5 address API.</strong> Mapbox has replaced it with v6.</td><td class="file">src/components/MapLocationPicker.tsx:251</td><td>Move the one call to v6 and add a timeout (it has none).</td></tr>
 </table>
 
-<h3>2.3 Feature gaps</h3>
+<h3>3.2 Gaps that affect users in the field</h3>
 
 <table>
-  <tr><th>#</th><th>Gap</th></tr>
-  <tr><td>G1</td><td><strong>The map shows almost none of what the hive list shows.</strong> Missing: inspection age, tasks due, treatment in the hive, stores level, super fullness (3D only), queen marking colour (fetched but unused). Two earlier feature documents already named the map as the place that &ldquo;wants this most&rdquo;.</td></tr>
-  <tr><td>G2</td><td><strong>No actions from a hive except &ldquo;Open hive&rdquo;.</strong> No &ldquo;Start inspection&rdquo;, no link to the queen. On a phone the apiary page hides its own &ldquo;New Inspection&rdquo; link, so the map is a dead end for field work.</td></tr>
-  <tr><td>G3</td><td><strong>Only the apiary owner can arrange the map.</strong> Team members of a shared apiary are always view-only. The feature document does not say so.</td></tr>
-  <tr><td>G4</td><td><strong>Nothing leads to the map.</strong> No &ldquo;Show on map&rdquo; from a hive, the hive list or a scanned QR tag; a new hive is not offered a place; the apiary page has no preview.</td></tr>
-  <tr><td>G5</td><td><strong>No offline view.</strong> Other field screens show a saved copy without signal; the map shows nothing, and a drag made without signal snaps back with a general message.</td></tr>
-  <tr><td>G6</td><td><strong>No landmarks.</strong> Sheds, trees, water, gates and text labels were left out of version 1 and never added. They are what makes a layout recognisable on site.</td></tr>
-  <tr><td>G7</td><td><strong>Mel cannot answer &ldquo;where is hive 12?&rdquo;</strong> No assistant tool reads the layout.</td></tr>
-  <tr><td>G8</td><td><strong>The print-out is the picture only</strong>, with no legend and no hive list.</td></tr>
-  <tr><td>G9</td><td><strong>Two position systems exist side by side.</strong> The older row and order fields are still on the hive form and have no link to the map.</td></tr>
-  <tr><td>G10</td><td><strong>Documents are out of date</strong> (version 1 map, 3D view and honey super documents), and there is no help page for the map.</td></tr>
+  <tr><th>#</th><th>Finding</th><th>Recommendation</th></tr>
+  <tr><td>G1</td><td><strong>No error monitoring at all.</strong> When the app crashes on a beekeeper&rsquo;s phone, or an offline inspection fails to send, nobody is told. Errors only reach the browser console and server logs. For users who will not report a fault, this is the biggest blind spot.</td><td>Add an error-monitoring service (Sentry is the usual choice and installs through Vercel). Needs one new host in the security policy (CSP). <em>Your decision: it is a new paid-tier-optional service and sends error details to a third party.</em></td></tr>
+  <tr><td>G2</td><td><strong>Push notifications are not actually built.</strong> The service worker can receive a push, but nothing subscribes the phone and nothing sends one (I confirmed: no subscription code, no keys). Reminders appear only while the app is open; everything else goes by email. The project guidance file lists Web Push as working on desktop and Android, which is not the case.</td><td><em>Your decision:</em> build real push for task and queen-rearing reminders (the 15-minute reminder job already exists and could send them), or keep email only. Either way I will correct the guidance file.</td></tr>
+  <tr><td>G3</td><td><strong>Failed emails are dropped silently.</strong> None of the five email-sending functions retries, and bounces from Resend are not recorded.</td><td>Low priority. Worth one retry on failure; bounce tracking only if invitations start going missing.</td></tr>
 </table>
 
-<h2>3. Proposed work</h2>
+<h3>3.3 Versions and security updates</h3>
 
-<p>Three batches, smallest and safest first. Each item is a small, separate change. Screen work follows the <code>hivecraic-frontend-design</code> and <code>mobile-screen</code> skills, and each batch ends with the QA audit and a documentation update.</p>
+<table>
+  <tr><th>#</th><th>Finding</th><th>Recommendation</th></tr>
+  <tr><td>V1</td><td><strong>zod has a high-severity fault</strong> (memory exhaustion), fixed in a minor update (4.3.5 &rarr; 4.6.7). Used only in the 15 Mel tool files.</td><td>Update now. Safe.</td></tr>
+  <tr><td>V2</td><td><strong>Next.js is one major version behind</strong> (15.5 against 16.4). The high-severity postcss fault inside Next.js is only fixed in 16. Version 16 also brings the smooth page transitions already planned in the native-feel review (Phase F).</td><td>Upgrade as its own isolated batch, with React 19.3 and the matching lint config. No middleware and no edge routes, so the usual upgrade pain points do not apply; the CSP and image settings need rechecking.</td></tr>
+  <tr><td>V3</td><td><strong>Supabase libraries are well behind:</strong> supabase-js 2.75 against 2.119 (44 minor releases), <code>@supabase/ssr</code> 0.7 against 0.12.</td><td>Update supabase-js now (same major). Update <code>@supabase/ssr</code> with a check of the two files that use it.</td></tr>
+  <tr><td>V4</td><td><span class="risk">Deadline.</span> <strong>The AI models Mel and voice notes use are being switched off by OpenAI</strong> (see 3.5): <code>gpt-4o</code> and <code>gpt-4o-mini</code> on 14 January 2027, <code>gpt-4o-transcribe</code> on 26 February 2027. The names are hard-coded in six places. After those dates Mel chat and voice transcription stop working.</td><td>Keep OpenAI (the knowledge base is embedded with its model, which is not being retired; changing provider means re-embedding everything). Put the model names in one file, then move to OpenAI&rsquo;s named replacements and test Mel and a voice note before January. An AI gateway is not needed for one provider.</td></tr>
+  <tr><td>V5</td><td><strong>Stripe server library is four majors behind</strong> (19 against 23), with the API version pinned to October 2025.</td><td>Not urgent; payments work. Do it after V2, with a test payment.</td></tr>
+  <tr><td>V6</td><td><strong>exceljs carries a moderate fault</strong> (in its uuid dependency) with no clean fix. It is used for one export, in the browser, on demand.</td><td>Leave. Low real risk.</td></tr>
+  <tr><td>V7</td><td><strong>Edge functions use old imports</strong> (Deno std 0.168; supabase-js pinned to 2.39 in two and unpinned in two).</td><td>Align all five on one pinned version when next touched.</td></tr>
+</table>
 
-<h3>Batch 1 &mdash; Faults and reliability</h3>
+<h3>3.4 Housekeeping</h3>
+
+<table>
+  <tr><th>#</th><th>Finding</th><th>Recommendation</th></tr>
+  <tr><td>H1</td><td><strong>Unused packages:</strong> <code>@stripe/stripe-js</code>, <code>resend</code>, <code>happy-dom</code> (no imports anywhere), and <code>@types/mapbox-gl</code> (Mapbox ships its own types).</td><td>Remove. Confirm with a typecheck.</td></tr>
+  <tr><td>H2</td><td><strong><code>.env.example</code> lists 3 of about 9 settings</strong>; it omits OpenAI, Resend, Mapbox, Google, the cron secret and the webhook secret, and lists a Stripe key nothing reads.</td><td>Complete it (names only).</td></tr>
+  <tr><td>H3</td><td><strong>Leftovers:</strong> two empty folders, two edge-function READMEs describing the old (insecure) cron recipe, a Wolf Waagen comment naming a different address from the code, an unused realtime entry in the CSP, and a fallback that would read a public Google key.</td><td>Tidy in one small batch.</td></tr>
+  <tr><td>H4</td><td><strong>Two map libraries.</strong> Leaflet exists for a single small map (see S2).</td><td>Removed as part of S2.</td></tr>
+  <tr><td>H5</td><td><strong>Vercel installs with <code>npm install</code></strong>, so a build can pick up versions other than the tested lockfile. No Node version is declared in <code>package.json</code>.</td><td>Switch to <code>npm ci</code> and declare Node 22.</td></tr>
+</table>
+
+<h3>3.5 Follow-up checks (13 November 2026)</h3>
+
+<table>
+  <tr><th>Check</th><th>Result</th><th>Effect on the recommendation</th></tr>
+  <tr><td><strong>Open-Meteo commercial plans</strong></td><td>
+    From their pricing page: the free service is &ldquo;for non-commercial use&rdquo;, limited to 10,000 calls a day, with no uptime guarantee.
+    <ul>
+      <li><strong>API Standard:</strong> 1 million calls a month, commercial use allowed, but <em>no</em> historical weather.</li>
+      <li><strong>API Professional:</strong> 5 million calls a month, commercial use, historical weather included.</li>
+    </ul>
+    Paid plans use a key and a separate address (<code>customer-api.open-meteo.com</code>); the request format is otherwise the same. The pricing page shows no amounts (they appear at checkout). Open-Meteo&rsquo;s own blog gives Professional as &ldquo;starting at 99 Euro per month&rdquo;; other sites report Standard at about 29 a month, which I could not confirm.</td>
+  <td>HiveCraic uses historical weather in three features: the GDD tracker, the TBR planner and foraging hours (plus the TCBC embed). So Standard alone does not cover the app.
+    <ul>
+      <li><strong>Option A (simplest):</strong> Professional, about &euro;99 a month. One address and key change behind a server route.</li>
+      <li><strong>Option B (cheaper, more work):</strong> Standard, and rebuild the three historical features to store daily weather in your own database instead of asking for the past each time.</li>
+      <li><strong>Option C:</strong> accept the risk and stay on the free service.</li>
+    </ul>
+    My recommendation: confirm both prices at their checkout, then A if the subscription income supports it, otherwise B. Either way the calls move behind one server route first, which is the same work.</td></tr>
+  <tr><td><strong>OpenAI model retirement</strong></td><td>From OpenAI&rsquo;s deprecations page:
+    <ul>
+      <li><code>gpt-4o</code> and <code>gpt-4o-mini</code>: switched off <strong>14 January 2027</strong> (announced 14 October 2026). Replacement named: <code>gpt-6-luna</code>.</li>
+      <li><code>gpt-4o-transcribe</code>: switched off <strong>26 February 2027</strong> (announced 26 August 2026). Replacement named: <code>gpt-transcribe</code> or <code>gpt-live-transcribe</code>.</li>
+      <li><code>text-embedding-3-small</code>: not listed as retiring in the part of the page I could read in full.</li>
+    </ul></td>
+  <td>Batch 3 is no longer optional tidy-up: it has a hard date about two months away. Moved up to second place. I have not compared the price of the replacement models with today&rsquo;s; that is part of the batch.</td></tr>
+  <tr><td><strong>Mapbox token restriction</strong></td><td>The public Mapbox token in this computer&rsquo;s local settings is <strong>not restricted to your web address</strong>: Mapbox accepted it with no site address and with a made-up one. I could not see the token set in Vercel; if it is the same one, production is unrestricted too.</td>
+  <td>Anyone can copy the token from the site and run up map usage on your account. Fix is in the Mapbox dashboard: add URL restrictions for <code>hivecraic.com</code>, <code>www.hivecraic.com</code> and your local test address. All Mapbox calls in the app come from the browser, so this will not break anything. <em>You need to do this; I have no access to the Mapbox dashboard.</em></td></tr>
+  <tr><td><strong>Node version on Vercel</strong></td><td><strong>Could not check.</strong> The Vercel account connected to this session contains one project only (<code>lhhh</code>, for lhhh.ie), not HiveCraic.</td>
+  <td>Please look at Vercel &rarr; HiveCraic project &rarr; Settings &rarr; Build and Deployment &rarr; Node.js Version. It should be 22.x (what the tests run on) or 24.x. Node 20 was retired by Vercel on 1 October 2026. Declaring the version in <code>package.json</code> (H5) settles it either way.</td></tr>
+</table>
+
+<h2>4. Considered and not recommended</h2>
+
+<ul>
+  <li><strong>TanStack Query, Serwist/Workbox, a component kit (shadcn/Radix), an animation library:</strong> each already weighed in your own documents; the hand-built versions work and a swap is a rewrite with no gain for the beekeeper.</li>
+  <li><strong>Capacitor / app-store wrapper:</strong> your native-feel plan defers this until after payments settle. Still right. Real push (G2) removes the main reason for it.</li>
+  <li><strong>Replacing Mapbox with MapLibre:</strong> would lose the terrain and land-cover data the foraging and DCA features use.</li>
+  <li><strong>Vercel AI SDK or AI Gateway:</strong> no benefit while there is one provider and four simple calls.</li>
+  <li><strong>Server-rendered sign-in (middleware):</strong> large and risky, already deliberately declined.</li>
+  <li><strong>TypeScript 7, ESLint 10, lucide 1.x, Vite 8:</strong> no user benefit; revisit after the Next.js upgrade.</li>
+</ul>
+
+<h2>5. Not verified</h2>
+
+<ul>
+  <li>Node version on Vercel and the Mapbox token set in Vercel (the connected Vercel account does not hold the HiveCraic project).</li>
+  <li>Supabase sign-in email sender and Resend domain settings.</li>
+  <li>Open-Meteo&rsquo;s exact prices (shown only at checkout) and the price of OpenAI&rsquo;s replacement models.</li>
+  <li>Bundle sizes were judged from how libraries are imported, not measured.</li>
+</ul>
+
+<h2>6. Proposed work (waiting for approval)</h2>
+
+<p>Each batch is small and separate. Recommended order as listed.</p>
+
+<h3>Batch 1 &mdash; Safe updates and tidy-up (no behaviour change)</h3>
 <ul class="todo">
-  <li>&#9745; F1: a hive that changes apiary loses its map position, enforced in the database so every route is covered. One database change, applied after a backup. Existing phantom positions are checked and cleared.</li>
-  <li>&#9745; F2: a failed load shows a message with a Try again button instead of an empty view-only map.</li>
-  <li>&#9745; F3: super fullness is fetched only by the 3D view, and only the latest inspection per hive.</li>
-  <li>&#9745; F4: the map reloads when the user returns to the screen, never while a save is in progress.</li>
-  <li>&#9745; F5: follow-up saves treat zero rows saved as a failure.</li>
-  <li>&#9745; F6: rollback snapshots are kept current, so a failed save restores the right position.</li>
-  <li>&#9745; F7: &ldquo;Delete bench&rdquo; asks for confirmation through the shared confirm dialogue.</li>
-  <li>&#9745; F8: &ldquo;yard&rdquo; replaced with &ldquo;apiary&rdquo; in three messages; titles in sentence case.</li>
-  <li>&#9745; F9: 48 px buttons in 3D, Button component for &ldquo;Open hive&rdquo;, one shared &ldquo;is placed&rdquo; test.</li>
-  <li>&#9745; QA audit and document update for batch 1.</li>
+  <li>&#9745; V1: update zod to 4.6.7</li>
+  <li>&#9745; V3: update supabase-js to the latest 2.x</li>
+  <li>&#9745; H1: remove the four unused packages</li>
+  <li>&#9745; H2: complete <code>.env.example</code></li>
+  <li>&#9745; H3: tidy the leftovers (two items left alone on purpose, see review)</li>
+  <li>&#9745; H5: <code>npm ci</code> on Vercel and declare Node 22</li>
+  <li>&#9745; Correct the Web Push line in the project guidance file</li>
 </ul>
 
-<h3>Batch 2 &mdash; Phone usability</h3>
+<h3>Batch 2 &mdash; AI models before OpenAI switches them off (deadline 14 January 2027)</h3>
 <ul class="todo">
-  <li>&#9745; U1: the map opens fitted to the screen width, with Zoom in, Zoom out and Fit buttons. Hive tap areas stay at 48 px at every zoom.</li>
-  <li>&#9745; U2 and U5: the map opens for viewing. An &ldquo;Arrange&rdquo; button turns on moving and reveals the setup controls; &ldquo;Done&rdquo; turns it off. (Decision B.)</li>
-  <li>&#9745; U3: on a phone, hive and bench details open as a bottom sheet over the map.</li>
-  <li>&#9745; U4: tap-to-place as the visible alternative to dragging: choose a hive, press &ldquo;Move&rdquo;, tap the new spot. The hint text explains press-and-hold.</li>
-  <li>&#9745; U5: an &ldquo;Undo&rdquo; option on the message shown after a move, turn or removal (last change only).</li>
-  <li>&#9745; U6: queenless hives carry a text or icon marker as well as the red border; a short legend sits under the map.</li>
-  <li>&#9745; U7: view-only users see how many hives are not yet placed, and no dragging hint.</li>
-  <li>&#9745; U8: skeleton while loading, a quiet &ldquo;Saved&rdquo; note after a change, an &ldquo;Add hive&rdquo; link in the empty state.</li>
-  <li>&#9745; QA audit and document update for batch 2.</li>
+  <li>&#9745; V4: one model configuration file</li>
+  <li>&#9745; Move chat to <code>gpt-6-luna</code> and transcription to <code>gpt-transcribe</code>, after checking their prices and that the installed OpenAI library supports them</li>
+  <li>&#9744; You test Mel and a voice note before it goes live</li>
 </ul>
 
-<h3>Batch 3 &mdash; Features</h3>
+<h3>Batch 3 &mdash; Stop using free map and lookup services outside their terms</h3>
 <ul class="todo">
-  <li>&#9745; G1: a &ldquo;Show&rdquo; chooser that colours and badges the hives by one thing at a time: queens (default), inspection age, stores, tasks and treatments. The legend follows the choice.</li>
-  <li>&#9745; G2: &ldquo;Start inspection&rdquo; as the main button in the hive details, and a link to the queen.</li>
-  <li>&#9745; G3: team members with edit rights on a shared apiary can arrange hives. (Decision C; needs a check of all three permission gates.)</li>
-  <li>&#9745; G4: &ldquo;Show on map&rdquo; from the hive page, opening the map with that hive selected.</li>
-  <li>&#9745; G5: the map shows a saved copy without signal, read-only, with a clear &ldquo;no signal&rdquo; message on any attempt to change it.</li>
-  <li>&#9745; G6: simple landmarks: shed, tree, water, gate and a text label. One new table. (Decision D.)</li>
-  <li>&#9745; G7: a Mel tool that answers where a hive is and what stands next to it.</li>
-  <li>&#9745; G8: the print-out gains the legend and a hive list.</li>
-  <li>&#9745; G10: feature documents brought up to date and a help page written.</li>
-  <li>&#9745; QA audit and document update for batch 3.</li>
+  <li>&#9744; S2 + H4: draw the trace-page map with Mapbox; remove Leaflet</li>
+  <li>&#9744; S3: route the Nominatim lookups through the geocode server route; remove Nominatim from the CSP</li>
+  <li>&#9744; S4: move Mapbox place-name lookup to v6 with a timeout</li>
+  <li>&#9744; Update the affected feature documents</li>
 </ul>
 
-<h3>Not proposed</h3>
-<ul>
-  <li>Background photo or satellite image, GPS alignment, custom apiary shapes, multi-select dragging, editing in 3D. Each is a large change for a feature that 4 accounts use today.</li>
-  <li>Live updates between two people editing at once. Reload on return (F4) covers the realistic case.</li>
+<h3>Batch 4 &mdash; Next.js 16 upgrade (isolated)</h3>
+<ul class="todo">
+  <li>&#9744; V2: Next.js 16, React 19.3, matching lint config; recheck CSP and images</li>
+  <li>&#9744; V3: <code>@supabase/ssr</code> to 0.12</li>
+  <li>&#9744; You run the tests and a phone check before it goes live</li>
 </ul>
 
-<h2>4. Decisions for you</h2>
+<h3>Decisions needed from you</h3>
+<ul class="todo">
+  <li>&#9745; <strong>D1 (S1):</strong> Open-Meteo: <strong>decided C</strong>, stay on the free service and accept the risk.</li>
+  <li>&#9745; <strong>D2 (G1):</strong> error monitoring: <strong>decided yes</strong>. Needs its own plan; not started.</li>
+  <li>&#9745; <strong>D3 (G2):</strong> push notifications: <strong>decided build</strong>. Needs its own feature plan in <code>docs/features</code>; not started.</li>
+</ul>
 
+<h3>For you to do in the dashboards</h3>
+<ul class="todo">
+  <li>&#9744; Mapbox: restrict the public token to your web addresses</li>
+  <li>&#9744; Vercel: confirm the HiveCraic project&rsquo;s Node.js version is 22.x or 24.x</li>
+</ul>
+
+<p>Later, not scheduled: V5 (Stripe library), V7 (edge-function imports), G3 (email retry).</p>
+
+<h2>7. Review &mdash; batches 1 and 2 (13 November 2026)</h2>
+
+<p>Typecheck and lint are clean. A dry-run clean install confirms the lockfile matches. <strong>No tests and no build were run</strong>; nothing is committed.</p>
+
+<h3>What changed</h3>
 <table>
-  <tr><th>#</th><th>Question</th><th>My recommendation</th></tr>
-  <tr><td>A</td><td>Which batches to build now?</td><td>Batches 1 and 2 now. Batch 3 item by item after you have tried batch 2 on a phone.</td></tr>
-  <tr><td>B</td><td>Should the map open for viewing, with an &ldquo;Arrange&rdquo; button to move things?</td><td>Yes. It stops accidental moves at the apiary and puts the map, not the controls, on the first screen.</td></tr>
-  <tr><td>C</td><td>May team members arrange the map of a shared apiary?</td><td>Yes for moving and turning hives, for members who can already edit those hives. Benches, size, entrance and north stay with the owner.</td></tr>
-  <tr><td>D</td><td>Are landmarks wanted?</td><td>Yes, but last in batch 3. It is the only item that needs a new table.</td></tr>
-  <tr><td>E</td><td>Should the map be on by default for subscribers, instead of behind the Profile switch?</td><td>Yes, once batch 2 is in. The switch stays, so it can be turned off.</td></tr>
-  <tr><td>F</td><td>Retire the older row and order fields on the hive form (G9)?</td><td>Not in this review. They carry a uniqueness rule and are used by the hive list; raise it separately.</td></tr>
+  <tr><th>Change</th><th>Files</th></tr>
+  <tr><td><strong>AI models moved to OpenAI&rsquo;s replacements.</strong> Chat, the tool router, the question classifier and voice clean-up now use <code>gpt-6-luna</code>; voice transcription uses <code>gpt-transcribe</code>. All model names live in one place. The knowledge-base model is unchanged.</td><td class="file">src/lib/openai.ts, src/lib/rag.ts, src/app/api/voice-notes-transcribe/route.ts</td></tr>
+  <tr><td><strong>Library updates:</strong> zod 4.6.7 (clears the high-severity fault), supabase-js 2.119, OpenAI library 6.49.</td><td class="file">package.json, package-lock.json</td></tr>
+  <tr><td><strong>Four unused packages removed:</strong> <code>@stripe/stripe-js</code>, <code>resend</code>, <code>happy-dom</code>, <code>@types/mapbox-gl</code>.</td><td class="file">package.json, package-lock.json</td></tr>
+  <tr><td><strong>Vercel installs from the lockfile</strong> (<code>npm ci</code>) and Node 22 is declared.</td><td class="file">vercel.json, package.json</td></tr>
+  <tr><td><strong>Tidy-up:</strong> <code>.env.example</code> lists every setting; the two stale edge-function READMEs carry an out-of-date warning; Wolf Waagen comment corrected; two empty folders removed; Web Push line in the guidance file corrected; voice notes document updated.</td><td class="file">.env.example, supabase/functions/*/README.md, src/lib/wolf-waagen-api.ts, .claude/CLAUDE.md, docs/features/voice-notes-field.md</td></tr>
 </table>
 
-<h2>5. Review</h2>
-
-<p><strong>13 November 2026.</strong> You accepted all recommendations (decisions A to F). Batches 1 and 2 are built. Type-check and lint are clean. No tests and no build were run. Nothing is committed.</p>
-
-<h3>Batch 1 &mdash; what changed</h3>
+<h3>How the model change was checked</h3>
+<p>OpenAI&rsquo;s documents do not say which settings <code>gpt-6-luna</code> accepts, so I sent five minimal live requests with the local key (a fraction of a cent):</p>
 <ul>
-  <li><strong>Database:</strong> a trigger on <code>hives</code> clears the map position when a hive changes apiary. It is live, and saved as <span class="file">supabase/migrations/20261113120000_clear_hive_map_position_on_apiary_change.sql</span>.</li>
-  <li><strong>Existing phantom positions were not cleared.</strong> A position left by an earlier move looks the same in the data as a real one, so there is no safe way to pick them out. No hive points at a bench in another apiary (checked: 0). If you see a hive at a wrong spot, take it off the map.</li>
-  <li><strong>Loading:</strong> a failed first load shows a message with Try again (2D and 3D). The map refreshes on return to the screen, never during a save.</li>
-  <li><strong>Saving:</strong> every write checks that a row was saved; a failed save puts back only what it changed; a bench is deleted only after its hives are safely on the ground.</li>
-  <li><strong>Less data:</strong> super fullness is fetched by the 3D view only.</li>
-  <li><strong>Small fixes:</strong> bench delete asks first; &ldquo;yard&rdquo; removed from three messages; page titles in sentence case; 48 px buttons in 3D; &ldquo;Open hive&rdquo; uses the Button component; one shared &ldquo;is placed&rdquo; test.</li>
+  <li>It <strong>rejects</strong> the old <code>max_tokens</code> setting, so all four chat calls now use <code>max_completion_tokens</code>.</li>
+  <li>It accepts the temperature and JSON-only settings the app uses when reasoning is switched off, and returned valid JSON.</li>
+  <li><code>gpt-transcribe</code> accepted the request shape the voice route sends (tested with a one-second tone, not speech).</li>
+</ul>
+<p>Listed prices: <code>gpt-6-luna</code> $0.10 in / $0.50 out per million tokens against $0.15 / $0.60 for <code>gpt-4o-mini</code>; <code>gpt-transcribe</code> $0.0045 a minute against about $0.006. Both are cheaper.</p>
+
+<h3>QA audit findings</h3>
+<table>
+  <tr><th>Severity</th><th>Finding</th><th>Outcome</th></tr>
+  <tr><td>Critical / High</td><td>None.</td><td></td></tr>
+  <tr><td>Medium</td><td>The new model is a reasoning model. If any chat call forgot to switch reasoning off, hidden reasoning would use up the answer limit and short answers (the classifier is capped at 100 tokens) would come back empty. The setting was repeated in four places.</td><td><strong>Fixed.</strong> Model and reasoning setting are one shared constant (<code>CHAT</code>) that every chat call uses.</td></tr>
+  <tr><td>Medium</td><td>OpenAI&rsquo;s guide says <code>gpt-transcribe</code> takes a list of languages instead of the single <code>language</code> setting. The service accepted the old setting today, and the installed library has no type for the new one.</td><td>Left as is. If OpenAI later refuses the old setting, voice notes would show &ldquo;Transcription failed&rdquo;; the fix is one line.</td></tr>
+  <tr><td>Low</td><td>Declaring Node 22 makes Vercel build and run on Node 22 whatever the dashboard says. That is the version the tests run on.</td><td>Intended. Say if the project is on 24 and you want to stay there.</td></tr>
+</table>
+
+<h3>Left alone on purpose</h3>
+<ul>
+  <li><strong>Public Google key fallback (H3):</strong> the local settings hold the Google key only under the public name, so removing the fallback would break Eircode lookup here and possibly in production. To finish: add <code>GOOGLE_MAPS_API_KEY</code> in Vercel and locally, then I remove the fallback.</li>
+  <li><strong>Realtime entry in the CSP (H3):</strong> harmless and not worth a security-policy change on its own.</li>
+  <li><strong>Knowledge-base ingest scripts</strong> (<code>scripts/ingest</code>) still name <code>gpt-4o</code> and <code>gpt-4o-mini</code>. They are run by hand, not by the app, and will stop working on 14 January 2027 unless updated. Not in the approved batch.</li>
+  <li><strong>Remaining audit items:</strong> 4 (1 high, 3 moderate): postcss inside Next.js (fixed by batch 4) and uuid inside exceljs.</li>
 </ul>
 
-<h3>Batch 2 &mdash; what changed</h3>
-<ul>
-  <li><strong>View first:</strong> the map opens for viewing; the owner presses Arrange to move things and Done to finish. An empty map opens in arrange mode for the owner.</li>
-  <li><strong>Fits the screen:</strong> the whole apiary fits the phone width, with Zoom out, Fit and Zoom in buttons.</li>
-  <li><strong>Tap-to-place:</strong> tap a hive or bench, choose Move (or Place on map), tap the spot. Dragging still works, and the hint now mentions press and hold.</li>
-  <li><strong>Undo:</strong> a &ldquo;Hive 12 moved&rdquo; message appears once the change is saved, with Undo. This also serves as the saved note.</li>
-  <li><strong>Details panel:</strong> fixed above the bottom bar on a phone.</li>
-  <li><strong>Legend</strong> under the map, and a red &ldquo;!&rdquo; on queenless hives.</li>
-  <li><strong>Map setup</strong> (entrance, benches, size, north) moved below the map and shown only while arranging.</li>
-  <li><strong>Other:</strong> skeleton while loading; view-only users see the unplaced count; an &ldquo;Add a hive&rdquo; button when the apiary has none.</li>
+<h3>For you to test</h3>
+<ul class="todo">
+  <li>&#9744; Run the test suite</li>
+  <li>&#9744; Mel: a question about your own data (&ldquo;How many hives do I have?&rdquo;), a knowledge question (&ldquo;How do I treat varroa?&rdquo;) and a greeting</li>
+  <li>&#9744; Record a voice note with beekeeping words (varroa, propolis, supersedure) and check the cleaned text</li>
+  <li>&#9744; Sign in and out, and an Eircode lookup (supabase-js update)</li>
 </ul>
-
-<h3>Differences from the plan</h3>
-<ul>
-  <li>The 15 degree turn buttons show no saved message, to avoid one message per press. The angle readout changes at once and a failure still shows a message.</li>
-  <li>Print is offered while viewing, not while arranging.</li>
-  <li>The &ldquo;Apiary Map&rdquo; pill on the apiary page keeps its title case, because every pill in that row uses it.</li>
-  <li>Decision E (map on by default) was done with batch 3, after your phone test.</li>
-</ul>
-
-<h3>Please check on a phone</h3>
-<ul>
-  <li>At fit-to-screen, long hive numbers may spill over a small hive square. Tell me if it reads badly on your apiaries.</li>
-  <li>The details panel above the bottom bar: that it clears the bar and does not hide the hive you tapped.</li>
-  <li>Arrange: press-and-hold drag, Move then tap, the turn handle, Undo.</li>
-  <li>Move a hive to another apiary from the hive list and confirm it shows as not placed on the new map.</li>
-  <li>Dark mode, and the 3D view.</li>
-</ul>
-
-<h3>Batch 3 and decision E &mdash; what changed</h3>
-<p>You tested batches 1 and 2 (&ldquo;all good&rdquo;) and they are live as commit <code>80612f00</code>. Batch 3 is built. Type-check and lint are clean. No tests and no build were run.</p>
-<ul>
-  <li><strong>Decision E:</strong> the map is on by default. The database default changed and 125 accounts were switched on (4 already were). The Profile switch stays. An account that had deliberately left it off could not be told apart from one that never looked, so all were switched on.</li>
-  <li><strong>G1 Show chooser:</strong> colour the hives by queens, last inspection, winter stores, or tasks and treatments. Amber carries &ldquo;!&rdquo; and red &ldquo;!!&rdquo;. The legend follows. An active hive with no queen recorded is now amber.</li>
-  <li><strong>G2:</strong> &ldquo;Start inspection&rdquo; and a link to the queen in the hive details, which also list inspection, stores, tasks and treatments.</li>
-  <li><strong>G3:</strong> team members of a shared apiary can move and turn hives. Benches, landmarks and setup stay with the owner.</li>
-  <li><strong>G4:</strong> &ldquo;Show on map&rdquo; on the hive page opens the map with that hive selected.</li>
-  <li><strong>G5:</strong> without signal the map shows the copy saved on the phone, with the standard notice, and cannot be arranged.</li>
-  <li><strong>G6:</strong> landmarks (shed, tree, water, gate, text label), in a new table <code>yard_landmarks</code>. Not drawn in 3D.</li>
-  <li><strong>G7:</strong> Mel can answer where a hive is and what stands next to it.</li>
-  <li><strong>G8:</strong> the print-out lists the legend and every hive.</li>
-  <li><strong>G10:</strong> feature documents updated; a guide for beekeepers written as <span class="file">docs/features/apiary-map-user-guide.md</span>. The app has no help pages, so the guide is a document, not a screen.</li>
-</ul>
-
-<h3>Please check for batch 3</h3>
-<ul>
-  <li>The Show chooser in each view, and the legend. It is November, so &ldquo;Last inspection&rdquo; is grey for every hive by the app&rsquo;s winter rule.</li>
-  <li>Hive details on a phone: with the extra lines, that the panel is still comfortable.</li>
-  <li>Start inspection from a hive; Show on map from a hive page.</li>
-  <li>A team member account: can move a hive, cannot move a bench.</li>
-  <li>Aeroplane mode: open a map you opened before.</li>
-  <li>Add, move and delete a landmark; resize the apiary with a landmark on it.</li>
-  <li>Ask Mel &ldquo;Where is hive &hellip;?&rdquo;.</li>
-  <li>Print.</li>
-</ul>
-
-<h3>Files changed</h3>
-<p class="file">src/hooks/useApiaryMap.ts &middot; src/components/apiaries/YardMap.tsx &middot; HiveToken.tsx &middot; BenchToken.tsx &middot; HiveInspectorPanel.tsx &middot; YardScene3D.tsx &middot; src/app/dashboard/apiaries/[id]/map/page.tsx &middot; map/3d/page.tsx &middot; docs/features/apiary-yard-map.md &middot; the migration file above</p>
 
 </body>
 </html>

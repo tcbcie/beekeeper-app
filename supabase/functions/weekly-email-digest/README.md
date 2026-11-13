@@ -1,5 +1,7 @@
 # Weekly Email Digest Edge Function
 
+> **Out of date (November 2026):** the cron recipe below, which sends the anon key, is no longer how this function is scheduled and must not be used. The live job is created by `supabase/migrations/20261016160000_security_batch3_cron_drop_legacy_anon.sql`: pg_cron calls the function with an `x-webhook-secret` header read from Vault. The sender address is `info@hivecraic.com`.
+
 This Supabase Edge Function sends weekly email summaries of upcoming queen rearing dates to users who have enabled the email digest option for their batches.
 
 ## Features

@@ -4,7 +4,7 @@
  * Wolf Waagen (https://wolf-waagen.de) is a German manufacturer of beehive scales.
  * This library provides TypeScript functions to interact with their API.
  *
- * API Base URL: https://new.app.wolf-waagen.de/api/v1
+ * API Base URL: https://app.wolf-waagen.de/api/v1
  * Authentication: Bearer token (provided by Wolf Waagen)
  */
 
