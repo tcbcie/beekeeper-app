@@ -293,6 +293,15 @@
 <p><strong>Only this layer is grouped.</strong> Shared apiaries, wild colonies and the rest are still individual markers. Ordinary users see no change.</p>
 <p><strong>One small difference:</strong> the dots are drawn on the map surface, so the other layers&rsquo; markers always sit on top of them.</p>
 
+<h3>Shared sightings moved by up to 1 km instead of 5 km &mdash; 13 November 2026</h3>
+<ul class="todo">
+  <li>&#9745; <strong>Database, applied to the live database:</strong> <code>get_shared_dca_sightings()</code> now moves a shared sighting by up to 1 km. <span class="file">supabase/migrations/20261113100000_dca_shared_sightings_one_km_offset.sql</span></li>
+  <li>&#9745; Checked in the database on 2,000 made-up points: the furthest moved 1.005 km, the average 0.67 km.</li>
+  <li>&#9745; The wording on the map says 1 km wherever it is about shared sightings; apiaries still say 5 km.</li>
+  <li>&#9745; Docs updated. Type-check and lint pass.</li>
+</ul>
+<p>The trade-off: a shared sighting now narrows down where its owner keeps bees more than before, since DCAs are usually within a few kilometres of an apiary.</p>
+
 <h2>6. One thing for you to check</h2>
 <p>The elevation data comes from Open-Meteo&rsquo;s free service. As far as I know that tier is for non-commercial use with a daily request limit. HiveCraic takes subscriptions, so their terms are worth reading. <span class="file">docs/features/apiary-elevation.md</span> says there are no limits.</p>
 

@@ -574,7 +574,7 @@ export default function CommunityMapPage() {
     const share = !sighting.is_shared
     const changed = await setSharing(sighting.id, share)
     if (!changed) toast.error('Could not change sharing. Check your signal and try again.')
-    else if (share) toast.success('Sighting shared. Others see it up to 5 km from the true spot.')
+    else if (share) toast.success('Sighting shared. Others see it up to 1 km from the true spot.')
     else toast.success('Sighting no longer shared')
   }, [setSharing, toast])
 
@@ -937,7 +937,7 @@ export default function CommunityMapPage() {
       })
     }
 
-    // Other beekeepers' shared DCA sightings (sky blue rings), offset like shared apiaries
+    // Other beekeepers' shared DCA sightings (sky blue rings), offset by up to 1 km
     if (showSharedSightings) {
       sharedSightings.forEach(sighting => {
         if (!map.current) return
@@ -952,7 +952,7 @@ export default function CommunityMapPage() {
           <div style="padding: 4px 8px;">
             ${popupTitle('#0284c7', 'Shared DCA sighting')}
             ${Number.isFinite(year) ? popupLine(`Drones seen in ${year}`) : ''}
-            ${popupLine('Shown up to 5 km from its true position')}
+            ${popupLine('Shown up to 1 km from its true position')}
             ${distance !== undefined ? popupLine(roughDistanceText(distance)) : ''}
           </div>
         `)
@@ -1031,7 +1031,7 @@ export default function CommunityMapPage() {
       const sightingLines = (sighting: DCAConfirmation) => `
         ${popupLine(`${sighting.confirmed ? 'Drones seen' : 'No drones seen'} on ${escapeHtml(formatDateIrish(sighting.observation_date))}`)}
         ${sighting.notes ? popupLine(escapeHtml(sighting.notes)) : ''}
-        ${sighting.is_shared ? popupLine('Shared with other beekeepers, up to 5 km from here') : ''}
+        ${sighting.is_shared ? popupLine('Shared with other beekeepers, up to 1 km from here') : ''}
       `
       // Remove, plus share or stop sharing for a "drones seen" sighting
       const sightingActions = (sighting: DCAConfirmation, removeLabel: string) => {
@@ -1353,7 +1353,7 @@ export default function CommunityMapPage() {
               <ToggleRow
                 id="layer-shared-dca"
                 label={`Shared DCA sightings (${sharedSightings.length})`}
-                description={swatch('bg-sky-600', 'Seen by other beekeepers, up to 5 km out')}
+                description={swatch('bg-sky-600', 'Seen by other beekeepers, up to 1 km out')}
                 checked={showSharedSightings}
                 onChange={setShowSharedSightings}
               />
@@ -1435,7 +1435,7 @@ export default function CommunityMapPage() {
             </div>
 
             <p className="text-sm text-text-secondary">
-              Other beekeepers&apos; apiaries and DCA sightings are moved by up to 5 km to protect their privacy.
+              Other beekeepers&apos; apiaries are moved by up to 5 km, and their DCA sightings by up to 1 km, to protect their privacy.
               Your own apiaries are shown where they really are.
             </p>
           </div>
@@ -1479,7 +1479,7 @@ export default function CommunityMapPage() {
             <span>
               Share with other beekeepers
               <span className="block text-sm text-text-secondary">
-                Shown up to 5 km from the true spot, without your name or note.
+                Shown up to 1 km from the true spot, without your name or note.
               </span>
             </span>
           </label>

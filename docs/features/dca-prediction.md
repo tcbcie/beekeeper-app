@@ -127,9 +127,9 @@ Sharing is the beekeeper's choice for each sighting, and is off unless they tick
 - **When recording:** a "Share with other beekeepers" tick-box on the sighting card, unticked by default
 - **Afterwards:** "Share with other beekeepers" / "Stop sharing" in the popup of any of their own "drones seen" sightings, including an answered hotspot
 - **Only "drones seen" can be shared.** A "no drones" answer stays private; the database refuses to share one
-- **What others see:** a sky-blue ring in the "Shared DCA sightings" layer, moved by up to 5 km with the same salted offset as shared apiaries, and the year. No name, no note, no exact date
+- **What others see:** a sky-blue ring in the "Shared DCA sightings" layer, moved by up to 1 km (reduced from 5 km on 13/11/2026 so the place can still be found), in a fixed, salted direction per sighting, and the year. No name, no note, no exact date
 - **No approval step.** Nothing typed by a beekeeper is shown to others, so there is nothing to moderate; a beekeeper can stop sharing at any time, and removing the sighting removes it for everyone
-- **Database:** `dca_confirmations.is_shared` (default false) and `get_shared_dca_sightings()`, which returns other beekeepers' shared sightings to signed-in users only. Migration `supabase/migrations/20261112200000_dca_sightings_opt_in_sharing.sql` (applied)
+- **Database:** `dca_confirmations.is_shared` (default false) and `get_shared_dca_sightings()`, which returns other beekeepers' shared sightings to signed-in users only. Migrations `supabase/migrations/20261112200000_dca_sightings_opt_in_sharing.sql` and `20261113100000_dca_shared_sightings_one_km_offset.sql` (both applied). The function works the offset out itself: `obfuscate_coordinates()` rounds to two decimal places, which alone would move a point by more than 1 km
 
 ## Edge Cases
 
