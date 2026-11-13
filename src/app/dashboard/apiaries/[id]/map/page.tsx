@@ -1,5 +1,5 @@
 'use client'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { ArrowLeft, Box } from 'lucide-react'
@@ -17,6 +17,8 @@ export default function ApiaryMapPage() {
   const params = useParams()
   const router = useRouter()
   const apiaryId = params.id as string
+  // "Show on map" from a hive page opens the map with that hive selected.
+  const initialHiveId = useSearchParams().get('hive')
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -40,7 +42,7 @@ export default function ApiaryMapPage() {
         </Link>
       </div>
 
-      <YardMap apiaryId={apiaryId} />
+      <YardMap apiaryId={apiaryId} initialHiveId={initialHiveId} />
     </div>
   )
 }

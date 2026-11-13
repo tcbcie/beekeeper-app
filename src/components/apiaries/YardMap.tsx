@@ -20,7 +20,8 @@ import {
 } from 'lucide-react'
 import {
   useApiaryMap, normaliseDeg, isHivePlaced,
-  type MapHive, type YardBench, type HivePlacementPatch, type BenchPlacementPatch,
+  LANDMARK_KINDS,
+  type MapHive, type YardBench, type HivePlacementPatch, type BenchPlacementPatch, type LandmarkKind,
 } from '@/hooks/useApiaryMap'
 import {
   UNIT_PX, BENCH_DEPTH_UNITS, SLOT_UNITS,
@@ -28,24 +29,35 @@ import {
   tokenFootprintUnits, rotatedBboxHalfPx, benchLengthUnits, snapPctToGrid,
   type YardDims,
 } from '@/lib/yard-geometry'
+import {
+  hiveMark, availableMapViews, MAP_VIEW_LABELS, MAP_VIEW_LEGEND, MAP_TONE_BORDER, MAP_TONE_SIGN, type MapView,
+} from '@/lib/apiary-map-view'
+import { getCurrentDate } from '@/lib/date-utils'
 import { printImageDataUrl, downloadDataUrl, printedOnLabel, excludeNoPrint } from '@/lib/print-layout'
 import { useToast } from '@/components/ui/Toast'
 import { useConfirm } from '@/components/ui/ConfirmDialog'
 import { Skeleton } from '@/components/ui/Skeleton'
+import CachedDataNotice from '@/components/ui/CachedDataNotice'
 import IconButton from '@/components/ui/IconButton'
 import Button from '@/components/ui/Button'
 import HiveToken from './HiveToken'
 import BenchToken from './BenchToken'
 import HiveInspectorPanel from './HiveInspectorPanel'
+import LandmarkToken, { LANDMARK_LABELS, landmarkName } from './LandmarkToken'
 
 const CANVAS_ID = 'yard-canvas'
 const NORTH_STEP_DEG = 15
 const BENCH_STEP_DEG = 15
 const SLOT_ID_PATTERN = /^bench:(.+):slot:(\d+)$/
+const LANDMARK_PREFIX = 'landmark:'
+// A landmark's drop ghost: the size of its tap area.
+const LANDMARK_GHOST_PX = 48
 // Zoom steps as a multiple of "the whole apiary fits the screen width".
 const ZOOM_STEPS = [1, 1.5, 2.25, 3.5, 5]
 // No point zooming in past this scale: a hive is already about 80px across.
 const MAX_PX_PER_UNIT = 90
+// The 2D map also loads inspection age, stores, tasks and treatments for its "Show" chooser.
+const MAP_OPTIONS = { withStatus: true }
 
 /** Dashed outline previewing where the dragged item will land. */
 interface DropGhost {
@@ -117,23 +129,24 @@ function YardCanvas({
   )
 }
 
-/** What the borders and marks on the map mean. */
-function MapLegend() {
-  const swatch = 'inline-block h-5 w-5 shrink-0 rounded border-2 bg-surface'
+/** What the borders and signs on the map mean in the view being shown. */
+function MapLegend({ view }: { view: MapView }) {
   return (
     <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-text-secondary" aria-label="What the map shows">
-      <li className="flex items-center gap-2">
-        <span aria-hidden className={`${swatch} border-forest-600`} /> Active hive
-      </li>
-      <li className="flex items-center gap-2">
-        <span aria-hidden className={`${swatch} border-red-500 relative`}>
-          <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-white text-sm font-bold leading-none">!</span>
-        </span>
-        Queenless
-      </li>
-      <li className="flex items-center gap-2">
-        <span aria-hidden className={`${swatch} border-border`} /> Not active
-      </li>
+      {MAP_VIEW_LEGEND[view].map(({ tone, label }) => {
+        const sign = MAP_TONE_SIGN[tone]
+        return (
+          <li key={tone} className="flex items-center gap-2">
+            <span aria-hidden className={`inline-block h-5 w-5 shrink-0 rounded border-2 bg-surface ${MAP_TONE_BORDER[tone]}`} />
+            {sign && (
+              <span aria-hidden className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-sm font-bold leading-none ${sign.className}`}>
+                {sign.text}
+              </span>
+            )}
+            {label}
+          </li>
+        )
+      })}
       <li className="flex items-center gap-2">
         <span aria-hidden className="inline-block h-0 w-0 border-l-[7px] border-r-[7px] border-b-[9px] border-l-transparent border-r-transparent border-b-amber-500" />
         Hive entrance side
@@ -144,25 +157,33 @@ function MapLegend() {
 
 interface YardMapProps {
   apiaryId: string
+  /** A hive to open selected ("Show on map" from the hive page). */
+  initialHiveId?: string | null
 }
 
-export default function YardMap({ apiaryId }: YardMapProps) {
+export default function YardMap({ apiaryId, initialHiveId = null }: YardMapProps) {
   const {
-    apiaryName, hives, benches, yard, yardDims, loading, loadFailed, isOwner,
-    saveHivePlacement, saveYardSettings, saveYardDimensions, addBench, saveBenchPlacement, deleteBench, retry,
-  } = useApiaryMap(apiaryId)
+    apiaryName, hives, benches, landmarks, yard, yardDims, loading, loadFailed, staleSince, isOwner, canMoveHives,
+    saveHivePlacement, saveYardSettings, saveYardDimensions, addBench, saveBenchPlacement, deleteBench,
+    addLandmark, saveLandmarkPlacement, deleteLandmark, retry, reload,
+  } = useApiaryMap(apiaryId, MAP_OPTIONS)
   const toast = useToast()
   const confirm = useConfirm()
   const router = useRouter()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(initialHiveId)
   const [selectedBenchId, setSelectedBenchId] = useState<string | null>(null)
+  const [selectedLandmarkId, setSelectedLandmarkId] = useState<string | null>(null)
+  const [landmarkKind, setLandmarkKind] = useState<LandmarkKind>('shed')
+  const [landmarkLabel, setLandmarkLabel] = useState('')
   // The map opens for viewing. Only "Arrange" lets things be moved, so a finger
   // resting on a hive at the apiary cannot shift it by accident.
   const [arranging, setArranging] = useState(false)
   const [zoom, setZoom] = useState(1)
+  // What the hives are coloured by: queens, last inspection, stores, or tasks.
+  const [view, setView] = useState<MapView>('queens')
   // Tap-to-place, the visible alternative to dragging: the next tap on the map
   // is where this hive or bench goes.
-  const [moving, setMoving] = useState<{ kind: 'hive' | 'bench'; id: string } | null>(null)
+  const [moving, setMoving] = useState<{ kind: 'hive' | 'bench' | 'landmark'; id: string } | null>(null)
   const [placingEntrance, setPlacingEntrance] = useState(false)
   const [benchCapacity, setBenchCapacity] = useState(2)
   const [ghost, setGhost] = useState<DropGhost | null>(null)
@@ -175,8 +196,13 @@ export default function YardMap({ apiaryId }: YardMapProps) {
   // exactly like the 3D view — the two views can never disagree about sizes.
   const [canvasWidth, setCanvasWidth] = useState<number | null>(null)
   const pxPerUnit = canvasWidth ? canvasWidth / yardDims.widthUnits : UNIT_PX
-  // Tokens can only be moved or turned by the owner, and only while arranging.
-  const isReadOnly = !isOwner || !arranging
+  // Hives can be moved or turned by the owner or a team member the apiary is
+  // shared with; benches and the map setup by the owner only. Both only while
+  // arranging.
+  // A saved copy (no signal) is for looking at: nothing can be changed on it.
+  const showingCopy = staleSince !== null
+  const isReadOnly = !canMoveHives || !arranging || showingCopy
+  const benchReadOnly = !isOwner || !arranging || showingCopy
 
   useEffect(() => {
     const el = canvasElRef.current
@@ -196,8 +222,8 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     if (loading || loadFailed || autoArrangeDoneRef.current) return
     autoArrangeDoneRef.current = true
     const benchIds = new Set(benches.map(b => b.id))
-    if (isOwner && benches.length === 0 && !hives.some(h => isHivePlaced(h, benchIds))) setArranging(true)
-  }, [loading, loadFailed, isOwner, benches, hives])
+    if (canMoveHives && hives.length > 0 && benches.length === 0 && !hives.some(h => isHivePlaced(h, benchIds))) setArranging(true)
+  }, [loading, loadFailed, canMoveHives, benches, hives])
 
   // Separate mouse and touch sensors: a single PointerSensor is unreliable at
   // starting a drag on touch devices (our field users are on phones). Mouse
@@ -226,13 +252,21 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args)
   }, [])
 
+  // One thing is selected at a time: a hive, a bench or a landmark.
   const selectHive = (hiveId: string) => {
     setSelectedId(hiveId)
     setSelectedBenchId(null)
+    setSelectedLandmarkId(null)
   }
   const selectBench = (benchId: string) => {
     setSelectedBenchId(benchId)
     setSelectedId(null)
+    setSelectedLandmarkId(null)
+  }
+  const selectLandmark = (landmarkId: string) => {
+    setSelectedLandmarkId(landmarkId)
+    setSelectedId(null)
+    setSelectedBenchId(null)
   }
 
   const stopArranging = () => {
@@ -278,8 +312,18 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     }
   }
 
+  /** Move a landmark and, once saved, say so with an Undo. */
+  const changeLandmark = async (landmarkId: string, patch: { map_x: number; map_y: number }) => {
+    const before = landmarks.find(l => l.id === landmarkId)
+    if (!before) return
+    const previous = { map_x: before.map_x, map_y: before.map_y }
+    const saved = await saveLandmarkPlacement(landmarkId, patch)
+    if (saved) toast.undoable(`${landmarkName(before)} moved`, () => { saveLandmarkPlacement(landmarkId, previous) })
+  }
+
   /** The dragged item's rotated bounding box, for sizing the drop ghost. */
   const draggedBboxPx = (idStr: string): { w: number; h: number } | null => {
+    if (idStr.startsWith(LANDMARK_PREFIX)) return { w: LANDMARK_GHOST_PX, h: LANDMARK_GHOST_PX }
     if (idStr.startsWith('bench:')) {
       const bench = benches.find(b => b.id === idStr.slice('bench:'.length))
       if (!bench) return null
@@ -450,16 +494,20 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     const idStr = String(active.id)
     const overId = String(over.id)
 
-    // Bench move: any target inside the apiary counts (the pointer may sit over
-    // a slot droppable rather than the canvas itself). Lands on the grid.
-    if (idStr.startsWith('bench:')) {
+    // Bench or landmark move: any target inside the apiary counts (the pointer
+    // may sit over a slot droppable rather than the canvas itself). Lands on the grid.
+    if (idStr.startsWith('bench:') || idStr.startsWith(LANDMARK_PREFIX)) {
       if (overId !== CANVAS_ID && !SLOT_ID_PATTERN.test(overId)) return
       const snapped = snapPctToGrid(
         clamp(((centrePx.x - canvasRect.left) / canvasRect.width) * 100, 0, 100),
         clamp(((centrePx.y - canvasRect.top) / canvasRect.height) * 100, 0, 100),
         yardDims,
       )
-      changeBench(idStr.slice('bench:'.length), { map_x: snapped.x, map_y: snapped.y }, 'moved')
+      if (idStr.startsWith(LANDMARK_PREFIX)) {
+        changeLandmark(idStr.slice(LANDMARK_PREFIX.length), { map_x: snapped.x, map_y: snapped.y })
+      } else {
+        changeBench(idStr.slice('bench:'.length), { map_x: snapped.x, map_y: snapped.y }, 'moved')
+      }
       return
     }
 
@@ -500,11 +548,16 @@ export default function YardMap({ apiaryId }: YardMapProps) {
   const unplacedHives = hives.filter(h => !isHivePlaced(h, benchById))
   const selectedHive = selectedId ? hives.find(h => h.id === selectedId) ?? null : null
   const selectedBench = selectedBenchId ? benchById.get(selectedBenchId) ?? null : null
+  const selectedLandmark = selectedLandmarkId ? landmarks.find(l => l.id === selectedLandmarkId) ?? null : null
   const movingHive = moving?.kind === 'hive' ? hives.find(h => h.id === moving.id) ?? null : null
   const entrance = yard.yard_entrance_x != null && yard.yard_entrance_y != null
     ? { x: Number(yard.yard_entrance_x), y: Number(yard.yard_entrance_y) }
     : null
   const northAngle = Number(yard.north_angle_deg ?? 0)
+
+  const today = getCurrentDate()
+  const views = availableMapViews(today)
+  const markOf = (hive: MapHive) => hiveMark(hive, view, today)
 
   const zoomIndex = Math.max(0, ZOOM_STEPS.indexOf(zoom))
   const canZoomOut = zoomIndex > 0
@@ -554,6 +607,12 @@ export default function YardMap({ apiaryId }: YardMapProps) {
       selectBench(moving.id)
       return
     }
+    if (moving.kind === 'landmark') {
+      const snapped = snapPctToGrid(x, y, yardDims)
+      changeLandmark(moving.id, { map_x: snapped.x, map_y: snapped.y })
+      selectLandmark(moving.id)
+      return
+    }
     const patch = groundOrBenchPatch(moving.id, { x: clientX, y: clientY }, rect)
     if (patch) changeHive(moving.id, patch, placedOrMoved(moving.id))
     selectHive(moving.id)
@@ -566,12 +625,25 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     // Clear selection so rings and handles don't appear on the printout.
     setSelectedId(null)
     setSelectedBenchId(null)
+    setSelectedLandmarkId(null)
     await new Promise(resolve => setTimeout(resolve, 80))
     try {
       const { toPng } = await import('html-to-image')
       const dataUrl = await toPng(node, { pixelRatio: 2, filter: excludeNoPrint })
       const title = `${apiaryName ?? 'Apiary'} — Apiary map`
-      if (!printImageDataUrl(dataUrl, title, printedOnLabel())) {
+      // Under the picture: what the colours mean, and every hive in words.
+      const signWord = { good: 'green', warn: 'amber, marked !', bad: 'red, marked !!', neutral: 'grey' } as const
+      const sections = [
+        {
+          heading: `Showing: ${MAP_VIEW_LABELS[view].toLowerCase()}`,
+          items: MAP_VIEW_LEGEND[view].map(({ tone, label }) => `${label} (${signWord[tone]})`),
+        },
+        {
+          heading: 'Hives',
+          items: hives.map(hive => `Hive ${hive.hive_number}: ${markOf(hive).detail}${isHivePlaced(hive, benchById) ? '' : ' (not on the map)'}`),
+        },
+      ]
+      if (!printImageDataUrl(dataUrl, title, printedOnLabel(), sections)) {
         downloadDataUrl(dataUrl, `${title}.png`)
         toast.info('Pop-up blocked — the map image was downloaded instead.')
       }
@@ -598,9 +670,11 @@ export default function YardMap({ apiaryId }: YardMapProps) {
     ? 'Tap the map where the apiary entrance is.'
     : movingHive
       ? `Tap the map where hive ${movingHive.hive_number} should stand.`
-      : moving
+      : moving?.kind === 'bench'
         ? 'Tap the map where the bench should stand.'
-        : null
+        : moving
+          ? 'Tap the map where the landmark should go.'
+          : null
 
   // On a phone the details sit in a panel fixed above the bottom bar, so they
   // are on screen wherever the tapped hive is; on wider screens they follow
@@ -640,13 +714,24 @@ export default function YardMap({ apiaryId }: YardMapProps) {
             </IconButton>
           </div>
 
+          <label className="flex items-center gap-2 text-sm font-medium text-text-secondary">
+            Show
+            <select
+              value={view}
+              onChange={(e) => setView(e.target.value as MapView)}
+              className="px-2 py-1.5 border border-border rounded-md bg-surface text-foreground text-base min-h-[48px]"
+            >
+              {views.map(v => <option key={v} value={v}>{MAP_VIEW_LABELS[v]}</option>)}
+            </select>
+          </label>
+
           <div className="ml-auto flex items-center gap-2">
             {!arranging && (
               <Button size="sm" tone="neutral" onClick={handlePrint}>
                 <Printer className="w-4 h-4 mr-1" /> Print
               </Button>
             )}
-            {isOwner && (arranging ? (
+            {canMoveHives && !showingCopy && (arranging ? (
               <Button size="sm" tone="success" onClick={stopArranging}>
                 <Check className="w-4 h-4 mr-1" /> Done
               </Button>
@@ -658,14 +743,21 @@ export default function YardMap({ apiaryId }: YardMapProps) {
           </div>
         </div>
 
-        {!isOwner && (
+        <CachedDataNotice savedAt={staleSince} onRetry={reload} />
+        {showingCopy && canMoveHives && (
+          <p className="text-sm text-text-secondary">
+            The map cannot be arranged without a signal. It will load again when the signal is back.
+          </p>
+        )}
+
+        {!canMoveHives && (
           <p className="text-sm text-text-secondary">
             You have view-only access to this apiary, so the layout cannot be changed.
             {unplacedHives.length > 0 && ` ${unplacedHives.length} ${unplacedHives.length === 1 ? 'hive is' : 'hives are'} not on the map yet.`}
           </p>
         )}
 
-        {arranging && (
+        {arranging && !showingCopy && (
           tapPrompt ? (
             <div role="status" className="flex flex-wrap items-center gap-3 rounded-lg border-2 border-forest-600 bg-surface p-3">
               <p className="flex-1 font-medium text-foreground">{tapPrompt}</p>
@@ -676,13 +768,14 @@ export default function YardMap({ apiaryId }: YardMapProps) {
           ) : (
             <p className="text-sm text-text-secondary">
               Press and hold a hive, then drag it to its place. Or tap a hive and choose Move. Changes are saved as you make them.
+              {!isOwner && ' Benches and the map setup belong to the apiary owner.'}
             </p>
           )
         )}
 
         {/* Apiary canvas — the apiary rectangle at its real proportions. */}
         <YardCanvas
-          onCanvasClick={arranging && (placingEntrance || moving) ? handleCanvasClick : undefined}
+          onCanvasClick={arranging && !showingCopy && (placingEntrance || moving) ? handleCanvasClick : undefined}
           canvasElRef={canvasElRef}
           dims={yardDims}
           zoom={zoom}
@@ -706,11 +799,22 @@ export default function YardMap({ apiaryId }: YardMapProps) {
             </span>
           )}
 
+          {/* Landmarks sit beneath benches and hives. */}
+          {landmarks.map(landmark => (
+            <LandmarkToken
+              key={landmark.id}
+              landmark={landmark}
+              isReadOnly={benchReadOnly}
+              selected={selectedLandmarkId === landmark.id}
+              onSelect={selectLandmark}
+            />
+          ))}
+
           {placedHives.length === 0 && benches.length === 0 && (
             <span className="pointer-events-none absolute inset-0 flex items-center justify-center px-6 text-center text-sm font-medium text-forest-800 dark:text-forest-200">
               {hives.length === 0
                 ? 'This apiary has no hives yet.'
-                : !isOwner
+                : !canMoveHives
                   ? 'No hives have been placed on this map yet.'
                   : arranging
                     ? 'Drag a hive from below onto the map, or tap it and choose Place on map.'
@@ -737,7 +841,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
             <BenchToken
               key={bench.id}
               bench={bench}
-              isReadOnly={isReadOnly}
+              isReadOnly={benchReadOnly}
               selected={selectedBenchId === bench.id}
               occupiedSlots={occupiedSlots(bench.id)}
               onSelect={selectBench}
@@ -750,6 +854,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
             <HiveToken
               key={hive.id}
               hive={hive}
+              mark={markOf(hive)}
               placed
               isReadOnly={isReadOnly}
               selected={selectedId === hive.id}
@@ -761,7 +866,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
           ))}
         </YardCanvas>
 
-        <MapLegend />
+        <MapLegend view={view} />
 
         {isOwner && hives.length === 0 && (
           <Button tone="success" onClick={() => router.push(`/dashboard/hives?apiary=${apiaryId}`)}>
@@ -770,7 +875,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
         )}
 
         {/* Unplaced tray — drag onto the map, or tap one and choose "Place on map". */}
-        {arranging && unplacedHives.length > 0 && (
+        {arranging && !showingCopy && unplacedHives.length > 0 && (
           <div className="rounded-lg border border-border bg-surface p-3">
             <p className="text-sm font-medium text-text-secondary mb-2">
               Hives not on the map yet ({unplacedHives.length})
@@ -780,6 +885,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
                 <HiveToken
                   key={hive.id}
                   hive={hive}
+                  mark={markOf(hive)}
                   placed={false}
                   isReadOnly={isReadOnly}
                   selected={selectedId === hive.id}
@@ -789,14 +895,14 @@ export default function YardMap({ apiaryId }: YardMapProps) {
             </div>
           </div>
         )}
-        {isOwner && !arranging && unplacedHives.length > 0 && (
+        {canMoveHives && !arranging && unplacedHives.length > 0 && (
           <p className="text-sm text-text-secondary">
             {unplacedHives.length} {unplacedHives.length === 1 ? 'hive is' : 'hives are'} not on the map yet. Choose Arrange to place {unplacedHives.length === 1 ? 'it' : 'them'}.
           </p>
         )}
 
         {/* Map setup, used once and then rarely, so it sits below the map. */}
-        {arranging && (
+        {arranging && isOwner && !showingCopy && (
           <div className="space-y-3 border-t border-border pt-4">
             <h2 className="text-lg font-bold text-foreground">Map setup</h2>
             <div className="flex flex-wrap items-center gap-2">
@@ -839,6 +945,42 @@ export default function YardMap({ apiaryId }: YardMapProps) {
               >
                 <Ruler className="w-4 h-4 mr-1" /> Size: {yard.yard_width_m} × {yard.yard_depth_m} m
               </Button>
+
+              <div className="flex flex-wrap items-center gap-1">
+                <label htmlFor="landmark-kind" className="sr-only">Kind of landmark</label>
+                <select
+                  id="landmark-kind"
+                  value={landmarkKind}
+                  onChange={(e) => setLandmarkKind(e.target.value as LandmarkKind)}
+                  className="px-2 py-1.5 border border-border rounded-md bg-surface text-foreground text-base min-h-[48px]"
+                >
+                  {LANDMARK_KINDS.map(kind => <option key={kind} value={kind}>{LANDMARK_LABELS[kind]}</option>)}
+                </select>
+                <label htmlFor="landmark-label" className="sr-only">Name of the landmark</label>
+                <input
+                  id="landmark-label"
+                  type="text"
+                  value={landmarkLabel}
+                  maxLength={40}
+                  enterKeyHint="done"
+                  onChange={(e) => setLandmarkLabel(e.target.value)}
+                  placeholder={landmarkKind === 'label' ? 'Text to show' : 'Name (optional)'}
+                  className="w-40 px-3 py-2 min-h-[48px] text-base border border-border rounded-md bg-surface text-foreground"
+                />
+                <Button
+                  size="sm"
+                  tone="neutral"
+                  disabled={landmarkKind === 'label' && !landmarkLabel.trim()}
+                  onClick={async () => {
+                    const id = await addLandmark(landmarkKind, landmarkLabel)
+                    if (!id) return
+                    setLandmarkLabel('')
+                    selectLandmark(id)
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add landmark
+                </Button>
+              </div>
 
               <div className="flex items-center gap-1">
                 <span className="text-sm text-text-secondary mr-1">North</span>
@@ -926,6 +1068,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
             <HiveInspectorPanel
               hive={selectedHive}
               isPlaced={isHivePlaced(selectedHive, benchById)}
+              statusViews={views}
               isReadOnly={isReadOnly}
               onRotate={(deg) => rotateHive(selectedHive.id, deg, null)}
               onMove={() => { setPlacingEntrance(false); setMoving({ kind: 'hive', id: selectedHive.id }) }}
@@ -955,7 +1098,7 @@ export default function YardMap({ apiaryId }: YardMapProps) {
                 </IconButton>
               </div>
 
-              {!isReadOnly && (
+              {!benchReadOnly && (
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-text-secondary">
@@ -995,9 +1138,56 @@ export default function YardMap({ apiaryId }: YardMapProps) {
           </div>
         )}
 
+        {/* Landmark details: move, delete */}
+        {selectedLandmark && !moving && (
+          <div className={detailsShell}>
+            <div className="rounded-lg border border-border bg-surface p-4 shadow-lg md:shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">{landmarkName(selectedLandmark)}</h3>
+                  {selectedLandmark.label && selectedLandmark.kind !== 'label' && (
+                    <p className="text-sm text-text-secondary">{LANDMARK_LABELS[selectedLandmark.kind]}</p>
+                  )}
+                </div>
+                <IconButton onClick={() => setSelectedLandmarkId(null)} aria-label="Close landmark details" className="min-h-[48px] min-w-[48px]">
+                  <X className="w-5 h-5" />
+                </IconButton>
+              </div>
+              {!benchReadOnly && (
+                <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+                  <Button
+                    size="sm"
+                    tone="neutral"
+                    onClick={() => { setPlacingEntrance(false); setMoving({ kind: 'landmark', id: selectedLandmark.id }) }}
+                  >
+                    <Move className="w-4 h-4 mr-1" /> Move
+                  </Button>
+                  <Button
+                    size="sm"
+                    tone="danger"
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: `Delete ${landmarkName(selectedLandmark)}?`,
+                        message: 'The landmark will be taken off the map.',
+                        confirmLabel: 'Delete landmark',
+                        variant: 'danger',
+                      })
+                      if (!ok) return
+                      setSelectedLandmarkId(null)
+                      deleteLandmark(selectedLandmark.id)
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" /> Delete landmark
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Room at the end of the page so the fixed details panel on a phone
             never covers the last of the content. */}
-        {(selectedHive || selectedBench) && !moving && <div aria-hidden className="h-56 md:hidden" />}
+        {(selectedHive || selectedBench || selectedLandmark) && !moving && <div aria-hidden className="h-56 md:hidden" />}
       </div>
     </DndContext>
   )

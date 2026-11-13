@@ -59,7 +59,7 @@ The invariant is enforced in two places: the carry-forward slices to the configu
 
 ## Out of scope
 
-- 3D yard-map (`Hive3D.tsx`) gauge overlay — possible follow-up.
+- 3D yard-map (`Hive3D.tsx`) gauge overlay — built in July 2026, see `apiary-3d-view.md`.
 - No change to the `honey_supers` given/taken adjustment logic.
 
 ## Pre-fill from last inspection (added later)

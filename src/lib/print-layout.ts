@@ -8,17 +8,26 @@ const PRINT_STYLE = `
   h1 { font-size: 18px; margin: 0 0 4px; }
   p { font-size: 12px; color: #555; margin: 0 0 16px; }
   img { max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 8px; }
+  h2 { font-size: 15px; margin: 18px 0 6px; text-align: left; }
+  ul { margin: 0; padding-left: 18px; text-align: left; font-size: 13px; columns: 2; }
+  li { margin: 0 0 3px; break-inside: avoid; }
   @media print {
     body { margin: 0; }
     img { border: none; border-radius: 0; }
   }
 `
 
+/** A titled list printed under the image (a legend, a hive list). Text only. */
+export interface PrintSection {
+  heading: string
+  items: string[]
+}
+
 /**
  * Open a print window for the given image. Returns false when the pop-up was
  * blocked so the caller can fall back to a download.
  */
-export function printImageDataUrl(dataUrl: string, title: string, subtitle: string): boolean {
+export function printImageDataUrl(dataUrl: string, title: string, subtitle: string, sections: PrintSection[] = []): boolean {
   const win = window.open('', '_blank', 'width=900,height=700')
   if (!win) return false
 
@@ -47,6 +56,18 @@ export function printImageDataUrl(dataUrl: string, title: string, subtitle: stri
   img.src = dataUrl
 
   doc.body.append(heading, meta, img)
+  for (const section of sections) {
+    if (section.items.length === 0) continue
+    const sectionHeading = doc.createElement('h2')
+    sectionHeading.textContent = section.heading
+    const list = doc.createElement('ul')
+    for (const item of section.items) {
+      const row = doc.createElement('li')
+      row.textContent = item
+      list.appendChild(row)
+    }
+    doc.body.append(sectionHeading, list)
+  }
   return true
 }
 

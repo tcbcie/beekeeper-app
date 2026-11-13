@@ -3,6 +3,7 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { normaliseDeg, type MapHive } from '@/hooks/useApiaryMap'
 import { UNIT_PX, tokenFootprintUnits, rotatedBboxHalfPx } from '@/lib/yard-geometry'
+import { MAP_TONE_BORDER, MAP_TONE_SIGN, type HiveMark } from '@/lib/apiary-map-view'
 
 // dnd-kit's Mouse/Touch sensors listen to mousedown/touchstart, which are
 // separate native streams from pointerdown — stop them on the rotate handle so
@@ -14,10 +15,12 @@ const swallowEvent = (e: React.SyntheticEvent) => e.stopPropagation()
 const CONTAINER_MARGIN_PX = 8
 const MIN_TOUCH_PX = 48
 // Below this footprint height (map zoomed out) only the hive number is shown.
-const QUEEN_LINE_MIN_PX = 44
+const SECOND_LINE_MIN_PX = 44
 
 interface HiveTokenProps {
   hive: MapHive
+  /** Tone, second line and sentence for the view the map is showing (hiveMark). */
+  mark: HiveMark
   // A placed token is absolutely positioned on the canvas; an unplaced one
   // sits in the tray and flows normally.
   placed: boolean
@@ -35,7 +38,7 @@ interface HiveTokenProps {
   pxPerUnit?: number
 }
 
-export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect, onRotate, anchor, pxPerUnit = UNIT_PX }: HiveTokenProps) {
+export default function HiveToken({ hive, mark, placed, isReadOnly, selected, onSelect, onRotate, anchor, pxPerUnit = UNIT_PX }: HiveTokenProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: hive.id,
     disabled: isReadOnly,
@@ -56,7 +59,7 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
     setNodeRef(node)
   }, [setNodeRef])
 
-  const queen = hive.queens?.[0]
+  const sign = MAP_TONE_SIGN[mark.tone]
   // numeric columns can arrive as strings; coerce before doing arithmetic.
   const rotation = liveDeg ?? Number(hive.rotation_deg ?? 0)
   const isNuc = hive.configuration?.hive_size === 'nuc'
@@ -67,13 +70,6 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
   const { hw, hh } = rotatedBboxHalfPx(fpW, fpH, rotation)
   const containerW = Math.max(MIN_TOUCH_PX, Math.ceil(hw * 2) + CONTAINER_MARGIN_PX)
   const containerH = Math.max(MIN_TOUCH_PX, Math.ceil(hh * 2) + CONTAINER_MARGIN_PX)
-
-  // Colour the border by colony health so it reads at a glance in the field.
-  const borderTone = hive.is_queenless
-    ? 'border-red-500'
-    : hive.status === 'active'
-      ? 'border-forest-600'
-      : 'border-border'
 
   // Compose live drag translation (px) with centering (-50%) for placed tokens.
   const dragTransform = transform
@@ -154,12 +150,12 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
         ${isDragging ? 'opacity-90' : ''}`}
       {...(isReadOnly ? {} : listeners)}
       {...attributes}
-      aria-label={`Hive ${hive.hive_number}${isNuc ? ' (nuc)' : ''}${hive.is_queenless ? ', queenless' : ''}${hive.rotation_deg != null ? `, rotated ${Math.round(Number(hive.rotation_deg))} degrees` : ''}`}
+      aria-label={`Hive ${hive.hive_number}${isNuc ? ' (nuc)' : ''}. ${mark.detail}${hive.rotation_deg != null ? `, rotated ${Math.round(Number(hive.rotation_deg))} degrees` : ''}`}
     >
       {/* Footprint: the hive body seen from above; rotates as a whole. */}
       <span
         className={`relative flex items-center justify-center rounded-md border-2 bg-surface shadow-md
-          ${borderTone}
+          ${MAP_TONE_BORDER[mark.tone]}
           ${selected ? 'ring-2 ring-forest-500 ring-offset-1' : ''}`}
         style={{
           width: fpW,
@@ -205,20 +201,21 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
           style={{ transform: placed ? `rotate(${-rotation}deg)` : undefined }}
         >
           <span className="text-base font-bold text-foreground leading-none">{hive.hive_number}</span>
-          {queen && fpH >= QUEEN_LINE_MIN_PX && (
-            <span className="mt-0.5 text-sm text-text-secondary leading-none">Q{queen.queen_number}</span>
+          {mark.line && fpH >= SECOND_LINE_MIN_PX && (
+            <span className="mt-0.5 text-sm text-text-secondary leading-none">{mark.line}</span>
           )}
         </span>
       </span>
 
-      {/* Queenless is marked with a sign as well as the red border, so it does
-          not rest on colour alone. Stays upright: it sits outside the rotated body. */}
-      {hive.is_queenless && (
+      {/* Amber and red carry a sign as well as the border colour, so the
+          meaning does not rest on colour alone. Stays upright: it sits outside
+          the rotated body. */}
+      {sign && (
         <span
           aria-hidden
-          className="pointer-events-none absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white text-sm font-bold leading-none shadow"
+          className={`pointer-events-none absolute right-0 top-0 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1 text-sm font-bold leading-none shadow ${sign.className}`}
         >
-          !
+          {sign.text}
         </span>
       )}
     </button>

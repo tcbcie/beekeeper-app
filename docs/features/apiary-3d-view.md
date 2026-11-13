@@ -8,7 +8,7 @@
 A rotatable 3D view of an apiary yard, reached from the 2D Yard Map via **"3D view"**
 (`/dashboard/apiaries/[id]/map/3d`). Each hive is drawn as a **parametric stack of boxes** built
 from its current `configuration` (brood boxes, half boxes, queen excluder, honey supers, floor),
-placed on the ground by its `map_x`/`map_y` and oriented to its `entrance_direction`. The user can
+placed on the ground by its `map_x`/`map_y` and oriented by its `rotation_deg` (free rotation; `entrance_direction` is the older, unused field). The user can
 **orbit, tilt and zoom** the whole yard. It is **view-only** — placement/editing stays on the 2D map.
 
 Promoted from the earlier spike (see `apiary-3d-view-feasibility.md`) with hive-number labels and an
@@ -100,5 +100,5 @@ PDF included); a blocked pop-up falls back to a PNG download. Shared helper:
 ## See also
 
 * `apiary-3d-view-feasibility.md` — the original assessment and spike.
-* `apiary-yard-map.md` — the 2D yard layout providing `map_x`, `map_y`, `entrance_direction`.
+* `apiary-yard-map.md` — the 2D apiary map providing `map_x`, `map_y`, `rotation_deg`, benches and the entrance. Landmarks are 2D only.
 * `mobile-performance-lcp-cls.md` — the performance budget the dynamic import respects.

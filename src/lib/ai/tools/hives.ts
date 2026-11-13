@@ -238,3 +238,113 @@ export const getHiveTimeline: Tool = {
     }
   }
 }
+
+// Where a hive stands on its apiary map (the layout the beekeeper arranged by hand)
+const COMPASS_POINTS = ['north', 'north-east', 'east', 'south-east', 'south', 'south-west', 'west', 'north-west'] as const
+
+export const getHiveMapPosition: Tool = {
+  name: 'getHiveMapPosition',
+  description: 'Find where a hive stands on its apiary map: whether it has been placed, how far it is from the apiary entrance, whether it is on a bench (hive stand) and in which place, and which hives stand nearest to it. Use for questions like "where is hive 12?", "which hive is next to hive 3?" or "is hive 7 on a bench?". Only knows what the beekeeper arranged on the apiary map.',
+  parameters: z.object({
+    hiveName: z.string().describe('The hive number or name, as the user said it'),
+  }),
+  execute: async (rawArgs: unknown, userId: string) => {
+    const args = rawArgs as { hiveName: string }
+    const supabase = getSupabase()
+
+    const found = await findHiveByName(userId, args.hiveName)
+    if (!found) return `No hive found matching "${args.hiveName}".`
+    const apiaryIds = await getAccessibleApiaryIds(userId)
+
+    const { data: hive, error: hiveError } = await supabase
+      .from('hives')
+      .select('id, hive_number, apiary_id, archived_at')
+      .eq('id', found.id)
+      .in('apiary_id', apiaryIds)
+      .maybeSingle()
+    if (hiveError) return `Error fetching the hive: ${logToolError(hiveError)}`
+    if (!hive || !hive.apiary_id) return `Hive ${found.hive_number} is not in an apiary, so it has no place on a map.`
+    if (hive.archived_at) return `Hive ${found.hive_number} is archived, so it is not shown on the apiary map.`
+
+    const [apiaryRes, hivesRes, benchesRes] = await Promise.all([
+      supabase.from('apiaries')
+        .select('name, yard_width_m, yard_depth_m, yard_entrance_x, yard_entrance_y, north_angle_deg')
+        .eq('id', hive.apiary_id).maybeSingle(),
+      supabase.from('hives')
+        .select('id, hive_number, map_x, map_y, bench_id, bench_slot')
+        .eq('apiary_id', hive.apiary_id).is('archived_at', null).limit(500),
+      supabase.from('yard_benches')
+        .select('id, capacity')
+        .eq('apiary_id', hive.apiary_id).limit(200),
+    ])
+    if (apiaryRes.error) return `Error fetching the apiary map: ${logToolError(apiaryRes.error)}`
+    if (hivesRes.error) return `Error fetching the apiary map: ${logToolError(hivesRes.error)}`
+    if (benchesRes.error) return `Error fetching the apiary map: ${logToolError(benchesRes.error)}`
+    if (!apiaryRes.data) return `The apiary map for hive ${found.hive_number} could not be found.`
+
+    const apiary = apiaryRes.data
+    // Positions are stored as a percentage of the map's width and depth; turn them into metres.
+    const widthM = Number(apiary.yard_width_m) || 5
+    const depthM = Number(apiary.yard_depth_m) || 3.33
+    const north = Number(apiary.north_angle_deg) || 0
+    const benchCapacity = new Map((benchesRes.data ?? []).map(b => [b.id as string, Number(b.capacity)]))
+    type Row = { id: string; hive_number: string; map_x: number | string | null; map_y: number | string | null; bench_id: string | null; bench_slot: number | null }
+    const rows = (hivesRes.data ?? []) as Row[]
+    // The same test as the map: ground coordinates, or a complete link to a bench that exists.
+    const isPlaced = (row: Row) => row.map_x != null && row.map_y != null
+      || (row.bench_id != null && row.bench_slot != null && benchCapacity.has(row.bench_id))
+    const metres = (row: Row) => ({ x: (Number(row.map_x) / 100) * widthM, y: (Number(row.map_y) / 100) * depthM })
+    // Compass direction from one point to another; "up" on the map is turned by where north points.
+    const direction = (from: { x: number; y: number }, to: { x: number; y: number }) => {
+      const mapBearing = (Math.atan2(to.x - from.x, -(to.y - from.y)) * 180) / Math.PI
+      const bearing = (((mapBearing - north) % 360) + 360) % 360
+      return COMPASS_POINTS[Math.round(bearing / 45) % 8]
+    }
+    const round = (value: number) => Math.round(value * 10) / 10
+
+    const self = rows.find(row => row.id === hive.id)
+    const placedCount = rows.filter(isPlaced).length
+    if (!self || !isPlaced(self) || self.map_x == null || self.map_y == null) {
+      return {
+        hive: found.hive_number,
+        apiary: apiary.name,
+        onMap: false,
+        note: `Hive ${found.hive_number} has not been placed on the apiary map yet. ${placedCount} of ${rows.length} hives in this apiary are on the map.`,
+      }
+    }
+
+    const here = metres(self)
+    const nearest = rows
+      .filter(row => row.id !== self.id && isPlaced(row) && row.map_x != null && row.map_y != null)
+      .map(row => {
+        const there = metres(row)
+        return {
+          hive: row.hive_number,
+          distanceMetres: round(Math.hypot(there.x - here.x, there.y - here.y)),
+          direction: direction(here, there),
+          sameBench: self.bench_id != null && row.bench_id === self.bench_id,
+        }
+      })
+      .sort((a, b) => a.distanceMetres - b.distanceMetres)
+      .slice(0, 4)
+
+    const capacity = self.bench_id != null ? benchCapacity.get(self.bench_id) : undefined
+    const entrance = apiary.yard_entrance_x != null && apiary.yard_entrance_y != null
+      ? { x: (Number(apiary.yard_entrance_x) / 100) * widthM, y: (Number(apiary.yard_entrance_y) / 100) * depthM }
+      : null
+
+    return {
+      hive: found.hive_number,
+      apiary: apiary.name,
+      onMap: true,
+      mapSizeMetres: `${widthM} wide by ${depthM} deep`,
+      standsOn: capacity != null && self.bench_slot != null
+        ? `a bench for ${capacity} ${capacity === 1 ? 'hive' : 'hives'}, place ${self.bench_slot + 1} of ${capacity}`
+        : 'the ground',
+      fromApiaryEntrance: entrance
+        ? `${round(Math.hypot(here.x - entrance.x, here.y - entrance.y))} m to the ${direction(entrance, here)} of the entrance`
+        : 'The apiary entrance has not been marked on the map.',
+      nearestHives: nearest.length > 0 ? nearest : 'No other hives are on the map.',
+    }
+  },
+}

@@ -2,10 +2,14 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { getCurrentUserId } from '@/lib/auth'
+import { getTeamAccess } from '@/lib/team-access'
+import { openScreenCache } from '@/lib/screen-cache'
 import {
   slotPositionPct, snapPctToGrid, yardDimsFromMetres,
   DEFAULT_YARD_WIDTH_M, DEFAULT_YARD_DEPTH_M, type YardDims,
 } from '@/lib/yard-geometry'
+import { getCurrentDate, toLocalDateString } from '@/lib/date-utils'
+import { getTreatmentRemovalState } from '@/lib/treatment-removal'
 import type { HiveConfiguration } from '@/types/hive'
 
 /** Normalise any angle to [0, 360). */
@@ -47,6 +51,17 @@ export interface MapHive {
   configuration: HiveConfiguration | null
   /** Per-super fullness (0-100) from the most recent inspection; null when not recorded. */
   last_super_fullness?: number[] | null
+  // Status for the map's "Show" chooser. Each is undefined when its lookup was
+  // not asked for or failed, so the map shows "not known" rather than a guess.
+  /** Latest inspection in the last year (null = none in that time). */
+  last_inspection_date?: string | null
+  /** Latest recorded stores level in the last year, and the day it was read. */
+  last_stores_level?: number | null
+  last_stores_date?: string | null
+  /** Open tasks for this hive. */
+  active_tasks_count?: number
+  /** A varroa treatment still on the hive (null = none). */
+  active_treatment?: { treatment_type: string; overdue: boolean } | null
   queens?: MapQueen[]
 }
 
@@ -84,6 +99,18 @@ export interface YardBench {
   map_y: number
   rotation_deg: number
   capacity: number
+}
+
+export const LANDMARK_KINDS = ['shed', 'tree', 'water', 'gate', 'label'] as const
+export type LandmarkKind = (typeof LANDMARK_KINDS)[number]
+
+/** Something that makes the layout recognisable on site: a shed, a tree, water, a gate, or a text label. */
+export interface YardLandmark {
+  id: string
+  kind: LandmarkKind
+  label: string | null
+  map_x: number
+  map_y: number
 }
 
 /**
@@ -129,13 +156,25 @@ interface UseApiaryMapReturn {
   apiaryName: string | null
   hives: MapHive[]
   benches: YardBench[]
+  landmarks: YardLandmark[]
   yard: YardSettings
   /** The apiary rectangle in scene units, derived from the metre dimensions. */
   yardDims: YardDims
   loading: boolean
   /** The first load failed, so there is no map to show — offer "Try again" (retry). */
   loadFailed: boolean
+  /**
+   * When the map on screen is the copy saved on this device because the latest
+   * could not be loaded (a timestamp), otherwise null. A saved copy is for
+   * looking at: nothing can be changed until the map has loaded again.
+   */
+  staleSince: number | null
   isOwner: boolean
+  /**
+   * May move and turn hives: the apiary owner, or a team member the apiary is
+   * shared with. Benches and the map setup stay with the owner.
+   */
+  canMoveHives: boolean
   /** Resolves true once the change is saved; false when it failed and was put back. */
   saveHivePlacement: (hiveId: string, patch: HivePlacementPatch) => Promise<boolean>
   saveYardSettings: (patch: YardSettingsPatch) => Promise<void>
@@ -143,6 +182,10 @@ interface UseApiaryMapReturn {
   addBench: (capacity: number) => Promise<void>
   saveBenchPlacement: (benchId: string, patch: BenchPlacementPatch) => Promise<boolean>
   deleteBench: (benchId: string) => Promise<void>
+  /** Add a landmark at the centre of the map; resolves its id, or null on failure. */
+  addLandmark: (kind: LandmarkKind, label: string) => Promise<string | null>
+  saveLandmarkPlacement: (landmarkId: string, patch: { map_x: number; map_y: number }) => Promise<boolean>
+  deleteLandmark: (landmarkId: string) => Promise<void>
   reload: () => Promise<void>
   /** Load again after a failed first load, showing the loading state meanwhile. */
   retry: () => void
@@ -151,6 +194,8 @@ interface UseApiaryMapReturn {
 interface UseApiaryMapOptions {
   /** Also fetch each hive's last recorded super fullness (only the 3D view shows it). */
   withSuperFullness?: boolean
+  /** Also fetch inspection age, stores, tasks and treatments (the 2D map's "Show" chooser). */
+  withStatus?: boolean
 }
 
 const DEFAULT_YARD: YardSettings = {
@@ -169,12 +214,24 @@ const dimsOf = (yard: YardSettings): YardDims =>
 
 type Updater<T> = T | ((prev: T) => T)
 
+/** What the map last showed, kept on the device so it opens without signal. */
+interface MapSnapshot {
+  apiaryName: string | null
+  isOwner: boolean
+  canMoveHives: boolean
+  yard: YardSettings
+  hives: MapHive[]
+  benches: YardBench[]
+  /** Missing from copies saved before landmarks existed. */
+  landmarks?: YardLandmark[]
+}
+
 /** A write failed when it errored or saved no row (a blocked write returns no error). */
 const writeFailed = (res: { error: unknown; data: unknown[] | null }) =>
   !!res.error || !res.data || res.data.length === 0
 
 export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}): UseApiaryMapReturn {
-  const { withSuperFullness = false } = options
+  const { withSuperFullness = false, withStatus = false } = options
   const toast = useToast()
   const mountedRef = useRef(true)
   const userIdRef = useRef<string | null>(null)
@@ -192,6 +249,7 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
   const hivesRef = useRef<MapHive[]>([])
   const benchesRef = useRef<YardBench[]>([])
   const yardRef = useRef<YardSettings>(DEFAULT_YARD)
+  const landmarksRef = useRef<YardLandmark[]>([])
 
   useEffect(() => {
     mountedRef.current = true
@@ -202,9 +260,12 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
   const [hives, setHivesState] = useState<MapHive[]>([])
   const [benches, setBenchesState] = useState<YardBench[]>([])
   const [yard, setYardState] = useState<YardSettings>(DEFAULT_YARD)
+  const [landmarks, setLandmarksState] = useState<YardLandmark[]>([])
   const [loading, setLoading] = useState(true)
   const [loadFailed, setLoadFailed] = useState(false)
+  const [staleSince, setStaleSince] = useState<number | null>(null)
   const [isOwner, setIsOwner] = useState(false)
+  const [canMoveHives, setCanMoveHives] = useState(false)
 
   // Every state change goes through these setters, which update the snapshot
   // ref in the same step. A second save started before React re-renders then
@@ -216,6 +277,10 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
   const setBenches = useCallback((next: Updater<YardBench[]>) => {
     benchesRef.current = typeof next === 'function' ? next(benchesRef.current) : next
     setBenchesState(benchesRef.current)
+  }, [])
+  const setLandmarks = useCallback((next: Updater<YardLandmark[]>) => {
+    landmarksRef.current = typeof next === 'function' ? next(landmarksRef.current) : next
+    setLandmarksState(landmarksRef.current)
   }, [])
   const setYard = useCallback((next: Updater<YardSettings>) => {
     yardRef.current = typeof next === 'function' ? next(yardRef.current) : next
@@ -230,11 +295,41 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
     // No setLoading(true): `loading` starts true for the first load, and a reload (after a failed
     // save) swapped the whole canvas for "Loading…", dropping any drag in progress (C7a-14)
     loadsInFlightRef.current++
+    // The copy of this map saved on the device, shown until the fresh one
+    // arrives, and kept on screen if it never does (no signal at the apiary).
+    let cache: ReturnType<typeof openScreenCache<MapSnapshot>> | null = null
+    let freshArrived = false
+    let failed = false
+    let copySavedAt: number | null = null
     try {
       const userId = userIdRef.current ?? (await getCurrentUserId())
       userIdRef.current = userId
 
-      const [apiaryRes, hivesRes, benchesRes] = await Promise.all([
+      if (userId) {
+        cache = openScreenCache<MapSnapshot>(userId, `apiary-map:${apiaryId}:${withSuperFullness ? '3d' : '2d'}`)
+        // Only a first load needs the copy; a refresh already has a map on screen.
+        if (!loadedRef.current) {
+          cache.read().then(entry => {
+            if (!entry || freshArrived || !isCurrent()) return
+            copySavedAt = entry.savedAt
+            setApiaryName(entry.data.apiaryName)
+            setIsOwner(entry.data.isOwner)
+            setCanMoveHives(entry.data.canMoveHives)
+            setYard(entry.data.yard)
+            setHives(entry.data.hives)
+            setBenches(entry.data.benches)
+            setLandmarks(entry.data.landmarks ?? [])
+            setLoading(false)
+            // The load may already have failed by the time the copy is read.
+            if (failed) {
+              setLoadFailed(false)
+              setStaleSince(entry.savedAt)
+            }
+          })
+        }
+      }
+
+      const [apiaryRes, hivesRes, benchesRes, teamAccess, landmarksRes] = await Promise.all([
         supabase.from('apiaries')
           .select('name, user_id, yard_entrance_x, yard_entrance_y, north_angle_deg, yard_width_m, yard_depth_m')
           .eq('id', apiaryId).single(),
@@ -249,11 +344,21 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
           .select('id, map_x, map_y, rotation_deg, capacity')
           .eq('apiary_id', apiaryId)
           .order('created_at'),
+        // Cached; resolves to "no shared access" on failure, which only keeps a team member view-only.
+        userId ? getTeamAccess(userId) : null,
+        supabase
+          .from('yard_landmarks')
+          .select('id, kind, label, map_x, map_y')
+          .eq('apiary_id', apiaryId)
+          .order('created_at'),
       ])
 
+      // The apiary is gone or no longer shared: no copy of it may be shown again.
+      if (apiaryRes.error?.code === 'PGRST116') cache?.forget()
       if (apiaryRes.error) throw apiaryRes.error
       if (hivesRes.error) throw hivesRes.error
       if (benchesRes.error) throw benchesRes.error
+      if (landmarksRes.error) throw landmarksRes.error
       if (!isCurrent()) return
 
       // PostgREST returns the queens embed as a single OBJECT for this
@@ -321,32 +426,122 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
         }
       }
 
-      setApiaryName(apiaryRes.data?.name ?? null)
-      setIsOwner(!!userId && apiaryRes.data?.user_id === userId)
-      setYard({
-        yard_entrance_x: apiaryRes.data?.yard_entrance_x ?? null,
-        yard_entrance_y: apiaryRes.data?.yard_entrance_y ?? null,
-        north_angle_deg: apiaryRes.data?.north_angle_deg ?? 0,
-        yard_width_m: Number(apiaryRes.data?.yard_width_m) || DEFAULT_YARD_WIDTH_M,
-        yard_depth_m: Number(apiaryRes.data?.yard_depth_m) || DEFAULT_YARD_DEPTH_M,
-      })
-      setHives(hiveRows)
-      setBenches((benchesRes.data || []) as YardBench[])
+      // Status for the "Show" chooser: three small lookups run together. Any
+      // that fails leaves its fields undefined (shown as "not known").
+      if (withStatus && hiveIds.length > 0) {
+        const today = getCurrentDate()
+        const yearAgo = toLocalDateString(new Date(Date.now() - 366 * 24 * 60 * 60 * 1000))
+        const [inspectionsRes, treatmentsRes, tasksRes] = await Promise.all([
+          // No user_id filter on any of these: RLS scopes them, and a team-mate's
+          // inspection of a shared hive must count.
+          supabase.from('inspections')
+            .select('hive_id, inspection_date, stores_level')
+            .in('hive_id', hiveIds)
+            .gte('inspection_date', yearAgo)
+            .order('inspection_date', { ascending: false }),
+          supabase.from('varroa_treatments')
+            .select('hive_id, treatment_date, treatment_type, planned_removal_date, removed_date')
+            .in('hive_id', hiveIds)
+            .not('planned_removal_date', 'is', null)
+            .is('removed_date', null)
+            .order('treatment_date', { ascending: false }),
+          supabase.from('tasks_events')
+            .select('hive_id')
+            .in('hive_id', hiveIds)
+            .eq('completed', false),
+        ])
+        if (!isCurrent()) return
+
+        if (inspectionsRes.error) {
+          console.error('Error loading inspection status:', inspectionsRes.error)
+        } else {
+          const lastDate = new Map<string, string>()
+          const stores = new Map<string, { level: number; date: string }>()
+          for (const row of inspectionsRes.data || []) {
+            if (!lastDate.has(row.hive_id)) lastDate.set(row.hive_id, row.inspection_date)
+            if (row.stores_level != null && !stores.has(row.hive_id)) {
+              stores.set(row.hive_id, { level: Number(row.stores_level), date: row.inspection_date })
+            }
+          }
+          hiveRows = hiveRows.map(h => ({
+            ...h,
+            last_inspection_date: lastDate.get(h.id) ?? null,
+            last_stores_level: stores.get(h.id)?.level ?? null,
+            last_stores_date: stores.get(h.id)?.date ?? null,
+          }))
+        }
+
+        if (treatmentsRes.error) {
+          console.error('Error loading treatment status:', treatmentsRes.error)
+        } else {
+          const treatment = new Map<string, { treatment_type: string; overdue: boolean }>()
+          for (const row of treatmentsRes.data || []) {
+            if (!row.hive_id || treatment.has(row.hive_id)) continue
+            const state = getTreatmentRemovalState(row, today)
+            if (state === 'none') continue
+            treatment.set(row.hive_id, { treatment_type: row.treatment_type, overdue: state === 'overdue' })
+          }
+          hiveRows = hiveRows.map(h => ({ ...h, active_treatment: treatment.get(h.id) ?? null }))
+        }
+
+        if (tasksRes.error) {
+          console.error('Error loading task status:', tasksRes.error)
+        } else {
+          const tasks = new Map<string, number>()
+          for (const row of tasksRes.data || []) {
+            if (row.hive_id) tasks.set(row.hive_id, (tasks.get(row.hive_id) ?? 0) + 1)
+          }
+          hiveRows = hiveRows.map(h => ({ ...h, active_tasks_count: tasks.get(h.id) ?? 0 }))
+        }
+      }
+
+      const owner = !!userId && apiaryRes.data?.user_id === userId
+      const fresh: MapSnapshot = {
+        apiaryName: apiaryRes.data?.name ?? null,
+        isOwner: owner,
+        canMoveHives: owner || !!teamAccess?.sharedApiaryIds.includes(apiaryId),
+        yard: {
+          yard_entrance_x: apiaryRes.data?.yard_entrance_x ?? null,
+          yard_entrance_y: apiaryRes.data?.yard_entrance_y ?? null,
+          north_angle_deg: apiaryRes.data?.north_angle_deg ?? 0,
+          yard_width_m: Number(apiaryRes.data?.yard_width_m) || DEFAULT_YARD_WIDTH_M,
+          yard_depth_m: Number(apiaryRes.data?.yard_depth_m) || DEFAULT_YARD_DEPTH_M,
+        },
+        hives: hiveRows,
+        benches: (benchesRes.data || []) as YardBench[],
+        landmarks: ((landmarksRes.data || []) as YardLandmark[]).map(l => ({ ...l, map_x: Number(l.map_x), map_y: Number(l.map_y) })),
+      }
+      freshArrived = true
+      setApiaryName(fresh.apiaryName)
+      setIsOwner(fresh.isOwner)
+      setCanMoveHives(fresh.canMoveHives)
+      setYard(fresh.yard)
+      setHives(fresh.hives)
+      setBenches(fresh.benches)
+      setLandmarks(fresh.landmarks ?? [])
+      cache?.save(fresh)
       loadedRef.current = true
       setLoadFailed(false)
+      setStaleSince(null)
     } catch (error) {
       console.error('Error loading apiary map:', error)
       if (isCurrent()) {
         // A failed first load has nothing to show: the screen offers "Try again".
         // A failed refresh keeps the map already on screen.
-        if (!loadedRef.current) setLoadFailed(true)
-        else if (!quiet) toast.error('Could not refresh the apiary map')
+        failed = true
+        if (loadedRef.current) {
+          if (!quiet) toast.error('Could not refresh the apiary map')
+        } else if (copySavedAt !== null) {
+          setStaleSince(copySavedAt)
+        } else {
+          setLoadFailed(true)
+        }
       }
     } finally {
       loadsInFlightRef.current--
       if (isCurrent()) setLoading(false)
     }
-  }, [apiaryId, toast, withSuperFullness, setHives, setBenches, setYard])
+  }, [apiaryId, toast, withSuperFullness, withStatus, setHives, setBenches, setYard, setLandmarks])
 
   const reload = useCallback(() => load(false), [load])
 
@@ -419,13 +614,14 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
     // Optimistically apply the change.
     setHives(prev => prev.map(h => (h.id === hiveId ? { ...h, ...patch } : h)))
 
-    // Return the affected row so a silently blocked write (RLS denial, ownership
-    // mismatch, row removed) is caught rather than left diverging from the DB.
+    // No user_id filter: row level security decides (the hive's owner, or a
+    // team member with access to its apiary), so the apiary owner can place a
+    // team-mate's hive and the other way round. Return the affected row so a
+    // silently blocked write is caught rather than left diverging from the DB.
     const { data, error } = await supabase
       .from('hives')
       .update(patch)
       .eq('id', hiveId)
-      .eq('user_id', userId)
       .select('id')
 
     if (error || !data || data.length === 0) {
@@ -546,7 +742,6 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
           ...(patch.rotation_deg != null ? { rotation_deg: patch.rotation_deg } : {}),
         })
         .eq('id', h.id)
-        .eq('user_id', userId)
         .select('id')
     }))
     if (results.some(writeFailed)) {
@@ -597,6 +792,12 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
       map_y: scalePct(b.map_y, sy) as number,
     }))
     const scaledBenchById = new Map(scaledBenches.map(b => [b.id, b]))
+    const prevLandmarks = landmarksRef.current
+    const scaledLandmarks = prevLandmarks.map(l => ({
+      ...l,
+      map_x: scalePct(l.map_x, sx) as number,
+      map_y: scalePct(l.map_y, sy) as number,
+    }))
 
     const scaledHives = prevHives.map(h => {
       // Bench hives re-derive from their (rescaled) bench so they stay on slot.
@@ -618,6 +819,7 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
     // Optimistically apply everything together.
     setYard(prev => ({ ...prev, ...apiaryPatch }))
     setBenches(scaledBenches)
+    setLandmarks(scaledLandmarks)
     setHives(scaledHives)
 
     const { data, error } = await supabase
@@ -632,6 +834,7 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
       if (!mountedRef.current) return
       setYard(prevYard)
       setBenches(prevBenches)
+      setLandmarks(prevLandmarks)
       setHives(prevHives)
       toast.error('Could not resize the apiary')
       return
@@ -642,10 +845,13 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
       ...scaledBenches.map(b =>
         supabase.from('yard_benches').update({ map_x: b.map_x, map_y: b.map_y }).eq('id', b.id).eq('user_id', userId).select('id'),
       ),
+      ...scaledLandmarks.map(l =>
+        supabase.from('yard_landmarks').update({ map_x: l.map_x, map_y: l.map_y }).eq('id', l.id).eq('user_id', userId).select('id'),
+      ),
       ...scaledHives
         .filter(h => h.map_x != null && h.map_y != null)
         .map(h =>
-          supabase.from('hives').update({ map_x: h.map_x, map_y: h.map_y }).eq('id', h.id).eq('user_id', userId).select('id'),
+          supabase.from('hives').update({ map_x: h.map_x, map_y: h.map_y }).eq('id', h.id).select('id'),
         ),
     ])
     if (results.some(writeFailed)) {
@@ -653,7 +859,7 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
       if (mountedRef.current) toast.error('The apiary was resized, but some positions could not be saved and were reloaded')
       reloadOwedRef.current = true
     }
-  }), [apiaryId, runSave, requireUser, toast, setHives, setBenches, setYard])
+  }), [apiaryId, runSave, requireUser, toast, setHives, setBenches, setYard, setLandmarks])
 
   /** Delete a bench; its hives stay where they are, just unlinked (grounded). */
   const deleteBench = useCallback((benchId: string) => runSave(async () => {
@@ -670,7 +876,6 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
       supabase.from('hives')
         .update({ bench_id: null, bench_slot: null })
         .eq('id', h.id)
-        .eq('user_id', userId)
         .select('id'),
     ))
     // The bench is only deleted once every hive on it is safely on the ground.
@@ -689,21 +894,82 @@ export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}
     }
   }), [runSave, requireUser, toast, setHives, setBenches])
 
+  const addLandmark = useCallback((kind: LandmarkKind, label: string) => runSave(async (): Promise<string | null> => {
+    const userId = requireUser()
+    if (!userId) return null
+
+    const centre = snapPctToGrid(50, 50, dimsOf(yardRef.current))
+    const { data, error } = await supabase
+      .from('yard_landmarks')
+      .insert({ user_id: userId, apiary_id: apiaryId, kind, label: label.trim().slice(0, 40) || null, map_x: centre.x, map_y: centre.y })
+      .select('id, kind, label, map_x, map_y')
+      .single()
+
+    if (error || !data) {
+      console.error('Error adding landmark:', error)
+      if (mountedRef.current) toast.error('Could not add the landmark')
+      return null
+    }
+    const added = { ...(data as YardLandmark), map_x: Number(data.map_x), map_y: Number(data.map_y) }
+    if (mountedRef.current) setLandmarks(prev => [...prev, added])
+    return added.id
+  }), [apiaryId, runSave, requireUser, toast, setLandmarks])
+
+  const saveLandmarkPlacement = useCallback((landmarkId: string, patch: { map_x: number; map_y: number }) => runSave(async (): Promise<boolean> => {
+    const userId = requireUser()
+    if (!userId) return false
+    const previous = landmarksRef.current.find(l => l.id === landmarkId)
+    if (!previous) return false
+
+    setLandmarks(prev => prev.map(l => (l.id === landmarkId ? { ...l, ...patch } : l)))
+    const res = await supabase.from('yard_landmarks').update(patch).eq('id', landmarkId).eq('user_id', userId).select('id')
+    if (writeFailed(res)) {
+      console.error('Error saving landmark position:', res.error ?? 'no matching row updated')
+      if (!mountedRef.current) return false
+      setLandmarks(prev => prev.map(l => (l.id === landmarkId ? { ...l, map_x: previous.map_x, map_y: previous.map_y } : l)))
+      toast.error('Could not save the landmark position')
+      return false
+    }
+    return true
+  }), [runSave, requireUser, toast, setLandmarks])
+
+  const deleteLandmark = useCallback((landmarkId: string) => runSave(async () => {
+    const userId = requireUser()
+    if (!userId) return
+    const previous = landmarksRef.current.find(l => l.id === landmarkId)
+    if (!previous) return
+
+    setLandmarks(prev => prev.filter(l => l.id !== landmarkId))
+    const res = await supabase.from('yard_landmarks').delete().eq('id', landmarkId).eq('user_id', userId).select('id')
+    if (writeFailed(res)) {
+      console.error('Error deleting landmark:', res.error ?? 'no matching row deleted')
+      if (!mountedRef.current) return
+      setLandmarks(prev => (prev.some(l => l.id === landmarkId) ? prev : [...prev, previous]))
+      toast.error('Could not delete the landmark')
+    }
+  }), [runSave, requireUser, toast, setLandmarks])
+
   return {
     apiaryName,
     hives,
     benches,
+    landmarks,
     yard,
     yardDims: dimsOf(yard),
     loading,
     loadFailed,
+    staleSince,
     isOwner,
+    canMoveHives,
     saveHivePlacement,
     saveYardSettings,
     saveYardDimensions,
     addBench,
     saveBenchPlacement,
     deleteBench,
+    addLandmark,
+    saveLandmarkPlacement,
+    deleteLandmark,
     reload,
     retry,
   }

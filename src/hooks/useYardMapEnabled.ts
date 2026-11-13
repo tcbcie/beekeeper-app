@@ -4,9 +4,10 @@ import { supabase } from '@/lib/supabase'
 import { resolveActiveSubscription } from './useHasActiveSubscription'
 
 /**
- * Gates the Yard Map (2D + 3D) on BOTH an active subscription AND the user's
- * opt-in `profiles.enable_yard_map` preference (default off). Used by the apiary
- * detail entry point and the Yard Map route guard.
+ * Gates the apiary map (2D + 3D) on BOTH an active subscription AND the user's
+ * `profiles.enable_yard_map` preference. The preference is on by default since
+ * 13/11/2026 and can be switched off in Profile. Used by the apiary detail entry
+ * point, the hive page's "Show on map" and the map route guard.
  *
  * The preference is cached at module scope (deduped across surfaces) and
  * refreshed live when the profile toggle fires `notifyYardMapPrefChanged()`, so

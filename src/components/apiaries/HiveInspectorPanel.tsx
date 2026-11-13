@@ -1,11 +1,14 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { RotateCcw, RotateCw, X, ExternalLink, Move, Undo2 } from 'lucide-react'
+import Link from 'next/link'
+import { RotateCcw, RotateCw, X, ExternalLink, Move, Search, Undo2 } from 'lucide-react'
 import IconButton from '@/components/ui/IconButton'
 import Button from '@/components/ui/Button'
 import { formatQueenlessLabel } from '@/lib/queenless'
 import { normaliseDeg, describeQueenLineage, type MapHive } from '@/hooks/useApiaryMap'
 import type { YardDims } from '@/lib/yard-geometry'
+import { hiveMark, type MapView } from '@/lib/apiary-map-view'
+import { getCurrentDate } from '@/lib/date-utils'
 
 const NUDGE_DEG = 15
 
@@ -30,6 +33,11 @@ interface HiveInspectorPanelProps {
   hive: MapHive
   /** Whether the hive is on the map (isHivePlaced, the one shared test). */
   isPlaced: boolean
+  /**
+   * The status views to spell out (inspection, stores, tasks), when the caller
+   * loaded them. The 3D view does not, and shows the queen line only.
+   */
+  statusViews?: MapView[]
   isReadOnly: boolean
   onRotate: (deg: number) => void
   /** Start tap-to-place: the next tap on the map is where the hive goes. */
@@ -42,13 +50,15 @@ interface HiveInspectorPanelProps {
   dims: YardDims
 }
 
-export default function HiveInspectorPanel({ hive, isPlaced, isReadOnly, onRotate, onMove, onRemove, onClose, entrance, dims }: HiveInspectorPanelProps) {
+export default function HiveInspectorPanel({ hive, isPlaced, statusViews, isReadOnly, onRotate, onMove, onRemove, onClose, entrance, dims }: HiveInspectorPanelProps) {
   const router = useRouter()
   const queen = hive.queens?.[0]
   // numeric columns can arrive as strings; coerce before doing arithmetic.
   const rotation = Number(hive.rotation_deg ?? 0)
   const relation = entranceRelation(hive, entrance ?? null, dims)
   const lineage = describeQueenLineage(queen)
+  const today = getCurrentDate()
+  const statusLines = (statusViews ?? []).filter(v => v !== 'queens').map(v => ({ view: v, text: hiveMark(hive, v, today).detail }))
 
   return (
     <div className="rounded-lg border border-border bg-surface p-4 shadow-lg md:shadow-sm">
@@ -59,12 +69,15 @@ export default function HiveInspectorPanel({ hive, isPlaced, isReadOnly, onRotat
             {hive.is_queenless
               ? formatQueenlessLabel(hive.queenless_reason)
               : queen
-                ? `Queen ${queen.queen_number}`
+                ? <Link href={`/dashboard/queens/${queen.id}`} className="fj-link">Queen {queen.queen_number}</Link>
                 : 'No queen recorded'}
             {' · '}
             <span className="capitalize">{hive.status}</span>
           </p>
           {lineage && <p className="text-sm text-text-secondary mt-0.5">{lineage}</p>}
+          {statusLines.map(line => (
+            <p key={line.view} className="text-sm text-text-secondary mt-0.5">{line.text}</p>
+          ))}
           {relation && <p className="text-sm text-text-secondary mt-0.5">{relation}</p>}
           {!isReadOnly && isPlaced && (
             <p className="hidden md:block text-sm text-text-secondary mt-0.5">
@@ -114,6 +127,11 @@ export default function HiveInspectorPanel({ hive, isPlaced, isReadOnly, onRotat
           <Button size="sm" tone="neutral" onClick={() => router.push(`/dashboard/hives/${hive.id}`)}>
             <ExternalLink className="w-4 h-4 mr-1" /> Open hive
           </Button>
+          {isReadOnly && (
+            <Button size="sm" tone="success" onClick={() => router.push(`/dashboard/records?create=inspection&hive=${hive.id}`)}>
+              <Search className="w-4 h-4 mr-1" /> Start inspection
+            </Button>
+          )}
         </div>
       </div>
     </div>

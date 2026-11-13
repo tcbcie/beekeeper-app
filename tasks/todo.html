@@ -23,7 +23,7 @@
 
 <h1>Apiary Map Review</h1>
 
-<p><strong>Status:</strong> batches 1 and 2 built, waiting on your phone test and test run; batch 3 not started &nbsp;&middot;&nbsp; <strong>Date:</strong> 13 November 2026</p>
+<p><strong>Status:</strong> all three batches built. Batches 1 and 2 are live; batch 3 and decision E are waiting on your phone test and test run &nbsp;&middot;&nbsp; <strong>Date:</strong> 13 November 2026</p>
 
 <blockquote>
 <p><strong>Your request:</strong> a full review of the apiary map from a usability point of view, a feature point of view, and any other general improvements.</p>
@@ -124,16 +124,16 @@
 
 <h3>Batch 3 &mdash; Features</h3>
 <ul class="todo">
-  <li>&#9744; G1: a &ldquo;Show&rdquo; chooser that colours and badges the hives by one thing at a time: queens (default), inspection age, stores, tasks and treatments. The legend follows the choice.</li>
-  <li>&#9744; G2: &ldquo;Start inspection&rdquo; as the main button in the hive details, and a link to the queen.</li>
-  <li>&#9744; G3: team members with edit rights on a shared apiary can arrange hives. (Decision C; needs a check of all three permission gates.)</li>
-  <li>&#9744; G4: &ldquo;Show on map&rdquo; from the hive page, opening the map with that hive selected.</li>
-  <li>&#9744; G5: the map shows a saved copy without signal, read-only, with a clear &ldquo;no signal&rdquo; message on any attempt to change it.</li>
-  <li>&#9744; G6: simple landmarks: shed, tree, water, gate and a text label. One new table. (Decision D.)</li>
-  <li>&#9744; G7: a Mel tool that answers where a hive is and what stands next to it.</li>
-  <li>&#9744; G8: the print-out gains the legend and a hive list.</li>
-  <li>&#9744; G10: feature documents brought up to date and a help page written.</li>
-  <li>&#9744; QA audit and document update for batch 3.</li>
+  <li>&#9745; G1: a &ldquo;Show&rdquo; chooser that colours and badges the hives by one thing at a time: queens (default), inspection age, stores, tasks and treatments. The legend follows the choice.</li>
+  <li>&#9745; G2: &ldquo;Start inspection&rdquo; as the main button in the hive details, and a link to the queen.</li>
+  <li>&#9745; G3: team members with edit rights on a shared apiary can arrange hives. (Decision C; needs a check of all three permission gates.)</li>
+  <li>&#9745; G4: &ldquo;Show on map&rdquo; from the hive page, opening the map with that hive selected.</li>
+  <li>&#9745; G5: the map shows a saved copy without signal, read-only, with a clear &ldquo;no signal&rdquo; message on any attempt to change it.</li>
+  <li>&#9745; G6: simple landmarks: shed, tree, water, gate and a text label. One new table. (Decision D.)</li>
+  <li>&#9745; G7: a Mel tool that answers where a hive is and what stands next to it.</li>
+  <li>&#9745; G8: the print-out gains the legend and a hive list.</li>
+  <li>&#9745; G10: feature documents brought up to date and a help page written.</li>
+  <li>&#9745; QA audit and document update for batch 3.</li>
 </ul>
 
 <h3>Not proposed</h3>
@@ -185,7 +185,7 @@
   <li>The 15 degree turn buttons show no saved message, to avoid one message per press. The angle readout changes at once and a failure still shows a message.</li>
   <li>Print is offered while viewing, not while arranging.</li>
   <li>The &ldquo;Apiary Map&rdquo; pill on the apiary page keeps its title case, because every pill in that row uses it.</li>
-  <li>Decision E (map on by default) is not done yet. It waits for your phone test of batch 2.</li>
+  <li>Decision E (map on by default) was done with batch 3, after your phone test.</li>
 </ul>
 
 <h3>Please check on a phone</h3>
@@ -195,6 +195,33 @@
   <li>Arrange: press-and-hold drag, Move then tap, the turn handle, Undo.</li>
   <li>Move a hive to another apiary from the hive list and confirm it shows as not placed on the new map.</li>
   <li>Dark mode, and the 3D view.</li>
+</ul>
+
+<h3>Batch 3 and decision E &mdash; what changed</h3>
+<p>You tested batches 1 and 2 (&ldquo;all good&rdquo;) and they are live as commit <code>80612f00</code>. Batch 3 is built. Type-check and lint are clean. No tests and no build were run.</p>
+<ul>
+  <li><strong>Decision E:</strong> the map is on by default. The database default changed and 125 accounts were switched on (4 already were). The Profile switch stays. An account that had deliberately left it off could not be told apart from one that never looked, so all were switched on.</li>
+  <li><strong>G1 Show chooser:</strong> colour the hives by queens, last inspection, winter stores, or tasks and treatments. Amber carries &ldquo;!&rdquo; and red &ldquo;!!&rdquo;. The legend follows. An active hive with no queen recorded is now amber.</li>
+  <li><strong>G2:</strong> &ldquo;Start inspection&rdquo; and a link to the queen in the hive details, which also list inspection, stores, tasks and treatments.</li>
+  <li><strong>G3:</strong> team members of a shared apiary can move and turn hives. Benches, landmarks and setup stay with the owner.</li>
+  <li><strong>G4:</strong> &ldquo;Show on map&rdquo; on the hive page opens the map with that hive selected.</li>
+  <li><strong>G5:</strong> without signal the map shows the copy saved on the phone, with the standard notice, and cannot be arranged.</li>
+  <li><strong>G6:</strong> landmarks (shed, tree, water, gate, text label), in a new table <code>yard_landmarks</code>. Not drawn in 3D.</li>
+  <li><strong>G7:</strong> Mel can answer where a hive is and what stands next to it.</li>
+  <li><strong>G8:</strong> the print-out lists the legend and every hive.</li>
+  <li><strong>G10:</strong> feature documents updated; a guide for beekeepers written as <span class="file">docs/features/apiary-map-user-guide.md</span>. The app has no help pages, so the guide is a document, not a screen.</li>
+</ul>
+
+<h3>Please check for batch 3</h3>
+<ul>
+  <li>The Show chooser in each view, and the legend. It is November, so &ldquo;Last inspection&rdquo; is grey for every hive by the app&rsquo;s winter rule.</li>
+  <li>Hive details on a phone: with the extra lines, that the panel is still comfortable.</li>
+  <li>Start inspection from a hive; Show on map from a hive page.</li>
+  <li>A team member account: can move a hive, cannot move a bench.</li>
+  <li>Aeroplane mode: open a map you opened before.</li>
+  <li>Add, move and delete a landmark; resize the apiary with a landmark on it.</li>
+  <li>Ask Mel &ldquo;Where is hive &hellip;?&rdquo;.</li>
+  <li>Print.</li>
 </ul>
 
 <h3>Files changed</h3>

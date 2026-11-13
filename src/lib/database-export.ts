@@ -74,7 +74,8 @@ export const DATABASE_EXPORT_TABLES = [
   'vegetation_info',
   'wild_colonies',
   'wild_colony_inspections',
-  'yard_benches'
+  'yard_benches',
+  'yard_landmarks'
 ] as const
 
 export type ExportTableName = (typeof DATABASE_EXPORT_TABLES)[number]
@@ -226,6 +227,7 @@ export const USER_EXPORT_TABLES: ReadonlyArray<{ table: string; label: string }>
   { table: 'queen_weights', label: 'Queen Weights' },
   { table: 'tool_suggestions', label: 'Tool Suggestions' },
   { table: 'yard_benches', label: 'Apiary Map Benches' },
+  { table: 'yard_landmarks', label: 'Apiary Map Landmarks' },
   { table: 'crm_customers', label: 'CRM Customers' },
   { table: 'crm_orders', label: 'CRM Orders' },
   { table: 'crm_order_items', label: 'CRM Order Items' },

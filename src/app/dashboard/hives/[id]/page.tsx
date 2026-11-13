@@ -3,7 +3,8 @@ import dynamic from 'next/dynamic'
 import { useEffect, useState, useCallback } from 'react'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
-import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore, Scale, QrCode, ChevronDown } from 'lucide-react'
+import { ArrowLeft, Calendar, Bug, Syringe, Wheat, Droplet, ListTodo, Plus, CheckCircle2, Archive, ArchiveRestore, Scale, QrCode, ChevronDown, Map as MapIcon } from 'lucide-react'
+import { useYardMapEnabled } from '@/hooks/useYardMapEnabled'
 import Link from 'next/link'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import { SkeletonScreen } from '@/components/ui/Skeleton'
@@ -51,6 +52,7 @@ export default function HiveDetailPage() {
   const params = useParams()
   const router = useRouter()
   const hiveId = params.id as string
+  const { yardMapEnabled } = useYardMapEnabled()
 
   const {
     hive,
@@ -239,6 +241,15 @@ export default function HiveDetailPage() {
         <div className="flex flex-wrap items-center gap-2 mt-1">
           {hive.apiaries && (
             <p className="text-text-tertiary">Apiary: {hive.apiaries.name}</p>
+          )}
+          {yardMapEnabled && hive.apiary_id && !hive.archived_at && (
+            <Link
+              href={`/dashboard/apiaries/${hive.apiary_id}/map?hive=${hiveId}`}
+              className="inline-flex min-h-[48px] items-center gap-1.5 px-3 text-sm font-medium bg-surface border border-border rounded-full hover:border-forest-500 text-text-secondary"
+            >
+              <MapIcon size={16} />
+              Show on map
+            </Link>
           )}
           {hive.is_shared && hive.team_name && (
             <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-sm font-medium rounded flex items-center gap-1 border border-blue-300 dark:border-blue-800">

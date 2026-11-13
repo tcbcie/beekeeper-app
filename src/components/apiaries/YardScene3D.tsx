@@ -9,6 +9,7 @@ import { BENCH_TOP_UNITS, slotOffsetUnits, rotatedOffset, type YardDims } from '
 import { printImageDataUrl, downloadDataUrl, printedOnLabel, excludeNoPrint } from '@/lib/print-layout'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
+import CachedDataNotice from '@/components/ui/CachedDataNotice'
 import Hive3D from './Hive3D'
 import Bench3D from './Bench3D'
 import HiveInspectorPanel from './HiveInspectorPanel'
@@ -39,7 +40,7 @@ const noop = () => {}
 const FULLNESS_OPTIONS = { withSuperFullness: true }
 
 export default function YardScene3D({ apiaryId }: YardScene3DProps) {
-  const { apiaryName, hives, benches, yard, yardDims, loading, loadFailed, retry } = useApiaryMap(apiaryId, FULLNESS_OPTIONS)
+  const { apiaryName, hives, benches, yard, yardDims, loading, loadFailed, staleSince, retry, reload } = useApiaryMap(apiaryId, FULLNESS_OPTIONS)
   const toast = useToast()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [webgl, setWebgl] = useState<boolean | null>(null)
@@ -129,6 +130,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
 
   return (
     <div className="space-y-4">
+      <CachedDataNotice savedAt={staleSince} onRetry={reload} />
       {placedHives.length === 0 ? (
         <p className="rounded-lg border border-border bg-surface p-6 text-center text-sm text-text-secondary">
           No hives are placed on this map yet. Place them on the{' '}

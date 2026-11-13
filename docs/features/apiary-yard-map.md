@@ -206,7 +206,7 @@ A full review of the apiary map led to two batches of changes. The plan and find
 
 ### Data and reliability
 
-- **Editing is owner-only.** Only the apiary owner can arrange the map. Team members of a shared apiary are view-only. (Letting team members move hives is planned.)
+- **Who can arrange.** The apiary owner can change everything. Team members of a shared apiary can move and turn hives (see batch 3 below). Everyone else is view-only.
 - **Saves are immediate**, one per change, with the change put back if the save fails. They are not debounced. `saveHivePlacement` and `saveBenchPlacement` resolve `true` once saved.
 - **Blocked writes count as failures.** Every write, including the per-hive writes after a bench move, a resize or a bench delete, checks that a row was saved.
 - **Rollback puts back only the fields that save changed**, so two quick changes to one hive cannot undo each other.
@@ -215,6 +215,21 @@ A full review of the apiary map led to two batches of changes. The plan and find
 - **Super fullness** is fetched only by the 3D view (`useApiaryMap(apiaryId, { withSuperFullness: true })`), and only from inspections that recorded it.
 - **Moving a hive to another apiary clears its map position.** The trigger `trg_clear_hive_map_position_on_apiary_change` on `hives` clears `map_x`, `map_y`, `bench_id` and `bench_slot` when `apiary_id` changes (migration `20261113120000_clear_hive_map_position_on_apiary_change.sql`). Positions left over from moves made before this date cannot be told apart from real ones; the owner can take such a hive off the map.
 
-### Still planned (batch 3)
+### Batch 3: features (13/11/2026)
 
-Colouring hives by inspection age, stores, tasks or treatments; "Start inspection" from the map; team members arranging hives; "Show on map" from a hive; an offline copy; landmarks; an assistant tool; a fuller print-out; the map on by default for subscribers.
+- **Show chooser.** A "Show" control colours the hives by one thing at a time: queens (the default), last inspection, winter stores (hidden from May to July, like the stores dial) or tasks and treatments. The rules are in `src/lib/apiary-map-view.ts` and reuse the app's existing ones (`inspection-age.ts`, `stores-level.ts`, `treatment-removal.ts`), so the map agrees with the hive list. Green, amber and red are backed by a sign ("!" for amber, "!!" for red), and the legend under the map follows the choice. In the queens view an active hive with no queen recorded is now amber, not green.
+- **Status data.** The 2D map asks for it with `useApiaryMap(apiaryId, { withStatus: true })`: inspections of the last year, treatments still on, and open tasks, in three lookups run together. A lookup that fails leaves its fields undefined and the map says "Could not be loaded" for that view.
+- **Hive details.** The panel spells out the queen (a link to her page), last inspection, stores, and tasks and treatments. While viewing it offers **Start inspection** (opens a new inspection for that hive) and **Open hive**.
+- **Team members.** A member of a team the apiary is shared with can move and turn hives (`canMoveHives`). Benches, landmarks, size, entrance and north stay with the apiary owner. Hive placement writes no longer filter by `user_id`; row level security decides, and a blocked write is caught by the zero-row check.
+- **Show on map.** The hive page has a "Show on map" link that opens the map with that hive selected (`?hive=<id>`).
+- **Without signal.** The last map shown is kept on the device (`openScreenCache`, key `apiary-map:<apiary>:2d` or `:3d`). If the map cannot load, that copy is shown with the standard "Could not refresh" notice and nothing can be arranged until it loads again. An apiary that is gone or no longer shared forgets its copy.
+- **Landmarks.** The owner can add a shed, tree, water, gate or text label from Map setup, drag it or move it with tap-to-place, and delete it (with confirmation). Table `yard_landmarks` (migration `20261113160000_create_yard_landmarks.sql`): anyone who can see the apiary can read them; only the apiary owner can write. Landmarks keep their real-world position when the apiary is resized, appear on the print-out and in the data export, and are not drawn in the 3D view.
+- **Assistant.** Mel has a `getHiveMapPosition` tool (`src/lib/ai/tools/hives.ts`): whether a hive is on the map, how far and in which direction from the entrance, its bench place, and the nearest hives.
+- **Print-out.** Under the picture it lists what the colours mean and every hive in words.
+- **On by default.** `profiles.enable_yard_map` now defaults to true and was switched on for every account (migration `20261113150000_apiary_map_on_by_default.sql`). The Profile switch stays. An active subscription is still required.
+
+### Not built
+
+Background photo or satellite image, GPS alignment, custom apiary shapes, multi-select dragging, editing in 3D, landmarks in 3D, live updates between two people editing at once.
+
+A guide for beekeepers is in `apiary-map-user-guide.md`.
