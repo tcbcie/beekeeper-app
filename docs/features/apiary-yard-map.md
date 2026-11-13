@@ -187,3 +187,34 @@ See `nav-feature-gating.md` for the shared gating mechanism.
 * `team-member-hive-placement.md` — hive→apiary assignment and RLS for shared apiaries.
 * `community-map-all-apiaries-layer.md` — the separate GPS/Mapbox map of apiary *locations*.
 * `drag-drop-quick-action.md` — existing drag-and-drop interaction precedent.
+
+## Review of 13/11/2026: reliability and phone usability
+
+A full review of the apiary map led to two batches of changes. The plan and findings are in `tasks/todo.html`.
+
+### How the map behaves now
+
+- **View first, then arrange.** The map opens for viewing. The apiary owner presses **Arrange** to move things and **Done** to finish. While viewing, hives cannot be dragged, so a finger resting on the map cannot shift one. An owner opening a map with nothing on it starts in arrange mode.
+- **Fits the screen.** The whole apiary fits the screen width (the old 720 px minimum is gone). **Zoom in**, **Zoom out** and **Fit** buttons enlarge it; a zoomed map scrolls sideways. Tap areas stay at 48 px at every zoom, and the queen number is hidden when a hive is drawn very small.
+- **Tap-to-place.** As well as press-and-hold dragging, a hive or bench can be moved by tapping it, choosing **Move** (or **Place on map** for a hive not yet placed), then tapping the new spot. Both routes share one placement rule (`groundOrBenchPatch` in `YardMap.tsx`).
+- **Undo.** After a hive or bench is moved, turned with the handle, or taken off the map, a message confirms it once it is saved and offers **Undo**. The 15 degree turn buttons do not show a message.
+- **Details on a phone.** Hive and bench details sit in a panel fixed above the bottom bar, so they are always on screen. On wider screens they follow the map.
+- **Map setup** (entrance, benches, size, north) is only shown while arranging and sits below the map.
+- **Legend.** A legend under the map explains the borders. Queenless hives carry a red "!" as well as the red border.
+- **Deleting a bench** asks for confirmation.
+- **View-only users** are told how many hives are not on the map yet.
+
+### Data and reliability
+
+- **Editing is owner-only.** Only the apiary owner can arrange the map. Team members of a shared apiary are view-only. (Letting team members move hives is planned.)
+- **Saves are immediate**, one per change, with the change put back if the save fails. They are not debounced. `saveHivePlacement` and `saveBenchPlacement` resolve `true` once saved.
+- **Blocked writes count as failures.** Every write, including the per-hive writes after a bench move, a resize or a bench delete, checks that a row was saved.
+- **Rollback puts back only the fields that save changed**, so two quick changes to one hive cannot undo each other.
+- **Refresh on return.** The map reloads when the user comes back to the screen, never while a save is in progress. A load that is in the air when a save starts is discarded and repeated after the save.
+- **Failed first load** shows "The apiary map could not be loaded" with **Try again**. A failed refresh keeps the map on screen.
+- **Super fullness** is fetched only by the 3D view (`useApiaryMap(apiaryId, { withSuperFullness: true })`), and only from inspections that recorded it.
+- **Moving a hive to another apiary clears its map position.** The trigger `trg_clear_hive_map_position_on_apiary_change` on `hives` clears `map_x`, `map_y`, `bench_id` and `bench_slot` when `apiary_id` changes (migration `20261113120000_clear_hive_map_position_on_apiary_change.sql`). Positions left over from moves made before this date cannot be told apart from real ones; the owner can take such a hive off the map.
+
+### Still planned (batch 3)
+
+Colouring hives by inspection age, stores, tasks or treatments; "Start inspection" from the map; team members arranging hives; "Show on map" from a hive; an offline copy; landmarks; an assistant tool; a fuller print-out; the map on by default for subscribers.

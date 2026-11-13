@@ -27,7 +27,7 @@ export default function ApiaryMap3DPage() {
           <ArrowLeft className="w-5 h-5" />
         </IconButton>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-foreground">3D Apiary View</h1>
+          <h1 className="text-2xl font-bold text-foreground">3D apiary view</h1>
           <p className="text-sm text-text-secondary">Spin the apiary around to see your hives in 3D.</p>
         </div>
         <Link

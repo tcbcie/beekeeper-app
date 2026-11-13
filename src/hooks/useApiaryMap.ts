@@ -133,14 +133,24 @@ interface UseApiaryMapReturn {
   /** The apiary rectangle in scene units, derived from the metre dimensions. */
   yardDims: YardDims
   loading: boolean
+  /** The first load failed, so there is no map to show — offer "Try again" (retry). */
+  loadFailed: boolean
   isOwner: boolean
-  saveHivePlacement: (hiveId: string, patch: HivePlacementPatch) => Promise<void>
+  /** Resolves true once the change is saved; false when it failed and was put back. */
+  saveHivePlacement: (hiveId: string, patch: HivePlacementPatch) => Promise<boolean>
   saveYardSettings: (patch: YardSettingsPatch) => Promise<void>
   saveYardDimensions: (widthM: number, depthM: number) => Promise<void>
   addBench: (capacity: number) => Promise<void>
-  saveBenchPlacement: (benchId: string, patch: BenchPlacementPatch) => Promise<void>
+  saveBenchPlacement: (benchId: string, patch: BenchPlacementPatch) => Promise<boolean>
   deleteBench: (benchId: string) => Promise<void>
   reload: () => Promise<void>
+  /** Load again after a failed first load, showing the loading state meanwhile. */
+  retry: () => void
+}
+
+interface UseApiaryMapOptions {
+  /** Also fetch each hive's last recorded super fullness (only the 3D view shows it). */
+  withSuperFullness?: boolean
 }
 
 const DEFAULT_YARD: YardSettings = {
@@ -157,12 +167,26 @@ const dimsOf = (yard: YardSettings): YardDims =>
     Number(yard.yard_depth_m) || DEFAULT_YARD_DEPTH_M,
   )
 
-export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
+type Updater<T> = T | ((prev: T) => T)
+
+/** A write failed when it errored or saved no row (a blocked write returns no error). */
+const writeFailed = (res: { error: unknown; data: unknown[] | null }) =>
+  !!res.error || !res.data || res.data.length === 0
+
+export function useApiaryMap(apiaryId: string, options: UseApiaryMapOptions = {}): UseApiaryMapReturn {
+  const { withSuperFullness = false } = options
   const toast = useToast()
   const mountedRef = useRef(true)
   const userIdRef = useRef<string | null>(null)
   // Monotonic token so a slow reload can never overwrite a newer one's result.
   const loadSeqRef = useRef(0)
+  // True once a load has succeeded: later failures keep the map on screen.
+  const loadedRef = useRef(false)
+  // Saves in progress, loads in progress, and whether a save discarded a load
+  // (so the map is refreshed once the saves have finished).
+  const pendingSavesRef = useRef(0)
+  const loadsInFlightRef = useRef(0)
+  const reloadOwedRef = useRef(false)
   // Mirror the latest state so a save can read the pre-change snapshot
   // synchronously, without depending on when React runs a state updater.
   const hivesRef = useRef<MapHive[]>([])
@@ -175,24 +199,37 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
   }, [])
 
   const [apiaryName, setApiaryName] = useState<string | null>(null)
-  const [hives, setHives] = useState<MapHive[]>([])
-  const [benches, setBenches] = useState<YardBench[]>([])
-  const [yard, setYard] = useState<YardSettings>(DEFAULT_YARD)
+  const [hives, setHivesState] = useState<MapHive[]>([])
+  const [benches, setBenchesState] = useState<YardBench[]>([])
+  const [yard, setYardState] = useState<YardSettings>(DEFAULT_YARD)
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
 
-  // Keep the snapshot refs current with rendered state.
-  useEffect(() => { hivesRef.current = hives }, [hives])
-  useEffect(() => { benchesRef.current = benches }, [benches])
-  useEffect(() => { yardRef.current = yard }, [yard])
+  // Every state change goes through these setters, which update the snapshot
+  // ref in the same step. A second save started before React re-renders then
+  // still reads the first save's values (the refs used to lag a render behind).
+  const setHives = useCallback((next: Updater<MapHive[]>) => {
+    hivesRef.current = typeof next === 'function' ? next(hivesRef.current) : next
+    setHivesState(hivesRef.current)
+  }, [])
+  const setBenches = useCallback((next: Updater<YardBench[]>) => {
+    benchesRef.current = typeof next === 'function' ? next(benchesRef.current) : next
+    setBenchesState(benchesRef.current)
+  }, [])
+  const setYard = useCallback((next: Updater<YardSettings>) => {
+    yardRef.current = typeof next === 'function' ? next(yardRef.current) : next
+    setYardState(yardRef.current)
+  }, [])
 
-  const reload = useCallback(async () => {
+  const load = useCallback(async (quiet: boolean) => {
     if (!apiaryId) return
     const seq = ++loadSeqRef.current
-    // Ignore results once a newer load has started or the component unmounted.
+    // Ignore results once a newer load has started, a save has begun, or the component unmounted.
     const isCurrent = () => mountedRef.current && seq === loadSeqRef.current
     // No setLoading(true): `loading` starts true for the first load, and a reload (after a failed
     // save) swapped the whole canvas for "Loading…", dropping any drag in progress (C7a-14)
+    loadsInFlightRef.current++
     try {
       const userId = userIdRef.current ?? (await getCurrentUserId())
       userIdRef.current = userId
@@ -261,12 +298,14 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
       // Fullness is optional, so most inspections leave it null; rows are
       // newest-first, so the first row per hive that actually has an array is
       // the latest recorded value.
+      // Only the 3D view shows it, and only inspections that recorded it are fetched.
       const hiveIds = hiveRows.map(h => h.id)
-      if (hiveIds.length > 0) {
+      if (withSuperFullness && hiveIds.length > 0) {
         const { data: fullnessRows, error: fullnessError } = await supabase
           .from('inspections')
           .select('hive_id, inspection_date, honey_super_fullness')
           .in('hive_id', hiveIds)
+          .not('honey_super_fullness', 'is', null)
           .order('inspection_date', { ascending: false })
         if (!isCurrent()) return
         if (fullnessError) {
@@ -293,33 +332,89 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
       })
       setHives(hiveRows)
       setBenches((benchesRes.data || []) as YardBench[])
+      loadedRef.current = true
+      setLoadFailed(false)
     } catch (error) {
       console.error('Error loading apiary map:', error)
-      if (isCurrent()) toast.error('Failed to load yard map')
+      if (isCurrent()) {
+        // A failed first load has nothing to show: the screen offers "Try again".
+        // A failed refresh keeps the map already on screen.
+        if (!loadedRef.current) setLoadFailed(true)
+        else if (!quiet) toast.error('Could not refresh the apiary map')
+      }
     } finally {
+      loadsInFlightRef.current--
       if (isCurrent()) setLoading(false)
     }
-  }, [apiaryId, toast])
+  }, [apiaryId, toast, withSuperFullness, setHives, setBenches, setYard])
+
+  const reload = useCallback(() => load(false), [load])
+
+  const retry = useCallback(() => {
+    setLoadFailed(false)
+    setLoading(true)
+    load(false)
+  }, [load])
 
   useEffect(() => {
     reload()
   }, [reload])
 
+  // Refresh when the user comes back to the screen, so a phone left open does
+  // not show an old layout. Never while a save is in progress, and never before
+  // the first load has succeeded (the "Try again" panel covers that).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      if (!loadedRef.current || pendingSavesRef.current > 0) return
+      load(true)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [load])
+
+  /**
+   * Run a save. A load still in the air when the save starts is discarded (its
+   * result predates the change and would undo it on screen); the map is then
+   * refreshed once every save has finished.
+   */
+  const runSave = useCallback(async <T,>(save: () => Promise<T>): Promise<T> => {
+    if (loadsInFlightRef.current > 0) {
+      loadSeqRef.current++
+      reloadOwedRef.current = true
+    }
+    pendingSavesRef.current++
+    try {
+      return await save()
+    } finally {
+      pendingSavesRef.current--
+      if (pendingSavesRef.current === 0 && reloadOwedRef.current && mountedRef.current) {
+        reloadOwedRef.current = false
+        load(true)
+      }
+    }
+  }, [load])
+
   const requireUser = useCallback((): string | null => {
     const userId = userIdRef.current
-    if (!userId) toast.error('You must be signed in to edit the yard map')
+    if (!userId) toast.error('You must be signed in to edit the apiary map')
     return userId
   }, [toast])
 
-  const saveHivePlacement = useCallback(async (hiveId: string, patch: HivePlacementPatch) => {
+  const saveHivePlacement = useCallback((hiveId: string, patch: HivePlacementPatch) => runSave(async (): Promise<boolean> => {
     const userId = requireUser()
-    if (!userId) return
+    if (!userId) return false
 
     // Snapshot the hive being changed (read synchronously from the ref) so we
     // can roll back on failure. Reading state here would be stale; reading it
     // from the setHives updater would not be available until React re-renders.
     const previous = hivesRef.current.find(h => h.id === hiveId)
-    if (!previous) return // Unknown hive — nothing to persist.
+    if (!previous) return false // Unknown hive — nothing to persist.
+    // Only the fields this save changed are put back on failure, so a second
+    // change made meanwhile (drag, then turn) is not undone with it.
+    const revert = Object.fromEntries(
+      (Object.keys(patch) as (keyof HivePlacementPatch)[]).map(key => [key, previous[key]]),
+    ) as HivePlacementPatch
 
     // Optimistically apply the change.
     setHives(prev => prev.map(h => (h.id === hiveId ? { ...h, ...patch } : h)))
@@ -335,18 +430,23 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
 
     if (error || !data || data.length === 0) {
       console.error('Error saving hive placement:', error ?? 'no matching row updated')
-      if (!mountedRef.current) return
+      if (!mountedRef.current) return false
       // Roll back to the exact prior values.
-      setHives(prev => prev.map(h => (h.id === hiveId ? previous : h)))
+      setHives(prev => prev.map(h => (h.id === hiveId ? { ...h, ...revert } : h)))
       toast.error('Could not save hive position')
+      return false
     }
-  }, [requireUser, toast])
+    return true
+  }), [runSave, requireUser, toast, setHives])
 
-  const saveYardSettings = useCallback(async (patch: YardSettingsPatch) => {
+  const saveYardSettings = useCallback((patch: YardSettingsPatch) => runSave(async () => {
     const userId = requireUser()
     if (!userId) return
 
     const previous = yardRef.current
+    const revert = Object.fromEntries(
+      (Object.keys(patch) as (keyof YardSettings)[]).map(key => [key, previous[key]]),
+    ) as YardSettingsPatch
     setYard(prev => ({ ...prev, ...patch }))
 
     const { data, error } = await supabase
@@ -357,14 +457,14 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
       .select('id')
 
     if (error || !data || data.length === 0) {
-      console.error('Error saving yard settings:', error ?? 'no matching row updated')
+      console.error('Error saving apiary map settings:', error ?? 'no matching row updated')
       if (!mountedRef.current) return
-      setYard(previous)
-      toast.error('Could not save yard settings')
+      setYard(prev => ({ ...prev, ...revert }))
+      toast.error('Could not save the apiary map settings')
     }
-  }, [apiaryId, requireUser, toast])
+  }), [apiaryId, runSave, requireUser, toast, setYard])
 
-  const addBench = useCallback(async (capacity: number) => {
+  const addBench = useCallback((capacity: number) => runSave(async () => {
     const userId = requireUser()
     if (!userId) return
 
@@ -382,19 +482,19 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
       return
     }
     if (mountedRef.current) setBenches(prev => [...prev, data as YardBench])
-  }, [apiaryId, requireUser, toast])
+  }), [apiaryId, runSave, requireUser, toast, setBenches])
 
   /**
    * Move/rotate a bench. The bench carries its hives: every linked hive gets
    * its canonical percent position (and, on rotation, its facing) recomputed
    * and persisted so the 3D view and any fallback consumers stay true.
    */
-  const saveBenchPlacement = useCallback(async (benchId: string, patch: BenchPlacementPatch) => {
+  const saveBenchPlacement = useCallback((benchId: string, patch: BenchPlacementPatch) => runSave(async (): Promise<boolean> => {
     const userId = requireUser()
-    if (!userId) return
+    if (!userId) return false
 
     const prevBench = benchesRef.current.find(b => b.id === benchId)
-    if (!prevBench) return
+    if (!prevBench) return false
     const nextBench = { ...prevBench, ...patch }
     const linkedHives = hivesRef.current.filter(h => h.bench_id === benchId)
     const prevHives = new Map(linkedHives.map(h => [h.id, h]))
@@ -431,13 +531,13 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     if (error || !data || data.length === 0) {
       console.error('Error saving bench placement:', error ?? 'no matching row updated')
       rollback()
-      return
+      return false
     }
 
-    // Persist the recomputed hive placements (best effort, per hive).
-    const results = await Promise.all(linkedHives.map(h => {
-      if (h.bench_slot == null) return Promise.resolve({ error: null })
-      const pos = slotPositionPct(nextBench, h.bench_slot, dims)
+    // Persist the recomputed hive placements, per hive. A write that saves no
+    // row (blocked or the hive is gone) counts as a failure, like an error.
+    const results = await Promise.all(linkedHives.filter(h => h.bench_slot != null).map(h => {
+      const pos = slotPositionPct(nextBench, h.bench_slot as number, dims)
       return supabase
         .from('hives')
         .update({
@@ -447,13 +547,17 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
         })
         .eq('id', h.id)
         .eq('user_id', userId)
+        .select('id')
     }))
-    if (results.some(r => r.error)) {
-      console.error('Error updating hives on bench move:', results.find(r => r.error)?.error)
+    if (results.some(writeFailed)) {
+      console.error('Error updating hives on bench move:', results.find(r => r.error)?.error ?? 'no matching row updated')
       // Bench itself saved; re-sync so the UI shows the DB's true positions.
-      if (mountedRef.current) reload()
+      if (mountedRef.current) toast.error('Some hives on the bench could not be saved, so the map was reloaded')
+      reloadOwedRef.current = true
+      return false
     }
-  }, [requireUser, reload, toast])
+    return true
+  }), [runSave, requireUser, toast, setHives, setBenches])
 
   /**
    * Resize the apiary rectangle (metres). Positions are stored as percentages,
@@ -461,7 +565,7 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
    * (anchored to the top-left corner) — enlarging adds space right/bottom,
    * shrinking clamps anything that would fall outside.
    */
-  const saveYardDimensions = useCallback(async (widthM: number, depthM: number) => {
+  const saveYardDimensions = useCallback((widthM: number, depthM: number) => runSave(async () => {
     const userId = requireUser()
     if (!userId) return
 
@@ -536,25 +640,23 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     // Persist the rescaled placements (best effort; re-sync on any failure).
     const results = await Promise.all([
       ...scaledBenches.map(b =>
-        supabase.from('yard_benches').update({ map_x: b.map_x, map_y: b.map_y }).eq('id', b.id).eq('user_id', userId),
+        supabase.from('yard_benches').update({ map_x: b.map_x, map_y: b.map_y }).eq('id', b.id).eq('user_id', userId).select('id'),
       ),
       ...scaledHives
         .filter(h => h.map_x != null && h.map_y != null)
         .map(h =>
-          supabase.from('hives').update({ map_x: h.map_x, map_y: h.map_y }).eq('id', h.id).eq('user_id', userId),
+          supabase.from('hives').update({ map_x: h.map_x, map_y: h.map_y }).eq('id', h.id).eq('user_id', userId).select('id'),
         ),
     ])
-    if (results.some(r => r.error)) {
-      console.error('Error rescaling placements:', results.find(r => r.error)?.error)
-      if (mountedRef.current) {
-        toast.error('The apiary was resized, but some positions could not be saved and were reloaded')
-        reload()
-      }
+    if (results.some(writeFailed)) {
+      console.error('Error rescaling placements:', results.find(r => r.error)?.error ?? 'no matching row updated')
+      if (mountedRef.current) toast.error('The apiary was resized, but some positions could not be saved and were reloaded')
+      reloadOwedRef.current = true
     }
-  }, [apiaryId, requireUser, reload, toast])
+  }), [apiaryId, runSave, requireUser, toast, setHives, setBenches, setYard])
 
   /** Delete a bench; its hives stay where they are, just unlinked (grounded). */
-  const deleteBench = useCallback(async (benchId: string) => {
+  const deleteBench = useCallback((benchId: string) => runSave(async () => {
     const userId = requireUser()
     if (!userId) return
 
@@ -568,24 +670,24 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
       supabase.from('hives')
         .update({ bench_id: null, bench_slot: null })
         .eq('id', h.id)
-        .eq('user_id', userId),
+        .eq('user_id', userId)
+        .select('id'),
     ))
-    const { error } = await supabase
-      .from('yard_benches')
-      .delete()
-      .eq('id', benchId)
-      .eq('user_id', userId)
+    // The bench is only deleted once every hive on it is safely on the ground.
+    const groundFailed = groundResults.some(writeFailed)
+    const deleteRes = groundFailed
+      ? null
+      : await supabase.from('yard_benches').delete().eq('id', benchId).eq('user_id', userId).select('id')
 
-    if (error || groundResults.some(r => r.error)) {
-      console.error('Error deleting bench:', error ?? groundResults.find(r => r.error)?.error)
-      if (!mountedRef.current) return
-      toast.error('Could not delete the bench')
+    if (groundFailed || !deleteRes || writeFailed(deleteRes)) {
+      console.error('Error deleting bench:', deleteRes?.error ?? groundResults.find(r => r.error)?.error ?? 'no matching row updated')
       // The grounding writes may have partially succeeded, so a local rollback
       // could show hives linked to a bench the DB has already unlinked —
       // re-sync from the DB instead of guessing.
-      reload()
+      if (mountedRef.current) toast.error('Could not delete the bench')
+      reloadOwedRef.current = true
     }
-  }, [requireUser, reload, toast])
+  }), [runSave, requireUser, toast, setHives, setBenches])
 
   return {
     apiaryName,
@@ -594,6 +696,7 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     yard,
     yardDims: dimsOf(yard),
     loading,
+    loadFailed,
     isOwner,
     saveHivePlacement,
     saveYardSettings,
@@ -602,5 +705,6 @@ export function useApiaryMap(apiaryId: string): UseApiaryMapReturn {
     saveBenchPlacement,
     deleteBench,
     reload,
+    retry,
   }
 }

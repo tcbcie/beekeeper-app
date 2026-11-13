@@ -160,7 +160,8 @@ export default function BenchToken({ bench, isReadOnly, selected, occupiedSlots,
         height: depthPx,
         transform: `${dragTransform} translate(-50%, -50%) rotate(${rotation}deg)`.trim(),
         zIndex: isDragging || selected ? 20 : 5,
-        touchAction: 'none',
+        // Only a movable bench claims the touch (see HiveToken).
+        touchAction: isReadOnly ? undefined : 'none',
         overflow: 'visible',
       }}
       {...(isReadOnly ? {} : listeners)}

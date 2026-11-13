@@ -4,12 +4,13 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { ArrowLeft, Box } from 'lucide-react'
 import IconButton from '@/components/ui/IconButton'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 // The canvas pulls in @dnd-kit; load it client-side only so it stays out of
 // the server bundle and off the initial shared bundle.
 const YardMap = dynamic(() => import('@/components/apiaries/YardMap'), {
   ssr: false,
-  loading: () => <p className="text-text-secondary py-8 text-center">Loading apiary map…</p>,
+  loading: () => <Skeleton className="w-full aspect-[3/2] rounded-xl" />,
 })
 
 export default function ApiaryMapPage() {
@@ -27,8 +28,8 @@ export default function ApiaryMapPage() {
           <ArrowLeft className="w-5 h-5" />
         </IconButton>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-foreground">Apiary Map</h1>
-          <p className="text-sm text-text-secondary">Drag hives to match their real position in the apiary. Tap one, then drag its ⟳ handle to turn it.</p>
+          <h1 className="text-2xl font-bold text-foreground">Apiary map</h1>
+          <p className="text-sm text-text-secondary">Where each hive stands. Tap a hive for its details.</p>
         </div>
         <Link
           href={`/dashboard/apiaries/${apiaryId}/map/3d`}

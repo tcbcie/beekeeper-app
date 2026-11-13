@@ -13,6 +13,8 @@ const swallowEvent = (e: React.SyntheticEvent) => e.stopPropagation()
 // oversized container made adjacent nucs grab each other's invisible edges.
 const CONTAINER_MARGIN_PX = 8
 const MIN_TOUCH_PX = 48
+// Below this footprint height (map zoomed out) only the hive number is shown.
+const QUEEN_LINE_MIN_PX = 44
 
 interface HiveTokenProps {
   hive: MapHive
@@ -88,12 +90,15 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
         height: containerH,
         transform: `${dragTransform} ${centreTransform} ${anchorTransform}`.trim(),
         zIndex: isDragging || selected ? 30 : 10,
-        touchAction: 'none',
+        // Only a movable hive claims the touch; while viewing, a swipe that
+        // starts on a hive still scrolls the page.
+        touchAction: isReadOnly ? undefined : 'none',
       }
     : {
+        position: 'relative',
         transform: dragTransform,
         zIndex: isDragging ? 30 : undefined,
-        touchAction: 'none',
+        touchAction: isReadOnly ? undefined : 'none',
       }
 
   // Free rotation: drag the handle around the token centre; angle is measured
@@ -149,7 +154,7 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
         ${isDragging ? 'opacity-90' : ''}`}
       {...(isReadOnly ? {} : listeners)}
       {...attributes}
-      aria-label={`Hive ${hive.hive_number}${isNuc ? ' (nuc)' : ''}${hive.rotation_deg != null ? `, rotated ${Math.round(Number(hive.rotation_deg))} degrees` : ''}`}
+      aria-label={`Hive ${hive.hive_number}${isNuc ? ' (nuc)' : ''}${hive.is_queenless ? ', queenless' : ''}${hive.rotation_deg != null ? `, rotated ${Math.round(Number(hive.rotation_deg))} degrees` : ''}`}
     >
       {/* Footprint: the hive body seen from above; rotates as a whole. */}
       <span
@@ -200,11 +205,22 @@ export default function HiveToken({ hive, placed, isReadOnly, selected, onSelect
           style={{ transform: placed ? `rotate(${-rotation}deg)` : undefined }}
         >
           <span className="text-base font-bold text-foreground leading-none">{hive.hive_number}</span>
-          {queen && (
+          {queen && fpH >= QUEEN_LINE_MIN_PX && (
             <span className="mt-0.5 text-sm text-text-secondary leading-none">Q{queen.queen_number}</span>
           )}
         </span>
       </span>
+
+      {/* Queenless is marked with a sign as well as the red border, so it does
+          not rest on colour alone. Stays upright: it sits outside the rotated body. */}
+      {hive.is_queenless && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white text-sm font-bold leading-none shadow"
+        >
+          !
+        </span>
+      )}
     </button>
   )
 }

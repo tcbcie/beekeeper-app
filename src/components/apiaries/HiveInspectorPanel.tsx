@@ -1,6 +1,6 @@
 'use client'
-import Link from 'next/link'
-import { RotateCcw, RotateCw, X, ExternalLink, Undo2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { RotateCcw, RotateCw, X, ExternalLink, Move, Undo2 } from 'lucide-react'
 import IconButton from '@/components/ui/IconButton'
 import Button from '@/components/ui/Button'
 import { formatQueenlessLabel } from '@/lib/queenless'
@@ -28,8 +28,12 @@ export function entranceRelation(hive: MapHive, entrance: { x: number; y: number
 
 interface HiveInspectorPanelProps {
   hive: MapHive
+  /** Whether the hive is on the map (isHivePlaced, the one shared test). */
+  isPlaced: boolean
   isReadOnly: boolean
   onRotate: (deg: number) => void
+  /** Start tap-to-place: the next tap on the map is where the hive goes. */
+  onMove?: () => void
   onRemove: () => void
   onClose: () => void
   /** Yard entrance marker position (0-100 %), when set on the apiary. */
@@ -38,16 +42,16 @@ interface HiveInspectorPanelProps {
   dims: YardDims
 }
 
-export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemove, onClose, entrance, dims }: HiveInspectorPanelProps) {
+export default function HiveInspectorPanel({ hive, isPlaced, isReadOnly, onRotate, onMove, onRemove, onClose, entrance, dims }: HiveInspectorPanelProps) {
+  const router = useRouter()
   const queen = hive.queens?.[0]
-  const isPlaced = (hive.map_x != null && hive.map_y != null) || hive.bench_id != null
   // numeric columns can arrive as strings; coerce before doing arithmetic.
   const rotation = Number(hive.rotation_deg ?? 0)
   const relation = entranceRelation(hive, entrance ?? null, dims)
   const lineage = describeQueenLineage(queen)
 
   return (
-    <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">
+    <div className="rounded-lg border border-border bg-surface p-4 shadow-lg md:shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-bold text-foreground">Hive {hive.hive_number}</h3>
@@ -63,7 +67,7 @@ export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemov
           {lineage && <p className="text-sm text-text-secondary mt-0.5">{lineage}</p>}
           {relation && <p className="text-sm text-text-secondary mt-0.5">{relation}</p>}
           {!isReadOnly && isPlaced && (
-            <p className="text-sm text-text-secondary mt-0.5">
+            <p className="hidden md:block text-sm text-text-secondary mt-0.5">
               Drag the ⟳ handle above the hive to turn it freely, or use the buttons below.
             </p>
           )}
@@ -73,22 +77,22 @@ export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemov
         </IconButton>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="mt-3 flex flex-wrap items-center gap-3">
         {!isReadOnly && isPlaced && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-text-secondary">
-              Rotation: <span className="font-semibold text-foreground">{Math.round(rotation)}°</span>
+              Turned <span className="font-semibold text-foreground">{Math.round(rotation)}°</span>
             </span>
             <IconButton
               onClick={() => onRotate(normaliseDeg(rotation - NUDGE_DEG))}
-              aria-label={`Rotate ${NUDGE_DEG} degrees anticlockwise`}
+              aria-label={`Turn hive ${NUDGE_DEG} degrees anticlockwise`}
               className="min-h-[48px] min-w-[48px]"
             >
               <RotateCcw className="w-5 h-5" />
             </IconButton>
             <IconButton
               onClick={() => onRotate(normaliseDeg(rotation + NUDGE_DEG))}
-              aria-label={`Rotate ${NUDGE_DEG} degrees clockwise`}
+              aria-label={`Turn hive ${NUDGE_DEG} degrees clockwise`}
               className="min-h-[48px] min-w-[48px]"
             >
               <RotateCw className="w-5 h-5" />
@@ -96,15 +100,20 @@ export default function HiveInspectorPanel({ hive, isReadOnly, onRotate, onRemov
           </div>
         )}
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {!isReadOnly && onMove && (
+            <Button size="sm" tone="neutral" onClick={onMove}>
+              <Move className="w-4 h-4 mr-1" /> {isPlaced ? 'Move' : 'Place on map'}
+            </Button>
+          )}
           {!isReadOnly && isPlaced && (
             <Button size="sm" tone="danger" onClick={onRemove}>
               <Undo2 className="w-4 h-4 mr-1" /> Remove from map
             </Button>
           )}
-          <Link href={`/dashboard/hives/${hive.id}`} className="fj-btn fj-btn-neutral fj-btn-sm">
+          <Button size="sm" tone="neutral" onClick={() => router.push(`/dashboard/hives/${hive.id}`)}>
             <ExternalLink className="w-4 h-4 mr-1" /> Open hive
-          </Link>
+          </Button>
         </div>
       </div>
     </div>

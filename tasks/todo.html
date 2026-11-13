@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Community Map and DCA Prediction Review</title>
+<title>Plan &mdash; Apiary Map Review</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -21,300 +21,184 @@
 </head>
 <body>
 
-<h1>Community Map and DCA Prediction Review</h1>
+<h1>Apiary Map Review</h1>
 
-<p><strong>Status:</strong> batches 1 to 3 built, waiting on your phone test and test run &nbsp;&middot;&nbsp; <strong>Date:</strong> 12 November 2026</p>
+<p><strong>Status:</strong> batches 1 and 2 built, waiting on your phone test and test run; batch 3 not started &nbsp;&middot;&nbsp; <strong>Date:</strong> 13 November 2026</p>
 
 <blockquote>
-<p><strong>Your request:</strong> revisit the community map, including the engine that predicts drone congregation areas, looking for functional improvements, missing features and usability improvements. You approved batches 1, 2 and 3 with my recommendations on decisions B to F, and asked for a batch 4 proposal afterwards.</p>
+<p><strong>Your request:</strong> a full review of the apiary map from a usability point of view, a feature point of view, and any other general improvements.</p>
+<p><strong>Scope I assumed:</strong> the hive-layout map inside one apiary (2D map at <code>/dashboard/apiaries/[id]/map</code> and its 3D view), not the community map reviewed yesterday. The previous community map plan that lived in this file is still in git history.</p>
 </blockquote>
 
-<h2>1. Decisions taken</h2>
+<h2>1. Where the map stands today</h2>
+
+<p>The map is a to-scale rectangle of the apiary. The owner drags hives and benches onto a 0.25 m grid, turns them, sets the entrance and north, and can print the result. A 3D view shows the same layout read-only. Every change saves at once.</p>
 
 <table>
-  <tr><th>#</th><th>Question</th><th>Decision</th></tr>
-  <tr><td>A</td><td>Scope</td><td>Batches 1, 2 and 3 now; batch 4 as a proposal (section 5).</td></tr>
-  <tr><td>B</td><td>Conservation-area position</td><td>Its own database step, in batch 4.</td></tr>
-  <tr><td>C</td><td>Team apiaries</td><td>Count as &ldquo;your apiaries&rdquo; on the map and in the DCA picker.</td></tr>
-  <tr><td>D</td><td>Time filter</td><td>Removed.</td></tr>
-  <tr><td>E</td><td>Terrain view</td><td>Tilts the map.</td></tr>
-  <tr><td>F</td><td>Engine tests</td><td>Written, for you to run.</td></tr>
+  <tr><th>Fact (live database, today)</th><th>Value</th></tr>
+  <tr><td>Accounts with the map switched on</td><td>4</td></tr>
+  <tr><td>Apiaries with at least one hive placed</td><td>10</td></tr>
+  <tr><td>Hives placed</td><td>74</td></tr>
+  <tr><td>Largest live apiary</td><td>20 hives</td></tr>
 </table>
 
-<h2>2. The work</h2>
+<p>The map is off by default and only reachable after a switch in Profile, which explains the low take-up.</p>
 
-<h3>Batch 1 &mdash; Reliability fixes</h3>
+<h2>2. Findings</h2>
+
+<h3>2.1 Faults</h3>
+
+<table>
+  <tr><th>#</th><th>Finding</th><th>Where</th></tr>
+  <tr><td>F1</td><td><strong>A hive moved to another apiary keeps its old map position.</strong> Bulk move clears the row and order but not the map position, and no database trigger clears it. The hive appears at a phantom spot on the new apiary&rsquo;s map. The move dialogue tells the user the position is cleared.</td><td class="file">src/app/dashboard/hives/page.tsx:249</td></tr>
+  <tr><td>F2</td><td><strong>A failed first load shows an empty, view-only map.</strong> There is a brief message but no way to retry, and the owner sees &ldquo;You have view-only access&rdquo;.</td><td class="file">src/hooks/useApiaryMap.ts:296</td></tr>
+  <tr><td>F3</td><td><strong>The 2D map downloads every inspection of every hive in the apiary</strong> on each open, with no limit, to get super fullness that only the 3D view uses.</td><td class="file">src/hooks/useApiaryMap.ts:266</td></tr>
+  <tr><td>F4</td><td><strong>The map never refreshes on return to the screen.</strong> The feature document promises it. A phone left open shows an old layout until the page is reloaded.</td><td class="file">src/hooks/useApiaryMap.ts</td></tr>
+  <tr><td>F5</td><td><strong>Follow-up saves ignore blocked writes.</strong> Moving a bench, resizing and deleting a bench update each hive afterwards and check only for an error, not for zero rows saved.</td><td class="file">src/hooks/useApiaryMap.ts:451, 536, 567</td></tr>
+  <tr><td>F6</td><td><strong>A failed save can restore the wrong position.</strong> Two quick changes to one hive (drag, then turn) can roll back to a stale snapshot. Already listed as a Low finding in the phase 2 audit and not fixed.</td><td class="file">src/hooks/useApiaryMap.ts:185, 340</td></tr>
+  <tr><td>F7</td><td><strong>&ldquo;Delete bench&rdquo; acts at once</strong> with no confirmation and no undo.</td><td class="file">src/components/apiaries/YardMap.tsx:710</td></tr>
+  <tr><td>F8</td><td><strong>Three messages still say &ldquo;yard&rdquo;</strong>, and two titles are in title case (&ldquo;Apiary Map&rdquo;, &ldquo;3D Apiary View&rdquo;).</td><td class="file">useApiaryMap.ts:298, 310, 363; map/page.tsx:27; map/3d/page.tsx:28</td></tr>
+  <tr><td>F9</td><td>Small rule breaks: two 3D buttons are 44 px high (rule is 48 px); the &ldquo;Open hive&rdquo; link uses button classes directly; the hive panel uses a looser &ldquo;is placed&rdquo; test than the rest of the map.</td><td class="file">YardScene3D.tsx:173; HiveInspectorPanel.tsx:43, 105</td></tr>
+</table>
+
+<h3>2.2 Usability on a phone</h3>
+
+<table>
+  <tr><th>#</th><th>Finding</th></tr>
+  <tr><td>U1</td><td><strong>The map is always at least 720 px wide</strong>, so it scrolls sideways on every phone, even for the default 5 m apiary. There is no zoom, no fit-to-screen and no full-screen view. The user never sees the whole apiary at once.</td></tr>
+  <tr><td>U2</td><td><strong>The controls come before the map.</strong> Up to nine setup controls (entrance, bench size, add bench, print, size, north) fill the first screen, though they are used once and then rarely.</td></tr>
+  <tr><td>U3</td><td><strong>Hive details open below the map</strong>, often off-screen, with no scroll to them. A tap on a hive can look as if nothing happened.</td></tr>
+  <tr><td>U4</td><td><strong>Dragging is the only way to place or move a hive</strong>, and on a phone it needs a 200 ms hold that the screen never mentions. A quick drag does nothing at all. This breaks the project rule that every gesture has a visible alternative.</td></tr>
+  <tr><td>U5</td><td><strong>The map is always in edit mode for the owner.</strong> A held finger at the apiary moves a hive, and the move saves at once with no undo.</td></tr>
+  <tr><td>U6</td><td><strong>Queenless is shown by a red border only</strong>, and there is no legend. An active hive with no queen recorded has the same green border as a healthy one.</td></tr>
+  <tr><td>U7</td><td><strong>View-only users cannot see unplaced hives</strong>, not even a count, and they still read the hint &ldquo;Drag hives to match their real position&rdquo;.</td></tr>
+  <tr><td>U8</td><td>Loading is plain text instead of a skeleton; nothing shows that a change was saved; the &ldquo;no hives yet&rdquo; message has no link to add one.</td></tr>
+</table>
+
+<h3>2.3 Feature gaps</h3>
+
+<table>
+  <tr><th>#</th><th>Gap</th></tr>
+  <tr><td>G1</td><td><strong>The map shows almost none of what the hive list shows.</strong> Missing: inspection age, tasks due, treatment in the hive, stores level, super fullness (3D only), queen marking colour (fetched but unused). Two earlier feature documents already named the map as the place that &ldquo;wants this most&rdquo;.</td></tr>
+  <tr><td>G2</td><td><strong>No actions from a hive except &ldquo;Open hive&rdquo;.</strong> No &ldquo;Start inspection&rdquo;, no link to the queen. On a phone the apiary page hides its own &ldquo;New Inspection&rdquo; link, so the map is a dead end for field work.</td></tr>
+  <tr><td>G3</td><td><strong>Only the apiary owner can arrange the map.</strong> Team members of a shared apiary are always view-only. The feature document does not say so.</td></tr>
+  <tr><td>G4</td><td><strong>Nothing leads to the map.</strong> No &ldquo;Show on map&rdquo; from a hive, the hive list or a scanned QR tag; a new hive is not offered a place; the apiary page has no preview.</td></tr>
+  <tr><td>G5</td><td><strong>No offline view.</strong> Other field screens show a saved copy without signal; the map shows nothing, and a drag made without signal snaps back with a general message.</td></tr>
+  <tr><td>G6</td><td><strong>No landmarks.</strong> Sheds, trees, water, gates and text labels were left out of version 1 and never added. They are what makes a layout recognisable on site.</td></tr>
+  <tr><td>G7</td><td><strong>Mel cannot answer &ldquo;where is hive 12?&rdquo;</strong> No assistant tool reads the layout.</td></tr>
+  <tr><td>G8</td><td><strong>The print-out is the picture only</strong>, with no legend and no hive list.</td></tr>
+  <tr><td>G9</td><td><strong>Two position systems exist side by side.</strong> The older row and order fields are still on the hive form and have no link to the map.</td></tr>
+  <tr><td>G10</td><td><strong>Documents are out of date</strong> (version 1 map, 3D view and honey super documents), and there is no help page for the map.</td></tr>
+</table>
+
+<h2>3. Proposed work</h2>
+
+<p>Three batches, smallest and safest first. Each item is a small, separate change. Screen work follows the <code>hivecraic-frontend-design</code> and <code>mobile-screen</code> skills, and each batch ends with the QA audit and a documentation update.</p>
+
+<h3>Batch 1 &mdash; Faults and reliability</h3>
 <ul class="todo">
-  <li>&#9745; The map&rsquo;s lookups run together and the loading state always clears.</li>
-  <li>&#9745; A layer that fails to load is named above the map with a Try again button.</li>
-  <li>&#9745; The map frame shows a message when the map itself cannot load.</li>
-  <li>&#9745; The engine reports a failure when no elevation data came back, and an empty result is never saved.</li>
-  <li>&#9745; An older calculation can no longer overwrite a newer saved result.</li>
-  <li>&#9745; Saving a sighting says whether it was saved, already recorded, or failed.</li>
-  <li>&#9745; A sighting becomes a hotspot only within 5 km of a selected apiary; the lower score threshold applies only near that sighting.</li>
-  <li>&#9745; A hotspot is coloured as answered only when the sighting is inside its own circle.</li>
-  <li>&#9745; Leftover clustering code removed.</li>
+  <li>&#9745; F1: a hive that changes apiary loses its map position, enforced in the database so every route is covered. One database change, applied after a backup. Existing phantom positions are checked and cleared.</li>
+  <li>&#9745; F2: a failed load shows a message with a Try again button instead of an empty view-only map.</li>
+  <li>&#9745; F3: super fullness is fetched only by the 3D view, and only the latest inspection per hive.</li>
+  <li>&#9745; F4: the map reloads when the user returns to the screen, never while a save is in progress.</li>
+  <li>&#9745; F5: follow-up saves treat zero rows saved as a failure.</li>
+  <li>&#9745; F6: rollback snapshots are kept current, so a failed save restores the right position.</li>
+  <li>&#9745; F7: &ldquo;Delete bench&rdquo; asks for confirmation through the shared confirm dialogue.</li>
+  <li>&#9745; F8: &ldquo;yard&rdquo; replaced with &ldquo;apiary&rdquo; in three messages; titles in sentence case.</li>
+  <li>&#9745; F9: 48 px buttons in 3D, Button component for &ldquo;Open hive&rdquo;, one shared &ldquo;is placed&rdquo; test.</li>
+  <li>&#9745; QA audit and document update for batch 1.</li>
 </ul>
 
 <h3>Batch 2 &mdash; Phone usability</h3>
 <ul class="todo">
-  <li>&#9745; One &ldquo;Layers&rdquo; button opens a scrolling panel holding every control.</li>
-  <li>&#9745; The map key is part of that panel (each switch shows its colour and count), so it works in full screen.</li>
-  <li>&#9745; The map is sized to the phone screen; zoom buttons moved to the bottom right; full-screen controls clear the status bar.</li>
-  <li>&#9745; &ldquo;Show my position&rdquo; button, asking for location only when tapped.</li>
-  <li>&#9745; 48px tap area on every marker, the map&rsquo;s own buttons and the popup close button.</li>
-  <li>&#9745; Popups have a close button and readable text in both light and dark.</li>
-  <li>&#9745; Layer choices, flight radius and ticked DCA apiaries are remembered on the device.</li>
-  <li>&#9745; Time filter removed; Terrain view tilts the map.</li>
-  <li>&#9745; Distances to offset apiaries read &ldquo;About 3 km&rdquo;; subtitle and privacy wording corrected.</li>
-  <li>&#9745; Screen-reader labels on the icon buttons; layer switches are real switches.</li>
-  <li>&#9745; DCA key covers predicted, drones seen, no drones and the dashed flight lines.</li>
+  <li>&#9745; U1: the map opens fitted to the screen width, with Zoom in, Zoom out and Fit buttons. Hive tap areas stay at 48 px at every zoom.</li>
+  <li>&#9745; U2 and U5: the map opens for viewing. An &ldquo;Arrange&rdquo; button turns on moving and reveals the setup controls; &ldquo;Done&rdquo; turns it off. (Decision B.)</li>
+  <li>&#9745; U3: on a phone, hive and bench details open as a bottom sheet over the map.</li>
+  <li>&#9745; U4: tap-to-place as the visible alternative to dragging: choose a hive, press &ldquo;Move&rdquo;, tap the new spot. The hint text explains press-and-hold.</li>
+  <li>&#9745; U5: an &ldquo;Undo&rdquo; option on the message shown after a move, turn or removal (last change only).</li>
+  <li>&#9745; U6: queenless hives carry a text or icon marker as well as the red border; a short legend sits under the map.</li>
+  <li>&#9745; U7: view-only users see how many hives are not yet placed, and no dragging hint.</li>
+  <li>&#9745; U8: skeleton while loading, a quiet &ldquo;Saved&rdquo; note after a change, an &ldquo;Add hive&rdquo; link in the empty state.</li>
+  <li>&#9745; QA audit and document update for batch 2.</li>
 </ul>
 
-<h3>Batch 3 &mdash; DCA sightings and engine</h3>
+<h3>Batch 3 &mdash; Features</h3>
 <ul class="todo">
-  <li>&#9745; &ldquo;Record a DCA sighting&rdquo;: tap the button, tap the map, add an optional note, save.</li>
-  <li>&#9745; &ldquo;Remove my answer&rdquo; / &ldquo;Remove sighting&rdquo; in the popup, with a confirmation prompt.</li>
-  <li>&#9745; Best-guess (fallback) hotspots can be answered.</li>
-  <li>&#9745; Optional note on a recorded sighting, shown in its popup.</li>
-  <li>&#9745; The prediction on show is worked out again straight after a sighting is saved or removed.</li>
-  <li>&#9745; Confirmed sightings never fade below 70% weight.</li>
-  <li>&#9745; Each selected apiary keeps its own best hotspot in the results.</li>
-  <li>&#9745; Hotspots on open sea are dropped.</li>
-  <li>&#9745; Team apiaries included.</li>
-  <li>&#9745; Engine tests written: <span class="file">tests/lib/dca-prediction.test.ts</span>.</li>
+  <li>&#9744; G1: a &ldquo;Show&rdquo; chooser that colours and badges the hives by one thing at a time: queens (default), inspection age, stores, tasks and treatments. The legend follows the choice.</li>
+  <li>&#9744; G2: &ldquo;Start inspection&rdquo; as the main button in the hive details, and a link to the queen.</li>
+  <li>&#9744; G3: team members with edit rights on a shared apiary can arrange hives. (Decision C; needs a check of all three permission gates.)</li>
+  <li>&#9744; G4: &ldquo;Show on map&rdquo; from the hive page, opening the map with that hive selected.</li>
+  <li>&#9744; G5: the map shows a saved copy without signal, read-only, with a clear &ldquo;no signal&rdquo; message on any attempt to change it.</li>
+  <li>&#9744; G6: simple landmarks: shed, tree, water, gate and a text label. One new table. (Decision D.)</li>
+  <li>&#9744; G7: a Mel tool that answers where a hive is and what stands next to it.</li>
+  <li>&#9744; G8: the print-out gains the legend and a hive list.</li>
+  <li>&#9744; G10: feature documents brought up to date and a help page written.</li>
+  <li>&#9744; QA audit and document update for batch 3.</li>
 </ul>
 
-<h3>Documentation</h3>
-<ul class="todo">
-  <li>&#9745; <span class="file">docs/features/dca-prediction.md</span> updated.</li>
-  <li>&#9745; <span class="file">docs/features/community-map.md</span> added.</li>
-  <li>&#9745; The two stale community map notes corrected.</li>
-</ul>
-
-<h2>3. Review</h2>
-
-<h3>What changed</h3>
-<table>
-  <tr><th>File</th><th>Change</th></tr>
-  <tr><td><span class="file">src/app/dashboard/community-map/page.tsx</span></td><td>Loading, the Layers panel, markers and popups, the sighting flow, remembered choices. The map now opens on your apiaries instead of the whole country.</td></tr>
-  <tr><td><span class="file">src/hooks/useDCAPredictions.ts</span></td><td>Save status, remove a sighting, notes, recalculation after a change, no saved empty results, the overwrite race.</td></tr>
-  <tr><td><span class="file">src/lib/dca-prediction.ts</span></td><td>Elevation failure, sea check, 5 km sighting limit, local threshold, 70% floor, best hotspot per apiary.</td></tr>
-  <tr><td><span class="file">src/app/globals.css</span></td><td>48px map buttons and popup close button, on this screen only.</td></tr>
-  <tr><td><span class="file">tests/lib/dca-prediction.test.ts</span></td><td>Five engine tests against a made-up landscape.</td></tr>
-</table>
-
-<h3>Checked and not checked</h3>
+<h3>Not proposed</h3>
 <ul>
-  <li>Type-check and lint pass on the changed files.</li>
-  <li>I have not run the app, the build or the tests. Nothing here has been seen on a screen yet.</li>
-  <li>The map height on a phone is my estimate of the space left under the header and above the bottom bar. It needs your eye on a real phone.</li>
+  <li>Background photo or satellite image, GPS alignment, custom apiary shapes, multi-select dragging, editing in 3D. Each is a large change for a feature that 4 accounts use today.</li>
+  <li>Live updates between two people editing at once. Reload on return (F4) covers the realistic case.</li>
 </ul>
 
-<h3>Where the result differs from the plan</h3>
-<ul>
-  <li><strong>Changing an answer</strong> is two taps: remove it, then answer again. There is no single &ldquo;switch&rdquo; button.</li>
-  <li><strong>Notes</strong> can be added when recording a sighting on the map, not when answering a predicted hotspot (that stays one tap).</li>
-  <li><strong>Water:</strong> only open sea is detected. The elevation service reports exactly 0 m over sea; lakes sit above sea level and look like flat land, so they are not caught.</li>
-  <li><strong>Privacy banner and legend card</strong> are gone from the page; their content is in the Layers panel, which leaves the first screen to the map.</li>
-  <li><strong>Red close button in full screen</strong> is removed. The full-screen button beside it did the same job.</li>
-  <li><strong>Team apiaries</strong> a team-mate also shares publicly are no longer drawn a second time as an offset purple marker.</li>
-</ul>
-
-<h3>What I found during the audit and left alone</h3>
-<ul>
-  <li>If your sightings fail to load, predictions run without them and nothing says so.</li>
-  <li>If one apiary gets no elevation data but others do, it silently contributes no hotspots.</li>
-  <li>A team member with a very large number of shared apiaries could hit a request-length limit; the Apiaries screen builds the same request the same way.</li>
-</ul>
-
-<h2>4. For you to test</h2>
-<ul class="todo">
-  <li>&#9744; Run <code>npx vitest run tests/lib/dca-prediction.test.ts</code>. I worked the expected scores out by hand, so tell me if any of the five fail.</li>
-  <li>&#9744; On a phone: open the map, open Layers, switch each layer, scroll the panel to the bottom.</li>
-  <li>&#9744; Tick an apiary, tap Predict DCAs; the panel should close and the map move to the hotspots.</li>
-  <li>&#9744; Tap a hotspot, answer &ldquo;Drones seen&rdquo;, then reopen it and remove the answer.</li>
-  <li>&#9744; Record a DCA sighting with a note; reopen its marker.</li>
-  <li>&#9744; Full screen on an installed phone: controls should clear the status bar.</li>
-  <li>&#9744; Terrain view, and the &ldquo;show my position&rdquo; button.</li>
-  <li>&#9744; Dark mode: popup text and the panel.</li>
-  <li>&#9744; With a coastal apiary: no hotspot should sit on the sea.</li>
-</ul>
-
-<h2>5. Batch 4 proposal</h2>
-
-<p>In the order I would do them. Each is separate; none depends on another unless noted.</p>
+<h2>4. Decisions for you</h2>
 
 <table>
-  <tr><th>#</th><th>Item</th><th>What it gives</th><th>Size and risk</th></tr>
-  <tr>
-    <td>4.1</td>
-    <td>Conservation-area privacy</td>
-    <td>The owner&rsquo;s id stops being readable by other signed-in users. The position stays exact, since the point of declaring one is that neighbours know where it is.</td>
-    <td>Small. One database function for the map to read from, and a tighter read policy. Back up first.</td>
-  </tr>
-  <tr>
-    <td>4.2</td>
-    <td>Database definitions into the repo</td>
-    <td><code>dca_confirmations</code>, <code>conservation_areas</code>, <code>wild_colonies</code> and the offset functions exist only in the live database. A copy in the repo makes them reviewable and restorable.</td>
-    <td>Small. No change to the live database; read and record only.</td>
-  </tr>
-  <tr>
-    <td>4.3</td>
-    <td>Elevation lookups through the server, with caching</td>
-    <td>Faster predictions (a 10-apiary run is about 23 requests one after another from the phone today), apiary positions no longer sent straight to an outside service, and one place to swap the provider. Do this first if the Open-Meteo terms rule out the free tier.</td>
-    <td>Medium. One API route with sign-in and rate limits, plus a cache.</td>
-  </tr>
-  <tr>
-    <td>4.4</td>
-    <td>Prevailing wind and aspect in the engine</td>
-    <td>The two biggest gaps against what is known about DCAs: drones favour sheltered, open ground. Aspect comes from heights the engine already fetches. Wind needs a climate source.</td>
-    <td>Medium. Changes scoring, so it needs your known DCAs to check against.</td>
-  </tr>
-  <tr>
-    <td>4.5</td>
-    <td>Neighbouring colony density</td>
-    <td>Shared apiaries and wild colonies already on the map count as evidence of drone supply near a candidate.</td>
-    <td>Small to medium. Positions are offset by up to 5 km, so it can only be a weak signal.</td>
-  </tr>
-  <tr>
-    <td>4.6</td>
-    <td>Community DCA sightings</td>
-    <td>Beekeepers who choose to can share confirmed DCAs, shown offset like apiaries. This is the feature the screen&rsquo;s name promises.</td>
-    <td>Large. Consent setting, new database function, and a decision on moderation.</td>
-  </tr>
-  <tr>
-    <td>4.7</td>
-    <td>Land cover and lakes</td>
-    <td>Woodland edges and open ground for scoring; lakes for the water check.</td>
-    <td>Large. A new map-data source; worth it only after 4.4 shows the scoring holds up.</td>
-  </tr>
-  <tr>
-    <td>4.8</td>
-    <td>Clustering for the all-apiaries layer</td>
-    <td>Keeps the Power User view fast as registered apiaries grow.</td>
-    <td>Medium. Only matters at a few hundred apiaries or more.</td>
-  </tr>
+  <tr><th>#</th><th>Question</th><th>My recommendation</th></tr>
+  <tr><td>A</td><td>Which batches to build now?</td><td>Batches 1 and 2 now. Batch 3 item by item after you have tried batch 2 on a phone.</td></tr>
+  <tr><td>B</td><td>Should the map open for viewing, with an &ldquo;Arrange&rdquo; button to move things?</td><td>Yes. It stops accidental moves at the apiary and puts the map, not the controls, on the first screen.</td></tr>
+  <tr><td>C</td><td>May team members arrange the map of a shared apiary?</td><td>Yes for moving and turning hives, for members who can already edit those hives. Benches, size, entrance and north stay with the owner.</td></tr>
+  <tr><td>D</td><td>Are landmarks wanted?</td><td>Yes, but last in batch 3. It is the only item that needs a new table.</td></tr>
+  <tr><td>E</td><td>Should the map be on by default for subscribers, instead of behind the Profile switch?</td><td>Yes, once batch 2 is in. The switch stays, so it can be turned off.</td></tr>
+  <tr><td>F</td><td>Retire the older row and order fields on the hive form (G9)?</td><td>Not in this review. They carry a uniqueness rule and are used by the hive list; raise it separately.</td></tr>
 </table>
 
-<p><strong>My recommendation:</strong> 4.1 and 4.2 together next, as they are small and close the one privacy gap. Then 4.3, then 4.4 once you can name a few DCAs you know to be real.</p>
+<h2>5. Review</h2>
 
-<h3>Batch 4.1 and 4.2 &mdash; done on 12 November 2026, one step held back</h3>
-<ul class="todo">
-  <li>&#9745; <strong>4.1, step 1:</strong> new database function <code>get_conservation_areas()</code>, applied to the live database. It returns the areas without the owner&rsquo;s id or apiary id, to signed-in users only. <span class="file">supabase/migrations/20261112120000_conservation_areas_read_function.sql</span></li>
-  <li>&#9745; The community map reads that function instead of the table.</li>
-  <li>&#9745; <strong>4.1, step 2 &mdash; applied on 12 November 2026</strong>, once the new version was live: the table&rsquo;s read policy is narrowed to the owner and Power Users/Admins. <span class="file">supabase/migrations/20261112183000_conservation_areas_narrow_select_policy.sql</span></li>
-  <li>&#9745; <strong>4.2:</strong> the three tables, their policies and the offset helper functions are recorded in <span class="file">sql/community_map_live_definitions.sql</span>. It is a reference read from the live database, not a migration, and has not been run anywhere.</li>
-  <li>&#9745; Security advisors checked after the change: the new function is not callable without signing in. Nothing new was raised.</li>
-</ul>
-<p>After step 2, a team member editing a team-mate&rsquo;s apiary will see its conservation tick-box as unticked, because they can no longer read that row.</p>
+<p><strong>13 November 2026.</strong> You accepted all recommendations (decisions A to F). Batches 1 and 2 are built. Type-check and lint are clean. No tests and no build were run. Nothing is committed.</p>
 
-<h3>Batch 4.3 &mdash; elevation lookups through the server, built on 12 November 2026</h3>
-<ul class="todo">
-  <li>&#9745; New server route <code>POST /api/elevation</code>: signed-in, active accounts only; up to 1,000 points a call and 300 calls an hour per user. <span class="file">src/app/api/elevation/route.ts</span></li>
-  <li>&#9745; The route asks Open-Meteo for 100 points at a time, all at once instead of one after another, and keeps successful answers for 30 days.</li>
-  <li>&#9745; The lookup helper now calls that route. Nothing else changed: the DCA engine and the apiary form use the same two functions as before. <span class="file">src/lib/elevation.ts</span></li>
-  <li>&#9745; New rate-limit bucket <code>elevation</code>. No database change was needed. <span class="file">src/lib/rate-limit.ts</span></li>
-  <li>&#9745; Docs updated: <span class="file">docs/features/apiary-elevation.md</span>, <span class="file">dca-prediction.md</span>, <span class="file">community-map.md</span>.</li>
-  <li>&#9745; Type-check and lint pass. Audit done, nothing to fix.</li>
-  <li>&#9744; <strong>For you to test:</strong> on the apiary form, set a position and check the height fills in; on the community map, predict DCAs for a few apiaries, then again after removing a sighting (the second run should be quicker).</li>
-</ul>
-<p><strong>What it changes for a beekeeper:</strong> a 10-apiary prediction is about 6 requests to our own server instead of up to 50 one after another to Open-Meteo, and apiary positions no longer leave the phone for an outside service.</p>
-<p><strong>Not done:</strong> the cache is per group of 100 points, not per point, so it helps when the same apiaries are predicted again (any device, any user with the same points), not for nearby but different points. Only the height lookups moved; the weather features still call Open-Meteo from the browser.</p>
-
-<h3>Batch 4.4 &mdash; aspect and wind shelter in the scoring, built on 12 November 2026</h3>
-<ul class="todo">
-  <li>&#9745; <strong>Aspect:</strong> south-facing ground adds up to 3 points to a hotspot&rsquo;s score, north-facing ground takes up to 3 away. <span class="file">src/lib/dca-prediction.ts</span></li>
-  <li>&#9745; <strong>Wind shelter:</strong> higher ground on the south-west side adds up to 3 points, lower ground there takes up to 3 away.</li>
-  <li>&#9745; Both use heights the engine already fetches, so no extra requests. Level ground scores 0 on both, so the existing thresholds keep their meaning.</li>
-  <li>&#9745; The popup&rsquo;s &ldquo;Signals&rdquo; line can now say &ldquo;south-facing ground&rdquo; or &ldquo;shelter from the prevailing wind&rdquo;.</li>
-  <li>&#9745; Saved predictions from the old scoring are no longer used (cache name moved to v6). <span class="file">src/hooks/useDCAPredictions.ts</span></li>
-  <li>&#9745; Five new tests for the two signals. <span class="file">tests/lib/dca-prediction.test.ts</span></li>
-  <li>&#9745; Docs updated. Type-check and lint pass. Audit done, nothing to fix.</li>
-  <li>&#9744; <strong>For you:</strong> run <code>npx vitest run tests/lib/dca-prediction.test.ts</code>, then predict DCAs for apiaries you know well and judge whether the hotspots moved sensibly.</li>
-</ul>
-<p><strong>Not validated.</strong> The database holds no confirmed DCA sighting (only two &ldquo;no drones&rdquo; answers), so there was nothing to check the new scoring against. That is why each signal is limited to 3 points out of a typical 40 to 80.</p>
-<p><strong>Two choices I made that you may want to change:</strong> the prevailing wind is a fixed south-westerly rather than looked up per apiary (no new outside service, right for Ireland and Britain); and confidence levels do not count the two new signals yet.</p>
-
-<h3>Batch 4.5 &mdash; neighbouring colonies in the scoring, built on 12 November 2026</h3>
-<ul class="todo">
-  <li>&#9745; A hotspot gains up to 3 points for other beekeepers&rsquo; shared hives within 6 km, nearer hives counting for more. <span class="file">src/lib/dca-prediction.ts</span></li>
-  <li>&#9745; The community map hands the shared apiaries it already loads to the prediction. No new request and no database change. <span class="file">src/app/dashboard/community-map/page.tsx</span>, <span class="file">src/hooks/useDCAPredictions.ts</span></li>
-  <li>&#9745; The popup&rsquo;s &ldquo;Signals&rdquo; line can now say &ldquo;other colonies nearby&rdquo;.</li>
-  <li>&#9745; Saved predictions are worked out again (cache name moved to v7) and now also depend on the shared apiaries nearby.</li>
-  <li>&#9745; Four new tests. Docs updated. Type-check and lint pass. Audit done, nothing to fix.</li>
-  <li>&#9744; <strong>For you:</strong> run <code>npx vitest run tests/lib/dca-prediction.test.ts</code> and predict DCAs for an apiary with shared apiaries around it.</li>
-</ul>
-<p><strong>How much it does:</strong> little, by design. Shared apiaries are shown up to 5 km from where they are, so the signal lifts every hotspot in an area with many colonies by a similar amount; it rarely changes which of one apiary&rsquo;s hotspots ranks first. In such areas a hotspot just under the cut-off can now appear.</p>
-<p><strong>Left out:</strong> wild colonies and the all-apiaries layer (only Power Users can see them, and a prediction should not depend on who is looking), and your own apiaries that are not ticked.</p>
-
-<h3>Batch 4.6 &mdash; shared DCA sightings, opt-in per sighting, built on 12 November 2026</h3>
-<ul class="todo">
-  <li>&#9745; <strong>Database, applied to the live database:</strong> a new <code>is_shared</code> column on sightings (off by default), a rule that only &ldquo;drones seen&rdquo; sightings can be shared, and <code>get_shared_dca_sightings()</code> for other beekeepers to read them. <span class="file">supabase/migrations/20261112200000_dca_sightings_opt_in_sharing.sql</span></li>
-  <li>&#9745; <strong>Sharing when recording:</strong> a &ldquo;Share with other beekeepers&rdquo; tick-box on the sighting card, unticked by default.</li>
-  <li>&#9745; <strong>Sharing afterwards:</strong> &ldquo;Share with other beekeepers&rdquo; / &ldquo;Stop sharing&rdquo; in the popup of your own &ldquo;drones seen&rdquo; sightings.</li>
-  <li>&#9745; <strong>New layer:</strong> &ldquo;Shared DCA sightings&rdquo; (sky-blue rings), on by default, for everyone.</li>
-  <li>&#9745; Docs updated. Type-check and lint pass. Audit done, nothing to fix. Checked in the database: the new function cannot be called without signing in.</li>
-  <li>&#9744; <strong>For you to test, ideally with two accounts:</strong> record a sighting with the box ticked; check the other account sees a blue ring a few kilometres away with the year only; stop sharing and check it goes.</li>
-</ul>
-<p><strong>What others see:</strong> the spot moved by up to 5 km and the year. Not your name, your note or the exact date. Your own shared sighting stays at its true spot on your map.</p>
-<p><strong>Choices I made that you may want to change:</strong></p>
+<h3>Batch 1 &mdash; what changed</h3>
 <ul>
-  <li><strong>No approval step.</strong> Nothing a beekeeper types is shown to others, so there is nothing to moderate. A false sighting can only be removed by its owner or in the database.</li>
-  <li><strong>5 km offset,</strong> the same as shared apiaries, as proposed. It protects where the sharer keeps bees but makes a shared DCA hard to find on the ground; one number changes it.</li>
-  <li><strong>Shared sightings do not feed the prediction,</strong> because their positions are offset.</li>
+  <li><strong>Database:</strong> a trigger on <code>hives</code> clears the map position when a hive changes apiary. It is live, and saved as <span class="file">supabase/migrations/20261113120000_clear_hive_map_position_on_apiary_change.sql</span>.</li>
+  <li><strong>Existing phantom positions were not cleared.</strong> A position left by an earlier move looks the same in the data as a real one, so there is no safe way to pick them out. No hive points at a bench in another apiary (checked: 0). If you see a hive at a wrong spot, take it off the map.</li>
+  <li><strong>Loading:</strong> a failed first load shows a message with Try again (2D and 3D). The map refreshes on return to the screen, never during a save.</li>
+  <li><strong>Saving:</strong> every write checks that a row was saved; a failed save puts back only what it changed; a bench is deleted only after its hives are safely on the ground.</li>
+  <li><strong>Less data:</strong> super fullness is fetched by the 3D view only.</li>
+  <li><strong>Small fixes:</strong> bench delete asks first; &ldquo;yard&rdquo; removed from three messages; page titles in sentence case; 48 px buttons in 3D; &ldquo;Open hive&rdquo; uses the Button component; one shared &ldquo;is placed&rdquo; test.</li>
 </ul>
 
-<h3>Batch 4.7 &mdash; land cover and lakes, built on 13 November 2026</h3>
-<ul class="todo">
-  <li>&#9745; <strong>Lakes:</strong> a hotspot on a lake, river, reservoir or the sea is dropped and the next best takes its place. A spot you reported yourself is kept. <span class="file">src/lib/dca-prediction.ts</span></li>
-  <li>&#9745; <strong>Woodland:</strong> a hotspot inside woodland loses 4 points; one on open ground with woodland within 300 m gains 3. The popup&rsquo;s &ldquo;Signals&rdquo; line can say &ldquo;woodland edge nearby&rdquo;.</li>
-  <li>&#9745; <strong>Source:</strong> Mapbox&rsquo;s own map data, read with the map key the app already has. <span class="file">src/lib/land-cover.ts</span></li>
-  <li>&#9745; Checked by hand against Mapbox before building: two lakes and open sea came back as water, a Wicklow forest as woodland nearby, farmland as neither.</li>
-  <li>&#9745; Saved predictions are worked out again (cache name moved to v8). Two new tests. Docs updated. Type-check and lint pass. Audit done, nothing to fix.</li>
-  <li>&#9744; <strong>For you:</strong> run <code>npx vitest run tests/lib/dca-prediction.test.ts</code>; predict DCAs for an apiary beside a lake or a forest and check no hotspot lands on the water.</li>
-</ul>
-<p><strong>Only the hotspots about to be shown are checked</strong>, not every candidate: usually 5 to 15 requests for a prediction that is not already saved on the phone. It removes and re-ranks hotspots; it does not go looking for better ground elsewhere.</p>
-<p><strong>Two things to know:</strong></p>
+<h3>Batch 2 &mdash; what changed</h3>
 <ul>
-  <li><strong>Cost.</strong> Mapbox bills these lookups per request. I do not know your plan&rsquo;s free allowance; at this volume it should be small, but it is worth a look in the Mapbox dashboard after a week.</li>
-  <li><strong>Privacy.</strong> The positions of the hotspots on show (within about 4 km of an apiary, not the apiary itself) go from the phone to Mapbox, which already receives the area of map being viewed.</li>
+  <li><strong>View first:</strong> the map opens for viewing; the owner presses Arrange to move things and Done to finish. An empty map opens in arrange mode for the owner.</li>
+  <li><strong>Fits the screen:</strong> the whole apiary fits the phone width, with Zoom out, Fit and Zoom in buttons.</li>
+  <li><strong>Tap-to-place:</strong> tap a hive or bench, choose Move (or Place on map), tap the spot. Dragging still works, and the hint now mentions press and hold.</li>
+  <li><strong>Undo:</strong> a &ldquo;Hive 12 moved&rdquo; message appears once the change is saved, with Undo. This also serves as the saved note.</li>
+  <li><strong>Details panel:</strong> fixed above the bottom bar on a phone.</li>
+  <li><strong>Legend</strong> under the map, and a red &ldquo;!&rdquo; on queenless hives.</li>
+  <li><strong>Map setup</strong> (entrance, benches, size, north) moved below the map and shown only while arranging.</li>
+  <li><strong>Other:</strong> skeleton while loading; view-only users see the unplaced count; an &ldquo;Add a hive&rdquo; button when the apiary has none.</li>
 </ul>
-<p>If the lookup fails (no signal, limit reached), the prediction is shown as before, without land cover.</p>
 
-<h3>Batch 4.8 &mdash; grouping in the all-apiaries layer, built on 13 November 2026</h3>
-<ul class="todo">
-  <li>&#9745; The Power User &ldquo;All apiaries&rdquo; layer is drawn by the map itself instead of one marker element per apiary, so it stays fast with hundreds of apiaries. <span class="file">src/app/dashboard/community-map/page.tsx</span></li>
-  <li>&#9745; Zoomed out, nearby apiaries are grouped into an indigo circle with a count. Tapping it zooms in until it splits.</li>
-  <li>&#9745; Zoomed in, each apiary is a dot with the same popup as before and a 48px tap area.</li>
-  <li>&#9745; Docs updated. Type-check and lint pass. Audit done, nothing to fix.</li>
-  <li>&#9744; <strong>For you, as a Power User or Admin:</strong> switch on &ldquo;All apiaries&rdquo;; check the numbered circles, tap one to zoom, tap a single dot for its popup; change the map view (Map, Satellite, Terrain) and check the layer comes back each time.</li>
+<h3>Differences from the plan</h3>
+<ul>
+  <li>The 15 degree turn buttons show no saved message, to avoid one message per press. The angle readout changes at once and a failure still shows a message.</li>
+  <li>Print is offered while viewing, not while arranging.</li>
+  <li>The &ldquo;Apiary Map&rdquo; pill on the apiary page keeps its title case, because every pill in that row uses it.</li>
+  <li>Decision E (map on by default) is not done yet. It waits for your phone test of batch 2.</li>
 </ul>
-<p><strong>Only this layer is grouped.</strong> Shared apiaries, wild colonies and the rest are still individual markers. Ordinary users see no change.</p>
-<p><strong>One small difference:</strong> the dots are drawn on the map surface, so the other layers&rsquo; markers always sit on top of them.</p>
 
-<h3>Shared sightings moved by up to 1 km instead of 5 km &mdash; 13 November 2026</h3>
-<ul class="todo">
-  <li>&#9745; <strong>Database, applied to the live database:</strong> <code>get_shared_dca_sightings()</code> now moves a shared sighting by up to 1 km. <span class="file">supabase/migrations/20261113100000_dca_shared_sightings_one_km_offset.sql</span></li>
-  <li>&#9745; Checked in the database on 2,000 made-up points: the furthest moved 1.005 km, the average 0.67 km.</li>
-  <li>&#9745; The wording on the map says 1 km wherever it is about shared sightings; apiaries still say 5 km.</li>
-  <li>&#9745; Docs updated. Type-check and lint pass.</li>
+<h3>Please check on a phone</h3>
+<ul>
+  <li>At fit-to-screen, long hive numbers may spill over a small hive square. Tell me if it reads badly on your apiaries.</li>
+  <li>The details panel above the bottom bar: that it clears the bar and does not hide the hive you tapped.</li>
+  <li>Arrange: press-and-hold drag, Move then tap, the turn handle, Undo.</li>
+  <li>Move a hive to another apiary from the hive list and confirm it shows as not placed on the new map.</li>
+  <li>Dark mode, and the 3D view.</li>
 </ul>
-<p>The trade-off: a shared sighting now narrows down where its owner keeps bees more than before, since DCAs are usually within a few kilometres of an apiary.</p>
 
-<h3>Moderation of shared sightings &mdash; built on 13 November 2026</h3>
-<ul class="todo">
-  <li>&#9745; <strong>For Admins:</strong> a shared sighting&rsquo;s popup has a &ldquo;Remove from shared map&rdquo; button, with a confirmation prompt. <span class="file">src/app/dashboard/community-map/page.tsx</span></li>
-  <li>&#9745; <strong>New admin route</strong> that stops the sighting being shared and records the removal in the admin audit log. <span class="file">src/app/api/admin/dca-sightings/unshare/route.ts</span></li>
-  <li>&#9745; <strong>Database, applied to the live database:</strong> <code>get_shared_dca_sightings()</code> gives the sighting&rsquo;s id to Admins only, so the route knows which one is meant. Everyone else still gets nothing that identifies it. <span class="file">supabase/migrations/20261113110000_dca_shared_sightings_admin_id.sql</span></li>
-  <li>&#9745; Docs updated. Type-check and lint pass. Audit done, nothing to fix.</li>
-  <li>&#9744; <strong>For you to test, with an Admin account and a second account:</strong> share a sighting from the second account; as Admin, tap its blue ring, remove it, and check it goes; check the second account still has the sighting, now unshared.</li>
-</ul>
-<p><strong>What removal does:</strong> the sighting stops being shared. It is not deleted; its owner keeps it as a private sighting and it still counts towards their own predictions.</p>
-<p><strong>What it does not do:</strong> the owner is not told, and nothing stops them sharing it again. Power Users do not get the button, only Admins.</p>
-
-<h2>6. One thing for you to check</h2>
-<p>The elevation data comes from Open-Meteo&rsquo;s free service. As far as I know that tier is for non-commercial use with a daily request limit. HiveCraic takes subscriptions, so their terms are worth reading. <span class="file">docs/features/apiary-elevation.md</span> says there are no limits.</p>
+<h3>Files changed</h3>
+<p class="file">src/hooks/useApiaryMap.ts &middot; src/components/apiaries/YardMap.tsx &middot; HiveToken.tsx &middot; BenchToken.tsx &middot; HiveInspectorPanel.tsx &middot; YardScene3D.tsx &middot; src/app/dashboard/apiaries/[id]/map/page.tsx &middot; map/3d/page.tsx &middot; docs/features/apiary-yard-map.md &middot; the migration file above</p>
 
 </body>
 </html>

@@ -8,6 +8,7 @@ import { useApiaryMap, isHivePlaced, type MapHive, type YardBench } from '@/hook
 import { BENCH_TOP_UNITS, slotOffsetUnits, rotatedOffset, type YardDims } from '@/lib/yard-geometry'
 import { printImageDataUrl, downloadDataUrl, printedOnLabel, excludeNoPrint } from '@/lib/print-layout'
 import { useToast } from '@/components/ui/Toast'
+import Button from '@/components/ui/Button'
 import Hive3D from './Hive3D'
 import Bench3D from './Bench3D'
 import HiveInspectorPanel from './HiveInspectorPanel'
@@ -34,9 +35,11 @@ interface YardScene3DProps {
 }
 
 const noop = () => {}
+// Only the 3D view draws super fullness, so only it asks for it.
+const FULLNESS_OPTIONS = { withSuperFullness: true }
 
 export default function YardScene3D({ apiaryId }: YardScene3DProps) {
-  const { apiaryName, hives, benches, yard, yardDims, loading } = useApiaryMap(apiaryId)
+  const { apiaryName, hives, benches, yard, yardDims, loading, loadFailed, retry } = useApiaryMap(apiaryId, FULLNESS_OPTIONS)
   const toast = useToast()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [webgl, setWebgl] = useState<boolean | null>(null)
@@ -82,7 +85,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
     try {
       const { toPng } = await import('html-to-image')
       const dataUrl = await toPng(node, { pixelRatio: 2, filter: excludeNoPrint })
-      const title = `${apiaryName ?? 'Apiary'} — 3D Apiary View`
+      const title = `${apiaryName ?? 'Apiary'} — 3D apiary view`
       if (!printImageDataUrl(dataUrl, title, printedOnLabel())) {
         downloadDataUrl(dataUrl, `${title}.png`)
         toast.info('Pop-up blocked — the image was downloaded instead.')
@@ -95,6 +98,16 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
 
   if (loading) {
     return <p className="text-text-secondary py-8 text-center">Loading 3D apiary…</p>
+  }
+
+  if (loadFailed) {
+    return (
+      <div role="alert" className="rounded-lg border border-border bg-surface p-6 text-center">
+        <p className="text-foreground font-medium">The 3D view could not be loaded.</p>
+        <p className="text-sm text-text-secondary mt-1 mb-4">Check your signal, then try again.</p>
+        <Button tone="success" onClick={retry}>Try again</Button>
+      </div>
+    )
   }
 
   // Graceful fallback when the device/browser cannot run WebGL.
@@ -131,7 +144,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
               type="button"
               onClick={handlePrint}
               aria-label="Print this view"
-              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg bg-white/90 dark:bg-slate-900/90 border border-border text-foreground shadow-sm hover:bg-white dark:hover:bg-slate-900"
+              className="inline-flex items-center gap-1.5 min-h-[48px] px-3 py-2 text-sm font-medium rounded-lg bg-white/90 dark:bg-slate-900/90 border border-border text-foreground shadow-sm hover:bg-white dark:hover:bg-slate-900"
             >
               <Printer className="w-4 h-4" /> Print
             </button>
@@ -139,7 +152,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
               type="button"
               onClick={() => controlsRef.current?.reset()}
               aria-label="Reset the camera view"
-              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 text-sm font-medium rounded-lg bg-white/90 dark:bg-slate-900/90 border border-border text-foreground shadow-sm hover:bg-white dark:hover:bg-slate-900"
+              className="inline-flex items-center gap-1.5 min-h-[48px] px-3 py-2 text-sm font-medium rounded-lg bg-white/90 dark:bg-slate-900/90 border border-border text-foreground shadow-sm hover:bg-white dark:hover:bg-slate-900"
             >
               <RotateCcw className="w-4 h-4" /> Reset view
             </button>
@@ -239,6 +252,7 @@ export default function YardScene3D({ apiaryId }: YardScene3DProps) {
       {selectedHive && (
         <HiveInspectorPanel
           hive={selectedHive}
+          isPlaced
           isReadOnly
           onRotate={noop}
           onRemove={noop}
