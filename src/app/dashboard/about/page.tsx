@@ -463,10 +463,10 @@ function AboutPageContent() {
  </p>
  <p className="text-text-secondary leading-relaxed font-semibold">AI &amp; Machine Learning:</p>
  <ul className="list-disc list-inside text-text-secondary space-y-1 ml-4">
- <li>AI Assistant (Mel) - Powered by GPT-4o-mini (OpenAI)</li>
+ <li>AI Assistant (Mel) - Powered by OpenAI</li>
  <li>Knowledge Base RAG - OpenAI embeddings with pgvector semantic search</li>
  <li>Varroa Mite Detection - YOLOv8 computer vision</li>
- <li>PDF OCR - GPT-4o Vision &amp; Gemini 2.0 Flash</li>
+ <li>PDF OCR - OpenAI &amp; Gemini 2.0 Flash</li>
  </ul>
 
  <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">App Statistics</h3>
@@ -966,7 +966,7 @@ function AboutPageContent() {
  HiveCraic relies on third-party services for certain functionality:
  </p>
  <ul className="list-disc list-inside space-y-1 ml-4">
- <li>Service interruptions, outages, or errors from third-party providers (Supabase, Stripe, Weather APIs) may affect HiveCraic functionality</li>
+ <li>Service interruptions, outages, or errors from third-party providers (Supabase, Vercel, Stripe, OpenAI, Mapbox, weather services) may affect HiveCraic functionality</li>
  <li>We are not responsible for issues, delays, or data loss caused by third-party service providers</li>
  <li>Third-party services have their own terms of service and limitations</li>
  <li>Weather data accuracy is dependent on third-party API providers and may be incomplete or incorrect</li>

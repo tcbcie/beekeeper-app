@@ -9,6 +9,7 @@ import {
   Lock,
   Mail,
   Scale,
+  Server,
   ShieldCheck,
   Users,
 } from 'lucide-react'
@@ -65,8 +66,9 @@ const sections: PrivacySection[] = [
     icon: Handshake,
     title: 'Data Sharing',
     items: [
-      { label: 'No Selling', desc: 'We do not sell, trade, or share your personal information' },
-      { label: 'Consent Only', desc: 'Data shared only with your explicit consent' },
+      { label: 'No Selling', desc: 'We do not sell or trade your personal information' },
+      { label: 'Service Providers', desc: 'The companies listed under "Services We Use" handle data on our behalf so that HiveCraic can work' },
+      { label: 'Consent Only', desc: 'Anything beyond that is shared only with your explicit consent' },
       { label: 'Legal Requirements', desc: 'When required by law or legal process' },
       { label: 'Safety', desc: 'To protect rights, property, or safety of users' },
     ],
@@ -78,6 +80,22 @@ const sections: PrivacySection[] = [
       { label: 'Stripe', desc: 'Payments processed securely through PCI-compliant Stripe' },
       { label: 'No Card Storage', desc: 'We do not store or have access to your full credit card details' },
       { label: 'Encrypted', desc: 'Payment information is encrypted and processed directly by Stripe' },
+    ],
+  },
+  {
+    icon: Server,
+    title: 'Services We Use',
+    items: [
+      { label: 'Supabase', desc: 'Stores your account, your beekeeping records and your photos, and handles sign-in' },
+      { label: 'Vercel', desc: 'Hosts the application and gives us anonymous page-view and loading-speed figures' },
+      { label: 'Stripe', desc: 'Takes subscription payments (see Payment Processing)' },
+      { label: 'OpenAI', desc: 'When you ask Mel a question or record a voice note, the question, the records needed to answer it, or the recording are sent to OpenAI to produce the answer or the text' },
+      { label: 'Resend', desc: 'Sends our emails: invitations, reminders and invoices' },
+      { label: 'Mapbox', desc: 'Draws the maps; the area of the map you are looking at is sent to Mapbox' },
+      { label: 'Google, postcodes.io and OpenStreetMap', desc: 'Turn an Eircode, postcode or place name you type into a map position' },
+      { label: 'Open-Meteo', desc: 'Provides weather and forecasts for the position of an apiary' },
+      { label: 'Sentry', desc: 'If the application fails, a technical report of the fault and your account number are sent to Sentry (stored in the EU) so we can fix it. No beekeeping records, email address or name are included' },
+      { label: 'BEEP and Wolf Waagen', desc: 'Only if you connect a hive scale: your scale readings are read from the maker using the access you provide' },
     ],
   },
   {
@@ -124,7 +142,7 @@ export default function PrivacyPage() {
             description="How HiveCraic collects, uses, and protects your personal information."
             className="justify-center text-center [&>div]:mx-auto [&>div]:max-w-2xl [&_h1]:text-3xl [&_h1]:sm:text-4xl"
           />
-          <p className="mt-4 text-sm text-text-tertiary">Last updated: January 2026</p>
+          <p className="mt-4 text-sm text-text-tertiary">Last updated: November 2026</p>
         </div>
       </Panel>
 
@@ -172,7 +190,7 @@ export default function PrivacyPage() {
           </h2>
           <p className="text-text-secondary">
             HiveCraic uses essential cookies for maintaining your logged-in session and remembering your preferences.
-            We do not use tracking cookies or analytics for advertising purposes.
+            We do not use tracking cookies or analytics for advertising purposes. Anonymous page-view and loading-speed figures are collected without cookies.
           </p>
         </Panel>
 
