@@ -72,7 +72,7 @@ A temporary admin-only route (`POST /api/sentry-test-error`, since removed) and 
 
 Findings:
 
-- **Browser frames in shared code files were unreadable.** By default Sentry uploads source maps only for page-specific files (`static/chunks/app/**`), not shared files such as `9079-*.js`, which hold much of the app's own code. Fixed with `widenClientFileUpload: true` (slightly longer builds).
+- **Browser frames in shared code files were unreadable.** By default Sentry uploads source maps only for page-specific files (`static/chunks/app/**`), not shared files such as `9079-*.js`, which hold much of the app's own code. Fixed with `widenClientFileUpload: true` (slightly longer builds). Confirmed by HIVECRAIC-4: the frame shows the original file, line and code.
 - **Known limit: server route files.** Server reports show readable Next.js and library frames and name the route (`POST /api/...`), but the line inside our own route file maps to Next.js's generated route template instead. Switching off Sentry's route wrapping (`autoInstrumentAppDirectory: false`) did not change this and was reverted. Use the route name, the message and the `where` tag from `reportError` to find the fault. Finding the cause needs a local production build to inspect the server source maps.
 - The location on server reports (United States, Ashburn) is the Vercel server's. The location on browser reports (e.g. Dublin) is worked out by Sentry from the sender's address when the report arrives; the address itself is not stored.
 
