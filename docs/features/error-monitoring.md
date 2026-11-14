@@ -61,13 +61,23 @@ The public address (DSN) is in `.env.local` and must be added to Vercel. It is n
 
 Sentry's setup guide recommends tracing and session recording as well. They are deliberately off (owner decision, errors only).
 
-## Test route (temporary)
+## Verification (14 November 2026)
 
-`POST /api/sentry-test-error` (admins only) throws `Sentry test error <time>` on purpose, to prove that a server error reaches Sentry with readable code. Added 14/11/2026, **remove once the test report has been seen**.
+A temporary admin-only route (`POST /api/sentry-test-error`, since removed) and a console test proved the whole chain:
 
-First test (14/11/2026, issue HIVECRAIC-1): the report arrived within seconds, tagged with the release (commit), `production` and the app version, with no headers, cookies, body or IP address. Source maps were applied, but the newest frame mapped to Sentry's route wrapper instead of the route file. Fix: `webpack.autoInstrumentAppDirectory: false` in `next.config.ts`. Routes are no longer wrapped, and uncaught route errors are reported by `onRequestError` instead. To be confirmed by a second test.
+| Test | Issue | Result |
+|---|---|---|
+| Server error | HIVECRAIC-1, HIVECRAIC-2 | Arrived within seconds, tagged with the release (commit), `production` and app version. No headers, cookies, body or IP address. |
+| Browser error | HIVECRAIC-3 | Arrived through the security policy with the account id only, no IP address. Breadcrumbs held only a page change and a tap. |
 
-The location shown on server reports (United States, Ashburn) is the Vercel server's, not the user's.
+Findings:
+
+- **Browser frames in shared code files were unreadable.** By default Sentry uploads source maps only for page-specific files (`static/chunks/app/**`), not shared files such as `9079-*.js`, which hold much of the app's own code. Fixed with `widenClientFileUpload: true` (slightly longer builds).
+- **Known limit: server route files.** Server reports show readable Next.js and library frames and name the route (`POST /api/...`), but the line inside our own route file maps to Next.js's generated route template instead. Switching off Sentry's route wrapping (`autoInstrumentAppDirectory: false`) did not change this and was reverted. Use the route name, the message and the `where` tag from `reportError` to find the fault. Finding the cause needs a local production build to inspect the server source maps.
+- The location on server reports (United States, Ashburn) is the Vercel server's. The location on browser reports (e.g. Dublin) is worked out by Sentry from the sender's address when the report arrives; the address itself is not stored.
+
+To repeat the browser test, paste this into the browser console on the live site:
+`setTimeout(() => { throw new Error('Sentry browser test ' + new Date().toISOString()) })`
 
 ## Limits
 

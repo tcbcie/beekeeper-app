@@ -174,12 +174,10 @@ export default withSentryConfig(nextConfig, {
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
   sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  // Also upload the shared code files (e.g. 9079-*.js), not only page-specific ones: shared files
+  // hold much of the app's own code, and without them browser reports show unreadable frames.
+  widenClientFileUpload: true,
   silent: true,
   telemetry: false,
-  webpack: {
-    treeshake: { removeDebugLogging: true, removeTracing: true },
-    // Wrapping each route hid the route's own line in reports (the frame mapped to Sentry's
-    // wrapper). Uncaught route errors are still reported by onRequestError in src/instrumentation.ts.
-    autoInstrumentAppDirectory: false,
-  },
+  webpack: { treeshake: { removeDebugLogging: true, removeTracing: true } },
 });

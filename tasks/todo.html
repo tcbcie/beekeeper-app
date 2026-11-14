@@ -355,7 +355,10 @@
   <li>&#9745; Temporary admin-only route <code>POST /api/sentry-test-error</code> added (14 November)</li>
   <li>&#9745; Build passed; test error triggered (status 500) and received in Sentry as HIVECRAIC-1, with the release, environment and app version, and no headers, cookies, body or IP address</li>
   <li>&#9745; Source maps work, but the route&rsquo;s own line was hidden behind Sentry&rsquo;s route wrapper. Fix prepared: route wrapping switched off in <code>next.config.ts</code></li>
-  <li>&#9744; Push the fix, trigger the test once more, confirm the route file and line show</li>
+  <li>&#9745; Second server test (HIVECRAIC-2): the wrapper change did not bring back the route&rsquo;s own line; reverted and recorded as a known limit</li>
+  <li>&#9745; Browser test (HIVECRAIC-3): arrived through the security policy, account id only, no IP address. Shared code files had no source maps; fix prepared (<code>widenClientFileUpload</code>)</li>
+  <li>&#9745; Temporary test route removed</li>
+  <li>&#9744; After the next deploy: repeat the browser console test and confirm readable frames</li>
   <li>&#9744; I confirm the report arrived with readable code, then remove the test route</li>
 </ul>
 
