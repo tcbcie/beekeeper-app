@@ -34,6 +34,8 @@ import FieldLabel from '@/components/ui/FieldLabel'
 import TextInput from '@/components/ui/TextInput'
 import SelectField from '@/components/ui/SelectField'
 import Button from '@/components/ui/Button'
+import { useSubmitLock } from '@/hooks/useSubmitLock'
+import { disablePush, enablePush, getPushState, refreshPushSubscription, type PushState } from '@/lib/push'
 
 interface UserProfile {
  id: string
@@ -577,6 +579,45 @@ export default function ProfilePage() {
  }
  }, [searchParams, toast])
 
+ // Reminders on this device (push). null until the browser has been asked.
+ const [pushState, setPushState] = useState<PushState | null>(null)
+ const pushLock = useSubmitLock()
+
+ useEffect(() => {
+ if (!userId) return
+ let cancelled = false
+ getPushState()
+ .then((state) => {
+ if (cancelled) return
+ setPushState(state)
+ // Already on: make sure the saved subscription belongs to whoever is signed in now.
+ if (state === 'on') refreshPushSubscription().catch((error) => console.error('Could not refresh push subscription:', error))
+ })
+ .catch(() => { if (!cancelled) setPushState('unsupported') })
+ return () => { cancelled = true }
+ }, [userId])
+
+ const togglePush = (turnOn: boolean) =>
+ pushLock.run(async () => {
+ try {
+ if (turnOn) {
+ const state = await enablePush()
+ setPushState(state)
+ if (state === 'on') toast.success('Reminders will show on this device.')
+ } else {
+ await disablePush()
+ setPushState('off')
+ toast.success('Reminders will no longer show on this device.')
+ }
+ } catch (error) {
+ console.error('Push setting failed:', error)
+ setPushState(await getPushState().catch(() => 'off' as const))
+ toast.error(turnOn
+ ? 'Could not switch on reminders on this device. Check your signal and try again.'
+ : 'Could not switch off reminders on this device. Check your signal and try again.')
+ }
+ })
+
  useEffect(() => {
  const initUser = async () => {
  const id = await getCurrentUserId()
@@ -1111,6 +1152,21 @@ export default function ProfilePage() {
               ? 'Email reminders off'
               : `${profileFormData.task_reminder_frequency.charAt(0).toUpperCase()}${profileFormData.task_reminder_frequency.slice(1)} email reminders`}
           >
+            <ToggleRow
+              id="device-reminders"
+              label="Reminders on this device"
+              description={
+                pushState === 'on' ? 'Your task and event reminders show on this device, even when HiveCraic is closed.'
+                : pushState === 'blocked' ? 'Notifications are blocked for HiveCraic. Allow them in your phone or browser settings, then come back here.'
+                : pushState === 'needs-install' ? 'On an iPhone or iPad, first add HiveCraic to your Home Screen (Share, then Add to Home Screen), then open it from there.'
+                : pushState === 'unsupported' ? 'This browser cannot show reminders. Email reminders still work.'
+                : 'Show your task and event reminders on this device, even when HiveCraic is closed.'
+              }
+              checked={pushState === 'on'}
+              onChange={togglePush}
+              disabled={pushState === null || pushLock.submitting || (pushState !== 'on' && pushState !== 'off')}
+            />
+
             <ToggleRow
               id="task-reminders"
               label="Task reminders"

@@ -86,10 +86,11 @@ Settings -> Apps -> HiveCraic -> Notifications
       `.trim()
     } else if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
       instructions = `
-To enable notifications on iOS:
+To enable notifications on an iPhone or iPad:
 
-Note: Browser notifications are limited on iOS.
-For best results, use the email digest feature instead.
+1. Add HiveCraic to your Home Screen (Share, then Add to Home Screen) and open it from there
+2. Open Settings > Notifications > HiveCraic
+3. Turn on Allow Notifications
       `.trim()
     } else {
       instructions = `

@@ -112,13 +112,28 @@ self.addEventListener('activate', (event) => {
   )
 })
 
-// Handle notification click - navigate to batches page
+// Handle notification click: open the page the notification is about (a push carries data.url,
+// e.g. /dashboard/tasks). The in-app queen rearing pop-ups carry none and keep opening batches.
+// An open HiveCraic window is brought forward instead of opening a second one.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
+  const wanted = event.notification.data && event.notification.data.url
+  const path = typeof wanted === 'string' && wanted.startsWith('/') && !wanted.startsWith('//')
+    ? wanted
+    : '/dashboard/batches'
+  const target = new URL(path, self.location.origin).href
 
-  event.waitUntil(
-    clients.openWindow('/dashboard/batches')
-  )
+  event.waitUntil((async () => {
+    const open = await clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const existing = open.find((client) => new URL(client.url).origin === self.location.origin)
+    if (!existing) return clients.openWindow(target)
+    await existing.focus()
+    try {
+      await existing.navigate(target)
+    } catch {
+      // Not controlled by this worker: it stays on its page, brought forward.
+    }
+  })())
 })
 
 // Listen for messages from the main thread
@@ -302,9 +317,14 @@ self.addEventListener('fetch', (event) => {
 
 // Handle push notifications (for Web Push API)
 self.addEventListener('push', (event) => {
-  console.log('Push notification received:', event)
-
-  const data = event.data ? event.data.json() : {}
+  // Every push must show a notification (iPhone stops delivering otherwise), so a message that is
+  // not JSON still shows as plain text.
+  let data = {}
+  try {
+    data = event.data ? event.data.json() : {}
+  } catch {
+    data = { body: event.data ? event.data.text() : '' }
+  }
   const title = data.title || 'HiveCraic Notification'
   const options = {
     body: data.body || 'You have a new notification',

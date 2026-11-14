@@ -358,8 +358,39 @@
   <li>&#9745; Second server test (HIVECRAIC-2): the wrapper change did not bring back the route&rsquo;s own line; reverted and recorded as a known limit</li>
   <li>&#9745; Browser test (HIVECRAIC-3): arrived through the security policy, account id only, no IP address. Shared code files had no source maps; fix prepared (<code>widenClientFileUpload</code>)</li>
   <li>&#9745; Temporary test route removed</li>
-  <li>&#9744; After the next deploy: repeat the browser console test and confirm readable frames</li>
+  <li>&#9745; Browser test repeated after the deploy (HIVECRAIC-4): frames readable. The four test issues are resolved in Sentry. <strong>Error monitoring complete.</strong></li>
   <li>&#9744; I confirm the report arrived with readable code, then remove the test route</li>
+</ul>
+
+<h2>10. Push notifications &mdash; batch A, the phone side (14 November 2026)</h2>
+
+<p>Typecheck and lint are clean. <strong>No tests and no build were run, and nothing is committed.</strong> Nothing is sent yet: that is batch B.</p>
+
+<ul class="todo">
+  <li>&#9745; Sending key pair generated; the private key is in <code>.env.local</code> only and was never shown</li>
+  <li>&#9745; Database: the existing <code>push_subscriptions</code> table recorded in a migration, <code>save_push_subscription</code> added (lets a second account on a shared phone take the subscription over), and table rights logged-in users never need removed. Applied to the live database; advisors show nothing new</li>
+  <li>&#9745; <span class="file">src/lib/push.ts</span>: switch on (permission asked on the tap), switch off, state, and removal on log-out</li>
+  <li>&#9745; Profile &rarr; Notifications: new first row &ldquo;Reminders on this device&rdquo;, with plain wording for on, off, blocked, iPhone not on the Home Screen, and browsers that cannot do it</li>
+  <li>&#9745; Service worker: a tap opens the page the notification names and brings an open HiveCraic window forward; a malformed message still shows</li>
+  <li>&#9745; Log-out removes this device&rsquo;s subscription (gives up after 3 seconds without signal)</li>
+  <li>&#9745; iPhone advice in <code>NotificationStatusCard</code> corrected (it said to use email instead)</li>
+</ul>
+
+<h3>QA audit</h3>
+<table>
+  <tr><th>Severity</th><th>Finding</th><th>Outcome</th></tr>
+  <tr><td>Critical / High</td><td>None.</td><td></td></tr>
+  <tr><td>Medium</td><td>Switching on waited on the service worker being &ldquo;ready&rdquo;, which never happens if it is not registered: the switch would stay locked.</td><td><strong>Fixed.</strong> Fails with a message instead.</td></tr>
+  <tr><td>Low</td><td>The 3-second log-out timer was left running.</td><td><strong>Fixed.</strong></td></tr>
+  <tr><td>Low</td><td>Other sign-outs (disabled account, ending impersonation, password reset) keep the subscription.</td><td>Intended: batch B&rsquo;s sender skips disabled accounts. Deleting an account deletes its subscriptions.</td></tr>
+</table>
+
+<h3>For you to do</h3>
+<ul class="todo">
+  <li>&#9744; In Vercel (HiveCraic, all environments), add <code>NEXT_PUBLIC_VAPID_PUBLIC_KEY</code> with the value in <code>.env.local</code></li>
+  <li>&#9744; Run the test suite</li>
+  <li>&#9744; After deploy, on Android or desktop: Profile &rarr; Notifications &rarr; switch on &ldquo;Reminders on this device&rdquo;, accept the prompt. I will confirm the row appears for your account. Then log out and back in: I will confirm it is gone</li>
+  <li>&#9744; On an iPhone: open in Safari first (the switch should explain Home Screen), then from the Home Screen icon and switch on</li>
 </ul>
 
 </body>

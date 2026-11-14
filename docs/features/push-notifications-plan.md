@@ -1,6 +1,6 @@
 # Push notifications for reminders — plan
 
-**Status:** plan, waiting for approval · **Date:** 13 November 2026 · **Decision:** D3 in the technology stack review (build real push)
+**Status:** approved 13/11/2026 (subscription alone is the opt-in; a tap opens Tasks). Batch A built 14/11/2026, batch B not started · **Date:** 13 November 2026 · **Decision:** D3 in the technology stack review (build real push)
 
 ## Why
 
@@ -66,13 +66,13 @@ An explicit sign-out removes this phone's subscription first, so the next person
 ## Batches
 
 **Batch A — the phone side (no sending yet)**
-- [ ] Generate the key pair; you add the public key to Vercel, I add the private key to Supabase secrets
-- [ ] Migration: record `push_subscriptions`, add `save_push_subscription` (with `GRANT EXECUTE TO authenticated`), run the security advisors
-- [ ] `src/lib/push.ts` and `isStandaloneApp()` helper
-- [ ] Profile switch (using the `hivecraic-frontend-design` and `mobile-screen` skills)
-- [ ] Service worker: tap opens the right page; safe message handling
-- [ ] Sign-out removes the subscription
-- [ ] Correct the iPhone copy in `NotificationStatusCard.tsx`
+- [x] Generate the key pair (in `.env.local`); you add the public key to Vercel; the private key goes to Supabase secrets in batch B
+- [x] Migration `20261114200000_push_subscriptions_save.sql`: records `push_subscriptions`, adds `save_push_subscription`, removes unneeded table rights; advisors checked
+- [x] `src/lib/push.ts` and `isStandaloneApp()` helper
+- [x] Profile switch "Reminders on this device" (using the `hivecraic-frontend-design` and `mobile-screen` skills)
+- [x] Service worker: tap opens the page in the notification and brings an open window forward; safe message handling
+- [x] Deliberate log-out removes the subscription (`useLogout`)
+- [x] Correct the iPhone copy in `NotificationStatusCard.tsx`
 - [ ] You test: switch on, see one row appear for your account; sign out, row gone
 
 **Batch B — sending**
