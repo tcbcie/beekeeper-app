@@ -353,7 +353,9 @@
   <li>&#9744; In Vercel (HiveCraic project, all environments), add <code>NEXT_PUBLIC_SENTRY_DSN</code> (value in <code>.env.local</code>), <code>SENTRY_ORG=tcbcie</code>, <code>SENTRY_PROJECT=hivecraic</code> and <code>SENTRY_AUTH_TOKEN</code> (the token above; never paste it here or in a chat)</li>
   <li>&#9744; Run the test suite (the outbox and error-screen tests now load the Sentry library)</li>
   <li>&#9745; Temporary admin-only route <code>POST /api/sentry-test-error</code> added (14 November)</li>
-  <li>&#9744; After it is live: check the Vercel build passed, then trigger the test error from the browser console while signed in as an admin</li>
+  <li>&#9745; Build passed; test error triggered (status 500) and received in Sentry as HIVECRAIC-1, with the release, environment and app version, and no headers, cookies, body or IP address</li>
+  <li>&#9745; Source maps work, but the route&rsquo;s own line was hidden behind Sentry&rsquo;s route wrapper. Fix prepared: route wrapping switched off in <code>next.config.ts</code></li>
+  <li>&#9744; Push the fix, trigger the test once more, confirm the route file and line show</li>
   <li>&#9744; I confirm the report arrived with readable code, then remove the test route</li>
 </ul>
 

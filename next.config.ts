@@ -176,5 +176,10 @@ export default withSentryConfig(nextConfig, {
   sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
   silent: true,
   telemetry: false,
-  webpack: { treeshake: { removeDebugLogging: true, removeTracing: true } },
+  webpack: {
+    treeshake: { removeDebugLogging: true, removeTracing: true },
+    // Wrapping each route hid the route's own line in reports (the frame mapped to Sentry's
+    // wrapper). Uncaught route errors are still reported by onRequestError in src/instrumentation.ts.
+    autoInstrumentAppDirectory: false,
+  },
 });

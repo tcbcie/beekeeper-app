@@ -65,6 +65,10 @@ Sentry's setup guide recommends tracing and session recording as well. They are 
 
 `POST /api/sentry-test-error` (admins only) throws `Sentry test error <time>` on purpose, to prove that a server error reaches Sentry with readable code. Added 14/11/2026, **remove once the test report has been seen**.
 
+First test (14/11/2026, issue HIVECRAIC-1): the report arrived within seconds, tagged with the release (commit), `production` and the app version, with no headers, cookies, body or IP address. Source maps were applied, but the newest frame mapped to Sentry's route wrapper instead of the route file. Fix: `webpack.autoInstrumentAppDirectory: false` in `next.config.ts`. Routes are no longer wrapped, and uncaught route errors are reported by `onRequestError` instead. To be confirmed by a second test.
+
+The location shown on server reports (United States, Ashburn) is the Vercel server's, not the user's.
+
 ## Limits
 
 - An error raised while offline is lost if the app is closed before signal returns. A refused inspection is detected when signal is back, so it is reported.
