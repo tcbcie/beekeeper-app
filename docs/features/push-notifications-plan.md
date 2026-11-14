@@ -1,6 +1,6 @@
 # Push notifications for reminders — plan
 
-**Status:** approved 13/11/2026 (subscription alone is the opt-in; a tap opens Tasks). Batch A built 14/11/2026, batch B not started · **Date:** 13 November 2026 · **Decision:** D3 in the technology stack review (build real push)
+**Status:** approved 13/11/2026 (subscription alone is the opt-in; a tap opens Tasks). Batch A built 14/11/2026, batch B built 14/11/2026, waiting for deployment · **Date:** 13 November 2026 · **Decision:** D3 in the technology stack review (build real push)
 
 ## Why
 
@@ -76,10 +76,10 @@ An explicit sign-out removes this phone's subscription first, so the next person
 - [ ] You test: switch on, see one row appear for your account; sign out, row gone
 
 **Batch B — sending**
-- [ ] `task-event-reminders`: send push alongside email, prune dead subscriptions, shared sent marker
+- [x] `task-event-reminders`: send push alongside email, prune dead subscriptions, shared sent marker (`jsr:@negrel/webpush@0.5.0`, checked against its source)
 - [ ] Redeploy the function with its `_shared` file
 - [ ] You test: a task due in 20 minutes with a 15-minute reminder, app closed, on Android and on an iPhone installed to the Home Screen
-- [ ] Feature document `docs/features/push-notifications.md`, guidance file and `.env.example` updated
+- [x] Feature document `docs/features/push-notifications.md`, guidance file and `.env.example` updated
 
 ## Risks and open points
 

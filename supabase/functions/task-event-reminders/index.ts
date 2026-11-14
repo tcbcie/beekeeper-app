@@ -4,6 +4,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { addDaysISO, dublinDate, dublinLocalToInstant, formatDateIrish } from '../_shared/dublin-time.ts'
+import * as webpush from 'jsr:@negrel/webpush@0.5.0'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 // Links in the e-mail go to the app, not the Supabase server (as in the invitation e-mails)
@@ -24,6 +25,18 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') // Optional: Use Resend fo
 // Internal webhook secret, sent by the pg_cron job as x-webhook-secret (read from Vault).
 // Deployed with verify_jwt=false, so this is the only thing that authorises a call.
 const WEBHOOK_SECRET = Deno.env.get('NOTIFY_WEBHOOK_SECRET')
+// Web Push sending keys: {"publicKey": JWK, "privateKey": JWK}. Unset = no push, email only.
+const VAPID_KEYS = Deno.env.get('VAPID_KEYS')
+// A push service that hangs must not hold up every reminder after it (fetch has no time limit).
+const PUSH_TIMEOUT_MS = 10_000
+
+interface PushSubscriptionRow {
+  id: string
+  user_id: string
+  endpoint: string
+  p256dh_key: string
+  auth_key: string
+}
 
 // Constant-time comparison so the secret cannot be guessed byte by byte from timings.
 function safeEqual(a: string, b: string): boolean {
@@ -171,6 +184,77 @@ function escapeHtml(value: unknown): string {
     .replace(/'/g, '&#39;')
 }
 
+/**
+ * Push reminders: a phone subscription alone is enough (owner decision, 13/11/2026), so this does
+ * not look at the email settings. Disabled accounts get nothing. Returns the ids of reminders that
+ * reached at least one device. A subscription the push service reports gone (404/410) is deleted.
+ */
+async function sendPushReminders(
+  supabase: any,
+  due: Map<string, TaskEvent[]>,
+): Promise<{ sentIds: Set<string>; pushes: number; failures: number; removed: number }> {
+  const result = { sentIds: new Set<string>(), pushes: 0, failures: 0, removed: 0 }
+  if (!VAPID_KEYS || due.size === 0) return result
+
+  const { data: subscriptions, error } = await supabase
+    .from('push_subscriptions')
+    .select('id, user_id, endpoint, p256dh_key, auth_key')
+    .in('user_id', [...due.keys()])
+  if (error) throw new Error(`Error fetching push subscriptions: ${error.message}`)
+  if (!subscriptions || subscriptions.length === 0) return result
+
+  const userIds = [...new Set((subscriptions as PushSubscriptionRow[]).map(s => s.user_id))]
+  const { data: accounts, error: accountsError } = await supabase
+    .from('profiles')
+    .select('id, is_active')
+    .in('id', userIds)
+  if (accountsError) throw new Error(`Error fetching accounts for push: ${accountsError.message}`)
+  const disabled = new Set((accounts ?? []).filter((a: { is_active: boolean | null }) => a.is_active === false).map((a: { id: string }) => a.id))
+
+  const vapidKeys = await webpush.importVapidKeys(JSON.parse(VAPID_KEYS), { extractable: false })
+  const appServer = await webpush.ApplicationServer.new({ contactInformation: 'mailto:info@hivecraic.com', vapidKeys })
+
+  for (const row of subscriptions as PushSubscriptionRow[]) {
+    if (disabled.has(row.user_id)) continue
+    const subscriber = appServer.subscribe({ endpoint: row.endpoint, keys: { p256dh: row.p256dh_key, auth: row.auth_key } })
+
+    for (const event of due.get(row.user_id) ?? []) {
+      const when = event.all_day
+        ? formatDateIrish(event.start_date)
+        : `${formatDateIrish(event.start_date)} ${formatTime(event.start_time)}`
+      const message = JSON.stringify({
+        // Push messages are limited to about 4 KB.
+        title: event.title.slice(0, 200),
+        body: `Reminder: ${when}`,
+        // One notification per reminder on the phone, even if it is sent twice.
+        tag: `reminder-${event.id}`,
+        data: { url: '/dashboard/tasks' },
+      })
+      let timer: number | undefined
+      try {
+        await Promise.race([
+          subscriber.pushTextMessage(message, { ttl: 24 * 60 * 60 }),
+          new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Push timed out')), PUSH_TIMEOUT_MS) }),
+        ])
+        result.pushes++
+        result.sentIds.add(event.id)
+      } catch (pushError) {
+        const status = pushError instanceof webpush.PushMessageError ? pushError.response.status : 0
+        if (status === 404 || status === 410) {
+          await supabase.from('push_subscriptions').delete().eq('id', row.id)
+          result.removed++
+          break // this device is gone: nothing else to send it
+        }
+        result.failures++
+        console.error(`Push failed (status ${status || 'none'}) for subscription ${row.id}:`, String(pushError))
+      } finally {
+        clearTimeout(timer)
+      }
+    }
+  }
+  return result
+}
+
 // Generate HTML email content
 function generateEmailHTML(userName: string, reminders: ReminderItem[], frequency: string): string {
   const reminderRows = reminders.map(reminder => {
@@ -296,25 +380,21 @@ serve(async (req) => {
       throw new Error(`Error fetching profiles: ${profilesError.message}`)
     }
 
-    if (!profiles || profiles.length === 0) {
-      return new Response(
-        JSON.stringify({ message: 'No users with email reminders enabled' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      )
-    }
-
     const emailsSent: string[] = []
     const errors: string[] = []
     const remindersMarkedSent: string[] = []
 
-    // Due reminders read once per frequency (they were re-read for every user: users x tasks)
+    // Everything due is read BEFORE anything is marked sent, so a reminder due now goes out by
+    // email and by push in the same run. Due reminders are read once per frequency (they were
+    // re-read for every user: users x tasks); push uses the reminder time itself ('realtime').
     const remindersByFrequency = new Map<string, Map<string, TaskEvent[]>>()
-    for (const frequency of new Set(profiles.map(p => p.task_reminder_frequency))) {
+    for (const frequency of new Set((profiles ?? []).map(p => p.task_reminder_frequency))) {
       remindersByFrequency.set(frequency, await getUpcomingReminders(supabase, frequency))
     }
+    const pushDue = VAPID_KEYS ? await getUpcomingReminders(supabase, 'realtime') : new Map<string, TaskEvent[]>()
 
     // Process each user
-    for (const profile of profiles) {
+    for (const profile of profiles ?? []) {
       const userEvents = remindersByFrequency.get(profile.task_reminder_frequency)?.get(profile.id)
 
       if (!userEvents || userEvents.length === 0) continue
@@ -427,10 +507,31 @@ serve(async (req) => {
     // Details (including addresses) go to the function log only, never the response
     if (errors.length > 0) console.error('Email send errors:', errors)
 
+    // Push, then mark what reached a phone but was not emailed: sent by email OR push counts.
+    // A push fault (e.g. a bad key setting) must not turn a run whose emails went out into a failure.
+    let push = { sentIds: new Set<string>(), pushes: 0, failures: 0, removed: 0 }
+    try {
+      push = await sendPushReminders(supabase, pushDue)
+    } catch (pushRunError) {
+      console.error('Push reminders failed:', String(pushRunError))
+    }
+    const pushOnlyIds = [...push.sentIds].filter(id => !remindersMarkedSent.includes(id))
+    if (pushOnlyIds.length > 0) {
+      const { error: markError } = await supabase
+        .from('tasks_events')
+        .update({ reminder_sent: true })
+        .in('id', pushOnlyIds)
+      if (markError) console.error('Could not mark pushed reminders as sent:', markError.message)
+      else remindersMarkedSent.push(...pushOnlyIds)
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         emailsSent: emailsSent.length,
+        pushesSent: push.pushes,
+        pushFailures: push.failures,
+        pushSubscriptionsRemoved: push.removed,
         remindersMarkedSent: remindersMarkedSent.length,
         errors: errors.length,
       }),

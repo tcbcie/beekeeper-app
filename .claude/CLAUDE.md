@@ -19,7 +19,7 @@ HiveCraic is a beekeeping management PWA (apiaries, hives, queens, queen rearing
 
 ## Known limitations
 
-- **Web Push** - not built yet (nothing subscribes a phone or sends a push; reminders go by email and show only while the app is open). When built: desktop and Android, and on iOS 16.4+ only once installed to the Home Screen.
+- **Web Push** - reminders on this device (Profile → Notifications), sent by the task-event-reminders job; see docs/features/push-notifications.md. Desktop and Android; on iOS 16.4+ only once installed to the Home Screen.
 
 Obey those Claude Rules:
 
