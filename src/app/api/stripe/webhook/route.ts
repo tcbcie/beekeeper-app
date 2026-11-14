@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServiceSupabase } from '@/lib/server/api-auth'
 import Stripe from 'stripe'
+import { reportError } from '@/lib/report-error'
 
 // Fail-fast at module init so a missing env surfaces at deploy time, not in a
 // per-request 500 with an opaque 'Webhook error' log line. The helper returns
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest) {
       .select('event_id')
     if (insertError && insertError.code !== '23505') {
       console.error(`Stripe webhook: failed to record event=${event.id}:`, insertError.message)
+      reportError('stripe-webhook', insertError)
       return NextResponse.json(
         { error: 'Failed to record event' },
         { status: 500 }
@@ -170,6 +172,7 @@ export async function POST(request: NextRequest) {
 
         if (error) {
           console.error(`Stripe webhook: activation RPC failed for event=${event.id} user=${userId}:`, error.message)
+          reportError('stripe-webhook', error)
           console.warn(`[AUDIT] Stripe subscription activation: event=${event.id} user=${userId} pi=${paymentIntentId} status=failed timestamp=${new Date().toISOString()}`)
           // Roll back the idempotency row so Stripe's retry can re-attempt
           // the activation rather than being silently dropped as a replay.
@@ -234,6 +237,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Webhook error:', error)
+    reportError('stripe-webhook', error)
     return NextResponse.json(
       { error: 'Webhook handler failed' },
       { status: 500 }

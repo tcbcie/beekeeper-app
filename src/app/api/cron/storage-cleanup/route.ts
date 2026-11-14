@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServiceSupabase } from '@/lib/server/api-auth'
 
 import { canonicalStoragePublicUrl, storagePathFromPublicUrl } from '@/lib/storage-url'
+import { reportError } from '@/lib/report-error'
 
 // The one shared secret-key client (it throws at module init if the env is missing, so a
 // missing key still surfaces at deploy time). The cron secret below is this route's own check.
@@ -82,6 +83,7 @@ export async function GET(request: NextRequest) {
 
   if (fetchError) {
     console.error('storage-cleanup: could not read the queue:', fetchError)
+    reportError('storage-cleanup', fetchError)
     return NextResponse.json({ error: 'Could not read the clean-up queue' }, { status: 500 })
   }
 
@@ -105,6 +107,7 @@ export async function GET(request: NextRequest) {
 
   if (refError) {
     console.error('storage-cleanup: reference check failed, deleting nothing:', refError)
+    reportError('storage-cleanup', refError)
     return NextResponse.json({ error: 'Reference check failed; nothing deleted' }, { status: 500 })
   }
 
@@ -165,6 +168,7 @@ export async function GET(request: NextRequest) {
 
     if (removeError) {
       console.error(`storage-cleanup: remove failed for ${bucket}:`, removeError)
+      reportError('storage-cleanup', removeError)
       for (const path of paths) {
         const rowId = rowIdByObject.get(`${bucket}/${path}`)
         if (rowId) failedRowIds.push(rowId)

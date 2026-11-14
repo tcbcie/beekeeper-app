@@ -3,6 +3,7 @@ import { deleteUploadedImages, uploadImageFile } from '@/lib/upload-image'
 import { fetchWeatherForApiary } from '@/lib/apiary-weather'
 import { withTimeout } from '@/lib/with-timeout'
 import { getLocalDb } from './local-db'
+import { reportError } from '@/lib/report-error'
 
 /**
  * New inspections on their way to the server. Each is written here first and removed only once it
@@ -88,6 +89,8 @@ async function removeEntry(id: string) {
 }
 
 async function refuse(entry: QueuedInspection, reason: string): Promise<SendResult> {
+  // The inspection is stuck on this phone until its owner acts: someone should know.
+  reportError('outbox-refused', reason)
   await recordProgress(entry.id, { failedReason: reason })
   return { status: 'rejected', reason }
 }
@@ -208,6 +211,7 @@ async function sendSteps(given: QueuedInspection, kept: boolean): Promise<SendRe
     if (stopped) return stopped
   } catch (error) {
     console.error('Sending an inspection failed:', error)
+    reportError('outbox-send', error)
     return { status: 'waiting' }
   }
   await removeEntry(given.id)
@@ -245,6 +249,7 @@ export async function queueInspection(entry: QueuedInspection): Promise<boolean>
     return true
   } catch (error) {
     console.error('Could not keep the inspection on this device:', error)
+    reportError('outbox-store', error)
     return false
   }
 }

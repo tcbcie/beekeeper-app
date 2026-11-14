@@ -1,6 +1,6 @@
 # Error monitoring — plan
 
-**Status:** plan, waiting for approval · **Date:** 13 November 2026 · **Decision:** D2 in the technology stack review (add error monitoring)
+**Status:** approved and built 13 November 2026 (see `error-monitoring.md`) · **Date:** 13 November 2026 · **Decision:** D2 in the technology stack review (add error monitoring)
 
 ## Why
 

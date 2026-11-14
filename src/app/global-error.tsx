@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import Button from '@/components/ui/Button'
+import { reportError } from '@/lib/report-error'
 
 export default function GlobalError({
   error,
@@ -9,6 +11,10 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    reportError('global-error', error)
+  }, [error])
+
   return (
     <html>
       <body className="bg-background flex items-center justify-center min-h-dvh p-4">

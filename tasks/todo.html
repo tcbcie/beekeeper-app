@@ -26,7 +26,7 @@
 
 <h1>Technology Stack Review</h1>
 
-<p><strong>Status:</strong> batches 1 and 2 are live. Ingest scripts moved to the new model (not yet committed). Plans for error monitoring and push notifications are written and waiting for your approval (section 8). Batches 3 and 4 not started &nbsp;&middot;&nbsp; <strong>Date:</strong> 13 November 2026</p>
+<p><strong>Status:</strong> batches 1 and 2 are live. Ingest scripts moved to the new model (not yet committed). Error monitoring is built and waiting on your Sentry settings and test run (section 9). Push notifications approved, not started. Batches 3 and 4 not started &nbsp;&middot;&nbsp; <strong>Date:</strong> 13 November 2026</p>
 
 <blockquote>
 <p><strong>Your request:</strong> a full review of the frameworks, libraries and external services, and whether they are still the best fit for the application, the user experience and the functionality.</p>
@@ -280,8 +280,8 @@
   <li>Needs: you create the Sentry account; one address added to the security policy; a privacy page update.</li>
 </ul>
 <ul class="todo">
-  <li>&#9744; Batch A: capture</li>
-  <li>&#9744; Batch B: privacy page and documents</li>
+  <li>&#9745; Batch A: capture (built, see section 9)</li>
+  <li>&#9745; Batch B: privacy page and documents (built, wording in section 9 for you to read)</li>
 </ul>
 
 <h3>Push notifications (D3) &mdash; plan</h3>
@@ -299,11 +299,62 @@
 
 <h3>Decisions needed</h3>
 <ul class="todo">
-  <li>&#9744; <strong>E1:</strong> Sentry in the EU region, errors only?</li>
-  <li>&#9744; <strong>E2:</strong> Privacy page: list all current third-party services while adding Sentry, or only Sentry?</li>
-  <li>&#9744; <strong>P1:</strong> Is a phone subscription alone enough to get push reminders, or should push also obey the email &ldquo;Task reminders&rdquo; / &ldquo;Event reminders&rdquo; switches?</li>
-  <li>&#9744; <strong>P2:</strong> Tap opens the Tasks page, or the hive the reminder is about?</li>
-  <li>&#9744; <strong>Order:</strong> I suggest error monitoring first, so the push work and the Next.js upgrade are watched by it.</li>
+  <li>&#9745; <strong>E1:</strong> Sentry, EU region, errors only: <strong>agreed</strong>.</li>
+  <li>&#9745; <strong>E2:</strong> Privacy page lists <strong>all</strong> services.</li>
+  <li>&#9745; <strong>P1:</strong> a phone subscription <strong>alone</strong> is enough.</li>
+  <li>&#9745; <strong>P2:</strong> tap opens the <strong>Tasks</strong> page.</li>
+  <li>&#9745; <strong>Order:</strong> error monitoring first, then push.</li>
+</ul>
+
+<h2>9. Review &mdash; error monitoring (13 November 2026)</h2>
+
+<p>Typecheck and lint are clean. <strong>No tests and no build were run, and nothing is committed.</strong> Until the Sentry settings exist in Vercel the code is inert: with no address set it sends nothing.</p>
+
+<h3>What changed</h3>
+<table>
+  <tr><th>Change</th><th>Files</th></tr>
+  <tr><td><strong>Sentry library added</strong> (<code>@sentry/nextjs</code> 11.12) and started in the browser and on the server.</td><td class="file">package.json, src/instrumentation-client.ts, src/instrumentation.ts, src/sentry.server.config.ts, src/lib/sentry-options.ts</td></tr>
+  <tr><td><strong>One reporting helper</strong>, <code>reportError(where, error)</code>, so no screen talks to Sentry directly.</td><td class="file">src/lib/report-error.ts</td></tr>
+  <tr><td><strong>Reports from the places that cost data:</strong> both error screens; a refused, failed or unsaveable offline inspection; the Stripe webhook; the nightly clean-up; invoice email.</td><td class="file">ErrorBoundary.tsx, global-error.tsx, inspection-outbox.ts, three API routes</td></tr>
+  <tr><td><strong>Account id tagging</strong> (id only).</td><td class="file">src/app/dashboard/layout.tsx</td></tr>
+  <tr><td><strong>Security policy</strong> allows Sentry&rsquo;s EU address; build uploads readable stack traces when the build secret is present.</td><td class="file">next.config.ts</td></tr>
+  <tr><td><strong>Privacy page</strong> names every service the app uses; About page list updated and old model names removed.</td><td class="file">src/app/(public)/privacy/page.tsx, src/app/dashboard/about/page.tsx</td></tr>
+  <tr><td>Feature document and settings list.</td><td class="file">docs/features/error-monitoring.md, .env.example</td></tr>
+</table>
+
+<h3>A finding that changed the build</h3>
+<p>The current Sentry version collects far more by default than the plan allowed: the sender&rsquo;s IP address, cookies, request headers and bodies, link query strings and database query details. All of these are switched off explicitly in <code>src/lib/sentry-options.ts</code>. I read the option names from the installed library itself, not from memory.</p>
+
+<h3>QA audit findings</h3>
+<table>
+  <tr><th>Severity</th><th>Finding</th><th>Outcome</th></tr>
+  <tr><td>Critical / High</td><td>None.</td><td></td></tr>
+  <tr><td>Medium</td><td>The invoice-email report passed on Resend&rsquo;s raw reply, which can repeat the customer&rsquo;s email address.</td><td><strong>Fixed.</strong> Only the status code is reported.</td></tr>
+  <tr><td>Medium</td><td>A build without the Sentry build secret (every local build) would have tried to upload stack-trace files.</td><td><strong>Fixed.</strong> Upload is switched off when the secret is missing.</td></tr>
+  <tr><td>Low</td><td>A refused inspection could have been reported on every app open.</td><td>Checked: refused entries are skipped on later sends, so it is reported once.</td></tr>
+  <tr><td>Low</td><td>Sentry can record the sender&rsquo;s IP address on its own side even when the app does not send it.</td><td>Needs the project setting below.</td></tr>
+</table>
+
+<h3>Not verified</h3>
+<ul>
+  <li>The build. Sentry wraps the build configuration, so the first Vercel build is the real test. A failed build leaves the current version live.</li>
+  <li>The download size added to the first load. Not measured.</li>
+  <li>That a report actually arrives: needs your Sentry address.</li>
+  <li>The EU address pattern (<code>*.ingest.de.sentry.io</code>) is from my own knowledge of Sentry, not from a page I read today. If your address looks different, tell me before going live; otherwise reports are silently blocked.</li>
+</ul>
+
+<h3>For you to do</h3>
+<ul class="todo">
+  <li>&#9744; Read the new privacy wording (section &ldquo;Services We Use&rdquo; and &ldquo;Data Sharing&rdquo; on the privacy page)</li>
+  <li>&#9745; Sentry project created through Sentry&rsquo;s setup hand-off (14 November): organisation <code>tcbcie</code>, EU region confirmed, project <code>hivecraic</code> (Next.js)</li>
+  <li>&#9745; Project privacy: IP addresses not stored, data scrubber and default scrubbers on</li>
+  <li>&#9745; Public address added to <code>.env.local</code> (not committed)</li>
+  <li>&#9744; In Sentry, create an <strong>organisation auth token</strong> for source-map upload (Settings &rarr; Developer Settings &rarr; Organization Tokens)</li>
+  <li>&#9744; In Vercel (HiveCraic project, all environments), add <code>NEXT_PUBLIC_SENTRY_DSN</code> (value in <code>.env.local</code>), <code>SENTRY_ORG=tcbcie</code>, <code>SENTRY_PROJECT=hivecraic</code> and <code>SENTRY_AUTH_TOKEN</code> (the token above; never paste it here or in a chat)</li>
+  <li>&#9744; Run the test suite (the outbox and error-screen tests now load the Sentry library)</li>
+  <li>&#9745; Temporary admin-only route <code>POST /api/sentry-test-error</code> added (14 November)</li>
+  <li>&#9744; After it is live: check the Vercel build passed, then trigger the test error from the browser console while signed in as an admin</li>
+  <li>&#9744; I confirm the report arrived with readable code, then remove the test route</li>
 </ul>
 
 </body>

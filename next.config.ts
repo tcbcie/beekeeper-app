@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { withSentryConfig } from "@sentry/nextjs/config";
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -67,6 +68,8 @@ function buildContentSecurityPolicy(): string {
     'https://nominatim.openstreetmap.org',
     'https://api.postcodes.io',
     'https://en.wikipedia.org',
+    // Error monitoring (Sentry, EU region). Must match the host in NEXT_PUBLIC_SENTRY_DSN.
+    'https://*.ingest.de.sentry.io',
   ]
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   if (supabaseUrl) {
@@ -124,6 +127,8 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_APP_VERSION: packageJson.version,
     // Marks data saved on the device, so a new deploy ignores what an older one stored.
     NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA ?? packageJson.version,
+    // production, preview or development: labels error reports.
+    NEXT_PUBLIC_DEPLOY_ENV: process.env.VERCEL_ENV ?? 'development',
   },
   async headers() {
     // Hosts allowed to iframe /embed/* pages.
@@ -162,4 +167,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Error monitoring: uploads source maps at build time so reports show readable code. Without
+// SENTRY_AUTH_TOKEN (local builds) nothing is uploaded. Errors only: tracing code is left out.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  silent: true,
+  telemetry: false,
+  webpack: { treeshake: { removeDebugLogging: true, removeTracing: true } },
+});

@@ -21,6 +21,7 @@ import { registerServiceWorker } from '@/lib/notifications'
 import { useToast } from '@/components/ui/Toast'
 import { useScreenTransition } from '@/hooks/useScreenTransition'
 import { InspectionOutboxRunner } from '@/components/records/InspectionOutbox'
+import { setMonitoringUser } from '@/lib/report-error'
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, userId, loading: authLoading } = useAuth()
@@ -99,6 +100,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [userId, router, toast])
+
+  // Error reports carry the account id only.
+  useEffect(() => {
+    setMonitoringUser(userId)
+  }, [userId])
 
   // Initialize update manager
   useEffect(() => {

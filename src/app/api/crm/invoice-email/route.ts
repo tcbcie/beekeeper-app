@@ -3,6 +3,7 @@ import { requireUser } from '@/lib/server/api-auth'
 import { renderInvoicePdf, type InvoicePdfData } from '@/components/crm/InvoicePdf'
 import type { ProductType } from '@/types/crm'
 import { consumeRateLimits, RATE_LIMITS } from '@/lib/rate-limit'
+import { reportError } from '@/lib/report-error'
 
 // @react-pdf/renderer needs the Node runtime (not Edge).
 export const runtime = 'nodejs'
@@ -155,6 +156,7 @@ export async function POST(request: NextRequest) {
       pdfBase64 = buffer.toString('base64')
     } catch (err) {
       console.error('invoice-email: PDF generation failed:', err)
+      reportError('invoice-email', err)
       return NextResponse.json({ error: 'Failed to generate the invoice PDF' }, { status: 500 })
     }
 
@@ -180,12 +182,15 @@ export async function POST(request: NextRequest) {
     if (!resendResponse.ok) {
       const detail = await resendResponse.text()
       console.error('invoice-email: Resend error:', detail)
+      // The status only: Resend's reply can repeat the customer's email address.
+      reportError('invoice-email', `Resend refused the email (HTTP ${resendResponse.status})`)
       return NextResponse.json({ error: 'Failed to send the email' }, { status: 502 })
     }
 
     return NextResponse.json({ success: true })
   } catch (err) {
     console.error('invoice-email error:', err)
+    reportError('invoice-email', err)
     return NextResponse.json({ error: 'Unexpected server error' }, { status: 500 })
   }
 }
