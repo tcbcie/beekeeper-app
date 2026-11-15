@@ -7,8 +7,10 @@ import { useToast } from '@/components/ui/Toast'
 import { FinancialRecord, DropdownValue } from '@/types/records'
 import Button from '@/components/ui/Button'
 import { RadioChoiceGroup, RadioChoiceOption } from '@/components/ui/RadioChoiceGroup'
+import SupplierPicker from './SupplierPicker'
 
 interface FinancialRecordFormProps {
+  userId: string
   record: FinancialRecord | null
   incomeCategories: DropdownValue[]
   expenseCategories: DropdownValue[]
@@ -19,6 +21,7 @@ interface FinancialRecordFormProps {
 }
 
 export default function FinancialRecordForm({
+  userId,
   record,
   incomeCategories,
   expenseCategories,
@@ -38,6 +41,10 @@ export default function FinancialRecordForm({
   const [categoryId, setCategoryId] = useState(record?.category_id || '')
   const [description, setDescription] = useState(record?.description || '')
   const [notes, setNotes] = useState(record?.notes || '')
+  // Expenses only (docs/features/profit-loss-suppliers.md)
+  const [supplierId, setSupplierId] = useState(record?.supplier_id || '')
+  const [invoiceNumber, setInvoiceNumber] = useState(record?.invoice_number || '')
+  const isExpense = recordType === 'expense'
 
   // Get categories based on type
   const categories = recordType === 'income' ? incomeCategories : expenseCategories
@@ -62,7 +69,10 @@ export default function FinancialRecordForm({
       amount: parsedAmount,
       category_id: categoryId,
       description: description.trim() || null,
-      notes: notes.trim() || null
+      notes: notes.trim() || null,
+      // Income has no supplier or invoice: anything left from switching type is dropped.
+      supplier_id: isExpense ? supplierId || null : null,
+      invoice_number: isExpense ? invoiceNumber.trim() || null : null
     })
   }
 
@@ -160,6 +170,33 @@ export default function FinancialRecordForm({
             ))}
           </select>
         </div>
+
+        {/* Supplier and invoice number: expenses only */}
+        {isExpense && (
+          <>
+            <SupplierPicker
+              userId={userId}
+              id={`${fieldId}-supplier`}
+              value={supplierId}
+              onChange={setSupplierId}
+            />
+            <div>
+              <label htmlFor={`${fieldId}-invoice`} className="block text-sm font-medium text-text-secondary mb-1">
+                Invoice number
+              </label>
+              <input
+                id={`${fieldId}-invoice`}
+                type="text"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                placeholder="For example, INV-20431"
+                maxLength={100}
+                autoComplete="off"
+                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+              />
+            </div>
+          </>
+        )}
 
         {/* Description */}
         <div>

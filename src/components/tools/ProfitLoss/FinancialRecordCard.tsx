@@ -21,6 +21,11 @@ export default function FinancialRecordCard({
 }: FinancialRecordCardProps) {
   const isIncome = record.record_type === 'income'
   const orderNumber = firstOf(record.order)?.order_number
+  // "Thornes · Invoice INV-20431", "Thornes" or "Invoice INV-20431" (expenses only)
+  const supplierLine = [
+    firstOf(record.supplier)?.name,
+    record.invoice_number ? `Invoice ${record.invoice_number}` : null,
+  ].filter(Boolean).join(' · ')
 
   // Format date as DD/MM/YYYY
   const formatDate = (dateStr: string) => {
@@ -88,6 +93,13 @@ export default function FinancialRecordCard({
             <p className="text-sm text-text-tertiary mt-1">
               {formatDate(record.transaction_date)}
             </p>
+
+            {/* Supplier and invoice number */}
+            {supplierLine && (
+              <p className="text-sm text-text-secondary mt-1 truncate">
+                {supplierLine}
+              </p>
+            )}
 
             {/* Description */}
             {record.description && (

@@ -90,7 +90,8 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
         .select(`
           *,
           category:dropdown_values(value),
-          order:crm_orders(order_number)
+          order:crm_orders(order_number),
+          supplier:suppliers(name)
         `)
         .eq('user_id', userId)
         .order('transaction_date', { ascending: false })
@@ -205,6 +206,8 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
             category_id: record.category_id,
             description: record.description || null,
             notes: record.notes || null,
+            supplier_id: record.supplier_id || null,
+            invoice_number: record.invoice_number || null,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingRecord.id)
@@ -223,7 +226,9 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
             amount: record.amount,
             category_id: record.category_id,
             description: record.description || null,
-            notes: record.notes || null
+            notes: record.notes || null,
+            supplier_id: record.supplier_id || null,
+            invoice_number: record.invoice_number || null
           })
 
         if (error) throw error
@@ -280,14 +285,16 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
       return
     }
 
-    const headers = ['Date', 'Type', 'Category', `Amount (${isUkNi ? 'GBP' : 'EUR'})`, 'Description', 'Notes']
+    const headers = ['Date', 'Type', 'Category', `Amount (${isUkNi ? 'GBP' : 'EUR'})`, 'Description', 'Notes', 'Supplier', 'Invoice number']
     const rows = filteredRecords.map(r => [
       r.transaction_date,
       r.record_type,
       r.category?.value || '',
       r.amount.toFixed(2),
       r.description || '',
-      r.notes || ''
+      r.notes || '',
+      firstOf(r.supplier)?.name || '',
+      r.invoice_number || ''
     ])
 
     downloadCsv(`pl-records-${timePeriod === 'year' ? selectedYear : timePeriod}-${getCurrentDate()}.csv`, toCsv(headers, rows))
@@ -383,6 +390,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
           // Remount per record: the form copies its props into state once, so without a key
           // editing another record while one is open would save the first record's values.
           key={editingRecord?.id ?? 'new'}
+          userId={userId}
           record={editingRecord}
           incomeCategories={incomeCategories}
           expenseCategories={expenseCategories}

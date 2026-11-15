@@ -415,6 +415,16 @@ export interface DropdownValue {
   value: string
 }
 
+// Supplier on a P&L expense (suppliers table, user-scoped)
+export interface Supplier {
+  id: string
+  user_id: string
+  name: string
+  phone: string | null
+  email: string | null
+  notes: string | null
+}
+
 // Financial record for P&L tracking
 export interface FinancialRecord {
   id: string
@@ -429,8 +439,13 @@ export interface FinancialRecord {
   updated_at?: string
   // Set when a fully-paid CRM order posted this row; the order manages it.
   crm_order_id?: string | null
+  // Expenses only: who was paid and their invoice reference.
+  supplier_id?: string | null
+  invoice_number?: string | null
   // Joined data from dropdown_values
   category?: { value: string }
+  // Joined supplier (to-one embed; read with firstOf)
+  supplier?: { name: string } | { name: string }[] | null
   // Joined order (to-one embed; read with firstOf)
   order?: { order_number: string } | { order_number: string }[] | null
 }

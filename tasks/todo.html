@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Mel voice input</title>
+<title>Plan &mdash; Suppliers on expenses</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -21,85 +21,106 @@
 </head>
 <body>
 
-<h1>Mel voice input</h1>
+<h1>Suppliers and invoice numbers on expenses</h1>
 
-<p><strong>Status:</strong> built, waiting for your tests and a real-phone check &nbsp;&middot;&nbsp; <strong>Date:</strong> 15 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/mel-voice-input.md</span></p>
+<p><strong>Status:</strong> built; database change is live; waiting for your tests &nbsp;&middot;&nbsp; <strong>Date:</strong> 15 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/profit-loss-suppliers.md</span></p>
 
 <blockquote>
-<p><strong>Your request:</strong> Mel (the assistant) only takes typed questions; let beekeepers ask by voice as well.</p>
-<p><strong>How it was explored:</strong> two read-only agents covered Mel's chat code and the existing voice notes pipeline, alongside <span class="file">docs/features/voice-notes-field.md</span>. The Technology Stack Review that was in this file is in git history (commit <code>3950ad7c</code> and earlier).</p>
+<p><strong>Your request:</strong> in Tools &rarr; Profit &amp; Loss, let an expense pick a supplier, create a new supplier on the spot, edit an existing one, and record the date and the invoice number.</p>
+<p><strong>How it was explored:</strong> an agent covered the Profit &amp; Loss code and docs; I checked the live database through the Supabase MCP. The Mel voice input plan that was in this file is in git history (<code>aac8caf4</code>).</p>
 </blockquote>
 
-<h2>1. What already exists</h2>
+<h2>1. What exists today</h2>
 <ul>
-  <li><strong>Mel's message box</strong> (<span class="file">src/components/chat/ChatInput.tsx</span>, 73 lines) has a text box and a Send button. Mel opens as a bottom sheet on the phone and closes by unmounting, so a recording stops cleanly when Mel is closed.</li>
-  <li><strong>Voice notes</strong> already record (<span class="file">src/hooks/useVoiceRecorder.ts</span>) and transcribe (<span class="file">/api/voice-notes-transcribe</span>) on the inspection and queen rearing forms. The route checks sign-in, subscription and rate limits, and biases towards beekeeping words.</li>
-  <li>The route always runs a second AI call that tidies text as an <em>inspection note</em>. That is wrong for a question and slower.</li>
+  <li><strong>The form</strong> (<span class="file">FinancialRecordForm.tsx</span>, shown inline on the Profit &amp; Loss tool) has: Type (income/expense), <strong>Date (already there, required)</strong>, Amount, Category, Description, Notes.</li>
+  <li><strong>The table</strong> <code>financial_records</code> has 117 records (33 expenses) from 4 users. It has RLS by <code>user_id</code> and no supplier or invoice columns.</li>
+  <li>There is no supplier table. The CRM's customers are the closest pattern, but they are a separate opt-in module, so they are not reused.</li>
+  <li>Saves go straight to Supabase in <span class="file">ProfitLoss/index.tsx</span>, with explicit column lists for insert and update.</li>
 </ul>
 
 <h2>2. The design</h2>
-<p><strong>User and moment:</strong> a beekeeper at the hive, gloved, with Mel open on their phone. <strong>One job:</strong> get the question into Mel's box without typing.</p>
+<p><strong>User and moment:</strong> a beekeeper at home or in the shed with a receipt or invoice in hand, entering what they bought. <strong>One job:</strong> record who was paid and the invoice reference without leaving the expense.</p>
 
 <pre>
- Idle                                   Recording
-┌──────────────────────────────────┐   ┌──────────────────────────────────┐
-│ ┌──────────────────┐ ┌──┐ ┌──┐   │   │ Listening… tap stop when you     │
-│ │ Ask about bee... │ │🎤│ │➤ │   │   │ have finished                    │
-│ └──────────────────┘ └──┘ └──┘   │   │ ┌──────────────────┐ ┌──┐ ┌──┐   │
-└──────────────────────────────────┘   │ │                  │ │■ │ │➤ │   │
-   mic: outline, 48px                  │ └──────────────────┘ └──┘ └──┘   │
-   send: green, 48px                   └──────────────────────────────────┘
-                                          stop: red, send disabled
+ Expense form (phone)                    New / edit supplier (bottom sheet)
+┌──────────────────────────────────┐    ┌──────────────────────────────────┐
+│ Type   (•) Expense  ( ) Income   │    │ New supplier                  ✕  │
+│ Date   [ 15/11/2026          ]   │    │                                  │
+│ Amount [ 84.50               ]   │    │ Name *  [ Thornes              ] │
+│ Category [ Equipment       ▾ ]   │    │ Phone   [                      ] │
+│                                  │    │ Email   [                      ] │
+│ Supplier                         │    │ Notes   [                      ] │
+│ [ Thornes                  ▾ ]   │    │                                  │
+│ [ Edit supplier ] [ + New ]      │    │ [ Cancel ]   [ Save supplier ]   │
+│                                  │    └──────────────────────────────────┘
+│ Invoice number [ INV-20431   ]   │
+│ Description [ ...            ]   │
+│ Notes       [ ...            ]   │
+│ [ Cancel ]        [ Save ]       │
+└──────────────────────────────────┘
 </pre>
 
 <ul>
-  <li><strong>Mic button</strong> beside Send, outlined and neutral, so the green Send stays the main action. While recording it turns solid red with a square icon, and its label reads "Stop recording". While transcribing it shows a spinner, and its label reads "Turning speech into text".</li>
-  <li><strong>A status line</strong> above the row ("Listening… tap stop when you have finished") is read out by screen readers. Errors appear in the same place.</li>
-  <li><strong>Words go into the box and are not sent automatically.</strong> The beekeeper checks for a misheard word, then taps Send. Text already typed is kept.</li>
-  <li><strong>Both buttons are 48px.</strong> Send already was: <code>.fj-icon-btn</code> sets a 48×48px minimum that overrides its <code>h-10</code>, so it is left untouched. The pulse animation only runs when reduced motion is off.</li>
-  <li>The mic is hidden in browsers that cannot record.</li>
+  <li>Supplier and Invoice number appear <strong>only for expenses</strong>, under Category. Both are optional.</li>
+  <li>The supplier list's first option is "No supplier". Below it are two 48px outline buttons, <strong>New supplier</strong> and <strong>Edit supplier</strong>; Edit only shows when a supplier is selected.</li>
+  <li>The sheet uses the existing <code>ModalShell</code>: a bottom sheet on a phone, a centred dialog on desktop. Saving a new supplier selects it in the expense. The toast reads "Supplier saved".</li>
+  <li>The record row gains one line, "Thornes · Invoice INV-20431". The CSV export gains "Supplier" and "Invoice number".</li>
+  <li>Inputs follow the form's existing styling (16px text, 48px tall).</li>
 </ul>
-<p><strong>Review against the design rules:</strong> I dropped my first idea, a purple mic as on the forms. Two filled buttons side by side compete, and Send is the primary action in this box. I also dropped auto-send, because a misheard "varroa" sent to Mel wastes a question.</p>
+<p><strong>Review against the design rules:</strong> I considered a typeahead "search or add" box, but the app has no such primitive and a native select is easier with gloves and large text. I put New and Edit as buttons, not as a "+ Add new…" option inside the select; that pattern is hidden and awkward with screen readers. There is no separate suppliers screen: everything happens where the expense is entered.</p>
 
-<h2>3. Server change (small)</h2>
-<p>In <span class="file">src/app/api/voice-notes-transcribe/route.ts</span>, read an optional form field <code>cleanup</code>. When it is <code>"false"</code>, skip the tidy-up call and return the transcript as <code>cleaned</code>. The inspection and batch forms send nothing, so they behave as before.</p>
+<h2>3. Database (additive only)</h2>
+<ul>
+  <li>New table <code>suppliers</code> (id, user_id, name, phone, email, notes, created_at, updated_at), with RLS <code>auth.uid() = user_id</code> for all four actions, the same as <code>financial_records</code>.</li>
+  <li><code>financial_records</code> gains <code>supplier_id</code> (nullable, on delete set null, indexed) and <code>invoice_number</code> (nullable text).</li>
+  <li>No existing data changes, so there is nothing to back up beyond Supabase's daily backup. Applied through the MCP, with the SQL saved as <span class="file">supabase/migrations/20261115180000_add_suppliers_to_profit_loss.sql</span>.</li>
+</ul>
 
 <h2>4. Todo</h2>
 <ul class="todo">
-  <li>☑ 1. Route: optional <code>cleanup=false</code> skips the notes tidy-up (about 3 lines).</li>
-  <li>☑ 2. <span class="file">ChatInput.tsx</span>: use <code>useVoiceRecorder</code>; add the record → stop → transcribe handler, which sends <code>cleanup=false</code>, appends the text to the box, aborts on close, and shows friendly errors.</li>
-  <li>☑ 3. <span class="file">ChatInput.tsx</span>: add the mic button (48px) and status line; disable Send while recording or transcribing.</li>
-  <li>☑ 4. Docs: finish <span class="file">docs/features/mel-voice-input.md</span>, and note Mel and the <code>cleanup</code> field in <span class="file">voice-notes-field.md</span>.</li>
-  <li>☐ 5. You test: <code>npm run test:run</code> and a build, then try it on a real phone (record, stop, text appears, Send). Also check the inspection voice note still tidies up.</li>
-  <li>☑ 6. Review section below. Commit once you are happy with the tests.</li>
+  <li>☑ 1. Migration: <code>suppliers</code> table with RLS, plus the two columns on <code>financial_records</code>. Apply it and check the policies and the advisors.</li>
+  <li>☑ 2. Types: <code>Supplier</code>, plus <code>supplier_id</code>, <code>invoice_number</code> and <code>supplier</code> on <code>FinancialRecord</code>.</li>
+  <li>☑ 3. New <span class="file">SupplierSheet.tsx</span>: create or edit a supplier on <code>ModalShell</code>.</li>
+  <li>☑ 4. New <span class="file">SupplierPicker.tsx</span>: loads suppliers, the select, and the New and Edit buttons that open the sheet.</li>
+  <li>☑ 5. <span class="file">FinancialRecordForm.tsx</span>: Supplier and Invoice number for expenses (income sends nulls).</li>
+  <li>☑ 6. <span class="file">index.tsx</span>: select <code>supplier:suppliers(name)</code>, save both fields on insert and update, add CSV columns, pass <code>userId</code> to the form.</li>
+  <li>☑ 7. <span class="file">FinancialRecordCard.tsx</span>: the supplier and invoice line.</li>
+  <li>☑ 8. <span class="file">database-export.ts</span>: include <code>suppliers</code>.</li>
+  <li>☑ 9. Docs: <span class="file">profit-loss-suppliers.md</span> and <span class="file">profit-loss-tracker.md</span>.</li>
+  <li>☑ 10. Lint the changed files (done). ☐ You test: <code>npm run test:run</code>, a build, and a real phone (add an expense with a new supplier, edit the supplier, export CSV).</li>
+  <li>☑ 11. Review section below.</li>
 </ul>
 
 <h2>5. Review</h2>
 <h3>What changed</h3>
 <table>
-  <tr><th>File</th><th>Change</th></tr>
-  <tr><td class="file">src/app/api/voice-notes-transcribe/route.ts</td><td>Reads an optional <code>cleanup</code> form field. With <code>"false"</code> it returns the transcript straight after transcription and skips the inspection-notes tidy-up. Sign-in, subscription, size and rate-limit checks still run first. Callers that send nothing are unchanged (+8 lines).</td></tr>
-  <tr><td class="file">src/components/chat/ChatInput.tsx</td><td>Uses the existing <code>useVoiceRecorder</code>. A mic button sits beside Send: outlined when idle, solid red with a square while recording (pulse only when motion is allowed), and a spinner while transcribing. A status line above the box reads "Listening… tap stop when you have finished." and shows errors; screen readers announce it. Spoken words are added after any typed text (capped at 2,000 characters) and the box is focused, ready for Send. Send and Enter are blocked while recording or transcribing. Closing Mel aborts a transcription in flight, and the recorder already stops the microphone on unmount.</td></tr>
-  <tr><td class="file">docs/features/mel-voice-input.md</td><td>New feature doc.</td></tr>
-  <tr><td class="file">docs/features/voice-notes-field.md</td><td>Lists Mel as a third user of the route and explains <code>cleanup=false</code>.</td></tr>
+  <tr><th>Where</th><th>Change</th></tr>
+  <tr><td>Live database</td><td>New <code>suppliers</code> table with RLS (own rows only, all four actions). <code>financial_records</code> gains <code>supplier_id</code> (on delete set null, indexed) and <code>invoice_number</code>. Applied through the MCP; both columns confirmed. The security advisors show nothing new. No existing row changed.</td></tr>
+  <tr><td class="file">supabase/migrations/20261115180000_add_suppliers_to_profit_loss.sql</td><td>The same SQL, kept with the other migrations.</td></tr>
+  <tr><td class="file">src/types/records.ts</td><td><code>Supplier</code> type; <code>supplier_id</code>, <code>invoice_number</code> and the joined <code>supplier</code> on <code>FinancialRecord</code>.</td></tr>
+  <tr><td class="file">ProfitLoss/SupplierSheet.tsx (new)</td><td>New or edit supplier sheet on <code>ModalShell</code>: Name (required), Phone, Email, Notes. "Save supplier" shows the toast "Supplier saved". A failed save says "Supplier not saved. Check your connection and try again." There is no <code>&lt;form&gt;</code>, because it opens inside the expense form; Enter saves the supplier.</td></tr>
+  <tr><td class="file">ProfitLoss/SupplierPicker.tsx (new)</td><td>Loads the user's suppliers, A&ndash;Z. Shows a select with "No supplier", "Edit supplier" (when one is chosen) and "New supplier". A saved supplier is selected straight away.</td></tr>
+  <tr><td class="file">ProfitLoss/FinancialRecordForm.tsx</td><td>Supplier and Invoice number under Category, for expenses only. Saving as income sends both as empty.</td></tr>
+  <tr><td class="file">ProfitLoss/index.tsx</td><td>Loads <code>supplier:suppliers(name)</code> with records, saves both fields on add and update, and adds two CSV columns, "Supplier" and "Invoice number". Passes <code>userId</code> to the form.</td></tr>
+  <tr><td class="file">ProfitLoss/FinancialRecordCard.tsx</td><td>A line such as "Thornes · Invoice INV-20431" above the description.</td></tr>
+  <tr><td class="file">src/lib/database-export.ts</td><td><code>suppliers</code> is added to the admin export and to a member's own data export.</td></tr>
+  <tr><td>Docs</td><td>New <span class="file">profit-loss-suppliers.md</span>; <span class="file">profit-loss-tracker.md</span> updated (how to use, schema, files, form fields, record cards, CSV).</td></tr>
 </table>
 <h3>Checks</h3>
 <ul>
-  <li>ESLint on both changed files: clean, including the React Compiler rules that are errors again.</li>
+  <li>ESLint on all changed files: no errors. There is one existing warning in <span class="file">index.tsx:111</span> (first-load effect), which was already there and is untouched.</li>
+  <li>TypeScript: no errors in the changed files.</li>
   <li>No tests or build were run, as you asked.</li>
 </ul>
 <h3>For you to test</h3>
 <ol>
-  <li><code>npm run test:run</code> and a build.</li>
-  <li>On a phone: open Mel, tap the mic, allow the microphone, ask "When did I last feed my hives?", tap stop. The words should appear in the box unsent; tap Send.</li>
-  <li>Close Mel while it says "Listening…". The phone's microphone indicator should go off.</li>
-  <li>Record a voice note on an inspection. It should still come back tidied up as before.</li>
+  <li><code>npm run test:run</code> and a build. If a test pins the list of exported tables, it will need <code>suppliers</code> added.</li>
+  <li>Add an expense, tap New supplier, enter "Thornes" and tap Save supplier. It should be selected; add an invoice number and Save. The row should show "Thornes · Invoice …".</li>
+  <li>Edit that expense, tap Edit supplier, change the phone and save. Then save the expense.</li>
+  <li>Switch a new record to Income. Supplier and Invoice number should disappear.</li>
+  <li>Export CSV and check the two new columns.</li>
+  <li>On a phone, the supplier sheet should come up from the bottom, and the keyboard should not hide "Save supplier".</li>
 </ol>
-<h3>Notes</h3>
-<ul>
-  <li>Mel's voice questions share the voice rate limits with voice notes: 20 an hour and 60 a day.</li>
-  <li>Like Mel itself, the mic shows for everyone. Non-subscribers see "An active subscription is required to use voice input."</li>
-</ul>
 
 </body>
 </html>

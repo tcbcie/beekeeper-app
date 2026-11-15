@@ -14,7 +14,7 @@ Completed: January 17, 2026
 2. Click the **"P&L"** card (Wallet icon)
 3. Click **"Add Record"** to create a new entry
 4. Select **Income** or **Expense** type
-5. Fill in date, amount (EUR), category, and optional description/notes
+5. Fill in date, amount (EUR or GBP), category, and optional description/notes. For an expense you can also pick a supplier (or add or edit one on the spot) and enter the invoice number (see `profit-loss-suppliers.md`)
 6. View summary cards showing totals
 7. Choose a period: This Month, Year (then pick the year), or All Time
 
@@ -88,6 +88,8 @@ CREATE TABLE public.financial_records (
 );
 ```
 
+Since 15 November 2026 (`supabase/migrations/20261115180000_add_suppliers_to_profit_loss.sql`): `supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL` and `invoice_number TEXT`, both nullable and set on expenses only. The `suppliers` table (name, phone, email, notes) is user-scoped with the same RLS. See `profit-loss-suppliers.md`.
+
 ### RLS Policies
 
 - Users can only view, insert, update, and delete their own records
@@ -102,6 +104,8 @@ CREATE TABLE public.financial_records (
 | `src/components/tools/ProfitLoss/FinancialRecordForm.tsx` | Add/Edit form with type toggle and category dropdown |
 | `src/components/tools/ProfitLoss/FinancialRecordCard.tsx` | Individual record display with edit/delete actions |
 | `src/components/tools/ProfitLoss/FinancialSummary.tsx` | Summary cards for totals |
+| `src/components/tools/ProfitLoss/SupplierPicker.tsx` | Supplier select with New and Edit buttons (expenses) |
+| `src/components/tools/ProfitLoss/SupplierSheet.tsx` | Add or edit a supplier in a bottom sheet |
 
 ### Files Modified
 
@@ -176,7 +180,7 @@ interface FinancialRecord {
 
 ### Record Cards
 - Left border color indicates type (green=income, red=expense)
-- Shows: Type badge, Category, Amount, Date, Description, Notes
+- Shows: Type badge, Category, Amount, Date, Supplier and invoice number (expenses), Description, Notes
 - Edit (pencil) and Delete (trash) action buttons
 
 ### Form Fields
@@ -184,14 +188,16 @@ interface FinancialRecord {
 2. Date* - Date picker
 3. Amount (EUR)* - Number input with 2 decimal places
 4. Category* - Dropdown (changes based on type selection)
-5. Description - Optional text input
-6. Notes - Optional textarea
+5. Supplier - Optional, expenses only: select with New supplier and Edit supplier buttons
+6. Invoice number - Optional, expenses only
+7. Description - Optional text input
+8. Notes - Optional textarea
 
 ## Export
 
 Click the **Export** button to download filtered records as CSV:
 - Filename: `pl-records-{period}-{date}.csv`
-- Columns: Date, Type, Category, Amount (EUR), Description, Notes
+- Columns: Date, Type, Category, Amount (EUR), Description, Notes, Supplier, Invoice number
 - Respects the current period (Month / chosen Year / All). The filename uses the year for Year, e.g. `pl-records-2025-{date}.csv`
 
 Financial records are also included in the Settings backup export.
