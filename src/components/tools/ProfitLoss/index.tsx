@@ -28,11 +28,19 @@ const MonthlyChart = dynamic(() => import('./MonthlyChart'), {
 })
 
 type TimePeriod = 'month' | 'year' | 'all'
+type TypeFilter = 'all' | FinancialRecord['record_type']
 
 // A year from the address (?year=2025&compare=2024, e.g. from Sales Insights).
 // Only a plain four-digit year is accepted; anything else is ignored.
 const yearParam = (value: string | null): number | null =>
   value && /^\d{4}$/.test(value) ? Number(value) : null
+
+// Which records the list and CSV show; totals, chart and categories always cover both.
+const TYPE_OPTIONS: ReadonlyArray<{ value: TypeFilter; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'income', label: 'Income' },
+  { value: 'expense', label: 'Expenses' },
+]
 
 const PERIOD_OPTIONS: ReadonlyArray<{ value: TimePeriod; label: string }> = [
   { value: 'month', label: 'This Month' },
@@ -55,6 +63,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
   const [showForm, setShowForm] = useState(false)
   const [editingRecord, setEditingRecord] = useState<FinancialRecord | null>(null)
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('year')
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   // The year shown when the period is Year; starts at the current year.
   const searchParams = useSearchParams()
   const [selectedYear, setSelectedYear] = useState(() => yearParam(searchParams.get('year')) ?? new Date().getFullYear())
@@ -167,6 +176,12 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
         return records
     }
   }, [records, timePeriod, selectedYear])
+
+  // The records list and CSV: the period's records, narrowed by Show (All / Income / Expenses)
+  const listedRecords = useMemo(
+    () => typeFilter === 'all' ? filteredRecords : filteredRecords.filter(r => r.record_type === typeFilter),
+    [filteredRecords, typeFilter]
+  )
 
   // Calculate totals
   const totals = useMemo(() => {
@@ -283,13 +298,13 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
 
   // Handle export to CSV
   const handleExport = () => {
-    if (filteredRecords.length === 0) {
+    if (listedRecords.length === 0) {
       toast.error('No records to export')
       return
     }
 
     const headers = ['Date', 'Type', 'Category', `Amount (${isUkNi ? 'GBP' : 'EUR'})`, 'Description', 'Notes', 'Supplier', 'Invoice number', 'Invoice date']
-    const rows = filteredRecords.map(r => [
+    const rows = listedRecords.map(r => [
       r.transaction_date,
       r.record_type,
       r.category?.value || '',
@@ -301,7 +316,8 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
       r.invoice_date || ''
     ])
 
-    downloadCsv(`pl-records-${timePeriod === 'year' ? selectedYear : timePeriod}-${getCurrentDate()}.csv`, toCsv(headers, rows))
+    const typeSuffix = typeFilter === 'income' ? '-income' : typeFilter === 'expense' ? '-expenses' : ''
+    downloadCsv(`pl-records-${timePeriod === 'year' ? selectedYear : timePeriod}${typeSuffix}-${getCurrentDate()}.csv`, toCsv(headers, rows))
 
     toast.success('Records exported')
   }
@@ -437,6 +453,11 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
         </div>
       )}
 
+      {/* Show: All / Income / Expenses (the list and CSV only) */}
+      {filteredRecords.length > 0 && (
+        <SegmentedControl label="Show" options={TYPE_OPTIONS} value={typeFilter} onChange={setTypeFilter} />
+      )}
+
       {/* Records List */}
       {filteredRecords.length === 0 ? (
         <div className="text-center py-8 bg-surface-secondary rounded-lg border border-border">
@@ -444,9 +465,14 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
           <p className="text-text-secondary">No financial records yet</p>
           <p className="text-sm text-text-tertiary">Click &quot;Add Record&quot; to start tracking</p>
         </div>
+      ) : listedRecords.length === 0 ? (
+        <div className="text-center py-8 bg-surface-secondary rounded-lg border border-border">
+          <p className="text-text-secondary">No {typeFilter === 'income' ? 'income' : 'expenses'} for {periodLabel}.</p>
+          <p className="text-sm text-text-tertiary">Tap &quot;Add Record&quot; to add one, or choose All.</p>
+        </div>
       ) : (
         <div className="space-y-3">
-          {filteredRecords.map((record) => (
+          {listedRecords.map((record) => (
             <FinancialRecordCard
               key={record.id}
               record={record}

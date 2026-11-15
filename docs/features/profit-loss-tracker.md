@@ -33,7 +33,8 @@ Completed: January 17, 2026
   - Year keeps records whose date string starts with that year. The year is read from `YYYY-MM-DD`, so there are no time zone slips and records dated in a later year are not counted. A mistyped year (0226) appears as its own option (226), so it can be found and fixed
   - Totals, chart, category panels, records list and CSV all follow the chosen year
 - Edit and delete records
-- CSV export (respects current time filter)
+- CSV export (respects current time filter and the Show filter)
+- **Show: All / Income / Expenses** above the records list (15/11/2026). It narrows the list and the CSV export only; totals, chart and category panels always cover both sides for the period. If nothing matches, it says "No expenses for 2026." (or income, this month, all time)
 - Mobile responsive design
 - Dark mode support
 
@@ -200,6 +201,7 @@ Click the **Export** button to download filtered records as CSV:
 - Filename: `pl-records-{period}-{date}.csv`
 - Columns: Date, Type, Category, Amount (EUR), Description, Notes, Supplier, Invoice number, Invoice date
 - Respects the current period (Month / chosen Year / All). The filename uses the year for Year, e.g. `pl-records-2025-{date}.csv`
+- Respects Show: with Income or Expenses chosen, only those rows are exported and the filename gains `-income` or `-expenses`, e.g. `pl-records-2026-expenses-{date}.csv`
 
 Financial records are also included in the Settings backup export.
 

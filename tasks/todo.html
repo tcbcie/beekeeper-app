@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Invoice date default</title>
+<title>Plan &mdash; P&amp;L list filter</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -21,50 +21,70 @@
 </head>
 <body>
 
-<h1>Invoice date starts with the expense date</h1>
+<h1>Filter the P&amp;L records list by income or expenses</h1>
 
-<p><strong>Status:</strong> built, waiting for your tests &nbsp;&middot;&nbsp; <strong>Date:</strong> 15 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/profit-loss-suppliers.md</span></p>
+<p><strong>Status:</strong> built, waiting for your tests &nbsp;&middot;&nbsp; <strong>Date:</strong> 15 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/profit-loss-tracker.md</span></p>
 
 <blockquote>
-<p><strong>Your request:</strong> on a new expense, Date should start with today, and Invoice date should start with that date too.</p>
-<p><strong>Checked:</strong> Date already starts with today on a new record (<code>getCurrentDate()</code> returns <code>YYYY-MM-DD</code>), and you confirmed this on your device. Nothing changes there. The invoice date plan is in git history (<code>205312cf</code>).</p>
+<p><strong>Your request</strong> (with a screenshot of the records list): "I cannot filter for income and expenses on the list."</p>
+<p>The invoice date default plan is in git history (<code>3c49c99a</code>).</p>
 </blockquote>
 
-<h2>1. Behaviour</h2>
+<h2>1. What exists</h2>
+<p>The list shows every record for the chosen Period (This Month, Year or All Time). The only control is Period, at the top. Totals, chart, categories, list and CSV all use the same <code>filteredRecords</code> in <span class="file">ProfitLoss/index.tsx</span>.</p>
+
+<h2>2. The design</h2>
+<pre>
+  Expenses by category ...
+ ┌──────────────────────────────────────────┐
+ │ Show   [  All  |  Income  |  Expenses  ] │   ← same control as Period, 48px
+ └──────────────────────────────────────────┘
+ ┌ Expense  Equipment            -€84.50 ┐
+ │ 12/11/2026                            │
+ │ Thornes · Invoice INV-20431 · Dated … │
+ └───────────────────────────────────────┘
+</pre>
 <ul>
-  <li><strong>New expense:</strong> Invoice date starts as the same date as Date (today).</li>
-  <li><strong>Change Date first:</strong> Invoice date follows it, as long as you have not set Invoice date yourself. For example, you enter last Tuesday's receipt and change Date, and Invoice date moves with it.</li>
-  <li><strong>Once you change Invoice date yourself</strong>, it stays as you set it.</li>
-  <li><strong>Editing an existing expense:</strong> nothing is filled in automatically. Its saved invoice date, or none, is shown as it is, so old records are never changed quietly.</li>
-  <li>You can still clear Invoice date to save without one.</li>
+  <li>A <strong>Show: All / Income / Expenses</strong> control directly above the records list, using the existing <code>SegmentedControl</code>, the same as Period. It defaults to All.</li>
+  <li>It filters <strong>the list and the CSV export</strong>, so an accountant can be sent just the expenses. Totals, chart and category panels stay for the whole period, because a profit figure needs both sides.</li>
+  <li>When nothing matches, the message says what to do, for example "No expenses in 2026. Tap Add Record to add one." The existing empty message ("No financial records yet") is left for when the period has no records at all.</li>
+  <li>It stays on screen rather than behind a filter button, as it is a single control people switch often while checking a list (the mobile-screen rule on filters).</li>
 </ul>
 
-<h2>2. Todo</h2>
+<h2>3. Todo</h2>
 <ul class="todo">
-  <li>☑ 1. <span class="file">FinancialRecordForm.tsx</span>: on a new record, start <code>invoiceDate</code> from <code>transactionDate</code>; in the Date field's change handler, move Invoice date along if it still equals the old Date (new records only).</li>
-  <li>☑ 2. Docs: <span class="file">profit-loss-suppliers.md</span>.</li>
-  <li>☑ 3. Lint (done). ☐ You test: add an expense (both dates are today), change Date (Invoice date follows), set Invoice date then change Date (it stays), edit an old expense (unchanged).</li>
-  <li>☑ 4. Review section below.</li>
+  <li>☑ 1. <span class="file">index.tsx</span>: <code>typeFilter</code> state, a <code>listedRecords</code> memo, the Show control above the list, the list uses <code>listedRecords</code>, and a matching empty message.</li>
+  <li>☑ 2. <span class="file">index.tsx</span>: the CSV export uses <code>listedRecords</code>; the file name gains <code>-income</code> or <code>-expenses</code> when filtered.</li>
+  <li>☑ 3. Docs: <span class="file">profit-loss-tracker.md</span>.</li>
+  <li>☑ 4. Lint (done). ☐ You test: switch Show and check the list, the totals (unchanged) and the CSV.</li>
+  <li>☑ 5. Review section below.</li>
 </ul>
 
-<h2>3. Review</h2>
+<h2>4. Review</h2>
 <table>
   <tr><th>File</th><th>Change</th></tr>
-  <tr><td class="file">ProfitLoss/FinancialRecordForm.tsx</td><td>On a new record, <code>invoiceDate</code> starts from <code>transactionDate</code> (today); an existing record keeps its saved value or stays empty. The Date field's change handler moves Invoice date with it when it is a new record and Invoice date still equals the old Date. Once the beekeeper sets or clears Invoice date, the two differ and it stays put. 9 lines.</td></tr>
-  <tr><td class="file">docs/features/profit-loss-suppliers.md</td><td>The default and follow behaviour is described.</td></tr>
+  <tr><td class="file">ProfitLoss/index.tsx</td><td>
+    <ul>
+      <li><code>typeFilter</code> state (All, Income or Expenses; default All) and a <code>listedRecords</code> memo, which is the period's records narrowed by type.</li>
+      <li>A <strong>Show</strong> <code>SegmentedControl</code> above the list, the same control as Period. It is hidden when the period has no records.</li>
+      <li>The list and CSV use <code>listedRecords</code>. The CSV file name gains <code>-income</code> or <code>-expenses</code> when filtered.</li>
+      <li>A new empty message for a filter with no matches: "No expenses for 2026." and "Tap "Add Record" to add one, or choose All." The existing "No financial records yet" stays for an empty period.</li>
+      <li>Totals, chart and category panels are untouched: they still use <code>filteredRecords</code> (both sides).</li>
+    </ul>
+  </td></tr>
+  <tr><td class="file">docs/features/profit-loss-tracker.md</td><td>The Show filter and the CSV file names.</td></tr>
 </table>
 <ul>
-  <li>Date already started with today on new records; this was checked and confirmed on your device, so it was not touched.</li>
-  <li>No database change. ESLint and TypeScript: no errors. No tests or build were run.</li>
+  <li>ESLint: no errors (the existing warning on the first-load effect is untouched). TypeScript: no errors. No tests or build were run.</li>
 </ul>
 <h3>For you to test</h3>
 <ol>
   <li><code>npm run test:run</code> and a build.</li>
-  <li>Add an expense: Date and Invoice date both show today.</li>
-  <li>Change Date to an earlier day: Invoice date follows.</li>
-  <li>Set Invoice date to another day, then change Date: Invoice date stays as you set it.</li>
-  <li>Clear Invoice date and save: the row shows no "Dated …".</li>
-  <li>Edit an older expense with no invoice date: it stays empty.</li>
+  <li>Open P&amp;L. Show should appear above the list on All.</li>
+  <li>Tap Expenses: only expense rows, and the totals, chart and categories do not change. Tap Income: only income.</li>
+  <li>Export with Expenses chosen: only expense rows, and the file is called <code>pl-records-2026-expenses-….csv</code>.</li>
+  <li>Choose a period with income but no expenses, then Expenses: "No expenses for …".</li>
+  <li>On a phone, check that the three Show buttons fit on one line.</li>
 </ol>
 
 </body>
