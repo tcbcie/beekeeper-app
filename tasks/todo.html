@@ -404,5 +404,33 @@
   <li>&#9744; Not yet checked: sign-up and password-reset emails (Supabase Auth mail settings); push on an iPhone from the Home Screen</li>
 </ul>
 
+<h2>12. Batch 4 &mdash; Next.js 16 upgrade (plan, waiting for approval)</h2>
+
+<p>Full plan: <span class="file">docs/features/nextjs-16-upgrade-plan.md</span>. Nothing changes for the beekeeper. Success means the app behaves exactly as today.</p>
+
+<h3>Findings</h3>
+<ul>
+  <li>The app is well placed: every page that reads route parameters already uses the async style Next 16 requires. There is no middleware, edge code or old API.</li>
+  <li>Next 16 builds with a new bundler (Turbopack) by default and <strong>fails</strong> when a webpack setting is present. Sentry adds one. We keep webpack. <code>vercel.json</code> has its own build command, so it must change as well as <code>package.json</code>.</li>
+  <li>Image quality 85 (apiary photo) would silently drop to 75 unless allowed. Local development photos would break unless local addresses are allowed in development.</li>
+  <li>Page changes would start to animate a scroll to the top unless one attribute is added.</li>
+  <li>React goes to 19.2.9, not 19.3: 19.3 would also force a 3D library upgrade.</li>
+  <li><code>@supabase/ssr</code> 0.7 &rarr; 0.12 needs no code change; we already use its current cookie API.</li>
+  <li>Risk: the new lint config may bring stricter React rules that flag existing code. I'll count them before deciding.</li>
+</ul>
+
+<h3>Work</h3>
+<ul class="todo">
+  <li>&#9745; Committed straight to <code>main</code> (your decision; no preview branch)</li>
+  <li>&#9745; Packages: next 16.4.6, react/react-dom 19.2.9, types 19.2, eslint-config-next 16.4.6, @supabase/ssr 0.12.7; <code>@eslint/eslintrc</code> removed. Audit: the high-severity PostCSS finding is gone; 2 moderate (exceljs) remain</li>
+  <li>&#9745; Keep webpack: <code>package.json</code> scripts and <code>vercel.json</code></li>
+  <li>&#9745; <code>next.config.ts</code>: image qualities 75 and 85; local addresses allowed in development only</li>
+  <li>&#9745; <code>layout.tsx</code>: <code>data-scroll-behavior="smooth"</code>; <code>tsconfig.json</code>: <code>react-jsx</code> and the <code>.next/dev/types</code> folder</li>
+  <li>&#9745; ESLint on the native flat configs. Typecheck clean. Lint: the six new React Compiler rules found 207 issues in existing code (169 set-state-in-effect); set to warnings, list of the 38 others in the plan. Lint passes (0 errors)</li>
+  <li>&#9745; QA audit (no critical/high findings); docs updated</li>
+  <li>&#9744; You: tests, Vercel preview build, phone checklist (plan document), Sentry test error</li>
+  <li>&#9745; Pushed to <code>main</code></li>
+</ul>
+
 </body>
 </html>

@@ -122,6 +122,10 @@ const nextConfig: NextConfig = {
     // instead of re-fetching them every hour. Not longer: a deleted photo is removed for good after
     // a 7-day grace period (cron/storage-cleanup), and copies shouldn't outlive it by much.
     minimumCacheTTL: 60 * 60 * 24 * 7,
+    // Next 16 allows only quality 75 unless listed; the apiary photo uses 85.
+    qualities: [75, 85],
+    // Next 16 refuses local addresses; the local Supabase (127.0.0.1:54321) needs this in development.
+    dangerouslyAllowLocalIP: process.env.NODE_ENV === 'development',
   },
   env: {
     NEXT_PUBLIC_APP_VERSION: packageJson.version,
