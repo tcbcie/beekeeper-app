@@ -75,11 +75,12 @@
 </table>
 <ul>
   <li>No database change: <code>supplier_id</code> was created <code>on delete set null</code>, and RLS already limits delete to the owner.</li>
-  <li>ESLint: no errors. The one existing warning in <span class="file">index.tsx:111</span> is untouched. TypeScript: no errors in these files. No tests or build were run.</li>
+  <li>ESLint: no errors. The one existing warning in <span class="file">index.tsx:111</span> is untouched. TypeScript: no errors in these files.</li>
+  <li><strong>Test suite (you ran it, 15 November 2026 at 18:46):</strong> 63 test files passed and 1 was skipped; 913 tests passed, 23 skipped, none failed (21.2s). The skipped file is <span class="file">tests/email-reminders/task-event-reminders.test.ts</span>, which skips all 23 of its tests by design and is unrelated to this work.</li>
 </ul>
 <h3>For you to test</h3>
 <ol>
-  <li><code>npm run test:run</code> and a build.</li>
+  <li>☑ <code>npm run test:run</code>: passed (see above). ☐ A build.</li>
   <li>Edit an expense with a supplier, tap Edit supplier, then Delete supplier. The message should give the right number of expenses. Confirm. The supplier should be gone from the list, the expense should show "No supplier", and the form should still be open with your other entries intact.</li>
   <li>Close the form. The other expenses that used it should no longer show the supplier, but they should all still be there.</li>
   <li>Rename a supplier. Other rows should show the new name straight away.</li>
