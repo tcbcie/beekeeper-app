@@ -393,5 +393,16 @@
   <li>&#9744; On an iPhone: open in Safari first (the switch should explain Home Screen), then from the Home Screen icon and switch on</li>
 </ul>
 
+<h2>11. Push notifications batch B and the email outage (14&ndash;15 November 2026)</h2>
+
+<ul class="todo">
+  <li>&#9745; Reminder job (version 17) sends push as well as email; committed as <code>e326ed02</code></li>
+  <li>&#9745; Device subscribed (Android/Chrome); first push sent 10:15 on 15/11</li>
+  <li>&#9745; <strong>Found:</strong> every email from the Supabase functions (reminders, invitations, weekly digest, new-user notice) had been failing for at least 26 days with &ldquo;API key is invalid&rdquo;. Resend showed only one delivered email in 30 days. Two reminders were missed, and the weekly digests most likely too</li>
+  <li>&#9745; Owner replaced the Resend key in Supabase and Vercel (15/11)</li>
+  <li>&#9745; Verified: invoice email (Vercel) arrived 10:48; test reminder at 11:00 sent by email and push, no errors; test task deleted</li>
+  <li>&#9744; Not yet checked: sign-up and password-reset emails (Supabase Auth mail settings); push on an iPhone from the Home Screen</li>
+</ul>
+
 </body>
 </html>

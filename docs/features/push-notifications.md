@@ -1,6 +1,8 @@
 # Push notifications (reminders on this device)
 
-**Status:** batch A (phone side) live 14/11/2026; batch B (sending) built 14/11/2026, waiting for the `VAPID_KEYS` secret and deployment. Plan: `push-notifications-plan.md`.
+**Status:** live and verified 15/11/2026. Plan: `push-notifications-plan.md`.
+
+Verified: a device subscribed on Android/Chrome (Google push service); a test reminder at 11:00 on 15/11/2026 went out by email and push in the same run (`emailsSent: 1, pushesSent: 1, errors: 0`).
 
 ## What the beekeeper gets
 

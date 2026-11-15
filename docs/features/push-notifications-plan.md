@@ -73,12 +73,12 @@ An explicit sign-out removes this phone's subscription first, so the next person
 - [x] Service worker: tap opens the page in the notification and brings an open window forward; safe message handling
 - [x] Deliberate log-out removes the subscription (`useLogout`)
 - [x] Correct the iPhone copy in `NotificationStatusCard.tsx`
-- [ ] You test: switch on, see one row appear for your account; sign out, row gone
+- [x] You test: switch on, see one row appear for your account (15/11/2026)
 
 **Batch B — sending**
 - [x] `task-event-reminders`: send push alongside email, prune dead subscriptions, shared sent marker (`jsr:@negrel/webpush@0.5.0`, checked against its source)
-- [ ] Redeploy the function with its `_shared` file
-- [ ] You test: a task due in 20 minutes with a 15-minute reminder, app closed, on Android and on an iPhone installed to the Home Screen
+- [x] Redeploy the function with its `_shared` file (version 17, 14/11/2026)
+- [x] Test reminder 15/11/2026: email and push sent in the same run (iPhone not yet tried)
 - [x] Feature document `docs/features/push-notifications.md`, guidance file and `.env.example` updated
 
 ## Risks and open points
