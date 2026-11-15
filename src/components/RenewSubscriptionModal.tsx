@@ -43,14 +43,6 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
   const [associationCode, setAssociationCode] = useState('')
   const [associations, setAssociations] = useState<Association[]>([])
 
-  // Load associations when modal opens and association code payment is selected
-  useEffect(() => {
-    if (isOpen && paymentMethod === 'association_code' && associations.length === 0) {
-      loadAssociations()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadAssociations is stable, associations.length is intentionally excluded to only load once
-  }, [isOpen, paymentMethod])
-
   const loadAssociations = async () => {
     try {
       const { data, error } = await supabase
@@ -67,6 +59,14 @@ export default function RenewSubscriptionModal({ isOpen, onClose, onSuccess, use
       setError('Failed to load associations')
     }
   }
+
+  // Load associations when modal opens and association code payment is selected
+  useEffect(() => {
+    if (isOpen && paymentMethod === 'association_code' && associations.length === 0) {
+      loadAssociations()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadAssociations is stable, associations.length is intentionally excluded to only load once
+  }, [isOpen, paymentMethod])
 
   if (!isOpen) return null
 

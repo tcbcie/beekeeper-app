@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, Dispatch, SetStateAction } from 'react'
+import { useEffect, useState, Dispatch, SetStateAction } from 'react'
 
 const NAMESPACE = 'hivecraic:filters'
 
@@ -82,12 +82,9 @@ export function usePersistentState<T>(
 ): [T, Dispatch<SetStateAction<T>>] {
   const storageKey = buildKey(key)
 
-  // The validator is only consulted when reading the initial value; keep it in
-  // a ref so a fresh inline function on every render does not re-trigger work.
-  const validateRef = useRef(validate)
-  validateRef.current = validate
-
-  const [value, setValue] = useState<T>(() => readStored(storageKey, defaultValue, validateRef.current))
+  // The validator is only consulted when reading the initial value (the initialiser runs once),
+  // so a fresh inline function on every render does no extra work.
+  const [value, setValue] = useState<T>(() => readStored(storageKey, defaultValue, validate))
 
   useEffect(() => {
     if (typeof window === 'undefined') return

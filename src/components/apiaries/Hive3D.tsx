@@ -99,12 +99,13 @@ export default function Hive3D({ hive, position, elevation = 0, selected, onSele
   // Precompute each layer's vertical centre; the stack sits on the feet.
   let cursor = FEET_H
   let bottomBroodCentre: number | null = null
-  const placed = layers.map(l => {
+  const placed: Array<(typeof layers)[number] & { centre: number }> = []
+  for (const l of layers) {
     const centre = cursor + l.height / 2
     cursor += l.height
     if (l.key === 'full-0') bottomBroodCentre = centre
-    return { ...l, centre }
-  })
+    placed.push({ ...l, centre })
+  }
   const totalHeight = cursor
 
   // Supers that have a recorded fullness, plus the vertical centre of the super

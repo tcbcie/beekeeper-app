@@ -53,10 +53,6 @@ export default function DropdownManagement() {
     display_order: 0,
   })
 
-  useEffect(() => {
-    fetchCategories()
-  }, [])
-
   const fetchCategories = async () => {
     const { data, error } = await supabase
       .from('dropdown_categories')
@@ -81,6 +77,10 @@ export default function DropdownManagement() {
       setCategories(categoriesWithSortedValues)
     }
   }
+
+  useEffect(() => {
+    fetchCategories()
+  }, [])
 
   const handleCategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault()

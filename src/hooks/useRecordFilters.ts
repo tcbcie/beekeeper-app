@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useCallback, useEffect, useRef, useDeferredValue, type Dispatch, type SetStateAction } from 'react'
+import { useMemo, useState, useCallback, useEffect, useLayoutEffect, useRef, useDeferredValue, type Dispatch, type SetStateAction } from 'react'
 import { usePersistentState } from '@/hooks/usePersistentState'
 import { useSelection } from '@/contexts/SelectionContext'
 import type {
@@ -181,9 +181,11 @@ export function useRecordFilters(options: UseRecordFiltersOptions): UseRecordFil
   // shared store and the rest to the persisted store; reads current values via
   // refs so its identity stays stable across renders.
   const sharedRef = useRef({ apiaryId: selectedApiaryId, hiveId: selectedHiveId })
-  sharedRef.current = { apiaryId: selectedApiaryId, hiveId: selectedHiveId }
   const storedRef = useRef(stored)
-  storedRef.current = stored
+  useLayoutEffect(() => {
+    sharedRef.current = { apiaryId: selectedApiaryId, hiveId: selectedHiveId }
+    storedRef.current = stored
+  })
 
   const setFilters = useCallback<Dispatch<SetStateAction<FilterState>>>((update) => {
     const prev: FilterState = { ...storedRef.current, apiaryId: sharedRef.current.apiaryId, hiveId: sharedRef.current.hiveId }

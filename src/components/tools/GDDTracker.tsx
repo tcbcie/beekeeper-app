@@ -365,8 +365,8 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
     return groups
   }, [sortedRecords, groupByVegetation])
 
-  // Sort indicator component
-  const SortIndicator = ({ column }: { column: SortColumn }) => {
+  // Sort indicator: a render function, not a component (a component defined here would be rebuilt every render)
+  const sortIndicator = (column: SortColumn) => {
     if (sortColumn !== column) return <ChevronUp size={14} className="opacity-0 group-hover:opacity-30" />
     return sortDirection === 'asc'
       ? <ChevronUp size={14} className="text-forest-600" />
@@ -625,7 +625,7 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                   className="text-left p-3 text-sm font-semibold text-foreground cursor-pointer hover:bg-surface-elevated transition-colors group"
                   onClick={() => handleSort('year')}
                 >
-                  <span className="flex items-center gap-1">Year <SortIndicator column="year" /></span>
+                  <span className="flex items-center gap-1">Year {sortIndicator('year')}</span>
                 </th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">Apiary</th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">Vegetation</th>
@@ -633,14 +633,14 @@ export default function GDDTracker({ userId }: GDDTrackerProps) {
                   className="text-left p-3 text-sm font-semibold text-foreground cursor-pointer hover:bg-surface-elevated transition-colors group"
                   onClick={() => handleSort('start_date')}
                 >
-                  <span className="flex items-center gap-1">Bloom Date <SortIndicator column="start_date" /></span>
+                  <span className="flex items-center gap-1">Bloom Date {sortIndicator('start_date')}</span>
                 </th>
                 <th className="text-left p-3 text-sm font-semibold text-foreground">End</th>
                 <th
                   className="text-right p-3 text-sm font-semibold text-foreground cursor-pointer hover:bg-surface-elevated transition-colors group"
                   onClick={() => handleSort('gdd_value')}
                 >
-                  <span className="flex items-center justify-end gap-1">GDD <SortIndicator column="gdd_value" /></span>
+                  <span className="flex items-center justify-end gap-1">GDD {sortIndicator('gdd_value')}</span>
                 </th>
                 <th className="text-center p-3 text-sm font-semibold text-foreground">Shared</th>
               </tr>

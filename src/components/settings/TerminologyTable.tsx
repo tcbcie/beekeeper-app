@@ -39,10 +39,6 @@ export default function TerminologyTable() {
   const [saving, setSaving] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
 
-  useEffect(() => {
-    fetchTerminology()
-  }, [])
-
   async function fetchTerminology() {
     setLoading(true)
     const { data, error } = await supabase
@@ -57,6 +53,10 @@ export default function TerminologyTable() {
     }
     setLoading(false)
   }
+
+  useEffect(() => {
+    fetchTerminology()
+  }, [])
 
   // Filter terms based on search query
   const filteredTerms = useMemo(() => {

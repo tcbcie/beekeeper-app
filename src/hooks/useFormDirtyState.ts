@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 interface UseFormDirtyStateOptions<T> {
   /** The form state to watch. Compared by serialisation, not by reference. */
@@ -64,7 +64,8 @@ export function useFormDirtyState<T>({
   // The timer and markPristine both need the newest snapshot, not the one
   // closed over when they were created.
   const latestSnapshotRef = useRef(snapshot)
-  latestSnapshotRef.current = snapshot
+  // Layout effect: updated after each commit, before the settle timer below or markPristine can read it.
+  useLayoutEffect(() => { latestSnapshotRef.current = snapshot })
 
   useEffect(() => {
     // setTimeout, not requestAnimationFrame: rAF does not fire in a background

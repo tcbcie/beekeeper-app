@@ -116,6 +116,9 @@ export default function QueensPage() {
  const queenRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
  const queenCardRefs = useRef<{ [key: string]: HTMLDivElement | null }>({})
 
+ // The time is read once when the screen opens: reading the clock during render gives a
+ // different answer on every render.
+ const [now] = useState(() => Date.now())
  const [showForm, setShowForm] = useState(false)
  const [editingQueen, setEditingQueen] = useState<Queen | null>(null)
  const [searchTerm, setSearchTerm] = useState('')
@@ -254,6 +257,11 @@ export default function QueensPage() {
  }
  }, [highlightedQueenId, queens])
 
+ const handleEdit = (queen: Queen) => {
+ setEditingQueen(queen)
+ setShowForm(true)
+ }
+
  // Auto-open edit form when navigating from detail page with ?edit=true
  useEffect(() => {
  if (editParam === 'true' && highlightedQueenId && queens.length > 0 && !editingQueen) {
@@ -264,13 +272,6 @@ export default function QueensPage() {
  }
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [editParam, highlightedQueenId, queens])
-
-
-
- const handleEdit = (queen: Queen) => {
- setEditingQueen(queen)
- setShowForm(true)
- }
 
  const handleDelete = async (id: string) => {
  if (!userId || deleting) return
@@ -485,7 +486,7 @@ export default function QueensPage() {
  const activeWithDates = queens.filter(q => q.status === 'active' && isProductionQueen(q.queen_role) && q.birth_date)
  if (activeWithDates.length === 0) return 0
  const totalDays = activeWithDates.reduce((sum, q) => {
- return sum + Math.floor((Date.now() - new Date(q.birth_date).getTime()) / (1000 * 60 * 60 * 24))
+ return sum + Math.floor((now - new Date(q.birth_date).getTime()) / (1000 * 60 * 60 * 24))
  }, 0)
  return Math.round(totalDays / activeWithDates.length / 30)
  })()
@@ -721,7 +722,7 @@ export default function QueensPage() {
  {queen.hives.apiaries.name}
  </div>
  )}
- {queen.status === 'active' && queen.birth_date && (Date.now() - new Date(queen.birth_date).getTime()) > 2 * 365 * 24 * 60 * 60 * 1000 && (
+ {queen.status === 'active' && queen.birth_date && (now - new Date(queen.birth_date).getTime()) > 2 * 365 * 24 * 60 * 60 * 1000 && (
  <div className="col-span-2">
  <span className="inline-block px-2 py-1 text-sm font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded border border-amber-300 dark:border-amber-700">
  Over 2 years old — replace soon
@@ -878,7 +879,7 @@ export default function QueensPage() {
  <td className="px-6 py-4 whitespace-nowrap text-text-primary font-medium">
  <span className="flex items-center gap-1.5">
  {calculateQueenAge(queen.birth_date)}
- {queen.status === 'active' && queen.birth_date && (Date.now() - new Date(queen.birth_date).getTime()) > 2 * 365 * 24 * 60 * 60 * 1000 && (
+ {queen.status === 'active' && queen.birth_date && (now - new Date(queen.birth_date).getTime()) > 2 * 365 * 24 * 60 * 60 * 1000 && (
  <span className="px-1.5 py-0.5 text-sm font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded border border-amber-300 dark:border-amber-700">
  Replace soon
  </span>

@@ -456,5 +456,17 @@
   <li>&#9745; <strong>C1 decided a):</strong> look up the Eircode through the app&rsquo;s own Google route, no weather if that fails (recommended); or b) no automatic weather until a map pin is set</li>
 </ul>
 
+<h2>14. Items left for later (plan, waiting for decisions)</h2>
+
+<p>Full plan: <span class="file">docs/features/deferred-items-review-plan.md</span>. Batches 1&ndash;4 are live, your checks passed, and Sentry shows no errors.</p>
+
+<ul class="todo">
+  <li>&#9745; <strong>L1:</strong> 38 React rule findings resolved (35 fixed, 3 explained false positives); the five rules are errors again; lint 0 errors, typecheck clean</li>
+  <li>&#9744; <strong>L2:</strong> keep <code>set-state-in-effect</code> (168) as a warning; ~37 cause a one-render flash, for a later batch</li>
+  <li>&#9744; <strong>T1:</strong> Mapbox town name may not be stored from the standard lookup: a) permanent lookup (card on the Mapbox account) / b) stop auto-filling / c) leave</li>
+  <li>&#9744; <strong>T2:</strong> Google coordinates may be kept 30 days: a) pin-confirm / c) keep and read Google&rsquo;s Service Specific Terms yourself</li>
+  <li>&#9744; <strong>U1/U2:</strong> Turbopack not now (Sentry tree-shaking unsupported); React 19.3 together with View Transitions (Phase F)</li>
+</ul>
+
 </body>
 </html>

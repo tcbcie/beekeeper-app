@@ -5,17 +5,13 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = [
   ...nextVitals,
   ...nextTs,
-  // eslint-config-next 16 added the React Compiler hook rules (react-hooks v7). Existing code had
-  // 207 findings on 15/11/2026 (169 set-state-in-effect). Warnings until a clean-up batch, so new
-  // findings stay visible without blocking CI. See docs/features/nextjs-16-upgrade-plan.md.
+  // eslint-config-next 16 added the React Compiler hook rules (react-hooks v7); their default is
+  // error. set-state-in-effect alone stays a warning: existing code has about 170 findings, mostly
+  // the load-in-an-effect pattern (docs/features/deferred-items-review-plan.md, L2). The other
+  // five were cleared on 15/11/2026 and are errors again.
   {
     rules: {
       "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/immutability": "warn",
-      "react-hooks/refs": "warn",
-      "react-hooks/static-components": "warn",
-      "react-hooks/purity": "warn",
-      "react-hooks/preserve-manual-memoization": "warn",
     },
   },
   {

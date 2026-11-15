@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
+import { useEffect, useLayoutEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { getCurrentUserId, getUserRole, type UserRole } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
@@ -125,7 +125,7 @@ export default function DashboardPage() {
  // Mobile tap-to-select: tap a quick action, then tap an apiary card to apply
  const [activeAction, setActiveAction] = useState<{ type: string; label: string } | null>(null)
  const activeActionRef = useRef(activeAction)
- activeActionRef.current = activeAction
+ useLayoutEffect(() => { activeActionRef.current = activeAction })
 
  // The apiaries are further down the page: bring them into view for the second tap, and move
  // focus to the instruction so a screen reader says what to do next.

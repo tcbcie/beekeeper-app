@@ -290,6 +290,7 @@ export default function ToolsPage() {
  if (!tool) return
  // Starring removes the row, so the next tool slides under the finger: a quick second tap
  // (gloves, a shaky hand) would star that one too. Ignore a star tap straight after another.
+ // eslint-disable-next-line react-hooks/purity -- runs on a star tap, not during render
  const now = Date.now()
  if (now - lastStarTapRef.current < STAR_TAP_GAP_MS) return
  lastStarTapRef.current = now

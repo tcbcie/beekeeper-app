@@ -12,10 +12,6 @@ export default function SubscriptionWarningBanner() {
   const [dismissed, setDismissed] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    fetchSubscriptionStatus()
-  }, [])
-
   const fetchSubscriptionStatus = async () => {
     try {
       const { data, error } = await supabase.rpc('get_subscription_status')
@@ -27,6 +23,10 @@ export default function SubscriptionWarningBanner() {
       console.error('Error fetching subscription status:', error)
     }
   }
+
+  useEffect(() => {
+    fetchSubscriptionStatus()
+  }, [])
 
   // Don't show banner if dismissed or if subscription is active
   if (dismissed || !subscriptionStatus) return null

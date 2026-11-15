@@ -1,7 +1,7 @@
 'use client'
 
 import { getCurrentDate } from '@/lib/date-utils'
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import { useGraftDistributions } from '@/hooks/useGraftDistributions'
@@ -48,7 +48,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
 
   // Stable ref for onCountsChange to avoid infinite re-render loops
   const onCountsChangeRef = useRef(onCountsChange)
-  onCountsChangeRef.current = onCountsChange
+  useLayoutEffect(() => { onCountsChangeRef.current = onCountsChange })
 
   // Frame selection state
   const [selectMode, setSelectMode] = useState(false)

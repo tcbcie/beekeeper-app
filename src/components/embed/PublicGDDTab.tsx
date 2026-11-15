@@ -149,7 +149,8 @@ export default function PublicGDDTab({ viewName, region, regionLabel }: PublicGD
   }, [periodFilter, selectedMonths])
 
   // Accumulation chart year selection
-  const currentYear = new Date().getFullYear()
+  // Read once when the tab opens, so it stays one value for every render and memo below.
+  const [currentYear] = useState(() => new Date().getFullYear())
   const availableAccumulationYears = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4]
   const [selectedAccumulationYears, setSelectedAccumulationYears] = useState<number[]>([currentYear, currentYear - 1])
 

@@ -131,7 +131,8 @@ export default function GDDDataTab({ userId }: GDDDataTabProps) {
   }, [periodFilter, selectedMonths])
 
   // Accumulation chart year selection (default: current year + 2 previous years)
-  const currentYear = new Date().getFullYear()
+  // Read once when the tab opens, so it stays one value for every render and memo below.
+  const [currentYear] = useState(() => new Date().getFullYear())
   const availableAccumulationYears = [currentYear, currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4]
   const [selectedAccumulationYears, setSelectedAccumulationYears] = useState<number[]>([currentYear, currentYear - 1])
 

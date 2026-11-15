@@ -110,7 +110,8 @@ export default function DistributionList({
 
   if (distLoading || distributions.length === 0) return null
 
-  const SortIcon = ({ col }: { col: SortColumn }) => {
+  // A render function, not a component: a component defined here would be rebuilt every render.
+  const sortIcon = (col: SortColumn) => {
     if (sortBy !== col) return <ArrowDown size={12} className="text-text-tertiary opacity-40" />
     return sortDir === 'asc'
       ? <ArrowUp size={12} className="text-foreground" />
@@ -154,13 +155,13 @@ export default function DistributionList({
                   <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Recipient</th>
                   <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">
                     <button type="button" onClick={() => handleSort('date')} className="inline-flex min-h-12 items-center gap-1 hover:text-foreground transition-colors">
-                      Date <SortIcon col="date" />
+                      Date {sortIcon('date')}
                     </button>
                   </th>
                   <th className="px-3 py-2 text-left text-sm font-medium text-text-secondary">Mating Location</th>
                   <th className="px-3 py-2 text-center text-sm font-medium text-text-secondary">
                     <button type="button" onClick={() => handleSort('mated')} className="inline-flex min-h-12 items-center gap-1 hover:text-foreground transition-colors">
-                      Mated <SortIcon col="mated" />
+                      Mated {sortIcon('mated')}
                     </button>
                   </th>
                   <th className="px-3 py-2 text-right text-sm font-medium text-text-secondary">Actions</th>

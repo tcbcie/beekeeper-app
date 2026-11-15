@@ -239,7 +239,8 @@ export default function AssociationManagement() {
     currentPage * itemsPerPage
   )
 
-  const SortIcon = ({ field }: { field: 'name' | 'county_area' | 'email' }) => {
+  // A render function, not a component: a component defined here would be rebuilt every render.
+  const sortIcon = (field: 'name' | 'county_area' | 'email') => {
     if (sortField !== field) return <ChevronUp size={14} className="opacity-30" />
     return sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
   }
@@ -462,7 +463,7 @@ export default function AssociationManagement() {
                     >
                       <div className="flex items-center gap-1">
                         Association Name
-                        <SortIcon field="name" />
+                        {sortIcon('name')}
                       </div>
                     </th>
                     <th
@@ -471,7 +472,7 @@ export default function AssociationManagement() {
                     >
                       <div className="flex items-center gap-1">
                         County/Area
-                        <SortIcon field="county_area" />
+                        {sortIcon('county_area')}
                       </div>
                     </th>
                     <th
@@ -480,7 +481,7 @@ export default function AssociationManagement() {
                     >
                       <div className="flex items-center gap-1">
                         Email
-                        <SortIcon field="email" />
+                        {sortIcon('email')}
                       </div>
                     </th>
                     <th className="px-4 py-3 text-center text-sm font-semibold text-text-secondary ">Contacted</th>

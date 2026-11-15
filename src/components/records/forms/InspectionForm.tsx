@@ -666,7 +666,7 @@ export default function InspectionForm({
       setVoiceError(null)
       await startVoiceRecording()
     }
-  }, [appendVoiceTranscript, isVoiceRecording, startVoiceRecording, stopVoiceRecording, voiceProcessing])
+  }, [appendVoiceTranscript, isVoiceRecording, startVoiceRecording, stopVoiceRecording, voiceProcessing, setVoiceError, setVoiceProcessing])
 
   const getApiaryIdForHive = useCallback((hiveId: string) => {
     if (!hiveId) {
@@ -1250,6 +1250,7 @@ export default function InspectionForm({
   const savedBroodBoxes = isEditing && formData.hive_id === initialData?.hive_id
     ? initialData?.brood_frames_per_box
     : null
+  // Kept as a memo: the effect below re-runs when this list's identity changes.
   const broodBoxList = useMemo<{ box: number; type: BroodBoxType }[]>(() => {
     if (savedBroodBoxes?.length) return savedBroodBoxes.map(({ box, type }) => ({ box, type }))
     const boxes: { box: number; type: BroodBoxType }[] = []
@@ -1257,6 +1258,7 @@ export default function InspectionForm({
     for (let i = 0; i < broodBoxFullCount; i++) boxes.push({ box: idx++, type: 'full' })
     for (let i = 0; i < broodBoxHalfCount; i++) boxes.push({ box: idx++, type: 'half' })
     return boxes
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization -- the dependencies are complete; the rule assumes values from the selected hive may change later in the render, which nothing here does
   }, [broodBoxFullCount, broodBoxHalfCount, savedBroodBoxes])
   const isMultiBox = broodBoxList.length > 1
 

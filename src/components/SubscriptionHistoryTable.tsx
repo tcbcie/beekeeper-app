@@ -8,10 +8,6 @@ export default function SubscriptionHistoryTable() {
   const [history, setHistory] = useState<SubscriptionHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchHistory()
-  }, [])
-
   const fetchHistory = async () => {
     try {
       const { data, error } = await supabase.rpc('get_subscription_history')
@@ -25,6 +21,10 @@ export default function SubscriptionHistoryTable() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchHistory()
+  }, [])
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-IE', {

@@ -38,10 +38,6 @@ export default function FrameStandardsManager() {
   const [editingStandard, setEditingStandard] = useState<EditingStandard | null>(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    fetchStandards()
-  }, [])
-
   async function fetchStandards() {
     setLoading(true)
     const { data, error } = await supabase
@@ -56,6 +52,10 @@ export default function FrameStandardsManager() {
     }
     setLoading(false)
   }
+
+  useEffect(() => {
+    fetchStandards()
+  }, [])
 
   async function handleAdd() {
     if (!newStandard.label.trim() || newStandard.width_mm <= 0 || newStandard.height_mm <= 0) {

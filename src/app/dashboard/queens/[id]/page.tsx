@@ -29,6 +29,9 @@ export default function QueenDetailPage() {
   const router = useRouter()
   const toast = useToast()
   const queenId = params.id as string
+  // The time is read once when the screen opens: reading the clock during render gives a
+  // different answer on every render.
+  const [now] = useState(() => Date.now())
   const [activeTab, setActiveTab] = useState<'overview' | 'report'>('overview')
   const [lineageExpanded, setLineageExpanded] = useState(true)
   const [showMatedForm, setShowMatedForm] = useState(false)
@@ -294,7 +297,7 @@ export default function QueenDetailPage() {
   // keep their own provenance (distributed) or show no code.
   const ownerContext = isOwner ? breederProfile : null
   const queenCode = queenCodeFor(queen, ownerContext)
-  const isOld = queen.birth_date && (Date.now() - new Date(queen.birth_date).getTime()) > 2 * 365 * 24 * 60 * 60 * 1000
+  const isOld = queen.birth_date && (now - new Date(queen.birth_date).getTime()) > 2 * 365 * 24 * 60 * 60 * 1000
 
   const colorBadgeClass = (color: string) => {
     switch (color) {

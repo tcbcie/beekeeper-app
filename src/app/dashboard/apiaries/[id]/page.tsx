@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { getCurrentUserId } from '@/lib/auth'
 import { useRouter, useParams } from 'next/navigation'
@@ -29,6 +29,9 @@ export default function ApiaryDetailPage() {
   const router = useRouter()
   const isPhone = useIsPhone()
   const apiaryId = params.id as string
+  // The time is read once when the screen opens: reading the clock during render gives a
+  // different answer on every render.
+  const [now] = useState(() => Date.now())
   const {
     apiary,
     hives,
@@ -99,7 +102,7 @@ export default function ApiaryDetailPage() {
   }
 
   const daysSinceInspection = stats.lastInspectionDate
-    ? Math.floor((Date.now() - new Date(stats.lastInspectionDate).getTime()) / (1000 * 60 * 60 * 24))
+    ? Math.floor((now - new Date(stats.lastInspectionDate).getTime()) / (1000 * 60 * 60 * 24))
     : null
   const normalisedImageUrl = normaliseStoragePublicUrl(apiary.image_url)
 

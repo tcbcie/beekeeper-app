@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import { useEffect, useLayoutEffect, useState, useMemo, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { supabase } from '@/lib/supabase'
 import { uploadImageFile, deleteUploadedImages } from '@/lib/upload-image'
@@ -860,6 +860,7 @@ export default function RecordsPage() {
     const entry: QueuedInspection = unsent && unsent.fingerprint === fingerprint ? unsent.entry : {
       id: crypto.randomUUID(),
       userId,
+      // eslint-disable-next-line react-hooks/purity -- runs when the form is submitted, not during render
       queuedAt: Date.now(),
       hiveId: formData.hive_id,
       hiveLabel: selectedHive?.hive_number ?? '',
@@ -1672,7 +1673,7 @@ export default function RecordsPage() {
   // A waiting inspection may arrive at any time, so show it when it does. Skipped while a form is
   // open: its own save refreshes the lists, and a reload shouldn't shift things under the beekeeper.
   const showFormRef = useRef(showForm)
-  showFormRef.current = showForm
+  useLayoutEffect(() => { showFormRef.current = showForm })
   const outboxCountRef = useRef<number | null>(null)
   useEffect(() => {
     if (!userId) return

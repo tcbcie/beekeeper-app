@@ -13,10 +13,6 @@ export default function SubscriptionStatusCard({ onRenewClick }: SubscriptionSta
  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatusResponse | null>(null)
  const [loading, setLoading] = useState(true)
 
- useEffect(() => {
- fetchSubscriptionStatus()
- }, [])
-
  const fetchSubscriptionStatus = async () => {
  try {
  const { data, error } = await supabase.rpc('get_subscription_status')
@@ -30,6 +26,10 @@ export default function SubscriptionStatusCard({ onRenewClick }: SubscriptionSta
  setLoading(false)
  }
  }
+
+ useEffect(() => {
+ fetchSubscriptionStatus()
+ }, [])
 
  if (loading) {
  return (
