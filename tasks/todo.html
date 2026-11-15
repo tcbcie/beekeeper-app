@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Invoice date on expenses</title>
+<title>Plan &mdash; Invoice date default</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -21,74 +21,50 @@
 </head>
 <body>
 
-<h1>Invoice date on expenses</h1>
+<h1>Invoice date starts with the expense date</h1>
 
-<p><strong>Status:</strong> built; database change is live; waiting for your tests &nbsp;&middot;&nbsp; <strong>Date:</strong> 15 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/profit-loss-suppliers.md</span> (extended)</p>
+<p><strong>Status:</strong> built, waiting for your tests &nbsp;&middot;&nbsp; <strong>Date:</strong> 15 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/profit-loss-suppliers.md</span></p>
 
 <blockquote>
-<p><strong>Your request:</strong> add an invoice date to expenses.</p>
-<p>This builds on suppliers and invoice numbers (<code>2e84b3e6</code>, <code>a360a4fc</code>). The delete-supplier plan is in git history (<code>5310add9</code>).</p>
+<p><strong>Your request:</strong> on a new expense, Date should start with today, and Invoice date should start with that date too.</p>
+<p><strong>Checked:</strong> Date already starts with today on a new record (<code>getCurrentDate()</code> returns <code>YYYY-MM-DD</code>), and you confirmed this on your device. Nothing changes there. The invoice date plan is in git history (<code>205312cf</code>).</p>
 </blockquote>
 
-<h2>1. The design</h2>
-<pre>
- Expense form (phone)
-┌──────────────────────────────────┐
-│ Date *  [ 15/11/2026         ]   │   ← the day it was paid (unchanged)
-│ ...                              │
-│ Supplier [ Thornes         ▾ ]   │
-│ [ Edit supplier ] [ + New ]      │
-│                                  │
-│ Invoice number [ INV-20431   ]   │   side by side from tablet width,
-│ Invoice date   [ 12/11/2026  ]   │   stacked on a phone
-│ Description ...                  │
-└──────────────────────────────────┘
- Record row:  Thornes · Invoice INV-20431 · Dated 12/11/2026
-</pre>
+<h2>1. Behaviour</h2>
 <ul>
-  <li>An optional <strong>Invoice date</strong> field, for <strong>expenses only</strong>, next to Invoice number (the same two-column grid as Date and Amount). It starts empty: the existing <strong>Date</strong> stays the date the expense counts towards in totals, the chart and the year filter.</li>
-  <li>The record row adds the invoice date to the supplier line in the same date style as the row's date.</li>
-  <li>The CSV export gains an "Invoice date" column after "Invoice number".</li>
-  <li>Switching a new record to Income hides the field, and income saves it as empty, the same as the supplier and invoice number.</li>
+  <li><strong>New expense:</strong> Invoice date starts as the same date as Date (today).</li>
+  <li><strong>Change Date first:</strong> Invoice date follows it, as long as you have not set Invoice date yourself. For example, you enter last Tuesday's receipt and change Date, and Invoice date moves with it.</li>
+  <li><strong>Once you change Invoice date yourself</strong>, it stays as you set it.</li>
+  <li><strong>Editing an existing expense:</strong> nothing is filled in automatically. Its saved invoice date, or none, is shown as it is, so old records are never changed quietly.</li>
+  <li>You can still clear Invoice date to save without one.</li>
 </ul>
 
-<h2>2. Database (additive only)</h2>
-<p><code>financial_records</code> gains <code>invoice_date date</code> (nullable). No existing row changes. Applied through the MCP and saved as <span class="file">supabase/migrations/20261115190000_add_invoice_date_to_financial_records.sql</span>.</p>
-
-<h2>3. Todo</h2>
+<h2>2. Todo</h2>
 <ul class="todo">
-  <li>☑ 1. Migration: the <code>invoice_date</code> column. Apply it and check it.</li>
-  <li>☑ 2. <span class="file">src/types/records.ts</span>: <code>invoice_date</code> on <code>FinancialRecord</code>.</li>
-  <li>☑ 3. <span class="file">FinancialRecordForm.tsx</span>: the Invoice date field beside Invoice number (expenses only, null for income).</li>
-  <li>☑ 4. <span class="file">index.tsx</span>: save it on insert and update; CSV column.</li>
-  <li>☑ 5. <span class="file">FinancialRecordCard.tsx</span>: the date on the supplier line.</li>
-  <li>☑ 6. Docs: <span class="file">profit-loss-suppliers.md</span> and <span class="file">profit-loss-tracker.md</span>.</li>
-  <li>☑ 7. Lint and type-check (done). ☐ You test: tests, a build, then add an expense with an invoice date and check the row and CSV.</li>
-  <li>☑ 8. Review section below.</li>
+  <li>☑ 1. <span class="file">FinancialRecordForm.tsx</span>: on a new record, start <code>invoiceDate</code> from <code>transactionDate</code>; in the Date field's change handler, move Invoice date along if it still equals the old Date (new records only).</li>
+  <li>☑ 2. Docs: <span class="file">profit-loss-suppliers.md</span>.</li>
+  <li>☑ 3. Lint (done). ☐ You test: add an expense (both dates are today), change Date (Invoice date follows), set Invoice date then change Date (it stays), edit an old expense (unchanged).</li>
+  <li>☑ 4. Review section below.</li>
 </ul>
 
-<h2>4. Review</h2>
+<h2>3. Review</h2>
 <table>
-  <tr><th>Where</th><th>Change</th></tr>
-  <tr><td>Live database</td><td><code>financial_records.invoice_date</code> (date, nullable) was added through the MCP and confirmed. No existing row changed.</td></tr>
-  <tr><td class="file">supabase/migrations/20261115190000_add_invoice_date_to_financial_records.sql</td><td>The same one-line SQL.</td></tr>
-  <tr><td class="file">src/types/records.ts</td><td><code>invoice_date</code> on <code>FinancialRecord</code>.</td></tr>
-  <tr><td class="file">ProfitLoss/FinancialRecordForm.tsx</td><td>An "Invoice date" date field beside "Invoice number" (two columns from tablet width, stacked on a phone), for expenses only. Income sends it as empty.</td></tr>
-  <tr><td class="file">ProfitLoss/index.tsx</td><td>Saved on add and update. CSV column "Invoice date" after "Invoice number".</td></tr>
-  <tr><td class="file">ProfitLoss/FinancialRecordCard.tsx</td><td>The supplier line now reads "Thornes · Invoice INV-20431 · Dated 12/11/2026". "Dated" keeps it apart from the payment date shown just above. The line moved below <code>formatDate</code>, because a <code>const</code> function cannot be used before it is declared.</td></tr>
-  <tr><td>Docs</td><td><span class="file">profit-loss-suppliers.md</span> and <span class="file">profit-loss-tracker.md</span> updated.</td></tr>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td class="file">ProfitLoss/FinancialRecordForm.tsx</td><td>On a new record, <code>invoiceDate</code> starts from <code>transactionDate</code> (today); an existing record keeps its saved value or stays empty. The Date field's change handler moves Invoice date with it when it is a new record and Invoice date still equals the old Date. Once the beekeeper sets or clears Invoice date, the two differ and it stays put. 9 lines.</td></tr>
+  <tr><td class="file">docs/features/profit-loss-suppliers.md</td><td>The default and follow behaviour is described.</td></tr>
 </table>
 <ul>
-  <li><strong>Change from the plan:</strong> the row shows the date as "Dated 12/11/2026", in the row's existing DD/MM/YYYY style, not "12 Nov 2026". A bare date would be confused with the payment date.</li>
-  <li>ESLint: no errors (the existing warning in <span class="file">index.tsx:112</span> is untouched). TypeScript: no errors in these files. No tests or build were run.</li>
+  <li>Date already started with today on new records; this was checked and confirmed on your device, so it was not touched.</li>
+  <li>No database change. ESLint and TypeScript: no errors. No tests or build were run.</li>
 </ul>
 <h3>For you to test</h3>
 <ol>
   <li><code>npm run test:run</code> and a build.</li>
-  <li>Add an expense with an invoice number and an invoice date earlier than the Date. The row should show "… · Dated …", and the totals should still follow the Date.</li>
-  <li>Edit it: the invoice date should be filled in. Clear it and save: it should be gone from the row.</li>
-  <li>Export CSV and check the "Invoice date" column.</li>
-  <li>On a phone, the two invoice fields should stack and the date picker should open normally.</li>
+  <li>Add an expense: Date and Invoice date both show today.</li>
+  <li>Change Date to an earlier day: Invoice date follows.</li>
+  <li>Set Invoice date to another day, then change Date: Invoice date stays as you set it.</li>
+  <li>Clear Invoice date and save: the row shows no "Dated …".</li>
+  <li>Edit an older expense with no invoice date: it stays empty.</li>
 </ol>
 
 </body>

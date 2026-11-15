@@ -46,7 +46,8 @@ export default function FinancialRecordForm({
   // Expenses only (docs/features/profit-loss-suppliers.md)
   const [supplierId, setSupplierId] = useState(record?.supplier_id || '')
   const [invoiceNumber, setInvoiceNumber] = useState(record?.invoice_number || '')
-  const [invoiceDate, setInvoiceDate] = useState(record?.invoice_date || '')
+  // A new expense's invoice date starts as its Date; an existing record shows what it saved.
+  const [invoiceDate, setInvoiceDate] = useState(record ? record.invoice_date || '' : transactionDate)
   const isExpense = recordType === 'expense'
 
   // Get categories based on type
@@ -131,7 +132,12 @@ export default function FinancialRecordForm({
               id={`${fieldId}-date`}
               type="date"
               value={transactionDate}
-              onChange={(e) => setTransactionDate(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value
+                // New record: Invoice date follows Date until the beekeeper sets or clears it.
+                if (!record && invoiceDate === transactionDate) setInvoiceDate(next)
+                setTransactionDate(next)
+              }}
               required
               className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
             />

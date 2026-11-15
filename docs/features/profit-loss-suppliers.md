@@ -17,6 +17,7 @@ On an **expense** (not income):
   - After a supplier is saved or deleted, the record rows reload quietly in the background (`fetchRecords(true)`), so other expenses show the new name, or no supplier, at once without closing the form.
 - **Invoice number:** a short free-text field, for example "INV-20431".
 - **Invoice date:** optional, beside the invoice number (stacked on a phone). It is for reference only: the existing Date still decides which month and year the expense counts towards.
+  - On a **new** expense it starts as the same date as Date (today). If Date is changed, it follows, until the beekeeper sets or clears it by hand. Editing an existing expense never fills it in automatically.
 - **Date:** the existing Date field, unchanged.
 
 The record row shows "Thornes · Invoice INV-20431 · Dated 12/11/2026" (whichever parts are set) above the description. "Dated" keeps the invoice date apart from the payment date. The CSV export gains "Supplier", "Invoice number" and "Invoice date" columns.
