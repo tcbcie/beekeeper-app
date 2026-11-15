@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import ModalShell from '@/components/ui/ModalShell'
+import { useConfirm } from '@/components/ui/ConfirmDialog'
 import FormActionRow from '@/components/ui/FormActionRow'
 import Button from '@/components/ui/Button'
 import TextInput from '@/components/ui/TextInput'
@@ -16,14 +17,16 @@ interface SupplierSheetProps {
   // null = add a new supplier
   supplier: Supplier | null
   onSaved: (supplier: Supplier) => void
+  onDeleted: (supplierId: string) => void
   onClose: () => void
 }
 
 // Add or edit a supplier from the expense form (docs/features/profit-loss-suppliers.md).
 // It opens inside the expense <form>, so it has no <form> of its own: Enter saves
 // the supplier here instead of submitting the expense.
-export default function SupplierSheet({ userId, supplier, onSaved, onClose }: SupplierSheetProps) {
+export default function SupplierSheet({ userId, supplier, onSaved, onDeleted, onClose }: SupplierSheetProps) {
   const toast = useToast()
+  const confirm = useConfirm()
   const [name, setName] = useState(supplier?.name || '')
   const [phone, setPhone] = useState(supplier?.phone || '')
   const [email, setEmail] = useState(supplier?.email || '')
@@ -68,6 +71,47 @@ export default function SupplierSheet({ userId, supplier, onSaved, onClose }: Su
     onSaved(data as Supplier)
   }
 
+  // Deleting keeps the expenses: the database clears their supplier (on delete set null).
+  const handleDelete = async () => {
+    if (!supplier || saving) return
+    setSaving(true)
+    const { count, error: countError } = await supabase
+      .from('financial_records')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('supplier_id', supplier.id)
+    setSaving(false)
+    if (countError) {
+      console.error('Error counting supplier expenses:', countError)
+      toast.error('Supplier not deleted. Check your connection and try again.')
+      return
+    }
+    const used = count ?? 0
+    const ok = await confirm({
+      title: `Delete ${supplier.name}?`,
+      message: used > 0
+        ? `It will be removed from ${used} ${used === 1 ? 'expense' : 'expenses'}. The expenses themselves are kept.`
+        : 'It is not used on any expense.',
+      confirmLabel: 'Delete supplier',
+      variant: 'danger',
+    })
+    if (!ok) return
+    setSaving(true)
+    const { error } = await supabase
+      .from('suppliers')
+      .delete()
+      .eq('id', supplier.id)
+      .eq('user_id', userId)
+    setSaving(false)
+    if (error) {
+      console.error('Error deleting supplier:', error)
+      toast.error('Supplier not deleted. Check your connection and try again.')
+      return
+    }
+    toast.success('Supplier deleted')
+    onDeleted(supplier.id)
+  }
+
   const saveOnEnter = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
       e.preventDefault()
@@ -82,7 +126,13 @@ export default function SupplierSheet({ userId, supplier, onSaved, onClose }: Su
       closeDisabled={saving}
       bodyClassName="p-4 sm:p-6"
       footer={(
-        <FormActionRow className="justify-end">
+        <FormActionRow className="flex-wrap justify-end">
+          {supplier && (
+            <Button tone="danger" onClick={handleDelete} disabled={saving} className="mr-auto flex items-center gap-2">
+              <Trash2 size={16} aria-hidden="true" />
+              Delete supplier
+            </Button>
+          )}
           <Button onClick={onClose} disabled={saving}>
             Cancel
           </Button>

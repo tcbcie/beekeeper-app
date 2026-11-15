@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Suppliers on expenses</title>
+<title>Plan &mdash; Delete a supplier</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -21,105 +21,69 @@
 </head>
 <body>
 
-<h1>Suppliers and invoice numbers on expenses</h1>
+<h1>Delete a supplier</h1>
 
-<p><strong>Status:</strong> built; database change is live; waiting for your tests &nbsp;&middot;&nbsp; <strong>Date:</strong> 15 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/profit-loss-suppliers.md</span></p>
+<p><strong>Status:</strong> built, waiting for your tests &nbsp;&middot;&nbsp; <strong>Date:</strong> 15 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/profit-loss-suppliers.md</span> (extended)</p>
 
 <blockquote>
-<p><strong>Your request:</strong> in Tools &rarr; Profit &amp; Loss, let an expense pick a supplier, create a new supplier on the spot, edit an existing one, and record the date and the invoice number.</p>
-<p><strong>How it was explored:</strong> an agent covered the Profit &amp; Loss code and docs; I checked the live database through the Supabase MCP. The Mel voice input plan that was in this file is in git history (<code>aac8caf4</code>).</p>
+<p><strong>Your request:</strong> add an option to delete a supplier.</p>
+<p>This follows on from suppliers on expenses (<code>2e84b3e6</code>); that plan is in git history.</p>
 </blockquote>
 
-<h2>1. What exists today</h2>
-<ul>
-  <li><strong>The form</strong> (<span class="file">FinancialRecordForm.tsx</span>, shown inline on the Profit &amp; Loss tool) has: Type (income/expense), <strong>Date (already there, required)</strong>, Amount, Category, Description, Notes.</li>
-  <li><strong>The table</strong> <code>financial_records</code> has 117 records (33 expenses) from 4 users. It has RLS by <code>user_id</code> and no supplier or invoice columns.</li>
-  <li>There is no supplier table. The CRM's customers are the closest pattern, but they are a separate opt-in module, so they are not reused.</li>
-  <li>Saves go straight to Supabase in <span class="file">ProfitLoss/index.tsx</span>, with explicit column lists for insert and update.</li>
-</ul>
-
-<h2>2. The design</h2>
-<p><strong>User and moment:</strong> a beekeeper at home or in the shed with a receipt or invoice in hand, entering what they bought. <strong>One job:</strong> record who was paid and the invoice reference without leaving the expense.</p>
-
+<h2>1. The design</h2>
 <pre>
- Expense form (phone)                    New / edit supplier (bottom sheet)
-┌──────────────────────────────────┐    ┌──────────────────────────────────┐
-│ Type   (•) Expense  ( ) Income   │    │ New supplier                  ✕  │
-│ Date   [ 15/11/2026          ]   │    │                                  │
-│ Amount [ 84.50               ]   │    │ Name *  [ Thornes              ] │
-│ Category [ Equipment       ▾ ]   │    │ Phone   [                      ] │
-│                                  │    │ Email   [                      ] │
-│ Supplier                         │    │ Notes   [                      ] │
-│ [ Thornes                  ▾ ]   │    │                                  │
-│ [ Edit supplier ] [ + New ]      │    │ [ Cancel ]   [ Save supplier ]   │
-│                                  │    └──────────────────────────────────┘
-│ Invoice number [ INV-20431   ]   │
-│ Description [ ...            ]   │
-│ Notes       [ ...            ]   │
-│ [ Cancel ]        [ Save ]       │
+ Edit supplier (bottom sheet)              Confirm (centred, existing dialog)
+┌──────────────────────────────────┐      ┌────────────────────────────────┐
+│ Edit supplier                 ✕  │      │ Delete Thornes?                │
+│ Name *  [ Thornes              ] │      │                                │
+│ Phone   [                      ] │      │ It will be removed from 3      │
+│ Email   [                      ] │      │ expenses. The expenses         │
+│ Notes   [                      ] │      │ themselves are kept.           │
+│                                  │      │                                │
+│ [ Delete supplier ]              │      │ [ Cancel ] [ Delete supplier ] │
+│ [ Cancel ]   [ Save supplier ]   │      └────────────────────────────────┘
 └──────────────────────────────────┘
 </pre>
-
 <ul>
-  <li>Supplier and Invoice number appear <strong>only for expenses</strong>, under Category. Both are optional.</li>
-  <li>The supplier list's first option is "No supplier". Below it are two 48px outline buttons, <strong>New supplier</strong> and <strong>Edit supplier</strong>; Edit only shows when a supplier is selected.</li>
-  <li>The sheet uses the existing <code>ModalShell</code>: a bottom sheet on a phone, a centred dialog on desktop. Saving a new supplier selects it in the expense. The toast reads "Supplier saved".</li>
-  <li>The record row gains one line, "Thornes · Invoice INV-20431". The CSV export gains "Supplier" and "Invoice number".</li>
-  <li>Inputs follow the form's existing styling (16px text, 48px tall).</li>
-</ul>
-<p><strong>Review against the design rules:</strong> I considered a typeahead "search or add" box, but the app has no such primitive and a native select is easier with gloves and large text. I put New and Edit as buttons, not as a "+ Add new…" option inside the select; that pattern is hidden and awkward with screen readers. There is no separate suppliers screen: everything happens where the expense is entered.</p>
-
-<h2>3. Database (additive only)</h2>
-<ul>
-  <li>New table <code>suppliers</code> (id, user_id, name, phone, email, notes, created_at, updated_at), with RLS <code>auth.uid() = user_id</code> for all four actions, the same as <code>financial_records</code>.</li>
-  <li><code>financial_records</code> gains <code>supplier_id</code> (nullable, on delete set null, indexed) and <code>invoice_number</code> (nullable text).</li>
-  <li>No existing data changes, so there is nothing to back up beyond Supabase's daily backup. Applied through the MCP, with the SQL saved as <span class="file">supabase/migrations/20261115180000_add_suppliers_to_profit_loss.sql</span>.</li>
+  <li><strong>Delete supplier</strong> is a red button in the <em>Edit supplier</em> sheet only; a new supplier has nothing to delete. It sits on the left of the footer, away from Save.</li>
+  <li>It asks first, through the existing <code>useConfirm</code> (danger). The message says how many expenses use the supplier, or "It is not used on any expense."</li>
+  <li>After deleting, the toast reads "Supplier deleted". The supplier leaves the list and the expense being edited goes back to "No supplier".</li>
+  <li>The database already clears the supplier from those expenses (<code>on delete set null</code>), so no data is lost and no migration is needed.</li>
 </ul>
 
-<h2>4. Todo</h2>
+<h2>2. A gap this also closes</h2>
+<p>After a supplier is <strong>renamed</strong> today, the other record rows show the old name until the page reloads. Deleting would leave a deleted name showing the same way. To fix both at the root, the picker tells Profit &amp; Loss when suppliers change, and the records reload. That is one callback passed from <span class="file">index.tsx</span> through the form to the picker.</p>
+
+<h2>3. Todo</h2>
 <ul class="todo">
-  <li>☑ 1. Migration: <code>suppliers</code> table with RLS, plus the two columns on <code>financial_records</code>. Apply it and check the policies and the advisors.</li>
-  <li>☑ 2. Types: <code>Supplier</code>, plus <code>supplier_id</code>, <code>invoice_number</code> and <code>supplier</code> on <code>FinancialRecord</code>.</li>
-  <li>☑ 3. New <span class="file">SupplierSheet.tsx</span>: create or edit a supplier on <code>ModalShell</code>.</li>
-  <li>☑ 4. New <span class="file">SupplierPicker.tsx</span>: loads suppliers, the select, and the New and Edit buttons that open the sheet.</li>
-  <li>☑ 5. <span class="file">FinancialRecordForm.tsx</span>: Supplier and Invoice number for expenses (income sends nulls).</li>
-  <li>☑ 6. <span class="file">index.tsx</span>: select <code>supplier:suppliers(name)</code>, save both fields on insert and update, add CSV columns, pass <code>userId</code> to the form.</li>
-  <li>☑ 7. <span class="file">FinancialRecordCard.tsx</span>: the supplier and invoice line.</li>
-  <li>☑ 8. <span class="file">database-export.ts</span>: include <code>suppliers</code>.</li>
-  <li>☑ 9. Docs: <span class="file">profit-loss-suppliers.md</span> and <span class="file">profit-loss-tracker.md</span>.</li>
-  <li>☑ 10. Lint the changed files (done). ☐ You test: <code>npm run test:run</code>, a build, and a real phone (add an expense with a new supplier, edit the supplier, export CSV).</li>
-  <li>☑ 11. Review section below.</li>
+  <li>☑ 1. <span class="file">SupplierSheet.tsx</span>: <code>onDeleted</code> prop; count the expenses using the supplier, confirm, delete, toast.</li>
+  <li>☑ 2. <span class="file">SupplierPicker.tsx</span>: remove the deleted supplier from the list and clear the selection; call <code>onSuppliersChanged</code> after a save or delete.</li>
+  <li>☑ 3. <span class="file">FinancialRecordForm.tsx</span> and <span class="file">index.tsx</span>: pass <code>onSuppliersChanged</code> through, which reloads the records.</li>
+  <li>☑ 4. Docs: <span class="file">profit-loss-suppliers.md</span>, deleting moves from "out of scope" to built.</li>
+  <li>☑ 5. Lint (done). ☐ You test: delete a used supplier, check its expenses still exist without it, and check a rename shows on other rows at once.</li>
+  <li>☑ 6. Review section below.</li>
 </ul>
 
-<h2>5. Review</h2>
-<h3>What changed</h3>
+<h2>4. Review</h2>
 <table>
-  <tr><th>Where</th><th>Change</th></tr>
-  <tr><td>Live database</td><td>New <code>suppliers</code> table with RLS (own rows only, all four actions). <code>financial_records</code> gains <code>supplier_id</code> (on delete set null, indexed) and <code>invoice_number</code>. Applied through the MCP; both columns confirmed. The security advisors show nothing new. No existing row changed.</td></tr>
-  <tr><td class="file">supabase/migrations/20261115180000_add_suppliers_to_profit_loss.sql</td><td>The same SQL, kept with the other migrations.</td></tr>
-  <tr><td class="file">src/types/records.ts</td><td><code>Supplier</code> type; <code>supplier_id</code>, <code>invoice_number</code> and the joined <code>supplier</code> on <code>FinancialRecord</code>.</td></tr>
-  <tr><td class="file">ProfitLoss/SupplierSheet.tsx (new)</td><td>New or edit supplier sheet on <code>ModalShell</code>: Name (required), Phone, Email, Notes. "Save supplier" shows the toast "Supplier saved". A failed save says "Supplier not saved. Check your connection and try again." There is no <code>&lt;form&gt;</code>, because it opens inside the expense form; Enter saves the supplier.</td></tr>
-  <tr><td class="file">ProfitLoss/SupplierPicker.tsx (new)</td><td>Loads the user's suppliers, A&ndash;Z. Shows a select with "No supplier", "Edit supplier" (when one is chosen) and "New supplier". A saved supplier is selected straight away.</td></tr>
-  <tr><td class="file">ProfitLoss/FinancialRecordForm.tsx</td><td>Supplier and Invoice number under Category, for expenses only. Saving as income sends both as empty.</td></tr>
-  <tr><td class="file">ProfitLoss/index.tsx</td><td>Loads <code>supplier:suppliers(name)</code> with records, saves both fields on add and update, and adds two CSV columns, "Supplier" and "Invoice number". Passes <code>userId</code> to the form.</td></tr>
-  <tr><td class="file">ProfitLoss/FinancialRecordCard.tsx</td><td>A line such as "Thornes · Invoice INV-20431" above the description.</td></tr>
-  <tr><td class="file">src/lib/database-export.ts</td><td><code>suppliers</code> is added to the admin export and to a member's own data export.</td></tr>
-  <tr><td>Docs</td><td>New <span class="file">profit-loss-suppliers.md</span>; <span class="file">profit-loss-tracker.md</span> updated (how to use, schema, files, form fields, record cards, CSV).</td></tr>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td class="file">ProfitLoss/SupplierSheet.tsx</td><td>A red "Delete supplier" button on the left of the footer, in the Edit sheet only. It counts the user's expenses using the supplier, then asks through <code>useConfirm</code> (danger): "Delete Thornes? It will be removed from 3 expenses. The expenses themselves are kept." If the supplier is unused, it says "It is not used on any expense." After deleting, the toast reads "Supplier deleted". If something fails, it says "Supplier not deleted. Check your connection and try again." Buttons are disabled while it works.</td></tr>
+  <tr><td class="file">ProfitLoss/SupplierPicker.tsx</td><td>On delete, the supplier is removed from the list and the selection is cleared if it was chosen. After a save or delete it calls <code>onSuppliersChanged</code>.</td></tr>
+  <tr><td class="file">ProfitLoss/FinancialRecordForm.tsx</td><td>Passes <code>onSuppliersChanged</code> to the picker.</td></tr>
+  <tr><td class="file">ProfitLoss/index.tsx</td><td><code>fetchRecords(quiet)</code>: with <code>true</code> it reloads the rows without the loading screen. The loading screen would have unmounted the open expense form and lost what was typed, which I caught during the build. Supplier changes use the quiet reload.</td></tr>
+  <tr><td class="file">docs/features/profit-loss-suppliers.md</td><td>Deleting is documented and removed from "Out of scope".</td></tr>
 </table>
-<h3>Checks</h3>
 <ul>
-  <li>ESLint on all changed files: no errors. There is one existing warning in <span class="file">index.tsx:111</span> (first-load effect), which was already there and is untouched.</li>
-  <li>TypeScript: no errors in the changed files.</li>
-  <li>No tests or build were run, as you asked.</li>
+  <li>No database change: <code>supplier_id</code> was created <code>on delete set null</code>, and RLS already limits delete to the owner.</li>
+  <li>ESLint: no errors. The one existing warning in <span class="file">index.tsx:111</span> is untouched. TypeScript: no errors in these files. No tests or build were run.</li>
 </ul>
 <h3>For you to test</h3>
 <ol>
-  <li><code>npm run test:run</code> and a build. If a test pins the list of exported tables, it will need <code>suppliers</code> added.</li>
-  <li>Add an expense, tap New supplier, enter "Thornes" and tap Save supplier. It should be selected; add an invoice number and Save. The row should show "Thornes · Invoice …".</li>
-  <li>Edit that expense, tap Edit supplier, change the phone and save. Then save the expense.</li>
-  <li>Switch a new record to Income. Supplier and Invoice number should disappear.</li>
-  <li>Export CSV and check the two new columns.</li>
-  <li>On a phone, the supplier sheet should come up from the bottom, and the keyboard should not hide "Save supplier".</li>
+  <li><code>npm run test:run</code> and a build.</li>
+  <li>Edit an expense with a supplier, tap Edit supplier, then Delete supplier. The message should give the right number of expenses. Confirm. The supplier should be gone from the list, the expense should show "No supplier", and the form should still be open with your other entries intact.</li>
+  <li>Close the form. The other expenses that used it should no longer show the supplier, but they should all still be there.</li>
+  <li>Rename a supplier. Other rows should show the new name straight away.</li>
+  <li>Tap Cancel on the confirmation. Nothing should change.</li>
 </ol>
 
 </body>

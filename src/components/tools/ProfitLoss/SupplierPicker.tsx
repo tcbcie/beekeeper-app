@@ -12,11 +12,13 @@ interface SupplierPickerProps {
   id: string
   value: string
   onChange: (supplierId: string) => void
+  // A supplier was saved or deleted: other records may show its old name.
+  onSuppliersChanged: () => void
 }
 
 // Pick the supplier on an expense, or add or edit one without leaving the form
 // (docs/features/profit-loss-suppliers.md).
-export default function SupplierPicker({ userId, id, value, onChange }: SupplierPickerProps) {
+export default function SupplierPicker({ userId, id, value, onChange, onSuppliersChanged }: SupplierPickerProps) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   // undefined = sheet closed, null = new supplier, Supplier = editing that one
   const [sheetSupplier, setSheetSupplier] = useState<Supplier | null | undefined>(undefined)
@@ -41,6 +43,14 @@ export default function SupplierPicker({ userId, id, value, onChange }: Supplier
     )
     onChange(saved.id)
     setSheetSupplier(undefined)
+    onSuppliersChanged()
+  }
+
+  const handleDeleted = (deletedId: string) => {
+    setSuppliers(prev => prev.filter(s => s.id !== deletedId))
+    if (value === deletedId) onChange('')
+    setSheetSupplier(undefined)
+    onSuppliersChanged()
   }
 
   return (
@@ -78,6 +88,7 @@ export default function SupplierPicker({ userId, id, value, onChange }: Supplier
           userId={userId}
           supplier={sheetSupplier}
           onSaved={handleSaved}
+          onDeleted={handleDeleted}
           onClose={() => setSheetSupplier(undefined)}
         />
       )}

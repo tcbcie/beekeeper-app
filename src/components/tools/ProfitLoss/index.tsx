@@ -82,8 +82,9 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
   }, [])
 
   // Fetch financial records
-  const fetchRecords = useCallback(async () => {
-    setLoading(true)
+  // quiet: reload in place (no loading screen), so an open form is not unmounted.
+  const fetchRecords = useCallback(async (quiet = false) => {
+    if (!quiet) setLoading(true)
     try {
       const { data, error } = await supabase
         .from('financial_records')
@@ -396,6 +397,8 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
           expenseCategories={expenseCategories}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
+          // A supplier was renamed or deleted: refresh the other rows without closing this form.
+          onSuppliersChanged={() => fetchRecords(true)}
           saving={saving}
           isUkNi={isUkNi}
         />

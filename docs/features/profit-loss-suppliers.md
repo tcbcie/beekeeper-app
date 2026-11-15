@@ -13,6 +13,8 @@ On an **expense** (not income):
 - **Supplier:** a list of their own suppliers, with "No supplier" as the first choice.
   - **New supplier** opens a sheet (name, phone, email, notes). Saving it adds the supplier and selects it in the expense straight away, with no need to leave the form.
   - **Edit supplier** (shown when one is selected) opens the same sheet filled in. Changes apply to every expense from that supplier.
+  - **Delete supplier** (red, in the Edit supplier sheet only) asks first, saying how many expenses use it: "Delete Thornes? It will be removed from 3 expenses. The expenses themselves are kept." The database clears the supplier from those expenses (`on delete set null`); no expense is deleted. The toast reads "Supplier deleted" and the expense being edited goes back to "No supplier".
+  - After a supplier is saved or deleted, the record rows reload quietly in the background (`fetchRecords(true)`), so other expenses show the new name, or no supplier, at once without closing the form.
 - **Invoice number:** a short free-text field, for example "INV-20431".
 - **Date:** the existing Date field, unchanged.
 
@@ -58,6 +60,5 @@ The supplier sheet opens inside the expense form (`ModalShell` does not use a po
 
 ## Out of scope
 
-- Deleting suppliers. A supplier that is no longer used simply stays in the list. This can be added later; deleting one would clear it from past expenses.
 - A separate suppliers screen.
 - Suppliers on income records.

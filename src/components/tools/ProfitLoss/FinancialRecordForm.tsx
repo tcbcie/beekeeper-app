@@ -16,6 +16,7 @@ interface FinancialRecordFormProps {
   expenseCategories: DropdownValue[]
   onSubmit: (record: Partial<FinancialRecord>) => Promise<void>
   onCancel: () => void
+  onSuppliersChanged: () => void
   saving: boolean
   isUkNi?: boolean
 }
@@ -27,6 +28,7 @@ export default function FinancialRecordForm({
   expenseCategories,
   onSubmit,
   onCancel,
+  onSuppliersChanged,
   saving,
   isUkNi
 }: FinancialRecordFormProps) {
@@ -179,6 +181,7 @@ export default function FinancialRecordForm({
               id={`${fieldId}-supplier`}
               value={supplierId}
               onChange={setSupplierId}
+              onSuppliersChanged={onSuppliersChanged}
             />
             <div>
               <label htmlFor={`${fieldId}-invoice`} className="block text-sm font-medium text-text-secondary mb-1">
