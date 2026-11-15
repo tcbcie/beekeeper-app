@@ -611,7 +611,7 @@ export default function DashboardPage() {
 
  {/* Application Version */}
  <p className="text-sm text-text-tertiary text-center py-2">
- HiveCraic v1.14.2 &middot; 15th November 2026 &middot; <Link href="/dashboard/about?section=changes" className="text-forest-600 dark:text-forest-400 underline underline-offset-2">View Changes</Link>
+ HiveCraic v1.14.3 &middot; 15th November 2026 &middot; <Link href="/dashboard/about?section=changes" className="text-forest-600 dark:text-forest-400 underline underline-offset-2">View Changes</Link>
  </p>
  </div>
  )
