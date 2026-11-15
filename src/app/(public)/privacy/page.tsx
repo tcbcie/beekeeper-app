@@ -92,7 +92,7 @@ const sections: PrivacySection[] = [
       { label: 'OpenAI', desc: 'When you ask Mel a question or record a voice note, the question, the records needed to answer it, or the recording are sent to OpenAI to produce the answer or the text' },
       { label: 'Resend', desc: 'Sends our emails: invitations, reminders and invoices' },
       { label: 'Mapbox', desc: 'Draws the maps; the area of the map you are looking at is sent to Mapbox' },
-      { label: 'Google, postcodes.io and OpenStreetMap', desc: 'Turn an Eircode, postcode or place name you type into a map position' },
+      { label: 'Google and postcodes.io', desc: 'Turn an Eircode, postcode or place name you type into a map position' },
       { label: 'Open-Meteo', desc: 'Provides weather and forecasts for the position of an apiary' },
       { label: 'Sentry', desc: 'If the application fails, a technical report of the fault and your account number are sent to Sentry (stored in the EU) so we can fix it. No beekeeping records, email address or name are included' },
       { label: 'BEEP and Wolf Waagen', desc: 'Only if you connect a hive scale: your scale readings are read from the maker using the access you provide' },

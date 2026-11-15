@@ -432,5 +432,29 @@
   <li>&#9745; Pushed to <code>main</code></li>
 </ul>
 
+<h2>13. Batch 3 &mdash; map and address lookups within their terms (plan, waiting for approval)</h2>
+
+<p>Full plan: <span class="file">docs/features/map-and-address-lookup-terms-plan.md</span>.</p>
+
+<ul>
+  <li><strong>Correction:</strong> Mapbox&rsquo;s v5 place lookup is not being retired. It stays on v5; it only lacked a time limit.</li>
+  <li><strong>Found:</strong> 14 of 108 apiaries have an Eircode but no map position. For those, inspection weather asks Nominatim, and on failure silently records Dublin or Belfast weather (a known fault).</li>
+</ul>
+
+<ul class="todo">
+  <li>&#9745; A. Trace page map drawn with Mapbox (same circle, no panning); shared circle helper <code>src/lib/geo-circle.ts</code>; Leaflet removed</li>
+  <li>&#9745; B. Apiary form: Nominatim fallback removed; a miss opens the map pin as for Eircodes</li>
+  <li>&#9745; C. Inspection weather for apiaries without a pin: Eircode via the app&rsquo;s own Google route (C1-a); no answer means no weather, the Dublin/Belfast fallback is gone</li>
+  <li>&#9745; D. Map pin town name: 8-second time limit and a success check</li>
+  <li>&#9745; E. Security policy (Nominatim removed), privacy page and feature documents updated</li>
+  <li>&#9745; QA audit: no critical/high findings. Typecheck clean; lint no errors</li>
+  <li>&#9744; You: run the tests; after deployment check the trace page, apiary lookups, map pin and inspection weather</li>
+</ul>
+
+<h3>Decision needed</h3>
+<ul class="todo">
+  <li>&#9745; <strong>C1 decided a):</strong> look up the Eircode through the app&rsquo;s own Google route, no weather if that fails (recommended); or b) no automatic weather until a map pin is set</li>
+</ul>
+
 </body>
 </html>

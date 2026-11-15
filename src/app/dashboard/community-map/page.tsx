@@ -18,6 +18,7 @@ import { MapPin, Users, Maximize2, Minimize2, Layers, X } from 'lucide-react'
 // Types only: the library itself is loaded on demand in the map setup effect below.
 import type mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import { createCircleGeoJSON } from '@/lib/geo-circle'
 import { useDCAPredictions, type DCAConfirmation } from '@/hooks/useDCAPredictions'
 // Other beekeepers' coordinates arrive already offset by the database.
 
@@ -220,29 +221,6 @@ function findSightingInCircle(
     }
   }
   return nearest
-}
-
-// Generate circle coordinates for GeoJSON
-function createCircleGeoJSON(center: [number, number], radiusKm: number): GeoJSON.Feature<GeoJSON.Polygon> {
-  const points = 64
-  const coords: [number, number][] = []
-  const earthRadiusKm = 6371
-
-  for (let i = 0; i <= points; i++) {
-    const angle = (i / points) * 2 * Math.PI
-    const latOffset = (radiusKm / earthRadiusKm) * (180 / Math.PI) * Math.cos(angle)
-    const lngOffset = (radiusKm / earthRadiusKm) * (180 / Math.PI) * Math.sin(angle) / Math.cos(center[1] * Math.PI / 180)
-    coords.push([center[0] + lngOffset, center[1] + latOffset])
-  }
-
-  return {
-    type: 'Feature',
-    properties: {},
-    geometry: {
-      type: 'Polygon',
-      coordinates: [coords]
-    }
-  }
 }
 
 // Create multi-circle GeoJSON for multiple apiaries

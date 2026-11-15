@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
+import mapboxgl from 'mapbox-gl'
+import 'mapbox-gl/dist/mapbox-gl.css'
+import { createCircleGeoJSON } from '@/lib/geo-circle'
 
 interface ApiaryAreaMapProps {
   lat: number
@@ -10,52 +11,56 @@ interface ApiaryAreaMapProps {
   radiusKm?: number
 }
 
+// The source apiary's foraging area on the public trace page: a still map (no panning or zooming)
+// with the amber circle. Drawn with Mapbox like the rest of the app; OpenStreetMap's own tile
+// servers are not for apps. The position is already blurred before it reaches this page.
 export default function ApiaryAreaMap({ lat, lon, radiusKm = 5 }: ApiaryAreaMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null)
-  const mapInstanceRef = useRef<L.Map | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return
+    const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
+    // No token: the grey block from the wrapper stays, with its label.
+    if (!containerRef.current || !accessToken) return
+    mapboxgl.accessToken = accessToken
 
-    // Create map
-    const map = L.map(mapRef.current, {
-      center: [lat, lon],
-      zoom: 11,
-      zoomControl: false,
-      dragging: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
-      touchZoom: false
+    const circle = createCircleGeoJSON([lon, lat], radiusKm)
+    const ring = circle.geometry.coordinates[0]
+    const lngs = ring.map(point => point[0])
+    const lats = ring.map(point => point[1])
+
+    const map = new mapboxgl.Map({
+      container: containerRef.current,
+      style: 'mapbox://styles/mapbox/outdoors-v12',
+      bounds: [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+      fitBoundsOptions: { padding: 20 },
+      interactive: false,
     })
 
-    // Add OpenStreetMap tiles. The credit is required by the OSM tile usage policy (C7a-21).
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map)
+    map.on('load', () => {
+      map.addSource('foraging-area', { type: 'geojson', data: circle })
+      map.addLayer({
+        id: 'foraging-area-fill',
+        type: 'fill',
+        source: 'foraging-area',
+        paint: { 'fill-color': '#fbbf24', 'fill-opacity': 0.2 },
+      })
+      map.addLayer({
+        id: 'foraging-area-line',
+        type: 'line',
+        source: 'foraging-area',
+        paint: { 'line-color': '#d97706', 'line-width': 2 },
+      })
+    })
 
-    // Draw circle (radius in meters)
-    L.circle([lat, lon], {
-      radius: radiusKm * 1000,
-      color: '#d97706',
-      fillColor: '#fbbf24',
-      fillOpacity: 0.2,
-      weight: 2
-    }).addTo(map)
-
-    // Fit bounds to circle
-    const bounds = L.latLng(lat, lon).toBounds(radiusKm * 1000 * 2)
-    map.fitBounds(bounds, { padding: [20, 20] })
-
-    mapInstanceRef.current = map
-
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove()
-        mapInstanceRef.current = null
-      }
-    }
+    return () => map.remove()
   }, [lat, lon, radiusKm])
 
-  return <div ref={mapRef} className="w-full h-full" />
+  return (
+    <div
+      ref={containerRef}
+      role="img"
+      aria-label="Map of the approximate area around the source apiary"
+      className="w-full h-full"
+    />
+  )
 }

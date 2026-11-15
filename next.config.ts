@@ -65,7 +65,6 @@ function buildContentSecurityPolicy(): string {
     'https://*.tiles.mapbox.com',
     'https://api.open-meteo.com',
     'https://archive-api.open-meteo.com',
-    'https://nominatim.openstreetmap.org',
     'https://api.postcodes.io',
     'https://en.wikipedia.org',
     // Error monitoring (Sentry, EU region). Must match the host in NEXT_PUBLIC_SENTRY_DSN.

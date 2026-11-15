@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import { createCircleGeoJSON } from '@/lib/geo-circle'
 import { MapPin, Crosshair, X, Circle, Layers, Map, Satellite, Maximize2, Minimize2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
@@ -146,29 +147,6 @@ const FLIGHT_RADIUS_OPTIONS = [
   { value: 8, label: '8 km' },
 ]
 
-// Generate circle coordinates for GeoJSON
-function createCircleGeoJSON(center: [number, number], radiusKm: number): GeoJSON.Feature<GeoJSON.Polygon> {
-  const points = 64
-  const coords: [number, number][] = []
-  const earthRadiusKm = 6371
-
-  for (let i = 0; i <= points; i++) {
-    const angle = (i / points) * 2 * Math.PI
-    const latOffset = (radiusKm / earthRadiusKm) * (180 / Math.PI) * Math.cos(angle)
-    const lngOffset = (radiusKm / earthRadiusKm) * (180 / Math.PI) * Math.sin(angle) / Math.cos(center[1] * Math.PI / 180)
-    coords.push([center[0] + lngOffset, center[1] + latOffset])
-  }
-
-  return {
-    type: 'Feature',
-    properties: {},
-    geometry: {
-      type: 'Polygon',
-      coordinates: [coords]
-    }
-  }
-}
-
 // Generate multi-polygon GeoJSON for all apiaries
 function createMultiCircleGeoJSON(apiaries: ApiaryLocation[], radiusKm: number): GeoJSON.FeatureCollection<GeoJSON.Polygon> {
   const features = apiaries
@@ -247,9 +225,12 @@ export default function MapLocationPicker({
       const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
       if (!accessToken) return
 
+      // 8 seconds: on poor signal the lookup must not hang. The town name is a convenience only.
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=place,locality&access_token=${accessToken}`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=place,locality&access_token=${accessToken}`,
+        { signal: AbortSignal.timeout(8000) }
       )
+      if (!response.ok) return
       const data = await response.json()
 
       if (data.features && data.features.length > 0) {

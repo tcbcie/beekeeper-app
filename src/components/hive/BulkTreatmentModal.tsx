@@ -41,7 +41,7 @@ const OTHER = 'Other'
  * treatment date and takes no hive input.
  *
  * **Weather is typed, not fetched.** The single-hive form autofills temperature
- * and conditions from the hive's apiary through Nominatim and Open-Meteo with no
+ * and conditions from the hive's apiary through Open-Meteo (and a postcode lookup) with no
  * caching anywhere in that path, so fanning it out to seventeen hives would fire
  * seventeen geocoding and seventeen forecast requests for what is usually one
  * apiary. A beekeeper treating a yard in one session stands in one set of

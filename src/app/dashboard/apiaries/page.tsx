@@ -160,38 +160,15 @@ export default function ApiariesPage() {
         if (data?.ok && data.lat && data.lon) {
           return { ok: true, lat: String(data.lat), lon: String(data.lon) }
         }
-        // Configuration problems are reported as-is; only fall through to the city-level lookup
-        // when the address genuinely could not be found.
+        // Configuration problems are reported as-is, so they don't look like bad user input.
         if (data?.reason === 'denied' || data?.reason === 'not-configured') {
           if (data.detail) console.error('Geocoding unavailable:', data.reason, data.detail)
           return { ok: false, reason: data.reason, detail: data.detail ?? undefined }
         }
       }
 
-      if (!isUkNi && !city) {
-        // An Irish Eircode is the only thing to go on and it did not resolve — nothing safe left
-        // to try, since Nominatim answers confidently wrong for Eircodes.
-        return { ok: false, reason: 'not-found' }
-      }
-
-      // Fallback: Nominatim with city only (Nominatim cannot handle Irish eircodes)
-      const country = isUkNi ? 'United Kingdom' : 'Ireland'
-      const searchQuery = city
-        ? `${city}, ${country}`
-        : isUkNi
-          ? `${eircode}, ${country}`
-          : null
-      if (!searchQuery) return { ok: false, reason: 'not-found' }
-
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&limit=1&countrycodes=${isUkNi ? 'gb' : 'ie'}`,
-        { headers: { 'User-Agent': 'HiveCraic/1.0' } }
-      )
-      const data = await response.json()
-
-      if (data && data.length > 0) {
-        return { ok: true, lat: data[0].lat, lon: data[0].lon }
-      }
+      // Not found: the form opens the map pin. There is no free fallback lookup: OpenStreetMap's
+      // Nominatim does not allow use from a paid app's phones, and it answers Eircodes wrongly.
       return { ok: false, reason: 'not-found' }
     } catch {
       return { ok: false, reason: 'not-found' }

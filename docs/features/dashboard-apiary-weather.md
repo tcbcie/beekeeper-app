@@ -72,7 +72,10 @@ coordinates. It geocoded the apiary's **Eircode** through Nominatim on every fet
 `records/page.tsx` now resolves weather via `fetchWeatherForApiary(apiaryId)`, which selects
 `latitude, longitude, eircode, is_uk_ni` and prefers the stored coordinates — exact, no lookup
 round-trip, and works without a postcode. The Eircode path remains as a fallback for apiaries
-recorded before coordinates were captured. Null/empty coordinates are guarded explicitly, since
+recorded before coordinates were captured. Since November 2026 it looks the Eircode up through the
+app's own `/api/geocode` route (Google) instead of Nominatim, and when that gives no answer the
+inspection gets **no** weather: the Dublin/Belfast fallback is gone
+(`map-and-address-lookup-terms-plan.md`). Null/empty coordinates are guarded explicitly, since
 `Number(null)` is `0` and would otherwise request weather for 0°,0° in the Atlantic.
 
 This also removed a duplicated apiary lookup: `handleFetchWeatherForHive` and the inspection save

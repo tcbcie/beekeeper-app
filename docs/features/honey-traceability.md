@@ -325,7 +325,7 @@ The trace page uses a trust-focused design for consumer verification. It has its
 **Hero Section:**
 - **Title:** "Pure Irish Honey" (customizable)
 - **Location:** Prominently displayed origin (e.g., "Harvested in Meath, Ireland")
-- **Map:** Optional interactive map with 5km foraging radius circle (if beekeeper has enabled location sharing). Labeled "Source Apiary Foraging Area (~5km)"
+- **Map:** Optional still map (Mapbox, no panning or zooming) with 5km foraging radius circle (if beekeeper has enabled location sharing). Labeled "Source Apiary Foraging Area (~5km)"
 - **Apiary Image:** Optional apiary photo displayed below the map (if enabled in batch settings)
 
 **Story Section:**
@@ -488,7 +488,7 @@ When editing an existing public batch, a QR code preview is shown at the top of 
 - Changed harvest floral source label to "Predominant Floral Source (>50%)"
 - Redesigned trace page with story-driven layout
 - Added beekeeper name display from profiles
-- Added optional map display with 5km radius circle using Leaflet.js (when share_location enabled)
+- Added optional map display with 5km radius circle using Leaflet.js (when share_location enabled). November 2026: redrawn with Mapbox and Leaflet removed, since OpenStreetMap's own tile servers are not for apps (`map-and-address-lookup-terms-plan.md`)
 - Changed public header "Sign In" to subtle "Beekeeper Login" text link
 - Added editable public display fields (public_title, public_origin, public_story)
 - Added 4 story templates: Floral Forager, The Purist, The Terroir, Seasonal Snapshot

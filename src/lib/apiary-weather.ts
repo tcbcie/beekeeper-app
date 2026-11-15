@@ -1,8 +1,10 @@
 import { supabase } from '@/lib/supabase'
 
-interface NominatimResult {
-  lat: string
-  lon: string
+/** The reply of /api/geocode (src/app/api/geocode/route.ts). */
+interface GeocodeResult {
+  ok: boolean
+  lat?: string
+  lon?: string
 }
 
 interface OpenMeteoCurrent {
@@ -37,36 +39,24 @@ const fetchJsonWithTimeout = async <T,>(
   }
 }
 
-const fetchWeatherData = async (eircode: string, isUkNi: boolean = false) => {
+/**
+ * Weather from an Eircode or UK postcode, for apiaries with no map position. Looked up through the
+ * app's own route (Google, signed in), the same lookup the apiary form uses. No answer (no signal,
+ * signed out, limit reached, not found) means no weather: a city-centre fallback used to record
+ * Dublin or Belfast weather without saying so.
+ */
+const fetchWeatherForPostcode = async (postcode: string, isUkNi: boolean) => {
   try {
-    const cleanedCode = eircode.trim().replace(/\s+/g, '').toUpperCase()
-    const headers = { 'User-Agent': 'HiveCraic/1.0' }
-    const country = isUkNi ? 'United Kingdom' : 'Ireland'
-    const fallbackLat = isUkNi ? '54.5973' : '53.3498'
-    const fallbackLon = isUkNi ? '-5.9301' : '-6.2603'
-
-    const geocodeData = await fetchJsonWithTimeout<NominatimResult[]>(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode)},${country}&format=json&limit=1`,
-      { headers }
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return null
+    const place = await fetchJsonWithTimeout<GeocodeResult>(
+      `/api/geocode?address=${encodeURIComponent(postcode.trim())}&country=${isUkNi ? 'GB' : 'IE'}`,
+      { headers: { Authorization: `Bearer ${session.access_token}` } }
     )
-
-    if (!Array.isArray(geocodeData) || geocodeData.length === 0) {
-      const altData = await fetchJsonWithTimeout<NominatimResult[]>(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanedCode + ' ' + country)}&format=json&limit=1`,
-        { headers }
-      )
-
-      if (!Array.isArray(altData) || altData.length === 0) {
-        return await getWeatherFromCoordinates(fallbackLat, fallbackLon)
-      }
-      return await getWeatherFromCoordinates(altData[0].lat, altData[0].lon)
-    }
-
-    return await getWeatherFromCoordinates(geocodeData[0].lat, geocodeData[0].lon)
+    if (!place?.ok || !place.lat || !place.lon) return null
+    return await getWeatherFromCoordinates(place.lat, place.lon)
   } catch {
-    const fallbackLat = isUkNi ? '54.5973' : '53.3498'
-    const fallbackLon = isUkNi ? '-5.9301' : '-6.2603'
-    return await getWeatherFromCoordinates(fallbackLat, fallbackLon)
+    return null
   }
 }
 
@@ -108,10 +98,9 @@ const getWeatherFromCoordinates = async (lat: string, lon: string) => {
 /**
  * Weather for an apiary, preferring its stored coordinates.
  *
- * The Eircode path only exists to approximate a position, and Eircode geocoding does not resolve
- * every postcode (see docs/features/irish-grid-reference.md) — falling back to a city centre when
- * it fails. Where the apiary already has coordinates they are exact, need no lookup, and work for
- * apiaries with no postcode at all. The Eircode remains the fallback for older records.
+ * Stored coordinates are exact and need no lookup. The Eircode is the fallback for older records
+ * without a map position; it may not resolve (see docs/features/irish-grid-reference.md), and then
+ * there is no weather rather than a guess.
  */
 export const fetchWeatherForApiary = async (apiaryId: string) => {
   const { data: apiaryData, error } = await supabase
@@ -138,7 +127,7 @@ export const fetchWeatherForApiary = async (apiaryId: string) => {
   }
 
   if (apiaryData.eircode) {
-    return await fetchWeatherData(apiaryData.eircode, apiaryData.is_uk_ni || false)
+    return await fetchWeatherForPostcode(apiaryData.eircode, apiaryData.is_uk_ni || false)
   }
 
   return null

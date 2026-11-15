@@ -45,9 +45,11 @@ assumption that Eircode formatting was at fault:
   (`partial_match: false`). Formatting was **not** the problem.
 - **Nominatim must never be used for Eircodes.** Queried with `H91 ADP9, Ireland` it confidently
   returns the **National Gallery of Ireland, Dublin** — about 200 km from the real location. The
-  existing code deliberately restricts the Nominatim fallback to *city* lookups for Ireland, and that
-  restriction is load-bearing: a wrong coordinate silently corrupts elevation, the Irish Grid square
-  and inspection weather. Failing is better than guessing.
+  code restricted the Nominatim fallback to *city* lookups for Ireland, because a wrong coordinate
+  silently corrupts elevation, the Irish Grid square and inspection weather. Failing is better than
+  guessing. Since November 2026 Nominatim is not used at all (its policy does not allow use from a
+  paid app's phones): a lookup Google cannot answer opens the map pin
+  (`map-and-address-lookup-terms-plan.md`).
 
 The key **is** configured in Vercel (all environments), and Google's endpoint returns
 `access-control-allow-origin: *`, so neither a missing key nor CORS explains it. Tested with a
