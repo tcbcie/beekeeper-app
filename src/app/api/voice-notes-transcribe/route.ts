@@ -95,8 +95,12 @@ export async function POST(request: NextRequest) {
     // Parse multipart body separately so a malformed payload returns 400
     // rather than being swallowed by the outer catch as a generic 500.
     let audio: File
+    // Mel's message box sends cleanup=false: the tidy-up below is written for
+    // inspection notes and would reword a question.
+    let skipCleanup = false
     try {
       const formData = await request.formData()
+      skipCleanup = formData.get('cleanup') === 'false'
       const raw = formData.get('audio')
       if (!(raw instanceof File) || raw.size === 0) {
         return NextResponse.json({ error: 'Missing or empty audio file' }, { status: 400 })
@@ -139,6 +143,10 @@ export async function POST(request: NextRequest) {
 
     if (!transcript) {
       return NextResponse.json({ transcript: '', cleaned: '' })
+    }
+
+    if (skipCleanup) {
+      return NextResponse.json({ transcript, cleaned: transcript })
     }
 
     // Scale the cleanup output cap to the actual transcript length so a long

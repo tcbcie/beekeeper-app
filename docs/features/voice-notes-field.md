@@ -11,7 +11,9 @@ This keeps scope minimal, ships fast, and gives beekeepers the biggest immediate
 - **Inspection form** — `src/components/records/forms/InspectionForm.tsx` (Notes section).
 - **Queen Rearing batch form** — `src/app/dashboard/batches/page.tsx` (Notes section under the grafting/batch form).
 
-Both surfaces share the exact same UI and reuse the same `useVoiceRecorder` hook and the single `/api/voice-notes-transcribe` endpoint. The API route does its own subscription gating, so adding the feature to a new Notes field is a copy-paste of state + button + handler.
+- **Mel's message box**: `src/components/chat/ChatInput.tsx` puts the spoken question into Mel's box (see `mel-voice-input.md`). It sends the form field `cleanup=false`, and the route then skips the notes tidy-up and returns the transcript as `cleaned`, because that tidy-up would reword a question.
+
+The two forms share the exact same UI and reuse the same `useVoiceRecorder` hook and the single `/api/voice-notes-transcribe` endpoint. The API route does its own subscription gating, so adding the feature to a new Notes field is a copy-paste of state + button + handler.
 
 ## Problem
 

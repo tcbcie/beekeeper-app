@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Technology Stack Review</title>
+<title>Plan &mdash; Mel voice input</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
   h2 { margin-top: 2.2rem; color: #2f7a4d; border-bottom: 1px solid #d8e3da; padding-bottom: .3rem; }
-  h3 { margin-top: 1.6rem; }
   code { background: #eef3ef; padding: .1rem .35rem; border-radius: 3px; font-size: .92em; }
+  pre { background: #eef3ef; padding: .8rem 1rem; border-radius: 4px; overflow-x: auto; line-height: 1.35; }
   table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: .94em; }
   th, td { border: 1px solid #d8e3da; padding: .5rem .65rem; text-align: left; vertical-align: top; }
   th { background: #eef3ef; }
@@ -17,470 +17,88 @@
   ul.todo { list-style: none; padding-left: 0; }
   ul.todo li { margin: .35rem 0; }
   .file { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88em; color: #4a5a4f; }
-  .keep { color: #2f7a4d; font-weight: 600; }
-  .change { color: #b45309; font-weight: 600; }
-  .risk { color: #b91c1c; font-weight: 600; }
 </style>
 </head>
 <body>
 
-<h1>Technology Stack Review</h1>
+<h1>Mel voice input</h1>
 
-<p><strong>Status:</strong> batches 1 and 2 are live. Ingest scripts moved to the new model (not yet committed). Error monitoring is built and waiting on your Sentry settings and test run (section 9). Push notifications approved, not started. Batches 3 and 4 not started &nbsp;&middot;&nbsp; <strong>Date:</strong> 13 November 2026</p>
+<p><strong>Status:</strong> built, waiting for your tests and a real-phone check &nbsp;&middot;&nbsp; <strong>Date:</strong> 15 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/mel-voice-input.md</span></p>
 
 <blockquote>
-<p><strong>Your request:</strong> a full review of the frameworks, libraries and external services, and whether they are still the best fit for the application, the user experience and the functionality.</p>
-<p><strong>How it was done:</strong> three read-only agents swept the code, configuration and <code>docs/features</code>; I ran <code>npm outdated</code> and <code>npm audit</code> and checked the key claims myself. No tests or builds were run. The apiary map plan that lived in this file is in git history.</p>
+<p><strong>Your request:</strong> Mel (the assistant) only takes typed questions; let beekeepers ask by voice as well.</p>
+<p><strong>How it was explored:</strong> two read-only agents covered Mel's chat code and the existing voice notes pipeline, alongside <span class="file">docs/features/voice-notes-field.md</span>. The Technology Stack Review that was in this file is in git history (commit <code>3950ad7c</code> and earlier).</p>
 </blockquote>
 
-<h2>1. Verdict in short</h2>
+<h2>1. What already exists</h2>
+<ul>
+  <li><strong>Mel's message box</strong> (<span class="file">src/components/chat/ChatInput.tsx</span>, 73 lines) has a text box and a Send button. Mel opens as a bottom sheet on the phone and closes by unmounting, so a recording stops cleanly when Mel is closed.</li>
+  <li><strong>Voice notes</strong> already record (<span class="file">src/hooks/useVoiceRecorder.ts</span>) and transcribe (<span class="file">/api/voice-notes-transcribe</span>) on the inspection and queen rearing forms. The route checks sign-in, subscription and rate limits, and biases towards beekeeping words.</li>
+  <li>The route always runs a second AI call that tidies text as an <em>inspection note</em>. That is wrong for a question and slower.</li>
+</ul>
 
-<p><strong>The core stack is still the right fit and should stay.</strong> Next.js on Vercel, Supabase, Tailwind 4, the hand-built UI primitives, Dexie and the hand-written service worker suit a phone-first app for the apiary. Heavy libraries (charts, maps, 3D, Excel) are already loaded on demand. Nothing needs replacing wholesale.</p>
+<h2>2. The design</h2>
+<p><strong>User and moment:</strong> a beekeeper at the hive, gloved, with Mel open on their phone. <strong>One job:</strong> get the question into Mel's box without typing.</p>
 
-<p>What does need attention falls into four groups:</p>
-<ol>
-  <li><strong>Three free services are used outside their terms</strong> for a paid app: Open-Meteo, OpenStreetMap tiles and Nominatim.</li>
-  <li><strong>Two gaps that hurt field users:</strong> no error monitoring, and no real push notifications.</li>
-  <li><strong>The framework is one major version behind</strong> (Next.js 15 against 16), which also blocks one security fix.</li>
-  <li><strong>Housekeeping:</strong> one high-severity library update, four unused packages, one duplicate map library.</li>
-</ol>
-
-<h2>2. What stays (good fit)</h2>
-
-<table>
-  <tr><th>Piece</th><th>Verdict</th><th>Why</th></tr>
-  <tr><td>Next.js App Router on Vercel</td><td class="keep">Keep, upgrade</td><td>Right framework. 54 pages, 29 API routes, no edge runtime, no middleware. Only the version is behind.</td></tr>
-  <tr><td>React 19</td><td class="keep">Keep</td><td>Pinned at 19.1.0; moves with the Next.js upgrade.</td></tr>
-  <tr><td>Supabase (database, sign-in, storage, edge functions, scheduled jobs, vector search)</td><td class="keep">Keep</td><td>The whole security model (RLS) is built on it. No case for moving.</td></tr>
-  <tr><td>Tailwind 4 + own UI primitives + lucide icons</td><td class="keep">Keep</td><td>40 primitives, no component kit to go stale, device fonts (no font download). Suits the 14px-floor rules.</td></tr>
-  <tr><td>Screen cache, drafts and outbox on Dexie</td><td class="keep">Keep</td><td>Purpose-built for poor signal. TanStack Query was already considered and rejected for good reasons (<span class="file">docs/features/screen-cache.md</span>).</td></tr>
-  <tr><td>Hand-written service worker</td><td class="keep">Keep</td><td>322 lines, does the job. Serwist/Workbox would add a dependency for no user gain.</td></tr>
-  <tr><td>Chart.js</td><td class="keep">Keep</td><td>One chart library, 8 screens, all loaded on demand.</td></tr>
-  <tr><td>Mapbox GL</td><td class="keep">Keep</td><td>Community map and location picker, loaded on demand, tiles cached for offline. Should become the only map library (see 3.2).</td></tr>
-  <tr><td>three.js / react-three-fiber, dnd-kit, exceljs, html-to-image, proj4, qrcode.react</td><td class="keep">Keep</td><td>Each used on one or two screens and correctly kept out of the first load.</td></tr>
-  <tr><td>Stripe hosted Checkout</td><td class="keep">Keep</td><td>Simplest safe option for a one-off yearly payment. Webhook is idempotent.</td></tr>
-  <tr><td>Resend for email</td><td class="keep">Keep</td><td>Works; called directly, so the installed SDK package is unused.</td></tr>
-  <tr><td>BEEP and Wolf Waagen scale links</td><td class="keep">Keep</td><td>Two vendors, two clients, by design.</td></tr>
-  <tr><td>Vitest + Testing Library, ESLint 9, TypeScript 5.9</td><td class="keep">Keep</td><td>Current. TypeScript 7 and ESLint 10 can wait until the Next.js upgrade is settled.</td></tr>
-  <tr><td>Browser print for Brother labels</td><td class="keep">Keep</td><td>No printer SDK to maintain; WebUSB/Bluetooth would not work on iPhone anyway.</td></tr>
-</table>
-
-<h2>3. Findings that need a change or a decision</h2>
-
-<h3>3.1 Free services used outside their terms <span class="risk">(highest priority)</span></h3>
-
-<table>
-  <tr><th>#</th><th>Finding</th><th>Where</th><th>Recommendation</th></tr>
-  <tr><td>S1</td><td><strong>Open-Meteo&rsquo;s free service is for non-commercial use</strong>, and HiveCraic is sold. Your own feature document already flags this as an open check. Weather, wind warnings, GDD, foraging hours, the TBR planner and elevation all depend on it (about 10 separate callers).</td><td class="file">docs/features/apiary-elevation.md; lib/apiary-weather.ts, lib/gdd.ts, hooks/useWindWarnings.ts and 7 more</td><td>Technically it is the best fit (no key, good Irish coverage), so keep the service and take their paid commercial plan. That plan uses an API key, which must not sit in the browser, so the calls would move behind one small server route with one shared weather helper. <em>Your decision: pay for the plan, or accept the risk.</em> See 3.5 for the plans and cost.</td></tr>
-  <tr><td>S2</td><td><strong>The public trace page draws its map from OpenStreetMap&rsquo;s volunteer tile servers</strong>, which are not meant for production apps and can block a site without notice. This is the page customers reach from a jar label.</td><td class="file">src/components/maps/ApiaryAreaMap.tsx:32</td><td>Draw this one small map with Mapbox instead. That also removes Leaflet, the second map library (see H4).</td></tr>
-  <tr><td>S3</td><td><strong>Nominatim (free OpenStreetMap address lookup) is called straight from users&rsquo; phones</strong> in three places. Its policy allows only light use and asks for an identifying header that a browser cannot send.</td><td class="file">dashboard/apiaries/page.tsx:187; lib/apiary-weather.ts:49, 55</td><td>Send these lookups through the existing Google geocode server route (already used for Eircodes, with a rate limit) and drop Nominatim.</td></tr>
-  <tr><td>S4</td><td><strong>Mapbox place-name lookup uses the old v5 address API.</strong> Mapbox has replaced it with v6.</td><td class="file">src/components/MapLocationPicker.tsx:251</td><td>Move the one call to v6 and add a timeout (it has none).</td></tr>
-</table>
-
-<h3>3.2 Gaps that affect users in the field</h3>
-
-<table>
-  <tr><th>#</th><th>Finding</th><th>Recommendation</th></tr>
-  <tr><td>G1</td><td><strong>No error monitoring at all.</strong> When the app crashes on a beekeeper&rsquo;s phone, or an offline inspection fails to send, nobody is told. Errors only reach the browser console and server logs. For users who will not report a fault, this is the biggest blind spot.</td><td>Add an error-monitoring service (Sentry is the usual choice and installs through Vercel). Needs one new host in the security policy (CSP). <em>Your decision: it is a new paid-tier-optional service and sends error details to a third party.</em></td></tr>
-  <tr><td>G2</td><td><strong>Push notifications are not actually built.</strong> The service worker can receive a push, but nothing subscribes the phone and nothing sends one (I confirmed: no subscription code, no keys). Reminders appear only while the app is open; everything else goes by email. The project guidance file lists Web Push as working on desktop and Android, which is not the case.</td><td><em>Your decision:</em> build real push for task and queen-rearing reminders (the 15-minute reminder job already exists and could send them), or keep email only. Either way I will correct the guidance file.</td></tr>
-  <tr><td>G3</td><td><strong>Failed emails are dropped silently.</strong> None of the five email-sending functions retries, and bounces from Resend are not recorded.</td><td>Low priority. Worth one retry on failure; bounce tracking only if invitations start going missing.</td></tr>
-</table>
-
-<h3>3.3 Versions and security updates</h3>
-
-<table>
-  <tr><th>#</th><th>Finding</th><th>Recommendation</th></tr>
-  <tr><td>V1</td><td><strong>zod has a high-severity fault</strong> (memory exhaustion), fixed in a minor update (4.3.5 &rarr; 4.6.7). Used only in the 15 Mel tool files.</td><td>Update now. Safe.</td></tr>
-  <tr><td>V2</td><td><strong>Next.js is one major version behind</strong> (15.5 against 16.4). The high-severity postcss fault inside Next.js is only fixed in 16. Version 16 also brings the smooth page transitions already planned in the native-feel review (Phase F).</td><td>Upgrade as its own isolated batch, with React 19.3 and the matching lint config. No middleware and no edge routes, so the usual upgrade pain points do not apply; the CSP and image settings need rechecking.</td></tr>
-  <tr><td>V3</td><td><strong>Supabase libraries are well behind:</strong> supabase-js 2.75 against 2.119 (44 minor releases), <code>@supabase/ssr</code> 0.7 against 0.12.</td><td>Update supabase-js now (same major). Update <code>@supabase/ssr</code> with a check of the two files that use it.</td></tr>
-  <tr><td>V4</td><td><span class="risk">Deadline.</span> <strong>The AI models Mel and voice notes use are being switched off by OpenAI</strong> (see 3.5): <code>gpt-4o</code> and <code>gpt-4o-mini</code> on 14 January 2027, <code>gpt-4o-transcribe</code> on 26 February 2027. The names are hard-coded in six places. After those dates Mel chat and voice transcription stop working.</td><td>Keep OpenAI (the knowledge base is embedded with its model, which is not being retired; changing provider means re-embedding everything). Put the model names in one file, then move to OpenAI&rsquo;s named replacements and test Mel and a voice note before January. An AI gateway is not needed for one provider.</td></tr>
-  <tr><td>V5</td><td><strong>Stripe server library is four majors behind</strong> (19 against 23), with the API version pinned to October 2025.</td><td>Not urgent; payments work. Do it after V2, with a test payment.</td></tr>
-  <tr><td>V6</td><td><strong>exceljs carries a moderate fault</strong> (in its uuid dependency) with no clean fix. It is used for one export, in the browser, on demand.</td><td>Leave. Low real risk.</td></tr>
-  <tr><td>V7</td><td><strong>Edge functions use old imports</strong> (Deno std 0.168; supabase-js pinned to 2.39 in two and unpinned in two).</td><td>Align all five on one pinned version when next touched.</td></tr>
-</table>
-
-<h3>3.4 Housekeeping</h3>
-
-<table>
-  <tr><th>#</th><th>Finding</th><th>Recommendation</th></tr>
-  <tr><td>H1</td><td><strong>Unused packages:</strong> <code>@stripe/stripe-js</code>, <code>resend</code>, <code>happy-dom</code> (no imports anywhere), and <code>@types/mapbox-gl</code> (Mapbox ships its own types).</td><td>Remove. Confirm with a typecheck.</td></tr>
-  <tr><td>H2</td><td><strong><code>.env.example</code> lists 3 of about 9 settings</strong>; it omits OpenAI, Resend, Mapbox, Google, the cron secret and the webhook secret, and lists a Stripe key nothing reads.</td><td>Complete it (names only).</td></tr>
-  <tr><td>H3</td><td><strong>Leftovers:</strong> two empty folders, two edge-function READMEs describing the old (insecure) cron recipe, a Wolf Waagen comment naming a different address from the code, an unused realtime entry in the CSP, and a fallback that would read a public Google key.</td><td>Tidy in one small batch.</td></tr>
-  <tr><td>H4</td><td><strong>Two map libraries.</strong> Leaflet exists for a single small map (see S2).</td><td>Removed as part of S2.</td></tr>
-  <tr><td>H5</td><td><strong>Vercel installs with <code>npm install</code></strong>, so a build can pick up versions other than the tested lockfile. No Node version is declared in <code>package.json</code>.</td><td>Switch to <code>npm ci</code> and declare Node 22.</td></tr>
-</table>
-
-<h3>3.5 Follow-up checks (13 November 2026)</h3>
-
-<table>
-  <tr><th>Check</th><th>Result</th><th>Effect on the recommendation</th></tr>
-  <tr><td><strong>Open-Meteo commercial plans</strong></td><td>
-    From their pricing page: the free service is &ldquo;for non-commercial use&rdquo;, limited to 10,000 calls a day, with no uptime guarantee.
-    <ul>
-      <li><strong>API Standard:</strong> 1 million calls a month, commercial use allowed, but <em>no</em> historical weather.</li>
-      <li><strong>API Professional:</strong> 5 million calls a month, commercial use, historical weather included.</li>
-    </ul>
-    Paid plans use a key and a separate address (<code>customer-api.open-meteo.com</code>); the request format is otherwise the same. The pricing page shows no amounts (they appear at checkout). Open-Meteo&rsquo;s own blog gives Professional as &ldquo;starting at 99 Euro per month&rdquo;; other sites report Standard at about 29 a month, which I could not confirm.</td>
-  <td>HiveCraic uses historical weather in three features: the GDD tracker, the TBR planner and foraging hours (plus the TCBC embed). So Standard alone does not cover the app.
-    <ul>
-      <li><strong>Option A (simplest):</strong> Professional, about &euro;99 a month. One address and key change behind a server route.</li>
-      <li><strong>Option B (cheaper, more work):</strong> Standard, and rebuild the three historical features to store daily weather in your own database instead of asking for the past each time.</li>
-      <li><strong>Option C:</strong> accept the risk and stay on the free service.</li>
-    </ul>
-    My recommendation: confirm both prices at their checkout, then A if the subscription income supports it, otherwise B. Either way the calls move behind one server route first, which is the same work.</td></tr>
-  <tr><td><strong>OpenAI model retirement</strong></td><td>From OpenAI&rsquo;s deprecations page:
-    <ul>
-      <li><code>gpt-4o</code> and <code>gpt-4o-mini</code>: switched off <strong>14 January 2027</strong> (announced 14 October 2026). Replacement named: <code>gpt-6-luna</code>.</li>
-      <li><code>gpt-4o-transcribe</code>: switched off <strong>26 February 2027</strong> (announced 26 August 2026). Replacement named: <code>gpt-transcribe</code> or <code>gpt-live-transcribe</code>.</li>
-      <li><code>text-embedding-3-small</code>: not listed as retiring in the part of the page I could read in full.</li>
-    </ul></td>
-  <td>Batch 3 is no longer optional tidy-up: it has a hard date about two months away. Moved up to second place. I have not compared the price of the replacement models with today&rsquo;s; that is part of the batch.</td></tr>
-  <tr><td><strong>Mapbox token restriction</strong></td><td>The public Mapbox token in this computer&rsquo;s local settings is <strong>not restricted to your web address</strong>: Mapbox accepted it with no site address and with a made-up one. I could not see the token set in Vercel; if it is the same one, production is unrestricted too.</td>
-  <td>Anyone can copy the token from the site and run up map usage on your account. Fix is in the Mapbox dashboard: add URL restrictions for <code>hivecraic.com</code>, <code>www.hivecraic.com</code> and your local test address. All Mapbox calls in the app come from the browser, so this will not break anything. <em>You need to do this; I have no access to the Mapbox dashboard.</em></td></tr>
-  <tr><td><strong>Node version on Vercel</strong></td><td><strong>Could not check.</strong> The Vercel account connected to this session contains one project only (<code>lhhh</code>, for lhhh.ie), not HiveCraic.</td>
-  <td>Please look at Vercel &rarr; HiveCraic project &rarr; Settings &rarr; Build and Deployment &rarr; Node.js Version. It should be 22.x (what the tests run on) or 24.x. Node 20 was retired by Vercel on 1 October 2026. Declaring the version in <code>package.json</code> (H5) settles it either way.</td></tr>
-</table>
-
-<h2>4. Considered and not recommended</h2>
+<pre>
+ Idle                                   Recording
+┌──────────────────────────────────┐   ┌──────────────────────────────────┐
+│ ┌──────────────────┐ ┌──┐ ┌──┐   │   │ Listening… tap stop when you     │
+│ │ Ask about bee... │ │🎤│ │➤ │   │   │ have finished                    │
+│ └──────────────────┘ └──┘ └──┘   │   │ ┌──────────────────┐ ┌──┐ ┌──┐   │
+└──────────────────────────────────┘   │ │                  │ │■ │ │➤ │   │
+   mic: outline, 48px                  │ └──────────────────┘ └──┘ └──┘   │
+   send: green, 48px                   └──────────────────────────────────┘
+                                          stop: red, send disabled
+</pre>
 
 <ul>
-  <li><strong>TanStack Query, Serwist/Workbox, a component kit (shadcn/Radix), an animation library:</strong> each already weighed in your own documents; the hand-built versions work and a swap is a rewrite with no gain for the beekeeper.</li>
-  <li><strong>Capacitor / app-store wrapper:</strong> your native-feel plan defers this until after payments settle. Still right. Real push (G2) removes the main reason for it.</li>
-  <li><strong>Replacing Mapbox with MapLibre:</strong> would lose the terrain and land-cover data the foraging and DCA features use.</li>
-  <li><strong>Vercel AI SDK or AI Gateway:</strong> no benefit while there is one provider and four simple calls.</li>
-  <li><strong>Server-rendered sign-in (middleware):</strong> large and risky, already deliberately declined.</li>
-  <li><strong>TypeScript 7, ESLint 10, lucide 1.x, Vite 8:</strong> no user benefit; revisit after the Next.js upgrade.</li>
+  <li><strong>Mic button</strong> beside Send, outlined and neutral, so the green Send stays the main action. While recording it turns solid red with a square icon, and its label reads "Stop recording". While transcribing it shows a spinner, and its label reads "Turning speech into text".</li>
+  <li><strong>A status line</strong> above the row ("Listening… tap stop when you have finished") is read out by screen readers. Errors appear in the same place.</li>
+  <li><strong>Words go into the box and are not sent automatically.</strong> The beekeeper checks for a misheard word, then taps Send. Text already typed is kept.</li>
+  <li><strong>Both buttons are 48px.</strong> Send already was: <code>.fj-icon-btn</code> sets a 48×48px minimum that overrides its <code>h-10</code>, so it is left untouched. The pulse animation only runs when reduced motion is off.</li>
+  <li>The mic is hidden in browsers that cannot record.</li>
 </ul>
+<p><strong>Review against the design rules:</strong> I dropped my first idea, a purple mic as on the forms. Two filled buttons side by side compete, and Send is the primary action in this box. I also dropped auto-send, because a misheard "varroa" sent to Mel wastes a question.</p>
 
-<h2>5. Not verified</h2>
+<h2>3. Server change (small)</h2>
+<p>In <span class="file">src/app/api/voice-notes-transcribe/route.ts</span>, read an optional form field <code>cleanup</code>. When it is <code>"false"</code>, skip the tidy-up call and return the transcript as <code>cleaned</code>. The inspection and batch forms send nothing, so they behave as before.</p>
 
-<ul>
-  <li>Node version on Vercel and the Mapbox token set in Vercel (the connected Vercel account does not hold the HiveCraic project).</li>
-  <li>Supabase sign-in email sender and Resend domain settings.</li>
-  <li>Open-Meteo&rsquo;s exact prices (shown only at checkout) and the price of OpenAI&rsquo;s replacement models.</li>
-  <li>Bundle sizes were judged from how libraries are imported, not measured.</li>
-</ul>
-
-<h2>6. Proposed work (waiting for approval)</h2>
-
-<p>Each batch is small and separate. Recommended order as listed.</p>
-
-<h3>Batch 1 &mdash; Safe updates and tidy-up (no behaviour change)</h3>
+<h2>4. Todo</h2>
 <ul class="todo">
-  <li>&#9745; V1: update zod to 4.6.7</li>
-  <li>&#9745; V3: update supabase-js to the latest 2.x</li>
-  <li>&#9745; H1: remove the four unused packages</li>
-  <li>&#9745; H2: complete <code>.env.example</code></li>
-  <li>&#9745; H3: tidy the leftovers (two items left alone on purpose, see review)</li>
-  <li>&#9745; H5: <code>npm ci</code> on Vercel and declare Node 22</li>
-  <li>&#9745; Correct the Web Push line in the project guidance file</li>
+  <li>☑ 1. Route: optional <code>cleanup=false</code> skips the notes tidy-up (about 3 lines).</li>
+  <li>☑ 2. <span class="file">ChatInput.tsx</span>: use <code>useVoiceRecorder</code>; add the record → stop → transcribe handler, which sends <code>cleanup=false</code>, appends the text to the box, aborts on close, and shows friendly errors.</li>
+  <li>☑ 3. <span class="file">ChatInput.tsx</span>: add the mic button (48px) and status line; disable Send while recording or transcribing.</li>
+  <li>☑ 4. Docs: finish <span class="file">docs/features/mel-voice-input.md</span>, and note Mel and the <code>cleanup</code> field in <span class="file">voice-notes-field.md</span>.</li>
+  <li>☐ 5. You test: <code>npm run test:run</code> and a build, then try it on a real phone (record, stop, text appears, Send). Also check the inspection voice note still tidies up.</li>
+  <li>☑ 6. Review section below. Commit once you are happy with the tests.</li>
 </ul>
 
-<h3>Batch 2 &mdash; AI models before OpenAI switches them off (deadline 14 January 2027)</h3>
-<ul class="todo">
-  <li>&#9745; V4: one model configuration file</li>
-  <li>&#9745; Move chat to <code>gpt-6-luna</code> and transcription to <code>gpt-transcribe</code>, after checking their prices and that the installed OpenAI library supports them</li>
-  <li>&#9744; You test Mel and a voice note before it goes live</li>
-</ul>
-
-<h3>Batch 3 &mdash; Stop using free map and lookup services outside their terms</h3>
-<ul class="todo">
-  <li>&#9744; S2 + H4: draw the trace-page map with Mapbox; remove Leaflet</li>
-  <li>&#9744; S3: route the Nominatim lookups through the geocode server route; remove Nominatim from the CSP</li>
-  <li>&#9744; S4: move Mapbox place-name lookup to v6 with a timeout</li>
-  <li>&#9744; Update the affected feature documents</li>
-</ul>
-
-<h3>Batch 4 &mdash; Next.js 16 upgrade (isolated)</h3>
-<ul class="todo">
-  <li>&#9744; V2: Next.js 16, React 19.3, matching lint config; recheck CSP and images</li>
-  <li>&#9744; V3: <code>@supabase/ssr</code> to 0.12</li>
-  <li>&#9744; You run the tests and a phone check before it goes live</li>
-</ul>
-
-<h3>Decisions needed from you</h3>
-<ul class="todo">
-  <li>&#9745; <strong>D1 (S1):</strong> Open-Meteo: <strong>decided C</strong>, stay on the free service and accept the risk.</li>
-  <li>&#9745; <strong>D2 (G1):</strong> error monitoring: <strong>decided yes</strong>. Needs its own plan; not started.</li>
-  <li>&#9745; <strong>D3 (G2):</strong> push notifications: <strong>decided build</strong>. Needs its own feature plan in <code>docs/features</code>; not started.</li>
-</ul>
-
-<h3>For you to do in the dashboards</h3>
-<ul class="todo">
-  <li>&#9744; Mapbox: restrict the public token to your web addresses</li>
-  <li>&#9744; Vercel: confirm the HiveCraic project&rsquo;s Node.js version is 22.x or 24.x</li>
-</ul>
-
-<p>Later, not scheduled: V5 (Stripe library), V7 (edge-function imports), G3 (email retry).</p>
-
-<h2>7. Review &mdash; batches 1 and 2 (13 November 2026)</h2>
-
-<p>Typecheck and lint are clean. A dry-run clean install confirms the lockfile matches. <strong>No tests and no build were run</strong>; nothing is committed.</p>
-
+<h2>5. Review</h2>
 <h3>What changed</h3>
 <table>
-  <tr><th>Change</th><th>Files</th></tr>
-  <tr><td><strong>AI models moved to OpenAI&rsquo;s replacements.</strong> Chat, the tool router, the question classifier and voice clean-up now use <code>gpt-6-luna</code>; voice transcription uses <code>gpt-transcribe</code>. All model names live in one place. The knowledge-base model is unchanged.</td><td class="file">src/lib/openai.ts, src/lib/rag.ts, src/app/api/voice-notes-transcribe/route.ts</td></tr>
-  <tr><td><strong>Library updates:</strong> zod 4.6.7 (clears the high-severity fault), supabase-js 2.119, OpenAI library 6.49.</td><td class="file">package.json, package-lock.json</td></tr>
-  <tr><td><strong>Four unused packages removed:</strong> <code>@stripe/stripe-js</code>, <code>resend</code>, <code>happy-dom</code>, <code>@types/mapbox-gl</code>.</td><td class="file">package.json, package-lock.json</td></tr>
-  <tr><td><strong>Vercel installs from the lockfile</strong> (<code>npm ci</code>) and Node 22 is declared.</td><td class="file">vercel.json, package.json</td></tr>
-  <tr><td><strong>Tidy-up:</strong> <code>.env.example</code> lists every setting; the two stale edge-function READMEs carry an out-of-date warning; Wolf Waagen comment corrected; two empty folders removed; Web Push line in the guidance file corrected; voice notes document updated.</td><td class="file">.env.example, supabase/functions/*/README.md, src/lib/wolf-waagen-api.ts, .claude/CLAUDE.md, docs/features/voice-notes-field.md</td></tr>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td class="file">src/app/api/voice-notes-transcribe/route.ts</td><td>Reads an optional <code>cleanup</code> form field. With <code>"false"</code> it returns the transcript straight after transcription and skips the inspection-notes tidy-up. Sign-in, subscription, size and rate-limit checks still run first. Callers that send nothing are unchanged (+8 lines).</td></tr>
+  <tr><td class="file">src/components/chat/ChatInput.tsx</td><td>Uses the existing <code>useVoiceRecorder</code>. A mic button sits beside Send: outlined when idle, solid red with a square while recording (pulse only when motion is allowed), and a spinner while transcribing. A status line above the box reads "Listening… tap stop when you have finished." and shows errors; screen readers announce it. Spoken words are added after any typed text (capped at 2,000 characters) and the box is focused, ready for Send. Send and Enter are blocked while recording or transcribing. Closing Mel aborts a transcription in flight, and the recorder already stops the microphone on unmount.</td></tr>
+  <tr><td class="file">docs/features/mel-voice-input.md</td><td>New feature doc.</td></tr>
+  <tr><td class="file">docs/features/voice-notes-field.md</td><td>Lists Mel as a third user of the route and explains <code>cleanup=false</code>.</td></tr>
 </table>
-
-<h3>How the model change was checked</h3>
-<p>OpenAI&rsquo;s documents do not say which settings <code>gpt-6-luna</code> accepts, so I sent five minimal live requests with the local key (a fraction of a cent):</p>
+<h3>Checks</h3>
 <ul>
-  <li>It <strong>rejects</strong> the old <code>max_tokens</code> setting, so all four chat calls now use <code>max_completion_tokens</code>.</li>
-  <li>It accepts the temperature and JSON-only settings the app uses when reasoning is switched off, and returned valid JSON.</li>
-  <li><code>gpt-transcribe</code> accepted the request shape the voice route sends (tested with a one-second tone, not speech).</li>
+  <li>ESLint on both changed files: clean, including the React Compiler rules that are errors again.</li>
+  <li>No tests or build were run, as you asked.</li>
 </ul>
-<p>Listed prices: <code>gpt-6-luna</code> $0.10 in / $0.50 out per million tokens against $0.15 / $0.60 for <code>gpt-4o-mini</code>; <code>gpt-transcribe</code> $0.0045 a minute against about $0.006. Both are cheaper.</p>
-
-<h3>QA audit findings</h3>
-<table>
-  <tr><th>Severity</th><th>Finding</th><th>Outcome</th></tr>
-  <tr><td>Critical / High</td><td>None.</td><td></td></tr>
-  <tr><td>Medium</td><td>The new model is a reasoning model. If any chat call forgot to switch reasoning off, hidden reasoning would use up the answer limit and short answers (the classifier is capped at 100 tokens) would come back empty. The setting was repeated in four places.</td><td><strong>Fixed.</strong> Model and reasoning setting are one shared constant (<code>CHAT</code>) that every chat call uses.</td></tr>
-  <tr><td>Medium</td><td>OpenAI&rsquo;s guide says <code>gpt-transcribe</code> takes a list of languages instead of the single <code>language</code> setting. The service accepted the old setting today, and the installed library has no type for the new one.</td><td>Left as is. If OpenAI later refuses the old setting, voice notes would show &ldquo;Transcription failed&rdquo;; the fix is one line.</td></tr>
-  <tr><td>Low</td><td>Declaring Node 22 makes Vercel build and run on Node 22 whatever the dashboard says. That is the version the tests run on.</td><td>Intended. Say if the project is on 24 and you want to stay there.</td></tr>
-</table>
-
-<h3>Left alone on purpose</h3>
-<ul>
-  <li><strong>Public Google key fallback (H3):</strong> the local settings hold the Google key only under the public name, so removing the fallback would break Eircode lookup here and possibly in production. To finish: add <code>GOOGLE_MAPS_API_KEY</code> in Vercel and locally, then I remove the fallback.</li>
-  <li><strong>Realtime entry in the CSP (H3):</strong> harmless and not worth a security-policy change on its own.</li>
-  <li><strong>Knowledge-base ingest scripts</strong> (<code>scripts/ingest</code>) still name <code>gpt-4o</code> and <code>gpt-4o-mini</code>. They are run by hand, not by the app, and will stop working on 14 January 2027 unless updated. Not in the approved batch.</li>
-  <li><strong>Remaining audit items:</strong> 4 (1 high, 3 moderate): postcss inside Next.js (fixed by batch 4) and uuid inside exceljs.</li>
-</ul>
-
 <h3>For you to test</h3>
-<ul class="todo">
-  <li>&#9744; Run the test suite</li>
-  <li>&#9744; Mel: a question about your own data (&ldquo;How many hives do I have?&rdquo;), a knowledge question (&ldquo;How do I treat varroa?&rdquo;) and a greeting</li>
-  <li>&#9744; Record a voice note with beekeeping words (varroa, propolis, supersedure) and check the cleaned text</li>
-  <li>&#9744; Sign in and out, and an Eircode lookup (supabase-js update)</li>
-</ul>
-
-<h2>8. Next: ingest scripts, error monitoring, push notifications</h2>
-
-<h3>Knowledge-base ingest scripts (done, not committed)</h3>
-<ul class="todo">
-  <li>&#9745; Language detection, translation and page scanning moved from <code>gpt-4o</code> / <code>gpt-4o-mini</code> to <code>gpt-6-luna</code>, with the same two setting changes as the app <span class="file">scripts/ingest/translation.mjs, scripts/ingest/text-extraction.mjs</span></li>
-  <li>&#9745; One live request confirmed the new model reads images (the scanning step needs it)</li>
-  <li>&#9744; Not run end to end: that would ingest a real document. Try one document next time you add to the knowledge base.</li>
-</ul>
-<p>QA audit: no critical or high findings. One note: page scanning used the larger <code>gpt-4o</code>; <code>gpt-6-luna</code> is OpenAI&rsquo;s named replacement but scan quality on poor photocopies is untested. The scripts also still offer Google&rsquo;s <code>gemini-2.0-flash</code> through an older Google library; I have not checked its retirement date.</p>
-
-<h3>Error monitoring (D2) &mdash; plan</h3>
-<p>Full plan: <span class="file">docs/features/error-monitoring-plan.md</span></p>
+<ol>
+  <li><code>npm run test:run</code> and a build.</li>
+  <li>On a phone: open Mel, tap the mic, allow the microphone, ask "When did I last feed my hives?", tap stop. The words should appear in the box unsent; tap Send.</li>
+  <li>Close Mel while it says "Listening…". The phone's microphone indicator should go off.</li>
+  <li>Record a voice note on an inspection. It should still come back tidied up as before.</li>
+</ol>
+<h3>Notes</h3>
 <ul>
-  <li>Sentry, EU region, errors only (no tracing, no session recording).</li>
-  <li>Catches every uncaught crash in the browser and on the server, plus deliberate reports from the places that cost data: the error screens, a refused or stuck offline inspection, the Stripe webhook, the nightly clean-up and invoice email.</li>
-  <li>Sends an account id only. No email, no beekeeping records, nothing during impersonation, no link tokens, and &ldquo;no signal&rdquo; errors are ignored.</li>
-  <li>Needs: you create the Sentry account; one address added to the security policy; a privacy page update.</li>
-</ul>
-<ul class="todo">
-  <li>&#9745; Batch A: capture (built, see section 9)</li>
-  <li>&#9745; Batch B: privacy page and documents (built, wording in section 9 for you to read)</li>
-</ul>
-
-<h3>Push notifications (D3) &mdash; plan</h3>
-<p>Full plan: <span class="file">docs/features/push-notifications-plan.md</span></p>
-<ul>
-  <li>One switch in Profile &rarr; Notifications: &ldquo;Notifications on this phone&rdquo;.</li>
-  <li>Task, event, treatment and batch-event reminders then arrive on the lock screen at the time already set on the task. Email carries on as now.</li>
-  <li>Reuses what exists: the <code>push_subscriptions</code> table (already in the live database, empty, correctly locked down) and the 15-minute reminder job. No new table, no new job, no new profile setting.</li>
-  <li>iPhone: works only after &ldquo;Add to Home Screen&rdquo;; the switch explains that.</li>
-</ul>
-<ul class="todo">
-  <li>&#9744; Batch A: the phone side (switch, saving the subscription, tap opens Tasks, sign-out removes it)</li>
-  <li>&#9744; Batch B: sending from the reminder job</li>
-</ul>
-
-<h3>Decisions needed</h3>
-<ul class="todo">
-  <li>&#9745; <strong>E1:</strong> Sentry, EU region, errors only: <strong>agreed</strong>.</li>
-  <li>&#9745; <strong>E2:</strong> Privacy page lists <strong>all</strong> services.</li>
-  <li>&#9745; <strong>P1:</strong> a phone subscription <strong>alone</strong> is enough.</li>
-  <li>&#9745; <strong>P2:</strong> tap opens the <strong>Tasks</strong> page.</li>
-  <li>&#9745; <strong>Order:</strong> error monitoring first, then push.</li>
-</ul>
-
-<h2>9. Review &mdash; error monitoring (13 November 2026)</h2>
-
-<p>Typecheck and lint are clean. <strong>No tests and no build were run, and nothing is committed.</strong> Until the Sentry settings exist in Vercel the code is inert: with no address set it sends nothing.</p>
-
-<h3>What changed</h3>
-<table>
-  <tr><th>Change</th><th>Files</th></tr>
-  <tr><td><strong>Sentry library added</strong> (<code>@sentry/nextjs</code> 11.12) and started in the browser and on the server.</td><td class="file">package.json, src/instrumentation-client.ts, src/instrumentation.ts, src/sentry.server.config.ts, src/lib/sentry-options.ts</td></tr>
-  <tr><td><strong>One reporting helper</strong>, <code>reportError(where, error)</code>, so no screen talks to Sentry directly.</td><td class="file">src/lib/report-error.ts</td></tr>
-  <tr><td><strong>Reports from the places that cost data:</strong> both error screens; a refused, failed or unsaveable offline inspection; the Stripe webhook; the nightly clean-up; invoice email.</td><td class="file">ErrorBoundary.tsx, global-error.tsx, inspection-outbox.ts, three API routes</td></tr>
-  <tr><td><strong>Account id tagging</strong> (id only).</td><td class="file">src/app/dashboard/layout.tsx</td></tr>
-  <tr><td><strong>Security policy</strong> allows Sentry&rsquo;s EU address; build uploads readable stack traces when the build secret is present.</td><td class="file">next.config.ts</td></tr>
-  <tr><td><strong>Privacy page</strong> names every service the app uses; About page list updated and old model names removed.</td><td class="file">src/app/(public)/privacy/page.tsx, src/app/dashboard/about/page.tsx</td></tr>
-  <tr><td>Feature document and settings list.</td><td class="file">docs/features/error-monitoring.md, .env.example</td></tr>
-</table>
-
-<h3>A finding that changed the build</h3>
-<p>The current Sentry version collects far more by default than the plan allowed: the sender&rsquo;s IP address, cookies, request headers and bodies, link query strings and database query details. All of these are switched off explicitly in <code>src/lib/sentry-options.ts</code>. I read the option names from the installed library itself, not from memory.</p>
-
-<h3>QA audit findings</h3>
-<table>
-  <tr><th>Severity</th><th>Finding</th><th>Outcome</th></tr>
-  <tr><td>Critical / High</td><td>None.</td><td></td></tr>
-  <tr><td>Medium</td><td>The invoice-email report passed on Resend&rsquo;s raw reply, which can repeat the customer&rsquo;s email address.</td><td><strong>Fixed.</strong> Only the status code is reported.</td></tr>
-  <tr><td>Medium</td><td>A build without the Sentry build secret (every local build) would have tried to upload stack-trace files.</td><td><strong>Fixed.</strong> Upload is switched off when the secret is missing.</td></tr>
-  <tr><td>Low</td><td>A refused inspection could have been reported on every app open.</td><td>Checked: refused entries are skipped on later sends, so it is reported once.</td></tr>
-  <tr><td>Low</td><td>Sentry can record the sender&rsquo;s IP address on its own side even when the app does not send it.</td><td>Needs the project setting below.</td></tr>
-</table>
-
-<h3>Not verified</h3>
-<ul>
-  <li>The build. Sentry wraps the build configuration, so the first Vercel build is the real test. A failed build leaves the current version live.</li>
-  <li>The download size added to the first load. Not measured.</li>
-  <li>That a report actually arrives: needs your Sentry address.</li>
-  <li>The EU address pattern (<code>*.ingest.de.sentry.io</code>) is from my own knowledge of Sentry, not from a page I read today. If your address looks different, tell me before going live; otherwise reports are silently blocked.</li>
-</ul>
-
-<h3>For you to do</h3>
-<ul class="todo">
-  <li>&#9744; Read the new privacy wording (section &ldquo;Services We Use&rdquo; and &ldquo;Data Sharing&rdquo; on the privacy page)</li>
-  <li>&#9745; Sentry project created through Sentry&rsquo;s setup hand-off (14 November): organisation <code>tcbcie</code>, EU region confirmed, project <code>hivecraic</code> (Next.js)</li>
-  <li>&#9745; Project privacy: IP addresses not stored, data scrubber and default scrubbers on</li>
-  <li>&#9745; Public address added to <code>.env.local</code> (not committed)</li>
-  <li>&#9744; In Sentry, create an <strong>organisation auth token</strong> for source-map upload (Settings &rarr; Developer Settings &rarr; Organization Tokens)</li>
-  <li>&#9744; In Vercel (HiveCraic project, all environments), add <code>NEXT_PUBLIC_SENTRY_DSN</code> (value in <code>.env.local</code>), <code>SENTRY_ORG=tcbcie</code>, <code>SENTRY_PROJECT=hivecraic</code> and <code>SENTRY_AUTH_TOKEN</code> (the token above; never paste it here or in a chat)</li>
-  <li>&#9744; Run the test suite (the outbox and error-screen tests now load the Sentry library)</li>
-  <li>&#9745; Temporary admin-only route <code>POST /api/sentry-test-error</code> added (14 November)</li>
-  <li>&#9745; Build passed; test error triggered (status 500) and received in Sentry as HIVECRAIC-1, with the release, environment and app version, and no headers, cookies, body or IP address</li>
-  <li>&#9745; Source maps work, but the route&rsquo;s own line was hidden behind Sentry&rsquo;s route wrapper. Fix prepared: route wrapping switched off in <code>next.config.ts</code></li>
-  <li>&#9745; Second server test (HIVECRAIC-2): the wrapper change did not bring back the route&rsquo;s own line; reverted and recorded as a known limit</li>
-  <li>&#9745; Browser test (HIVECRAIC-3): arrived through the security policy, account id only, no IP address. Shared code files had no source maps; fix prepared (<code>widenClientFileUpload</code>)</li>
-  <li>&#9745; Temporary test route removed</li>
-  <li>&#9745; Browser test repeated after the deploy (HIVECRAIC-4): frames readable. The four test issues are resolved in Sentry. <strong>Error monitoring complete.</strong></li>
-  <li>&#9744; I confirm the report arrived with readable code, then remove the test route</li>
-</ul>
-
-<h2>10. Push notifications &mdash; batch A, the phone side (14 November 2026)</h2>
-
-<p>Typecheck and lint are clean. <strong>No tests and no build were run, and nothing is committed.</strong> Nothing is sent yet: that is batch B.</p>
-
-<ul class="todo">
-  <li>&#9745; Sending key pair generated; the private key is in <code>.env.local</code> only and was never shown</li>
-  <li>&#9745; Database: the existing <code>push_subscriptions</code> table recorded in a migration, <code>save_push_subscription</code> added (lets a second account on a shared phone take the subscription over), and table rights logged-in users never need removed. Applied to the live database; advisors show nothing new</li>
-  <li>&#9745; <span class="file">src/lib/push.ts</span>: switch on (permission asked on the tap), switch off, state, and removal on log-out</li>
-  <li>&#9745; Profile &rarr; Notifications: new first row &ldquo;Reminders on this device&rdquo;, with plain wording for on, off, blocked, iPhone not on the Home Screen, and browsers that cannot do it</li>
-  <li>&#9745; Service worker: a tap opens the page the notification names and brings an open HiveCraic window forward; a malformed message still shows</li>
-  <li>&#9745; Log-out removes this device&rsquo;s subscription (gives up after 3 seconds without signal)</li>
-  <li>&#9745; iPhone advice in <code>NotificationStatusCard</code> corrected (it said to use email instead)</li>
-</ul>
-
-<h3>QA audit</h3>
-<table>
-  <tr><th>Severity</th><th>Finding</th><th>Outcome</th></tr>
-  <tr><td>Critical / High</td><td>None.</td><td></td></tr>
-  <tr><td>Medium</td><td>Switching on waited on the service worker being &ldquo;ready&rdquo;, which never happens if it is not registered: the switch would stay locked.</td><td><strong>Fixed.</strong> Fails with a message instead.</td></tr>
-  <tr><td>Low</td><td>The 3-second log-out timer was left running.</td><td><strong>Fixed.</strong></td></tr>
-  <tr><td>Low</td><td>Other sign-outs (disabled account, ending impersonation, password reset) keep the subscription.</td><td>Intended: batch B&rsquo;s sender skips disabled accounts. Deleting an account deletes its subscriptions.</td></tr>
-</table>
-
-<h3>For you to do</h3>
-<ul class="todo">
-  <li>&#9744; In Vercel (HiveCraic, all environments), add <code>NEXT_PUBLIC_VAPID_PUBLIC_KEY</code> with the value in <code>.env.local</code></li>
-  <li>&#9744; Run the test suite</li>
-  <li>&#9744; After deploy, on Android or desktop: Profile &rarr; Notifications &rarr; switch on &ldquo;Reminders on this device&rdquo;, accept the prompt. I will confirm the row appears for your account. Then log out and back in: I will confirm it is gone</li>
-  <li>&#9744; On an iPhone: open in Safari first (the switch should explain Home Screen), then from the Home Screen icon and switch on</li>
-</ul>
-
-<h2>11. Push notifications batch B and the email outage (14&ndash;15 November 2026)</h2>
-
-<ul class="todo">
-  <li>&#9745; Reminder job (version 17) sends push as well as email; committed as <code>e326ed02</code></li>
-  <li>&#9745; Device subscribed (Android/Chrome); first push sent 10:15 on 15/11</li>
-  <li>&#9745; <strong>Found:</strong> every email from the Supabase functions (reminders, invitations, weekly digest, new-user notice) had been failing for at least 26 days with &ldquo;API key is invalid&rdquo;. Resend showed only one delivered email in 30 days. Two reminders were missed, and the weekly digests most likely too</li>
-  <li>&#9745; Owner replaced the Resend key in Supabase and Vercel (15/11)</li>
-  <li>&#9745; Verified: invoice email (Vercel) arrived 10:48; test reminder at 11:00 sent by email and push, no errors; test task deleted</li>
-  <li>&#9744; Not yet checked: sign-up and password-reset emails (Supabase Auth mail settings); push on an iPhone from the Home Screen</li>
-</ul>
-
-<h2>12. Batch 4 &mdash; Next.js 16 upgrade (plan, waiting for approval)</h2>
-
-<p>Full plan: <span class="file">docs/features/nextjs-16-upgrade-plan.md</span>. Nothing changes for the beekeeper. Success means the app behaves exactly as today.</p>
-
-<h3>Findings</h3>
-<ul>
-  <li>The app is well placed: every page that reads route parameters already uses the async style Next 16 requires. There is no middleware, edge code or old API.</li>
-  <li>Next 16 builds with a new bundler (Turbopack) by default and <strong>fails</strong> when a webpack setting is present. Sentry adds one. We keep webpack. <code>vercel.json</code> has its own build command, so it must change as well as <code>package.json</code>.</li>
-  <li>Image quality 85 (apiary photo) would silently drop to 75 unless allowed. Local development photos would break unless local addresses are allowed in development.</li>
-  <li>Page changes would start to animate a scroll to the top unless one attribute is added.</li>
-  <li>React goes to 19.2.9, not 19.3: 19.3 would also force a 3D library upgrade.</li>
-  <li><code>@supabase/ssr</code> 0.7 &rarr; 0.12 needs no code change; we already use its current cookie API.</li>
-  <li>Risk: the new lint config may bring stricter React rules that flag existing code. I'll count them before deciding.</li>
-</ul>
-
-<h3>Work</h3>
-<ul class="todo">
-  <li>&#9745; Committed straight to <code>main</code> (your decision; no preview branch)</li>
-  <li>&#9745; Packages: next 16.4.6, react/react-dom 19.2.9, types 19.2, eslint-config-next 16.4.6, @supabase/ssr 0.12.7; <code>@eslint/eslintrc</code> removed. Audit: the high-severity PostCSS finding is gone; 2 moderate (exceljs) remain</li>
-  <li>&#9745; Keep webpack: <code>package.json</code> scripts and <code>vercel.json</code></li>
-  <li>&#9745; <code>next.config.ts</code>: image qualities 75 and 85; local addresses allowed in development only</li>
-  <li>&#9745; <code>layout.tsx</code>: <code>data-scroll-behavior="smooth"</code>; <code>tsconfig.json</code>: <code>react-jsx</code> and the <code>.next/dev/types</code> folder</li>
-  <li>&#9745; ESLint on the native flat configs. Typecheck clean. Lint: the six new React Compiler rules found 207 issues in existing code (169 set-state-in-effect); set to warnings, list of the 38 others in the plan. Lint passes (0 errors)</li>
-  <li>&#9745; QA audit (no critical/high findings); docs updated</li>
-  <li>&#9744; You: tests, Vercel preview build, phone checklist (plan document), Sentry test error</li>
-  <li>&#9745; Pushed to <code>main</code></li>
-</ul>
-
-<h2>13. Batch 3 &mdash; map and address lookups within their terms (plan, waiting for approval)</h2>
-
-<p>Full plan: <span class="file">docs/features/map-and-address-lookup-terms-plan.md</span>.</p>
-
-<ul>
-  <li><strong>Correction:</strong> Mapbox&rsquo;s v5 place lookup is not being retired. It stays on v5; it only lacked a time limit.</li>
-  <li><strong>Found:</strong> 14 of 108 apiaries have an Eircode but no map position. For those, inspection weather asks Nominatim, and on failure silently records Dublin or Belfast weather (a known fault).</li>
-</ul>
-
-<ul class="todo">
-  <li>&#9745; A. Trace page map drawn with Mapbox (same circle, no panning); shared circle helper <code>src/lib/geo-circle.ts</code>; Leaflet removed</li>
-  <li>&#9745; B. Apiary form: Nominatim fallback removed; a miss opens the map pin as for Eircodes</li>
-  <li>&#9745; C. Inspection weather for apiaries without a pin: Eircode via the app&rsquo;s own Google route (C1-a); no answer means no weather, the Dublin/Belfast fallback is gone</li>
-  <li>&#9745; D. Map pin town name: 8-second time limit and a success check</li>
-  <li>&#9745; E. Security policy (Nominatim removed), privacy page and feature documents updated</li>
-  <li>&#9745; QA audit: no critical/high findings. Typecheck clean; lint no errors</li>
-  <li>&#9744; You: run the tests; after deployment check the trace page, apiary lookups, map pin and inspection weather</li>
-</ul>
-
-<h3>Decision needed</h3>
-<ul class="todo">
-  <li>&#9745; <strong>C1 decided a):</strong> look up the Eircode through the app&rsquo;s own Google route, no weather if that fails (recommended); or b) no automatic weather until a map pin is set</li>
-</ul>
-
-<h2>14. Items left for later (plan, waiting for decisions)</h2>
-
-<p>Full plan: <span class="file">docs/features/deferred-items-review-plan.md</span>. Batches 1&ndash;4 are live, your checks passed, and Sentry shows no errors.</p>
-
-<ul class="todo">
-  <li>&#9745; <strong>L1:</strong> 38 React rule findings resolved (35 fixed, 3 explained false positives); the five rules are errors again; lint 0 errors, typecheck clean</li>
-  <li>&#9744; <strong>L2:</strong> keep <code>set-state-in-effect</code> (168) as a warning; ~37 cause a one-render flash, for a later batch</li>
-  <li>&#9745; <strong>T1 (decided: leave):</strong> Mapbox town name may not be stored from the standard lookup: a) permanent lookup (card on the Mapbox account) / b) stop auto-filling / c) leave</li>
-  <li>&#9744; <strong>T2:</strong> Google coordinates may be kept 30 days: a) pin-confirm / c) keep and read Google&rsquo;s Service Specific Terms yourself</li>
-  <li>&#9744; <strong>U1/U2:</strong> Turbopack not now (Sentry tree-shaking unsupported); React 19.3 together with View Transitions (Phase F)</li>
-</ul>
-
-<h2>15. L2 &mdash; one-render flashes (plan, waiting for approval)</h2>
-
-<p>Full plan: <span class="file">docs/features/set-state-in-effect-flashes-plan.md</span>. L1 is live (<code>d19c0eb5</code>).</p>
-
-<ul>
-  <li>36 places traced where an effect corrects a value after the screen has drawn. After a tap React finishes these before painting, so many are never seen; they show when data arrives or a dialog reopens.</li>
-  <li>This batch: the 19 places where it can be seen or costs a wasted render on a busy screen (17 files). The other ~17 are invisible tidying and stay warnings.</li>
-</ul>
-
-<ul class="todo">
-  <li>&#9745; Records list count, hive and queen edit forms, queen colour, Mel welcome, photo viewer, dashboard weather badges, varroa honey-super warning, batch cell frame, NIHBS figures and group, profit and loss category, inspection form errors, print labels banner, card photo failure, two filtered drop-downs, terminology page</li>
-  <li>&#9745; Typecheck clean, lint 0 errors (set-state warnings 177 &rarr; 158), QA audit (no critical/high findings), docs</li>
-  <li>&#9744; You: run the tests; after deployment the checks in the plan</li>
+  <li>Mel's voice questions share the voice rate limits with voice notes: 20 an hour and 60 a day.</li>
+  <li>Like Mel itself, the mic shows for everyone. Non-subscribers see "An active subscription is required to use voice input."</li>
 </ul>
 
 </body>
