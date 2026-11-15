@@ -48,19 +48,17 @@ export default function ChatDialog({ isOpen, onClose }: ChatDialogProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Add welcome message on first open
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      setMessages([
-        {
-          id: 'welcome',
-          role: 'assistant',
-          content: 'Hi I\'m Mel, your Virtual Assistant. Ask me anything about your hives, inspections, or general beekeeping knowledge.',
-          timestamp: new Date()
-        }
-      ])
-    }
-  }, [isOpen, messages.length])
+  // Welcome message on first open, added in that same render so the dialog never draws empty.
+  if (isOpen && messages.length === 0) {
+    setMessages([
+      {
+        id: 'welcome',
+        role: 'assistant',
+        content: 'Hi I\'m Mel, your Virtual Assistant. Ask me anything about your hives, inspections, or general beekeeping knowledge.',
+        timestamp: new Date()
+      }
+    ])
+  }
 
   // The submit lock stops a double tap sending the same question twice.
   const sendMessage = (content: string) => run(async () => {

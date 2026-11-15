@@ -64,7 +64,6 @@ export default function VarroaTreatmentForm({
   const [formApiaryId, setFormApiaryId] = useState<string>('')
   const [isOtherTreatment, setIsOtherTreatment] = useState(false)
   const [otherTreatmentType, setOtherTreatmentType] = useState('')
-  const [selectedHiveHasHoneySupers, setSelectedHiveHasHoneySupers] = useState(false)
   const [fetchingWeather, setFetchingWeather] = useState(false)
   // One save at a time: a double tap must not save the record twice.
   const { submitting, run } = useSubmitLock()
@@ -119,11 +118,9 @@ export default function VarroaTreatmentForm({
     }
   }, [selectedApiaryId, treatment, hives, treatmentProducts])
 
-  useEffect(() => {
-    const selectedHive = hives.find(h => h.id === formData.hive_id)
-    const honeySupers = selectedHive?.configuration?.honey_supers || 0
-    setSelectedHiveHasHoneySupers(honeySupers > 0)
-  }, [formData.hive_id, hives])
+  // Honey supers on the chosen hive: a treatment warning, worked out while drawing.
+  const selectedHiveHasHoneySupers =
+    (hives.find(h => h.id === formData.hive_id)?.configuration?.honey_supers || 0) > 0
 
   // Apply the page's filter once per filter value. Re-applying it whenever the hive list
   // reloaded put the filter's hive back over the one picked in the form (C4-12).
@@ -348,7 +345,6 @@ export default function VarroaTreatmentForm({
             onChange={(e) => {
               setFormApiaryId(e.target.value)
               setFormData(prev => ({ ...prev, hive_id: '' }))
-              setSelectedHiveHasHoneySupers(false)
             }}
             className="w-full px-3 py-2 min-h-[48px] border border-border rounded-md bg-surface dark:bg-surface text-foreground"
           >

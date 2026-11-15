@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Edit2, Trash2, Search, Camera, QrCode, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import type { Inspection, Hive, Apiary } from '@/types/records'
@@ -65,7 +65,9 @@ export default function InspectionCard({
     .filter((url): url is string => Boolean(url))
   const normalisedImageUrl = photoUrls[0] ?? null
   const extraPhotoCount = Math.max(0, photoUrls.length - 1)
-  const [thumbnailLoadFailed, setThumbnailLoadFailed] = useState(false)
+  // Which photo failed to load: a replaced photo is not marked failed.
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null)
+  const thumbnailLoadFailed = failedImageUrl !== null && failedImageUrl === normalisedImageUrl
   const [qrModalOpen, setQrModalOpen] = useState(false)
 
   const givenTakenItems = [
@@ -76,10 +78,6 @@ export default function InspectionCard({
     { label: 'Drone', value: inspection.drone_frames },
     { label: 'Store', value: inspection.store_frames },
   ].filter((item): item is { label: string; value: number } => isNonZeroAdjustment(item.value))
-
-  useEffect(() => {
-    setThumbnailLoadFailed(false)
-  }, [normalisedImageUrl])
 
   const droneLabel = getLevelLabel(inspection.drones_present)
   const propolisLabel = getLevelLabel(inspection.propolis_level)
@@ -125,7 +123,7 @@ export default function InspectionCard({
                 fill
                 className="object-cover"
                 sizes="48px"
-                onError={() => setThumbnailLoadFailed(true)}
+                onError={() => setFailedImageUrl(normalisedImageUrl)}
               />
               <span className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded bg-black/70 p-0.5 text-white pointer-events-none">
                 <ZoomIn size={12} aria-hidden="true" />

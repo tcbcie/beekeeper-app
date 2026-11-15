@@ -1,7 +1,7 @@
 'use client'
 
 import { getCurrentDate } from '@/lib/date-utils'
-import { useEffect, useId, useState } from 'react'
+import { useId, useState } from 'react'
 import { X, Loader2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 import { FinancialRecord, DropdownValue } from '@/types/records'
@@ -38,13 +38,6 @@ export default function FinancialRecordForm({
   const [categoryId, setCategoryId] = useState(record?.category_id || '')
   const [description, setDescription] = useState(record?.description || '')
   const [notes, setNotes] = useState(record?.notes || '')
-
-  // Reset category when type changes (unless editing)
-  useEffect(() => {
-    if (!record) {
-      setCategoryId('')
-    }
-  }, [recordType, record])
 
   // Get categories based on type
   const categories = recordType === 'income' ? incomeCategories : expenseCategories
@@ -101,7 +94,11 @@ export default function FinancialRecordForm({
                 name={`${fieldId}-type`}
                 value={type}
                 checked={recordType === type}
-                onChange={() => setRecordType(type)}
+                onChange={() => {
+                  setRecordType(type)
+                  // A new record's category belongs to the other list: clear it (an edit keeps its own).
+                  if (!record) setCategoryId('')
+                }}
                 title={type === 'income' ? 'Income' : 'Expense'}
                 tone="green"
                 className="min-h-[48px] items-center"

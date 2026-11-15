@@ -410,10 +410,8 @@ export default function RecordsPage() {
   // Show the list 50 at a time: drawing every record (735 for the largest account) on each
   // change was the page's slowest step. A new filter or search starts again at 50, and a record
   // opened from a link is always within the shown part.
-  const [visibleCount, setVisibleCount] = useState(RECORDS_PAGE_SIZE)
-  useEffect(() => {
-    setVisibleCount(RECORDS_PAGE_SIZE)
-  }, [filters, searchTerm])
+  const [shown, setShown] = useState({ count: RECORDS_PAGE_SIZE, filters, searchTerm })
+  const visibleCount = shown.filters === filters && shown.searchTerm === searchTerm ? shown.count : RECORDS_PAGE_SIZE
   const highlightedIndex = highlightedRecordKey
     ? filteredRecords.findIndex(record => `${record.record_type}-${record.id}` === highlightedRecordKey)
     : -1
@@ -2057,7 +2055,7 @@ export default function RecordsPage() {
               <Button
                 type="button"
                 tone="neutral"
-                onClick={() => setVisibleCount(count => count + RECORDS_PAGE_SIZE)}
+                onClick={() => setShown({ count: visibleCount + RECORDS_PAGE_SIZE, filters, searchTerm })}
               >
                 Show more
               </Button>

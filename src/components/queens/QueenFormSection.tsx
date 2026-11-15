@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
@@ -151,12 +151,8 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  editingQueen ? formDataFromQueen(editingQueen, queens, batches) : emptyFormData()
  )
 
- // Re-populate when switching between add and edit (or editing another queen)
- useEffect(() => {
- setFormData(editingQueen ? formDataFromQueen(editingQueen, queens, batches) : emptyFormData())
- setShowLineage(false)
- // eslint-disable-next-line react-hooks/exhaustive-deps
- }, [editingQueen])
+ // Switching between add and edit, or to another queen, starts a fresh form: the parent gives
+ // each queen its own key, so the state above is initialised from that queen.
 
  const resetForm = () => {
  setShowLineage(false)
@@ -164,15 +160,12 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  onClose()
  }
 
- // Auto-calculate color when birth date changes (skip for distributed queens — preserve breeder data)
- useEffect(() => {
- if (formData.birth_date && !editingQueen?.distributed_by_name) {
- const calculatedColor = getQueenColorFromYear(formData.birth_date)
- if (calculatedColor && calculatedColor !== formData.marking_color) {
- setFormData(prev => ({ ...prev, marking_color: calculatedColor }))
- }
- }
- }, [formData.birth_date, formData.marking_color, editingQueen?.distributed_by_name])
+ // Marking colour from the birth year (not for distributed queens — keep the breeder's data).
+ // When there is one it wins over a manual pick, as before.
+ const autoMarkingColor = formData.birth_date && !editingQueen?.distributed_by_name
+ ? getQueenColorFromYear(formData.birth_date)
+ : ''
+ const markingColor = autoMarkingColor || formData.marking_color
 
  // One save at a time: a double tap must not create two queens.
  const { submitting, run } = useSubmitLock()
@@ -234,6 +227,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  // Convert empty strings to null for optional UUID fields
  const dataToSubmit = {
  ...formData,
+ marking_color: markingColor,
  // Trailing spaces are invisible in the field but make a distinct queen number, and numbers
  // are unique per account by string comparison — " 48" would sit alongside "48" undetected.
  queen_number: formData.queen_number.trim(),
@@ -359,7 +353,7 @@ export default function QueenFormSection({ userId, queens, batches, subspeciesOp
  )}
  </label>
  <select
- value={formData.marking_color}
+ value={markingColor}
  onChange={(e) => setFormData({ ...formData, marking_color: e.target.value })}
  disabled={!!editingQueen?.distributed_by_name}
  className={`w-full min-h-[48px] px-3 py-2 border border-border rounded-md bg-surface dark:bg-surface-elevated text-foreground focus:ring-2 focus:ring-forest-500 focus:border-forest-500 ${editingQueen?.distributed_by_name ? 'opacity-60 cursor-not-allowed' : ''}`}

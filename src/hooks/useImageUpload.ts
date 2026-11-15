@@ -7,6 +7,8 @@ interface UseImageUploadOptions {
   bucket?: string
   folder: string
   onError?: (message: string) => void
+  /** Photo already saved (e.g. the record being edited), shown until a new one is chosen. */
+  initialPreviewUrl?: string | null
 }
 
 interface UseImageUploadReturn {
@@ -28,7 +30,7 @@ export function useImageUpload(options: UseImageUploadOptions): UseImageUploadRe
   const { bucket = 'inspection-images', folder, onError } = options
 
   const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(options.initialPreviewUrl ?? null)
   const [uploading, setUploading] = useState(false)
   const readerRef = useRef<FileReader | null>(null)
   const mountedRef = useRef(true)

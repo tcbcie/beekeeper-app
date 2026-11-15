@@ -1,7 +1,7 @@
 'use client'
 
 import { getCurrentDate } from '@/lib/date-utils'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
@@ -144,20 +144,15 @@ export default function HiveFormSection({ userId, apiaries, queens, editingHive,
  handleImageChange,
  handleRemoveImage,
  uploadImage,
- reset: resetImage,
- setPreviewFromUrl,
  } = useImageUpload({
  bucket: 'apiary-images',
+ initialPreviewUrl: normaliseStoragePublicUrl(editingHive?.image_url),
  folder: `${userId || 'unknown'}/hives`,
  onError: (message) => toast.error(message),
  })
 
- // Re-populate when switching between add and edit (or editing another hive)
- useEffect(() => {
- setFormData(editingHive ? formDataFromHive(editingHive) : emptyFormData())
- resetImage()
- setPreviewFromUrl(normaliseStoragePublicUrl(editingHive?.image_url))
- }, [editingHive, resetImage, setPreviewFromUrl])
+ // Switching between add and edit, or to another hive, starts a fresh form: the parent gives
+ // each hive its own key, so the state above is initialised from that hive.
 
  // Picking a model on a NEW hive fills in its size and frames per box. An existing hive's
  // configuration is never changed by this: it has its own history.

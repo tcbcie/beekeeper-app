@@ -99,7 +99,7 @@ Google is kept because it is the only service found that resolves Eircodes corre
 ## Decisions needed
 
 - [x] **L1:** fix the 38 findings and switch those five rules back to errors (done 15/11/2026)
-- [ ] **L2:** keep `set-state-in-effect` as a warning; schedule the ~37 real one-render flashes as a later batch (recommended)
-- [ ] **T1:** Mapbox town name: a) permanent lookup, needs a card on the Mapbox account (recommended); b) stop auto-filling; c) leave
-- [ ] **T2:** Google coordinates: a) pin-confirm; c) keep and check the terms yourself (recommended)
-- [ ] **U1/U2:** Turbopack not now; React 19.3 with Phase F (recommended)
+- [x] **L2:** rule stays a warning; the 19 visible flashes fixed 15/11/2026 (`set-state-in-effect-flashes-plan.md`)
+- [x] **T1:** decided c) leave (owner, 15/11/2026). About 391 lookups a year; switching to permanent would cost about $2 a year if wanted later
+- [x] **T2:** c) keep; the owner to read Google's Service Specific Terms
+- [x] **U1/U2:** Turbopack not now; React 19.3 with Phase F

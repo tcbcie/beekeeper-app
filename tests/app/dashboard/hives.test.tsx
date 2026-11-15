@@ -83,8 +83,9 @@ describe('HivesPage', () => {
       const [addButton] = await screen.findAllByRole('button', { name: /^add hive$/i })
       await userEvent.click(addButton)
 
-      // The form loads when opened (next/dynamic), so wait for it to appear
-      await userEvent.type(await screen.findByPlaceholderText('e.g., A-1, B-3'), 'TEST-H1')
+      // The form loads when opened (next/dynamic). Its first load is compiled on demand while the
+      // whole suite runs, which can take longer than the default 3 s wait, so allow 10 s here.
+      await userEvent.type(await screen.findByPlaceholderText('e.g., A-1, B-3', {}, { timeout: 10_000 }), 'TEST-H1')
       const apiarySelect = screen
         .getAllByRole('combobox')
         .find((select) => select.querySelector('option[value=""]')?.textContent === 'Select apiary') as HTMLSelectElement

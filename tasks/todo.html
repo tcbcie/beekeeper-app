@@ -463,9 +463,24 @@
 <ul class="todo">
   <li>&#9745; <strong>L1:</strong> 38 React rule findings resolved (35 fixed, 3 explained false positives); the five rules are errors again; lint 0 errors, typecheck clean</li>
   <li>&#9744; <strong>L2:</strong> keep <code>set-state-in-effect</code> (168) as a warning; ~37 cause a one-render flash, for a later batch</li>
-  <li>&#9744; <strong>T1:</strong> Mapbox town name may not be stored from the standard lookup: a) permanent lookup (card on the Mapbox account) / b) stop auto-filling / c) leave</li>
+  <li>&#9745; <strong>T1 (decided: leave):</strong> Mapbox town name may not be stored from the standard lookup: a) permanent lookup (card on the Mapbox account) / b) stop auto-filling / c) leave</li>
   <li>&#9744; <strong>T2:</strong> Google coordinates may be kept 30 days: a) pin-confirm / c) keep and read Google&rsquo;s Service Specific Terms yourself</li>
   <li>&#9744; <strong>U1/U2:</strong> Turbopack not now (Sentry tree-shaking unsupported); React 19.3 together with View Transitions (Phase F)</li>
+</ul>
+
+<h2>15. L2 &mdash; one-render flashes (plan, waiting for approval)</h2>
+
+<p>Full plan: <span class="file">docs/features/set-state-in-effect-flashes-plan.md</span>. L1 is live (<code>d19c0eb5</code>).</p>
+
+<ul>
+  <li>36 places traced where an effect corrects a value after the screen has drawn. After a tap React finishes these before painting, so many are never seen; they show when data arrives or a dialog reopens.</li>
+  <li>This batch: the 19 places where it can be seen or costs a wasted render on a busy screen (17 files). The other ~17 are invisible tidying and stay warnings.</li>
+</ul>
+
+<ul class="todo">
+  <li>&#9745; Records list count, hive and queen edit forms, queen colour, Mel welcome, photo viewer, dashboard weather badges, varroa honey-super warning, batch cell frame, NIHBS figures and group, profit and loss category, inspection form errors, print labels banner, card photo failure, two filtered drop-downs, terminology page</li>
+  <li>&#9745; Typecheck clean, lint 0 errors (set-state warnings 177 &rarr; 158), QA audit (no critical/high findings), docs</li>
+  <li>&#9744; You: run the tests; after deployment the checks in the plan</li>
 </ul>
 
 </body>

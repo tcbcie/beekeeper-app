@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/components/ui/Toast'
 import Button from '@/components/ui/Button'
@@ -96,7 +96,6 @@ const emptyFormData = (): FormData => {
 export default function BatchFormSection({ userId, queens, apiaries, hives, sealedCellCounts, userHasActiveSubscription, ownedRearingGroups, memberRearingGroups, editingBatch, onSaved, onClose }: BatchFormSectionProps) {
  const toast = useToast()
  const [formData, setFormData] = useState<FormData>(emptyFormData)
- const [filteredHives, setFilteredHives] = useState<Hive[]>([])
  const [quantitiesOpen, setQuantitiesOpen] = useState(true)
  const [notificationPrefsOpen, setNotificationPrefsOpen] = useState(false)
  const [editingBatchHasGrafts, setEditingBatchHasGrafts] = useState(false)
@@ -211,14 +210,11 @@ export default function BatchFormSection({ userId, queens, apiaries, hives, seal
  onClose()
  }
 
- useEffect(() => {
- if (formData.starter_apiary_id) {
- const filtered = hives.filter(h => h.apiary_id === formData.starter_apiary_id)
- setFilteredHives(filtered)
- } else {
- setFilteredHives([])
- }
- }, [formData.starter_apiary_id, hives])
+ // Hives of the chosen starter apiary
+ const filteredHives = useMemo(
+ () => (formData.starter_apiary_id ? hives.filter(h => h.apiary_id === formData.starter_apiary_id) : []),
+ [formData.starter_apiary_id, hives]
+ )
 
  // One save at a time: a double tap must not save the batch twice (the second create
  // would fail on the unique name and show a false "name already used" error).

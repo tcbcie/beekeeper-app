@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Edit2, Trash2, Bug, Camera, ZoomIn } from 'lucide-react'
 import Image from 'next/image'
 import type { VarroaCheck } from '@/types/records'
@@ -28,11 +28,9 @@ export default function VarroaCheckCard({
 }: VarroaCheckCardProps) {
   const isNaturalDrop = check.method === 'Natural Mite Drop' || check.method === 'Screening Board'
   const normalisedImageUrl = normaliseStoragePublicUrl(check.image_url)
-  const [thumbnailLoadFailed, setThumbnailLoadFailed] = useState(false)
-
-  useEffect(() => {
-    setThumbnailLoadFailed(false)
-  }, [normalisedImageUrl])
+  // Which photo failed to load: a replaced photo is not marked failed.
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null)
+  const thumbnailLoadFailed = failedImageUrl !== null && failedImageUrl === normalisedImageUrl
 
   return (
     <div className="bg-surface dark:bg-surface rounded-lg shadow border border-border p-3 border-l-4 border-orange-500">
@@ -58,7 +56,7 @@ export default function VarroaCheckCard({
                 fill
                 className="object-cover rounded-lg border-2 border-border shadow-sm"
                 sizes="64px"
-                onError={() => setThumbnailLoadFailed(true)}
+                onError={() => setFailedImageUrl(normalisedImageUrl)}
               />
               <span className="absolute bottom-0.5 right-0.5 flex items-center justify-center rounded bg-black/70 p-0.5 text-white pointer-events-none">
                 <ZoomIn size={14} aria-hidden="true" />

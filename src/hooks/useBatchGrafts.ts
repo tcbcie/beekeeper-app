@@ -64,7 +64,7 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
   const [bulkDistributeGrafts, setBulkDistributeGrafts] = useState<Graft[] | null>(null)
   const [unlockedGraftIds, setUnlockedGraftIds] = useState<Set<string>>(new Set())
   const [frameCollapsed, setFrameCollapsed] = useState(false)
-  const frameInitialised = useRef(false)
+  const [frameInitialised, setFrameInitialised] = useState(false)
 
   const {
     distributions,
@@ -239,13 +239,11 @@ export function useBatchGrafts({ batchId, userId, cellCount, groupId, emergenceD
     }
   }, [grafts, tableSelectMode])
 
-  // Auto-collapse frame once on first load if table grafts already exist
-  useEffect(() => {
-    if (frameInitialised.current || grafts.length === 0) return
-    frameInitialised.current = true
-    const hasTableGrafts = grafts.some(g => !FRAME_STATUS_VALUES.includes(g.status))
-    if (hasTableGrafts) setFrameCollapsed(true)
-  }, [grafts])
+  // Collapse the frame once, in the render the grafts first arrive, if table grafts already exist
+  if (!frameInitialised && grafts.length > 0) {
+    setFrameInitialised(true)
+    if (grafts.some(g => !FRAME_STATUS_VALUES.includes(g.status))) setFrameCollapsed(true)
+  }
 
   // Sync counts to parent and persist to DB when grafts change
   const lastPersistedCounts = useRef<string>('')

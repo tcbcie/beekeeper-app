@@ -380,17 +380,20 @@ export default function InspectionForm({
   }, [goToStep, step, validateStep])
 
   // Clear each message as the user fixes the field it belongs to, rather than
-  // leaving stale errors standing until the next attempt to move on.
-  useEffect(() => {
-    setFieldErrors(previous => {
-      const shown = Object.keys(previous)
-      if (shown.length === 0) return previous
+  // leaving stale errors standing until the next attempt to move on. Re-checked in the render
+  // the step or a required field changes (validateStep changes with hive, date and time).
+  const [errorsCheckedFor, setErrorsCheckedFor] = useState({ validateStep, step })
+  if (errorsCheckedFor.validateStep !== validateStep || errorsCheckedFor.step !== step) {
+    setErrorsCheckedFor({ validateStep, step })
+    const shown = Object.keys(fieldErrors)
+    if (shown.length > 0) {
       const stillInvalid = new Set(validateStep(step).map(error => error.fieldId))
       const remaining = shown.filter(fieldId => stillInvalid.has(fieldId))
-      if (remaining.length === shown.length) return previous
-      return Object.fromEntries(remaining.map(fieldId => [fieldId, previous[fieldId]]))
-    })
-  }, [validateStep, step])
+      if (remaining.length !== shown.length) {
+        setFieldErrors(Object.fromEntries(remaining.map(fieldId => [fieldId, fieldErrors[fieldId]])))
+      }
+    }
+  }
 
   const lastStoresReading = isEditing ? null : previousStoresByHive[formData.hive_id] ?? null
 

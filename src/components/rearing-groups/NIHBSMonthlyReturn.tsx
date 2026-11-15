@@ -33,6 +33,24 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
   const [exporting, setExporting] = useState(false)
   const { reportData, loading, error, fetchReport, saveManualFields } = useNIHBSReport()
 
+  // A group that no longer exists falls back to the first one, before any report is fetched for it.
+  if (ownedGroups.length > 0 && !ownedGroups.some((g) => g.id === selectedGroupId)) {
+    setSelectedGroupId(ownedGroups[0].id)
+  }
+
+  // The editable figures start from the report, filled in the render it arrives.
+  const [editsSource, setEditsSource] = useState(reportData)
+  if (editsSource !== reportData) {
+    setEditsSource(reportData)
+    if (reportData) {
+      setManualEdits(new Map(reportData.months.map((md) => [md.month, {
+        hybridised_offspring: md.hybridised_offspring,
+        virgins_distributed_external: md.virgins_distributed_external,
+        virgins_external_mated: md.virgins_external_mated,
+      }])))
+    }
+  }
+
   useEffect(() => {
     if (!selectedGroupId) return
     const group = ownedGroups.find((g) => g.id === selectedGroupId)
@@ -41,26 +59,6 @@ export default function NIHBSMonthlyReturn({ ownedGroups, userId }: NIHBSMonthly
       setManualEdits(new Map())
     }
   }, [selectedGroupId, selectedYear, ownedGroups, fetchReport])
-
-  useEffect(() => {
-    if (ownedGroups.length > 0 && !ownedGroups.find((g) => g.id === selectedGroupId)) {
-      setSelectedGroupId(ownedGroups[0].id)
-    }
-  }, [ownedGroups, selectedGroupId])
-
-  // Initialise manual edits from report data
-  useEffect(() => {
-    if (!reportData) return
-    const edits = new Map<number, ManualFields>()
-    for (const md of reportData.months) {
-      edits.set(md.month, {
-        hybridised_offspring: md.hybridised_offspring,
-        virgins_distributed_external: md.virgins_distributed_external,
-        virgins_external_mated: md.virgins_external_mated,
-      })
-    }
-    setManualEdits(edits)
-  }, [reportData])
 
   const getManualField = (month: number, field: keyof ManualFields): number => {
     return manualEdits.get(month)?.[field] ?? 0

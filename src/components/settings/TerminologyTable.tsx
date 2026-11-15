@@ -67,11 +67,6 @@ export default function TerminologyTable() {
     )
   }, [terms, searchQuery])
 
-  // Reset to page 1 when search changes
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchQuery])
-
   // Pagination calculations
   const totalPages = Math.ceil(filteredTerms.length / ITEMS_PER_PAGE)
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
@@ -256,7 +251,7 @@ export default function TerminologyTable() {
           type="text"
           placeholder="Search terms..."
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
           className="pl-10 pr-4"
         />
       </div>

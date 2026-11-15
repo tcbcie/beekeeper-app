@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { AlertCircle, Printer } from 'lucide-react'
 import ModalShell from '@/components/ui/ModalShell'
 import FormActionRow from '@/components/ui/FormActionRow'
@@ -31,9 +31,11 @@ export default function PrintLabelsModal({
 
   // Reset any prior error state when the modal is re-opened so a previous
   // pop-up-blocker banner doesn't persist across separate print attempts.
-  useEffect(() => {
+  const [wasOpen, setWasOpen] = useState(open)
+  if (open !== wasOpen) {
+    setWasOpen(open)
     if (open) setStatus('idle')
-  }, [open])
+  }
 
   if (!open) return null
 

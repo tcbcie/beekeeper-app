@@ -59,19 +59,23 @@ export default function ImageZoomModal({ isOpen, imageUrl, images, startIndex = 
   // would leave the page unscrollable with no visible viewer to dismiss.
   const hasSomethingToShow = gallery.length > 0
 
-  useEffect(() => {
-    if (isOpen && hasSomethingToShow) {
-      document.body.style.overflow = 'hidden'
+  const showing = isOpen && hasSomethingToShow
+  const [shownFor, setShownFor] = useState({ showing, startIndex })
+  if (shownFor.showing !== showing || shownFor.startIndex !== startIndex) {
+    setShownFor({ showing, startIndex })
+    if (showing) {
       setScale(1)
       setPosition({ x: 0, y: 0 })
       setIndex(startIndex)
-    } else {
-      document.body.style.overflow = 'unset'
     }
+  }
+
+  useEffect(() => {
+    document.body.style.overflow = showing ? 'hidden' : 'unset'
     return () => {
       document.body.style.overflow = 'unset'
     }
-  }, [isOpen, startIndex, hasSomethingToShow])
+  }, [showing])
 
   // Arrow keys are how a desktop user expects to page a gallery. Bound only while
   // open and only when there is more than one photo, so single-image callers are

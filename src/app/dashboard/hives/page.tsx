@@ -904,6 +904,7 @@ export default function HivesPage() {
  {showForm && (
  <div ref={formRef}>
  <HiveFormSection
+ key={editingHive?.id ?? 'new'}
  userId={userId}
  apiaries={apiaries}
  queens={queens}

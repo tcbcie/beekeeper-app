@@ -546,6 +546,7 @@ export default function QueensPage() {
 
  {showForm && (
  <QueenFormSection
+ key={editingQueen?.id ?? 'new'}
  userId={userId}
  queens={queens}
  batches={batches}

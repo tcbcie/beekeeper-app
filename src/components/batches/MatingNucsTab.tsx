@@ -164,7 +164,6 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  const [batches, setBatches] = useState<Batch[]>([])
  const [grafts, setGrafts] = useState<Graft[]>([])
  const [queens, setQueens] = useState<Queen[]>([])
- const [filteredGrafts, setFilteredGrafts] = useState<Graft[]>([])
  const [loading, setLoading] = useState(true)
  const [showForm, setShowForm] = useState(false)
  const [editingNuc, setEditingNuc] = useState<MatingNuc | null>(null)
@@ -541,14 +540,10 @@ export default function MatingNucsTab({ userId }: MatingNucsTabProps) {
  }, [nucs])
 
  // Filter grafts by selected batch (include the nuc's current graft when editing)
- useEffect(() => {
- if (formData.batch_id) {
+ const filteredGrafts = useMemo(() => {
+ if (!formData.batch_id) return []
  const currentGraftId = editingNuc?.graft_id
- const filtered = grafts.filter(g => g.batch_id === formData.batch_id && (['sealed', 'caged', 'emerged'].includes(g.status) || g.id === currentGraftId))
- setFilteredGrafts(filtered)
- } else {
- setFilteredGrafts([])
- }
+ return grafts.filter(g => g.batch_id === formData.batch_id && (['sealed', 'caged', 'emerged'].includes(g.status) || g.id === currentGraftId))
  }, [formData.batch_id, grafts, editingNuc])
 
  useEffect(() => {

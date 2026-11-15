@@ -187,9 +187,6 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
   const [bloomExpanded, setBloomExpanded] = useState(false)
   const [vegModalOpen, setVegModalOpen] = useState(false)
   const [vegModalPlant, setVegModalPlant] = useState<{ name: string; typeId: string } | null>(null)
-  const [nectarCondition, setNectarCondition] = useState<NectarCondition | null>(null)
-  const [pollenCondition, setPollenCondition] = useState<PollenCondition | null>(null)
-  const [foragingHours, setForagingHours] = useState<{ today: number | null; tomorrow: number | null } | null>(null)
   const dragCounterRef = useRef(0)
   const cardRef = useRef<HTMLAnchorElement | null>(null)
   const mountedRef = useRef(true)
@@ -447,37 +444,24 @@ function ApiaryWeatherRow({ apiary, activeAction, onActionDrop, variant = 'card'
   useEffect(() => { fetchWeather() }, [fetchWeather])
   useEffect(() => { fetchGDDAndBloom() }, [fetchGDDAndBloom])
 
-  // Compute nectar condition and foraging hours when weather data is available
-  useEffect(() => {
-    if (!weather) return
-    const today = weather.daily[0]
-    if (!today) return
-    // Sum recent precipitation: yesterday + today (actual/observed rain for nectar secretion)
-    const recentRain = (weather.yesterday?.precipitationSum ?? 0) + today.precipitationSum
-    const condition = getNectarConditions(
-      weather.current.temperature,
-      weather.current.humidity,
-      today.sunshineDuration,
-      recentRain
-    )
-    setNectarCondition(condition)
-
-    // Pollen conditions: uses today's rain only (rain washes pollen off flowers)
-    setPollenCondition(getPollenConditions(
-      weather.current.temperature,
-      weather.current.humidity,
-      today.sunshineDuration,
-      today.precipitationSum
-    ))
-
-    // Flying weather: today / tomorrow (use raw temps for precision)
-    const calcHours = (d: DailyForecast | null | undefined) =>
-      d ? calculateForagingHours(d.tempMinRaw, d.tempMaxRaw, d.sunshineDuration, d.precipitationSum) : null
-    setForagingHours({
-      today: calcHours(today),
-      tomorrow: calcHours(weather.daily[1]),
-    })
-  }, [weather])
+  // Nectar and pollen conditions and flying hours, worked out from the weather while drawing
+  // (a few sums, so no memo), so the badges appear with the weather instead of a draw later.
+  const today = weather?.daily[0]
+  const calcHours = (d: DailyForecast | null | undefined) =>
+    d ? calculateForagingHours(d.tempMinRaw, d.tempMaxRaw, d.sunshineDuration, d.precipitationSum) : null
+  const nectarCondition: NectarCondition | null = weather && today
+    // Recent rain: yesterday + today (actual/observed rain for nectar secretion)
+    ? getNectarConditions(weather.current.temperature, weather.current.humidity, today.sunshineDuration,
+      (weather.yesterday?.precipitationSum ?? 0) + today.precipitationSum)
+    : null
+  // Pollen conditions: uses today's rain only (rain washes pollen off flowers)
+  const pollenCondition: PollenCondition | null = weather && today
+    ? getPollenConditions(weather.current.temperature, weather.current.humidity, today.sunshineDuration, today.precipitationSum)
+    : null
+  // Flying weather: today / tomorrow (use raw temps for precision)
+  const foragingHours = weather && today
+    ? { today: calcHours(today), tomorrow: calcHours(weather.daily[1]) }
+    : null
 
 
   // The last visit (latest record of any kind): hives left closed on a visit are left on purpose
