@@ -21,11 +21,6 @@ export default function FinancialRecordCard({
 }: FinancialRecordCardProps) {
   const isIncome = record.record_type === 'income'
   const orderNumber = firstOf(record.order)?.order_number
-  // "Thornes · Invoice INV-20431", "Thornes" or "Invoice INV-20431" (expenses only)
-  const supplierLine = [
-    firstOf(record.supplier)?.name,
-    record.invoice_number ? `Invoice ${record.invoice_number}` : null,
-  ].filter(Boolean).join(' · ')
 
   // Format date as DD/MM/YYYY
   const formatDate = (dateStr: string) => {
@@ -36,6 +31,14 @@ export default function FinancialRecordCard({
       year: 'numeric'
     })
   }
+
+  // "Thornes · Invoice INV-20431 · Dated 12/11/2026", or whichever parts are set (expenses only).
+  // "Dated" keeps the invoice date apart from the payment date shown above it.
+  const supplierLine = [
+    firstOf(record.supplier)?.name,
+    record.invoice_number ? `Invoice ${record.invoice_number}` : null,
+    record.invoice_date ? `Dated ${formatDate(record.invoice_date)}` : null,
+  ].filter(Boolean).join(' · ')
 
   const formatAmount = (amount: number) => {
     return new Intl.NumberFormat(isUkNi ? 'en-GB' : 'en-IE', {

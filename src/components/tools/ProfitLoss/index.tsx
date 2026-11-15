@@ -209,6 +209,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
             notes: record.notes || null,
             supplier_id: record.supplier_id || null,
             invoice_number: record.invoice_number || null,
+            invoice_date: record.invoice_date || null,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingRecord.id)
@@ -229,7 +230,8 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
             description: record.description || null,
             notes: record.notes || null,
             supplier_id: record.supplier_id || null,
-            invoice_number: record.invoice_number || null
+            invoice_number: record.invoice_number || null,
+            invoice_date: record.invoice_date || null
           })
 
         if (error) throw error
@@ -286,7 +288,7 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
       return
     }
 
-    const headers = ['Date', 'Type', 'Category', `Amount (${isUkNi ? 'GBP' : 'EUR'})`, 'Description', 'Notes', 'Supplier', 'Invoice number']
+    const headers = ['Date', 'Type', 'Category', `Amount (${isUkNi ? 'GBP' : 'EUR'})`, 'Description', 'Notes', 'Supplier', 'Invoice number', 'Invoice date']
     const rows = filteredRecords.map(r => [
       r.transaction_date,
       r.record_type,
@@ -295,7 +297,8 @@ export default function ProfitLoss({ userId }: ProfitLossProps) {
       r.description || '',
       r.notes || '',
       firstOf(r.supplier)?.name || '',
-      r.invoice_number || ''
+      r.invoice_number || '',
+      r.invoice_date || ''
     ])
 
     downloadCsv(`pl-records-${timePeriod === 'year' ? selectedYear : timePeriod}-${getCurrentDate()}.csv`, toCsv(headers, rows))

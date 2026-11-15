@@ -46,6 +46,7 @@ export default function FinancialRecordForm({
   // Expenses only (docs/features/profit-loss-suppliers.md)
   const [supplierId, setSupplierId] = useState(record?.supplier_id || '')
   const [invoiceNumber, setInvoiceNumber] = useState(record?.invoice_number || '')
+  const [invoiceDate, setInvoiceDate] = useState(record?.invoice_date || '')
   const isExpense = recordType === 'expense'
 
   // Get categories based on type
@@ -74,7 +75,8 @@ export default function FinancialRecordForm({
       notes: notes.trim() || null,
       // Income has no supplier or invoice: anything left from switching type is dropped.
       supplier_id: isExpense ? supplierId || null : null,
-      invoice_number: isExpense ? invoiceNumber.trim() || null : null
+      invoice_number: isExpense ? invoiceNumber.trim() || null : null,
+      invoice_date: isExpense ? invoiceDate || null : null
     })
   }
 
@@ -173,7 +175,7 @@ export default function FinancialRecordForm({
           </select>
         </div>
 
-        {/* Supplier and invoice number: expenses only */}
+        {/* Supplier, invoice number and invoice date: expenses only */}
         {isExpense && (
           <>
             <SupplierPicker
@@ -183,20 +185,34 @@ export default function FinancialRecordForm({
               onChange={setSupplierId}
               onSuppliersChanged={onSuppliersChanged}
             />
-            <div>
-              <label htmlFor={`${fieldId}-invoice`} className="block text-sm font-medium text-text-secondary mb-1">
-                Invoice number
-              </label>
-              <input
-                id={`${fieldId}-invoice`}
-                type="text"
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)}
-                placeholder="For example, INV-20431"
-                maxLength={100}
-                autoComplete="off"
-                className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor={`${fieldId}-invoice`} className="block text-sm font-medium text-text-secondary mb-1">
+                  Invoice number
+                </label>
+                <input
+                  id={`${fieldId}-invoice`}
+                  type="text"
+                  value={invoiceNumber}
+                  onChange={(e) => setInvoiceNumber(e.target.value)}
+                  placeholder="For example, INV-20431"
+                  maxLength={100}
+                  autoComplete="off"
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+                />
+              </div>
+              <div>
+                <label htmlFor={`${fieldId}-invoice-date`} className="block text-sm font-medium text-text-secondary mb-1">
+                  Invoice date
+                </label>
+                <input
+                  id={`${fieldId}-invoice-date`}
+                  type="date"
+                  value={invoiceDate}
+                  onChange={(e) => setInvoiceDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+                />
+              </div>
             </div>
           </>
         )}

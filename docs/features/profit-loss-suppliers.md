@@ -16,9 +16,10 @@ On an **expense** (not income):
   - **Delete supplier** (red, in the Edit supplier sheet only) asks first, saying how many expenses use it: "Delete Thornes? It will be removed from 3 expenses. The expenses themselves are kept." The database clears the supplier from those expenses (`on delete set null`); no expense is deleted. The toast reads "Supplier deleted" and the expense being edited goes back to "No supplier".
   - After a supplier is saved or deleted, the record rows reload quietly in the background (`fetchRecords(true)`), so other expenses show the new name, or no supplier, at once without closing the form.
 - **Invoice number:** a short free-text field, for example "INV-20431".
+- **Invoice date:** optional, beside the invoice number (stacked on a phone). It is for reference only: the existing Date still decides which month and year the expense counts towards.
 - **Date:** the existing Date field, unchanged.
 
-The record row shows "Supplier · Invoice INV-20431" under the description, and the CSV export gains "Supplier" and "Invoice number" columns.
+The record row shows "Thornes · Invoice INV-20431 · Dated 12/11/2026" (whichever parts are set) above the description. "Dated" keeps the invoice date apart from the payment date. The CSV export gains "Supplier", "Invoice number" and "Invoice date" columns.
 
 Both fields are optional, so existing expenses and quick entries are unaffected.
 
@@ -42,6 +43,7 @@ New columns on `financial_records`:
 
 - `supplier_id uuid` references `suppliers(id)` **on delete set null**, with an index.
 - `invoice_number text`.
+- `invoice_date date`, added on 15 November 2026 (`supabase/migrations/20261115190000_add_invoice_date_to_financial_records.sql`).
 
 Both are nullable, so it is a purely additive change. No existing row changes.
 

@@ -14,7 +14,7 @@ Completed: January 17, 2026
 2. Click the **"P&L"** card (Wallet icon)
 3. Click **"Add Record"** to create a new entry
 4. Select **Income** or **Expense** type
-5. Fill in date, amount (EUR or GBP), category, and optional description/notes. For an expense you can also pick a supplier (or add or edit one on the spot) and enter the invoice number (see `profit-loss-suppliers.md`)
+5. Fill in date, amount (EUR or GBP), category, and optional description/notes. For an expense you can also pick a supplier (or add or edit one on the spot) and enter the invoice number and invoice date (see `profit-loss-suppliers.md`)
 6. View summary cards showing totals
 7. Choose a period: This Month, Year (then pick the year), or All Time
 
@@ -88,7 +88,7 @@ CREATE TABLE public.financial_records (
 );
 ```
 
-Since 15 November 2026 (`supabase/migrations/20261115180000_add_suppliers_to_profit_loss.sql`): `supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL` and `invoice_number TEXT`, both nullable and set on expenses only. The `suppliers` table (name, phone, email, notes) is user-scoped with the same RLS. See `profit-loss-suppliers.md`.
+Since 15 November 2026 (`supabase/migrations/20261115180000_add_suppliers_to_profit_loss.sql`): `supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL` and `invoice_number TEXT`, plus `invoice_date DATE` (`20261115190000_add_invoice_date_to_financial_records.sql`), all nullable and set on expenses only. The `suppliers` table (name, phone, email, notes) is user-scoped with the same RLS. See `profit-loss-suppliers.md`.
 
 ### RLS Policies
 
@@ -180,7 +180,7 @@ interface FinancialRecord {
 
 ### Record Cards
 - Left border color indicates type (green=income, red=expense)
-- Shows: Type badge, Category, Amount, Date, Supplier and invoice number (expenses), Description, Notes
+- Shows: Type badge, Category, Amount, Date, Supplier, invoice number and invoice date (expenses), Description, Notes
 - Edit (pencil) and Delete (trash) action buttons
 
 ### Form Fields
@@ -190,14 +190,15 @@ interface FinancialRecord {
 4. Category* - Dropdown (changes based on type selection)
 5. Supplier - Optional, expenses only: select with New supplier and Edit supplier buttons
 6. Invoice number - Optional, expenses only
-7. Description - Optional text input
-8. Notes - Optional textarea
+7. Invoice date - Optional, expenses only (reference only; Date drives totals)
+8. Description - Optional text input
+9. Notes - Optional textarea
 
 ## Export
 
 Click the **Export** button to download filtered records as CSV:
 - Filename: `pl-records-{period}-{date}.csv`
-- Columns: Date, Type, Category, Amount (EUR), Description, Notes, Supplier, Invoice number
+- Columns: Date, Type, Category, Amount (EUR), Description, Notes, Supplier, Invoice number, Invoice date
 - Respects the current period (Month / chosen Year / All). The filename uses the year for Year, e.g. `pl-records-2025-{date}.csv`
 
 Financial records are also included in the Settings backup export.

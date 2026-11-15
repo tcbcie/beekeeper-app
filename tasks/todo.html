@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Delete a supplier</title>
+<title>Plan &mdash; Invoice date on expenses</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -21,70 +21,74 @@
 </head>
 <body>
 
-<h1>Delete a supplier</h1>
+<h1>Invoice date on expenses</h1>
 
-<p><strong>Status:</strong> built, waiting for your tests &nbsp;&middot;&nbsp; <strong>Date:</strong> 15 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/profit-loss-suppliers.md</span> (extended)</p>
+<p><strong>Status:</strong> built; database change is live; waiting for your tests &nbsp;&middot;&nbsp; <strong>Date:</strong> 15 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/profit-loss-suppliers.md</span> (extended)</p>
 
 <blockquote>
-<p><strong>Your request:</strong> add an option to delete a supplier.</p>
-<p>This follows on from suppliers on expenses (<code>2e84b3e6</code>); that plan is in git history.</p>
+<p><strong>Your request:</strong> add an invoice date to expenses.</p>
+<p>This builds on suppliers and invoice numbers (<code>2e84b3e6</code>, <code>a360a4fc</code>). The delete-supplier plan is in git history (<code>5310add9</code>).</p>
 </blockquote>
 
 <h2>1. The design</h2>
 <pre>
- Edit supplier (bottom sheet)              Confirm (centred, existing dialog)
-┌──────────────────────────────────┐      ┌────────────────────────────────┐
-│ Edit supplier                 ✕  │      │ Delete Thornes?                │
-│ Name *  [ Thornes              ] │      │                                │
-│ Phone   [                      ] │      │ It will be removed from 3      │
-│ Email   [                      ] │      │ expenses. The expenses         │
-│ Notes   [                      ] │      │ themselves are kept.           │
-│                                  │      │                                │
-│ [ Delete supplier ]              │      │ [ Cancel ] [ Delete supplier ] │
-│ [ Cancel ]   [ Save supplier ]   │      └────────────────────────────────┘
+ Expense form (phone)
+┌──────────────────────────────────┐
+│ Date *  [ 15/11/2026         ]   │   ← the day it was paid (unchanged)
+│ ...                              │
+│ Supplier [ Thornes         ▾ ]   │
+│ [ Edit supplier ] [ + New ]      │
+│                                  │
+│ Invoice number [ INV-20431   ]   │   side by side from tablet width,
+│ Invoice date   [ 12/11/2026  ]   │   stacked on a phone
+│ Description ...                  │
 └──────────────────────────────────┘
+ Record row:  Thornes · Invoice INV-20431 · Dated 12/11/2026
 </pre>
 <ul>
-  <li><strong>Delete supplier</strong> is a red button in the <em>Edit supplier</em> sheet only; a new supplier has nothing to delete. It sits on the left of the footer, away from Save.</li>
-  <li>It asks first, through the existing <code>useConfirm</code> (danger). The message says how many expenses use the supplier, or "It is not used on any expense."</li>
-  <li>After deleting, the toast reads "Supplier deleted". The supplier leaves the list and the expense being edited goes back to "No supplier".</li>
-  <li>The database already clears the supplier from those expenses (<code>on delete set null</code>), so no data is lost and no migration is needed.</li>
+  <li>An optional <strong>Invoice date</strong> field, for <strong>expenses only</strong>, next to Invoice number (the same two-column grid as Date and Amount). It starts empty: the existing <strong>Date</strong> stays the date the expense counts towards in totals, the chart and the year filter.</li>
+  <li>The record row adds the invoice date to the supplier line in the same date style as the row's date.</li>
+  <li>The CSV export gains an "Invoice date" column after "Invoice number".</li>
+  <li>Switching a new record to Income hides the field, and income saves it as empty, the same as the supplier and invoice number.</li>
 </ul>
 
-<h2>2. A gap this also closes</h2>
-<p>After a supplier is <strong>renamed</strong> today, the other record rows show the old name until the page reloads. Deleting would leave a deleted name showing the same way. To fix both at the root, the picker tells Profit &amp; Loss when suppliers change, and the records reload. That is one callback passed from <span class="file">index.tsx</span> through the form to the picker.</p>
+<h2>2. Database (additive only)</h2>
+<p><code>financial_records</code> gains <code>invoice_date date</code> (nullable). No existing row changes. Applied through the MCP and saved as <span class="file">supabase/migrations/20261115190000_add_invoice_date_to_financial_records.sql</span>.</p>
 
 <h2>3. Todo</h2>
 <ul class="todo">
-  <li>☑ 1. <span class="file">SupplierSheet.tsx</span>: <code>onDeleted</code> prop; count the expenses using the supplier, confirm, delete, toast.</li>
-  <li>☑ 2. <span class="file">SupplierPicker.tsx</span>: remove the deleted supplier from the list and clear the selection; call <code>onSuppliersChanged</code> after a save or delete.</li>
-  <li>☑ 3. <span class="file">FinancialRecordForm.tsx</span> and <span class="file">index.tsx</span>: pass <code>onSuppliersChanged</code> through, which reloads the records.</li>
-  <li>☑ 4. Docs: <span class="file">profit-loss-suppliers.md</span>, deleting moves from "out of scope" to built.</li>
-  <li>☑ 5. Lint (done). ☐ You test: delete a used supplier, check its expenses still exist without it, and check a rename shows on other rows at once.</li>
-  <li>☑ 6. Review section below.</li>
+  <li>☑ 1. Migration: the <code>invoice_date</code> column. Apply it and check it.</li>
+  <li>☑ 2. <span class="file">src/types/records.ts</span>: <code>invoice_date</code> on <code>FinancialRecord</code>.</li>
+  <li>☑ 3. <span class="file">FinancialRecordForm.tsx</span>: the Invoice date field beside Invoice number (expenses only, null for income).</li>
+  <li>☑ 4. <span class="file">index.tsx</span>: save it on insert and update; CSV column.</li>
+  <li>☑ 5. <span class="file">FinancialRecordCard.tsx</span>: the date on the supplier line.</li>
+  <li>☑ 6. Docs: <span class="file">profit-loss-suppliers.md</span> and <span class="file">profit-loss-tracker.md</span>.</li>
+  <li>☑ 7. Lint and type-check (done). ☐ You test: tests, a build, then add an expense with an invoice date and check the row and CSV.</li>
+  <li>☑ 8. Review section below.</li>
 </ul>
 
 <h2>4. Review</h2>
 <table>
-  <tr><th>File</th><th>Change</th></tr>
-  <tr><td class="file">ProfitLoss/SupplierSheet.tsx</td><td>A red "Delete supplier" button on the left of the footer, in the Edit sheet only. It counts the user's expenses using the supplier, then asks through <code>useConfirm</code> (danger): "Delete Thornes? It will be removed from 3 expenses. The expenses themselves are kept." If the supplier is unused, it says "It is not used on any expense." After deleting, the toast reads "Supplier deleted". If something fails, it says "Supplier not deleted. Check your connection and try again." Buttons are disabled while it works.</td></tr>
-  <tr><td class="file">ProfitLoss/SupplierPicker.tsx</td><td>On delete, the supplier is removed from the list and the selection is cleared if it was chosen. After a save or delete it calls <code>onSuppliersChanged</code>.</td></tr>
-  <tr><td class="file">ProfitLoss/FinancialRecordForm.tsx</td><td>Passes <code>onSuppliersChanged</code> to the picker.</td></tr>
-  <tr><td class="file">ProfitLoss/index.tsx</td><td><code>fetchRecords(quiet)</code>: with <code>true</code> it reloads the rows without the loading screen. The loading screen would have unmounted the open expense form and lost what was typed, which I caught during the build. Supplier changes use the quiet reload.</td></tr>
-  <tr><td class="file">docs/features/profit-loss-suppliers.md</td><td>Deleting is documented and removed from "Out of scope".</td></tr>
+  <tr><th>Where</th><th>Change</th></tr>
+  <tr><td>Live database</td><td><code>financial_records.invoice_date</code> (date, nullable) was added through the MCP and confirmed. No existing row changed.</td></tr>
+  <tr><td class="file">supabase/migrations/20261115190000_add_invoice_date_to_financial_records.sql</td><td>The same one-line SQL.</td></tr>
+  <tr><td class="file">src/types/records.ts</td><td><code>invoice_date</code> on <code>FinancialRecord</code>.</td></tr>
+  <tr><td class="file">ProfitLoss/FinancialRecordForm.tsx</td><td>An "Invoice date" date field beside "Invoice number" (two columns from tablet width, stacked on a phone), for expenses only. Income sends it as empty.</td></tr>
+  <tr><td class="file">ProfitLoss/index.tsx</td><td>Saved on add and update. CSV column "Invoice date" after "Invoice number".</td></tr>
+  <tr><td class="file">ProfitLoss/FinancialRecordCard.tsx</td><td>The supplier line now reads "Thornes · Invoice INV-20431 · Dated 12/11/2026". "Dated" keeps it apart from the payment date shown just above. The line moved below <code>formatDate</code>, because a <code>const</code> function cannot be used before it is declared.</td></tr>
+  <tr><td>Docs</td><td><span class="file">profit-loss-suppliers.md</span> and <span class="file">profit-loss-tracker.md</span> updated.</td></tr>
 </table>
 <ul>
-  <li>No database change: <code>supplier_id</code> was created <code>on delete set null</code>, and RLS already limits delete to the owner.</li>
-  <li>ESLint: no errors. The one existing warning in <span class="file">index.tsx:111</span> is untouched. TypeScript: no errors in these files.</li>
-  <li><strong>Test suite (you ran it, 15 November 2026 at 18:46):</strong> 63 test files passed and 1 was skipped; 913 tests passed, 23 skipped, none failed (21.2s). The skipped file is <span class="file">tests/email-reminders/task-event-reminders.test.ts</span>, which skips all 23 of its tests by design and is unrelated to this work.</li>
+  <li><strong>Change from the plan:</strong> the row shows the date as "Dated 12/11/2026", in the row's existing DD/MM/YYYY style, not "12 Nov 2026". A bare date would be confused with the payment date.</li>
+  <li>ESLint: no errors (the existing warning in <span class="file">index.tsx:112</span> is untouched). TypeScript: no errors in these files. No tests or build were run.</li>
 </ul>
 <h3>For you to test</h3>
 <ol>
-  <li>☑ <code>npm run test:run</code>: passed (see above). ☐ A build.</li>
-  <li>Edit an expense with a supplier, tap Edit supplier, then Delete supplier. The message should give the right number of expenses. Confirm. The supplier should be gone from the list, the expense should show "No supplier", and the form should still be open with your other entries intact.</li>
-  <li>Close the form. The other expenses that used it should no longer show the supplier, but they should all still be there.</li>
-  <li>Rename a supplier. Other rows should show the new name straight away.</li>
-  <li>Tap Cancel on the confirmation. Nothing should change.</li>
+  <li><code>npm run test:run</code> and a build.</li>
+  <li>Add an expense with an invoice number and an invoice date earlier than the Date. The row should show "… · Dated …", and the totals should still follow the Date.</li>
+  <li>Edit it: the invoice date should be filled in. Clear it and save: it should be gone from the row.</li>
+  <li>Export CSV and check the "Invoice date" column.</li>
+  <li>On a phone, the two invoice fields should stack and the date picker should open normally.</li>
 </ol>
 
 </body>

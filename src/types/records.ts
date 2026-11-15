@@ -442,6 +442,7 @@ export interface FinancialRecord {
   // Expenses only: who was paid and their invoice reference.
   supplier_id?: string | null
   invoice_number?: string | null
+  invoice_date?: string | null
   // Joined data from dropdown_values
   category?: { value: string }
   // Joined supplier (to-one embed; read with firstOf)
