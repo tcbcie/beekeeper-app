@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Hive card header</title>
+<title>Plan &mdash; Select hives on a phone</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -21,76 +21,74 @@
 </head>
 <body>
 
-<h1>Tidy the hive card header</h1>
+<h1>Select hives on a phone</h1>
 
-<p><strong>Status:</strong> built, waiting for your check &nbsp;&middot;&nbsp; <strong>Date:</strong> 16 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/hive-card-header-layout.md</span> (new)</p>
+<p><strong>Status:</strong> built, waiting for your check on a phone &nbsp;&middot;&nbsp; <strong>Date:</strong> 16 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/hive-bulk-actions.md</span> (update)</p>
 
 <blockquote>
-<p><strong>Your request</strong> (with a screenshot of the top of hive card 29-DA): "See if that section on the Hive card can be rendered better. It's not looking great on the desktop, and I checked on the mobile, it's pretty much the same as way. It's not aligned and there seems to be space wasted."</p>
-<p>The winter feed plan that was in this file is in git history (<code>c6de020b</code>).</p>
+<p><strong>Report from a user</strong> (WhatsApp, with screenshots): "just noticed when I went to move hives On iPhone, the hive select button only shows when phone is in landscape."</p>
+<p>The hive card header plan that was in this file is in git history (<code>5caa7f2a</code>).</p>
 </blockquote>
 
 <h2>1. Root cause</h2>
-<p>In <span class="file">src/components/hive/HiveListCard.tsx</span>, the header is two flex columns side by side:</p>
+<p>In <span class="file">src/app/dashboard/hives/page.tsx</span>:</p>
 <ul>
-  <li><strong>Left:</strong> the hive number, with the scale icons and QR tag, sharing, archived, tasks and treatment pills under it.</li>
-  <li><strong>Right:</strong> a "status cluster" with the status pill, queenless pill, "Inspected N days ago" and the ⋮ menu. It wraps and is right-aligned.</li>
+  <li><strong>Line 875:</strong> the toolbar <em>Select</em> button has <code>hidden sm:flex</code>, so it only appears at 640px and wider. An iPhone in landscape is wider than 640px, which is why it appears there.</li>
+  <li><strong>Lines 864&ndash;870:</strong> commit <code>b9391c7e</code> (2 Nov, mobile native feel) moved the phone entry point inside the collapsed <em>Filters</em> panel as "Select several hives", on the basis that choosing several hives is occasional on a phone. Filters start closed on a phone, so the button is out of sight and nobody would think to look for it there.</li>
+  <li><strong>Side bug:</strong> the toolbar button switches at 640px (<code>sm</code>), but the phone button uses <code>useIsPhone()</code>, which switches at 768px (<code>md</code>). Between 640 and 767px (a large phone in landscape, a small tablet), both buttons show.</li>
 </ul>
-<p>The cards are only about 300px wide, on a phone and in the desktop grid alike, so the two columns fight for the width:</p>
-<ul>
-  <li>The right cluster wraps into three rows, which leaves ⋮ alone on its own row.</li>
-  <li>"Inspected 29 days ago" breaks over two lines.</li>
-  <li>The QR tag is cut to "HC-G…".</li>
-  <li>The space under "29-DA" is empty.</li>
-</ul>
-<p>The comments in the code already describe working around this ("pushes these onto two or three rows").</p>
 
-<h2>2. The design</h2>
-<p>I'll split the header into two rows instead of two columns.</p>
+<h2>2. The fix</h2>
+<p>I'll put a visible <em>Select</em> button on the hive count line on phones. That line already exists and has empty space on the right, so the list does not move down and the five-hives-on-first-view goal still holds. The toolbar row has no room for a fourth button at 390px wide: the apiary picker would shrink to nothing.</p>
 <pre>
- Before                               After
- ┌──────────────────────────────┐     ┌──────────────────────────────┐
- │ 29-DA              [active]  │     │ 29-DA                    [⋮] │
- │ ⚖                ┌─────────┐ │     │ [active] [◷ Inspected 29 days│
- │ [HC-G…]          │◷ Inspec-│ │     │  ago] [▦ HC-GH7K2] ⚖         │
- │                  │ted 29 d…│ │     │                              │
- │                        [⋮]   │     │ [ Overview &amp; Records       ] │
- │ [ Overview &amp; Records       ] │     └──────────────────────────────┘
- └──────────────────────────────┘
+ Phone, portrait (390px)
+ ┌──────────────────────────────────────┐
+ │ [ Search hive, apiary, tag or queen ]│
+ │ [All Apiaries ◇] [Filters ▾] [+ Add] │
+ │ 47 Active | 0 Archived    [☑ Select] │  &larr; new, 48px tall
+ │ [     List     |     Cards       ]   │
+ │ EPF 1 …                              │
+ └──────────────────────────────────────┘
+ Once tapped: the existing "Done selecting" button, "Select all (47)",
+ checkboxes, and the bottom action bar with Move / Treat / Feed.
 </pre>
-<ul>
-  <li><strong>Row 1:</strong> the hive number on the left takes the free width, and ⋮ is pinned top right where people expect a card menu. A long compound number still wraps, as it does now.</li>
-  <li><strong>Row 2:</strong> one left-aligned row of pills that wraps naturally, in this order: status, queenless, Inspected N days ago, QR tag, scale icons, shared, archived, active tasks, treatment on. The most important state comes first. Every pill now gets the full card width, so the QR code shows in full.</li>
-  <li><strong>Nothing else changes:</strong> the pill colours and wording, the menu contents, the Overview &amp; Records button and the rest of the card all stay the same.</li>
-</ul>
-<p><strong>Checked against the house rules:</strong> no new cards, boxes, colours or motion. The menu stays the same button, and the text stays 14px.</p>
+<p>All the switching between the phone and wider layouts happens at one breakpoint, <code>md</code> (768px), the same as <code>useIsPhone</code>. It is done with CSS only, so the button doesn't flash on first load.</p>
 
-<h2>3. Changes (one file)</h2>
 <table>
-  <tr><th>File</th><th>Change</th></tr>
-  <tr><td class="file">src/components/hive/HiveListCard.tsx</td><td>Move the existing JSX blocks into the two rows above and remove the right-hand cluster wrapper and its comment. No logic changes.</td></tr>
-  <tr><td class="file">docs/features/hive-card-header-layout.md</td><td>A short note on the layout and why.</td></tr>
+<tr><th>Width</th><th>Enter selection</th><th>Leave selection</th></tr>
+<tr><td>Under 768px</td><td>"Select" on the count line (<code>md:hidden</code>)</td><td>"Done selecting" (<code>sm:hidden</code> &rarr; <code>md:hidden</code>)</td></tr>
+<tr><td>768px and wider</td><td>Toolbar "Select" (<code>hidden sm:flex</code> &rarr; <code>hidden md:flex</code>)</td><td>The same toolbar button, which reads "Done"</td></tr>
 </table>
+<p>Desktop is unchanged.</p>
 
-<h2>4. To do</h2>
+<h2>3. To-do</h2>
 <ul class="todo">
-  <li>☑ Plan checked with you</li>
-  <li>☑ Header restructured into name/menu row and pill row</li>
-  <li>☑ Docs note</li>
-  <li>☐ You check on phone and desktop: a hive with a long number, a shared hive, an archived hive, a hive with a treatment on, and the ⋮ menu still opening</li>
-  <li>☑ Review section</li>
+  <li>&#9745; Remove the "Select several hives" button from inside Filters (lines 864&ndash;870).</li>
+  <li>&#9745; Toolbar Select: <code>hidden sm:flex</code> &rarr; <code>hidden md:flex</code>.</li>
+  <li>&#9745; "Done selecting": <code>sm:hidden</code> &rarr; <code>md:hidden</code>.</li>
+  <li>&#9745; Hive count line: make it a row with the counts on the left and a <code>Button tone="neutral"</code> "Select" (CheckSquare icon) on the right. It only shows under <code>md</code> and when selection is off.</li>
+  <li>&#9745; Update <span class="file">docs/features/hive-bulk-actions.md</span> with where Select sits on a phone.</li>
+  <li>&#9745; QA audit (qa-engineer).</li>
+  <li>&#9745; Review section below.</li>
+</ul>
+<p><strong>For you to check:</strong> on an iPhone in portrait, Hives shows "Select" beside "47 Active | 0 Archived". Tap it, tick two hives, then Move. Also check landscape and desktop, where you should see only one Select button.</p>
+
+<h2>4. Review</h2>
+<p>Built as planned. All the code changes are in <span class="file">src/app/dashboard/hives/page.tsx</span>, about 10 lines in total.</p>
+<ul>
+  <li><strong>Filters panel:</strong> the phone-only "Select several hives" button is gone from it.</li>
+  <li><strong>Hive count line:</strong> this is now a row with the counts on the left (<code>min-w-0</code>, so a long line with "Need inspection" or "Treatments On" wraps instead of pushing the button off-screen) and a neutral "Select" button on the right (<code>shrink-0 md:hidden</code>). The button only shows while selection is off. Once selecting, the existing "Done selecting" button under the toolbar ends it.</li>
+  <li><strong>Breakpoints:</strong> the toolbar "Select/Done" is now <code>hidden md:flex</code> and "Done selecting" is <code>md:hidden</code>. The phone layout, the bulk bar padding (<code>pb-56 md:pb-24</code>) and <code>useIsPhone</code> now all switch at 768px, so the 640&ndash;767px double button is gone.</li>
+  <li><strong>CSS check:</strong> <code>.fj-btn</code> sets <code>display: inline-flex</code> inside <code>:where()</code>, which has zero specificity, so <code>md:hidden</code> on the <code>Button</code> wins.</li>
+  <li><strong>Docs:</strong> <span class="file">docs/features/hive-bulk-actions.md</span> now says where Select sits on a phone and why it moved.</li>
 </ul>
 
-<h2>5. Review</h2>
-<p>Built as planned. Only <span class="file">HiveListCard.tsx</span> changed, plus the new doc note. The diff is mostly the existing blocks moving, with no logic changes.</p>
+<h3>QA audit</h3>
 <ul>
-  <li><strong>Row 1:</strong> <code>&lt;h3&gt;</code> (now <code>min-w-0</code>) and the ⋮ menu block, unchanged apart from <code>flex-shrink-0</code> so it never squeezes.</li>
-  <li><strong>Row 2:</strong> a single <code>flex flex-wrap gap-2</code> holding status, queenless, Inspected, QR tag, scales, shared, archived, tasks and treatment.</li>
-  <li><strong>Pill heights:</strong> the QR, shared, archived, tasks and treatment pills went from <code>py-0.5</code> to <code>py-1</code>, matching the status pills, so a wrapped row lines up.</li>
-  <li><strong>Tidy-up:</strong> I removed the right-hand cluster wrapper and its comment, and updated the treatment pill's comment.</li>
+  <li>No Critical, High or Medium findings. No data, query or RLS code changed, and the selection state and handlers are reused unchanged.</li>
+  <li><strong>&#9898; Low, left as is:</strong> if the list holds only team-mates' hives (Filters &rarr; Team Hives), Select still shows but there is nothing to tick. Desktop has always behaved this way, so the phone matches it.</li>
+  <li><code>npm run typecheck</code> and <code>eslint</code> on the changed file are both clean. As agreed, I didn't run the build or the tests.</li>
 </ul>
-<p><strong>Follow-up (your decision):</strong> the status pill now shows only when the status isn't "active" (in any case) and the hive isn't archived. In the live data that leaves 4 "retired" hives and 1 "Weak" hive. Archived hives keep their dated "Archived" pill. With only non-active statuses left, the pill's three-way colour switch became one neutral style.</p>
-<p><strong>Not changed:</strong> the ⋮ button's own size, the pill colours and wording, the menu contents, and everything below the header.</p>
 
 </body>
 </html>

@@ -14,7 +14,8 @@ Let a beekeeper select one or more hives in the Hives grid and apply a group act
 ## Scope / decisions
 
 ### Selection
-- A **"Select"** toggle button in the existing filter bar turns selection mode on/off.
+- A **"Select"** toggle button in the existing filter bar turns selection mode on/off (768px and wider; it reads "Done" while selecting).
+- **On a phone** (under 768px) "Select" sits at the right of the hive count line ("47 Active | 0 Archived"), always on show, and "Done selecting" under the toolbar ends it. Until 16/11/2026 it was inside the collapsed Filters panel as "Select several hives", where a user could not find it to move hives (it only showed in landscape). Every phone/wider switch here is at `md`, the same breakpoint as `useIsPhone`, so only one Select button ever shows.
 - In selection mode, each hive card shows a **large checkbox** (top-left).
 - Only the user's **own** hives are selectable (checkbox hidden for team/shared hives), matching the existing Edit/Delete owner rule. Bulk writes only succeed on owned rows under RLS, so this keeps the UI honest.
 - A **floating action bar** appears at the bottom of the screen when ≥1 hive is selected: shows the count and the actions (Move to apiary…, Clone, Clear).

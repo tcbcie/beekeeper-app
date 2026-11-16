@@ -861,18 +861,11 @@ export default function HivesPage() {
  <option value="last_inspected">Sort: Last Inspected</option>
  <option value="status">Sort: Status</option>
  </select>
- {/* Choosing several hives is occasional on a phone, so it starts from here */}
- {isPhone && !selectionMode && (
- <Button tone="neutral" onClick={() => setSelectionMode(true)}>
- <CheckSquare size={18} />
- Select several hives
- </Button>
- )}
  </div>
  </FilterDisclosure>
  <Button
  onClick={() => (selectionMode ? exitSelection() : setSelectionMode(true))}
- className={`hidden sm:flex px-4 py-2 min-h-[48px] rounded-lg font-medium items-center justify-center gap-2 touch-manipulation sm:w-auto border ${
+ className={`hidden md:flex px-4 py-2 min-h-[48px] rounded-lg font-medium items-center justify-center gap-2 touch-manipulation sm:w-auto border ${
  selectionMode
  ? 'bg-forest-600 dark:bg-forest-500 text-white border-forest-600 dark:border-forest-500 hover:bg-forest-700 dark:hover:bg-forest-600'
  : 'bg-surface dark:bg-surface-elevated text-foreground border-border hover:border-forest-500'
@@ -892,7 +885,7 @@ export default function HivesPage() {
  <span className="hidden sm:inline">{showForm ? 'Cancel' : 'Add Hive'}</span>
  </Button>
  {selectionMode && (
- <Button tone="success" onClick={exitSelection} className="col-span-full sm:hidden">
+ <Button tone="success" onClick={exitSelection} className="col-span-full md:hidden">
  Done selecting
  </Button>
  )}
@@ -917,11 +910,20 @@ export default function HivesPage() {
 
  {/* Summary stats bar */}
  {filteredHives.length > 0 && (
- <p className="text-sm text-text-secondary">
+ <div className="flex items-center justify-between gap-3">
+ <p className="min-w-0 text-sm text-text-secondary">
  {activeCount} Active | {archivedCount} Archived
  {inspectionSeason && ` | ${needInspectionCount} Need inspection (over 14 days)`}
  {treatmentsOnCount > 0 && ` | ${treatmentsOnCount} Treatment${treatmentsOnCount > 1 ? 's' : ''} On`}
  </p>
+ {/* On show on a phone: hidden inside Filters, people could not find it to move hives */}
+ {!selectionMode && (
+ <Button tone="neutral" onClick={() => setSelectionMode(true)} className="shrink-0 md:hidden">
+ <CheckSquare size={18} />
+ Select
+ </Button>
+ )}
+ </div>
  )}
 
  {/* On show, not inside Filters: it changes how the list looks, and it is the only way to the cards. */}
