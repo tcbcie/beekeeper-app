@@ -1,4 +1,5 @@
 // Hive-related type definitions
+import type { FeedSummary } from '@/lib/feeding'
 
 export interface HiveConfiguration {
   brood_boxes?: number
@@ -122,6 +123,8 @@ export interface Hive {
   last_stores_level?: number | null
   /** Date of that stores reading. */
   last_stores_date?: string | null
+  /** Feeds since the stores season began (1 August); null out of season. */
+  winter_feed?: ({ since: string } & FeedSummary) | null
   colonies?: Colony
   archive_reason_value?: {
     value?: string

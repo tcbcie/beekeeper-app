@@ -11,7 +11,9 @@ import { usePersistentState } from './usePersistentState'
 import { useSelection } from '@/contexts/SelectionContext'
 import { Hive, ActiveTreatment } from '@/types/hive'
 import { getTreatmentRemovalState } from '@/lib/treatment-removal'
-import { toLocalDateString } from '@/lib/date-utils'
+import { getCurrentDate, toLocalDateString } from '@/lib/date-utils'
+import { storesSeasonStart } from '@/lib/stores-level'
+import { summariseFeeds } from '@/lib/feeding'
 import { openScreenCache } from '@/lib/screen-cache'
 
 export interface HiveListApiary {
@@ -229,7 +231,7 @@ export function useHivesList() {
  'varroa_treatments', 'hive_id, treatment_date, treatment_type, planned_removal_date, removed_date', 'treatment_date'
  ),
  historyForHives<{ hive_id: string; check_date: string }>('varroa_checks', 'hive_id, check_date', 'check_date'),
- historyForHives<{ hive_id: string; feed_date: string }>('feedings', 'hive_id, feed_date', 'feed_date'),
+ historyForHives<{ hive_id: string; feed_date: string; feed_type: string | null; quantity: number | null; unit: string | null }>('feedings', 'hive_id, feed_date, feed_type, quantity, unit', 'feed_date'),
  historyForHives<{ hive_id: string; harvest_date: string }>('harvests', 'hive_id, harvest_date', 'harvest_date'),
  fetchInChunks<{ hive_id: string | null }>(hiveIds, (chunk) => supabase
  .from('tasks_events')
@@ -352,6 +354,18 @@ export function useHivesList() {
  })
  })
 
+ // Feeds since the stores season began, for the card's winter feed line (null from May to July)
+ const feedSince = storesSeasonStart(getCurrentDate())
+ const seasonFeedsByHive = new Map<string, NonNullable<typeof lastFeedings>>()
+ if (feedSince) {
+ lastFeedings?.forEach(feeding => {
+ if (feeding.feed_date < feedSince) return
+ const feeds = seasonFeedsByHive.get(feeding.hive_id) ?? []
+ feeds.push(feeding)
+ seasonFeedsByHive.set(feeding.hive_id, feeds)
+ })
+ }
+
  // Build map of active task counts per hive
  const activeTasksByHive = new Map<string, number>()
  activeTasks?.forEach(task => {
@@ -414,6 +428,7 @@ export function useHivesList() {
  previous_super_fullness_date: previousSuperFullnessDate,
  last_stores_level: storesInspection?.stores_level ?? null,
  last_stores_date: storesInspection?.inspection_date ?? null,
+ winter_feed: feedSince ? { since: feedSince, ...summariseFeeds(seasonFeedsByHive.get(hive.id) ?? []) } : null,
  }
  })
 

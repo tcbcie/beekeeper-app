@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { Tool } from './index'
 import { getSupabase, getAccessibleHiveIds, getAccessibleApiaryIds, getOwnApiaryIds, findHiveByName, formatDate, logToolError, todayInDublin, addDaysISO, boundedInt } from './utils'
 import { storesBand, storesSeasonStart, storesWord } from '@/lib/stores-level'
+import { normaliseUnit } from '@/lib/feeding'
 
 // Helper to extract hive info from Supabase join
 function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string } {
@@ -16,12 +17,6 @@ function getHiveInfo(hives: unknown): { hive_number: string; apiary_name: string
     hive_number: h.hive_number || 'Unknown',
     apiary_name: apiaryName
   }
-}
-
-// The form stores "L" and older records "liters", so one hive's litres add up as one amount
-function normaliseUnit(unit: string | null): string {
-  const text = unit?.trim() ?? ''
-  return /^(l|lit(er|re)s?)$/i.test(text) ? 'L' : text
 }
 
 // Some older records have no unit: say so, rather than let Mel present a bare number

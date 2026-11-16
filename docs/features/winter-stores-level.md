@@ -64,6 +64,22 @@ and were left untouched.
 - The % and word always sit beside the colour.
 - Archived hives show no dial.
 
+### Winter feed line (16/11/2026)
+
+Under the stores text the card shows the feed given since the same season start (1 August, or the
+previous 1 August from January to April):
+
+- "Fed 4 times since 1 August", "Fed once …" or "Not fed since 1 August". It shows whether or not
+  stores were checked.
+- A second line totals the amounts, e.g. "2.5 kg Fondant · 4 L syrup". Every syrup (any ratio or
+  custom "… syrup") adds up as one "syrup"; other feeds total by their own name. Amounts only add
+  within the same unit, and "liters" counts as L.
+- Feeds with no amount count in the times but not the totals.
+- Team-mates' feeds count (RLS-scoped, no `user_id` filter).
+- `summariseFeeds()` and `normaliseUnit()` live in `src/lib/feeding.ts` (Mel's feeding tools use the
+  same unit rule). `useHivesList` sets `hive.winter_feed` from its existing feedings query.
+- Not shown on the phone list row, the hive detail page or the map.
+
 ## Other places it appears
 
 - The inspection record card, the review step and the hive detail history.

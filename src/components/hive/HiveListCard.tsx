@@ -414,6 +414,7 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  <StoresDial
  level={hive.last_stores_date && hive.last_stores_date >= storesSince ? hive.last_stores_level ?? null : null}
  date={hive.last_stores_date}
+ feed={hive.winter_feed}
  />
  )}
  {hive.notes && (

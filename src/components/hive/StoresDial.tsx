@@ -1,17 +1,34 @@
 'use client'
 
 import { formatStoresDate, STORES_BAND_TEXT_CLASSES, storesBand, storesWord } from '@/lib/stores-level'
+import type { Hive } from '@/types/hive'
 
 interface StoresDialProps {
   /** Stores level, 0-100, or null when there is no reading for this winter. */
   level: number | null
   /** Date of the reading. */
   date?: string | null
+  /** Feeds given since the season began, shown under the stores text. */
+  feed?: Hive['winter_feed']
+}
+
+// "Fed 3 times since 1 August" and the amounts, e.g. "12 L syrup · 2 kg Fondant"
+function FeedLines({ feed }: { feed: NonNullable<Hive['winter_feed']> }) {
+  const since = formatStoresDate(feed.since) ?? feed.since
+  const fed = feed.times === 0 ? 'Not fed' : feed.times === 1 ? 'Fed once' : `Fed ${feed.times} times`
+  return (
+    <>
+      <span className="block text-text-secondary">{fed} since {since}</span>
+      {feed.amounts.length > 0 && (
+        <span className="block text-text-tertiary tabular-nums">{feed.amounts.join(' · ')}</span>
+      )}
+    </>
+  )
 }
 
 // Half-circle dial for the hive card: the arcs end at the 40 and 80 band boundaries. The % and a
 // word sit beside it, so it never relies on colour alone. Purely presentational.
-export default function StoresDial({ level, date }: StoresDialProps) {
+export default function StoresDial({ level, date, feed }: StoresDialProps) {
   if (level === null) {
     return (
       <div className="flex items-center gap-2">
@@ -21,6 +38,7 @@ export default function StoresDial({ level, date }: StoresDialProps) {
         <span className="text-sm">
           <span className="block font-semibold text-text-secondary">Stores not checked</span>
           <span className="block text-text-tertiary">No reading since 1 August</span>
+          {feed && <FeedLines feed={feed} />}
         </span>
       </div>
     )
@@ -56,6 +74,7 @@ export default function StoresDial({ level, date }: StoresDialProps) {
           {clamped}% &middot; {word}
         </span>
         <span className="block text-text-tertiary">Stores · {estimatedText}</span>
+        {feed && <FeedLines feed={feed} />}
       </span>
     </div>
   )

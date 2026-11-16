@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; P&amp;L list filter</title>
+<title>Plan &mdash; Winter feed on hive card</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -21,71 +21,104 @@
 </head>
 <body>
 
-<h1>Filter the P&amp;L records list by income or expenses</h1>
+<h1>Show winter feed beside the stores gauge</h1>
 
-<p><strong>Status:</strong> built, waiting for your tests &nbsp;&middot;&nbsp; <strong>Date:</strong> 15 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/profit-loss-tracker.md</span></p>
+<p><strong>Status:</strong> built, waiting for your tests &nbsp;&middot;&nbsp; <strong>Date:</strong> 16 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/winter-stores-level.md</span> (plan copy: <span class="file">docs/features/winter-feed-on-hive-card-plan.md</span>)</p>
 
 <blockquote>
-<p><strong>Your request</strong> (with a screenshot of the records list): "I cannot filter for income and expenses on the list."</p>
-<p>The invoice date default plan is in git history (<code>3c49c99a</code>).</p>
+<p><strong>Your request</strong> (with a screenshot of the hive card): "Beside the gauge where we report on the stores recorded, also show how much feed has been given to a particular hive in preparation of the winter. So that should probably be anything starting at the end of August for the current year."</p>
+<p>The previous plan in this file (P&amp;L list filter) is in git history (<code>fb67afe4</code>).</p>
 </blockquote>
 
 <h2>1. What exists</h2>
-<p>The list shows every record for the chosen Period (This Month, Year or All Time). The only control is Period, at the top. Totals, chart, categories, list and CSV all use the same <code>filteredRecords</code> in <span class="file">ProfitLoss/index.tsx</span>.</p>
+<ul>
+  <li><span class="file">src/components/hive/StoresDial.tsx</span> draws the gauge with two lines of text: "100% · Enough" and "Stores · Estimated 18 October". When there is no reading, it shows a grey arc and "Stores not checked".</li>
+  <li><span class="file">HiveListCard.tsx</span> shows the dial only in the stores season. <code>storesSeasonStart()</code> returns 1 August onwards and hides the dial from May to July. Archived hives show no dial.</li>
+  <li><span class="file">useHivesList.ts</span> already loads every feeding for the listed hives, but only <code>hive_id, feed_date</code>, which it uses for the "last record" row. Results are scoped by RLS, so team-mates' feeds count.</li>
+  <li>Feeds are stored in <code>feedings</code> with free-text <code>feed_type</code>, <code>quantity</code> and <code>unit</code> (L, kg or g; older rows may say "liters" or leave it blank).</li>
+  <li>Live data since 1 August 2026:
+    <ul>
+      <li>Syrup in three ratios: 116 rows, all in L.</li>
+      <li>Fondant in kg: 36 rows.</li>
+      <li>A few other rows: HiveAlive, pollen patty, and "frame of ivy honey" with no amount.</li>
+      <li>40 rows have no quantity at all.</li>
+    </ul>
+  </li>
+  <li>Mel's <code>getRecentFeedings</code> already applies the rule "only add amounts of the same feed and unit", using a private <code>normaliseUnit</code>.</li>
+</ul>
 
 <h2>2. The design</h2>
+<p>I'll add one extra line under the existing dial text, in the same column, so the stores level and the feed read together. No new card or box.</p>
 <pre>
-  Expenses by category ...
- ┌──────────────────────────────────────────┐
- │ Show   [  All  |  Income  |  Expenses  ] │   ← same control as Period, 48px
- └──────────────────────────────────────────┘
- ┌ Expense  Equipment            -€84.50 ┐
- │ 12/11/2026                            │
- │ Thornes · Invoice INV-20431 · Dated … │
- └───────────────────────────────────────┘
+ ╭──╮   100% · Enough
+ │ ╲│   Stores · Estimated 18 October
+        Fed 5 times since 1 August
+        12 L syrup · 2 kg fondant
 </pre>
 <ul>
-  <li>A <strong>Show: All / Income / Expenses</strong> control directly above the records list, using the existing <code>SegmentedControl</code>, the same as Period. It defaults to All.</li>
-  <li>It filters <strong>the list and the CSV export</strong>, so an accountant can be sent just the expenses. Totals, chart and category panels stay for the whole period, because a profit figure needs both sides.</li>
-  <li>When nothing matches, the message says what to do, for example "No expenses in 2026. Tap Add Record to add one." The existing empty message ("No financial records yet") is left for when the period has no records at all.</li>
-  <li>It stays on screen rather than behind a filter button, as it is a single control people switch often while checking a list (the mobile-screen rule on filters).</li>
+  <li><strong>Period.</strong> Feeds count from the same season start as the dial: <strong>1 August</strong> this year (or last year when it is now January to April). One date rule then covers both the reading and the feed. See question A.</li>
+  <li><strong>Amounts.</strong> All syrups (1:1, 3:2, 2:1, custom "… syrup") add up into one "syrup" figure in litres. Every other feed is totalled by its own name and unit, for example "2 kg Fondant" or "1 L HiveAlive". Amounts in different units are never added together.</li>
+  <li><strong>Feeds with no amount</strong> still count in "Fed 5 times", so a frame of ivy honey isn't lost.</li>
+  <li><strong>No feeds this season:</strong> the line reads "Not fed since 1 August". It also shows when stores were not checked.</li>
+  <li>The text is 14px tertiary, like the line above it. There are no new tap targets and no colour coding, because the feed isn't judged good or bad.</li>
+  <li><strong>Out of scope:</strong> the compact phone list row (<span class="file">HiveListRow</span>), the hive detail page and the map.</li>
 </ul>
 
-<h2>3. Todo</h2>
-<ul class="todo">
-  <li>☑ 1. <span class="file">index.tsx</span>: <code>typeFilter</code> state, a <code>listedRecords</code> memo, the Show control above the list, the list uses <code>listedRecords</code>, and a matching empty message.</li>
-  <li>☑ 2. <span class="file">index.tsx</span>: the CSV export uses <code>listedRecords</code>; the file name gains <code>-income</code> or <code>-expenses</code> when filtered.</li>
-  <li>☑ 3. Docs: <span class="file">profit-loss-tracker.md</span>.</li>
-  <li>☑ 4. Lint (done). ☐ You test: switch Show and check the list, the totals (unchanged) and the CSV.</li>
-  <li>☑ 5. Review section below.</li>
-</ul>
+<h2>3. Decisions</h2>
+<ol type="A">
+  <li><strong>Start date:</strong> 1 August, matching the stores dial (your answer).</li>
+  <li><strong>Syrup:</strong> one syrup total for all ratios (your answer).</li>
+</ol>
 
-<h2>4. Review</h2>
+<h2>4. Changes (small)</h2>
 <table>
   <tr><th>File</th><th>Change</th></tr>
-  <tr><td class="file">ProfitLoss/index.tsx</td><td>
-    <ul>
-      <li><code>typeFilter</code> state (All, Income or Expenses; default All) and a <code>listedRecords</code> memo, which is the period's records narrowed by type.</li>
-      <li>A <strong>Show</strong> <code>SegmentedControl</code> above the list, the same control as Period. It is hidden when the period has no records.</li>
-      <li>The list and CSV use <code>listedRecords</code>. The CSV file name gains <code>-income</code> or <code>-expenses</code> when filtered.</li>
-      <li>A new empty message for a filter with no matches: "No expenses for 2026." and "Tap "Add Record" to add one, or choose All." The existing "No financial records yet" stays for an empty period.</li>
-      <li>Totals, chart and category panels are untouched: they still use <code>filteredRecords</code> (both sides).</li>
-    </ul>
-  </td></tr>
-  <tr><td class="file">docs/features/profit-loss-tracker.md</td><td>The Show filter and the CSV file names.</td></tr>
+  <tr><td class="file">src/lib/feeding.ts</td><td>Move <code>normaliseUnit</code> here from Mel's tool. Add <code>summariseFeeds(feeds)</code>, which returns <code>{ times, amounts: string[] }</code>.</td></tr>
+  <tr><td class="file">src/lib/ai/tools/feeding.ts</td><td>Import <code>normaliseUnit</code> instead of defining it. Behaviour is unchanged.</td></tr>
+  <tr><td class="file">src/hooks/useHivesList.ts</td><td>Add <code>feed_type, quantity, unit</code> to the existing feedings select. Set <code>winter_feed</code> per hive from feeds on or after the season start.</td></tr>
+  <tr><td class="file">src/types/hive.ts</td><td>Add <code>winter_feed?: { times: number; amounts: string[] } | null</code>.</td></tr>
+  <tr><td class="file">src/components/hive/StoresDial.tsx</td><td>Add an optional <code>feed</code> prop that renders the feed line(s) in both states of the dial.</td></tr>
+  <tr><td class="file">src/components/hive/HiveListCard.tsx</td><td>Pass <code>feed={hive.winter_feed}</code>.</td></tr>
+  <tr><td class="file">docs/features/winter-stores-level.md</td><td>Document the feed line.</td></tr>
 </table>
-<ul>
-  <li>ESLint: no errors (the existing warning on the first-load effect is untouched). TypeScript: no errors. No tests or build were run.</li>
+
+<h2>5. To do</h2>
+<ul class="todo">
+  <li>☑ Plan checked with you</li>
+  <li>☑ <code>normaliseUnit</code> and <code>summariseFeeds</code> in <span class="file">src/lib/feeding.ts</span>; Mel imports it</li>
+  <li>☑ <code>winter_feed</code> type and hook calculation</li>
+  <li>☑ Feed line in <code>StoresDial</code>, passed from the card</li>
+  <li>☑ Docs updated (feature doc and plan copy)</li>
+  <li>☐ You test on the hive list (phone and desktop)</li>
+  <li>☑ Review section</li>
 </ul>
-<h3>For you to test</h3>
-<ol>
-  <li><code>npm run test:run</code> and a build.</li>
-  <li>Open P&amp;L. Show should appear above the list on All.</li>
-  <li>Tap Expenses: only expense rows, and the totals, chart and categories do not change. Tap Income: only income.</li>
-  <li>Export with Expenses chosen: only expense rows, and the file is called <code>pl-records-2026-expenses-….csv</code>.</li>
-  <li>Choose a period with income but no expenses, then Expenses: "No expenses for …".</li>
-  <li>On a phone, check that the three Show buttons fit on one line.</li>
-</ol>
+
+<h2>6. Review</h2>
+<p>Built as planned, with no schema change and no new database request.</p>
+<table>
+  <tr><th>File</th><th>What changed</th></tr>
+  <tr><td class="file">src/lib/feeding.ts</td><td>New <code>summariseFeeds()</code>, which returns the number of feeds and the totals. Every syrup adds up as "syrup"; any other feed totals by its own name. Amounts only add within the same unit. <code>normaliseUnit()</code> moved here.</td></tr>
+  <tr><td class="file">src/lib/ai/tools/feeding.ts</td><td>Mel imports <code>normaliseUnit</code> instead of defining it. Behaviour is unchanged.</td></tr>
+  <tr><td class="file">src/hooks/useHivesList.ts</td><td>The existing feedings select also reads <code>feed_type, quantity, unit</code>. Feeds since the season start are grouped once per hive, and the result goes in <code>winter_feed</code>.</td></tr>
+  <tr><td class="file">src/types/hive.ts</td><td>Adds <code>winter_feed</code>.</td></tr>
+  <tr><td class="file">src/components/hive/StoresDial.tsx</td><td>New optional <code>feed</code> prop. Its lines show under the stores text, whether or not stores were checked.</td></tr>
+  <tr><td class="file">src/components/hive/HiveListCard.tsx</td><td>Passes <code>feed={hive.winter_feed}</code>.</td></tr>
+  <tr><td class="file">docs/features/</td><td>Adds a "Winter feed line" section to <code>winter-stores-level.md</code> and a new <code>winter-feed-on-hive-card-plan.md</code>.</td></tr>
+</table>
+<p><strong>Checked against live data.</strong> Hive LNH 10 has four feeds since 1 August: 1 L of 2:1, 1 L of 1:1, 2 L of 1:1, and 2.5 kg of Fondant. The card should read:</p>
+<pre>
+ ╭──╮   …% · …
+ │ ╲│   Stores · Estimated …
+        Fed 4 times since 1 August
+        2.5 kg Fondant · 4 L syrup
+</pre>
+<p><strong>Notes</strong></p>
+<ul>
+  <li>Totals list newest feed type first.</li>
+  <li>From January to April the line reads "since 1 August 2026", because the year is added when it is not the current year, the same as the dial's own date.</li>
+  <li>From May to July the line is hidden along with the dial, and archived hives don't show it either.</li>
+</ul>
+<p><strong>To test (please run yourself):</strong> type check or build, then the hive list on a phone and on a desktop. Check a fed hive, an unfed hive ("Not fed since 1 August"), and a hive with no stores reading.</p>
 
 </body>
 </html>
