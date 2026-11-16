@@ -136,113 +136,18 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </label>
  )}
 
- <div className="flex justify-between items-start gap-2 mb-3">
- {/* min-w-0 + break-words: a compound hive number ("77-HMN+|70-HMN+") is one
-     unbreakable token, and a flex item's default min-width:auto would size this
-     column to it, shoving the status cluster off the right edge of the card —
-     worst on a phone. Letting it shrink and wrap keeps the pills inside the card. */}
- <div className="flex flex-col gap-1 min-w-0">
- <h3 className="text-xl font-bold text-foreground break-words">
+ <div className="mb-3">
+ {/* Name and menu on one row, every pill on the next: side-by-side columns squeezed the
+     pills into a narrow right-hand stack on a ~300px card, leaving the menu on its own row. */}
+ <div className="flex justify-between items-start gap-2">
+ {/* min-w-0 + break-words: a compound hive number ("77-HMN+|70-HMN+") is one unbreakable
+     token; letting it shrink and wrap keeps the menu inside the card, worst on a phone. */}
+ <h3 className="text-xl font-bold text-foreground break-words min-w-0">
  {hive.hive_number}
  </h3>
- {(hive.beep_device_id || hive.wolf_scale_id || hive.qr_tag_code) && (
- <div className="flex flex-wrap items-center gap-2">
- {hive.beep_device_id && (
- <span title="BEEP scale connected" className="inline-flex">
- <Scale size={16} className="text-amber-600" />
- </span>
- )}
- {hive.wolf_scale_id && (
- <span title="Wolf Waagen scale connected" className="inline-flex">
- <Scale size={16} className="text-blue-600" />
- </span>
- )}
- {hive.qr_tag_code && (
- <span
- title={`QR tag ${hive.qr_tag_code}`}
- className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-sm font-semibold bg-surface-secondary text-text-primary border border-border max-w-full whitespace-nowrap"
- >
- <QrCode size={12} className="flex-shrink-0" />
- <span className="truncate">{hive.qr_tag_code}</span>
- </span>
- )}
- </div>
- )}
- {hive.is_shared && hive.team_name && (
- <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-sm font-medium rounded flex items-center gap-1 w-fit border border-blue-300 dark:border-blue-800">
- <Users size={14} aria-hidden="true" />
- <span>Shared via {hive.team_name}</span>
- </span>
- )}
- {!hive.is_shared && hive.shared_with_team && (
- <span className="px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-sm font-medium rounded flex items-center gap-1 w-fit border border-purple-300 dark:border-purple-800">
- <Share2 size={14} aria-hidden="true" />
- <span>Shared with {hive.shared_with_team}</span>
- </span>
- )}
- {hive.archived_at && (
- <span className="px-2 py-0.5 bg-surface dark:bg-surface-elevated text-text-primary text-sm font-medium rounded flex items-center gap-1 w-fit border border-border">
- <Archive size={14} aria-hidden="true" />
- <span>Archived {new Date(hive.archived_at).toLocaleDateString()}</span>
- </span>
- )}
- {hive.active_tasks_count !== undefined && hive.active_tasks_count > 0 && (
- <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-sm font-semibold rounded flex items-center gap-1 w-fit border border-amber-400 dark:border-amber-700">
- <ClipboardList size={14} aria-hidden="true" />
- <span className="font-bold">{hive.active_tasks_count}</span>
- <span>Active Task{hive.active_tasks_count > 1 ? 's' : ''}</span>
- </span>
- )}
- {/*
-   A treatment still on the hive. Unlike the status and sharing pills this one is
-   transient: it appears only between applying a treatment and recording its
-   removal, and disappears once the beekeeper does the thing it asks for. Sits
-   with the descriptive pills rather than the status cluster because the label
-   carries a product name and a date, and must be free to wrap.
- */}
- {!hive.archived_at && hive.active_treatment && (
- <span className={`px-2 py-0.5 text-sm font-semibold rounded flex items-start gap-1 w-fit max-w-full border ${
- hive.active_treatment.overdue
- ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border-red-400 dark:border-red-700'
- : 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 border-amber-400 dark:border-amber-700'
- }`}>
- <Syringe size={14} className="flex-shrink-0 mt-0.5" />
- <span className="break-words">
- {formatRemovalLabel(hive.active_treatment.treatment_type, {
- planned_removal_date: hive.active_treatment.planned_removal_date,
- removed_date: null,
- })}
- </span>
- </span>
- )}
- </div>
- {/* Right-hand status cluster. justify-end keeps every wrapped row flush
-     with the card edge — a long hive number pushes these onto two or three
-     rows, and without it the shorter rows align to the left of a box sized by
-     the widest pill, which reads as staggered. */}
- <div className="flex flex-wrap items-center justify-end gap-2 max-w-full">
- <span className={`px-2 py-1 rounded text-sm font-medium whitespace-nowrap ${
- hive.status === 'active' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-800' :
- hive.status === 'archived' ? 'bg-surface dark:bg-surface-elevated text-text-primary border border-border' :
- 'bg-surface dark:bg-surface-elevated text-text-primary border border-border'
- }`}>
- {hive.status}
- </span>
- {hive.is_queenless && !hive.archived_at && (
- <span className="px-2 py-1 rounded text-sm font-medium whitespace-nowrap bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800">
- {formatQueenlessLabel(hive.queenless_reason)}
- </span>
- )}
- {/* Days since inspection badge */}
- {!hive.archived_at && (
- <span className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded border ${INSPECTION_BADGE_CLASSES[inspectionAgeTone(daysSinceInspection)]}`}>
- <Clock size={14} aria-hidden="true" />
- {inspectedAgoText(daysSinceInspection)}
- </span>
- )}
  {isOwner && (
  <div
- className="relative context-menu-container"
+ className="relative context-menu-container flex-shrink-0"
  onKeyDown={(e) => {
  if (e.key !== 'Escape' || openMenuId !== hive.id) return
  e.stopPropagation()
@@ -312,6 +217,93 @@ export default function HiveListCard({ hive, userId, onEdit, onDelete, onUnarchi
  </div>
  )}
  </div>
+ )}
+ </div>
+ <div className="flex flex-wrap items-center gap-2 mt-2">
+ <span className={`px-2 py-1 rounded text-sm font-medium whitespace-nowrap ${
+ hive.status === 'active' ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-800' :
+ hive.status === 'archived' ? 'bg-surface dark:bg-surface-elevated text-text-primary border border-border' :
+ 'bg-surface dark:bg-surface-elevated text-text-primary border border-border'
+ }`}>
+ {hive.status}
+ </span>
+ {hive.is_queenless && !hive.archived_at && (
+ <span className="px-2 py-1 rounded text-sm font-medium whitespace-nowrap bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800">
+ {formatQueenlessLabel(hive.queenless_reason)}
+ </span>
+ )}
+ {/* Days since inspection badge */}
+ {!hive.archived_at && (
+ <span className={`inline-flex items-center gap-1 px-2 py-1 text-sm font-medium rounded border ${INSPECTION_BADGE_CLASSES[inspectionAgeTone(daysSinceInspection)]}`}>
+ <Clock size={14} aria-hidden="true" />
+ {inspectedAgoText(daysSinceInspection)}
+ </span>
+ )}
+ {hive.beep_device_id && (
+ <span title="BEEP scale connected" className="inline-flex">
+ <Scale size={16} className="text-amber-600" />
+ </span>
+ )}
+ {hive.wolf_scale_id && (
+ <span title="Wolf Waagen scale connected" className="inline-flex">
+ <Scale size={16} className="text-blue-600" />
+ </span>
+ )}
+ {hive.qr_tag_code && (
+ <span
+ title={`QR tag ${hive.qr_tag_code}`}
+ className="inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-semibold bg-surface-secondary text-text-primary border border-border max-w-full whitespace-nowrap"
+ >
+ <QrCode size={12} className="flex-shrink-0" />
+ <span className="truncate">{hive.qr_tag_code}</span>
+ </span>
+ )}
+ {hive.is_shared && hive.team_name && (
+ <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-sm font-medium rounded flex items-center gap-1 w-fit border border-blue-300 dark:border-blue-800">
+ <Users size={14} aria-hidden="true" />
+ <span>Shared via {hive.team_name}</span>
+ </span>
+ )}
+ {!hive.is_shared && hive.shared_with_team && (
+ <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-sm font-medium rounded flex items-center gap-1 w-fit border border-purple-300 dark:border-purple-800">
+ <Share2 size={14} aria-hidden="true" />
+ <span>Shared with {hive.shared_with_team}</span>
+ </span>
+ )}
+ {hive.archived_at && (
+ <span className="px-2 py-1 bg-surface dark:bg-surface-elevated text-text-primary text-sm font-medium rounded flex items-center gap-1 w-fit border border-border">
+ <Archive size={14} aria-hidden="true" />
+ <span>Archived {new Date(hive.archived_at).toLocaleDateString()}</span>
+ </span>
+ )}
+ {hive.active_tasks_count !== undefined && hive.active_tasks_count > 0 && (
+ <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-sm font-semibold rounded flex items-center gap-1 w-fit border border-amber-400 dark:border-amber-700">
+ <ClipboardList size={14} aria-hidden="true" />
+ <span className="font-bold">{hive.active_tasks_count}</span>
+ <span>Active Task{hive.active_tasks_count > 1 ? 's' : ''}</span>
+ </span>
+ )}
+ {/*
+   A treatment still on the hive. Unlike the status and sharing pills this one is
+   transient: it appears only between applying a treatment and recording its
+   removal, and disappears once the beekeeper does the thing it asks for. Last in
+   the row because the label carries a product name and a date, and must be free
+   to wrap.
+ */}
+ {!hive.archived_at && hive.active_treatment && (
+ <span className={`px-2 py-1 text-sm font-semibold rounded flex items-start gap-1 w-fit max-w-full border ${
+ hive.active_treatment.overdue
+ ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 border-red-400 dark:border-red-700'
+ : 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 border-amber-400 dark:border-amber-700'
+ }`}>
+ <Syringe size={14} className="flex-shrink-0 mt-0.5" />
+ <span className="break-words">
+ {formatRemovalLabel(hive.active_treatment.treatment_type, {
+ planned_removal_date: hive.active_treatment.planned_removal_date,
+ removed_date: null,
+ })}
+ </span>
+ </span>
  )}
  </div>
  </div>

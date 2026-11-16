@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Winter feed on hive card</title>
+<title>Plan &mdash; Hive card header</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -21,104 +21,75 @@
 </head>
 <body>
 
-<h1>Show winter feed beside the stores gauge</h1>
+<h1>Tidy the hive card header</h1>
 
-<p><strong>Status:</strong> built, waiting for your tests &nbsp;&middot;&nbsp; <strong>Date:</strong> 16 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/winter-stores-level.md</span> (plan copy: <span class="file">docs/features/winter-feed-on-hive-card-plan.md</span>)</p>
+<p><strong>Status:</strong> built, waiting for your check &nbsp;&middot;&nbsp; <strong>Date:</strong> 16 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/hive-card-header-layout.md</span> (new)</p>
 
 <blockquote>
-<p><strong>Your request</strong> (with a screenshot of the hive card): "Beside the gauge where we report on the stores recorded, also show how much feed has been given to a particular hive in preparation of the winter. So that should probably be anything starting at the end of August for the current year."</p>
-<p>The previous plan in this file (P&amp;L list filter) is in git history (<code>fb67afe4</code>).</p>
+<p><strong>Your request</strong> (with a screenshot of the top of hive card 29-DA): "See if that section on the Hive card can be rendered better. It's not looking great on the desktop, and I checked on the mobile, it's pretty much the same as way. It's not aligned and there seems to be space wasted."</p>
+<p>The winter feed plan that was in this file is in git history (<code>c6de020b</code>).</p>
 </blockquote>
 
-<h2>1. What exists</h2>
+<h2>1. Root cause</h2>
+<p>In <span class="file">src/components/hive/HiveListCard.tsx</span>, the header is two flex columns side by side:</p>
 <ul>
-  <li><span class="file">src/components/hive/StoresDial.tsx</span> draws the gauge with two lines of text: "100% · Enough" and "Stores · Estimated 18 October". When there is no reading, it shows a grey arc and "Stores not checked".</li>
-  <li><span class="file">HiveListCard.tsx</span> shows the dial only in the stores season. <code>storesSeasonStart()</code> returns 1 August onwards and hides the dial from May to July. Archived hives show no dial.</li>
-  <li><span class="file">useHivesList.ts</span> already loads every feeding for the listed hives, but only <code>hive_id, feed_date</code>, which it uses for the "last record" row. Results are scoped by RLS, so team-mates' feeds count.</li>
-  <li>Feeds are stored in <code>feedings</code> with free-text <code>feed_type</code>, <code>quantity</code> and <code>unit</code> (L, kg or g; older rows may say "liters" or leave it blank).</li>
-  <li>Live data since 1 August 2026:
-    <ul>
-      <li>Syrup in three ratios: 116 rows, all in L.</li>
-      <li>Fondant in kg: 36 rows.</li>
-      <li>A few other rows: HiveAlive, pollen patty, and "frame of ivy honey" with no amount.</li>
-      <li>40 rows have no quantity at all.</li>
-    </ul>
-  </li>
-  <li>Mel's <code>getRecentFeedings</code> already applies the rule "only add amounts of the same feed and unit", using a private <code>normaliseUnit</code>.</li>
+  <li><strong>Left:</strong> the hive number, with the scale icons and QR tag, sharing, archived, tasks and treatment pills under it.</li>
+  <li><strong>Right:</strong> a "status cluster" with the status pill, queenless pill, "Inspected N days ago" and the ⋮ menu. It wraps and is right-aligned.</li>
 </ul>
+<p>The cards are only about 300px wide, on a phone and in the desktop grid alike, so the two columns fight for the width:</p>
+<ul>
+  <li>The right cluster wraps into three rows, which leaves ⋮ alone on its own row.</li>
+  <li>"Inspected 29 days ago" breaks over two lines.</li>
+  <li>The QR tag is cut to "HC-G…".</li>
+  <li>The space under "29-DA" is empty.</li>
+</ul>
+<p>The comments in the code already describe working around this ("pushes these onto two or three rows").</p>
 
 <h2>2. The design</h2>
-<p>I'll add one extra line under the existing dial text, in the same column, so the stores level and the feed read together. No new card or box.</p>
+<p>I'll split the header into two rows instead of two columns.</p>
 <pre>
- ╭──╮   100% · Enough
- │ ╲│   Stores · Estimated 18 October
-        Fed 5 times since 1 August
-        12 L syrup · 2 kg fondant
+ Before                               After
+ ┌──────────────────────────────┐     ┌──────────────────────────────┐
+ │ 29-DA              [active]  │     │ 29-DA                    [⋮] │
+ │ ⚖                ┌─────────┐ │     │ [active] [◷ Inspected 29 days│
+ │ [HC-G…]          │◷ Inspec-│ │     │  ago] [▦ HC-GH7K2] ⚖         │
+ │                  │ted 29 d…│ │     │                              │
+ │                        [⋮]   │     │ [ Overview &amp; Records       ] │
+ │ [ Overview &amp; Records       ] │     └──────────────────────────────┘
+ └──────────────────────────────┘
 </pre>
 <ul>
-  <li><strong>Period.</strong> Feeds count from the same season start as the dial: <strong>1 August</strong> this year (or last year when it is now January to April). One date rule then covers both the reading and the feed. See question A.</li>
-  <li><strong>Amounts.</strong> All syrups (1:1, 3:2, 2:1, custom "… syrup") add up into one "syrup" figure in litres. Every other feed is totalled by its own name and unit, for example "2 kg Fondant" or "1 L HiveAlive". Amounts in different units are never added together.</li>
-  <li><strong>Feeds with no amount</strong> still count in "Fed 5 times", so a frame of ivy honey isn't lost.</li>
-  <li><strong>No feeds this season:</strong> the line reads "Not fed since 1 August". It also shows when stores were not checked.</li>
-  <li>The text is 14px tertiary, like the line above it. There are no new tap targets and no colour coding, because the feed isn't judged good or bad.</li>
-  <li><strong>Out of scope:</strong> the compact phone list row (<span class="file">HiveListRow</span>), the hive detail page and the map.</li>
+  <li><strong>Row 1:</strong> the hive number on the left takes the free width, and ⋮ is pinned top right where people expect a card menu. A long compound number still wraps, as it does now.</li>
+  <li><strong>Row 2:</strong> one left-aligned row of pills that wraps naturally, in this order: status, queenless, Inspected N days ago, QR tag, scale icons, shared, archived, active tasks, treatment on. The most important state comes first. Every pill now gets the full card width, so the QR code shows in full.</li>
+  <li><strong>Nothing else changes:</strong> the pill colours and wording, the menu contents, the Overview &amp; Records button and the rest of the card all stay the same.</li>
 </ul>
+<p><strong>Checked against the house rules:</strong> no new cards, boxes, colours or motion. The menu stays the same button, and the text stays 14px.</p>
 
-<h2>3. Decisions</h2>
-<ol type="A">
-  <li><strong>Start date:</strong> 1 August, matching the stores dial (your answer).</li>
-  <li><strong>Syrup:</strong> one syrup total for all ratios (your answer).</li>
-</ol>
-
-<h2>4. Changes (small)</h2>
+<h2>3. Changes (one file)</h2>
 <table>
   <tr><th>File</th><th>Change</th></tr>
-  <tr><td class="file">src/lib/feeding.ts</td><td>Move <code>normaliseUnit</code> here from Mel's tool. Add <code>summariseFeeds(feeds)</code>, which returns <code>{ times, amounts: string[] }</code>.</td></tr>
-  <tr><td class="file">src/lib/ai/tools/feeding.ts</td><td>Import <code>normaliseUnit</code> instead of defining it. Behaviour is unchanged.</td></tr>
-  <tr><td class="file">src/hooks/useHivesList.ts</td><td>Add <code>feed_type, quantity, unit</code> to the existing feedings select. Set <code>winter_feed</code> per hive from feeds on or after the season start.</td></tr>
-  <tr><td class="file">src/types/hive.ts</td><td>Add <code>winter_feed?: { times: number; amounts: string[] } | null</code>.</td></tr>
-  <tr><td class="file">src/components/hive/StoresDial.tsx</td><td>Add an optional <code>feed</code> prop that renders the feed line(s) in both states of the dial.</td></tr>
-  <tr><td class="file">src/components/hive/HiveListCard.tsx</td><td>Pass <code>feed={hive.winter_feed}</code>.</td></tr>
-  <tr><td class="file">docs/features/winter-stores-level.md</td><td>Document the feed line.</td></tr>
+  <tr><td class="file">src/components/hive/HiveListCard.tsx</td><td>Move the existing JSX blocks into the two rows above and remove the right-hand cluster wrapper and its comment. No logic changes.</td></tr>
+  <tr><td class="file">docs/features/hive-card-header-layout.md</td><td>A short note on the layout and why.</td></tr>
 </table>
 
-<h2>5. To do</h2>
+<h2>4. To do</h2>
 <ul class="todo">
   <li>☑ Plan checked with you</li>
-  <li>☑ <code>normaliseUnit</code> and <code>summariseFeeds</code> in <span class="file">src/lib/feeding.ts</span>; Mel imports it</li>
-  <li>☑ <code>winter_feed</code> type and hook calculation</li>
-  <li>☑ Feed line in <code>StoresDial</code>, passed from the card</li>
-  <li>☑ Docs updated (feature doc and plan copy)</li>
-  <li>☐ You test on the hive list (phone and desktop)</li>
+  <li>☑ Header restructured into name/menu row and pill row</li>
+  <li>☑ Docs note</li>
+  <li>☐ You check on phone and desktop: a hive with a long number, a shared hive, an archived hive, a hive with a treatment on, and the ⋮ menu still opening</li>
   <li>☑ Review section</li>
 </ul>
 
-<h2>6. Review</h2>
-<p>Built as planned, with no schema change and no new database request.</p>
-<table>
-  <tr><th>File</th><th>What changed</th></tr>
-  <tr><td class="file">src/lib/feeding.ts</td><td>New <code>summariseFeeds()</code>, which returns the number of feeds and the totals. Every syrup adds up as "syrup"; any other feed totals by its own name. Amounts only add within the same unit. <code>normaliseUnit()</code> moved here.</td></tr>
-  <tr><td class="file">src/lib/ai/tools/feeding.ts</td><td>Mel imports <code>normaliseUnit</code> instead of defining it. Behaviour is unchanged.</td></tr>
-  <tr><td class="file">src/hooks/useHivesList.ts</td><td>The existing feedings select also reads <code>feed_type, quantity, unit</code>. Feeds since the season start are grouped once per hive, and the result goes in <code>winter_feed</code>.</td></tr>
-  <tr><td class="file">src/types/hive.ts</td><td>Adds <code>winter_feed</code>.</td></tr>
-  <tr><td class="file">src/components/hive/StoresDial.tsx</td><td>New optional <code>feed</code> prop. Its lines show under the stores text, whether or not stores were checked.</td></tr>
-  <tr><td class="file">src/components/hive/HiveListCard.tsx</td><td>Passes <code>feed={hive.winter_feed}</code>.</td></tr>
-  <tr><td class="file">docs/features/</td><td>Adds a "Winter feed line" section to <code>winter-stores-level.md</code> and a new <code>winter-feed-on-hive-card-plan.md</code>.</td></tr>
-</table>
-<p><strong>Checked against live data.</strong> Hive LNH 10 has four feeds since 1 August: 1 L of 2:1, 1 L of 1:1, 2 L of 1:1, and 2.5 kg of Fondant. The card should read:</p>
-<pre>
- ╭──╮   …% · …
- │ ╲│   Stores · Estimated …
-        Fed 4 times since 1 August
-        2.5 kg Fondant · 4 L syrup
-</pre>
-<p><strong>Notes</strong></p>
+<h2>5. Review</h2>
+<p>Built as planned. Only <span class="file">HiveListCard.tsx</span> changed, plus the new doc note. The diff is mostly the existing blocks moving, with no logic changes.</p>
 <ul>
-  <li>Totals list newest feed type first.</li>
-  <li>From January to April the line reads "since 1 August 2026", because the year is added when it is not the current year, the same as the dial's own date.</li>
-  <li>From May to July the line is hidden along with the dial, and archived hives don't show it either.</li>
+  <li><strong>Row 1:</strong> <code>&lt;h3&gt;</code> (now <code>min-w-0</code>) and the ⋮ menu block, unchanged apart from <code>flex-shrink-0</code> so it never squeezes.</li>
+  <li><strong>Row 2:</strong> a single <code>flex flex-wrap gap-2</code> holding status, queenless, Inspected, QR tag, scales, shared, archived, tasks and treatment.</li>
+  <li><strong>Pill heights:</strong> the QR, shared, archived, tasks and treatment pills went from <code>py-0.5</code> to <code>py-1</code>, matching the status pills, so a wrapped row lines up.</li>
+  <li><strong>Tidy-up:</strong> I removed the right-hand cluster wrapper and its comment, and updated the treatment pill's comment.</li>
 </ul>
-<p><strong>To test (please run yourself):</strong> type check or build, then the hive list on a phone and on a desktop. Check a fed hive, an unfed hive ("Not fed since 1 August"), and a hive with no stores reading.</p>
+<p><strong>Not changed:</strong> the ⋮ button's own size, the pill colours and wording, the menu contents, and everything below the header.</p>
 
 </body>
 </html>
