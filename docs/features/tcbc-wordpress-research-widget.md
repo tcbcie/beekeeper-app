@@ -11,6 +11,8 @@ Two complementary delivery modes share the same backend (a public Supabase view 
 
 No WordPress plugin required for either — a short `functions.php` shortcode and a `<script>` or `<iframe>` tag on the relevant page.
 
+> **Related (24/11/2026):** the tcbc.ie homepage phenology and GDD sum tables read a JSON feed, `/api/embed/phenology`, built on the same `public_galway_gdd` view and the same cached Open-Meteo fetch. See `tcbc-phenology-feed.md`. The view's definition is now recorded in `supabase/migrations/20261124100000_capture_public_galway_gdd_view.sql`.
+
 ## Goals
 
 1. Surface useful public information from the HiveCraic community dataset to TCBC members browsing the club website.
@@ -102,7 +104,7 @@ Security notes:
 
 ### 3. Open-Meteo Archive API (external, already in use)
 
-`https://archive-api.open-meteo.com/v1/archive` — no key, CORS-open. Galway city centroid: `53.2707, -9.0568`. The card widget still calls it from the browser. Since batch 41 (24/10/2026) the **iframe embed** calls our own route instead, `GET /api/embed/gdd-archive?region=<slug>&year=<yyyy>` (`src/app/api/embed/gdd-archive/route.ts`). It serves only regions in `src/lib/embed-regions.ts` and years from 2000 to this year (Irish date). It fetches upstream with `next: { revalidate }` (6 h for this year, 30 days for past years) and returns `Cache-Control: public, s-maxage`, so Open-Meteo sees a few calls per region whatever the visitor numbers (C7b-07).
+`https://archive-api.open-meteo.com/v1/archive` — no key, CORS-open. Galway city centroid: `53.2707, -9.0568`. The card widget still calls it from the browser. Since batch 41 (24/10/2026) the **iframe embed** calls our own route instead, `GET /api/embed/gdd-archive?region=<slug>&year=<yyyy>` (`src/app/api/embed/gdd-archive/route.ts`). It serves only regions in `src/lib/embed-regions.ts` and years from 2000 to this year (Irish date). It fetches upstream with `next: { revalidate }` (6 h for this year, 30 days for past years) and returns `Cache-Control: public, s-maxage`, so Open-Meteo sees a few calls per region whatever the visitor numbers (C7b-07). Since 24/11/2026 the fetch itself lives in `src/lib/embed-archive.ts` (`fetchEmbedArchive`), shared with the phenology feed.
 
 ## What the widget shows
 

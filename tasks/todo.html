@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plan &mdash; Select hives on a phone</title>
+<title>Plan &mdash; Phenology feed for tcbc.ie</title>
 <style>
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1.25rem; line-height: 1.6; color: #1f2620; }
   h1 { border-bottom: 3px solid #2f7a4d; padding-bottom: .4rem; }
@@ -21,74 +21,130 @@
 </head>
 <body>
 
-<h1>Select hives on a phone</h1>
+<h1>Public phenology feed for tcbc.ie</h1>
 
-<p><strong>Status:</strong> built, waiting for your check on a phone &nbsp;&middot;&nbsp; <strong>Date:</strong> 16 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/hive-bulk-actions.md</span> (update)</p>
+<p><strong>Status:</strong> built, waiting for your tests and deploy &nbsp;&middot;&nbsp; <strong>Date:</strong> 24 November 2026 &nbsp;&middot;&nbsp; <strong>Feature doc:</strong> <span class="file">docs/features/tcbc-phenology-feed.md</span> (new)</p>
 
 <blockquote>
-<p><strong>Report from a user</strong> (WhatsApp, with screenshots): "just noticed when I went to move hives On iPhone, the hive select button only shows when phone is in landscape."</p>
-<p>The hive card header plan that was in this file is in git history (<code>5caa7f2a</code>).</p>
+<p><strong>Your request:</strong> "read the /opt/projects/tcbcie/docs/hivecraic-phenology-api-brief.md brief and implement".</p>
+<p><strong>Your decisions:</strong></p>
+<ul>
+  <li><strong>Observations:</strong> community mode only. The feed uses every shared Galway record. Where several people recorded the same event in the same year, it takes the earliest start, that record's GDD and the latest end.</li>
+  <li><strong>Colony events:</strong> Brood and Pollen stay in the feed as category <code>colony</code>.</li>
+  <li><strong>Default dates:</strong> <code>02-01,03-01,04-01,05-01</code>.</li>
+</ul>
+<p>The previous plans that were in this file are in git history (<code>5caa7f2a</code>, and the hives Select button plan in <code>0e4b6d20</code>).</p>
 </blockquote>
 
-<h2>1. Root cause</h2>
-<p>In <span class="file">src/app/dashboard/hives/page.tsx</span>:</p>
+<h2>1. What I found</h2>
 <ul>
-  <li><strong>Line 875:</strong> the toolbar <em>Select</em> button has <code>hidden sm:flex</code>, so it only appears at 640px and wider. An iPhone in landscape is wider than 640px, which is why it appears there.</li>
-  <li><strong>Lines 864&ndash;870:</strong> commit <code>b9391c7e</code> (2 Nov, mobile native feel) moved the phone entry point inside the collapsed <em>Filters</em> panel as "Select several hives", on the basis that choosing several hives is occasional on a phone. Filters start closed on a phone, so the button is out of sight and nobody would think to look for it there.</li>
-  <li><strong>Side bug:</strong> the toolbar button switches at 640px (<code>sm</code>), but the phone button uses <code>useIsPhone()</code>, which switches at 768px (<code>md</code>). Between 640 and 767px (a large phone in landscape, a small tablet), both buttons show.</li>
+  <li><code>public_galway_gdd</code> <strong>exists in the database</strong> and <code>anon</code> can read it. It is built on <code>shared_gdd_records_community</code>, which is internal and has no client grants. It already returns only <code>id, vegetation_type_id, vegetation_name, year, start_date, end_date, gdd_value, city</code>, with no user ids or coordinates.</li>
+  <li><strong>Missing migration files:</strong> neither view has a file in <span class="file">supabase/migrations</span>. Both were applied through the MCP at the time, so the database already lists them in its migration history.</li>
+  <li><strong>The narrow read path already exists.</strong> Because the feed is community mode, it can read <code>public_galway_gdd</code> with the anon key. No new database function is needed, and <code>gdd_records</code> and <code>get_shared_gdd_records()</code> stay closed to <code>anon</code>.</li>
+  <li>No vegetation type called Brood or Pollen exists yet, so every event is a <code>plant</code> for now.</li>
+  <li>The temperature fetch, including the Open-Meteo URL, the time-limit race that keeps Next's fetch cache working, and the 6 h / 30 day revalidate, lives inside <span class="file">src/app/api/embed/gdd-archive/route.ts</span>. I'll move it into a small shared helper so both routes make <strong>the same cached upstream call</strong>, one per region and year.</li>
 </ul>
 
-<h2>2. The fix</h2>
-<p>I'll put a visible <em>Select</em> button on the hive count line on phones. That line already exists and has empty space on the right, so the list does not move down and the five-hives-on-first-view goal still holds. The toolbar row has no room for a fourth button at 390px wide: the apiary picker would shrink to nothing.</p>
-<pre>
- Phone, portrait (390px)
- ┌──────────────────────────────────────┐
- │ [ Search hive, apiary, tag or queen ]│
- │ [All Apiaries ◇] [Filters ▾] [+ Add] │
- │ 47 Active | 0 Archived    [☑ Select] │  &larr; new, 48px tall
- │ [     List     |     Cards       ]   │
- │ EPF 1 …                              │
- └──────────────────────────────────────┘
- Once tapped: the existing "Done selecting" button, "Select all (47)",
- checkboxes, and the bottom action bar with Move / Treat / Feed.
-</pre>
-<p>All the switching between the phone and wider layouts happens at one breakpoint, <code>md</code> (768px), the same as <code>useIsPhone</code>. It is done with CSS only, so the button doesn't flash on first load.</p>
-
+<h3>Two differences from the brief to know about</h3>
 <table>
-<tr><th>Width</th><th>Enter selection</th><th>Leave selection</th></tr>
-<tr><td>Under 768px</td><td>"Select" on the count line (<code>md:hidden</code>)</td><td>"Done selecting" (<code>sm:hidden</code> &rarr; <code>md:hidden</code>)</td></tr>
-<tr><td>768px and wider</td><td>Toolbar "Select" (<code>hidden sm:flex</code> &rarr; <code>hidden md:flex</code>)</td><td>The same toolbar button, which reads "Done"</td></tr>
+  <tr><th>Brief says</th><th>What the data says</th><th>What I'll do</th></tr>
+  <tr><td>Snowdrops 2025 = 2025-01-30, GDD <strong>78.9</strong></td><td>The shared records hold 2025-01-30 with GDD <strong>77.0</strong> (Galway city) and <strong>77.3</strong> (Mace). 78.9 comes from tcbc.ie's own historic table.</td><td>Publish what HiveCraic holds. For a tie on the earliest start, take the lower GDD so the result is deterministic. The feed will say 77.0.</td></tr>
+  <tr><td>Keys like <code>gorse</code>, <code>cherry-plum</code></td><td>The names include Latin in brackets, e.g. "Cherry plum (Prunus cerasifera)", "Clover (Red)", "Clover (White)"</td><td>Slug the <strong>whole</strong> name: <code>cherry-plum-prunus-cerasifera</code>, <code>clover-red</code>. Dropping the brackets would merge Red and White clover into one key. TCBC treats the key only as an identifier, so this is safe.</td></tr>
 </table>
-<p>Desktop is unchanged.</p>
 
-<h2>3. To-do</h2>
+<h2>2. How it fits together</h2>
+<pre>
+ tcbc.ie (server, 6 h cache)
+        │  GET /api/embed/phenology?region=galway&amp;years=2025,2026
+        ▼
+ route.ts ── validate region / years / dates ──► 400 on bad input
+        │
+        ├─► Supabase (anon key) ── public_galway_gdd ──► events[]       (error → 502)
+        │
+        └─► fetchEmbedArchive(region, year) for each year and year − 1
+                (same cached Open-Meteo call as gdd-archive)              (any failure → 502)
+                     │
+                     ▼
+            calculateGDDFromDaily (src/lib/gdd.ts, unchanged) ──► gdd_sums[]
+        │
+        ▼
+ JSON v1 + Cache-Control: public, s-maxage=21600, stale-while-revalidate=86400   (current year included)
+                          public, s-maxage=2592000                                (past years only)
+</pre>
+
+<h2>3. Todo</h2>
 <ul class="todo">
-  <li>&#9745; Remove the "Select several hives" button from inside Filters (lines 864&ndash;870).</li>
-  <li>&#9745; Toolbar Select: <code>hidden sm:flex</code> &rarr; <code>hidden md:flex</code>.</li>
-  <li>&#9745; "Done selecting": <code>sm:hidden</code> &rarr; <code>md:hidden</code>.</li>
-  <li>&#9745; Hive count line: make it a row with the counts on the left and a <code>Button tone="neutral"</code> "Select" (CheckSquare icon) on the right. It only shows under <code>md</code> and when selection is off.</li>
-  <li>&#9745; Update <span class="file">docs/features/hive-bulk-actions.md</span> with where Select sits on a phone.</li>
-  <li>&#9745; QA audit (qa-engineer).</li>
-  <li>&#9745; Review section below.</li>
-</ul>
-<p><strong>For you to check:</strong> on an iPhone in portrait, Hives shows "Select" beside "47 Active | 0 Archived". Tap it, tick two hives, then Move. Also check landscape and desktop, where you should see only one Select button.</p>
-
-<h2>4. Review</h2>
-<p>Built as planned. All the code changes are in <span class="file">src/app/dashboard/hives/page.tsx</span>, about 10 lines in total.</p>
-<ul>
-  <li><strong>Filters panel:</strong> the phone-only "Select several hives" button is gone from it.</li>
-  <li><strong>Hive count line:</strong> this is now a row with the counts on the left (<code>min-w-0</code>, so a long line with "Need inspection" or "Treatments On" wraps instead of pushing the button off-screen) and a neutral "Select" button on the right (<code>shrink-0 md:hidden</code>). The button only shows while selection is off. Once selecting, the existing "Done selecting" button under the toolbar ends it.</li>
-  <li><strong>Breakpoints:</strong> the toolbar "Select/Done" is now <code>hidden md:flex</code> and "Done selecting" is <code>md:hidden</code>. The phone layout, the bulk bar padding (<code>pb-56 md:pb-24</code>) and <code>useIsPhone</code> now all switch at 768px, so the 640&ndash;767px double button is gone.</li>
-  <li><strong>CSS check:</strong> <code>.fj-btn</code> sets <code>display: inline-flex</code> inside <code>:where()</code>, which has zero specificity, so <code>md:hidden</code> on the <code>Button</code> wins.</li>
-  <li><strong>Docs:</strong> <span class="file">docs/features/hive-bulk-actions.md</span> now says where Select sits on a phone and why it moved.</li>
+  <li>☑ <strong>1. Record the views as a migration.</strong> Add <span class="file">supabase/migrations/20261124100000_capture_public_galway_gdd_view.sql</span> with the live definitions of <code>shared_gdd_records_community</code> and <code>public_galway_gdd</code> and their grants, copied from the database. This is a file only: the database already has both, so nothing is applied.</li>
+  <li>☑ <strong>2. Share the archive fetch.</strong> Add <span class="file">src/lib/embed-archive.ts</span> with <code>fetchEmbedArchive(region, year)</code>, the code moved out of the gdd-archive route as it is. Then point <span class="file">gdd-archive/route.ts</span> at it. Its behaviour and responses don't change.</li>
+  <li>☑ <strong>3. Feed builder.</strong> Add <span class="file">src/lib/phenology-feed.ts</span> with small pure functions:
+    <ul>
+      <li><code>parseYears</code> and <code>parseDates</code>, which apply the brief's bounds.</li>
+      <li><code>eventKey</code>, the slug.</li>
+      <li><code>buildEvents</code>, which applies community-mode merging, the colony tag and the 100 cap, and sorts in season order.</li>
+      <li><code>buildGddSums</code>, which works out values on each date and <code>reached_previous_year</code>. Both use <code>calculateGDDFromDaily</code> on the days from 1 January to the date.</li>
+    </ul>
+  </li>
+  <li>☑ <strong>4. Route.</strong> Add <span class="file">src/app/api/embed/phenology/route.ts</span>. It takes GET only, has no auth, and uses the anon Supabase client. It returns 400 for bad input, 502 when the archive or database can't be read, and sets the cache headers above.</li>
+  <li>☑ <strong>5. Tests.</strong> Add <span class="file">tests/api/embed-phenology.test.ts</span> in the same style as the gdd-archive test. It covers the 400 cases from the brief, 502 when the archive is down, a merged community event, the GDD sum and reached date, the cache headers, and that the payload has no personal fields. <em>You run it.</em></li>
+  <li>☑ <strong>6. Docs.</strong> Add <span class="file">docs/features/tcbc-phenology-feed.md</span> and a pointer from <span class="file">docs/features/tcbc-wordpress-research-widget.md</span>.</li>
+  <li>☑ <strong>7. Review section</strong> in this file, with a check of the 2025 values against Open-Meteo.</li>
 </ul>
 
-<h3>QA audit</h3>
+<h2>4. What doesn't change</h2>
 <ul>
-  <li>No Critical, High or Medium findings. No data, query or RLS code changed, and the selection state and handlers are reused unchanged.</li>
-  <li><strong>&#9898; Low, left as is:</strong> if the list holds only team-mates' hives (Filters &rarr; Team Hives), Select still shows but there is nothing to tick. Desktop has always behaved this way, so the phone matches it.</li>
-  <li><code>npm run typecheck</code> and <code>eslint</code> on the changed file are both clean. As agreed, I didn't run the build or the tests.</li>
+  <li><span class="file">src/lib/gdd.ts</span> stays as it is, and so does the vanilla JS widget copy.</li>
+  <li>No database objects, RLS or grants change.</li>
+  <li>The <code>/embed/*</code> framing rules in <span class="file">next.config.ts</span> stay as they are. No CORS is needed, because TCBC calls the feed server-to-server.</li>
+  <li>The version number stays as it is.</li>
 </ul>
+
+<h2>5. After it's live</h2>
+<p>Tell the TCBC owner to set <code>HIVECRAIC_PHENOLOGY_URL=https://www.hivecraic.com/api/embed/phenology</code> in Vercel and redeploy.</p>
+
+<h2>6. Review</h2>
+<h3>What changed</h3>
+<table>
+  <tr><th>File</th><th>Change</th></tr>
+  <tr><td class="file">supabase/migrations/20261124100000_capture_public_galway_gdd_view.sql</td><td>New. It records the live <code>shared_gdd_records_community</code> and <code>public_galway_gdd</code> definitions and grants. It is a file only, and the database is unchanged.</td></tr>
+  <tr><td class="file">src/lib/embed-archive.ts</td><td>New. <code>fetchEmbedArchive(region, year)</code> is the Open-Meteo fetch moved out of the gdd-archive route. It now also requires <code>temperature_2m_min</code>, which the GDD formula reads.</td></tr>
+  <tr><td class="file">src/app/api/embed/gdd-archive/route.ts</td><td>Uses the shared helper. It returns the same responses as before.</td></tr>
+  <tr><td class="file">src/lib/phenology-feed.ts</td><td>New. It holds the pure builders: input parsing, slug, community merge, GDD sums and reached dates, all through <code>calculateGDDFromDaily</code>.</td></tr>
+  <tr><td class="file">src/app/api/embed/phenology/route.ts</td><td>New. The public GET route, with 400 and 502 responses and the cache headers from the brief.</td></tr>
+  <tr><td class="file">tests/api/embed-phenology.test.ts</td><td>New. It covers the 400 cases, 502, the merge, sums and reached dates, cache headers and the absence of personal fields.</td></tr>
+  <tr><td class="file">docs/features/tcbc-phenology-feed.md</td><td>New feature doc. There are also two pointers in <span class="file">tcbc-wordpress-research-widget.md</span>.</td></tr>
+</table>
+
+<h3>Checked against real data</h3>
+<p>I ran the builders against the live Open-Meteo archive for Galway, at 53.2707, −9.0568:</p>
+<pre>
+ GDD sum      2025     2026    2026 reached in 2025
+ 02-01        91.7     81.8    2025-01-31
+ 03-01       243.2    237.2    2025-03-01
+ 04-01       513.4    489.9    2025-03-31
+ 05-01       845.5    785.7    2025-04-27
+ (2025 reached in 2024: 2024-02-02, 02-28, 04-03, 05-07)
+</pre>
+<ul>
+  <li><strong>The 1 February 2025 total doesn't match the old table.</strong> HiveCraic's formula at the Galway centroid gives 91.7. tcbc.ie's historic table shows 85.5, so that figure came from another source or location.</li>
+  <li><strong>The formula matches the stored records.</strong> At an apiary around 53.40, −9.10 the same code gives 77.1 for 30 January 2025, against 77.3 in the stored Mace snowdrops record. Stored record GDDs are worked out per apiary.</li>
+  <li><strong>Snowdrops 2025 publishes as 77.0.</strong> Two records share the earliest start, and the lower GDD is chosen.</li>
+  <li><strong>Merging works on sample records:</strong> the snowdrops records merged into one row, gorse from December sorted first, and a record with no GDD fell back to the accumulated value.</li>
+</ul>
+
+<h3>Other notes</h3>
+<ul>
+  <li><strong>Region check:</strong> the new route checks the region with <code>Object.hasOwn</code>, so <code>?region=constructor</code> is a 400. The old gdd-archive route would accept that value, but it only ends in a 502 from Open-Meteo, so I left that route as it is.</li>
+  <li><strong>Data to tidy:</strong> some shared records end in the following year, such as Hazel 2025 ending 2026-04-06 and Mace snowdrops 2025 ending 2026-03-20. The feed publishes them as recorded.</li>
+  <li><strong>Lint:</strong> <code>eslint</code> is clean on all the changed files. I didn't run typecheck or tests, per the project rules.</li>
+</ul>
+
+<h3>For you to do</h3>
+<ol>
+  <li>Run <code>npm run typecheck</code>, <code>npm run lint</code> and <code>npx vitest run tests/api/embed-phenology.test.ts tests/api/embed-gdd-archive.test.ts</code>.</li>
+  <li>Commit and push to <code>main</code>, which deploys.</li>
+  <li>Check <code>https://www.hivecraic.com/api/embed/phenology?region=galway&amp;years=2025,2026</code>.</li>
+  <li>Tell the TCBC owner to set <code>HIVECRAIC_PHENOLOGY_URL=https://www.hivecraic.com/api/embed/phenology</code> in Vercel and redeploy.</li>
+</ol>
 
 </body>
 </html>
